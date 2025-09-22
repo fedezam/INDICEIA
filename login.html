@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INDICEIA - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo h1 {
+            color: #333;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        .logo p {
+            color: #666;
+            margin-top: 8px;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-group label {
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .input-group input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #4285f4;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #333;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #555;
+        }
+        
+        .btn-google {
+            background: #4285f4;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .btn-google:hover {
+            background: #3367d6;
+        }
+        
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+            color: #666;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #ddd;
+        }
+        
+        .divider span {
+            background: white;
+            padding: 0 16px;
+        }
+        
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+        }
+        
+        .register-link a {
+            color: #4285f4;
+            text-decoration: none;
+        }
+        
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>INDICEIA</h1>
+            <p>Tu vendedor IA personalizado</p>
+        </div>
+        
+        <form class="login-form" id="emailLogin">
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <a href="#" id="forgotPassword" style="color: #4285f4; text-decoration: none; font-size: 14px; margin-bottom: 16px; display: block; text-align: right;">¿Olvidaste tu contraseña?</a>
+            
+            <button type="submit" class="btn btn-primary">Iniciar Sesión</button>
+        </form>
+        
+        <div class="divider">
+            <span>o</span>
+        </div>
+        
+        <button class="btn btn-google" id="googleLogin">
+            <svg width="20" height="20" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Continuar con Google
+        </button>
+        
+        <div class="register-link">
+            ¿No tienes cuenta? <a href="#" id="registerLink">Regístrate aquí</a>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+        import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+        import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+        // Your Firebase config (REPLACE WITH YOUR ACTUAL CONFIG)
+        const firebaseConfig = {
+           apiKey: "AIzaSyC7Ny3pE6zaaQbfvEJqRMcZ98W6LSfJTgo",
+           authDomain: "indiceia-e2d42.firebaseapp.com",
+           projectId: "indiceia-e2d42",
+           storageBucket: "indiceia-e2d42.firebasestorage.app",
+           messagingSenderId: "630890658793",
+           appId: "1:630890658793:web:98b9a9084c308f80926978",
+           measurementId: "G-NTG5LD5YNP"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        let isRegisterMode = false;
+
+        // Generate referral ID
+        function generateReferralId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        // Email login/register
+        document.getElementById('emailLogin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                if (isRegisterMode) {
+                    // Show registration form first
+                    showRegistrationForm(email, password);
+                } else {
+                    // Login
+                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    console.log('Usuario logueado:', userCredential.user);
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // Show registration form
+        function showRegistrationForm(email, password) {
+            const loginContainer = document.querySelector('.login-container');
+            loginContainer.innerHTML = `
+                <div class="logo">
+                    <h1>INDICEIA</h1>
+                    <p>Completa tu registro</p>
+                </div>
+                
+                <form class="login-form" id="completeRegistration">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" value="${email}" disabled style="background: #f5f5f5;">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="nombre">Tu Nombre *</label>
+                        <input type="text" id="nombre" name="nombre" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="nombreComercio">Nombre de tu Comercio *</label>
+                        <input type="text" id="nombreComercio" name="nombreComercio" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="telefono">WhatsApp/Teléfono *</label>
+                        <input type="tel" id="telefono" name="telefono" placeholder="+54 9 XXX XXXXXXX" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Crear Cuenta</button>
+                </form>
+                
+                <div class="register-link">
+                    <a href="#" onclick="location.reload()">← Volver al login</a>
+                </div>
+            `;
+
+            // Handle complete registration
+            document.getElementById('completeRegistration').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const userData = Object.fromEntries(formData);
+
+                try {
+                    // Create user
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    
+                    // Save additional data
+                    await setDoc(doc(db, 'usuarios', userCredential.user.uid), {
+                        email: email,
+                        nombre: userData.nombre,
+                        nombreComercio: userData.nombreComercio,
+                        telefono: userData.telefono,
+                        referralId: generateReferralId(),
+                        fechaRegistro: new Date(),
+                        plan: 'basic',
+                        estado: 'trial'
+                    });
+
+                    console.log('Usuario registrado:', userCredential.user);
+                    window.location.href = 'dashboard.html';
+                } catch (error) {
+                    alert('Error al registrar: ' + error.message);
+                }
+            });
+        }
+
+        // Google login
+        document.getElementById('googleLogin').addEventListener('click', async () => {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                const user = result.user;
+                
+                // Check if user exists in our database
+                const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+                
+                if (!userDoc.exists()) {
+                    // New Google user - need additional data
+                    showGoogleRegistrationForm(user);
+                } else {
+                    // Existing user
+                    console.log('Usuario logueado con Google:', user);
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // Show Google registration form
+        function showGoogleRegistrationForm(user) {
+            const loginContainer = document.querySelector('.login-container');
+            loginContainer.innerHTML = `
+                <div class="logo">
+                    <h1>INDICEIA</h1>
+                    <p>Completa tu perfil</p>
+                </div>
+                
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <img src="${user.photoURL}" style="width: 60px; height: 60px; border-radius: 50%;" alt="Profile">
+                    <p style="margin: 8px 0; color: #666;">${user.displayName}</p>
+                    <p style="margin: 0; color: #666; font-size: 14px;">${user.email}</p>
+                </div>
+                
+                <form class="login-form" id="completeGoogleRegistration">
+                    <div class="input-group">
+                        <label for="nombreComercio">Nombre de tu Comercio *</label>
+                        <input type="text" id="nombreComercio" name="nombreComercio" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="telefono">WhatsApp/Teléfono *</label>
+                        <input type="tel" id="telefono" name="telefono" placeholder="+54 9 XXX XXXXXXX" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Completar Registro</button>
+                </form>
+            `;
+
+            // Handle Google registration completion
+            document.getElementById('completeGoogleRegistration').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const userData = Object.fromEntries(formData);
+
+                try {
+                    await setDoc(doc(db, 'usuarios', user.uid), {
+                        email: user.email,
+                        nombre: user.displayName,
+                        avatar: user.photoURL,
+                        nombreComercio: userData.nombreComercio,
+                        telefono: userData.telefono,
+                        referralId: generateReferralId(),
+                        fechaRegistro: new Date(),
+                        plan: 'basic',
+                        estado: 'trial'
+                    });
+
+                    window.location.href = 'dashboard.html';
+                } catch (error) {
+                    alert('Error al completar registro: ' + error.message);
+                }
+            });
+        }
+
+        // Forgot password
+        document.getElementById('forgotPassword').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            
+            if (!email) {
+                alert('Ingresa tu email primero');
+                return;
+            }
+            
+            try {
+                await sendPasswordResetEmail(auth, email);
+                alert('✅ Email de recuperación enviado. Revisa tu bandeja de entrada.');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // Register link toggle
+        document.getElementById('registerLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            isRegisterMode = !isRegisterMode;
+            
+            if (isRegisterMode) {
+                // Change to register mode
+                document.querySelector('.btn-primary').textContent = 'Continuar Registro';
+                e.target.textContent = 'Ya tienes cuenta? Inicia sesión';
+                document.querySelector('.logo p').textContent = 'Crea tu cuenta y comienza a vender';
+            } else {
+                // Change back to login mode
+                document.querySelector('.btn-primary').textContent = 'Iniciar Sesión';
+                e.target.textContent = 'Regístrate aquí';
+                document.querySelector('.logo p').textContent = 'Tu vendedor IA personalizado';
+            }
+        });
+    </script>
+</body>
+</html>
