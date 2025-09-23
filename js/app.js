@@ -323,3 +323,89 @@ function showRegistrationForm(email, password) {
         case "auth/weak-password":
           errorMessage = "La contraseña es demasiado débil";
           break;
+        default:
+          errorMessage = error.message;
+      }
+
+      Utils.showToast("Error", errorMessage, "error");
+    }
+  });
+}
+
+// ✅ Validación de campos de registro
+function validateRegistrationField() {
+  const field = this;
+  const errorMsg = field.parentElement.parentElement.querySelector(".error-message");
+
+  if (!field.value.trim()) {
+    field.classList.add("error");
+    errorMsg.classList.add("show");
+    return false;
+  } else {
+    field.classList.remove("error");
+    errorMsg.classList.remove("show");
+    return true;
+  }
+}
+
+function validateRegistrationForm() {
+  const inputs = document.querySelectorAll("#completeRegistration input[required]");
+  let isValid = true;
+
+  inputs.forEach((input) => {
+    if (!validateRegistrationField.call(input)) {
+      isValid = false;
+    }
+  });
+
+  return isValid;
+}
+
+// ✅ Login con Google
+document.getElementById("googleLogin").addEventListener("click", async () => {
+  Utils.showLoading("Iniciando con Google...");
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+    if (!userDoc.exists()) {
+      await setDoc(doc(db, "usuarios", user.uid), {
+        email: user.email,
+        nombre: user.displayName || "",
+        nombreComercio: "",
+        telefono: "",
+        referralId: Utils.generateReferralId(),
+        fechaRegistro: new Date(),
+        plan: "basic",
+        estado: "trial",
+      });
+    }
+
+    Utils.showToast("¡Bienvenido!", "Has iniciado sesión con Google", "success");
+    setTimeout(() => {
+      window.location.href = "dashboard.html";
+    }, 1000);
+  } catch (error) {
+    Utils.hideLoading();
+    Utils.showToast("Error", "No se pudo iniciar sesión con Google", "error");
+  }
+});
+
+// ✅ Reset password
+document.getElementById("forgotPassword").addEventListener("click", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value;
+
+  if (!Utils.validateEmail(email)) {
+    Utils.showToast("Error", "Ingresa un email válido primero", "error");
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    Utils.showToast("Éxito", "Te enviamos un correo para restablecer tu contraseña", "success");
+  } catch (error) {
+    Utils.showToast("Error", error.message, "error");
+  }
+});
