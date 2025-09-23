@@ -210,7 +210,12 @@ class Dashboard {
       { id: 'nombreComercio', label: 'Nombre del Comercio', type: 'text', required: true },
       { id: 'descripcion', label: 'Descripción', type: 'textarea', required: true },
       { id: 'direccion', label: 'Dirección', type: 'text', required: true },
-      { id: 'ciudad', label: 'Ciudad', type: 'text', required: true }
+      { id: 'ciudad', label: 'Ciudad', type: 'text', required: true },
+      { id: 'pais', label: 'País', type: 'select', required: true, options: [
+        'Argentina', 'México', 'Colombia', 'Chile', 'Perú', 'Ecuador', 'Uruguay', 'Paraguay', 'Bolivia',
+        'España', 'Estados Unidos', 'Brasil', 'Venezuela', 'Guatemala', 'Costa Rica', 'Panamá', 'Honduras',
+        'Nicaragua', 'El Salvador', 'República Dominicana', 'Cuba', 'Puerto Rico', 'Otro'
+      ]}
     ];
 
     this.renderFormFields('basicInfoFields', basicFields);
@@ -249,24 +254,71 @@ class Dashboard {
     
     if (scheduleGrid) {
       scheduleGrid.innerHTML = days.map(day => {
-        const dayData = this.userData?.horarios?.[day.toLowerCase()] || { open: '09:00', close: '18:00', closed: false };
+        const dayKey = day.toLowerCase();
+        const dayData = this.userData?.horarios?.[dayKey] || { 
+          morning: { open: '08:00', close: '12:00' }, 
+          afternoon: { open: '16:00', close: '20:00' }, 
+          closed: false,
+          continuous: false
+        };
         
         return `
           <div class="schedule-day">
             <div class="day-header">
               <label class="day-toggle">
-                <input type="checkbox" ${dayData.closed ? '' : 'checked'} onchange="toggleDay('${day.toLowerCase()}', this)">
+                <input type="checkbox" ${dayData.closed ? '' : 'checked'} onchange="toggleDay('${dayKey}', this)">
                 <span>${day}</span>
               </label>
             </div>
             <div class="day-hours ${dayData.closed ? 'disabled' : ''}">
-              <div class="time-input">
-                <label>Abre:</label>
-                <input type="time" value="${dayData.open}" onchange="updateSchedule('${day.toLowerCase()}', 'open', this.value)">
+              <div class="schedule-mode">
+                <label class="schedule-option">
+                  <input type="radio" name="${dayKey}_mode" value="continuous" ${dayData.continuous ? 'checked' : ''} 
+                         onchange="toggleScheduleMode('${dayKey}', 'continuous')">
+                  <span>Horario Continuo</span>
+                </label>
+                <label class="schedule-option">
+                  <input type="radio" name="${dayKey}_mode" value="split" ${!dayData.continuous ? 'checked' : ''} 
+                         onchange="toggleScheduleMode('${dayKey}', 'split')">
+                  <span>Horario Cortado</span>
+                </label>
               </div>
-              <div class="time-input">
-                <label>Cierra:</label>
-                <input type="time" value="${dayData.close}" onchange="updateSchedule('${day.toLowerCase()}', 'close', this.value)">
+              
+              <div class="time-blocks">
+                <div class="time-block continuous-schedule ${dayData.continuous ? '' : 'hidden'}">
+                  <label>Horario:</label>
+                  <div class="time-range">
+                    <input type="time" value="${dayData.continuous ? (dayData.open || '09:00') : '09:00'}" 
+                           onchange="updateContinuousSchedule('${dayKey}', 'open', this.value)">
+                    <span>a</span>
+                    <input type="time" value="${dayData.continuous ? (dayData.close || '18:00') : '18:00'}" 
+                           onchange="updateContinuousSchedule('${dayKey}', 'close', this.value)">
+                  </div>
+                </div>
+                
+                <div class="time-block split-schedule ${!dayData.continuous ? '' : 'hidden'}">
+                  <div class="morning-hours">
+                    <label>Mañana:</label>
+                    <div class="time-range">
+                      <input type="time" value="${dayData.morning?.open || '08:00'}" 
+                             onchange="updateSplitSchedule('${dayKey}', 'morning', 'open', this.value)">
+                      <span>a</span>
+                      <input type="time" value="${dayData.morning?.close || '12:00'}" 
+                             onchange="updateSplitSchedule('${dayKey}', 'morning', 'close', this.value)">
+                    </div>
+                  </div>
+                  
+                  <div class="afternoon-hours">
+                    <label>Tarde:</label>
+                    <div class="time-range">
+                      <input type="time" value="${dayData.afternoon?.open || '16:00'}" 
+                             onchange="updateSplitSchedule('${dayKey}', 'afternoon', 'open', this.value)">
+                      <span>a</span>
+                      <input type="time" value="${dayData.afternoon?.close || '20:00'}" 
+                             onchange="updateSplitSchedule('${dayKey}', 'afternoon', 'close', this.value)">
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -279,14 +331,38 @@ class Dashboard {
       const dayHours = checkbox.closest('.schedule-day').querySelector('.day-hours');
       if (checkbox.checked) {
         dayHours.classList.remove('disabled');
+        this.updateScheduleField(day, 'closed', false);
       } else {
         dayHours.classList.add('disabled');
+        this.updateScheduleField(day, 'closed', true);
       }
-      this.updateScheduleField(day, 'closed', !checkbox.checked);
     };
 
-    window.updateSchedule = (day, field, value) => {
+    window.toggleScheduleMode = (day, mode) => {
+      const dayElement = document.querySelector(`input[name="${day}_mode"][value="${mode}"]`).closest('.schedule-day');
+      const continuousBlock = dayElement.querySelector('.continuous-schedule');
+      const splitBlock = dayElement.querySelector('.split-schedule');
+      
+      if (mode === 'continuous') {
+        continuousBlock.classList.remove('hidden');
+        splitBlock.classList.add('hidden');
+        this.updateScheduleField(day, 'continuous', true);
+      } else {
+        continuousBlock.classList.add('hidden');
+        splitBlock.classList.remove('hidden');
+        this.updateScheduleField(day, 'continuous', false);
+      }
+    };
+
+    window.updateContinuousSchedule = (day, field, value) => {
       this.updateScheduleField(day, field, value);
+    };
+
+    window.updateSplitSchedule = (day, period, field, value) => {
+      if (!this.userData.horarios) this.userData.horarios = {};
+      if (!this.userData.horarios[day]) this.userData.horarios[day] = {};
+      if (!this.userData.horarios[day][period]) this.userData.horarios[day][period] = {};
+      this.userData.horarios[day][period][field] = value;
     };
   }
 
@@ -294,7 +370,7 @@ class Dashboard {
     const productFields = [
       { id: 'productName', label: 'Nombre del Producto', type: 'text', required: true },
       { id: 'productPrice', label: 'Precio', type: 'number', required: true, step: '0.01' },
-      { id: 'productCategory', label: 'Categoría', type: 'select', required: true, options: this.categories },
+      { id: 'productCategory', label: 'Categoría', type: 'select', required: true, options: this.selectedCategories },
       { id: 'productDescription', label: 'Descripción', type: 'textarea', required: false },
       { id: 'productStock', label: 'Stock', type: 'number', required: false },
       { id: 'productCode', label: 'Código', type: 'text', required: false }
@@ -372,30 +448,123 @@ class Dashboard {
   }
 
   async loadCategories() {
-    const defaultCategories = ['Electrónicos', 'Ropa', 'Hogar', 'Deportes', 'Libros', 'Otros'];
-    this.categories = this.userData?.categories || defaultCategories;
-    this.renderCategoriesGrid();
+    // Categorías predefinidas más completas organizadas por sector
+    const predefinedCategories = [
+      // Retail y Comercio
+      'Ropa y Moda', 'Calzado', 'Accesorios', 'Joyería', 'Relojes',
+      
+      // Tecnología y Electrónicos
+      'Electrónicos', 'Informática', 'Celulares y Tablets', 'Audio y Video', 'Gaming',
+      
+      // Hogar y Decoración
+      'Hogar y Decoración', 'Muebles', 'Electrodomésticos', 'Jardín', 'Ferretería',
+      
+      // Salud y Belleza
+      'Belleza y Cosméticos', 'Salud', 'Farmacia', 'Perfumería', 'Cuidado Personal',
+      
+      // Alimentos y Bebidas
+      'Alimentos', 'Bebidas', 'Panadería', 'Carnicería', 'Verdulería', 'Almacén',
+      
+      // Servicios
+      'Servicios Profesionales', 'Educación', 'Turismo', 'Transporte', 'Seguros',
+      
+      // Entretenimiento y Cultura
+      'Libros', 'Música', 'Películas', 'Juguetes', 'Deportes', 'Fitness',
+      
+      // Especialidades
+      'Automotor', 'Mascotas', 'Bebés y Niños', 'Arte y Manualidades', 'Oficina',
+      
+      // Negocios específicos
+      'Regalería', 'Marroquinería', 'Óptica', 'Fotografía', 'Instrumentos Musicales',
+      'Papelería', 'Librería', 'Floristería', 'Cerrajería', 'Tapicería'
+    ];
+
+    // Combinar categorías del usuario con las predefinidas (sin duplicados)
+    const userCategories = this.userData?.categories || [];
+    this.allCategories = [...new Set([...predefinedCategories, ...userCategories])].sort();
+    this.selectedCategories = userCategories.length > 0 ? userCategories : [];
+    
+    this.renderCategoriesSelector();
   }
 
-  renderCategoriesGrid() {
-    const grid = document.getElementById('categoriesGrid');
-    if (!grid) return;
+  renderCategoriesSelector() {
+    const container = document.getElementById('categoriesGrid');
+    if (!container) return;
 
-    grid.innerHTML = this.categories.map((category, index) => `
-      <div class="category-tag">
+    container.innerHTML = `
+      <div class="categories-section">
+        <div class="categories-selector">
+          <h4><i class="fas fa-list"></i> Seleccionar Categorías para tu Negocio</h4>
+          <div class="category-dropdown">
+            <select id="categorySelect" class="category-select">
+              <option value="">Seleccionar categoría...</option>
+              ${this.allCategories.map(cat => `
+                <option value="${cat}" ${this.selectedCategories.includes(cat) ? 'disabled' : ''}>${cat}</option>
+              `).join('')}
+            </select>
+            <button type="button" class="btn btn-success" id="addSelectedCategory">
+              <i class="fas fa-plus"></i> Agregar
+            </button>
+          </div>
+          
+          <div class="custom-category">
+            <input type="text" id="customCategory" placeholder="¿No encuentras tu rubro? Escríbelo aquí...">
+            <button type="button" class="btn btn-secondary" id="addCustomCategory">
+              <i class="fas fa-plus"></i> Agregar Personalizada
+            </button>
+          </div>
+        </div>
+
+        <div class="selected-categories">
+          <h4><i class="fas fa-check-circle"></i> Categorías de tu Negocio</h4>
+          <div class="selected-categories-grid" id="selectedCategoriesGrid">
+            ${this.renderSelectedCategories()}
+          </div>
+          ${this.selectedCategories.length === 0 ? '<p class="empty-categories">No has seleccionado categorías aún</p>' : ''}
+        </div>
+      </div>
+    `;
+
+    // Event listeners
+    document.getElementById('addSelectedCategory')?.addEventListener('click', () => {
+      const select = document.getElementById('categorySelect');
+      const category = select?.value;
+      if (category && !this.selectedCategories.includes(category)) {
+        this.selectedCategories.push(category);
+        this.updateUserField('categories', this.selectedCategories);
+        this.renderCategoriesSelector();
+        this.renderProductForm();
+        this.showToast('Categoría agregada', `"${category}" ha sido agregada`, 'success');
+      }
+    });
+
+    document.getElementById('addCustomCategory')?.addEventListener('click', () => {
+      const input = document.getElementById('customCategory');
+      const category = input?.value.trim();
+      if (category && !this.selectedCategories.includes(category)) {
+        this.selectedCategories.push(category);
+        // También agregar a todas las categorías para futuras selecciones
+        if (!this.allCategories.includes(category)) {
+          this.allCategories.push(category);
+        }
+        this.updateUserField('categories', this.selectedCategories);
+        this.renderCategoriesSelector();
+        this.renderProductForm();
+        input.value = '';
+        this.showToast('Categoría personalizada agregada', `"${category}" ha sido agregada`, 'success');
+      }
+    });
+  }
+
+  renderSelectedCategories() {
+    return this.selectedCategories.map((category, index) => `
+      <div class="selected-category-tag">
         <span>${category}</span>
-        <button onclick="removeCategory(${index})" class="remove-btn">
+        <button onclick="removeSelectedCategory(${index})" class="remove-btn">
           <i class="fas fa-times"></i>
         </button>
       </div>
     `).join('');
-
-    window.removeCategory = (index) => {
-      this.categories.splice(index, 1);
-      this.updateUserField('categories', this.categories);
-      this.renderCategoriesGrid();
-      this.renderProductForm();
-    };
   }
 
   renderProductsTable() {
@@ -585,8 +754,7 @@ class Dashboard {
   generateAIResponse(userMessage) {
     const responses = {
       precio: `Los precios de nuestros productos varían. ¿Hay algún producto específico que te interese?`,
-      horarios: this.userData?.horarios ? `Nuestros horarios son: ${Object.entries(this.userData.horarios).map(([day, hours]) => 
-        hours.closed ? '' : `${day}: ${hours.open}-${hours.close}`).filter(Boolean).join(', ')}` : 'Consulta nuestros horarios de atención.',
+      horarios: this.userData?.horarios ? this.formatScheduleForAI() : 'Consulta nuestros horarios de atención.',
       productos: this.products.length > 0 ? `Tenemos ${this.products.length} productos disponibles. Algunos de nuestros productos son: ${this.products.slice(0, 3).map(p => p.nombre).join(', ')}.` : 'Estamos actualizando nuestro catálogo.',
       contacto: `Puedes contactarnos al ${this.userData?.telefono || 'teléfono disponible en nuestra información'}.`,
       default: 'Gracias por tu consulta. ¿En qué más puedo ayudarte?'
@@ -597,6 +765,29 @@ class Dashboard {
       if (message.includes(key)) return response;
     }
     return responses.default;
+  }
+
+  formatScheduleForAI() {
+    if (!this.userData?.horarios) return 'Consulta nuestros horarios.';
+    
+    const dayNames = {
+      lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles', 
+      jueves: 'Jueves', viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo'
+    };
+
+    const scheduleText = Object.entries(this.userData.horarios)
+      .filter(([day, hours]) => !hours.closed)
+      .map(([day, hours]) => {
+        const dayName = dayNames[day] || day;
+        if (hours.continuous) {
+          return `${dayName}: ${hours.open} a ${hours.close}`;
+        } else {
+          return `${dayName}: ${hours.morning.open} a ${hours.morning.close} y ${hours.afternoon.open} a ${hours.afternoon.close}`;
+        }
+      })
+      .join(', ');
+
+    return scheduleText || 'Horarios no disponibles actualmente.';
   }
 
   // 📊 Statistics
@@ -647,10 +838,14 @@ class Dashboard {
     document.getElementById('addCategory')?.addEventListener('click', () => {
       const input = document.getElementById('newCategory');
       const category = input?.value.trim();
-      if (category && !this.categories.includes(category)) {
-        this.categories.push(category);
-        this.updateUserField('categories', this.categories);
-        this.renderCategoriesGrid();
+      if (category && !this.selectedCategories.includes(category)) {
+        this.selectedCategories.push(category);
+        // También agregar a todas las categorías
+        if (!this.allCategories.includes(category)) {
+          this.allCategories.push(category);
+        }
+        this.updateUserField('categories', this.selectedCategories);
+        this.renderCategoriesSelector();
         this.renderProductForm();
         input.value = '';
         this.showToast('Categoría agregada', `"${category}" ha sido agregada`, 'success');
@@ -744,7 +939,7 @@ class Dashboard {
     }
   }
 
-  async saveScheduleData() {
+    await this.saveScheduleData() {
     try {
       this.showLoading('Guardando horarios...');
       
@@ -755,14 +950,37 @@ class Dashboard {
         const dayElement = document.querySelector(`[onchange*="${day}"]`)?.closest('.schedule-day');
         if (dayElement) {
           const checkbox = dayElement.querySelector('input[type="checkbox"]');
-          const openTime = dayElement.querySelector('input[type="time"]:first-of-type')?.value;
-          const closeTime = dayElement.querySelector('input[type="time"]:last-of-type')?.value;
+          const isContinuous = dayElement.querySelector(`input[name="${day}_mode"][value="continuous"]`)?.checked;
           
-          scheduleData[day] = {
-            closed: !checkbox?.checked,
-            open: openTime || '09:00',
-            close: closeTime || '18:00'
-          };
+          if (isContinuous) {
+            const openTime = dayElement.querySelector('.continuous-schedule input[type="time"]:first-of-type')?.value;
+            const closeTime = dayElement.querySelector('.continuous-schedule input[type="time"]:last-of-type')?.value;
+            
+            scheduleData[day] = {
+              closed: !checkbox?.checked,
+              continuous: true,
+              open: openTime || '09:00',
+              close: closeTime || '18:00'
+            };
+          } else {
+            const morningOpen = dayElement.querySelector('.morning-hours input[type="time"]:first-of-type')?.value;
+            const morningClose = dayElement.querySelector('.morning-hours input[type="time"]:last-of-type')?.value;
+            const afternoonOpen = dayElement.querySelector('.afternoon-hours input[type="time"]:first-of-type')?.value;
+            const afternoonClose = dayElement.querySelector('.afternoon-hours input[type="time"]:last-of-type')?.value;
+            
+            scheduleData[day] = {
+              closed: !checkbox?.checked,
+              continuous: false,
+              morning: {
+                open: morningOpen || '08:00',
+                close: morningClose || '12:00'
+              },
+              afternoon: {
+                open: afternoonOpen || '16:00',
+                close: afternoonClose || '20:00'
+              }
+            };
+          }
         }
       });
 
@@ -1065,11 +1283,11 @@ window.updateSchedule = function(day, field, value) {
   }
 };
 
-window.removeCategory = function(index) {
+window.removeSelectedCategory = function(index) {
   if (window.dashboard) {
-    window.dashboard.categories.splice(index, 1);
-    window.dashboard.updateUserField('categories', window.dashboard.categories);
-    window.dashboard.renderCategoriesGrid();
+    window.dashboard.selectedCategories.splice(index, 1);
+    window.dashboard.updateUserField('categories', window.dashboard.selectedCategories);
+    window.dashboard.renderCategoriesSelector();
     window.dashboard.renderProductForm();
   }
 };
