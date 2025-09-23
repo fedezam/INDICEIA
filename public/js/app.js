@@ -421,3 +421,5 @@ document.getElementById("forgotPassword").addEventListener("click", async (e) =>
   }
 });
 
+export { auth, db };
+
