@@ -77,17 +77,22 @@ class Utils {
       setTimeout(() => container.removeChild(toast), 300);
     }, 5000);
 
-    toast
-      .querySelector(".toast-close")
-      .addEventListener("click", () => {
-        toast.classList.remove("show");
-        setTimeout(() => container.removeChild(toast), 300);
-      });
+    toast.querySelector(".toast-close").addEventListener("click", () => {
+      toast.classList.remove("show");
+      setTimeout(() => container.removeChild(toast), 300);
+    });
   }
 
   static validateEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
+  }
+
+  // ✅ Validación de contraseñas seguras
+  static validatePassword(password) {
+    // mínimo 8 caracteres, al menos 1 mayúscula, 1 número y 1 caracter especial
+    const re = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return re.test(password);
   }
 
   static validateForm() {
@@ -112,8 +117,10 @@ class Utils {
     const passwordField = document.getElementById("password");
     const passwordError =
       passwordField.parentElement.parentElement.querySelector(".error-message");
-    if (!password) {
+    if (!password || !Utils.validatePassword(password)) {
       passwordField.classList.add("error");
+      passwordError.textContent =
+        "Mínimo 8 caracteres, una mayúscula, un número y un símbolo";
       passwordError.classList.add("show");
       isValid = false;
     } else {
@@ -130,72 +137,66 @@ class Utils {
 }
 
 // 👁 toggle password
-document
-  .getElementById("togglePassword")
-  .addEventListener("click", function () {
-    const passwordField = document.getElementById("password");
-    const type =
-      passwordField.getAttribute("type") === "password"
-        ? "text"
-        : "password";
-    passwordField.setAttribute("type", type);
+document.getElementById("togglePassword").addEventListener("click", function () {
+  const passwordField = document.getElementById("password");
+  const type =
+    passwordField.getAttribute("type") === "password" ? "text" : "password";
+  passwordField.setAttribute("type", type);
 
-    this.classList.toggle("fa-eye");
-    this.classList.toggle("fa-eye-slash");
-  });
+  this.classList.toggle("fa-eye");
+  this.classList.toggle("fa-eye-slash");
+});
 
 // 📩 Email login
-document
-  .getElementById("emailLogin")
-  .addEventListener("submit", async (e) => {
-    e.preventDefault();
+document.getElementById("emailLogin").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-    if (!Utils.validateForm()) {
-      Utils.showToast(
-        "Campos incompletos",
-        "Por favor corrige los errores en el formulario",
-        "error"
-      );
-      return;
-    }
+  if (!Utils.validateForm()) {
+    Utils.showToast(
+      "Campos incompletos",
+      "Por favor corrige los errores en el formulario",
+      "error"
+    );
+    return;
+  }
 
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-    if (isRegisterMode) {
-      showRegistrationForm(email, password);
-    } else {
-      Utils.showLoading("Iniciando sesión...");
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        Utils.showToast("¡Bienvenido!", "Has iniciado sesión correctamente", "success");
-        setTimeout(() => {
-          window.location.href = "dashboard.html";
-        }, 1000);
-      } catch (error) {
-        Utils.hideLoading();
-        let errorMessage = "Error al iniciar sesión";
+  if (isRegisterMode) {
+    showRegistrationForm(email, password);
+  } else {
+    Utils.showLoading("Iniciando sesión...");
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      Utils.showToast("¡Bienvenido!", "Has iniciado sesión correctamente", "success");
+      setTimeout(() => {
+        window.location.href = "dashboard.html";
+      }, 1000);
+    } catch (error) {
+      Utils.hideLoading();
+      let errorMessage = "Error al iniciar sesión";
 
-        switch (error.code) {
-          case "auth/user-not-found":
-            errorMessage = "No existe una cuenta con este email";
-            break;
-          case "auth/wrong-password":
-            errorMessage = "Contraseña incorrecta";
-            break;
-          case "auth/too-many-requests":
-            errorMessage = "Demasiados intentos. Intenta más tarde";
-            break;
-          case "auth/invalid-credential":
-            errorMessage = "Credenciales inválidas";
-            break;
-          default:
-            errorMessage = error.message;
-        }
-        Utils.showToast("Error", errorMessage, "error");
+      switch (error.code) {
+        case "auth/user-not-found":
+          errorMessage = "No existe una cuenta con este email";
+          break;
+        case "auth/wrong-password":
+          errorMessage = "Contraseña incorrecta";
+          break;
+        case "auth/too-many-requests":
+          errorMessage = "Demasiados intentos. Intenta más tarde";
+          break;
+        case "auth/invalid-credential":
+          errorMessage = "Credenciales inválidas";
+          break;
+        default:
+          errorMessage = error.message;
       }
+      Utils.showToast("Error", errorMessage, "error");
     }
-  });
+  }
+});
 
 // 📝 Registro
 function showRegistrationForm(email, password) {
@@ -280,6 +281,16 @@ function showRegistrationForm(email, password) {
 
     const formData = new FormData(e.target);
     const userData = Object.fromEntries(formData);
+
+    // ✅ chequeamos la password fuerte
+    if (!Utils.validatePassword(password)) {
+      Utils.showToast(
+        "Contraseña débil",
+        "Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo",
+        "error"
+      );
+      return;
+    }
 
     Utils.showLoading("Creando tu cuenta...");
 
@@ -409,3 +420,4 @@ document.getElementById("forgotPassword").addEventListener("click", async (e) =>
     Utils.showToast("Error", error.message, "error");
   }
 });
+
