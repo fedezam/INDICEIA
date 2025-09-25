@@ -800,57 +800,59 @@ class Dashboard {
   // ============================================
 
   renderAIConfigForm() {
-    const container = document.getElementById("aiConfigFields");
-    if (!container) return;
+  const container = document.getElementById("aiConfigFields");
+  if (!container) return;
 
-    const aiFields = [
-      { id: "aiName", label: "Nombre del Asistente", type: "text", required: true, placeholder: "ej: Ana, tu asistente virtual" },
-      { id: "aiPersonality", label: "Personalidad", type: "select", required: true, options: ["Amigable y cercano","Profesional","Divertido","Formal","Casual"] },
-      { id: "aiTone", label: "Tono de Voz", type: "select", required: true, options: ["Entusiasta","Relajado","Serio","Jovial","Elegante"] },
-      { id: "aiGreeting", label: "Saludo Inicial", type: "textarea", required: true, placeholder: "ej: ¡Hola! Soy Ana, tu asistente virtual. ¿En qué puedo ayudarte hoy?" }
-    ];
+  const aiFields = [
+    { id: "aiName", label: "Nombre del Asistente", type: "text", required: true, placeholder: "ej: Ana, tu asistente virtual" },
+    { id: "aiPersonality", label: "Personalidad", type: "select", required: true, options: ["Amigable y cercano","Profesional","Divertido","Formal","Casual"] },
+    { id: "aiTone", label: "Tono de Voz", type: "select", required: true, options: ["Entusiasta","Relajado","Serio","Jovial","Elegante"] },
+    { id: "aiGreeting", label: "Saludo Inicial", type: "textarea", required: true, placeholder: "ej: ¡Hola! Soy Ana, tu asistente virtual. ¿En qué puedo ayudarte hoy?" }
+  ];
 
-    let html = this.renderFormFields("", aiFields);
+  // ✅ Generamos el HTML de los campos correctamente
+  let html = aiFields.map(field => this.renderFormField(field)).join("");
 
-    // Configuración de precios
-    html += `
-      <div class="form-section">
-        <h4><i class="fas fa-dollar-sign"></i> Configuración de Precios</h4>
-        <div class="price-config">
-          <label class="checkbox-item">
-            <input type="checkbox" id="aiPricesPaused" ${this.userData?.aiConfig?.pricesPaused ? "checked" : ""}>
-            <span class="checkbox-text">Pausar todos los precios temporalmente</span>
-            <small>La IA no mencionará precios, siempre derivará al contacto</small>
-          </label>
-        </div>
+  // Configuración de precios
+  html += `
+    <div class="form-section">
+      <h4><i class="fas fa-dollar-sign"></i> Configuración de Precios</h4>
+      <div class="price-config">
+        <label class="checkbox-item">
+          <input type="checkbox" id="aiPricesPaused" ${this.userData?.aiConfig?.pricesPaused ? "checked" : ""}>
+          <span class="checkbox-text">Pausar todos los precios temporalmente</span>
+          <small>La IA no mencionará precios, siempre derivará al contacto</small>
+        </label>
       </div>
-    `;
+    </div>
+  `;
 
-    // Comportamientos específicos
-    html += `
-      <div class="form-section">
-        <h4><i class="fas fa-cog"></i> Comportamientos</h4>
-        <div class="form-field">
-          <label>Cuando no hay precio disponible:</label>
-          <select id="aiNoPriceBehavior">
-            <option value="contact">Derivar al contacto del comercio</option>
-            <option value="ask">Pedir que consulte por WhatsApp/teléfono</option>
-            <option value="soon">Informar "precio próximamente disponible"</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <label>Cuando un producto está pausado:</label>
-          <select id="aiPausedBehavior">
-            <option value="hide">No mencionarlo (como si no existiera)</option>
-            <option value="unavailable">Decir "temporalmente no disponible"</option>
-            <option value="contact">Derivar al contacto para consultar</option>
-          </select>
-        </div>
+  // Comportamientos específicos
+  html += `
+    <div class="form-section">
+      <h4><i class="fas fa-cog"></i> Comportamientos</h4>
+      <div class="form-field">
+        <label>Cuando no hay precio disponible:</label>
+        <select id="aiNoPriceBehavior">
+          <option value="contact">Derivar al contacto del comercio</option>
+          <option value="ask">Pedir que consulte por WhatsApp/teléfono</option>
+          <option value="soon">Informar "precio próximamente disponible"</option>
+        </select>
       </div>
-    `;
+      <div class="form-field">
+        <label>Cuando un producto está pausado:</label>
+        <select id="aiPausedBehavior">
+          <option value="hide">No mencionarlo (como si no existiera)</option>
+          <option value="unavailable">Decir "temporalmente no disponible"</option>
+          <option value="contact">Derivar al contacto para consultar</option>
+        </select>
+      </div>
+    </div>
+  `;
 
-    container.innerHTML = html;
-  }
+  container.innerHTML = html;
+}
+
 
   // ============================================
   // AUTH Y RESTO DE FUNCIONES ORIGINALES
