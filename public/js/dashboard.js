@@ -63,12 +63,31 @@ class Dashboard {
       </div>
       <div class="csv-preview-content" id="csvPreviewContent"></div>
       <div class="csv-preview-actions">
-        <button type="button" class="btn btn-secondary" id="cancelCsvImport">
-          <i class="fas fa-times"></i> Cancelar
-        </button>
-        <button type="button" class="btn btn-success" id="importCsvData" disabled>
-          <i class="fas fa-upload"></i> Importar Datos
-        </button>
+        <div class="import-options">
+          <h4><i class="fas fa-cog"></i> Opciones de Importación</h4>
+          <div class="import-mode-selector">
+            <label class="import-option">
+              <input type="radio" name="importMode" value="add" checked>
+              <span>Agregar nuevos registros (mantener existentes)</span>
+            </label>
+            <label class="import-option">
+              <input type="radio" name="importMode" value="update">
+              <span>Actualizar existentes por código/nombre</span>
+            </label>
+            <label class="import-option">
+              <input type="radio" name="importMode" value="replace">
+              <span>Reemplazar todo el inventario</span>
+            </label>
+          </div>
+        </div>
+        <div class="import-buttons">
+          <button type="button" class="btn btn-secondary" id="cancelCsvImport">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="button" class="btn btn-success" id="importCsvData" disabled>
+            <i class="fas fa-upload"></i> Importar Datos
+          </button>
+        </div>
       </div>
     `;
     
@@ -116,7 +135,11 @@ class Dashboard {
     try {
       this.showLoading("Procesando archivo CSV...");
       
-      const text = await file.text();
+      // Leer archivo con encoding UTF-8 correcto
+      const arrayBuffer = await file.arrayBuffer();
+      const decoder = new TextDecoder('utf-8');
+      const text = decoder.decode(arrayBuffer);
+      
       const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
       
       if (lines.length < 2) {
@@ -311,6 +334,9 @@ class Dashboard {
     try {
       this.showLoading("Importando datos...");
       
+      // Obtener modo de importación
+      const importMode = document.querySelector('input[name="importMode"]:checked')?.value || "add";
+      
       // Obtener mapeo de columnas
       const selects = document.querySelectorAll(".mapping-select");
       const mapping = {};
@@ -332,7 +358,9 @@ class Dashboard {
         // Campos básicos
         ["nombre", "codigo", "categoria", "subcategoria", "descripcion", "imagen", "color", "talle", "origen"].forEach(field => {
           if (mapping[field] !== undefined) {
-            item[field] = row[mapping[field]] || null;
+            const value = row[mapping[field]] || null;
+            // Limpiar caracteres extraños de encoding
+            item[field] = value ? value.replace(/�/g, '').trim() : null;
           }
         });
 
@@ -387,8 +415,8 @@ class Dashboard {
         return item;
       });
 
-      // Importar usando batch para eficiencia
-      await this.batchImportData(processedData);
+      // Importar según el modo seleccionado
+      await this.handleImportByMode(processedData, importMode);
       
       // Actualizar UI
       await this.loadProducts();
@@ -401,9 +429,15 @@ class Dashboard {
       const productos = processedData.filter(item => item.tipo === "producto").length;
       const servicios = processedData.filter(item => item.tipo === "servicio").length;
       
+      const modeMessages = {
+        add: "Agregados",
+        update: "Actualizados/Agregados", 
+        replace: "Reemplazados"
+      };
+      
       this.showToast(
         "Importación completa", 
-        `Importados: ${productos} productos y ${servicios} servicios`, 
+        `${modeMessages[importMode]}: ${productos} productos y ${servicios} servicios`, 
         "success"
       );
 
@@ -414,17 +448,84 @@ class Dashboard {
     }
   }
 
-  async batchImportData(data) {
-    const batch = writeBatch(db);
+  async handleImportByMode(newData, mode) {
     const collectionRef = collection(db, "usuarios", this.currentUser.uid, "productos");
     
-    data.forEach(item => {
-      const docRef = doc(collectionRef);
-      batch.set(docRef, item);
+    if (mode === "replace") {
+      // Eliminar todo y agregar nuevo
+      await this.clearAllProductsForReplace();
+      const batch = writeBatch(db);
+      newData.forEach(item => {
+        const docRef = doc(collectionRef);
+        batch.set(docRef, item);
+      });
+      await batch.commit();
+      
+    } else if (mode === "update") {
+      // Actualizar existentes por código o nombre
+      const existingProducts = this.products;
+      const batch = writeBatch(db);
+      let batchCount = 0;
+      
+      for (const newItem of newData) {
+        // Buscar producto existente por código o nombre
+        const existing = existingProducts.find(p => 
+          (newItem.codigo && p.codigo === newItem.codigo) ||
+          (p.nombre === newItem.nombre)
+        );
+        
+        if (existing) {
+          // Actualizar existente
+          const docRef = doc(db, "usuarios", this.currentUser.uid, "productos", existing.id);
+          batch.update(docRef, { 
+            ...newItem, 
+            fechaActualizacion: new Date(),
+            fechaCreacion: existing.fechaCreacion // Mantener fecha original
+          });
+        } else {
+          // Agregar nuevo
+          const docRef = doc(collectionRef);
+          batch.set(docRef, newItem);
+        }
+        
+        batchCount++;
+        
+        // Ejecutar batch cada 500 operaciones (límite de Firestore)
+        if (batchCount >= 500) {
+          await batch.commit();
+          const newBatch = writeBatch(db);
+          batchCount = 0;
+        }
+      }
+      
+      if (batchCount > 0) {
+        await batch.commit();
+      }
+      
+    } else {
+      // Modo "add" - solo agregar nuevos
+      const batch = writeBatch(db);
+      newData.forEach(item => {
+        const docRef = doc(collectionRef);
+        batch.set(docRef, item);
+      });
+      await batch.commit();
+    }
+  }
+
+  async clearAllProductsForReplace() {
+    const ref = collection(db, "usuarios", this.currentUser.uid, "productos");
+    const snap = await getDocs(ref);
+    const batch = writeBatch(db);
+    
+    snap.docs.forEach(doc => {
+      batch.delete(doc.ref);
     });
     
     await batch.commit();
   }
+
+
 
   hideCSVPreview() {
     const container = document.getElementById("csvPreviewContainer");
@@ -699,6 +800,9 @@ class Dashboard {
   // ============================================
 
   renderAIConfigForm() {
+    const container = document.getElementById("aiConfigFields");
+    if (!container) return;
+
     const aiFields = [
       { id: "aiName", label: "Nombre del Asistente", type: "text", required: true, placeholder: "ej: Ana, tu asistente virtual" },
       { id: "aiPersonality", label: "Personalidad", type: "select", required: true, options: ["Amigable y cercano","Profesional","Divertido","Formal","Casual"] },
@@ -745,10 +849,7 @@ class Dashboard {
       </div>
     `;
 
-    const container = document.getElementById("aiConfigFields");
-    if (container) {
-      container.innerHTML = html;
-    }
+    container.innerHTML = html;
   }
 
   // ============================================
