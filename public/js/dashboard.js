@@ -13,7 +13,8 @@ import {
   deleteDoc,
   query,
   orderBy,
-  writeBatch
+  writeBatch,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 class Dashboard {
@@ -202,18 +203,13 @@ class Dashboard {
       { key: "subcategoria", label: "Subcategoría" },
       { key: "descripcion", label: "Descripción" },
       { key: "imagen", label: "Imagen (URL)" },
-      { key: "precio_valor", label: "Precio (Valor)" },
-      { key: "precio_moneda", label: "Moneda" },
+      { key: "precio", label: "Precio" },
       { key: "stock", label: "Stock/Cantidad" },
       { key: "color", label: "Color" },
       { key: "talle", label: "Talle/Tamaño" },
-      { key: "largo_cm", label: "Largo (cm)" },
-      { key: "ancho_cm", label: "Ancho (cm)" },
-      { key: "alto_cm", label: "Alto (cm)" },
-      { key: "peso_kg", label: "Peso (kg)" },
       { key: "origen", label: "Origen" },
-      { key: "contacto_telefono", label: "Teléfono Contacto" },
-      { key: "contacto_email", label: "Email Contacto" },
+      { key: "telefono", label: "Teléfono Contacto" },
+      { key: "email", label: "Email Contacto" },
       { key: "disponibilidad", label: "Disponibilidad" },
       { key: "duracion", label: "Duración" }
     ];
@@ -286,7 +282,7 @@ class Dashboard {
       categoria: ["categoria", "rubro", "tipo", "clase"],
       descripcion: ["descripcion", "detalle", "info", "observaciones"],
       imagen: ["imagen", "photo", "foto", "pic", "picture", "url", "link"],
-      precio_valor: ["precio", "valor", "importe", "costo", "$", "price"],
+      precio: ["precio", "valor", "importe", "costo", "$", "price"],
       stock: ["stock", "cantidad", "cant", "qty", "existencia"],
       color: ["color", "colour"],
       talle: ["talle", "talla", "size", "tamaño"],
@@ -351,66 +347,26 @@ class Dashboard {
       // Procesar datos
       const processedData = this.csvData.map(row => {
         const item = {
-          fechaCreacion: new Date(),
-          estado: "activo" // activo | pausado
+          fechaRegistro: serverTimestamp(),
+          paused: false
         };
 
-        // Campos básicos
-        ["nombre", "codigo", "categoria", "subcategoria", "descripcion", "imagen", "color", "talle", "origen"].forEach(field => {
-          if (mapping[field] !== undefined) {
-            const value = row[mapping[field]] || null;
-            // Limpiar caracteres extraños de encoding
-            item[field] = value ? value.replace(/�/g, '').trim() : null;
+        // Mapear campos básicos
+        Object.entries(mapping).forEach(([field, colIndex]) => {
+          if (colIndex < row.length) {
+            let value = row[colIndex] || "";
+            value = value.replace(/�/g, '').trim();
+            
+            if (field === "precio") {
+              const numericValue = parseFloat(value.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+              item[field] = numericValue;
+            } else if (field === "stock") {
+              item[field] = parseInt(value) || 0;
+            } else {
+              item[field] = value || "";
+            }
           }
         });
-
-        // Stock (numérico)
-        if (mapping.stock !== undefined) {
-          const stockValue = row[mapping.stock];
-          item.stock = stockValue ? parseInt(stockValue) || 0 : null;
-        }
-
-        // Precio (objeto con validación)
-        const precio = {};
-        if (mapping.precio_valor !== undefined) {
-          const precioValue = row[mapping.precio_valor];
-          precio.valor = precioValue ? parseFloat(precioValue.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0 : 0;
-        }
-        
-        if (mapping.precio_moneda !== undefined) {
-          let moneda = row[mapping.precio_moneda] || "ARS";
-          moneda = ["ARS", "USD", "EUR", "CLP", "MXN", "COP", "PEN"].includes(moneda.toUpperCase()) ? moneda.toUpperCase() : "ARS";
-          precio.moneda = moneda;
-        } else {
-          precio.moneda = "ARS";
-        }
-        
-        item.precio = precio;
-
-        // Medidas físicas
-        const medidas = {};
-        ["largo_cm", "ancho_cm", "alto_cm", "peso_kg"].forEach(field => {
-          if (mapping[field] !== undefined) {
-            const value = row[mapping[field]];
-            medidas[field.replace('_', '')] = value ? parseFloat(value) || null : null;
-          }
-        });
-        item.medidas = medidas;
-
-        // Contacto (para servicios)
-        const contacto = {};
-        if (mapping.contacto_telefono !== undefined) {
-          contacto.telefono = row[mapping.contacto_telefono] || null;
-        }
-        if (mapping.contacto_email !== undefined) {
-          contacto.email = row[mapping.contacto_email] || null;
-        }
-        if (Object.keys(contacto).length > 0) {
-          item.contacto = contacto;
-        }
-
-        // Determinar tipo automáticamente
-        item.tipo = (item.precio?.valor > 0) ? "producto" : "servicio";
 
         return item;
       });
@@ -426,18 +382,9 @@ class Dashboard {
       this.hideCSVPreview();
       this.hideLoading();
       
-      const productos = processedData.filter(item => item.tipo === "producto").length;
-      const servicios = processedData.filter(item => item.tipo === "servicio").length;
-      
-      const modeMessages = {
-        add: "Agregados",
-        update: "Actualizados/Agregados", 
-        replace: "Reemplazados"
-      };
-      
       this.showToast(
         "Importación completa", 
-        `${modeMessages[importMode]}: ${productos} productos y ${servicios} servicios`, 
+        `Procesados ${processedData.length} registros`, 
         "success"
       );
 
@@ -449,7 +396,7 @@ class Dashboard {
   }
 
   async handleImportByMode(newData, mode) {
-    const collectionRef = collection(db, "usuarios", this.currentUser.uid, "productos");
+    const collectionRef = collection(db, "comercios", this.currentUser.uid, "productos");
     
     if (mode === "replace") {
       // Eliminar todo y agregar nuevo
@@ -476,12 +423,8 @@ class Dashboard {
         
         if (existing) {
           // Actualizar existente
-          const docRef = doc(db, "usuarios", this.currentUser.uid, "productos", existing.id);
-          batch.update(docRef, { 
-            ...newItem, 
-            fechaActualizacion: new Date(),
-            fechaCreacion: existing.fechaCreacion // Mantener fecha original
-          });
+          const docRef = doc(db, "comercios", this.currentUser.uid, "productos", existing.id);
+          batch.update(docRef, newItem);
         } else {
           // Agregar nuevo
           const docRef = doc(collectionRef);
@@ -514,7 +457,7 @@ class Dashboard {
   }
 
   async clearAllProductsForReplace() {
-    const ref = collection(db, "usuarios", this.currentUser.uid, "productos");
+    const ref = collection(db, "comercios", this.currentUser.uid, "productos");
     const snap = await getDocs(ref);
     const batch = writeBatch(db);
     
@@ -524,8 +467,6 @@ class Dashboard {
     
     await batch.commit();
   }
-
-
 
   hideCSVPreview() {
     const container = document.getElementById("csvPreviewContainer");
@@ -576,27 +517,23 @@ class Dashboard {
       </div>
     `;
 
-    // Campos comunes
+    // Campos comunes - CORREGIDOS para que coincidan con el guardado
     const commonFields = [
-      { id: "itemName", label: "Nombre", type: "text", required: true },
-      { id: "itemCode", label: "Código/SKU", type: "text", required: false },
-      { id: "itemCategory", label: "Categoría", type: "select", required: true, options: this.selectedCategories },
-      { id: "itemSubcategory", label: "Subcategoría", type: "text", required: false },
-      { id: "itemDescription", label: "Descripción", type: "textarea", required: false },
-      { id: "itemImage", label: "Imagen (URL)", type: "url", required: false, placeholder: "https://ejemplo.com/imagen.jpg o enlace a Instagram/catálogo" }
+      { id: "productName", label: "Nombre", type: "text", required: true },
+      { id: "productCode", label: "Código/SKU", type: "text", required: false },
+      { id: "productCategory", label: "Categoría", type: "select", required: true, options: this.selectedCategories },
+      { id: "productSubcategory", label: "Subcategoría", type: "text", required: false },
+      { id: "productDescription", label: "Descripción", type: "textarea", required: false },
+      { id: "productImage", label: "Imagen (URL)", type: "url", required: false, placeholder: "https://ejemplo.com/imagen.jpg" }
     ];
 
     // Campos específicos para productos
     const productFields = [
-      { id: "itemPrice", label: "Precio", type: "number", required: false, step: "0.01" },
-      { id: "itemCurrency", label: "Moneda", type: "select", required: false, options: ["ARS","USD","EUR","CLP","MXN","COP","PEN"] },
-      { id: "itemStock", label: "Stock", type: "number", required: false },
-      { id: "itemColor", label: "Color", type: "text", required: false },
-      { id: "itemSize", label: "Talle/Tamaño", type: "text", required: false },
-      { id: "itemLength", label: "Largo (cm)", type: "number", required: false, step: "0.1" },
-      { id: "itemWidth", label: "Ancho (cm)", type: "number", required: false, step: "0.1" },
-      { id: "itemHeight", label: "Alto (cm)", type: "number", required: false, step: "0.1" },
-      { id: "itemWeight", label: "Peso (kg)", type: "number", required: false, step: "0.1" }
+      { id: "productPrice", label: "Precio", type: "number", required: false, step: "0.01" },
+      { id: "productStock", label: "Stock", type: "number", required: false },
+      { id: "productColor", label: "Color", type: "text", required: false },
+      { id: "productSize", label: "Talle/Tamaño", type: "text", required: false },
+      { id: "productOrigin", label: "Origen", type: "text", required: false }
     ];
 
     // Campos específicos para servicios
@@ -620,18 +557,6 @@ class Dashboard {
       html += "<h4><i class='fas fa-phone'></i> Información del Servicio</h4>";
       html += serviceFields.map(field => this.renderFormField(field)).join("");
     }
-
-    // Control de estado
-    html += `
-      <h4><i class="fas fa-toggle-on"></i> Estado</h4>
-      <div class="form-field">
-        <label>Estado del registro</label>
-        <select id="itemStatus">
-          <option value="activo">Activo - IA puede mencionarlo</option>
-          <option value="pausado">Pausado - IA no lo menciona</option>
-        </select>
-      </div>
-    `;
 
     html += "</div>";
     container.innerHTML = html;
@@ -681,68 +606,36 @@ class Dashboard {
 
     if (this.products.length === 0) {
       head.innerHTML = "";
-      body.innerHTML = `<tr><td colspan="7" class="empty-state-row">No hay registros cargados</td></tr>`;
+      body.innerHTML = `<tr><td colspan="6" class="empty-state-row">No hay registros cargados</td></tr>`;
       return;
     }
 
     head.innerHTML = `
       <tr>
-        <th>Imagen</th>
-        <th>Tipo</th>
         <th>Nombre</th>
         <th>Categoría</th>
-        <th>Precio/Contacto</th>
+        <th>Precio</th>
         <th>Stock</th>
-        <th>Estado</th>
+        <th>Descripción</th>
         <th>Acciones</th>
       </tr>
     `;
 
     body.innerHTML = this.products.map(item => {
-      const tipo = item.tipo || (item.precio?.valor > 0 ? "producto" : "servicio");
-      const tipoIcon = tipo === "producto" ? "fas fa-box" : "fas fa-handshake";
-      const estadoClass = item.estado === "pausado" ? "estado-pausado" : "estado-activo";
-      
-      let precioContacto = "";
-      if (tipo === "producto" && item.precio?.valor) {
-        precioContacto = `${item.precio.moneda || "ARS"} ${item.precio.valor}`;
-      } else if (item.contacto?.telefono) {
-        precioContacto = item.contacto.telefono;
-      } else {
-        precioContacto = "Ver contacto";
-      }
-
       return `
         <tr data-product-id="${item.id}">
-          <td>
-            ${item.imagen ? 
-              `<div class="item-image">
-                <img src="${item.imagen}" alt="${item.nombre}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                <div class="image-placeholder" style="display:none;"><i class="fas fa-image"></i></div>
-               </div>` : 
-              `<div class="image-placeholder"><i class="fas fa-image"></i></div>`
-            }
-          </td>
-          <td><i class="${tipoIcon}" title="${tipo}"></i></td>
-          <td>
-            <div class="item-name">${item.nombre || item.nombre}</div>
-            ${item.codigo ? `<div class="item-code">${item.codigo}</div>` : ""}
-          </td>
+          <td>${item.nombre || ""}</td>
           <td>${item.categoria || ""}</td>
-          <td>${precioContacto}</td>
-          <td>${tipo === "producto" ? (item.stock ?? "N/A") : "-"}</td>
-          <td>
-            <span class="estado-badge ${estadoClass}">
-              ${item.estado === "pausado" ? "Pausado" : "Activo"}
-            </span>
-          </td>
+          <td>$${item.precio || 0}</td>
+          <td>${item.stock ?? "N/A"}</td>
+          <td>${item.descripcion || ""}</td>
           <td>
             <div class="table-actions">
               <button class="btn btn-sm btn-outline edit-product" title="Editar">
                 <i class="fas fa-edit"></i>
               </button>
-              <button class="btn btn-sm toggle-status" title="${item.estado === 'pausado' ? 'Activar' : 'Pausar'}">
-                <i class="fas ${item.estado === 'pausado' ? 'fa-play' : 'fa-pause'}"></i>
+              <button class="btn btn-sm toggle-status" title="${item.paused ? 'Activar' : 'Pausar'}">
+                <i class="fas ${item.paused ? 'fa-play' : 'fa-pause'}"></i>
               </button>
               <button class="btn btn-sm btn-danger delete-product" title="Eliminar">
                 <i class="fas fa-trash"></i>
@@ -774,10 +667,10 @@ class Dashboard {
       const product = this.products.find(p => p.id === id);
       if (!product) return;
 
-      const newStatus = product.estado === "pausado" ? "activo" : "pausado";
+      const newStatus = !product.paused;
       
-      await updateDoc(doc(db, "usuarios", this.currentUser.uid, "productos", id), {
-        estado: newStatus
+      await updateDoc(doc(db, "comercios", this.currentUser.uid, "productos", id), {
+        paused: newStatus
       });
 
       await this.loadProducts();
@@ -785,7 +678,7 @@ class Dashboard {
       
       this.showToast(
         "Estado actualizado", 
-        `Producto ${newStatus === "pausado" ? "pausado" : "activado"}`, 
+        `Producto ${newStatus ? "pausado" : "activado"}`, 
         "success"
       );
       
@@ -800,59 +693,57 @@ class Dashboard {
   // ============================================
 
   renderAIConfigForm() {
-  const container = document.getElementById("aiConfigFields");
-  if (!container) return;
+    const container = document.getElementById("aiConfigFields");
+    if (!container) return;
 
-  const aiFields = [
-    { id: "aiName", label: "Nombre del Asistente", type: "text", required: true, placeholder: "ej: Ana, tu asistente virtual" },
-    { id: "aiPersonality", label: "Personalidad", type: "select", required: true, options: ["Amigable y cercano","Profesional","Divertido","Formal","Casual"] },
-    { id: "aiTone", label: "Tono de Voz", type: "select", required: true, options: ["Entusiasta","Relajado","Serio","Jovial","Elegante"] },
-    { id: "aiGreeting", label: "Saludo Inicial", type: "textarea", required: true, placeholder: "ej: ¡Hola! Soy Ana, tu asistente virtual. ¿En qué puedo ayudarte hoy?" }
-  ];
+    const aiFields = [
+      { id: "aiName", label: "Nombre del Asistente", type: "text", required: true, placeholder: "ej: Ana, tu asistente virtual" },
+      { id: "aiPersonality", label: "Personalidad", type: "select", required: true, options: ["Amigable y cercano","Profesional","Divertido","Formal","Casual"] },
+      { id: "aiTone", label: "Tono de Voz", type: "select", required: true, options: ["Entusiasta","Relajado","Serio","Jovial","Elegante"] },
+      { id: "aiGreeting", label: "Saludo Inicial", type: "textarea", required: true, placeholder: "ej: ¡Hola! Soy Ana, tu asistente virtual. ¿En qué puedo ayudarte hoy?" }
+    ];
 
-  // ✅ Generamos el HTML de los campos correctamente
-  let html = aiFields.map(field => this.renderFormField(field)).join("");
+    let html = aiFields.map(field => this.renderFormField(field)).join("");
 
-  // Configuración de precios
-  html += `
-    <div class="form-section">
-      <h4><i class="fas fa-dollar-sign"></i> Configuración de Precios</h4>
-      <div class="price-config">
-        <label class="checkbox-item">
-          <input type="checkbox" id="aiPricesPaused" ${this.userData?.aiConfig?.pricesPaused ? "checked" : ""}>
-          <span class="checkbox-text">Pausar todos los precios temporalmente</span>
-          <small>La IA no mencionará precios, siempre derivará al contacto</small>
-        </label>
+    // Configuración de precios
+    html += `
+      <div class="form-section">
+        <h4><i class="fas fa-dollar-sign"></i> Configuración de Precios</h4>
+        <div class="price-config">
+          <label class="checkbox-item">
+            <input type="checkbox" id="aiPricesPaused" ${this.userData?.aiConfig?.pricesPaused ? "checked" : ""}>
+            <span class="checkbox-text">Pausar todos los precios temporalmente</span>
+            <small>La IA no mencionará precios, siempre derivará al contacto</small>
+          </label>
+        </div>
       </div>
-    </div>
-  `;
+    `;
 
-  // Comportamientos específicos
-  html += `
-    <div class="form-section">
-      <h4><i class="fas fa-cog"></i> Comportamientos</h4>
-      <div class="form-field">
-        <label>Cuando no hay precio disponible:</label>
-        <select id="aiNoPriceBehavior">
-          <option value="contact">Derivar al contacto del comercio</option>
-          <option value="ask">Pedir que consulte por WhatsApp/teléfono</option>
-          <option value="soon">Informar "precio próximamente disponible"</option>
-        </select>
+    // Comportamientos específicos
+    html += `
+      <div class="form-section">
+        <h4><i class="fas fa-cog"></i> Comportamientos</h4>
+        <div class="form-field">
+          <label>Cuando no hay precio disponible:</label>
+          <select id="aiNoPriceBehavior">
+            <option value="contact">Derivar al contacto del comercio</option>
+            <option value="ask">Pedir que consulte por WhatsApp/teléfono</option>
+            <option value="soon">Informar "precio próximamente disponible"</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Cuando un producto está pausado:</label>
+          <select id="aiPausedBehavior">
+            <option value="hide">No mencionarlo (como si no existiera)</option>
+            <option value="unavailable">Decir "temporalmente no disponible"</option>
+            <option value="contact">Derivar al contacto para consultar</option>
+          </select>
+        </div>
       </div>
-      <div class="form-field">
-        <label>Cuando un producto está pausado:</label>
-        <select id="aiPausedBehavior">
-          <option value="hide">No mencionarlo (como si no existiera)</option>
-          <option value="unavailable">Decir "temporalmente no disponible"</option>
-          <option value="contact">Derivar al contacto para consultar</option>
-        </select>
-      </div>
-    </div>
-  `;
+    `;
 
-  container.innerHTML = html;
-}
-
+    container.innerHTML = html;
+  }
 
   // ============================================
   // AUTH Y RESTO DE FUNCIONES ORIGINALES
@@ -1036,11 +927,15 @@ class Dashboard {
     ];
     this.renderFormFields("basicInfoFields", basicFields);
 
+    // CONTACTO CON REDES SOCIALES AGREGADAS
     const contactFields = [
       { id: "telefono", label: "Teléfono", type: "tel", required: true },
       { id: "whatsapp", label: "WhatsApp", type: "tel", required: false },
       { id: "email", label: "Email de contacto", type: "email", required: false },
-      { id: "website", label: "Sitio web", type: "url", required: false }
+      { id: "website", label: "Sitio web", type: "url", required: false },
+      { id: "instagram", label: "Instagram", type: "url", required: false, placeholder: "https://instagram.com/tu_cuenta" },
+      { id: "facebook", label: "Facebook", type: "url", required: false, placeholder: "https://facebook.com/tu_pagina" },
+      { id: "tiktok", label: "TikTok", type: "url", required: false, placeholder: "https://tiktok.com/@tu_cuenta" }
     ];
     this.renderFormFields("contactFields", contactFields);
 
@@ -1056,6 +951,7 @@ class Dashboard {
     }
   }
 
+  // HORARIOS CON TEXTO MEJORADO
   renderScheduleForm() {
     const days = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
     const scheduleGrid = document.getElementById("scheduleGrid");
@@ -1073,7 +969,7 @@ class Dashboard {
           <div class="day-header">
             <label class="day-toggle">
               <input type="checkbox" ${!dayData.closed ? "checked" : ""}>
-              <span>${day}</span>
+              <span>${day} (marcar para habilitar)</span>
             </label>
           </div>
           <div class="day-hours ${dayData.closed ? "disabled" : ""}">
@@ -1125,8 +1021,8 @@ class Dashboard {
   async loadProducts() {
     try {
       if (!this.currentUser) return;
-      const productsRef = collection(db, "usuarios", this.currentUser.uid, "productos");
-      const q = query(productsRef, orderBy("nombre"));
+      const productsRef = collection(db, "comercios", this.currentUser.uid, "productos");
+      const q = query(productsRef, orderBy("fechaRegistro", "desc"));
       const snap = await getDocs(q);
       this.products = [];
       snap.forEach(d => this.products.push({ id: d.id, ...d.data() }));
@@ -1223,89 +1119,44 @@ class Dashboard {
     const p = this.products.find(x => x.id === id);
     if (!p) return;
     
-    // Determinar tipo y configurar formulario
-    this.currentProductType = p.tipo || (p.precio?.valor > 0 ? "producto" : "servicio");
-    this.renderProductForm();
-    
-    // Llenar campos comunes
-    const commonMap = {
-      nombre: "itemName",
-      codigo: "itemCode", 
-      categoria: "itemCategory",
-      subcategoria: "itemSubcategory",
-      descripcion: "itemDescription",
-      imagen: "itemImage"
+    // Llenar campos del formulario
+    const fieldMap = {
+      nombre: "productName",
+      codigo: "productCode", 
+      categoria: "productCategory",
+      subcategoria: "productSubcategory",
+      descripcion: "productDescription",
+      imagen: "productImage",
+      precio: "productPrice",
+      stock: "productStock",
+      color: "productColor",
+      talle: "productSize",
+      origen: "productOrigin"
     };
     
-    Object.entries(commonMap).forEach(([key, fieldId]) => {
+    Object.entries(fieldMap).forEach(([key, fieldId]) => {
       const el = document.getElementById(fieldId);
       if (el) el.value = p[key] ?? "";
     });
-
-    // Llenar campos específicos según tipo
-    if (this.currentProductType === "producto") {
-      const productMap = {
-        "precio.valor": "itemPrice",
-        "precio.moneda": "itemCurrency",
-        stock: "itemStock",
-        color: "itemColor",
-        talle: "itemSize",
-        "medidas.largocm": "itemLength",
-        "medidas.anchocm": "itemWidth", 
-        "medidas.altocm": "itemHeight",
-        "medidas.pesokg": "itemWeight"
-      };
-      
-      Object.entries(productMap).forEach(([path, fieldId]) => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-          const value = this.getNestedValue(p, path);
-          el.value = value ?? "";
-        }
-      });
-    } else {
-      const serviceMap = {
-        "contacto.telefono": "servicePhone",
-        "contacto.email": "serviceEmail",
-        duracion: "serviceDuration",
-        disponibilidad: "serviceAvailability"
-      };
-      
-      Object.entries(serviceMap).forEach(([path, fieldId]) => {
-        const el = document.getElementById(fieldId);
-        if (el) {
-          const value = this.getNestedValue(p, path);
-          el.value = value ?? "";
-        }
-      });
-    }
-
-    // Estado
-    const statusEl = document.getElementById("itemStatus");
-    if (statusEl) statusEl.value = p.estado || "activo";
     
     this.editingProductId = id;
-    this.showToast("Edición", "Registro cargado en el formulario para editar", "info");
-  }
-
-  getNestedValue(obj, path) {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+    this.showToast("Edición", "Producto cargado en el formulario para editar", "info");
   }
 
   async deleteProduct(id) {
-    if (!confirm("¿Estás seguro de eliminar este registro?")) return;
+    if (!confirm("¿Estás seguro de eliminar este producto?")) return;
     try {
-      this.showLoading("Eliminando registro...");
-      await deleteDoc(doc(db, "usuarios", this.currentUser.uid, "productos", id));
+      this.showLoading("Eliminando producto...");
+      await deleteDoc(doc(db, "comercios", this.currentUser.uid, "productos", id));
       await this.loadProducts();
       this.renderProductsTable();
       this.updateProgressIndicator();
       this.hideLoading();
-      this.showToast("Registro eliminado", "El registro ha sido eliminado correctamente", "success");
+      this.showToast("Producto eliminado", "El producto ha sido eliminado correctamente", "success");
     } catch (error) {
       this.hideLoading();
       console.error(error);
-      this.showToast("Error", "No se pudo eliminar el registro", "error");
+      this.showToast("Error", "No se pudo eliminar el producto", "error");
     }
   }
 
@@ -1425,7 +1276,7 @@ class Dashboard {
     }
     
     if (msg.includes("productos")) {
-      const activeProducts = this.products.filter(p => p.estado !== "pausado");
+      const activeProducts = this.products.filter(p => !p.paused);
       return activeProducts.length > 0 ? 
         `Tenemos ${activeProducts.length} productos disponibles. Algunos ejemplos: ${activeProducts.slice(0,3).map(p=>p.nombre).join(", ")}` : 
         "Nuestro catálogo se está actualizando.";
@@ -1453,8 +1304,8 @@ class Dashboard {
   renderStats() {
     const grid = document.getElementById("statsGrid");
     if (!grid) return;
-    const activeProducts = this.products.filter(p => p.estado !== "pausado").length;
-    const pausedProducts = this.products.filter(p => p.estado === "pausado").length;
+    const activeProducts = this.products.filter(p => !p.paused).length;
+    const pausedProducts = this.products.filter(p => p.paused).length;
     const stats = [
       { icon: "fas fa-comments", label: "Consultas Totales", value: this.userData?.stats?.consultas || "156" },
       { icon: "fas fa-users", label: "Clientes Únicos", value: this.userData?.stats?.clientes || "89" },
@@ -1476,52 +1327,49 @@ class Dashboard {
   // Export / import / clear productos
   exportProducts() {
     if (this.products.length === 0) {
-      this.showToast("Info", "No hay registros para exportar", "info");
+      this.showToast("Info", "No hay productos para exportar", "info");
       return;
     }
-    const headers = ["Tipo","Nombre","Código","Categoría","Subcategoría","Imagen","Precio","Moneda","Stock","Descripción","Estado"];
+    const headers = ["Nombre","Código","Categoría","Subcategoría","Imagen","Precio","Stock","Descripción"];
     const rows = this.products.map(p => [
-      p.tipo || (p.precio?.valor > 0 ? "producto" : "servicio"),
       p.nombre || "",
       p.codigo || "",
       p.categoria || "",
       p.subcategoria || "",
       p.imagen || "",
-      p.precio?.valor || "",
-      p.precio?.moneda || "",
+      p.precio || "",
       p.stock ?? "",
-      p.descripcion || "",
-      p.estado || "activo"
+      p.descripcion || ""
     ]);
     const csv = [headers, ...rows].map(r => r.map(field => `"${String(field).replace(/"/g,'""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `inventario_${(this.userData?.nombreComercio || "comercio").replace(/\s+/g,"_")}.csv`;
+    a.download = `productos_${(this.userData?.nombreComercio || "comercio").replace(/\s+/g,"_")}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    this.showToast("Éxito", "Inventario exportado", "success");
+    this.showToast("Éxito", "Productos exportados", "success");
   }
 
   async clearAllProducts() {
-    if (!confirm("¿Eliminar todos los registros? Esta acción no puede deshacerse.")) return;
+    if (!confirm("¿Eliminar todos los productos? Esta acción no puede deshacerse.")) return;
     try {
-      this.showLoading("Eliminando registros...");
-      const ref = collection(db, "usuarios", this.currentUser.uid, "productos");
+      this.showLoading("Eliminando productos...");
+      const ref = collection(db, "comercios", this.currentUser.uid, "productos");
       const snap = await getDocs(ref);
-      await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "usuarios", this.currentUser.uid, "productos", d.id))));
+      await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "comercios", this.currentUser.uid, "productos", d.id))));
       await this.loadProducts();
       this.renderProductsTable();
       this.updateProgressIndicator();
       this.hideLoading();
-      this.showToast("Éxito", "Todos los registros eliminados", "success");
+      this.showToast("Éxito", "Todos los productos eliminados", "success");
     } catch (error) {
       this.hideLoading();
       console.error(error);
-      this.showToast("Error", "No se pudieron eliminar los registros", "error");
+      this.showToast("Error", "No se pudieron eliminar los productos", "error");
     }
   }
 
@@ -1640,7 +1488,10 @@ class Dashboard {
           telefono: fd.get("telefono") || "",
           whatsapp: fd.get("whatsapp") || "",
           email: fd.get("email") || "",
-          website: fd.get("website") || ""
+          website: fd.get("website") || "",
+          instagram: fd.get("instagram") || "",
+          facebook: fd.get("facebook") || "",
+          tiktok: fd.get("tiktok") || ""
         };
         const payments = Array.from(document.querySelectorAll("input[name='paymentMethods']:checked")).map(i => i.value);
         const payload = { ...basic, ...contact, paymentMethods: payments };
@@ -1708,81 +1559,66 @@ class Dashboard {
       }
     });
 
-    // Enhanced Product/Service form submit
+    // Product form submit - CORREGIDO
     document.getElementById("productForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const form = e.target;
-      const fd = new FormData(form);
       
-      // Campos comunes
-      const data = {
-        nombre: fd.get("itemName") || "",
-        codigo: fd.get("itemCode") || "",
-        categoria: fd.get("itemCategory") || "",
-        subcategoria: fd.get("itemSubcategory") || "",
-        descripcion: fd.get("itemDescription") || "",
-        imagen: fd.get("itemImage") || null,
-        tipo: this.currentProductType,
-        estado: fd.get("itemStatus") || "activo",
-        fechaCreacion: new Date()
-      };
+      const nombre = document.getElementById("productName")?.value.trim();
+      const codigo = document.getElementById("productCode")?.value.trim();
+      const categoria = document.getElementById("productCategory")?.value.trim();
+      const subcategoria = document.getElementById("productSubcategory")?.value.trim();
+      const descripcion = document.getElementById("productDescription")?.value.trim();
+      const imagen = document.getElementById("productImage")?.value.trim();
+      const precio = parseFloat(document.getElementById("productPrice")?.value) || 0;
+      const stock = parseInt(document.getElementById("productStock")?.value) || 0;
+      const color = document.getElementById("productColor")?.value.trim();
+      const talle = document.getElementById("productSize")?.value.trim();
+      const origen = document.getElementById("productOrigin")?.value.trim();
 
-      // Campos específicos por tipo
-      if (this.currentProductType === "producto") {
-        // Precio
-        const precioValor = parseFloat(fd.get("itemPrice")) || 0;
-        const precioMoneda = fd.get("itemCurrency") || "ARS";
-        data.precio = { valor: precioValor, moneda: precioMoneda };
-        
-        // Stock y características
-        data.stock = fd.get("itemStock") ? parseInt(fd.get("itemStock")) : null;
-        data.color = fd.get("itemColor") || null;
-        data.talle = fd.get("itemSize") || null;
-        
-        // Medidas
-        const medidas = {
-          largocm: fd.get("itemLength") ? parseFloat(fd.get("itemLength")) : null,
-          anchocm: fd.get("itemWidth") ? parseFloat(fd.get("itemWidth")) : null,
-          altocm: fd.get("itemHeight") ? parseFloat(fd.get("itemHeight")) : null,
-          pesokg: fd.get("itemWeight") ? parseFloat(fd.get("itemWeight")) : null
-        };
-        data.medidas = medidas;
-      } else {
-        // Servicios
-        const contacto = {
-          telefono: fd.get("servicePhone") || null,
-          email: fd.get("serviceEmail") || null
-        };
-        if (contacto.telefono || contacto.email) {
-          data.contacto = contacto;
-        }
-        data.duracion = fd.get("serviceDuration") || null;
-        data.disponibilidad = fd.get("serviceAvailability") || null;
-      }
-
-      if (!data.nombre || !data.categoria) {
-        this.showToast("Error", "Complete los campos requeridos", "error");
+      if (!nombre || !categoria) {
+        this.showToast("Error", "Complete los campos requeridos (Nombre y Categoría)", "error");
         return;
       }
 
+      const productData = {
+        nombre,
+        codigo: codigo || "",
+        categoria,
+        subcategoria: subcategoria || "",
+        descripcion: descripcion || "",
+        imagen: imagen || "",
+        precio,
+        stock,
+        color: color || "",
+        talle: talle || "",
+        origen: origen || "",
+        paused: false,
+        fechaRegistro: serverTimestamp()
+      };
+
       try {
-        this.showLoading("Guardando registro...");
+        this.showLoading("Guardando producto...");
+        
         if (this.editingProductId) {
-          await updateDoc(doc(db, "usuarios", this.currentUser.uid, "productos", this.editingProductId), data);
+          // Actualizar producto existente
+          await updateDoc(doc(db, "comercios", this.currentUser.uid, "productos", this.editingProductId), productData);
           this.editingProductId = null;
+          this.showToast("Éxito", "Producto actualizado", "success");
         } else {
-          await addDoc(collection(db, "usuarios", this.currentUser.uid, "productos"), data);
+          // Agregar nuevo producto
+          await addDoc(collection(db, "comercios", this.currentUser.uid, "productos"), productData);
+          this.showToast("Éxito", "Producto agregado", "success");
         }
+
         await this.loadProducts();
         this.renderProductsTable();
         this.updateProgressIndicator();
-        form.reset();
+        e.target.reset();
         this.hideLoading();
-        this.showToast("Éxito", `${this.currentProductType === "producto" ? "Producto" : "Servicio"} registrado`, "success");
-      } catch (err) {
+      } catch (error) {
         this.hideLoading();
-        console.error(err);
-        this.showToast("Error", "No se pudo guardar el registro", "error");
+        console.error("Error saving product:", error);
+        this.showToast("Error", "No se pudo guardar el producto", "error");
       }
     });
 
@@ -1818,7 +1654,7 @@ class Dashboard {
   // Generar IA con configuración avanzada
   async generateAI(formData) {
     if (!this.userData?.nombreComercio || this.products.length === 0) {
-      this.showToast("Advertencia", "Completa la info del comercio y agrega productos/servicios", "warning");
+      this.showToast("Advertencia", "Completa la info del comercio y agrega productos", "warning");
       return;
     }
     try {
