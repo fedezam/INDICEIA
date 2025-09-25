@@ -3,15 +3,27 @@ import {
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import {
   doc,
   getDoc,
-@@ -24,17 +21,21 @@ class Dashboard {
+  updateDoc,
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+class Dashboard {
+  constructor() {
+    this.currentUser = null;
+    this.userData = {};
+    this.currentTab = "comercio";
     this.products = [];
     this.allCategories = [];
     this.selectedCategories = [];
-    this.editingProductId = null; // si estamos editando un producto
+    this.editingProductId = null;
     this.init();
   }
 
@@ -23,19 +35,15 @@ import {
     this.renderInitialContent();
   }
 
-  // 🔐 Autenticación (solo chequeo + logout)
-  // -----------------------
   // AUTH: solo comprobación + logout
-  // -----------------------
   setupAuth() {
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-@@ -43,69 +44,72 @@ class Dashboard {
+        this.currentUser = user;
+        await this.loadUserData();
         this.updateUserUI();
         this.updateProgressIndicator();
       } else {
-        window.location.href = "index.html"; // vuelve al login
-        // si no hay sesión, volver al login (index.html)
         window.location.href = "index.html";
       }
     });
@@ -44,7 +52,6 @@ import {
       try {
         await signOut(auth);
         window.location.href = "index.html";
-      } catch (error) {
       } catch (err) {
         this.showToast("Error", "No se pudo cerrar sesión", "error");
         console.error(err);
@@ -52,27 +59,19 @@ import {
     });
   }
 
-  // 🔽 --- A partir de acá mantenemos solo lógica del dashboard ---
-
-  // -----------------------
   // Carga de datos
-  // -----------------------
   async loadUserData() {
     try {
-      const userDoc = await getDoc(doc(db, "usuarios", this.currentUser.uid));
       if (!this.currentUser) return;
       const userRef = doc(db, "usuarios", this.currentUser.uid);
       const userDoc = await getDoc(userRef);
       if (userDoc.exists()) {
         this.userData = userDoc.data();
-        await this.loadProducts();
-        await this.loadCategories();
       } else {
         this.userData = {};
       }
       await this.loadProducts();
       await this.loadCategories();
-      // re-render forms with loaded data
       this.setupForms();
       this.updateUserUI();
       this.updateProgressIndicator();
@@ -83,21 +82,12 @@ import {
   }
 
   updateUserUI() {
-    if (!this.userData) return;
     if (!this.userData || !this.currentUser) return;
     const userAvatar = document.getElementById("userAvatar");
     const userName = document.getElementById("userName");
     const userEmail = document.getElementById("userEmail");
+    
     if (userAvatar) {
-      userAvatar.textContent = (this.userData.nombre || this.currentUser.email)
-        .charAt(0)
-        .toUpperCase();
-    }
-    if (userName) {
-      userName.textContent = this.userData.nombre || "Usuario";
-    }
-    if (userEmail) {
-      userEmail.textContent = this.currentUser.email;
       const display = (this.userData.nombre || this.currentUser.email || "U").charAt(0).toUpperCase();
       userAvatar.textContent = display;
     }
@@ -105,47 +95,29 @@ import {
     if (userEmail) userEmail.textContent = this.currentUser.email || "";
   }
 
-  // 📊 Progreso
-  // -----------------------
   // Progress indicator
-  // -----------------------
   updateProgressIndicator() {
     const steps = [
       { id: "plan", label: "Plan", completed: !!this.userData?.plan },
-      {
-        id: "info",
-        label: "Información",
-        completed: !!(
-          this.userData?.nombreComercio && this.userData?.telefono
-        ),
-      },
       { id: "info", label: "Información", completed: !!(this.userData?.nombreComercio && this.userData?.telefono) },
       { id: "horarios", label: "Horarios", completed: !!this.userData?.horarios },
       { id: "productos", label: "Productos", completed: this.products.length > 0 },
-      { id: "ia", label: "IA", completed: !!this.userData?.aiGenerated },
       { id: "ia", label: "IA", completed: !!this.userData?.aiGenerated }
     ];
-    const completed = steps.filter((s) => s.completed).length;
     const completed = steps.filter(s => s.completed).length;
     const percentage = Math.round((completed / steps.length) * 100);
 
     const progressFill = document.getElementById("completionFill");
-@@ -119,92 +123,928 @@ class Dashboard {
+    const progressText = document.getElementById("completionText");
+    if (progressFill) progressFill.style.width = `${percentage}%`;
+    if (progressText) progressText.textContent = `${percentage}% completado`;
+    
+    this.renderProgressSteps(steps);
+  }
+
   renderProgressSteps(steps) {
     const container = document.getElementById("progressSteps");
     if (!container) return;
-    container.innerHTML = steps
-      .map(
-        (step) => `
-        <div class="progress-step ${step.completed ? "completed" : ""}">
-          <div class="step-icon">
-            <i class="fas ${step.completed ? "fa-check" : "fa-circle"}"></i>
-          </div>
-          <div class="step-label">${step.label}</div>
-        </div>
-      `
-      )
-      .join("");
     container.innerHTML = steps.map(step => `
       <div class="progress-step ${step.completed ? "completed" : ""}">
         <div class="step-icon"><i class="fas ${step.completed ? "fa-check" : "fa-circle"}"></i></div>
@@ -154,40 +126,18 @@ import {
     `).join("");
   }
 
-  // 🗂️ Tabs
-  // -----------------------
   // Tabs
-  // -----------------------
   setupTabs() {
     const tabs = [
       { id: "comercio", label: "Mi Comercio", icon: "fas fa-store" },
       { id: "horarios", label: "Horarios", icon: "fas fa-clock" },
       { id: "productos", label: "Productos", icon: "fas fa-box" },
       { id: "ia", label: "Mi IA", icon: "fas fa-robot" },
-      { id: "estadisticas", label: "Estadísticas", icon: "fas fa-chart-line" },
       { id: "estadisticas", label: "Estadísticas", icon: "fas fa-chart-line" }
     ];
     const tabNav = document.getElementById("tabNav");
-    if (tabNav) {
-      tabNav.innerHTML = tabs
-        .map(
-          (tab) => `
-          <button class="tab-btn ${
-            tab.id === this.currentTab ? "active" : ""
-          }" data-tab="${tab.id}">
-            <i class="${tab.icon}"></i>
-            <span>${tab.label}</span>
-          </button>
-        `
-        )
-        .join("");
-
-      tabNav.addEventListener("click", (e) => {
-        const tabBtn = e.target.closest(".tab-btn");
-        if (tabBtn) this.switchTab(tabBtn.dataset.tab);
-      });
-    }
     if (!tabNav) return;
+    
     tabNav.innerHTML = tabs.map(t => `
       <button class="tab-btn ${t.id === this.currentTab ? "active" : ""}" data-tab="${t.id}">
         <i class="${t.icon}"></i> <span>${t.label}</span>
@@ -203,39 +153,18 @@ import {
   }
 
   switchTab(tabId) {
-    document
-      .querySelectorAll(".tab-btn")
-      .forEach((btn) => btn.classList.remove("active"));
-    document
-      .querySelectorAll(".tab-pane")
-      .forEach((pane) => pane.classList.remove("active"));
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
     document.querySelector(`[data-tab="${tabId}"]`)?.classList.add("active");
     document.getElementById(tabId)?.classList.add("active");
     this.currentTab = tabId;
 
-    switch (tabId) {
-      case "productos":
-        this.renderProductsTable();
-        break;
-      case "ia":
-        this.renderAISection();
-        break;
-      case "estadisticas":
-        this.renderStats();
-        break;
-    }
-    // acciones al mostrar ciertas pestañas
     if (tabId === "productos") this.renderProductsTable();
     if (tabId === "ia") this.renderAISection();
     if (tabId === "estadisticas") this.renderStats();
   }
 
-  // 📝 Forms
-  // -----------------------
-  // Forms rendering (comercio, horarios, producto, IA)
-  // -----------------------
+  // Forms rendering
   setupForms() {
     this.renderComercioForm();
     this.renderScheduleForm();
@@ -243,10 +172,6 @@ import {
     this.renderAIConfigForm();
   }
 
-  // 🚨 IMPORTANTE: aquí seguirían todas tus funciones de render de formularios,
-  // productos, IA, estadísticas, showToast(), etc.
-  // No repito todo para no sobrecargar, pero se mantienen igual que en tu código original,
-  // solo eliminamos duplicaciones de login/registro.
   renderComercioForm() {
     const planSelector = document.getElementById("planSelector");
     if (planSelector) {
@@ -423,9 +348,7 @@ import {
     }).join("");
   }
 
-  // -----------------------
   // PRODUCTS / CATEGORIES
-  // -----------------------
   async loadProducts() {
     try {
       if (!this.currentUser) return;
@@ -488,7 +411,6 @@ import {
       </div>
     `;
 
-    // Delegación de eventos en el contenedor
     const section = container.querySelector(".categories-section");
     section?.addEventListener("click", async (e) => {
       if (e.target.closest("#addSelectedCategory")) {
@@ -524,8 +446,6 @@ import {
     });
   }
 
-  // ...
-}
   renderProductsTable() {
     const head = document.getElementById("productsTableHead");
     const body = document.getElementById("productsTableBody");
@@ -560,7 +480,7 @@ import {
       </tr>
     `).join("");
 
-    // Delegación: editar / borrar
+    // CORRIGIDO: Removido { once: true }
     body.addEventListener("click", async (e) => {
       const row = e.target.closest("tr");
       if (!row) return;
@@ -570,7 +490,7 @@ import {
       } else if (e.target.closest(".delete-product")) {
         await this.deleteProduct(id);
       }
-    }, { once: true }); // once:true para evitar múltiples attaches cuando se re-renderiza
+    });
   }
 
   editProduct(id) {
@@ -602,9 +522,7 @@ import {
     }
   }
 
-  // -----------------------
   // AI: vista previa y probador
-  // -----------------------
   renderAISection() {
     const hasRequired = this.userData?.nombreComercio && this.products.length > 0;
     const noAIMessage = document.getElementById("noAIMessage");
@@ -651,7 +569,7 @@ import {
       `;
     }
 
-    // Delegación
+    // CORRIGIDO: Removido { once: true }
     const preview = document.getElementById("aiPreviewSection");
     preview?.addEventListener("click", (e) => {
       if (e.target.closest(".copy-link-btn")) {
@@ -662,7 +580,7 @@ import {
       } else if (e.target.closest(".generate-qr-btn")) {
         this.showToast("QR", "Función de QR próximamente", "info");
       }
-    }, { once: true });
+    });
   }
 
   setupChatTest() {
@@ -730,9 +648,7 @@ import {
       }).join(", ") || "Horarios no disponibles.";
   }
 
-  // -----------------------
   // Estadísticas (placeholder visual)
-  // -----------------------
   renderStats() {
     const grid = document.getElementById("statsGrid");
     if (!grid) return;
@@ -753,9 +669,7 @@ import {
     `).join("");
   }
 
-  // -----------------------
   // Export / import / clear productos
-  // -----------------------
   exportProducts() {
     if (this.products.length === 0) {
       this.showToast("Info", "No hay productos para exportar", "info");
@@ -777,7 +691,6 @@ import {
   }
 
   async processExcelFile(file) {
-    // implementación simple CSV (aunque el UI acepta xlsx): si quieres xlsx usar sheetjs
     try {
       this.showLoading("Procesando archivo.");
       const text = await file.text();
@@ -824,13 +737,10 @@ import {
     }
   }
 
-  // -----------------------
-  // Helpers: update fields, schedule
-  // -----------------------
+  // Helpers: update fields
   async updateUserField(field, value) {
     try {
       await updateDoc(doc(db, "usuarios", this.currentUser.uid), { [field]: value });
-      // sincronizar local
       this.userData = { ...(this.userData || {}), [field]: value };
       this.updateProgressIndicator();
     } catch (error) {
@@ -853,9 +763,7 @@ import {
     }
   }
 
-  // -----------------------
   // UI: loading + toast
-  // -----------------------
   showLoading(text = "Cargando...") {
     const overlay = document.getElementById("loadingOverlay");
     const loadingText = document.getElementById("loadingText");
@@ -898,9 +806,7 @@ import {
     this.renderProgressSteps([]);
   }
 
-  // -----------------------
   // EVENT LISTENERS: formularios y botones
-  // -----------------------
   setupEventListeners() {
     // Comercio form (guardar)
     const comercioForm = document.getElementById("comercioForm");
@@ -921,7 +827,6 @@ import {
           email: fd.get("email") || "",
           website: fd.get("website") || ""
         };
-        // paymentMethods
         const payments = Array.from(document.querySelectorAll("input[name='paymentMethods']:checked")).map(i => i.value);
         const payload = { ...basic, ...contact, paymentMethods: payments };
         this.showLoading("Guardando información...");
@@ -988,7 +893,7 @@ import {
       }
     });
 
-    // Product form submit (crear o actualizar)
+    // Product form submit
     document.getElementById("productForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = e.target;
@@ -1009,7 +914,6 @@ import {
       try {
         this.showLoading("Guardando producto.");
         if (this.editingProductId) {
-          // actualizar
           await updateDoc(doc(db, "usuarios", this.currentUser.uid, "productos", this.editingProductId), data);
           this.editingProductId = null;
         } else {
@@ -1060,7 +964,7 @@ import {
     document.getElementById("exportProducts")?.addEventListener("click", () => this.exportProducts());
     document.getElementById("clearProducts")?.addEventListener("click", () => this.clearAllProducts());
 
-    // AI: generar / preview
+    // AI: generar
     const aiForm = document.getElementById("aiConfigForm");
     aiForm?.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1072,17 +976,12 @@ import {
       await this.generateAI(fd);
     });
     document.getElementById("previewAI")?.addEventListener("click", () => {
-      // simplemente renderizar vista previa localmente
       this.renderAISection();
       this.showToast("Vista previa", "Vista previa de la IA actualizada", "info");
     });
+  }
 
-    // Chat test send button (se vincula cuando se muestra la sección)
-  } // end setupEventListeners()
-
-  // -----------------------
-  // Generar IA (solo actualiza user doc con configuración)
-  // -----------------------
+  // Generar IA
   async generateAI(formData) {
     if (!this.userData?.nombreComercio || this.products.length === 0) {
       this.showToast("Advertencia", "Completa la info del comercio y agrega productos", "warning");
@@ -1110,9 +1009,8 @@ import {
       this.showToast("Error", "No se pudo generar la IA", "error");
     }
   }
-} // end class Dashboard
+}
 
-// Inicializar Dashboard
 // Inicializar
 document.addEventListener("DOMContentLoaded", () => {
   new Dashboard();
