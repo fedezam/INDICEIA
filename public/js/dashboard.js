@@ -1685,6 +1685,7 @@ class Dashboard {
       this.renderAISection();
       this.hideLoading();
       this.showToast("Éxito", "¡Tu asistente de IA está listo!", "success");
+      await this.updateJSON();
     } catch (error) {
       this.hideLoading();
       console.error(error);
