@@ -4,7 +4,8 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  signInWithPopup
+  signInWithRedirect,
+  getRedirectResult
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
@@ -156,32 +157,46 @@ document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
   }
 });
 
-// ✅ Google login
-document.getElementById("googleLogin")?.addEventListener("click", async () => {
-  Utils.showLoading("Iniciando con Google...");
+// ✅ Inicializar el resultado del redirect al cargar la página
+window.addEventListener("load", async () => {
   try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      const user = result.user;
 
-    const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-    if (!userDoc.exists()) {
-      await setDoc(doc(db, "usuarios", user.uid), {
-        email: user.email,
-        nombre: user.displayName || "",
-        nombreComercio: "",
-        telefono: "",
-        referralId: Utils.generateReferralId(),
-        fechaRegistro: new Date(),
-        plan: "basic",
-        estado: "trial",
-      });
+      const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, "usuarios", user.uid), {
+          email: user.email,
+          nombre: user.displayName || "",
+          nombreComercio: "",
+          telefono: "",
+          referralId: Utils.generateReferralId(),
+          fechaRegistro: new Date(),
+          plan: "basic",
+          estado: "trial",
+        });
+      }
+
+      Utils.showToast("¡Bienvenido!", "Has iniciado sesión con Google", "success");
+      setTimeout(() => window.location.href = "dashboard.html", 1000);
     }
-
-    Utils.showToast("¡Bienvenido!", "Has iniciado sesión con Google", "success");
-    setTimeout(() => window.location.href = "dashboard.html", 1000);
   } catch (error) {
     Utils.hideLoading();
     Utils.showToast("Error", "No se pudo iniciar sesión con Google", "error");
+    console.error("Redirect error:", error);
+  }
+});
+
+// ✅ Google login botón
+document.getElementById("googleLogin")?.addEventListener("click", async () => {
+  try {
+    Utils.showLoading("Redirigiendo a Google...");
+    await signInWithRedirect(auth, provider);
+  } catch (error) {
+    Utils.hideLoading();
+    Utils.showToast("Error", "No se pudo iniciar sesión con Google", "error");
+    console.error("Redirect initiation error:", error);
   }
 });
 
@@ -282,7 +297,4 @@ function validateRegistrationField() {
 
 function validateRegistrationForm() {
   const inputs = document.querySelectorAll("#completeRegistration input[required]");
-  return Array.from(inputs).every((input) => validateRegistrationField.call(input));
-}
-
-export { auth, db };
+  return Array.from(inputs).every((input) => validateRegistrationField.call
