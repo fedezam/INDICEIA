@@ -1651,7 +1651,7 @@ class Dashboard {
     });
   }
 
-  // ==========================
+// ==========================
 // Generar IA con configuración avanzada
 // ==========================
 async generateAI(formData) {
@@ -1668,9 +1668,15 @@ async generateAI(formData) {
       aiPersonality: formData.get("aiPersonality"),
       aiTone: formData.get("aiTone"),
       aiGreeting: formData.get("aiGreeting"),
-      pricesPaused: document.getElementById("aiPricesPaused")?.checked || false,
-      noPriceBehavior: document.getElementById("aiNoPriceBehavior")?.value || "contact",
-      pausedBehavior: document.getElementById("aiPausedBehavior")?.value || "hide",
+      pricesPaused: document.getElementById("aiPricesPaused") 
+        ? document.getElementById("aiPricesPaused").checked 
+        : false,
+      noPriceBehavior: document.getElementById("aiNoPriceBehavior") 
+        ? document.getElementById("aiNoPriceBehavior").value 
+        : "contact",
+      pausedBehavior: document.getElementById("aiPausedBehavior") 
+        ? document.getElementById("aiPausedBehavior").value 
+        : "hide",
       aiGenerated: true,
       fechaGeneracion: new Date()
     };
