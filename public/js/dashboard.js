@@ -681,6 +681,12 @@ class Dashboard {
         `Producto ${newStatus ? "pausado" : "activado"}`, 
         "success"
       );
+      try {
+      await this.updateJSON();
+    } catch (err) {
+  console.error("No se pudo actualizar el JSON:", err);
+
+    }
       
     } catch (error) {
       console.error("Error toggling status:", error);
@@ -1502,10 +1508,18 @@ class Dashboard {
         this.updateUserUI();
         this.updateProgressIndicator();
         this.showToast("Éxito", "Información guardada", "success");
-      } catch (error) {
-        this.hideLoading();
-        console.error(error);
-        this.showToast("Error", "No se pudo guardar la información", "error");
+
+        try {
+        await this.updateJSON();
+        } catch (err) {
+        console.error("No se pudo actualizar el JSON:", err);
+       }
+
+} catch (error) {
+  this.hideLoading();
+  console.error(error);
+  this.showToast("Error", "No se pudo guardar la información", "error");
+}
       }
     });
 
@@ -1551,6 +1565,12 @@ class Dashboard {
         this.userData = { ...(this.userData || {}), horarios };
         this.hideLoading();
         this.showToast("Éxito", "Horarios guardados", "success");
+        try {
+        await this.updateJSON();
+        } catch (err) {
+        console.error("No se pudo actualizar el JSON:", err);
+  
+}
         this.updateProgressIndicator();
       } catch (error) {
         this.hideLoading();
@@ -1608,6 +1628,12 @@ class Dashboard {
           // Agregar nuevo producto
           await addDoc(collection(db, "comercios", this.currentUser.uid, "productos"), productData);
           this.showToast("Éxito", "Producto agregado", "success");
+          try {
+          await this.updateJSON();
+          } catch (err) {
+          console.error("No se pudo actualizar el JSON:", err);
+
+}
         }
 
         await this.loadProducts();
