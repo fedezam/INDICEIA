@@ -53,12 +53,16 @@ class Utils {
     setTimeout(() => toast.classList.add("show"), 100);
     setTimeout(() => {
       toast.classList.remove("show");
-      setTimeout(() => container.removeChild(toast), 300);
+      setTimeout(() => {
+        if (toast.parentNode) container.removeChild(toast);
+      }, 300);
     }, 5000);
 
     toast.querySelector(".toast-close").addEventListener("click", () => {
       toast.classList.remove("show");
-      setTimeout(() => container.removeChild(toast), 300);
+      setTimeout(() => {
+        if (toast.parentNode) container.removeChild(toast);
+      }, 300);
     });
   }
 
@@ -157,13 +161,12 @@ document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
   }
 });
 
-// ✅ Inicializar el resultado del redirect al cargar la página
+// ✅ Google login usando Redirect
 window.addEventListener("load", async () => {
   try {
     const result = await getRedirectResult(auth);
     if (result && result.user) {
       const user = result.user;
-
       const userDoc = await getDoc(doc(db, "usuarios", user.uid));
       if (!userDoc.exists()) {
         await setDoc(doc(db, "usuarios", user.uid), {
@@ -177,26 +180,20 @@ window.addEventListener("load", async () => {
           estado: "trial",
         });
       }
-
       Utils.showToast("¡Bienvenido!", "Has iniciado sesión con Google", "success");
       setTimeout(() => window.location.href = "dashboard.html", 1000);
     }
   } catch (error) {
-    Utils.hideLoading();
-    Utils.showToast("Error", "No se pudo iniciar sesión con Google", "error");
-    console.error("Redirect error:", error);
+    console.error("Error login Google:", error);
   }
 });
 
-// ✅ Google login botón
 document.getElementById("googleLogin")?.addEventListener("click", async () => {
   try {
-    Utils.showLoading("Redirigiendo a Google...");
     await signInWithRedirect(auth, provider);
   } catch (error) {
-    Utils.hideLoading();
+    console.error("No se pudo iniciar Google:", error);
     Utils.showToast("Error", "No se pudo iniciar sesión con Google", "error");
-    console.error("Redirect initiation error:", error);
   }
 });
 
@@ -297,4 +294,8 @@ function validateRegistrationField() {
 
 function validateRegistrationForm() {
   const inputs = document.querySelectorAll("#completeRegistration input[required]");
-  return Array.from(inputs).every((input) => validateRegistrationField.call
+  return Array.from(inputs).every((input) => validateRegistrationField.call(input));
+}
+
+export { auth, db };
+
