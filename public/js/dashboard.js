@@ -1651,76 +1651,86 @@ class Dashboard {
     });
   }
 
-  // Generar IA con configuración avanzada
-  async generateAI(formData) {
-    if (!this.userData?.nombreComercio || this.products.length === 0) {
-      this.showToast("Advertencia", "Completa la info del comercio y agrega productos", "warning");
-      return;
-    }
-    try {
-      this.showLoading("Generando tu IA personalizada...");
-      
-      const aiConfig = {
-        aiName: formData.get("aiName"),
-        aiPersonality: formData.get("aiPersonality"),
-        aiTone: formData.get("aiTone"),
-        aiGreeting: formData.get("aiGreeting"),
-        pricesPaused: document.getElementById("aiPricesPaused")?.checked || false,
-        noPriceBehavior: document.getElementById("aiNoPriceBehavior")?.value || "contact",
-        pausedBehavior: document.getElementById("aiPausedBehavior")?.value || "hide",
-        aiGenerated: true,
-        fechaGeneracion: new Date()
-      };
-      
-      const updateData = {
-        aiConfig,
-        aiGenerated: true,
-        aiName: aiConfig.aiName,
-        aiGreeting: aiConfig.aiGreeting
-      };
-      
-      await updateDoc(doc(db, "usuarios", this.currentUser.uid), updateData);
-      this.userData = { ...(this.userData || {}), ...updateData };
-      this.updateProgressIndicator();
-      this.renderAISection();
-      this.hideLoading();
-      this.showToast("Éxito", "¡Tu asistente de IA está listo!", "success");
-      await this.updateJSON();
-    } catch (error) {
-      this.hideLoading();
-      console.error(error);
-      this.showToast("Error", "No se pudo generar la IA", "error");
-    }
+  // ==========================
+// Generar IA con configuración avanzada
+// ==========================
+async generateAI(formData) {
+  if (!this.userData?.nombreComercio || this.products.length === 0) {
+    this.showToast("Advertencia", "Completa la info del comercio y agrega productos", "warning");
+    return;
+  }
+
+  try {
+    this.showLoading("Generando tu IA personalizada...");
+
+    const aiConfig = {
+      aiName: formData.get("aiName"),
+      aiPersonality: formData.get("aiPersonality"),
+      aiTone: formData.get("aiTone"),
+      aiGreeting: formData.get("aiGreeting"),
+      pricesPaused: document.getElementById("aiPricesPaused")?.checked || false,
+      noPriceBehavior: document.getElementById("aiNoPriceBehavior")?.value || "contact",
+      pausedBehavior: document.getElementById("aiPausedBehavior")?.value || "hide",
+      aiGenerated: true,
+      fechaGeneracion: new Date()
+    };
+
+    const updateData = {
+      aiConfig,
+      aiGenerated: true,
+      aiName: aiConfig.aiName,
+      aiGreeting: aiConfig.aiGreeting
+    };
+
+    await updateDoc(doc(db, "usuarios", this.currentUser.uid), updateData);
+    this.userData = { ...(this.userData || {}), ...updateData };
+    this.updateProgressIndicator();
+    this.renderAISection();
+    this.hideLoading();
+    this.showToast("Éxito", "¡Tu asistente de IA está listo!", "success");
+
+    // ✅ Actualizar JSON del comercio
+    await this.updateJSON();
+
+  } catch (error) {
+    this.hideLoading();
+    console.error(error);
+    this.showToast("Error", "No se pudo generar la IA", "error");
   }
 }
+
+// ==========================
+// Actualizar JSON del comercio en Vercel (llama a /api/export-json)
+// ==========================
 async updateJSON() {
-    if (!this.currentUser) return;
-    
-    try {
-      this.showLoading("Actualizando JSON...");
-      
-      const response = await fetch('/api/export-json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: this.currentUser.uid })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        this.showToast("Éxito", "JSON actualizado correctamente", "success");
-        console.log("URL del JSON:", result.gist.rawUrl);
-      } else {
-        throw new Error(result.error || "Error desconocido");
-      }
-      
-    } catch (error) {
-      console.error("Error updating JSON:", error);
-      this.showToast("Error", "No se pudo actualizar el JSON", "error");
-    } finally {
-      this.hideLoading();
+  if (!this.currentUser) return;
+
+  try {
+    this.showLoading("Actualizando JSON...");
+
+    const response = await fetch('/api/export-json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: this.currentUser.uid })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      this.showToast("Éxito", "JSON actualizado correctamente", "success");
+      console.log("URL del JSON:", result.gist.rawUrl);
+    } else {
+      throw new Error(result.error || "Error desconocido");
     }
+
+  } catch (error) {
+    console.error("Error updating JSON:", error);
+    this.showToast("Error", "No se pudo actualizar el JSON", "error");
+  } finally {
+    this.hideLoading();
   }
+}
+
 // Inicializar
 document.addEventListener("DOMContentLoaded", () => {
   new Dashboard();
