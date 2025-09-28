@@ -1,4 +1,4 @@
-// mi-comercio.js
+// mi-comercio.js - Versión corregida
 import { LocalData, FirebaseHelpers, AuthHelpers, Utils, AppInit } from '../js/shared.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -46,10 +46,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
 
-      // Agregar event listeners para auto-save
+      // Event listener para el botón de guardar
+      const saveButton = document.getElementById('saveDataBtn');
+      if (saveButton) {
+        saveButton.addEventListener('click', async (e) => {
+          e.preventDefault();
+          await saveFormDataAndContinue(form);
+        });
+      }
+
+      // Agregar event listeners para auto-save (opcional)
       form.querySelectorAll('input, textarea, select').forEach(field => {
         field.addEventListener('blur', debounce(async () => {
-          await saveFormData(form);
+          await saveFormData(form, false); // false = no continuar a siguiente página
         }, 500));
       });
 
@@ -111,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // 🛠️ Función para guardar datos del formulario
-async function saveFormData(form) {
+async function saveFormData(form, showToast = true) {
   try {
     const formData = new FormData(form);
     const updates = {};
@@ -138,11 +147,54 @@ async function saveFormData(form) {
     }
 
     // Mostrar toast de confirmación
-    Utils.showToast('Guardado', 'Información actualizada correctamente', 'success');
+    if (showToast) {
+      Utils.showToast('Guardado', 'Información actualizada correctamente', 'success');
+    }
     
+    return true;
   } catch (error) {
     console.error('❌ Error guardando:', error);
     Utils.showToast('Error', 'No se pudieron guardar los datos', 'error');
+    return false;
+  }
+}
+
+// 🛠️ Función para guardar y continuar a la siguiente página
+async function saveFormDataAndContinue(form) {
+  try {
+    Utils.showLoading('Guardando datos...');
+    
+    // Primero validar campos requeridos
+    const isValid = await window.validateCurrentPageData();
+    if (!isValid) {
+      Utils.hideLoading();
+      return;
+    }
+
+    // Guardar datos
+    const saved = await saveFormData(form, false);
+    if (!saved) {
+      Utils.hideLoading();
+      return;
+    }
+
+    // Marcar como completada y ir a siguiente página
+    if (window.Navigation) {
+      Utils.hideLoading();
+      Utils.showToast('¡Datos guardados!', 'Continuando a la siguiente sección...', 'success');
+      
+      setTimeout(() => {
+        window.Navigation.goToNextPage();
+      }, 1000);
+    } else {
+      Utils.hideLoading();
+      Utils.showToast('Guardado', 'Datos guardados correctamente', 'success');
+    }
+
+  } catch (error) {
+    Utils.hideLoading();
+    console.error('❌ Error guardando y continuando:', error);
+    Utils.showToast('Error', 'Hubo un problema al guardar', 'error');
   }
 }
 
