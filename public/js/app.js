@@ -307,7 +307,7 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     console.log("Sesión detectada:", user.email);
     // Si el usuario ya está logueado, mandalo al dashboard
-    window.location.href = "dashboard.html";
+    window.location.href = "mi-comercio.html";
   } else {
     console.log("No hay sesión activa");
     // Si no hay sesión, mostrar login
