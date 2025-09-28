@@ -1778,34 +1778,74 @@ async generateAI(formData) {
 // ==========================
 // Actualizar JSON del comercio en Vercel (llama a /api/export-json)
 // ==========================
-async updateJSON() {
-  if (!this.currentUser) return;
+import { auth } from "./firebase.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-  try {
-    this.showLoading("Actualizando JSON...");
+class Dashboard {
+  constructor(currentUser) {
+    this.currentUser = currentUser;
+  }
 
-    const response = await fetch('/api/export-json', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: this.currentUser.uid })
-    });
+  showLoading(msg) {
+    // Mostrar spinner o overlay
+    console.log("Loading:", msg);
+  }
 
-    const result = await response.json();
+  hideLoading() {
+    // Ocultar spinner o overlay
+    console.log("Loading oculto");
+  }
 
-    if (result.success) {
-      this.showToast("Éxito", "JSON actualizado correctamente", "success");
-      console.log("URL del JSON:", result.gist.rawUrl);
-    } else {
-      throw new Error(result.error || "Error desconocido");
+  showToast(title, msg, type) {
+    // Mostrar notificación al usuario
+    console.log(`[${type.toUpperCase()}] ${title}: ${msg}`);
+  }
+
+  async updateJSON() {
+    if (!this.currentUser) return;
+
+    try {
+      this.showLoading("Actualizando JSON...");
+
+      const response = await fetch('/api/export-json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: this.currentUser.uid })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        this.showToast("Éxito", "JSON actualizado correctamente", "success");
+        console.log("URL del JSON:", result.gist.rawUrl);
+      } else {
+        throw new Error(result.error || "Error desconocido en la actualización de JSON");
+      }
+
+    } catch (error) {
+      console.error("Error updating JSON:", error);
+      this.showToast("Error", "No se pudo actualizar el JSON", "error");
+    } finally {
+      this.hideLoading();
     }
-
-  } catch (error) {
-    console.error("Error updating JSON:", error);
-    this.showToast("Error", "No se pudo actualizar el JSON", "error");
-  } finally {
-    this.hideLoading();
   }
 }
+
+// Inicializar Dashboard con el usuario real de Firebase
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    const dashboard = new Dashboard(user);
+    // Llamar a updateJSON cuando quieras
+    dashboard.updateJSON();
+  } else {
+    console.log("Usuario no logueado");
+  }
+});
+
 
 // Inicializar
 document.addEventListener("DOMContentLoaded", () => {
