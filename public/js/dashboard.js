@@ -1773,6 +1773,7 @@ async generateAI(formData) {
     this.showToast("Error", "No se pudo generar la IA", "error");
   }
 }
+}
 
 // ==========================
 // Actualizar JSON del comercio en Vercel (llama a /api/export-json)
