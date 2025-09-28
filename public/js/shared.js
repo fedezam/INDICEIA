@@ -355,6 +355,11 @@ class PlansManager {
 // 🔍 AUTH HELPERS (Extraído)
 // ==========================================
 class AuthHelpers {
+  // Obtener usuario actual
+  static getCurrentUser() {
+    return auth.currentUser;
+  }
+
   // Verificar si usuario está logueado
   static isLoggedIn() {
     return !!auth.currentUser;
