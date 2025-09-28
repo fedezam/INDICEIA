@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi Comercio</title>
-  <link rel="stylesheet" href="public/css/common.css">
-  <link rel="stylesheet" href="public/css/mi-comercio.css">
-  <script type="module" src="public/js/shared.js"></script>
-  <script type="module" src="public/js/navigation.js"></script>
-  <script type="module" src="public/js/mi-comercio.js"></script>
+  <!-- CSS -->
+  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="./css/dashboard.css">
+  <!-- JS base -->
+  <script type="module" src="./js/shared.js"></script>
+  <script type="module" src="./js/navigation.js"></script>
+  <script type="module" src="./js/mi-comercio.js"></script>
 </head>
 <body>
   <!-- Header común -->
@@ -30,23 +32,4 @@
   <!-- Contenido específico -->
   <main class="main-content">
     <form id="miComercioForm">
-      <label>Nombre del comercio <input type="text" name="nombreComercio" required></label>
-      <label>Dirección <input type="text" name="direccion" required></label>
-      <label>Teléfono <input type="tel" name="telefono" required></label>
-      <label>Ciudad <input type="text" name="ciudad" required></label>
-      <label>Provincia <input type="text" name="provincia" required></label>
-      <label>País <input type="text" name="pais" required></label>
-      <label>Barrio <input type="text" name="barrio"></label>
-      <label>Descripción <textarea name="descripcion"></textarea></label>
-    </form>
-  </main>
-
-  <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="loading-overlay">
-    <div id="loadingText">Cargando...</div>
-  </div>
-
-  <!-- Toast container -->
-  <div id="toastContainer" class="toast-container"></div>
-</body>
-</html>
+      <label>Nombre del comercio <input type="text" name="nomb
