@@ -1778,9 +1778,6 @@ async generateAI(formData) {
 // ==========================
 // Actualizar JSON del comercio en Vercel (llama a /api/export-json)
 // ==========================
-import { auth } from "./firebase.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-
 class Dashboard {
   constructor(currentUser) {
     this.currentUser = currentUser;
