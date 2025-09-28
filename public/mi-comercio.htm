@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Comercio</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/mi-comercio.css">
+  <script type="module" src="/js/shared.js"></script>
+  <script type="module" src="/js/navigation.js"></script>
+  <script type="module" src="/js/mi-comercio.js"></script>
+</head>
+<body>
+  <!-- Header común -->
+  <div class="header-common">
+    <div class="logo">
+      <i class="fas fa-robot"></i>
+      <h1>INDICEIA</h1>
+    </div>
+    <div class="user-info">
+      <span id="commerceName">Cargando...</span>
+      <div class="plan-badge" id="planBadge">Trial</div>
+      <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div id="progressContainer"></div>
+
+  <!-- Contenido específico -->
+  <main class="main-content">
+    <form id="miComercioForm">
+      <label>Nombre del comercio <input type="text" name="nombreComercio" required></label>
+      <label>Dirección <input type="text" name="direccion" required></label>
+      <label>Teléfono <input type="tel" name="telefono" required></label>
+      <label>Ciudad <input type="text" name="ciudad" required></label>
+      <label>Provincia <input type="text" name="provincia" required></label>
+      <label>País <input type="text" name="pais" required></label>
+      <label>Barrio <input type="text" name="barrio"></label>
+      <label>Descripción <textarea name="descripcion"></textarea></label>
+    </form>
+  </main>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div id="loadingText">Cargando...</div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container"></div>
+</body>
+</html>
