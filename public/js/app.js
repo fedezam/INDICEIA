@@ -298,4 +298,20 @@ function validateRegistrationForm() {
 }
 
 export { auth, db };
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+// 🔄 Detectar sesión activa al cargar la app
+onAuthStateChanged(auth, (user) => {
+  const loadingOverlay = document.getElementById("loadingOverlay");
+
+  if (user) {
+    console.log("Sesión detectada:", user.email);
+    // Si el usuario ya está logueado, mandalo al dashboard
+    window.location.href = "dashboard.html";
+  } else {
+    console.log("No hay sesión activa");
+    // Si no hay sesión, mostrar login
+    if (loadingOverlay) loadingOverlay.classList.remove("show");
+  }
+});
 
