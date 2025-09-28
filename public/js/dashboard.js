@@ -1621,84 +1621,76 @@ async clearAllProducts() {
       }
     });
 
-    // Product form submit - CORREGIDO
     document.getElementById("productForm")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      
-      const nombre = document.getElementById("productName")?.value.trim();
-      const codigo = document.getElementById("productCode")?.value.trim();
-      const categoria = document.getElementById("productCategory")?.value.trim();
-      const subcategoria = document.getElementById("productSubcategory")?.value.trim();
-      const descripcion = document.getElementById("productDescription")?.value.trim();
-      const imagen = document.getElementById("productImage")?.value.trim();
-      const precio = parseFloat(document.getElementById("productPrice")?.value) || 0;
-      const stock = parseInt(document.getElementById("productStock")?.value) || 0;
-      const color = document.getElementById("productColor")?.value.trim();
-      const talle = document.getElementById("productSize")?.value.trim();
-      const origen = document.getElementById("productOrigin")?.value.trim();
+  e.preventDefault();
+       const nombre = document.getElementById("productName")?.value.trim();
+       const codigo = document.getElementById("productCode")?.value.trim();
+       const categoria = document.getElementById("productCategory")?.value.trim();
+       const subcategoria = document.getElementById("productSubcategory")?.value.trim();
+       const descripcion = document.getElementById("productDescription")?.value.trim();
+       const imagen = document.getElementById("productImage")?.value.trim();
+       const precio = parseFloat(document.getElementById("productPrice")?.value) || 0;
+       const stock = parseInt(document.getElementById("productStock")?.value) || 0;
+       const color = document.getElementById("productColor")?.value.trim();
+       const talle = document.getElementById("productSize")?.value.trim();
+       const origen = document.getElementById("productOrigin")?.value.trim();
 
-      if (!nombre || !categoria) {
-        this.showToast("Error", "Complete los campos requeridos (Nombre y Categoría)", "error");
-        return;
-      }
-
-      const productData = {
-        nombre,
-        codigo: codigo || "",
-        categoria,
-        subcategoria: subcategoria || "",
-        descripcion: descripcion || "",
-        imagen: imagen || "",
-        precio,
-        stock,
-        color: color || "",
-        talle: talle || "",
-        origen: origen || "",
-        paused: false,
-        fechaRegistro: serverTimestamp()
-      };
-
-try {
-  this.showLoading("Guardando producto...");
-  
-  if (this.editingProductId) {
-    // Actualizar producto existente
-    await updateDoc(doc(db, "comercios", this.currentUser.uid, "productos", this.editingProductId), productData);
-    this.editingProductId = null;
-    this.showToast("Éxito", "Producto actualizado", "success");
-    
-    // ✅ Sincronización JSON para actualización
-    try {
-      await this.updateJSON();
-    } catch (err) {
-      console.error("No se pudo actualizar el JSON:", err);
-    }
-    
-  } else {
-    // Agregar nuevo producto
-    await addDoc(collection(db, "comercios", this.currentUser.uid, "productos"), productData);
-    this.showToast("Éxito", "Producto agregado", "success");
-    
-    // ✅ Sincronización JSON para nuevo producto
-    try {
-      await this.updateJSON();
-    } catch (err) {
-      console.error("No se pudo actualizar el JSON:", err);
-    }
+    if (!nombre || !categoria) {
+      this.showToast("Error", "Complete los campos requeridos (Nombre y Categoría)", "error");
+      return;
   }
-  
-  await this.loadProducts();
-  this.renderProductsTable();
-  this.updateProgressIndicator();
-  e.target.reset();
-  this.hideLoading();
-  
-} catch (error) {
-  this.hideLoading();
-  console.error("Error saving product:", error);
-  this.showToast("Error", "No se pudo guardar el producto", "error");
-}
-    }); // ✅ Este cierre faltaba
+
+    const productData = {
+      nombre,
+      codigo: codigo || "",
+      categoria,
+      subcategoria: subcategoria || "",
+      descripcion: descripcion || "",
+      imagen: imagen || "",
+      precio,
+      stock,
+      color: color || "",
+      talle: talle || "",
+      origen: origen || "",
+      paused: false,
+      fechaRegistro: serverTimestamp()
+  };
+
+  try {
+    this.showLoading("Guardando producto...");
+    if (this.editingProductId) {
+      await updateDoc(doc(db, "comercios", this.currentUser.uid, "productos", this.editingProductId), productData);
+      this.editingProductId = null;
+      this.showToast("Éxito", "Producto actualizado", "success");
+      try {
+        await this.updateJSON();
+      } catch (err) {
+        console.error("No se pudo actualizar el JSON:", err);
+      }
+    } else {
+      await addDoc(collection(db, "comercios", this.currentUser.uid, "productos"), productData);
+      this.showToast("Éxito", "Producto agregado", "success");
+      try {
+        await this.updateJSON();
+      } catch (err) {
+        console.error("No se pudo actualizar el JSON:", err);
+      }
+    }
+    await this.loadProducts();
+    this.renderProductsTable();
+    this.updateProgressIndicator();
+    e.target.reset();
+    this.hideLoading();
+  } catch (error) {
+    this.hideLoading();
+    console.error("Error saving product:", error);
+    this.showToast("Error", "No se pudo guardar el producto", "error");
+  }
+});
+    
+
+
+ 
 
     // Clear product form
     document.getElementById("clearProduct")?.addEventListener("click", () => {
