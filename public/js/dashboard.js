@@ -1776,34 +1776,27 @@ async generateAI(formData) {
 }
 
 // ==========================
-// Actualizar JSON del comercio en Vercel (llama a /api/export-json)
+// Método updateJSON para agregar dentro de la clase Dashboard principal
 // ==========================
-
-  async updateJSON() {
+async updateJSON() {
   if (!this.currentUser) return;
-
   try {
     this.showLoading("Actualizando JSON...");
-
     const response = await fetch('/api/export-json', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: this.currentUser.uid })
     });
-
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-
     const result = await response.json();
-
     if (result.success) {
       this.showToast("Éxito", "JSON actualizado correctamente", "success");
       console.log("URL del JSON:", result.gist.rawUrl);
     } else {
       throw new Error(result.error || "Error desconocido en la actualización de JSON");
     }
-
   } catch (error) {
     console.error("Error updating JSON:", error);
     this.showToast("Error", "No se pudo actualizar el JSON", "error");
@@ -1811,10 +1804,6 @@ async generateAI(formData) {
     this.hideLoading();
   }
 }
-
-// ==========================
-// MANTÉN solo este inicializador al final del archivo:
-// ==========================
 
 // Inicializar
 document.addEventListener("DOMContentLoaded", () => {
