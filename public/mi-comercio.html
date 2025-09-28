@@ -281,6 +281,17 @@
       cursor: not-allowed;
     }
 
+    .btn-lg {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+    }
+
+    .form-actions {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 2rem;
+      margin-top: 2rem;
+    }
+
     .nav-info {
       text-align: center;
       color: #718096;
@@ -504,6 +515,14 @@
             <textarea id="descripcion" name="descripcion" 
                       placeholder="Describe brevemente tu comercio, productos o servicios..."></textarea>
           </div>
+        </div>
+
+        <!-- Botón para guardar y continuar -->
+        <div class="form-actions" style="margin-top: 2rem; text-align: center;">
+          <button type="button" id="saveDataBtn" class="btn btn-primary btn-lg">
+            <i class="fas fa-save"></i>
+            Guardar y Continuar
+          </button>
         </div>
       </form>
     </div>
