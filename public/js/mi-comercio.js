@@ -1,59 +1,76 @@
-import { LocalData, FirebaseHelpers, Utils, AppInit } from './shared.js';
+// mi-comercio.js
+import { auth, db, Utils } from './firebase.js';
+import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // Inicializar datos compartidos
-  const userData = await AppInit.initSharedData();
-  if (!userData) return;
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  if (loadingOverlay) loadingOverlay.classList.add('show');
 
-  // Mostrar nombre del comercio y plan
-  const commerceName = document.getElementById('commerceName');
-  const planBadge = document.getElementById('planBadge');
-  if (commerceName) commerceName.textContent = userData.nombreComercio || 'Mi Comercio';
-  if (planBadge) planBadge.textContent = userData.plan || 'Trial';
+  // Verificar sesión activa
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      // No hay sesión, volver al login
+      window.location.href = '/index.html';
+      return;
+    }
 
-  // Logout
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) logoutBtn.addEventListener('click', async () => {
-    await Utils.showLoading('Cerrando sesión...');
-    await FirebaseHelpers.logout();
-    window.location.href = '/index.html';
-  });
+    const userRef = doc(db, 'usuarios', user.uid);
+    const userSnap = await getDoc(userRef);
 
-  // Llenar form con datos existentes
-  const form = document.getElementById('miComercioForm');
-  if (form && userData) {
-    form.nombreComercio.value = userData.nombreComercio || '';
-    form.direccion.value = userData.direccion || '';
-    form.telefono.value = userData.telefono || '';
-    form.ciudad.value = userData.ciudad || '';
-    form.provincia.value = userData.provincia || '';
-    form.pais.value = userData.pais || '';
-    form.barrio.value = userData.barrio || '';
-    form.descripcion.value = userData.descripcion || '';
-  }
+    if (!userSnap.exists()) {
+      console.error("No existe el documento del usuario");
+      window.location.href = '/index.html';
+      return;
+    }
 
-  // Guardar cambios automáticamente al salir del campo
-  form.querySelectorAll('input, textarea').forEach(field => {
-    field.addEventListener('change', async () => {
-      const updates = {};
-      Array.from(form.elements).forEach(el => {
-        if (el.name) updates[el.name] = el.value;
+    const userData = userSnap.data();
+
+    // Mostrar nombre del comercio y plan
+    document.getElementById('commerceName').textContent = userData.nombreComercio || 'Mi Comercio';
+    document.getElementById('planBadge').textContent = userData.plan || 'Trial';
+
+    // Llenar formulario
+    const form = document.getElementById('miComercioForm');
+    if (form) {
+      form.nombreComercio.value = userData.nombreComercio || '';
+      form.direccion.value = userData.direccion || '';
+      form.telefono.value = userData.telefono || '';
+      form.ciudad.value = userData.ciudad || '';
+      form.provincia.value = userData.provincia || '';
+      form.pais.value = userData.pais || '';
+      form.barrio.value = userData.barrio || '';
+      form.descripcion.value = userData.descripcion || '';
+    }
+
+    // Guardar cambios al cambiar cada campo
+    form.querySelectorAll('input, textarea').forEach(field => {
+      field.addEventListener('change', async () => {
+        const updates = {};
+        Array.from(form.elements).forEach(el => {
+          if (el.name) updates[el.name] = el.value;
+        });
+        try {
+          await updateDoc(userRef, updates);
+          Utils.showToast('Guardado', 'Datos actualizados correctamente', 'success');
+
+          // Si tenés progress bar
+          if (window.Navigation?.markPageAsCompleted) window.Navigation.markPageAsCompleted('mi-comercio');
+          if (window.Navigation?.updateProgressBar) window.Navigation.updateProgressBar();
+        } catch (err) {
+          console.error(err);
+          Utils.showToast('Error', 'No se pudieron guardar los datos', 'error');
+        }
       });
-      try {
-        await FirebaseHelpers.updateUserData(updates);
-        LocalData.updateSharedData({ userData: updates });
-        Utils.showToast('Guardado', 'Datos actualizados correctamente', 'success');
-        // Actualizar progress
-        window.Navigation.markPageAsCompleted('mi-comercio');
-        window.Navigation.updateProgressBar();
-      } catch (error) {
-        Utils.showToast('Error', 'No se pudieron guardar los datos', 'error');
-      }
     });
-  });
 
-  // Definir validación para Navigation
-  window.validateCurrentPageData = async () => {
-    return Array.from(form.querySelectorAll('[required]')).every(f => f.value.trim() !== '');
-  };
+    // Logout
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) logoutBtn.addEventListener('click', async () => {
+      Utils.showLoading('Cerrando sesión...');
+      await auth.signOut();
+      window.location.href = '/index.html';
+    });
+
+    if (loadingOverlay) loadingOverlay.classList.remove('show');
+  });
 });
