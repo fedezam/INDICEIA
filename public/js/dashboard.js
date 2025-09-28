@@ -1562,7 +1562,6 @@ async clearAllProducts() {
   console.error(error);
   this.showToast("Error", "No se pudo guardar la información", "error");
 }
-      }
     });
 
     // Reset form
