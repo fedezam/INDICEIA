@@ -1720,65 +1720,64 @@ async clearAllProducts() {
     });
   }
 
-// ==========================
-// Generar IA con configuración avanzada
-// ==========================
-async generateAI(formData) {
-  if (!this.userData?.nombreComercio || this.products.length === 0) {
-    this.showToast("Advertencia", "Completa la info del comercio y agrega productos", "warning");
-    return;
+  // ==========================
+  // Generar IA con configuración avanzada
+  // ==========================
+  async generateAI(formData) {
+    if (!this.userData?.nombreComercio || this.products.length === 0) {
+      this.showToast("Advertencia", "Completa la info del comercio y agrega productos", "warning");
+      return;
+    }
+
+    try {
+      this.showLoading("Generando tu IA personalizada...");
+
+      const aiConfig = {
+        aiName: formData.get("aiName"),
+        aiPersonality: formData.get("aiPersonality"),
+        aiTone: formData.get("aiTone"),
+        aiGreeting: formData.get("aiGreeting"),
+        pricesPaused: document.getElementById("aiPricesPaused") 
+          ? document.getElementById("aiPricesPaused").checked 
+          : false,
+        noPriceBehavior: document.getElementById("aiNoPriceBehavior") 
+          ? document.getElementById("aiNoPriceBehavior").value 
+          : "contact",
+        pausedBehavior: document.getElementById("aiPausedBehavior") 
+          ? document.getElementById("aiPausedBehavior").value 
+          : "hide",
+        aiGenerated: true,
+        fechaGeneracion: new Date()
+      };
+
+      const updateData = {
+        aiConfig,
+        aiGenerated: true,
+        aiName: aiConfig.aiName,
+        aiGreeting: aiConfig.aiGreeting
+      };
+
+      await updateDoc(doc(db, "usuarios", this.currentUser.uid), updateData);
+      this.userData = { ...(this.userData || {}), ...updateData };
+      this.updateProgressIndicator();
+      this.renderAISection();
+      this.hideLoading();
+      this.showToast("Éxito", "¡Tu asistente de IA está listo!", "success");
+
+      // ✅ Actualizar JSON del comercio
+      await this.updateJSON();
+
+    } catch (error) {
+      this.hideLoading();
+      console.error(error);
+      this.showToast("Error", "No se pudo generar la IA", "error");
+    }
   }
 
-  try {
-    this.showLoading("Generando tu IA personalizada...");
-
-    const aiConfig = {
-      aiName: formData.get("aiName"),
-      aiPersonality: formData.get("aiPersonality"),
-      aiTone: formData.get("aiTone"),
-      aiGreeting: formData.get("aiGreeting"),
-      pricesPaused: document.getElementById("aiPricesPaused") 
-        ? document.getElementById("aiPricesPaused").checked 
-        : false,
-      noPriceBehavior: document.getElementById("aiNoPriceBehavior") 
-        ? document.getElementById("aiNoPriceBehavior").value 
-        : "contact",
-      pausedBehavior: document.getElementById("aiPausedBehavior") 
-        ? document.getElementById("aiPausedBehavior").value 
-        : "hide",
-      aiGenerated: true,
-      fechaGeneracion: new Date()
-    };
-
-    const updateData = {
-      aiConfig,
-      aiGenerated: true,
-      aiName: aiConfig.aiName,
-      aiGreeting: aiConfig.aiGreeting
-    };
-
-    await updateDoc(doc(db, "usuarios", this.currentUser.uid), updateData);
-    this.userData = { ...(this.userData || {}), ...updateData };
-    this.updateProgressIndicator();
-    this.renderAISection();
-    this.hideLoading();
-    this.showToast("Éxito", "¡Tu asistente de IA está listo!", "success");
-
-    // ✅ Actualizar JSON del comercio
-    await this.updateJSON();
-
-  } catch (error) {
-    this.hideLoading();
-    console.error(error);
-    this.showToast("Error", "No se pudo generar la IA", "error");
-  }
-}
-}
-
-// ==========================
-// Método updateJSON para agregar dentro de la clase Dashboard principal
-// ==========================
-async updateJSON() {
+  // ==========================
+  // Método updateJSON
+  // ==========================
+  async updateJSON() {
     if (!this.currentUser) return;
     try {
       this.showLoading("Actualizando JSON...");
@@ -1787,9 +1786,7 @@ async updateJSON() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: this.currentUser.uid })
       });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const result = await response.json();
       if (result.success) {
         this.showToast("Éxito", "JSON actualizado correctamente", "success");
@@ -1804,8 +1801,7 @@ async updateJSON() {
       this.hideLoading();
     }
   }
-
-} // <- Cierre de la clase Dashboard
+} // 👈 cierre ÚNICO de la clase Dashboard
 
 // Inicializar
 document.addEventListener("DOMContentLoaded", () => {
