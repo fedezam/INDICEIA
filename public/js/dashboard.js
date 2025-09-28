@@ -1779,26 +1779,6 @@ async generateAI(formData) {
 // Actualizar JSON del comercio en Vercel (llama a /api/export-json)
 // ==========================
 
-class Dashboard {
-  constructor(currentUser) {
-    this.currentUser = currentUser;
-  }
-
-  showLoading(msg) {
-    // Mostrar spinner o overlay
-    console.log("Loading:", msg);
-  }
-
-  hideLoading() {
-    // Ocultar spinner o overlay
-    console.log("Loading oculto");
-  }
-
-  showToast(title, msg, type) {
-    // Mostrar notificación al usuario
-    console.log(`[${type.toUpperCase()}] ${title}: ${msg}`);
-  }
-
   async updateJSON() {
   if (!this.currentUser) return;
 
