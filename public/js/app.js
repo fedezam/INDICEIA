@@ -5,7 +5,8 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   signInWithRedirect,
-  getRedirectResult
+  getRedirectResult,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
@@ -145,7 +146,8 @@ document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       Utils.showToast("¡Bienvenido!", "Has iniciado sesión correctamente", "success");
-      setTimeout(() => window.location.href = "dashboard.html", 1000);
+      Utils.hideLoading();
+      setTimeout(() => window.location.href = "mi-comercio.html", 1000);
     } catch (error) {
       Utils.hideLoading();
       let errorMessage = "Error al iniciar sesión";
@@ -180,18 +182,24 @@ window.addEventListener("load", async () => {
           estado: "trial",
         });
       }
+      Utils.hideLoading();
       Utils.showToast("¡Bienvenido!", "Has iniciado sesión con Google", "success");
-      setTimeout(() => window.location.href = "dashboard.html", 1000);
+      setTimeout(() => window.location.href = "mi-comercio.html", 1000);
+    } else {
+      Utils.hideLoading();
     }
   } catch (error) {
+    Utils.hideLoading();
     console.error("Error login Google:", error);
   }
 });
 
 document.getElementById("googleLogin")?.addEventListener("click", async () => {
   try {
+    Utils.showLoading("Conectando con Google...");
     await signInWithRedirect(auth, provider);
   } catch (error) {
+    Utils.hideLoading();
     console.error("No se pudo iniciar Google:", error);
     Utils.showToast("Error", "No se pudo iniciar sesión con Google", "error");
   }
@@ -220,27 +228,14 @@ function showRegistrationForm(email, password) {
   if (!loginContainer) return;
 
   loginContainer.innerHTML = `
-    <!-- HTML de registro aquí, igual que tu código actual -->
+    <!-- HTML de registro aquí -->
   `;
 
   const newForm = document.getElementById("completeRegistration");
   if (!newForm) return;
 
-  const inputs = newForm.querySelectorAll("input[required]");
-  inputs.forEach((input) => {
-    input.addEventListener("blur", validateRegistrationField);
-    input.addEventListener("input", () => {
-      if (input.classList.contains("error")) validateRegistrationField.call(input);
-    });
-  });
-
   newForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!validateRegistrationForm()) {
-      Utils.showToast("Campos incompletos", "Por favor completa todos los campos", "error");
-      return;
-    }
-
     const formData = new FormData(e.target);
     const userData = Object.fromEntries(formData);
 
@@ -262,8 +257,9 @@ function showRegistrationForm(email, password) {
         plan: "basic",
         estado: "trial",
       });
+      Utils.hideLoading();
       Utils.showToast("¡Cuenta creada!", "¡Bienvenido a INDICEIA! Redirigiendo...", "success");
-      setTimeout(() => window.location.href = "dashboard.html", 1500);
+      setTimeout(() => window.location.href = "mi-comercio.html", 1500);
     } catch (error) {
       Utils.hideLoading();
       let errorMessage = "Error al crear la cuenta";
@@ -278,40 +274,17 @@ function showRegistrationForm(email, password) {
   });
 }
 
-function validateRegistrationField() {
-  const field = this;
-  const errorMsg = field.parentElement.parentElement.querySelector(".error-message");
-  if (!field.value.trim()) {
-    field.classList.add("error");
-    errorMsg?.classList.add("show");
-    return false;
-  } else {
-    field.classList.remove("error");
-    errorMsg?.classList.remove("show");
-    return true;
-  }
-}
-
-function validateRegistrationForm() {
-  const inputs = document.querySelectorAll("#completeRegistration input[required]");
-  return Array.from(inputs).every((input) => validateRegistrationField.call(input));
-}
-
-export { auth, db };
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-
 // 🔄 Detectar sesión activa al cargar la app
 onAuthStateChanged(auth, (user) => {
   const loadingOverlay = document.getElementById("loadingOverlay");
-
   if (user) {
     console.log("Sesión detectada:", user.email);
-    // Si el usuario ya está logueado, mandalo al dashboard
     window.location.href = "mi-comercio.html";
   } else {
     console.log("No hay sesión activa");
-    // Si no hay sesión, mostrar login
     if (loadingOverlay) loadingOverlay.classList.remove("show");
   }
 });
+
+    
 
