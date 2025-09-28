@@ -327,73 +327,80 @@ class Dashboard {
   }
 
   async importMappedCSV() {
-    try {
-      this.showLoading("Importando datos...");
-      
-      // Obtener modo de importación
-      const importMode = document.querySelector('input[name="importMode"]:checked')?.value || "add";
-      
-      // Obtener mapeo de columnas
-      const selects = document.querySelectorAll(".mapping-select");
-      const mapping = {};
-      selects.forEach(select => {
-        const field = select.value;
-        const colIndex = parseInt(select.dataset.colIndex);
-        if (field) {
-          mapping[field] = colIndex;
+  try {
+    this.showLoading("Importando datos...");
+    
+    // Obtener modo de importación
+    const importMode = document.querySelector('input[name="importMode"]:checked')?.value || "add";
+    
+    // Obtener mapeo de columnas
+    const selects = document.querySelectorAll(".mapping-select");
+    const mapping = {};
+    selects.forEach(select => {
+      const field = select.value;
+      const colIndex = parseInt(select.dataset.colIndex);
+      if (field) {
+        mapping[field] = colIndex;
+      }
+    });
+
+    // Procesar datos
+    const processedData = this.csvData.map(row => {
+      const item = {
+        fechaRegistro: serverTimestamp(),
+        paused: false
+      };
+
+      // Mapear campos básicos
+      Object.entries(mapping).forEach(([field, colIndex]) => {
+        if (colIndex < row.length) {
+          let value = row[colIndex] || "";
+          value = value.replace(//g, '').trim();
+          
+          if (field === "precio") {
+            const numericValue = parseFloat(value.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+            item[field] = numericValue;
+          } else if (field === "stock") {
+            item[field] = parseInt(value) || 0;
+          } else {
+            item[field] = value || "";
+          }
         }
       });
 
-      // Procesar datos
-      const processedData = this.csvData.map(row => {
-        const item = {
-          fechaRegistro: serverTimestamp(),
-          paused: false
-        };
+      return item;
+    });
 
-        // Mapear campos básicos
-        Object.entries(mapping).forEach(([field, colIndex]) => {
-          if (colIndex < row.length) {
-            let value = row[colIndex] || "";
-            value = value.replace(/�/g, '').trim();
-            
-            if (field === "precio") {
-              const numericValue = parseFloat(value.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
-              item[field] = numericValue;
-            } else if (field === "stock") {
-              item[field] = parseInt(value) || 0;
-            } else {
-              item[field] = value || "";
-            }
-          }
-        });
+    // Importar según el modo seleccionado
+    await this.handleImportByMode(processedData, importMode);
+    
+    // Actualizar UI
+    await this.loadProducts();
+    this.renderProductsTable();
+    this.updateProgressIndicator();
+    
+    this.hideCSVPreview();
+    this.hideLoading();
+    
+    this.showToast(
+      "Importación completa", 
+      `Procesados ${processedData.length} registros`, 
+      "success"
+    );
 
-        return item;
-      });
-
-      // Importar según el modo seleccionado
-      await this.handleImportByMode(processedData, importMode);
-      
-      // Actualizar UI
-      await this.loadProducts();
-      this.renderProductsTable();
-      this.updateProgressIndicator();
-      
-      this.hideCSVPreview();
-      this.hideLoading();
-      
-      this.showToast(
-        "Importación completa", 
-        `Procesados ${processedData.length} registros`, 
-        "success"
-      );
-
-    } catch (error) {
-      this.hideLoading();
-      console.error("Error importing CSV:", error);
-      this.showToast("Error", "No se pudo completar la importación", "error");
+    // ✅ Sincronización suave con JSON (NO bloqueante)
+    try {
+      await this.updateJSON();
+    } catch (err) {
+      console.error("No se pudo actualizar el JSON:", err);
     }
+
+  } catch (error) {
+    this.hideLoading();
+    console.error("Error importing CSV:", error);
+    this.showToast("Error", "No se pudo completar la importación", "error");
   }
+}
 
   async handleImportByMode(newData, mode) {
     const collectionRef = collection(db, "comercios", this.currentUser.uid, "productos");
@@ -1058,68 +1065,89 @@ class Dashboard {
   }
 
   renderCategoriesSelector() {
-    const container = document.getElementById("categoriesGrid");
-    if (!container) return;
-    container.innerHTML = `
-      <div class="categories-section">
-        <div class="categories-selector">
-          <h4><i class="fas fa-list"></i> Seleccionar Categorías para tu Negocio</h4>
-          <div class="category-dropdown">
-            <select id="categorySelect" class="category-select">
-              <option value="">Seleccionar categoría...</option>
-              ${this.allCategories.map(cat => `<option value="${cat}" ${this.selectedCategories.includes(cat) ? "disabled" : ""}>${cat}</option>`).join("")}
-            </select>
-            <button type="button" class="btn btn-success" id="addSelectedCategory"><i class="fas fa-plus"></i> Agregar</button>
-          </div>
-          <div class="custom-category">
-            <input type="text" id="customCategory" placeholder="¿No encuentras tu rubro? Escríbelo aquí...">
-            <button type="button" class="btn btn-secondary" id="addCustomCategory"><i class="fas fa-plus"></i> Agregar Personalizada</button>
-          </div>
+  const container = document.getElementById("categoriesGrid");
+  if (!container) return;
+  container.innerHTML = `
+    <div class="categories-section">
+      <div class="categories-selector">
+        <h4><i class="fas fa-list"></i> Seleccionar Categorías para tu Negocio</h4>
+        <div class="category-dropdown">
+          <select id="categorySelect" class="category-select">
+            <option value="">Seleccionar categoría...</option>
+            ${this.allCategories.map(cat => `<option value="${cat}" ${this.selectedCategories.includes(cat) ? "disabled" : ""}>${cat}</option>`).join("")}
+          </select>
+          <button type="button" class="btn btn-success" id="addSelectedCategory"><i class="fas fa-plus"></i> Agregar</button>
         </div>
-        <div class="selected-categories">
-          <h4><i class="fas fa-check-circle"></i> Categorías de tu Negocio</h4>
-          <div class="selected-categories-grid" id="selectedCategoriesGrid">
-            ${this.selectedCategories.map((cat, idx) => `<div class="selected-category-tag" data-index="${idx}"><span>${cat}</span><button class="remove-btn"><i class="fas fa-times"></i></button></div>`).join("")}
-          </div>
-          ${this.selectedCategories.length === 0 ? `<p class="empty-categories">No has seleccionado categorías aún</p>` : ""}
+        <div class="custom-category">
+          <input type="text" id="customCategory" placeholder="¿No encuentras tu rubro? Escríbelo aquí...">
+          <button type="button" class="btn btn-secondary" id="addCustomCategory"><i class="fas fa-plus"></i> Agregar Personalizada</button>
         </div>
       </div>
-    `;
+      <div class="selected-categories">
+        <h4><i class="fas fa-check-circle"></i> Categorías de tu Negocio</h4>
+        <div class="selected-categories-grid" id="selectedCategoriesGrid">
+          ${this.selectedCategories.map((cat, idx) => `<div class="selected-category-tag" data-index="${idx}"><span>${cat}</span><button class="remove-btn"><i class="fas fa-times"></i></button></div>`).join("")}
+        </div>
+        ${this.selectedCategories.length === 0 ? `<p class="empty-categories">No has seleccionado categorías aún</p>` : ""}
+      </div>
+    </div>
+  `;
 
-    const section = container.querySelector(".categories-section");
-    section?.addEventListener("click", async (e) => {
-      if (e.target.closest("#addSelectedCategory")) {
-        const sel = document.getElementById("categorySelect");
-        const cat = sel?.value;
-        if (cat && !this.selectedCategories.includes(cat)) {
-          this.selectedCategories.push(cat);
-          await this.updateUserField("categories", this.selectedCategories);
-          this.renderCategoriesSelector();
-          this.renderProductForm();
-          this.showToast("Categoría agregada", `"${cat}" ha sido agregada`, "success");
-        }
-      } else if (e.target.closest("#addCustomCategory")) {
-        const input = document.getElementById("customCategory");
-        const cat = input?.value.trim();
-        if (cat && !this.selectedCategories.includes(cat)) {
-          this.selectedCategories.push(cat);
-          if (!this.allCategories.includes(cat)) this.allCategories.push(cat);
-          await this.updateUserField("categories", this.selectedCategories);
-          this.renderCategoriesSelector();
-          this.renderProductForm();
-          input.value = "";
-          this.showToast("Categoría personalizada agregada", `"${cat}" ha sido agregada`, "success");
-        }
-      } else if (e.target.closest(".remove-btn")) {
-        const tag = e.target.closest(".selected-category-tag");
-        const idx = Number(tag.dataset.index);
-        this.selectedCategories.splice(idx, 1);
+  const section = container.querySelector(".categories-section");
+  section?.addEventListener("click", async (e) => {
+    if (e.target.closest("#addSelectedCategory")) {
+      const sel = document.getElementById("categorySelect");
+      const cat = sel?.value;
+      if (cat && !this.selectedCategories.includes(cat)) {
+        this.selectedCategories.push(cat);
         await this.updateUserField("categories", this.selectedCategories);
         this.renderCategoriesSelector();
         this.renderProductForm();
+        this.showToast("Categoría agregada", `"${cat}" ha sido agregada`, "success");
+
+        // ✅ Sincronizar JSON
+        try {
+          await this.updateJSON();
+        } catch (err) {
+          console.error("No se pudo actualizar el JSON:", err);
+        }
       }
-    });
-  }
+    } else if (e.target.closest("#addCustomCategory")) {
+      const input = document.getElementById("customCategory");
+      const cat = input?.value.trim();
+      if (cat && !this.selectedCategories.includes(cat)) {
+        this.selectedCategories.push(cat);
+        if (!this.allCategories.includes(cat)) this.allCategories.push(cat);
+        await this.updateUserField("categories", this.selectedCategories);
+        this.renderCategoriesSelector();
+        this.renderProductForm();
+        input.value = "";
+        this.showToast("Categoría personalizada agregada", `"${cat}" ha sido agregada`, "success");
+
+        // ✅ Sincronizar JSON
+        try {
+          await this.updateJSON();
+        } catch (err) {
+          console.error("No se pudo actualizar el JSON:", err);
+        }
+      }
+    } else if (e.target.closest(".remove-btn")) {
+      const tag = e.target.closest(".selected-category-tag");
+      const idx = Number(tag.dataset.index);
+      this.selectedCategories.splice(idx, 1);
+      await this.updateUserField("categories", this.selectedCategories);
+      this.renderCategoriesSelector();
+      this.renderProductForm();
+
+      // ✅ Sincronizar JSON
+      try {
+        await this.updateJSON();
+      } catch (err) {
+        console.error("No se pudo actualizar el JSON:", err);
+      }
+    }
+  });
+}
 
   editProduct(id) {
     const p = this.products.find(x => x.id === id);
@@ -1149,22 +1177,29 @@ class Dashboard {
     this.showToast("Edición", "Producto cargado en el formulario para editar", "info");
   }
 
-  async deleteProduct(id) {
-    if (!confirm("¿Estás seguro de eliminar este producto?")) return;
+async deleteProduct(id) {
+  if (!confirm("¿Estás seguro de eliminar este producto?")) return;
+  try {
+    this.showLoading("Eliminando producto...");
+    await deleteDoc(doc(db, "comercios", this.currentUser.uid, "productos", id));
+    await this.loadProducts();
+    this.renderProductsTable();
+    this.updateProgressIndicator();
+    this.hideLoading();
+    this.showToast("Producto eliminado", "El producto ha sido eliminado correctamente", "success");
+
+    // ✅ Sincronización suave con JSON
     try {
-      this.showLoading("Eliminando producto...");
-      await deleteDoc(doc(db, "comercios", this.currentUser.uid, "productos", id));
-      await this.loadProducts();
-      this.renderProductsTable();
-      this.updateProgressIndicator();
-      this.hideLoading();
-      this.showToast("Producto eliminado", "El producto ha sido eliminado correctamente", "success");
-    } catch (error) {
-      this.hideLoading();
-      console.error(error);
-      this.showToast("Error", "No se pudo eliminar el producto", "error");
+      await this.updateJSON();
+    } catch (err) {
+      console.error("No se pudo actualizar el JSON:", err);
     }
+  } catch (error) {
+    this.hideLoading();
+    console.error(error);
+    this.showToast("Error", "No se pudo eliminar el producto", "error");
   }
+}
 
   // AI: vista previa y probador
   renderAISection() {
@@ -1360,24 +1395,31 @@ class Dashboard {
     this.showToast("Éxito", "Productos exportados", "success");
   }
 
-  async clearAllProducts() {
-    if (!confirm("¿Eliminar todos los productos? Esta acción no puede deshacerse.")) return;
+async clearAllProducts() {
+  if (!confirm("¿Eliminar todos los productos? Esta acción no puede deshacerse.")) return;
+  try {
+    this.showLoading("Eliminando productos...");
+    const ref = collection(db, "comercios", this.currentUser.uid, "productos");
+    const snap = await getDocs(ref);
+    await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "comercios", this.currentUser.uid, "productos", d.id))));
+    await this.loadProducts();
+    this.renderProductsTable();
+    this.updateProgressIndicator();
+    this.hideLoading();
+    this.showToast("Éxito", "Todos los productos eliminados", "success");
+
+    // ✅ Sincronizar JSON (no crítico, no bloquea)
     try {
-      this.showLoading("Eliminando productos...");
-      const ref = collection(db, "comercios", this.currentUser.uid, "productos");
-      const snap = await getDocs(ref);
-      await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "comercios", this.currentUser.uid, "productos", d.id))));
-      await this.loadProducts();
-      this.renderProductsTable();
-      this.updateProgressIndicator();
-      this.hideLoading();
-      this.showToast("Éxito", "Todos los productos eliminados", "success");
-    } catch (error) {
-      this.hideLoading();
-      console.error(error);
-      this.showToast("Error", "No se pudieron eliminar los productos", "error");
+      await this.updateJSON();
+    } catch (err) {
+      console.error("No se pudo actualizar el JSON:", err);
     }
+  } catch (error) {
+    this.hideLoading();
+    console.error(error);
+    this.showToast("Error", "No se pudieron eliminar los productos", "error");
   }
+}
 
   // Helpers: update fields
   async updateUserField(field, value) {
@@ -1616,37 +1658,47 @@ class Dashboard {
         fechaRegistro: serverTimestamp()
       };
 
-      try {
-        this.showLoading("Guardando producto...");
-        
-        if (this.editingProductId) {
-          // Actualizar producto existente
-          await updateDoc(doc(db, "comercios", this.currentUser.uid, "productos", this.editingProductId), productData);
-          this.editingProductId = null;
-          this.showToast("Éxito", "Producto actualizado", "success");
-        } else {
-          // Agregar nuevo producto
-          await addDoc(collection(db, "comercios", this.currentUser.uid, "productos"), productData);
-          this.showToast("Éxito", "Producto agregado", "success");
-          try {
-          await this.updateJSON();
-          } catch (err) {
-          console.error("No se pudo actualizar el JSON:", err);
-
+try {
+  this.showLoading("Guardando producto...");
+  
+  if (this.editingProductId) {
+    // Actualizar producto existente
+    await updateDoc(doc(db, "comercios", this.currentUser.uid, "productos", this.editingProductId), productData);
+    this.editingProductId = null;
+    this.showToast("Éxito", "Producto actualizado", "success");
+    
+    // ✅ Sincronización JSON para actualización
+    try {
+      await this.updateJSON();
+    } catch (err) {
+      console.error("No se pudo actualizar el JSON:", err);
+    }
+    
+  } else {
+    // Agregar nuevo producto
+    await addDoc(collection(db, "comercios", this.currentUser.uid, "productos"), productData);
+    this.showToast("Éxito", "Producto agregado", "success");
+    
+    // ✅ Sincronización JSON para nuevo producto
+    try {
+      await this.updateJSON();
+    } catch (err) {
+      console.error("No se pudo actualizar el JSON:", err);
+    }
+  }
+  
+  await this.loadProducts();
+  this.renderProductsTable();
+  this.updateProgressIndicator();
+  e.target.reset();
+  this.hideLoading();
+  
+} catch (error) {
+  this.hideLoading();
+  console.error("Error saving product:", error);
+  this.showToast("Error", "No se pudo guardar el producto", "error");
 }
-        }
-
-        await this.loadProducts();
-        this.renderProductsTable();
-        this.updateProgressIndicator();
-        e.target.reset();
-        this.hideLoading();
-      } catch (error) {
-        this.hideLoading();
-        console.error("Error saving product:", error);
-        this.showToast("Error", "No se pudo guardar el producto", "error");
-      }
-    });
+    }); // ✅ Este cierre faltaba
 
     // Clear product form
     document.getElementById("clearProduct")?.addEventListener("click", () => {
