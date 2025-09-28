@@ -158,3 +158,29 @@ function debounce(func, wait) {
     timeout = setTimeout(later, wait);
   };
 }
+
+// 🛠️ Esperar a que Firebase Auth esté completamente inicializado
+async function waitForAuth() {
+  return new Promise(async (resolve) => {
+    // Si ya hay un usuario, resolver inmediatamente
+    if (AuthHelpers.getCurrentUser()) {
+      resolve();
+      return;
+    }
+
+    // Usar onAuthStateChanged para esperar
+    const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js');
+    const { auth } = await import('../js/shared.js');
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe(); // Dejar de escuchar
+      resolve(); // Resolver cuando auth esté listo (con o sin usuario)
+    });
+
+    // Timeout de seguridad (5 segundos máximo)
+    setTimeout(() => {
+      unsubscribe();
+      resolve();
+    }, 5000);
+  });
+}
