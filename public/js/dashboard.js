@@ -352,22 +352,21 @@ class Dashboard {
       };
 
       // Mapear campos básicos
-     Object.entries(mapping).forEach(([field, colIndex]) => {
-  if (colIndex < row.length) {
-    let value = row[colIndex] || "";
-    value = value.replace(/"/g, '').trim(); // 👈 corrección aquí
-    
-    if (field === "precio") {
-      const numericValue = parseFloat(value.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
-      item[field] = numericValue;
-    } else if (field === "stock") {
-      item[field] = parseInt(value) || 0;
-    } else {
-      item[field] = value || "";
-    }
-  }
-});
-
+      Object.entries(mapping).forEach(([field, colIndex]) => {
+        if (colIndex < row.length) {
+          let value = row[colIndex] || "";
+          value = value.replace(//g, '').trim();
+          
+          if (field === "precio") {
+            const numericValue = parseFloat(value.replace(/[^0-9.,]/g, '').replace(',', '.')) || 0;
+            item[field] = numericValue;
+          } else if (field === "stock") {
+            item[field] = parseInt(value) || 0;
+          } else {
+            item[field] = value || "";
+          }
+        }
+      });
 
       return item;
     });
