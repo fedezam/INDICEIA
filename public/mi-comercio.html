@@ -7,10 +7,6 @@
   <!-- CSS -->
   <link rel="stylesheet" href="./css/styles.css">
   <link rel="stylesheet" href="./css/dashboard.css">
-  <!-- JS base -->
-  <script type="module" src="./js/shared.js"></script>
-  <script type="module" src="./js/navigation.js"></script>
-  <script type="module" src="./js/mi-comercio.js"></script>
 </head>
 <body>
   <!-- Header común -->
@@ -32,4 +28,37 @@
   <!-- Contenido específico -->
   <main class="main-content">
     <form id="miComercioForm">
-      <label>Nombre del comercio <input type="text" name="nomb
+      <label>Nombre del comercio 
+        <input type="text" name="nombreComercio" required>
+      </label>
+      <label>Dirección 
+        <input type="text" name="direccion">
+      </label>
+      <label>Teléfono 
+        <input type="text" name="telefono">
+      </label>
+      <label>Ciudad 
+        <input type="text" name="ciudad">
+      </label>
+      <label>Provincia 
+        <input type="text" name="provincia">
+      </label>
+      <label>País 
+        <input type="text" name="pais">
+      </label>
+      <label>Barrio 
+        <input type="text" name="barrio">
+      </label>
+      <label>Descripción 
+        <textarea name="descripcion"></textarea>
+      </label>
+    </form>
+  </main>
+
+  <!-- JS (orden importa) -->
+  <script type="module" src="./js/firebase.js"></script>
+  <script type="module" src="./js/shared.js"></script>
+  <script type="module" src="./js/navigation.js"></script>
+  <script type="module" src="./js/mi-comercio.js"></script>
+</body>
+</html>
