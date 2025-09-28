@@ -1778,6 +1778,7 @@ async generateAI(formData) {
 // ==========================
 // Actualizar JSON del comercio en Vercel (llama a /api/export-json)
 // ==========================
+
 class Dashboard {
   constructor(currentUser) {
     this.currentUser = currentUser;
