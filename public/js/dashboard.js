@@ -1778,11 +1778,7 @@ async generateAI(formData) {
 // ==========================
 // Método updateJSON para agregar dentro de la clase Dashboard principal
 // ==========================
-async generateAI(formData) {
-    // ... código del método generateAI
-  }
-
-  async updateJSON() {
+async updateJSON() {
     if (!this.currentUser) return;
     try {
       this.showLoading("Actualizando JSON...");
@@ -1808,6 +1804,7 @@ async generateAI(formData) {
       this.hideLoading();
     }
   }
+
 } // <- Cierre de la clase Dashboard
 
 // Inicializar
