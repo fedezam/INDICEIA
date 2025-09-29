@@ -3,11 +3,12 @@ import { LocalData, Utils } from './shared.js';
 
 class Navigation {
   // Configuración de páginas y orden
+  // Configuración de páginas y orden
   static pages = [
     { id: 'mi-comercio', name: 'Mi Comercio', url: '/dashboard/mi-comercio.html', icon: 'fas fa-store' },
+    { id: 'horarios', name: 'Horarios', url: '/dashboard/horarios.html', icon: 'fas fa-clock' },
     { id: 'productos', name: 'Productos', url: '/dashboard/productos.html', icon: 'fas fa-boxes' },
-    { id: 'mi-ia', name: 'Mi IA', url: '/dashboard/mi-ia.html', icon: 'fas fa-robot' },
-    { id: 'estadisticas', name: 'Estadísticas', url: '/dashboard/estadisticas.html', icon: 'fas fa-chart-line' }
+    { id: 'mi-ia', name: 'IA Config', url: '/dashboard/mi-ia.html', icon: 'fas fa-robot' }
   ];
 
   // Obtener página actual desde URL
