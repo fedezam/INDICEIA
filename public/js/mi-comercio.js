@@ -1,204 +1,304 @@
-// mi-comercio.js - Versión corregida
-import { LocalData, FirebaseHelpers, AuthHelpers, Utils, AppInit } from '../js/shared.js';
+// mi-comercio-standalone.js - Versión más simple y independiente
+import { auth, db } from '../js/firebase.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+import { doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+// Variables globales
+let currentUser = null;
+let userData = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🚀 Iniciando mi-comercio.js');
+  console.log('🚀 Iniciando mi-comercio.js (versión standalone)');
 
-  try {
-    // 1️⃣ Verificar autenticación
-    if (!AuthHelpers.requireAuth()) {
-      console.error('❌ Usuario no autenticado');
-      return;
+  // Usar onAuthStateChanged - la forma más confiable
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      console.log('✅ Usuario autenticado:', user.email);
+      currentUser = user;
+      await initializePage();
+    } else {
+      console.log('❌ Usuario no autenticado, redirigiendo...');
+      window.location.href = '/index.html';
     }
-
-    // 2️⃣ Mostrar loading mientras carga
-    Utils.showLoading('Cargando datos del comercio...');
-
-    // 3️⃣ Inicializar datos compartidos
-    const userData = await AppInit.initSharedData();
-    if (!userData) {
-      console.error('❌ No se pudieron cargar los datos del usuario');
-      Utils.hideLoading();
-      Utils.showToast('Error', 'No se pudieron cargar los datos', 'error');
-      return;
-    }
-
-    console.log('✅ Datos de usuario cargados:', userData);
-
-    // 4️⃣ Mostrar nombre del comercio y plan en header
-    const commerceName = document.getElementById('commerceName');
-    const planBadge = document.getElementById('planBadge');
-    
-    if (commerceName) {
-      commerceName.textContent = userData.nombreComercio || 'Mi Comercio';
-    }
-    if (planBadge) {
-      planBadge.textContent = userData.plan || 'Trial';
-    }
-
-    // 5️⃣ Llenar formulario con datos existentes
-    const form = document.getElementById('miComercioForm');
-    if (form) {
-      // Llenar campos con datos existentes
-      form.querySelectorAll('input, textarea, select').forEach(field => {
-        if (field.name && userData[field.name]) {
-          field.value = userData[field.name];
-        }
-      });
-
-      // Event listener para el botón de guardar
-      const saveButton = document.getElementById('saveDataBtn');
-      if (saveButton) {
-        saveButton.addEventListener('click', async (e) => {
-          e.preventDefault();
-          await saveFormDataAndContinue(form);
-        });
-      }
-
-      // Agregar event listeners para auto-save (opcional)
-      form.querySelectorAll('input, textarea, select').forEach(field => {
-        field.addEventListener('blur', debounce(async () => {
-          await saveFormData(form, false); // false = no continuar a siguiente página
-        }, 500));
-      });
-
-      console.log('✅ Formulario inicializado');
-    }
-
-    // 6️⃣ Botón logout
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        
-        if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-          Utils.showLoading('Cerrando sesión...');
-          try {
-            await AuthHelpers.logout(); // Corregido: era FirebaseHelpers.logout()
-            window.location.href = '/index.html';
-          } catch (error) {
-            Utils.hideLoading();
-            Utils.showToast('Error', 'No se pudo cerrar sesión', 'error');
-            console.error('Error logout:', error);
-          }
-        }
-      });
-    }
-
-    // 7️⃣ Función de validación para Navigation
-    window.validateCurrentPageData = async () => {
-      const form = document.getElementById('miComercioForm');
-      if (!form) return false;
-
-      const requiredFields = form.querySelectorAll('[required]');
-      const isValid = Array.from(requiredFields).every(field => {
-        const value = field.value.trim();
-        if (!value) {
-          field.classList.add('error');
-          return false;
-        } else {
-          field.classList.remove('error');
-          return true;
-        }
-      });
-
-      if (!isValid) {
-        Utils.showToast('Campos requeridos', 'Por favor completa todos los campos marcados como obligatorios', 'warning');
-      }
-
-      return isValid;
-    };
-
-    Utils.hideLoading();
-    console.log('✅ mi-comercio.js cargado completamente');
-
-  } catch (error) {
-    Utils.hideLoading();
-    console.error('❌ Error en mi-comercio.js:', error);
-    Utils.showToast('Error', 'Hubo un problema al cargar la página', 'error');
-  }
+  });
 });
 
-// 🛠️ Función para guardar datos del formulario
-async function saveFormData(form, showToast = true) {
+async function initializePage() {
   try {
-    const formData = new FormData(form);
-    const updates = {};
-    
-    // Convertir FormData a objeto
-    for (let [key, value] of formData.entries()) {
-      updates[key] = value.trim();
-    }
+    showLoading('Cargando datos del comercio...');
 
-    console.log('💾 Guardando datos:', updates);
+    // 1️⃣ Cargar datos del usuario
+    await loadUserData();
 
-    // Guardar en Firebase
-    await FirebaseHelpers.updateUserData(updates);
-    
-    // Actualizar localStorage
-    LocalData.updateSharedData({ userData: updates });
-    
-    // Marcar sección como completada si tiene datos básicos
-    if (updates.nombreComercio && updates.telefono) {
-      if (window.Navigation) {
-        window.Navigation.markPageAsCompleted('mi-comercio');
-        window.Navigation.updateProgressBar();
-      }
-    }
+    // 2️⃣ Llenar header
+    updateHeader();
 
-    // Mostrar toast de confirmación
-    if (showToast) {
-      Utils.showToast('Guardado', 'Información actualizada correctamente', 'success');
-    }
-    
-    return true;
+    // 3️⃣ Llenar formulario
+    fillForm();
+
+    // 4️⃣ Setup event listeners
+    setupEventListeners();
+
+    // 5️⃣ Setup navigation
+    setupNavigation();
+
+    hideLoading();
+    console.log('✅ Página inicializada correctamente');
+
   } catch (error) {
-    console.error('❌ Error guardando:', error);
-    Utils.showToast('Error', 'No se pudieron guardar los datos', 'error');
-    return false;
+    hideLoading();
+    console.error('❌ Error inicializando página:', error);
+    showToast('Error', 'Hubo un problema al cargar la página', 'error');
   }
 }
 
-// 🛠️ Función para guardar y continuar a la siguiente página
-async function saveFormDataAndContinue(form) {
+async function loadUserData() {
   try {
-    Utils.showLoading('Guardando datos...');
+    const userDoc = await getDoc(doc(db, "usuarios", currentUser.uid));
+    if (userDoc.exists()) {
+      userData = { id: currentUser.uid, ...userDoc.data() };
+      console.log('✅ Datos de usuario cargados:', userData);
+    } else {
+      throw new Error('Datos de usuario no encontrados');
+    }
+  } catch (error) {
+    console.error('Error cargando datos usuario:', error);
+    throw error;
+  }
+}
+
+function updateHeader() {
+  const commerceName = document.getElementById('commerceName');
+  const planBadge = document.getElementById('planBadge');
+  
+  if (commerceName) {
+    commerceName.textContent = userData.nombreComercio || 'Mi Comercio';
+  }
+  if (planBadge) {
+    planBadge.textContent = userData.plan || 'Trial';
+  }
+}
+
+function fillForm() {
+  const form = document.getElementById('miComercioForm');
+  if (!form) return;
+
+  form.querySelectorAll('input, textarea, select').forEach(field => {
+    if (field.name && userData[field.name]) {
+      field.value = userData[field.name];
+    }
+  });
+
+  console.log('✅ Formulario llenado con datos existentes');
+}
+
+function setupEventListeners() {
+  // Botón guardar
+  const saveBtn = document.getElementById('saveDataBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', handleSaveAndContinue);
+  }
+
+  // Auto-save al cambiar campos
+  const form = document.getElementById('miComercioForm');
+  if (form) {
+    form.querySelectorAll('input, textarea, select').forEach(field => {
+      field.addEventListener('blur', debounce(handleAutoSave, 1000));
+    });
+  }
+
+  // Logout
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', handleLogout);
+  }
+}
+
+function setupNavigation() {
+  // Progress bar simple
+  updateProgressBar();
+  
+  // Validación para navigation
+  window.validateCurrentPageData = async () => {
+    const form = document.getElementById('miComercioForm');
+    const requiredFields = form?.querySelectorAll('[required]') || [];
     
-    // Primero validar campos requeridos
+    let isValid = true;
+    requiredFields.forEach(field => {
+      if (!field.value.trim()) {
+        field.classList.add('error');
+        isValid = false;
+      } else {
+        field.classList.remove('error');
+      }
+    });
+
+    if (!isValid) {
+      showToast('Campos requeridos', 'Por favor completa todos los campos marcados como obligatorios', 'warning');
+    }
+
+    return isValid;
+  };
+}
+
+async function handleSaveAndContinue() {
+  try {
+    showLoading('Guardando datos...');
+
+    // Validar
     const isValid = await window.validateCurrentPageData();
     if (!isValid) {
-      Utils.hideLoading();
+      hideLoading();
       return;
     }
 
-    // Guardar datos
-    const saved = await saveFormData(form, false);
-    if (!saved) {
-      Utils.hideLoading();
-      return;
-    }
-
-    // Marcar como completada y ir a siguiente página
-    if (window.Navigation) {
-      Utils.hideLoading();
-      Utils.showToast('¡Datos guardados!', 'Continuando a la siguiente sección...', 'success');
-      
-      setTimeout(() => {
-        window.Navigation.goToNextPage();
-      }, 1000);
-    } else {
-      Utils.hideLoading();
-      Utils.showToast('Guardado', 'Datos guardados correctamente', 'success');
-    }
+    // Guardar
+    await saveFormData();
+    
+    hideLoading();
+    showToast('¡Datos guardados!', 'Redirigiendo a la siguiente sección...', 'success');
+    
+    // Simular navegación a productos (por ahora solo mostrar mensaje)
+    setTimeout(() => {
+      // window.location.href = '/dashboard/productos.html';
+      showToast('Próximamente', 'La página de productos estará disponible pronto', 'info');
+    }, 1500);
 
   } catch (error) {
-    Utils.hideLoading();
-    console.error('❌ Error guardando y continuando:', error);
-    Utils.showToast('Error', 'Hubo un problema al guardar', 'error');
+    hideLoading();
+    console.error('Error guardando:', error);
+    showToast('Error', 'No se pudieron guardar los datos', 'error');
   }
 }
 
-// 🛠️ Debounce helper para evitar demasiados saves
+async function handleAutoSave() {
+  try {
+    await saveFormData(false); // false = no mostrar toast
+  } catch (error) {
+    console.error('Error en auto-save:', error);
+  }
+}
+
+async function saveFormData(showSuccessToast = true) {
+  const form = document.getElementById('miComercioForm');
+  if (!form) return;
+
+  const formData = new FormData(form);
+  const updates = {};
+  
+  for (let [key, value] of formData.entries()) {
+    updates[key] = value.trim();
+  }
+
+  // Guardar en Firestore
+  await updateDoc(doc(db, "usuarios", currentUser.uid), {
+    ...updates,
+    fechaActualizacion: new Date()
+  });
+
+  // Actualizar datos locales
+  userData = { ...userData, ...updates };
+
+  if (showSuccessToast) {
+    showToast('Guardado', 'Información actualizada correctamente', 'success');
+  }
+
+  // Actualizar header por si cambió el nombre del comercio
+  updateHeader();
+  
+  // Actualizar progress si tiene datos básicos
+  if (updates.nombreComercio && updates.telefono) {
+    updateProgressBar(33); // 33% completado
+  }
+
+  console.log('💾 Datos guardados:', updates);
+}
+
+async function handleLogout() {
+  if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+    try {
+      showLoading('Cerrando sesión...');
+      await auth.signOut();
+      window.location.href = '/index.html';
+    } catch (error) {
+      hideLoading();
+      showToast('Error', 'No se pudo cerrar sesión', 'error');
+    }
+  }
+}
+
+function updateProgressBar(percentage = 25) {
+  const fillElement = document.getElementById('completionFill');
+  const textElement = document.getElementById('completionText');
+  
+  if (fillElement) fillElement.style.width = `${percentage}%`;
+  if (textElement) textElement.textContent = `${percentage}% completado`;
+
+  // Actualizar steps
+  const steps = document.querySelectorAll('.step');
+  steps.forEach((step, index) => {
+    if (index === 0) { // Mi Comercio
+      step.classList.add('current');
+    } else {
+      step.classList.remove('current');
+    }
+  });
+}
+
+// Utility functions
+function showLoading(text = "Cargando...") {
+  const overlay = document.getElementById("loadingOverlay");
+  const loadingText = document.getElementById("loadingText");
+  if (overlay && loadingText) {
+    loadingText.textContent = text;
+    overlay.classList.add("show");
+  }
+}
+
+function hideLoading() {
+  const overlay = document.getElementById("loadingOverlay");
+  if (overlay) overlay.classList.remove("show");
+}
+
+function showToast(title, message, type = "success") {
+  const container = document.getElementById("toastContainer");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  const icons = {
+    success: "fas fa-check-circle",
+    error: "fas fa-exclamation-circle",
+    warning: "fas fa-exclamation-triangle",
+    info: "fas fa-info-circle",
+  };
+
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <i class="${icons[type]}"></i>
+    <div class="toast-content">
+      <div class="toast-title">${title}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close"><i class="fas fa-times"></i></button>
+  `;
+  container.appendChild(toast);
+
+  setTimeout(() => toast.classList.add("show"), 100);
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => {
+      if (toast.parentNode) container.removeChild(toast);
+    }, 300);
+  }, 5000);
+
+  toast.querySelector(".toast-close").addEventListener("click", () => {
+    toast.classList.remove("show");
+    setTimeout(() => {
+      if (toast.parentNode) container.removeChild(toast);
+    }, 300);
+  });
+}
+
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -209,30 +309,4 @@ function debounce(func, wait) {
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
-}
-
-// 🛠️ Esperar a que Firebase Auth esté completamente inicializado
-async function waitForAuth() {
-  return new Promise(async (resolve) => {
-    // Si ya hay un usuario, resolver inmediatamente
-    if (AuthHelpers.getCurrentUser()) {
-      resolve();
-      return;
-    }
-
-    // Usar onAuthStateChanged para esperar
-    const { onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js');
-    const { auth } = await import('../js/shared.js');
-    
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe(); // Dejar de escuchar
-      resolve(); // Resolver cuando auth esté listo (con o sin usuario)
-    });
-
-    // Timeout de seguridad (5 segundos máximo)
-    setTimeout(() => {
-      unsubscribe();
-      resolve();
-    }, 5000);
-  });
 }
