@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horarios - INDICEIA</title>
+  
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- CSS único -->
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando...</div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-robot"></i>
+        </div>
+        <h1>INDICEIA</h1>
+      </div>
+      <div class="user-info">
+        <div class="user-details">
+          <div class="user-name" id="commerceName">Cargando...</div>
+          <div class="user-email" id="planBadge">Trial</div>
+        </div>
+        <button id="logoutBtn" class="btn-logout">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Progress bar -->
+  <div class="progress-indicator" id="progressContainer"></div>
+
+  <!-- Contenido principal -->
+  <main class="main-content">
+    <div class="container">
+      <div class="form-section">
+        <h3><i class="fas fa-clock"></i> Horarios de Atención</h3>
+        <p>Configura los horarios en que tu comercio está disponible para atender consultas.</p>
+        
+        <div class="schedule-grid" id="scheduleGrid">
+          <!-- Se llenará dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Navegación -->
+  <div class="navigation-controls" id="navigationControls"></div>
+
+  <!-- Scripts -->
+  <script type="module">
+    import { LocalData, Utils, FirebaseHelpers, AuthHelpers, auth } from './js/shared.js';
+    import Navigation from './js/navigation.js';
+
+    // Días de la semana
+    const DAYS = [
+      { key: "lunes", label: "Lunes" },
+      { key: "martes", label: "Martes" },
+      { key: "miercoles", label: "Miércoles" },
+      { key: "jueves", label: "Jueves" },
+      { key: "viernes", label: "Viernes" },
+      { key: "sabado", label: "Sábado" },
+      { key: "domingo", label: "Domingo" }
+    ];
+
+    let userData = {};
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        Utils.showLoading('Verificando sesión...');
+        
+        // Verificación asíncrona de sesión
+        const user = await new Promise((resolve) => {
+          const unsubscribe = auth.onAuthStateChanged((user) => {
+            unsubscribe();
+            resolve(user);
+          });
+        });
+
+        if (!user) {
+          window.location.href = '/index.html';
+          return;
+        }
+
+        Utils.showLoading('Cargando horarios...');
+        userData = await FirebaseHelpers.getUserData();
+        renderScheduleForm();
+        setupEventListeners();
+        Navigation.init();
+
+        // Validación para navegación
+        window.validateCurrentPageData = () => {
+          // Al menos un día debe estar habilitado
+          const horarios = userData.horarios || {};
+          const hasEnabledDay = Object.values(horarios).some(day => !day.closed);
+          if (!hasEnabledDay) {
+            Utils.showToast('Horarios', 'Debes habilitar al menos un día de atención', 'warning');
+          }
+          return hasEnabledDay;
+        };
+
+        Utils.hideLoading();
+      } catch (error) {
+        Utils.hideLoading();
+        console.error('Error:', error);
+        Utils.showToast('Error', 'No se pudo cargar la página', 'error');
+      }
+    });
+
+    function renderScheduleForm() {
+      const container = document.getElementById('scheduleGrid');
+      if (!container) return;
+
+      const horarios = userData.horarios || {};
+      
+      container.innerHTML = DAYS.map(day => {
+        const dayData = horarios[day.key] || {
+          morning: { open: "08:00", close: "12:00" },
+          afternoon: { open: "16:00", close: "20:00" },
+          closed: false,
+          continuous: false
+        };
+        
+        return `
+          <div class="schedule-day" data-day="${day.key}">
+            <div class="day-header">
+              <label class="day-toggle">
+                <input type="checkbox" ${!dayData.closed ? "checked" : ""}>
+                <span>${day.label} (marcar para habilitar)</span>
+              </label>
+            </div>
+            <div class="day-hours ${dayData.closed ? "disabled" : ""}">
+              <div class="schedule-mode">
+                <label class="schedule-option">
+                  <input type="radio" name="${day.key}_mode" value="continuous" ${dayData.continuous ? "checked" : ""}>
+                  <span>Horario Continuo</span>
+                </label>
+                <label class="schedule-option">
+                  <input type="radio" name="${day.key}_mode" value="split" ${!dayData.continuous ? "checked" : ""}>
+                  <span>Horario Cortado</span>
+                </label>
+              </div>
+              <div class="time-blocks">
+                <div class="time-block continuous-schedule ${dayData.continuous ? "" : "hidden"}">
+                  <label>Horario:</label>
+                  <div class="time-range">
+                    <input type="time" value="${dayData.continuous ? (dayData.open || "09:00") : "09:00"}">
+                    <span>a</span>
+                    <input type="time" value="${dayData.continuous ? (dayData.close || "18:00") : "18:00"}">
+                  </div>
+                </div>
+                <div class="time-block split-schedule ${!dayData.continuous ? "" : "hidden"}">
+                  <div class="morning-hours">
+                    <label>Mañana:</label>
+                    <div class="time-range">
+                      <input type="time" value="${dayData.morning?.open || "08:00"}">
+                      <span>a</span>
+                      <input type="time" value="${dayData.morning?.close || "12:00"}">
+                    </div>
+                  </div>
+                  <div class="afternoon-hours">
+                    <label>Tarde:</label>
+                    <div class="time-range">
+                      <input type="time" value="${dayData.afternoon?.open || "16:00"}">
+                      <span>a</span>
+                      <input type="time" value="${dayData.afternoon?.close || "20:00"}">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setupEventListeners() {
+      // Toggle día habilitado/deshabilitado
+      document.getElementById('scheduleGrid').addEventListener('change', (e) => {
+        if (e.target.type === 'checkbox') {
+          const dayEl = e.target.closest('.schedule-day');
+          const hoursEl = dayEl.querySelector('.day-hours');
+          if (e.target.checked) {
+            hoursEl.classList.remove('disabled');
+          } else {
+            hoursEl.classList.add('disabled');
+          }
+        }
+        
+        // Cambio de modo (continuo/cortado)
+        if (e.target.type === 'radio' && e.target.name.includes('_mode')) {
+          const dayKey = e.target.name.replace('_mode', '');
+          const dayEl = document.querySelector(`[data-day="${dayKey}"]`);
+          const continuousBlock = dayEl.querySelector('.continuous-schedule');
+          const splitBlock = dayEl.querySelector('.split-schedule');
+          
+          if (e.target.value === 'continuous') {
+            continuousBlock.classList.remove('hidden');
+            splitBlock.classList.add('hidden');
+          } else {
+            continuousBlock.classList.add('hidden');
+            splitBlock.classList.remove('hidden');
+          }
+        }
+      });
+
+      // Logout
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        if (confirm('¿Cerrar sesión?')) {
+          await AuthHelpers.logout();
+          window.location.href = '/index.html';
+        }
+      });
+    }
+
+    // Guardar datos al navegar
+    window.addEventListener('beforeunload', async () => {
+      await saveScheduleData();
+    });
+
+    async function saveScheduleData() {
+      const grid = document.getElementById('scheduleGrid');
+      if (!grid) return;
+
+      const days = Array.from(grid.querySelectorAll('.schedule-day'));
+      const horarios = {};
+
+      days.forEach(dayEl => {
+        const day = dayEl.dataset.day;
+        const enabled = dayEl.querySelector('.day-toggle input[type="checkbox"]')?.checked ?? true;
+        
+        if (!enabled) {
+          horarios[day] = { closed: true };
+          return;
+        }
+
+        const continuous = dayEl.querySelector(`input[name="${day}_mode"][value="continuous"]`)?.checked ?? false;
+        
+        if (continuous) {
+          const inputs = dayEl.querySelectorAll('.continuous-schedule input[type="time"]');
+          horarios[day] = {
+            closed: false,
+            continuous: true,
+            open: inputs[0]?.value || "09:00",
+            close: inputs[1]?.value || "18:00"
+          };
+        } else {
+          const mInputs = dayEl.querySelectorAll('.morning-hours input[type="time"]');
+          const aInputs = dayEl.querySelectorAll('.afternoon-hours input[type="time"]');
+          horarios[day] = {
+            closed: false,
+            continuous: false,
+            morning: {
+              open: mInputs[0]?.value || "08:00",
+              close: mInputs[1]?.value || "12:00"
+            },
+            afternoon: {
+              open: aInputs[0]?.value || "16:00",
+              close: aInputs[1]?.value || "20:00"
+            }
+          };
+        }
+      });
+
+      try {
+        await FirebaseHelpers.updateUserData({ horarios });
+        userData.horarios = horarios;
+      } catch (error) {
+        console.error('Error saving schedule:', error);
+      }
+    }
+
+    // Sobreescribir validación de navegación para guardar antes
+    const originalGoToNextPage = Navigation.goToNextPage;
+    Navigation.goToNextPage = async function() {
+      await saveScheduleData();
+      return originalGoToNextPage.call(this);
+    };
+
+    const originalGoToPreviousPage = Navigation.goToPreviousPage;
+    Navigation.goToPreviousPage = async function() {
+      await saveScheduleData();
+      return originalGoToPreviousPage.call(this);
+    };
+  </script>
+</body>
+</html>
