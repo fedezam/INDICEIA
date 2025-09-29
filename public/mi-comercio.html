@@ -9,7 +9,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   
   <!-- CSS único -->
-  <link rel="stylesheet" href="../css/dashboard.css">
+  <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
   <!-- Loading overlay -->
@@ -172,11 +172,10 @@
 
   <!-- Scripts -->
   <script type="module">
-    import { LocalData, Utils, FirebaseHelpers, PlansManager, AuthHelpers } from '../js/shared.js';
-    import Navigation from '../js/navigation.js';
-    import { auth } from '../js/firebase.js';
+    import { LocalData, Utils, FirebaseHelpers, PlansManager, AuthHelpers, auth } from './js/shared.js';
+    import Navigation from './js/navigation.js';
 
-    // Datos predefinidos (solo lo esencial)
+    // Datos predefinidos
     const PROVINCES_BY_COUNTRY = {
       Argentina: ["Buenos Aires", "CABA", "Catamarca", "Chaco", "Chubut", "Córdoba", "Corrientes", "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza", "Misiones", "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz", "Santa Fe", "Santiago del Estero", "Tierra del Fuego", "Tucumán"],
       México: ["Aguascalientes", "Baja California", "Baja California Sur", "Campeche", "Chiapas", "Chihuahua", "Ciudad de México", "Coahuila", "Colima", "Durango", "Guanajuato", "Guerrero", "Hidalgo", "Jalisco", "México", "Michoacán", "Morelos", "Nayarit", "Nuevo León", "Oaxaca", "Puebla", "Querétaro", "Quintana Roo", "San Luis Potosí", "Sinaloa", "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala", "Veracruz", "Yucatán", "Zacatecas"],
@@ -208,11 +207,23 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       try {
-        if (!AuthHelpers.isLoggedIn()) {
+        Utils.showLoading('Verificando sesión...');
+        
+        // ESPERAR a que Firebase verifique la sesión
+        const user = await new Promise((resolve) => {
+          const unsubscribe = auth.onAuthStateChanged((user) => {
+            unsubscribe();
+            resolve(user);
+          });
+        });
+
+        // Si no hay usuario, redirigir
+        if (!user) {
           window.location.href = '/index.html';
           return;
         }
 
+        // Usuario verificado, continuar cargando
         Utils.showLoading('Cargando datos...');
         userData = await FirebaseHelpers.getUserData();
         selectedCategories = userData.categories || [];
@@ -243,11 +254,11 @@
         Utils.hideLoading();
       } catch (error) {
         Utils.hideLoading();
+        console.error('Error en inicialización:', error);
         Utils.showToast('Error', 'No se pudo cargar la página', 'error');
       }
     });
 
-    // Funciones de renderizado (igual que antes, pero sin CSS embebido)
     function renderPlans() {
       const container = document.getElementById('planSelector');
       const plans = PlansManager.getAllPlans();
@@ -382,6 +393,7 @@
       document.getElementById('logoutBtn').addEventListener('click', async () => {
         if (confirm('¿Cerrar sesión?')) {
           await AuthHelpers.logout();
+          window.location.href = '/index.html';
         }
       });
     }
