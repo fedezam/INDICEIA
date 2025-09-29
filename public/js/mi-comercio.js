@@ -1,4 +1,4 @@
-// js/mi-comercio.js 
+// mi-comercio-standalone.js - Versión con sincronización JSON
 import { auth, db } from '../js/firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
 import { doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
@@ -156,12 +156,11 @@ async function handleSaveAndContinue() {
     await saveFormData();
     
     hideLoading();
-    showToast('¡Datos guardados!', 'Redirigiendo a la siguiente sección...', 'success');
+    showToast('¡Datos guardados!', 'Redirigiendo a horarios...', 'success');
     
-    // Simular navegación a productos (por ahora solo mostrar mensaje)
+    // Redirigir a horarios
     setTimeout(() => {
-      // window.location.href = '/dashboard/productos.html';
-      showToast('Próximamente', 'La página de productos estará disponible pronto', 'info');
+      window.location.href = '/horarios.html';
     }, 1500);
 
   } catch (error) {
@@ -196,6 +195,14 @@ async function saveFormData(showSuccessToast = true) {
     fechaActualizacion: new Date()
   });
 
+  // ✅ Sincronizar con JSON/Gist (no bloqueante)
+  try {
+    await syncToGist();
+  } catch (err) {
+    console.error("No se pudo sincronizar JSON:", err);
+    // No bloquea el flujo principal
+  }
+
   // Actualizar datos locales
   userData = { ...userData, ...updates };
 
@@ -212,6 +219,32 @@ async function saveFormData(showSuccessToast = true) {
   }
 
   console.log('💾 Datos guardados:', updates);
+}
+
+// ✅ Función para sincronizar con tu API de Vercel
+async function syncToGist() {
+  try {
+    const response = await fetch('/api/export-json', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: currentUser.uid
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ JSON sincronizado:', result.gist?.rawUrl);
+    return result;
+  } catch (error) {
+    console.error('❌ Error sincronizando JSON:', error);
+    throw error;
+  }
 }
 
 async function handleLogout() {
