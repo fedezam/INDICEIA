@@ -8,557 +8,436 @@
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   
-  <!-- CSS - usando dashboard.css que ya existe -->
+  <!-- CSS único -->
   <link rel="stylesheet" href="../css/dashboard.css">
-  
-  <style>
-    /* Estilos específicos para mi-comercio */
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: #f8fafc;
-    }
-
-    .header-common {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 1.5rem;
-      font-weight: bold;
-    }
-
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .plan-badge {
-      background: rgba(255,255,255,0.2);
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.85rem;
-    }
-
-    .btn-logout {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.3);
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .btn-logout:hover {
-      background: rgba(255,255,255,0.2);
-    }
-
-    .progress-indicator {
-      background: white;
-      padding: 2rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .progress-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-
-    .progress-title {
-      font-size: 1.5rem;
-      font-weight: bold;
-      color: #2d3748;
-      margin-bottom: 0.5rem;
-    }
-
-    .progress-subtitle {
-      color: #718096;
-    }
-
-    .completion-indicator {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-
-    .completion-bar {
-      flex: 1;
-      height: 8px;
-      background: #e2e8f0;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .completion-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #48bb78, #38a169);
-      transition: width 0.5s ease;
-      border-radius: 4px;
-    }
-
-    .completion-text {
-      font-weight: 600;
-      color: #2d3748;
-    }
-
-    .progress-steps {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-
-    .step {
-      flex: 1;
-      text-align: center;
-      padding: 1rem;
-      border-radius: 8px;
-      background: #f7fafc;
-      border: 2px solid #e2e8f0;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .step.active {
-      background: #ebf8ff;
-      border-color: #3182ce;
-      color: #2c5282;
-    }
-
-    .step.current {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      border-color: #667eea;
-      color: white;
-    }
-
-    .step-icon {
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .step-check {
-      color: #48bb78;
-      margin-left: 0.5rem;
-    }
-
-    .main-content {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 0 2rem;
-    }
-
-    .form-section {
-      background: white;
-      border-radius: 12px;
-      padding: 2rem;
-      margin-bottom: 2rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .form-section h2 {
-      margin: 0 0 1.5rem 0;
-      color: #2c3e50;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-    }
-
-    .form-grid.single-column {
-      grid-template-columns: 1fr;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group label {
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: #34495e;
-    }
-
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-      padding: 0.75rem;
-      border: 2px solid #e0e6ed;
-      border-radius: 8px;
-      font-size: 1rem;
-      transition: border-color 0.3s ease;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: #3498db;
-      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-    }
-
-    .form-group input.error,
-    .form-group textarea.error {
-      border-color: #e74c3c;
-      box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
-    }
-
-    .form-group textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-
-    .required::after {
-      content: " *";
-      color: #e74c3c;
-    }
-
-    .navigation-controls {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 0 2rem;
-    }
-
-    .nav-buttons {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-
-    .btn {
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn-secondary {
-      background: #f8fafc;
-      color: #4a5568;
-      border: 2px solid #e2e8f0;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background: #edf2f7;
-      border-color: #cbd5e0;
-    }
-
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .btn-lg {
-      padding: 1rem 2rem;
-      font-size: 1.1rem;
-    }
-
-    .form-actions {
-      border-top: 1px solid #e2e8f0;
-      padding-top: 2rem;
-      margin-top: 2rem;
-    }
-
-    .nav-info {
-      text-align: center;
-      color: #718096;
-      font-size: 0.9rem;
-    }
-
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      opacity: 0;
-      visibility: hidden;
-      transition: all 0.3s ease;
-    }
-
-    .loading-overlay.show {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid rgba(255,255,255,0.3);
-      border-top: 4px solid white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    .loading-text {
-      color: white;
-      margin-top: 1rem;
-      font-size: 1.1rem;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .toast-container {
-      position: fixed;
-      top: 2rem;
-      right: 2rem;
-      z-index: 10000;
-    }
-
-    .toast {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      padding: 1rem 1.5rem;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      min-width: 300px;
-      transform: translateX(400px);
-      opacity: 0;
-      transition: all 0.3s ease;
-    }
-
-    .toast.show {
-      transform: translateX(0);
-      opacity: 1;
-    }
-
-    .toast.success {
-      border-left: 4px solid #48bb78;
-    }
-
-    .toast.error {
-      border-left: 4px solid #f56565;
-    }
-
-    .toast.warning {
-      border-left: 4px solid #ed8936;
-    }
-
-    .toast-close {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0.25rem;
-      color: #a0aec0;
-    }
-
-    @media (max-width: 768px) {
-      .form-grid {
-        grid-template-columns: 1fr;
-      }
-      
-      .main-content, .navigation-controls {
-        margin: 1rem;
-        padding: 0 1rem;
-      }
-      
-      .form-section {
-        padding: 1.5rem;
-      }
-
-      .header-common {
-        padding: 1rem;
-      }
-
-      .progress-steps {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      .step {
-        padding: 0.75rem;
-      }
-
-      .nav-buttons {
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      .btn {
-        width: 100%;
-        justify-content: center;
-      }
-    }
-  </style>
 </head>
 <body>
   <!-- Loading overlay -->
   <div class="loading-overlay" id="loadingOverlay">
-    <div>
-      <div class="spinner"></div>
-      <div class="loading-text" id="loadingText">Cargando...</div>
-    </div>
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando...</div>
   </div>
 
   <!-- Toast container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Header común -->
-  <header class="header-common">
-    <div class="logo">
-      <i class="fas fa-robot"></i>
-      <h1>INDICEIA</h1>
-    </div>
-    <div class="user-info">
-      <span id="commerceName">Cargando...</span>
-      <div class="plan-badge" id="planBadge">Trial</div>
-      <button id="logoutBtn" class="btn-logout">
-        <i class="fas fa-sign-out-alt"></i>
-      </button>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-robot"></i>
+        </div>
+        <h1>INDICEIA</h1>
+      </div>
+      <div class="user-info">
+        <div class="user-details">
+          <div class="user-name" id="commerceName">Cargando...</div>
+          <div class="user-email" id="planBadge">Trial</div>
+        </div>
+        <button id="logoutBtn" class="btn-logout">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
     </div>
   </header>
 
+  <!-- Subscription Banner -->
+  <div class="subscription-banner" id="subscriptionBanner">
+    <i class="fas fa-info-circle"></i>
+    <span id="subscriptionMessage">Cargando estado de suscripción...</span>
+  </div>
+
   <!-- Progress bar -->
-  <div id="progressContainer"></div>
+  <div class="progress-indicator" id="progressContainer"></div>
 
   <!-- Contenido principal -->
   <main class="main-content">
-    <!-- Información básica -->
-    <div class="form-section">
-      <h2>
-        <i class="fas fa-store"></i>
-        Información Básica
-      </h2>
-      
-      <form id="miComercioForm">
-        <div class="form-grid">
-          <div class="form-group">
+    <div class="container">
+      <!-- Selector de Plan -->
+      <div class="form-section">
+        <h3><i class="fas fa-crown"></i> Selector de Plan</h3>
+        <p>Elige el plan que mejor se adapte a tu negocio:</p>
+        <div class="plan-selector" id="planSelector"></div>
+      </div>
+
+      <!-- Información básica -->
+      <div class="form-section">
+        <h3><i class="fas fa-store"></i> Información Básica</h3>
+        <form id="miComercioForm" class="form-fields">
+          <div class="form-field">
             <label for="nombreComercio" class="required">Nombre del comercio</label>
-            <input type="text" id="nombreComercio" name="nombreComercio" required 
-                   placeholder="Ej: Panadería San Juan">
+            <input type="text" id="nombreComercio" name="nombreComercio" required placeholder="Ej: Panadería San Juan">
+            <div class="error-message">Este campo es requerido</div>
           </div>
-
-          <div class="form-group">
-            <label for="telefono" class="required">Teléfono</label>
-            <input type="text" id="telefono" name="telefono" required 
-                   placeholder="Ej: +54 9 11 1234-5678">
+          <div class="form-field">
+            <label for="pais" class="required">País</label>
+            <select id="pais" name="pais" required>
+              <option value="">Seleccionar...</option>
+              <option value="Argentina">Argentina</option>
+              <option value="México">México</option>
+              <option value="Colombia">Colombia</option>
+              <option value="Chile">Chile</option>
+              <option value="Perú">Perú</option>
+              <option value="España">España</option>
+              <option value="Estados Unidos">Estados Unidos</option>
+              <option value="Brasil">Brasil</option>
+              <option value="Otro">Otro</option>
+            </select>
+            <div class="error-message">Este campo es requerido</div>
           </div>
-
-          <div class="form-group">
-            <label for="direccion">Dirección</label>
-            <input type="text" id="direccion" name="direccion" 
-                   placeholder="Ej: Av. Corrientes 1234">
+          <div class="form-field">
+            <label for="provincia" class="required">Provincia/Estado</label>
+            <select id="provincia" name="provincia" required>
+              <option value="">Seleccionar país primero</option>
+            </select>
+            <div class="error-message">Este campo es requerido</div>
           </div>
-
-          <div class="form-group">
-            <label for="ciudad">Ciudad</label>
-            <input type="text" id="ciudad" name="ciudad" 
-                   placeholder="Ej: Buenos Aires">
+          <div class="form-field">
+            <label for="ciudad" class="required">Ciudad</label>
+            <input type="text" id="ciudad" name="ciudad" required placeholder="Ej: Buenos Aires">
+            <div class="error-message">Este campo es requerido</div>
           </div>
-
-          <div class="form-group">
-            <label for="provincia">Provincia</label>
-            <input type="text" id="provincia" name="provincia" 
-                   placeholder="Ej: Buenos Aires">
-          </div>
-
-          <div class="form-group">
-            <label for="pais">País</label>
-            <input type="text" id="pais" name="pais" value="Argentina"
-                   placeholder="Ej: Argentina">
-          </div>
-        </div>
-
-        <div class="form-grid single-column">
-          <div class="form-group">
+          <div class="form-field">
             <label for="barrio">Barrio (opcional)</label>
-            <input type="text" id="barrio" name="barrio" 
-                   placeholder="Ej: Palermo">
+            <input type="text" id="barrio" name="barrio" placeholder="Ej: Palermo">
           </div>
+          <div class="form-field">
+            <label for="direccion" class="required">Dirección</label>
+            <input type="text" id="direccion" name="direccion" required placeholder="Ej: Av. Corrientes 1234">
+            <div class="error-message">Este campo es requerido</div>
+          </div>
+          <div class="form-field">
+            <label for="descripcion" class="required">Descripción del comercio</label>
+            <textarea id="descripcion" name="descripcion" required placeholder="Describe brevemente tu comercio..."></textarea>
+            <div class="error-message">Este campo es requerido</div>
+          </div>
+        </form>
+      </div>
 
-          <div class="form-group">
-            <label for="descripcion">Descripción del comercio</label>
-            <textarea id="descripcion" name="descripcion" 
-                      placeholder="Describe brevemente tu comercio, productos o servicios..."></textarea>
+      <!-- Contacto -->
+      <div class="form-section">
+        <h3><i class="fas fa-phone"></i> Información de Contacto</h3>
+        <div class="form-fields">
+          <div class="form-field">
+            <label for="telefono" class="required">Teléfono</label>
+            <input type="text" id="telefono" name="telefono" required placeholder="Ej: +54 9 11 1234-5678">
+            <div class="error-message">Este campo es requerido</div>
+          </div>
+          <div class="form-field">
+            <label for="whatsapp">WhatsApp (opcional)</label>
+            <input type="text" id="whatsapp" name="whatsapp" placeholder="Ej: +54 9 11 1234-5678">
+          </div>
+          <div class="form-field">
+            <label for="email">Email de contacto (opcional)</label>
+            <input type="email" id="email" name="email" placeholder="contacto@micomercio.com">
+          </div>
+          <div class="form-field">
+            <label for="website">Sitio web (opcional)</label>
+            <input type="url" id="website" name="website" placeholder="https://micomercio.com">
+          </div>
+          <div class="form-field">
+            <label for="instagram">Instagram (opcional)</label>
+            <input type="url" id="instagram" name="instagram" placeholder="https://instagram.com/micomercio">
+          </div>
+          <div class="form-field">
+            <label for="facebook">Facebook (opcional)</label>
+            <input type="url" id="facebook" name="facebook" placeholder="https://facebook.com/micomercio">
+          </div>
+          <div class="form-field">
+            <label for="tiktok">TikTok (opcional)</label>
+            <input type="url" id="tiktok" name="tiktok" placeholder="https://tiktok.com/@micomercio">
           </div>
         </div>
+      </div>
 
-        <!-- Botón para guardar y continuar -->
-        <div class="form-actions" style="margin-top: 2rem; text-align: center;">
-          <button type="button" id="saveDataBtn" class="btn btn-primary btn-lg">
-            <i class="fas fa-save"></i>
-            Guardar y Continuar
-          </button>
-        </div>
-      </form>
-    </div>
+      <!-- Categorías -->
+      <div class="form-section">
+        <h3><i class="fas fa-tags"></i> Categorías del Negocio</h3>
+        <p>Selecciona el rubro que mejor describe tu comercio.</p>
+        <div id="categoriesGrid" class="categories-section"></div>
+      </div>
 
-    <!-- Información adicional -->
-    <div class="form-section">
-      <h2>
-        <i class="fas fa-info-circle"></i>
-        Información Adicional
-      </h2>
-      
-      <div class="form-grid">
-        <div class="form-group">
-          <label for="tipoComercio">Tipo de comercio</label>
-          <select id="tipoComercio" name="tipoComercio">
-            <option value="">Seleccionar...</option>
-            <option value="productos">Venta de productos</option>
-            <option value="servicios">Prestación de servicios</option>
-            <option value="mixto">Productos y servicios</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="web">Sitio web (opcional)</label>
-          <input type="url" id="web" name="web" 
-                 placeholder="https://miweb.com">
-        </div>
+      <!-- Métodos de pago -->
+      <div class="form-section">
+        <h3><i class="fas fa-credit-card"></i> Métodos de Pago</h3>
+        <p>Selecciona los métodos que aceptas:</p>
+        <div class="checkbox-grid" id="paymentMethods"></div>
       </div>
     </div>
   </main>
 
-  <!-- Navegación (se genera automáticamente) -->
-  <div id="navigationControls"></div>
+  <!-- Navegación -->
+  <div class="navigation-controls" id="navigationControls"></div>
 
   <!-- Scripts -->
-  <script type="module" src="../js/firebase.js"></script>
-  <script type="module" src="../js/mi-comercio.js"></script>
+  <script type="module">
+    import { LocalData, Utils, FirebaseHelpers, PlansManager, AuthHelpers } from '../js/shared.js';
+    import Navigation from '../js/navigation.js';
+    import { auth } from '../js/firebase.js';
+
+    // Datos predefinidos (solo lo esencial)
+    const PROVINCES_BY_COUNTRY = {
+      Argentina: ["Buenos Aires", "CABA", "Catamarca", "Chaco", "Chubut", "Córdoba", "Corrientes", "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza", "Misiones", "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz", "Santa Fe", "Santiago del Estero", "Tierra del Fuego", "Tucumán"],
+      México: ["Aguascalientes", "Baja California", "Baja California Sur", "Campeche", "Chiapas", "Chihuahua", "Ciudad de México", "Coahuila", "Colima", "Durango", "Guanajuato", "Guerrero", "Hidalgo", "Jalisco", "México", "Michoacán", "Morelos", "Nayarit", "Nuevo León", "Oaxaca", "Puebla", "Querétaro", "Quintana Roo", "San Luis Potosí", "Sinaloa", "Sonora", "Tabasco", "Tamaulipas", "Tlaxcala", "Veracruz", "Yucatán", "Zacatecas"],
+      Colombia: ["Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá", "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba", "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena", "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda", "San Andrés y Providencia", "Santander", "Sucre", "Tolima", "Valle del Cauca", "Vaupés", "Vichada"],
+      Chile: ["Arica y Parinacota", "Tarapacá", "Antofagasta", "Atacama", "Coquimbo", "Valparaíso", "Metropolitana", "O'Higgins", "Maule", "Ñuble", "Biobío", "Araucanía", "Los Ríos", "Los Lagos", "Aysén", "Magallanes"],
+      Perú: ["Amazonas", "Áncash", "Apurímac", "Arequipa", "Ayacucho", "Cajamarca", "Callao", "Cusco", "Huancavelica", "Huánuco", "Ica", "Junín", "La Libertad", "Lambayeque", "Lima", "Loreto", "Madre de Dios", "Moquegua", "Pasco", "Piura", "Puno", "San Martín", "Tacna", "Tumbes", "Ucayali"],
+      España: ["Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", "Castilla-La Mancha", "Castilla y León", "Cataluña", "Ceuta", "Extremadura", "Galicia", "Madrid", "Melilla", "Murcia", "Navarra", "País Vasco", "La Rioja"],
+      "Estados Unidos": ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawái", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Luisiana", "Maine", "Maryland", "Massachusetts", "Míchigan", "Minnesota", "Misisipi", "Misuri", "Montana", "Nebraska", "Nevada", "Nueva Hampshire", "Nueva Jersey", "Nuevo México", "Nueva York", "Carolina del Norte", "Dakota del Norte", "Ohio", "Oklahoma", "Oregón", "Pensilvania", "Rhode Island", "Carolina del Sur", "Dakota del Sur", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "Virginia Occidental", "Wisconsin", "Wyoming"],
+      Brasil: ["Acre", "Alagoas", "Amapá", "Amazonas", "Bahía", "Ceará", "Distrito Federal", "Espírito Santo", "Goiás", "Maranhão", "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Pará", "Paraíba", "Paraná", "Pernambuco", "Piauí", "Río de Janeiro", "Río Grande del Norte", "Río Grande del Sur", "Rondônia", "Roraima", "Santa Catarina", "São Paulo", "Sergipe", "Tocantins"]
+    };
+
+    const PREDEFINED_CATEGORIES = [
+      "Ropa y Moda","Calzado","Accesorios","Joyería","Relojes",
+      "Electrónicos","Informática","Celulares y Tablets","Audio y Video","Gaming",
+      "Hogar y Decoración","Muebles","Electrodomésticos","Jardín","Ferretería",
+      "Belleza y Cosméticos","Salud","Farmacia","Perfumería","Cuidado Personal",
+      "Alimentos","Bebidas","Panadería","Carnicería","Verdulería","Almacén",
+      "Servicios Profesionales","Educación","Turismo","Transporte","Seguros",
+      "Libros","Música","Películas","Juguetes","Deportes","Fitness",
+      "Automotor","Mascotas","Bebés y Niños","Arte y Manualidades","Oficina",
+      "Regalería","Marroquinería","Óptica","Fotografía","Instrumentos Musicales",
+      "Papelería","Librería","Floristería","Cerrajería","Tapicería"
+    ];
+
+    const PAYMENT_METHODS = ["Efectivo", "Tarjeta de débito", "Tarjeta de crédito", "Transferencia", "MercadoPago", "PayPal", "Crypto", "Cheque"];
+
+    let userData = {};
+    let selectedCategories = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        if (!AuthHelpers.isLoggedIn()) {
+          window.location.href = '/index.html';
+          return;
+        }
+
+        Utils.showLoading('Cargando datos...');
+        userData = await FirebaseHelpers.getUserData();
+        selectedCategories = userData.categories || [];
+
+        renderPlans();
+        renderPaymentMethods();
+        renderCategories();
+        fillForm();
+        setupEventListeners();
+        updateSubscriptionBanner();
+        Navigation.init();
+
+        window.validateCurrentPageData = () => {
+          const requiredFields = ['nombreComercio', 'telefono', 'direccion', 'ciudad', 'pais', 'provincia', 'descripcion'];
+          let isValid = true;
+          requiredFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el.value.trim()) {
+              el.classList.add('error');
+              isValid = false;
+            } else {
+              el.classList.remove('error');
+            }
+          });
+          return isValid;
+        };
+
+        Utils.hideLoading();
+      } catch (error) {
+        Utils.hideLoading();
+        Utils.showToast('Error', 'No se pudo cargar la página', 'error');
+      }
+    });
+
+    // Funciones de renderizado (igual que antes, pero sin CSS embebido)
+    function renderPlans() {
+      const container = document.getElementById('planSelector');
+      const plans = PlansManager.getAllPlans();
+      container.innerHTML = plans.map(plan => `
+        <div class="plan-card ${userData.plan === plan.id ? 'selected' : ''}" data-plan="${plan.id}">
+          <div class="plan-header">
+            <h4>${plan.nombre}</h4>
+            <div class="plan-price">$${plan.precio} USD/mes</div>
+          </div>
+          <div class="plan-features">
+            <div class="feature"><i class="fas fa-check"></i> Hasta ${plan.maxProductos === -1 ? 'ilimitados' : plan.maxProductos} productos</div>
+            <div class="feature"><i class="fas fa-check"></i> ${plan.descripcion}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderPaymentMethods() {
+      const container = document.getElementById('paymentMethods');
+      container.innerHTML = PAYMENT_METHODS.map(method => `
+        <label class="checkbox-item">
+          <input type="checkbox" name="paymentMethods" value="${method}" ${userData.paymentMethods?.includes(method) ? 'checked' : ''}>
+          <span class="checkbox-text">${method}</span>
+        </label>
+      `).join('');
+    }
+
+    function renderCategories() {
+      const container = document.getElementById('categoriesGrid');
+      const allCategories = [...new Set([...PREDEFINED_CATEGORIES, ...(userData.categories || [])])].sort();
+      
+      container.innerHTML = `
+        <div class="categories-selector">
+          <div class="category-dropdown">
+            <select id="categorySelect" class="category-select">
+              <option value="">Seleccionar categoría...</option>
+              ${allCategories.map(cat => `<option value="${cat}" ${selectedCategories.includes(cat) ? "disabled" : ""}>${cat}</option>`).join("")}
+            </select>
+            <button type="button" class="btn btn-success" id="addSelectedCategory"><i class="fas fa-plus"></i> Agregar</button>
+          </div>
+          <div class="custom-category">
+            <input type="text" id="customCategory" placeholder="¿No encuentras tu rubro? Escríbelo aquí...">
+            <button type="button" class="btn btn-secondary" id="addCustomCategory"><i class="fas fa-plus"></i> Agregar Personalizada</button>
+          </div>
+        </div>
+        <div class="selected-categories">
+          <h4><i class="fas fa-check-circle"></i> Categorías de tu Negocio</h4>
+          <div class="selected-categories-grid" id="selectedCategoriesGrid">
+            ${selectedCategories.map((cat, idx) => `<div class="selected-category-tag" data-index="${idx}"><span>${cat}</span><button class="remove-btn"><i class="fas fa-times"></i></button></div>`).join("")}
+          </div>
+          ${selectedCategories.length === 0 ? `<p class="empty-categories">No has seleccionado categorías aún</p>` : ""}
+        </div>
+      `;
+    }
+
+    function fillForm() {
+      const fields = ['nombreComercio', 'telefono', 'direccion', 'ciudad', 'barrio', 'descripcion', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok'];
+      fields.forEach(field => {
+        const el = document.getElementById(field);
+        if (el && userData[field]) el.value = userData[field];
+      });
+
+      const paisEl = document.getElementById('pais');
+      if (userData.pais) {
+        paisEl.value = userData.pais;
+        loadProvinces(userData.pais);
+        if (userData.provincia) {
+          document.getElementById('provincia').value = userData.provincia;
+        }
+      }
+
+      if (userData.plan) {
+        document.querySelectorAll('.plan-card').forEach(card => {
+          if (card.dataset.plan === userData.plan) {
+            card.classList.add('selected');
+          }
+        });
+      }
+
+      document.getElementById('commerceName').textContent = userData.nombreComercio || 'Mi Comercio';
+      document.getElementById('planBadge').textContent = userData.plan || 'Trial';
+    }
+
+    function loadProvinces(country) {
+      const select = document.getElementById('provincia');
+      const provinces = PROVINCES_BY_COUNTRY[country] || ['Otro'];
+      select.innerHTML = provinces.map(p => `<option value="${p}">${p}</option>`).join('');
+    }
+
+    function setupEventListeners() {
+      document.getElementById('pais').addEventListener('change', (e) => {
+        loadProvinces(e.target.value);
+      });
+
+      document.querySelectorAll('.plan-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+        });
+      });
+
+      document.getElementById('categoriesGrid').addEventListener('click', async (e) => {
+        if (e.target.closest('#addSelectedCategory')) {
+          const select = document.getElementById('categorySelect');
+          const cat = select.value;
+          if (cat && !selectedCategories.includes(cat)) {
+            selectedCategories.push(cat);
+            await FirebaseHelpers.updateUserData({ categories: selectedCategories });
+            userData.categories = selectedCategories;
+            renderCategories();
+          }
+        } else if (e.target.closest('#addCustomCategory')) {
+          const input = document.getElementById('customCategory');
+          const cat = input.value.trim();
+          if (cat && !selectedCategories.includes(cat)) {
+            selectedCategories.push(cat);
+            await FirebaseHelpers.updateUserData({ categories: selectedCategories });
+            userData.categories = selectedCategories;
+            renderCategories();
+            input.value = '';
+          }
+        } else if (e.target.closest('.remove-btn')) {
+          const tag = e.target.closest('.selected-category-tag');
+          const idx = Number(tag.dataset.index);
+          selectedCategories.splice(idx, 1);
+          await FirebaseHelpers.updateUserData({ categories: selectedCategories });
+          userData.categories = selectedCategories;
+          renderCategories();
+        }
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        if (confirm('¿Cerrar sesión?')) {
+          await AuthHelpers.logout();
+        }
+      });
+    }
+
+    function updateSubscriptionBanner() {
+      const banner = document.getElementById('subscriptionBanner');
+      const messageEl = document.getElementById('subscriptionMessage');
+      
+      const trialEnd = userData.trialEndDate ? new Date(userData.trialEndDate) : null;
+      const now = new Date();
+      const status = userData.estado || 'trial';
+      
+      if (status === 'active') {
+        const endDate = userData.subscriptionEndDate ? new Date(userData.subscriptionEndDate) : null;
+        const formattedDate = endDate ? endDate.toLocaleDateString('es-ES') : 'fecha no disponible';
+        messageEl.textContent = `Suscripción activa hasta ${formattedDate}`;
+        banner.className = 'subscription-banner active';
+      } else if (status === 'trial' && trialEnd) {
+        const daysLeft = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+        if (daysLeft > 0) {
+          messageEl.textContent = `Trial gratuito - ${daysLeft} días restantes`;
+          banner.className = 'subscription-banner';
+        } else {
+          messageEl.textContent = `Trial expirado - actualiza tu plan`;
+          banner.className = 'subscription-banner expired';
+        }
+      } else {
+        messageEl.textContent = `Suscripción vencida - actualiza tu plan`;
+        banner.className = 'subscription-banner expired';
+      }
+    }
+  </script>
+
+  <style>
+    .subscription-banner {
+      background: #fffbeb;
+      border-left: 4px solid #f6ad55;
+      padding: 1rem 2rem;
+      margin: 1rem 0;
+      font-weight: 600;
+      color: #975a16;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .subscription-banner.expired {
+      background: #fed7d7;
+      border-left-color: #e53e3e;
+      color: #9b2c2c;
+    }
+    .subscription-banner.active {
+      background: #c6f6d5;
+      border-left-color: #38a169;
+      color: #276749;
+    }
+    .required::after { content: " *"; color: #f44336; }
+  </style>
 </body>
 </html>
