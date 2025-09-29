@@ -3,7 +3,6 @@ import { LocalData, Utils } from './shared.js';
 
 class Navigation {
   // Configuración de páginas y orden
-  // Configuración de páginas y orden
   static pages = [
     { id: 'mi-comercio', name: 'Mi Comercio', url: 'mi-comercio.html', icon: 'fas fa-store' },
     { id: 'horarios', name: 'Horarios', url: 'horarios.html', icon: 'fas fa-clock' },
@@ -292,7 +291,9 @@ class Navigation {
 // Auto-inicializar cuando se carga la página
 document.addEventListener('DOMContentLoaded', () => {
   // Solo inicializar en páginas del dashboard
-  if (window.location.pathname.includes('/dashboard/')) {
+  const dashboardPages = ['mi-comercio.html', 'horarios.html', 'productos.html', 'mi-ia.html'];
+  const currentPage = window.location.pathname.split('/').pop();
+  if (dashboardPages.includes(currentPage)) {
     Navigation.init();
   }
 });
