@@ -178,7 +178,6 @@
       try {
         Utils.showLoading('Verificando sesión...');
         
-        // Verificación asíncrona de sesión
         const user = await new Promise((resolve) => {
           const unsubscribe = auth.onAuthStateChanged((user) => {
             unsubscribe();
@@ -203,7 +202,6 @@
         Navigation.init();
 
         window.validateCurrentPageData = () => {
-          // Validación mínima: al menos un producto
           return products.length > 0;
         };
 
@@ -257,7 +255,6 @@
 
       formTitle.textContent = currentProductType === 'producto' ? 'Agregar Producto' : 'Agregar Servicio';
 
-      // Campos comunes
       const commonFields = [
         { id: "productName", label: "Nombre/Título", type: "text", required: true },
         { id: "productCode", label: "Código/SKU", type: "text", required: false },
@@ -267,7 +264,6 @@
         { id: "productImage", label: "Imagen (URL)", type: "url", required: false, placeholder: "https://ejemplo.com/imagen.jpg" }
       ];
 
-      // Campos específicos
       let specificFields = [];
       if (currentProductType === "producto") {
         specificFields = [
@@ -337,7 +333,7 @@
       `;
 
       body.innerHTML = products.map(item => {
-        const isProduct = !item.servicePhone; // Heurística simple
+        const isProduct = !item.servicePhone;
         return `
           <tr data-product-id="${item.id}">
             <td>${item.nombre || ""}</td>
@@ -362,7 +358,6 @@
         `;
       }).join("");
 
-      // Configurar eventos
       body.addEventListener("click", async (e) => {
         const row = e.target.closest("tr");
         if (!row) return;
@@ -396,7 +391,6 @@
     }
 
     function setupEventListeners() {
-      // Cambio de tipo
       document.getElementById('typeSelector').addEventListener('change', (e) => {
         if (e.target.name === 'itemType') {
           currentProductType = e.target.value;
@@ -405,7 +399,6 @@
         }
       });
 
-      // Formulario de producto
       document.getElementById('productForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!validateProductForm()) return;
@@ -417,7 +410,6 @@
         editingProductId = null;
       });
 
-      // Logout
       document.getElementById('logoutBtn').addEventListener('click', async () => {
         if (confirm('¿Cerrar sesión?')) {
           await AuthHelpers.logout();
@@ -425,7 +417,6 @@
         }
       });
 
-      // CSV Upload
       const fileUpload = document.getElementById('fileUpload');
       const fileInput = document.getElementById('excelFile');
       
@@ -448,7 +439,6 @@
         if (file) processCSVFile(file);
       });
 
-      // Botones de tabla
       document.getElementById('exportProducts')?.addEventListener('click', exportProducts);
       document.getElementById('clearProducts')?.addEventListener('click', clearAllProducts);
     }
@@ -489,6 +479,12 @@
         } else {
           await FirebaseHelpers.addProduct(productData);
           Utils.showToast('Éxito', 'Producto agregado', 'success');
+        }
+
+        try {
+          await FirebaseHelpers.syncToGist();
+        } catch (err) {
+          console.error("No se pudo sincronizar JSON:", err);
         }
 
         await loadProducts();
@@ -534,7 +530,6 @@
       const product = products.find(p => p.id === id);
       if (!product) return;
 
-      // Llenar campos comunes
       document.getElementById('productName').value = product.nombre || '';
       document.getElementById('productCode').value = product.codigo || '';
       document.getElementById('productCategory').value = product.categoria || '';
@@ -542,13 +537,11 @@
       document.getElementById('productDescription').value = product.descripcion || '';
       document.getElementById('productImage').value = product.imagen || '';
 
-      // Determinar tipo
       const isProduct = product.precio !== undefined || product.stock !== undefined;
       currentProductType = isProduct ? 'producto' : 'servicio';
       renderTypeSelector();
       renderProductForm();
 
-      // Llenar campos específicos
       if (isProduct) {
         document.getElementById('productPrice').value = product.precio || '';
         document.getElementById('productStock').value = product.stock || '';
@@ -571,6 +564,13 @@
       try {
         Utils.showLoading('Eliminando producto...');
         await FirebaseHelpers.deleteProduct(id);
+        
+        try {
+          await FirebaseHelpers.syncToGist();
+        } catch (err) {
+          console.error("No se pudo sincronizar JSON:", err);
+        }
+        
         await loadProducts();
         renderProductsTable();
         Utils.hideLoading();
@@ -588,6 +588,13 @@
         if (!product) return;
         const newStatus = !product.paused;
         await FirebaseHelpers.updateProduct(id, { paused: newStatus });
+        
+        try {
+          await FirebaseHelpers.syncToGist();
+        } catch (err) {
+          console.error("No se pudo sincronizar JSON:", err);
+        }
+        
         await loadProducts();
         renderProductsTable();
         Utils.showToast('Estado actualizado', `Producto ${newStatus ? 'pausado' : 'activado'}`, 'success');
@@ -605,7 +612,6 @@
     }
 
     async function processCSVFile(file) {
-      // Implementación simplificada para el ejemplo
       Utils.showToast('CSV', 'Funcionalidad de importación CSV en desarrollo', 'info');
     }
 
@@ -621,7 +627,6 @@
       if (!confirm('¿Eliminar todos los productos? Esta acción no puede deshacerse.')) return;
       try {
         Utils.showLoading('Eliminando productos...');
-        // Implementación simplificada
         Utils.hideLoading();
         Utils.showToast('Éxito', 'Todos los productos eliminados', 'success');
       } catch (error) {
@@ -630,18 +635,6 @@
         Utils.showToast('Error', 'No se pudieron eliminar los productos', 'error');
       }
     }
-
-    // Guardado automático al navegar
-    const originalGoToNextPage = Navigation.goToNextPage;
-    Navigation.goToNextPage = async function() {
-      // No se guarda automáticamente en productos (se guarda al agregar/editar)
-      return originalGoToNextPage.call(this);
-    };
-
-    const originalGoToPreviousPage = Navigation.goToPreviousPage;
-    Navigation.goToPreviousPage = async function() {
-      return originalGoToPreviousPage.call(this);
-    };
 
     function updateSubscriptionBanner() {
       const banner = document.getElementById('subscriptionBanner');
@@ -770,7 +763,8 @@
     
     .type-content i {
       font-size: 2rem;
-      margin-bottom: 1rem;
+      margin-bottom: 1rem
+      ;
       color: #4299e1;
     }
     
