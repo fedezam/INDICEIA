@@ -219,6 +219,15 @@ class FirebaseHelpers {
     }
   }
 }
+// 🔧 FirebaseHelpers (solo lo nuevo)
+class FirebaseHelpers {
+  static async updateUserData(data) {
+    const user = auth.currentUser;
+    if (!user) throw new Error('Usuario no autenticado');
+    await setDoc(doc(db, "usuarios", user.uid), data, { merge: true });
+  }
+}
+
 
 // ==========================================
 // 🎯 INITIALIZATION (Actualizado initSharedData)
