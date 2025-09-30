@@ -3,58 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro - INDICEIA</title>
+  <title>Registro Usuario - INDICEIA</title>
 
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
+  
   <!-- CSS único -->
   <link rel="stylesheet" href="css/dashboard.css">
-
   <style>
-    /* Ajustes para usuario.html */
-    .form-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-top: 20px;
-      align-items: center;
-      justify-content: center;
-    }
-
+    .required::after { content: " *"; color: #f44336; }
     .btn-choice {
       width: 100%;
-      max-width: 350px;
-      text-align: center;
-      font-size: 1rem;
+      margin: 10px 0;
       padding: 12px;
-      border-radius: 10px;
+      font-size: 1rem;
       cursor: pointer;
-      transition: all 0.2s;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
-
-    .btn-choice i {
-      margin-right: 8px;
+    .btn-choice:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
-
-    .btn-choice:hover {
-      transform: scale(1.03);
+    @media(min-width: 600px){
+      .btn-choice { width: auto; padding: 12px 20px; }
     }
-
-    .choice-description {
-      font-size: 0.9rem;
-      color: #555;
-      text-align: center;
-      margin-top: -10px;
-      margin-bottom: 10px;
-    }
-
-    /* Responsive */
-    @media(max-width:600px){
-      .btn-choice { font-size: 0.9rem; padding: 10px; }
-    }
-
-    .required::after { content: " *"; color: #f44336; }
   </style>
 </head>
 <body>
@@ -71,7 +47,9 @@
   <header class="header">
     <div class="container">
       <div class="logo">
-        <div class="logo-icon"><i class="fas fa-robot"></i></div>
+        <div class="logo-icon">
+          <i class="fas fa-robot"></i>
+        </div>
         <h1>INDICEIA</h1>
       </div>
     </div>
@@ -81,8 +59,8 @@
   <main class="main-content">
     <div class="container">
       <div class="form-section">
-        <h3><i class="fas fa-user"></i> Datos del Usuario</h3>
-        <p>Completa tus datos personales para comenzar.</p>
+        <h3><i class="fas fa-user"></i> Perfil de Usuario</h3>
+        <p>Completa tus datos personales para poder crear tu asistente para comercio o servicio.</p>
 
         <form id="userProfileForm" class="form-fields">
           <div class="form-field">
@@ -104,47 +82,41 @@
           </div>
 
           <div class="form-field">
-            <label for="userBirthDate">Fecha de Nacimiento</label>
-            <input type="date" id="userBirthDate" name="userBirthDate">
+            <label for="userBirthDate" class="required">Fecha de Nacimiento</label>
+            <input type="date" id="userBirthDate" name="userBirthDate" required>
           </div>
 
           <div class="form-field">
             <label for="userStreet" class="required">Calle y Número</label>
-            <input type="text" id="userStreet" name="userStreet" placeholder="Ej: Av. Córdoba 1234">
+            <input type="text" id="userStreet" name="userStreet" required placeholder="Ej: Av. Libertador 1234">
           </div>
 
           <div class="form-field">
-            <label for="userBarrio">Barrio (opcional)</label>
-            <input type="text" id="userBarrio" name="userBarrio" placeholder="Ej: Palermo">
+            <label for="userNeighborhood">Barrio (opcional)</label>
+            <input type="text" id="userNeighborhood" name="userNeighborhood" placeholder="Ej: Palermo">
           </div>
 
           <div class="form-field">
-            <label for="userCity" class="required">Localidad</label>
-            <input type="text" id="userCity" name="userCity" placeholder="Ej: Buenos Aires">
+            <label for="userCity" class="required">Localidad / Ciudad</label>
+            <input type="text" id="userCity" name="userCity" required placeholder="Ej: Buenos Aires">
           </div>
 
           <div class="form-field">
             <label for="userProvince" class="required">Provincia</label>
-            <input type="text" id="userProvince" name="userProvince" placeholder="Ej: Buenos Aires">
+            <input type="text" id="userProvince" name="userProvince" required placeholder="Ej: Buenos Aires">
           </div>
 
           <div class="form-field">
             <label for="userCountry" class="required">País</label>
-            <input type="text" id="userCountry" name="userCountry" placeholder="Ej: Argentina">
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> Guardar Datos</button>
+            <input type="text" id="userCountry" name="userCountry" required placeholder="Ej: Argentina">
           </div>
         </form>
 
-        <!-- Botones de bifurcación comercio/servicio -->
-        <div class="form-actions" id="choiceButtons" style="display:none;">
-          <div class="choice-description">Selecciona qué tipo de asistente quieres crear:</div>
-          <button id="btnComercio" class="btn-choice btn-primary">
+        <div class="form-actions">
+          <button type="button" id="btnComercio" class="btn-choice btn-primary" disabled>
             <i class="fas fa-store"></i> Crear Asistente para Comercio
           </button>
-          <button id="btnServicio" class="btn-choice btn-success">
+          <button type="button" id="btnServicio" class="btn-choice btn-success" disabled>
             <i class="fas fa-hand-holding-medical"></i> Crear Asistente para Servicio
           </button>
         </div>
@@ -160,8 +132,8 @@
       try {
         Utils.showLoading('Verificando sesión...');
         
-        const user = await new Promise((resolve) => {
-          const unsubscribe = auth.onAuthStateChanged((user) => {
+        const user = await new Promise(resolve => {
+          const unsubscribe = auth.onAuthStateChanged(user => {
             unsubscribe();
             resolve(user);
           });
@@ -174,6 +146,7 @@
 
         const userData = await FirebaseHelpers.getUserData();
         fillForm(userData);
+        checkFormAndToggleButtons();
         setupEventListeners();
         Utils.hideLoading();
       } catch (error) {
@@ -188,92 +161,106 @@
       if (userData.email) document.getElementById('userEmail').value = userData.email;
       if (userData.telefono) document.getElementById('userPhone').value = userData.telefono;
       if (userData.fechaNacimiento) document.getElementById('userBirthDate').value = userData.fechaNacimiento;
-      if (userData.direccion) {
-        document.getElementById('userStreet').value = userData.direccion.calle || '';
-        document.getElementById('userBarrio').value = userData.direccion.barrio || '';
-        document.getElementById('userCity').value = userData.direccion.localidad || '';
-        document.getElementById('userProvince').value = userData.direccion.provincia || '';
-        document.getElementById('userCountry').value = userData.direccion.pais || '';
-      }
+      if (userData.calle) document.getElementById('userStreet').value = userData.calle;
+      if (userData.barrio) document.getElementById('userNeighborhood').value = userData.barrio;
+      if (userData.ciudad) document.getElementById('userCity').value = userData.ciudad;
+      if (userData.provincia) document.getElementById('userProvince').value = userData.provincia;
+      if (userData.pais) document.getElementById('userCountry').value = userData.pais;
     }
 
     function setupEventListeners() {
-      const form = document.getElementById('userProfileForm');
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (!validateForm()) return;
-        await saveUserProfile();
+      const requiredFields = ['userName','userEmail','userPhone','userBirthDate','userStreet','userCity','userProvince','userCountry'];
+      requiredFields.forEach(id => {
+        document.getElementById(id).addEventListener('input', checkFormAndToggleButtons);
       });
 
-      document.getElementById('btnComercio').addEventListener('click', () => {
-        window.location.href = '/mi-comercio.html';
-      });
-
-      document.getElementById('btnServicio').addEventListener('click', () => {
-        window.location.href = '/mi-servicio.html';
-      });
+      document.getElementById('btnComercio').addEventListener('click', () => handleButtonClick('comercio'));
+      document.getElementById('btnServicio').addEventListener('click', () => handleButtonClick('servicio'));
     }
 
-    function validateForm() {
-      const requiredFields = ['userName', 'userEmail', 'userPhone', 'userStreet', 'userCity', 'userProvince', 'userCountry'];
-      let isValid = true;
+    function checkFormAndToggleButtons() {
+      const requiredFields = ['userName','userEmail','userPhone','userBirthDate','userStreet','userCity','userProvince','userCountry'];
+      let allFilled = true;
 
       requiredFields.forEach(id => {
         const el = document.getElementById(id);
-        if (!el.value.trim()) {
-          el.classList.add('error');
-          isValid = false;
-        } else {
-          el.classList.remove('error');
-        }
+        if (!el.value.trim()) allFilled = false;
       });
 
-      const email = document.getElementById('userEmail').value;
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        document.getElementById('userEmail').classList.add('error');
-        isValid = false;
-      }
-
-      return isValid;
+      ['btnComercio','btnServicio'].forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        btn.disabled = !allFilled;
+        btn.dataset.formComplete = allFilled ? 'true' : 'false';
+      });
     }
 
-    async function saveUserProfile() {
+    async function handleButtonClick(tipo) {
+      const btnId = tipo === 'comercio' ? 'btnComercio' : 'btnServicio';
+      const btn = document.getElementById(btnId);
+      if (btn.dataset.formComplete !== 'true') {
+        Utils.showToast('Atención', 'Debes completar todos los datos antes de continuar', 'warning');
+        return;
+      }
+      await saveUserProfile(tipo);
+    }
+
+    async function saveUserProfile(tipo) {
       try {
         Utils.showLoading('Guardando perfil...');
-
+        
         const userData = {
           nombre: document.getElementById('userName').value.trim(),
           email: document.getElementById('userEmail').value.trim(),
           telefono: document.getElementById('userPhone').value.trim(),
-          fechaNacimiento: document.getElementById('userBirthDate').value || null,
-          direccion: {
-            calle: document.getElementById('userStreet').value.trim(),
-            barrio: document.getElementById('userBarrio').value.trim() || "",
-            localidad: document.getElementById('userCity').value.trim(),
-            provincia: document.getElementById('userProvince').value.trim(),
-            pais: document.getElementById('userCountry').value.trim()
-          }
+          fechaNacimiento: document.getElementById('userBirthDate').value,
+          calle: document.getElementById('userStreet').value.trim(),
+          barrio: document.getElementById('userNeighborhood').value.trim(),
+          ciudad: document.getElementById('userCity').value.trim(),
+          provincia: document.getElementById('userProvince').value.trim(),
+          pais: document.getElementById('userCountry').value.trim()
         };
 
         const userDoc = doc(db, "usuarios", auth.currentUser.uid);
+        const userSnapshot = await getDoc(userDoc);
+
+        let comercioId = null;
+        if (tipo === 'comercio') {
+          if (userSnapshot.exists()) comercioId = userSnapshot.data().comercioId;
+          if (!comercioId) {
+            comercioId = 'comercio_' + Math.random().toString(36).substring(2,15) + Date.now().toString(36);
+            await setDoc(doc(db, "comercios", comercioId), {
+              nombreComercio: "",
+              rubro: "",
+              direccion: "",
+              telefono: userData.telefono,
+              fechaCreacion: serverTimestamp(),
+              ownerId: auth.currentUser.uid
+            });
+          }
+        }
+
         await setDoc(userDoc, {
           ...userData,
+          comercioId: comercioId || null,
           fechaRegistro: serverTimestamp()
         }, { merge: true });
 
         Utils.hideLoading();
         Utils.showToast('Éxito', 'Perfil guardado correctamente', 'success');
 
-        // Mostrar botones de bifurcación
-        document.getElementById('choiceButtons').style.display = 'flex';
+        // Redirigir según tipo
+        setTimeout(() => {
+          if (tipo === 'comercio') window.location.href = '/mi-comercio.html';
+          else window.location.href = '/mi-servicio.html';
+        }, 1000);
 
       } catch (error) {
         Utils.hideLoading();
-        console.error('Error saving user profile:', error);
+        console.error('Error guardando perfil:', error);
         Utils.showToast('Error', 'No se pudo guardar el perfil', 'error');
       }
     }
   </script>
 </body>
 </html>
+
