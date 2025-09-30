@@ -1,11 +1,61 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Registro - INDICEIA</title>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-<link rel="stylesheet" href="css/dashboard.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro - INDICEIA</title>
+
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+  <!-- CSS único -->
+  <link rel="stylesheet" href="css/dashboard.css">
+
+  <style>
+    /* Ajustes para usuario.html */
+    .form-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-choice {
+      width: 100%;
+      max-width: 350px;
+      text-align: center;
+      font-size: 1rem;
+      padding: 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-choice i {
+      margin-right: 8px;
+    }
+
+    .btn-choice:hover {
+      transform: scale(1.03);
+    }
+
+    .choice-description {
+      font-size: 0.9rem;
+      color: #555;
+      text-align: center;
+      margin-top: -10px;
+      margin-bottom: 10px;
+    }
+
+    /* Responsive */
+    @media(max-width:600px){
+      .btn-choice { font-size: 0.9rem; padding: 10px; }
+    }
+
+    .required::after { content: " *"; color: #f44336; }
+  </style>
 </head>
 <body>
   <!-- Loading overlay -->
@@ -17,12 +67,23 @@
   <!-- Toast container -->
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <div class="logo-icon"><i class="fas fa-robot"></i></div>
+        <h1>INDICEIA</h1>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido principal -->
   <main class="main-content">
     <div class="container">
       <div class="form-section">
         <h3><i class="fas fa-user"></i> Datos del Usuario</h3>
-        <p>Completa tus datos personales. Solo se usarán para gestión interna y contacto.</p>
-        
+        <p>Completa tus datos personales para comenzar.</p>
+
         <form id="userProfileForm" class="form-fields">
           <div class="form-field">
             <label for="userName" class="required">Nombre Completo</label>
@@ -43,161 +104,176 @@
           </div>
 
           <div class="form-field">
-            <label for="userOccupation">Título / Ocupación (opcional)</label>
-            <input type="text" id="userOccupation" name="userOccupation" placeholder="Ej: Médico, Abogado, Albañil">
+            <label for="userBirthDate">Fecha de Nacimiento</label>
+            <input type="date" id="userBirthDate" name="userBirthDate">
           </div>
 
           <div class="form-field">
-            <label for="userCity">Ciudad / Localidad</label>
+            <label for="userStreet" class="required">Calle y Número</label>
+            <input type="text" id="userStreet" name="userStreet" placeholder="Ej: Av. Córdoba 1234">
+          </div>
+
+          <div class="form-field">
+            <label for="userBarrio">Barrio (opcional)</label>
+            <input type="text" id="userBarrio" name="userBarrio" placeholder="Ej: Palermo">
+          </div>
+
+          <div class="form-field">
+            <label for="userCity" class="required">Localidad</label>
             <input type="text" id="userCity" name="userCity" placeholder="Ej: Buenos Aires">
           </div>
 
           <div class="form-field">
-            <label for="userAge">Edad</label>
-            <input type="number" id="userAge" name="userAge" placeholder="Ej: 35">
+            <label for="userProvince" class="required">Provincia</label>
+            <input type="text" id="userProvince" name="userProvince" placeholder="Ej: Buenos Aires">
           </div>
 
-          <p>¿Qué deseas crear primero?</p>
+          <div class="form-field">
+            <label for="userCountry" class="required">País</label>
+            <input type="text" id="userCountry" name="userCountry" placeholder="Ej: Argentina">
+          </div>
+
           <div class="form-actions">
-            <button type="button" id="btnComercio" class="btn btn-primary btn-lg">
-              <i class="fas fa-store"></i> Crear mi comercio
-            </button>
-            <button type="button" id="btnServicio" class="btn btn-secondary btn-lg">
-              <i class="fas fa-user-md"></i> Crear mi servicio
-            </button>
+            <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> Guardar Datos</button>
           </div>
         </form>
+
+        <!-- Botones de bifurcación comercio/servicio -->
+        <div class="form-actions" id="choiceButtons" style="display:none;">
+          <div class="choice-description">Selecciona qué tipo de asistente quieres crear:</div>
+          <button id="btnComercio" class="btn-choice btn-primary">
+            <i class="fas fa-store"></i> Crear Asistente para Comercio
+          </button>
+          <button id="btnServicio" class="btn-choice btn-success">
+            <i class="fas fa-hand-holding-medical"></i> Crear Asistente para Servicio
+          </button>
+        </div>
       </div>
     </div>
   </main>
 
-<script type="module">
-import { Utils, FirebaseHelpers, auth, db, doc, setDoc, serverTimestamp } from './js/shared.js';
+  <!-- Scripts -->
+  <script type="module">
+    import { Utils, FirebaseHelpers, AuthHelpers, auth, db, doc, getDoc, setDoc, serverTimestamp } from './js/shared.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    Utils.showLoading('Verificando sesión...');
-    
-    const user = await new Promise(resolve => {
-      const unsubscribe = auth.onAuthStateChanged(u => {
-        unsubscribe();
-        resolve(u);
-      });
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        Utils.showLoading('Verificando sesión...');
+        
+        const user = await new Promise((resolve) => {
+          const unsubscribe = auth.onAuthStateChanged((user) => {
+            unsubscribe();
+            resolve(user);
+          });
+        });
+
+        if (!user) {
+          window.location.href = '/index.html';
+          return;
+        }
+
+        const userData = await FirebaseHelpers.getUserData();
+        fillForm(userData);
+        setupEventListeners();
+        Utils.hideLoading();
+      } catch (error) {
+        Utils.hideLoading();
+        console.error('Error:', error);
+        Utils.showToast('Error', 'No se pudo cargar la página', 'error');
+      }
     });
 
-    if (!user) {
-      window.location.href = '/index.html';
-      return;
+    function fillForm(userData) {
+      if (userData.nombre) document.getElementById('userName').value = userData.nombre;
+      if (userData.email) document.getElementById('userEmail').value = userData.email;
+      if (userData.telefono) document.getElementById('userPhone').value = userData.telefono;
+      if (userData.fechaNacimiento) document.getElementById('userBirthDate').value = userData.fechaNacimiento;
+      if (userData.direccion) {
+        document.getElementById('userStreet').value = userData.direccion.calle || '';
+        document.getElementById('userBarrio').value = userData.direccion.barrio || '';
+        document.getElementById('userCity').value = userData.direccion.localidad || '';
+        document.getElementById('userProvince').value = userData.direccion.provincia || '';
+        document.getElementById('userCountry').value = userData.direccion.pais || '';
+      }
     }
 
-    const userData = await FirebaseHelpers.getUserData();
-    fillForm(userData);
-    setupEventListeners();
-    Utils.hideLoading();
-  } catch (error) {
-    Utils.hideLoading();
-    console.error(error);
-    Utils.showToast('Error', 'No se pudo cargar la página', 'error');
-  }
-});
-
-function fillForm(userData) {
-  if (userData.nombre) document.getElementById('userName').value = userData.nombre;
-  if (userData.email) document.getElementById('userEmail').value = userData.email;
-  if (userData.telefono) document.getElementById('userPhone').value = userData.telefono;
-  if (userData.ocupacion) document.getElementById('userOccupation').value = userData.ocupacion;
-  if (userData.ciudad) document.getElementById('userCity').value = userData.ciudad;
-  if (userData.edad) document.getElementById('userAge').value = userData.edad;
-}
-
-function setupEventListeners() {
-  document.getElementById('btnComercio').addEventListener('click', () => saveUserProfile('comercio'));
-  document.getElementById('btnServicio').addEventListener('click', () => saveUserProfile('servicio'));
-}
-
-async function saveUserProfile(tipo) {
-  if (!validateForm()) return;
-
-  try {
-    Utils.showLoading('Guardando perfil...');
-    
-    const userData = {
-      nombre: document.getElementById('userName').value.trim(),
-      email: document.getElementById('userEmail').value.trim(),
-      telefono: document.getElementById('userPhone').value.trim(),
-      ocupacion: document.getElementById('userOccupation').value.trim(),
-      ciudad: document.getElementById('userCity').value.trim(),
-      edad: parseInt(document.getElementById('userAge').value) || null
-    };
-
-    const userDocRef = doc(db, "usuarios", auth.currentUser.uid);
-    await setDoc(userDocRef, { ...userData, fechaRegistro: serverTimestamp() }, { merge: true });
-
-    // Crear documento base según tipo
-    if (tipo === 'comercio') {
-      const comercioId = 'comercio_' + Math.random().toString(36).substring(2,15) + Date.now().toString(36);
-      await setDoc(doc(db, "comercios", comercioId), {
-        nombreComercio: "",
-        rubro: "",
-        direccion: "",
-        telefono: userData.telefono,
-        ownerId: auth.currentUser.uid,
-        fechaCreacion: serverTimestamp()
+    function setupEventListeners() {
+      const form = document.getElementById('userProfileForm');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+        await saveUserProfile();
       });
-      await setDoc(userDocRef, { comercioId }, { merge: true });
-      Utils.showToast('Éxito', 'Perfil y comercio guardados', 'success');
-      setTimeout(() => window.location.href = '/mi-comercio.html', 1000);
-    } else if (tipo === 'servicio') {
-      const servicioId = 'servicio_' + Math.random().toString(36).substring(2,15) + Date.now().toString(36);
-      await setDoc(doc(db, "servicios", servicioId), {
-        nombreServicio: "",
-        descripcion: "",
-        direccion: "",
-        telefono: "", // opcional, se carga en servicio
-        ownerId: auth.currentUser.uid,
-        fechaCreacion: serverTimestamp()
+
+      document.getElementById('btnComercio').addEventListener('click', () => {
+        window.location.href = '/mi-comercio.html';
       });
-      await setDoc(userDocRef, { servicioId }, { merge: true });
-      Utils.showToast('Éxito', 'Perfil y servicio guardados', 'success');
-      setTimeout(() => window.location.href = '/mi-servicio.html', 1000);
+
+      document.getElementById('btnServicio').addEventListener('click', () => {
+        window.location.href = '/mi-servicio.html';
+      });
     }
 
-    Utils.hideLoading();
+    function validateForm() {
+      const requiredFields = ['userName', 'userEmail', 'userPhone', 'userStreet', 'userCity', 'userProvince', 'userCountry'];
+      let isValid = true;
 
-  } catch (error) {
-    Utils.hideLoading();
-    console.error(error);
-    Utils.showToast('Error', 'No se pudo guardar el perfil', 'error');
-  }
-}
+      requiredFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el.value.trim()) {
+          el.classList.add('error');
+          isValid = false;
+        } else {
+          el.classList.remove('error');
+        }
+      });
 
-function validateForm() {
-  const requiredFields = ['userName', 'userEmail', 'userPhone'];
-  let isValid = true;
+      const email = document.getElementById('userEmail').value;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        document.getElementById('userEmail').classList.add('error');
+        isValid = false;
+      }
 
-  requiredFields.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el.value.trim()) {
-      el.classList.add('error');
-      isValid = false;
-    } else {
-      el.classList.remove('error');
+      return isValid;
     }
-  });
 
-  const email = document.getElementById('userEmail').value;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    document.getElementById('userEmail').classList.add('error');
-    isValid = false;
-  }
+    async function saveUserProfile() {
+      try {
+        Utils.showLoading('Guardando perfil...');
 
-  return isValid;
-}
-</script>
+        const userData = {
+          nombre: document.getElementById('userName').value.trim(),
+          email: document.getElementById('userEmail').value.trim(),
+          telefono: document.getElementById('userPhone').value.trim(),
+          fechaNacimiento: document.getElementById('userBirthDate').value || null,
+          direccion: {
+            calle: document.getElementById('userStreet').value.trim(),
+            barrio: document.getElementById('userBarrio').value.trim() || "",
+            localidad: document.getElementById('userCity').value.trim(),
+            provincia: document.getElementById('userProvince').value.trim(),
+            pais: document.getElementById('userCountry').value.trim()
+          }
+        };
 
-<style>
-.required::after { content: " *"; color: #f44336; }
-</style>
+        const userDoc = doc(db, "usuarios", auth.currentUser.uid);
+        await setDoc(userDoc, {
+          ...userData,
+          fechaRegistro: serverTimestamp()
+        }, { merge: true });
+
+        Utils.hideLoading();
+        Utils.showToast('Éxito', 'Perfil guardado correctamente', 'success');
+
+        // Mostrar botones de bifurcación
+        document.getElementById('choiceButtons').style.display = 'flex';
+
+      } catch (error) {
+        Utils.hideLoading();
+        console.error('Error saving user profile:', error);
+        Utils.showToast('Error', 'No se pudo guardar el perfil', 'error');
+      }
+    }
+  </script>
 </body>
 </html>
