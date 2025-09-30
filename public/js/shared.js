@@ -248,16 +248,38 @@ class FirebaseHelpers {
     }
   }
 
-  // 🆕 Generar JSON del comercio (basado en tu exportJSON.js)
+  // Sincronizar JSON con Gist (llamar después de cualquier cambio)
+  static async syncToGist(userId = null) {
+    try {
+      const uid = userId || auth.currentUser?.uid;
+      if (!uid) return;
+
+      const response = await fetch('/api/export-json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: uid })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ JSON sincronizado:', result.gist?.rawUrl);
+      return result;
+    } catch (error) {
+      console.error('❌ Error sincronizando JSON:', error);
+      throw error;
+    }
+  }
+
+  // Generar JSON del comercio (basado en tu exportJSON.js)
   static async generateCommerceJSON(userId = null) {
     try {
       const uid = userId || auth.currentUser?.uid;
       if (!uid) throw new Error('No hay usuario autenticado');
 
-      // Datos del usuario/comercio
       const userData = await this.getUserData(uid);
-      
-      // Productos
       const productos = await this.getProducts(uid);
 
       const finalJSON = {
