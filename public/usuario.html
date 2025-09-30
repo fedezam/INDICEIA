@@ -1,183 +1,64 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro de Usuario</title>
-  <link rel="stylesheet" href="css/styles.css">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f7f7f7;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-    }
-    form {
-      margin-bottom: 20px;
-    }
-    label {
-      font-weight: bold;
-      display: block;
-      margin-top: 10px;
-    }
-    input, select {
-      width: 100%;
-      padding: 8px;
-      margin-top: 4px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .options {
-      display: flex;
-      justify-content: space-around;
-      margin-top: 20px;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .option-btn {
-      flex: 1 1 45%;
-      padding: 15px;
-      background: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
-      text-align: center;
-      transition: background 0.3s;
-    }
-    .option-btn:hover {
-      background: #0056b3;
-    }
-    .option-btn:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    .explanation {
-      text-align: center;
-      margin-top: 15px;
-      font-size: 14px;
-      color: #555;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Registro de Usuario</h1>
-    <form id="userForm">
-      <label>Nombre completo *</label>
-      <input type="text" id="nombre" required>
+import { auth, db } from "./firebase.js";
+import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-      <label>Email *</label>
-      <input type="email" id="email" required>
+const form = document.getElementById("userForm");
+const btnComercio = document.getElementById("btnComercio");
+const btnServicio = document.getElementById("btnServicio");
 
-      <label>Teléfono *</label>
-      <input type="tel" id="telefono" required>
+let currentUser = null;
 
-      <label>Fecha de nacimiento *</label>
-      <input type="date" id="fechaNacimiento" required>
+// 🔒 Verificar login
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    currentUser = user;
+  } else {
+    window.location.href = "index.html";
+  }
+});
 
-      <label>País *</label>
-      <input type="text" id="pais" required>
+// 📝 Función para validar formulario
+function validarFormulario() {
+  return form.checkValidity();
+}
 
-      <label>Provincia *</label>
-      <input type="text" id="provincia" required>
+async function guardarUsuario() {
+  const userData = {
+    nombre: document.getElementById("nombre").value,
+    email: document.getElementById("email").value,
+    telefono: document.getElementById("telefono").value,
+    fechaNacimiento: document.getElementById("fechaNacimiento").value,
+    pais: document.getElementById("pais").value,
+    provincia: document.getElementById("provincia").value,
+    localidad: document.getElementById("localidad").value,
+    barrio: document.getElementById("barrio").value,
+    direccion: document.getElementById("direccion").value,
+    createdAt: new Date()
+  };
 
-      <label>Localidad *</label>
-      <input type="text" id="localidad" required>
+  try {
+    await setDoc(doc(db, "usuarios", currentUser.uid), userData, { merge: true });
+  } catch (err) {
+    console.error("Error guardando usuario:", err);
+    alert("Hubo un error al guardar tus datos. Intenta de nuevo.");
+  }
+}
 
-      <label>Barrio (opcional)</label>
-      <input type="text" id="barrio">
+// 🎯 Eventos botones
+btnComercio.addEventListener("click", async () => {
+  if (!validarFormulario()) {
+    alert("Por favor, completá todos los campos requeridos antes de continuar.");
+    return;
+  }
+  await guardarUsuario();
+  window.location.href = "mi-comercio.html";
+});
 
-      <label>Calle y número *</label>
-      <input type="text" id="direccion" required>
-    </form>
-
-    <div class="options">
-      <button id="btnComercio" class="option-btn">Crear Asistente para Comercio</button>
-      <button id="btnServicio" class="option-btn">Crear Asistente para Servicio</button>
-    </div>
-    <div class="explanation">
-      <p><b>Comercio:</b> Ideal para negocios físicos o tiendas online. Podrás cargar productos, horarios y promociones.</p>
-      <p><b>Servicio:</b> Perfecto para profesionales, médicos, talleres, municipios. Podrás definir tu oferta, horarios y formas de contacto.</p>
-    </div>
-  </div>
-
-  <script type="module">
-    import { auth, db } from "js/firebase.js";
-    import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-
-    const form = document.getElementById("userForm");
-    const btnComercio = document.getElementById("btnComercio");
-    const btnServicio = document.getElementById("btnServicio");
-
-    let currentUser = null;
-
-    // 🔒 Verificar login
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUser = user;
-      } else {
-        window.location.href = "index.html";
-      }
-    });
-
-    // 📝 Función para validar formulario
-    function validarFormulario() {
-      return form.checkValidity();
-    }
-
-    async function guardarUsuario() {
-      const userData = {
-        nombre: document.getElementById("nombre").value,
-        email: document.getElementById("email").value,
-        telefono: document.getElementById("telefono").value,
-        fechaNacimiento: document.getElementById("fechaNacimiento").value,
-        pais: document.getElementById("pais").value,
-        provincia: document.getElementById("provincia").value,
-        localidad: document.getElementById("localidad").value,
-        barrio: document.getElementById("barrio").value,
-        direccion: document.getElementById("direccion").value,
-        createdAt: new Date()
-      };
-
-      try {
-        await setDoc(doc(db, "usuarios", currentUser.uid), userData, { merge: true });
-      } catch (err) {
-        console.error("Error guardando usuario:", err);
-        alert("Hubo un error al guardar tus datos. Intenta de nuevo.");
-      }
-    }
-
-    // 🎯 Eventos botones
-    btnComercio.addEventListener("click", async () => {
-      if (!validarFormulario()) {
-        alert("Por favor, completá todos los campos requeridos antes de continuar.");
-        return;
-      }
-      await guardarUsuario();
-      window.location.href = "mi-comercio.html";
-    });
-
-    btnServicio.addEventListener("click", async () => {
-      if (!validarFormulario()) {
-        alert("Por favor, completá todos los campos requeridos antes de continuar.");
-        return;
-      }
-      await guardarUsuario();
-      window.location.href = "mi-servicio.html";
-    });
-  </script>
-</body>
-</html>
+btnServicio.addEventListener("click", async () => {
+  if (!validarFormulario()) {
+    alert("Por favor, completá todos los campos requeridos antes de continuar.");
+    return;
+  }
+  await guardarUsuario();
+  window.location.href = "mi-servicio.html";
+});
