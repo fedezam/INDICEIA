@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro - INDICEIA</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando...</div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="form-section">
+        <h3><i class="fas fa-user"></i> Datos del Usuario</h3>
+        <p>Completa tus datos personales. Solo se usarán para gestión interna y contacto.</p>
+        
+        <form id="userProfileForm" class="form-fields">
+          <div class="form-field">
+            <label for="userName" class="required">Nombre Completo</label>
+            <input type="text" id="userName" name="userName" required placeholder="Ej: Juan Pérez">
+            <div class="error-message">Este campo es requerido</div>
+          </div>
+
+          <div class="form-field">
+            <label for="userEmail" class="required">Email</label>
+            <input type="email" id="userEmail" name="userEmail" required placeholder="tu@email.com">
+            <div class="error-message">Ingresa un email válido</div>
+          </div>
+
+          <div class="form-field">
+            <label for="userPhone" class="required">Teléfono</label>
+            <input type="tel" id="userPhone" name="userPhone" required placeholder="+54 9 11 1234-5678">
+            <div class="error-message">Este campo es requerido</div>
+          </div>
+
+          <div class="form-field">
+            <label for="userOccupation">Título / Ocupación (opcional)</label>
+            <input type="text" id="userOccupation" name="userOccupation" placeholder="Ej: Médico, Abogado, Albañil">
+          </div>
+
+          <div class="form-field">
+            <label for="userCity">Ciudad / Localidad</label>
+            <input type="text" id="userCity" name="userCity" placeholder="Ej: Buenos Aires">
+          </div>
+
+          <div class="form-field">
+            <label for="userAge">Edad</label>
+            <input type="number" id="userAge" name="userAge" placeholder="Ej: 35">
+          </div>
+
+          <p>¿Qué deseas crear primero?</p>
+          <div class="form-actions">
+            <button type="button" id="btnComercio" class="btn btn-primary btn-lg">
+              <i class="fas fa-store"></i> Crear mi comercio
+            </button>
+            <button type="button" id="btnServicio" class="btn btn-secondary btn-lg">
+              <i class="fas fa-user-md"></i> Crear mi servicio
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+<script type="module">
+import { Utils, FirebaseHelpers, auth, db, doc, setDoc, serverTimestamp } from './js/shared.js';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    Utils.showLoading('Verificando sesión...');
+    
+    const user = await new Promise(resolve => {
+      const unsubscribe = auth.onAuthStateChanged(u => {
+        unsubscribe();
+        resolve(u);
+      });
+    });
+
+    if (!user) {
+      window.location.href = '/index.html';
+      return;
+    }
+
+    const userData = await FirebaseHelpers.getUserData();
+    fillForm(userData);
+    setupEventListeners();
+    Utils.hideLoading();
+  } catch (error) {
+    Utils.hideLoading();
+    console.error(error);
+    Utils.showToast('Error', 'No se pudo cargar la página', 'error');
+  }
+});
+
+function fillForm(userData) {
+  if (userData.nombre) document.getElementById('userName').value = userData.nombre;
+  if (userData.email) document.getElementById('userEmail').value = userData.email;
+  if (userData.telefono) document.getElementById('userPhone').value = userData.telefono;
+  if (userData.ocupacion) document.getElementById('userOccupation').value = userData.ocupacion;
+  if (userData.ciudad) document.getElementById('userCity').value = userData.ciudad;
+  if (userData.edad) document.getElementById('userAge').value = userData.edad;
+}
+
+function setupEventListeners() {
+  document.getElementById('btnComercio').addEventListener('click', () => saveUserProfile('comercio'));
+  document.getElementById('btnServicio').addEventListener('click', () => saveUserProfile('servicio'));
+}
+
+async function saveUserProfile(tipo) {
+  if (!validateForm()) return;
+
+  try {
+    Utils.showLoading('Guardando perfil...');
+    
+    const userData = {
+      nombre: document.getElementById('userName').value.trim(),
+      email: document.getElementById('userEmail').value.trim(),
+      telefono: document.getElementById('userPhone').value.trim(),
+      ocupacion: document.getElementById('userOccupation').value.trim(),
+      ciudad: document.getElementById('userCity').value.trim(),
+      edad: parseInt(document.getElementById('userAge').value) || null
+    };
+
+    const userDocRef = doc(db, "usuarios", auth.currentUser.uid);
+    await setDoc(userDocRef, { ...userData, fechaRegistro: serverTimestamp() }, { merge: true });
+
+    // Crear documento base según tipo
+    if (tipo === 'comercio') {
+      const comercioId = 'comercio_' + Math.random().toString(36).substring(2,15) + Date.now().toString(36);
+      await setDoc(doc(db, "comercios", comercioId), {
+        nombreComercio: "",
+        rubro: "",
+        direccion: "",
+        telefono: userData.telefono,
+        ownerId: auth.currentUser.uid,
+        fechaCreacion: serverTimestamp()
+      });
+      await setDoc(userDocRef, { comercioId }, { merge: true });
+      Utils.showToast('Éxito', 'Perfil y comercio guardados', 'success');
+      setTimeout(() => window.location.href = '/mi-comercio.html', 1000);
+    } else if (tipo === 'servicio') {
+      const servicioId = 'servicio_' + Math.random().toString(36).substring(2,15) + Date.now().toString(36);
+      await setDoc(doc(db, "servicios", servicioId), {
+        nombreServicio: "",
+        descripcion: "",
+        direccion: "",
+        telefono: "", // opcional, se carga en servicio
+        ownerId: auth.currentUser.uid,
+        fechaCreacion: serverTimestamp()
+      });
+      await setDoc(userDocRef, { servicioId }, { merge: true });
+      Utils.showToast('Éxito', 'Perfil y servicio guardados', 'success');
+      setTimeout(() => window.location.href = '/mi-servicio.html', 1000);
+    }
+
+    Utils.hideLoading();
+
+  } catch (error) {
+    Utils.hideLoading();
+    console.error(error);
+    Utils.showToast('Error', 'No se pudo guardar el perfil', 'error');
+  }
+}
+
+function validateForm() {
+  const requiredFields = ['userName', 'userEmail', 'userPhone'];
+  let isValid = true;
+
+  requiredFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) {
+      el.classList.add('error');
+      isValid = false;
+    } else {
+      el.classList.remove('error');
+    }
+  });
+
+  const email = document.getElementById('userEmail').value;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    document.getElementById('userEmail').classList.add('error');
+    isValid = false;
+  }
+
+  return isValid;
+}
+</script>
+
+<style>
+.required::after { content: " *"; color: #f44336; }
+</style>
+</body>
+</html>
