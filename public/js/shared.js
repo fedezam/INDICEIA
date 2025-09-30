@@ -1,193 +1,70 @@
-// shared.js - Funciones comunes extraídas del código existente
-import { auth, db, provider } from "./firebase.js";
-import { 
-  doc, setDoc, getDoc, collection, getDocs, addDoc, updateDoc, deleteDoc 
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-
-// ==========================================
-// 🔧 UTILS CLASE (Ya funcionando)
-// ==========================================
-class Utils {
-  static showLoading(text = "Cargando...") {
-    const overlay = document.getElementById("loadingOverlay");
-    const loadingText = document.getElementById("loadingText");
-    if (overlay && loadingText) {
-      loadingText.textContent = text;
-      overlay.classList.add("show");
-    }
-  }
-
-  static hideLoading() {
-    const overlay = document.getElementById("loadingOverlay");
-    if (overlay) overlay.classList.remove("show");
-  }
-
-  static showToast(title, message, type = "success") {
-    const container = document.getElementById("toastContainer");
-    if (!container) return;
-
-    const toast = document.createElement("div");
-    const icons = {
-      success: "fas fa-check-circle",
-      error: "fas fa-exclamation-circle",
-      warning: "fas fa-exclamation-triangle",
-      info: "fas fa-info-circle",
-    };
-
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-      <i class="${icons[type]}"></i>
-      <div class="toast-content">
-        <div class="toast-title">${title}</div>
-        <div class="toast-message">${message}</div>
-      </div>
-      <button class="toast-close"><i class="fas fa-times"></i></button>
-    `;
-    container.appendChild(toast);
-
-    setTimeout(() => toast.classList.add("show"), 100);
-    setTimeout(() => {
-      toast.classList.remove("show");
-      setTimeout(() => {
-        if (toast.parentNode) container.removeChild(toast);
-      }, 300);
-    }, 5000);
-
-    toast.querySelector(".toast-close").addEventListener("click", () => {
-      toast.classList.remove("show");
-      setTimeout(() => {
-        if (toast.parentNode) container.removeChild(toast);
-      }, 300);
-    });
-  }
-
-  static validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  }
-
-  static validatePassword(password) {
-    const re = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return re.test(password);
-  }
-
-  static generateReferralId() {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-  }
-
-  // 🆕 Generar comercioId único (UUID-like)
-  static generateComercioId() {
-    return 'comercio_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-  }
-}
-
-// ==========================================
-// 🗂️ LOCALSTORAGE HELPERS (Nuevos)
-// ==========================================
-class LocalData {
-  static save(key, data) {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-      return true;
-    } catch (error) {
-      console.error('Error guardando en localStorage:', error);
-      return false;
-    }
-  }
-
-  static load(key, defaultValue = null) {
-    try {
-      const item = localStorage.getItem(key);
-      return item ? JSON.parse(item) : defaultValue;
-    } catch (error) {
-      console.error('Error cargando de localStorage:', error);
-      return defaultValue;
-    }
-  }
-
-  static remove(key) {
-    try {
-      localStorage.removeItem(key);
-      return true;
-    } catch (error) {
-      console.error('Error removiendo de localStorage:', error);
-      return false;
-    }
-  }
-
-  // Datos compartidos entre páginas
-  static getSharedData() {
-    return this.load('indiceia_shared', {
-      comercioId: null,
-      referralId: null,
-      planId: 'basico',
-      trialEndDate: null,
-      subscriptionStatus: 'trial',
-      currentStep: 'mi-comercio',
-      completedSections: [],
-      lastSave: null,
-      userData: {}
-    });
-  }
-
-  static updateSharedData(updates) {
-    const current = this.getSharedData();
-    const updated = { ...current, ...updates, lastSave: new Date().toISOString() };
-    return this.save('indiceia_shared', updated);
-  }
-}
-
-// ==========================================
-// 🔥 FIREBASE HELPERS (Extraído + mejorado)
-// ==========================================
+// 🔥 FIREBASE HELPERS (Actualizado para usar comercios/comercioId)
 class FirebaseHelpers {
-  // Obtener usuario actual
-  static getCurrentUser() {
-    return auth.currentUser;
-  }
-
-  // Obtener datos del usuario desde Firestore
-  static async getUserData(userId = null) {
+  // Obtener comercio actual
+  static async getComercioData(comercioId = null) {
     try {
-      const uid = userId || auth.currentUser?.uid;
-      if (!uid) throw new Error('No hay usuario autenticado');
+      if (!comercioId) {
+        // Si no se pasa, intentar obtenerlo del usuario autenticado
+        const user = auth.currentUser;
+        if (!user) throw new Error('No hay usuario autenticado');
 
-      const userDoc = await getDoc(doc(db, "usuarios", uid));
-      if (!userDoc.exists()) throw new Error('Usuario no encontrado');
-      
-      return { id: uid, ...userDoc.data() };
+        const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+        if (!userDoc.exists()) throw new Error('Usuario no encontrado');
+
+        comercioId = userDoc.data()?.comercioId;
+        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+      }
+
+      const comercioDoc = await getDoc(doc(db, "comercios", comercioId));
+      if (!comercioDoc.exists()) throw new Error('Comercio no encontrado');
+
+      return { comercioId, ...comercioDoc.data() };
     } catch (error) {
-      console.error('Error obteniendo datos usuario:', error);
+      console.error('Error obteniendo datos comercio:', error);
       throw error;
     }
   }
 
-  // Actualizar datos del usuario
-  static async updateUserData(userData, userId = null) {
+  // Actualizar datos del comercio
+  static async updateComercioData(data, comercioId = null) {
     try {
-      const uid = userId || auth.currentUser?.uid;
-      if (!uid) throw new Error('No hay usuario autenticado');
+      if (!comercioId) {
+        const user = auth.currentUser;
+        if (!user) throw new Error('No hay usuario autenticado');
 
-      await updateDoc(doc(db, "usuarios", uid), {
-        ...userData,
+        const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+        if (!userDoc.exists()) throw new Error('Usuario no encontrado');
+
+        comercioId = userDoc.data()?.comercioId;
+        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+      }
+
+      await updateDoc(doc(db, "comercios", comercioId), {
+        ...data,
         fechaActualizacion: new Date()
       });
+
       return true;
     } catch (error) {
-      console.error('Error actualizando usuario:', error);
+      console.error('Error actualizando comercio:', error);
       throw error;
     }
   }
 
-  // Obtener productos del usuario
-  static async getProducts(userId = null) {
+  // Obtener productos de un comercio
+  static async getProducts(comercioId = null) {
     try {
-      const uid = userId || auth.currentUser?.uid;
-      if (!uid) throw new Error('No hay usuario autenticado');
+      if (!comercioId) {
+        const user = auth.currentUser;
+        if (!user) throw new Error('No hay usuario autenticado');
+        const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+        comercioId = userDoc.data()?.comercioId;
+        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+      }
 
-      const productosRef = collection(db, "usuarios", uid, "productos");
+      const productosRef = collection(db, "comercios", comercioId, "productos");
       const snapshot = await getDocs(productosRef);
-      
+
       return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -199,17 +76,22 @@ class FirebaseHelpers {
   }
 
   // Agregar producto
-  static async addProduct(productData, userId = null) {
+  static async addProduct(productData, comercioId = null) {
     try {
-      const uid = userId || auth.currentUser?.uid;
-      if (!uid) throw new Error('No hay usuario autenticado');
+      if (!comercioId) {
+        const user = auth.currentUser;
+        if (!user) throw new Error('No hay usuario autenticado');
+        const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+        comercioId = userDoc.data()?.comercioId;
+        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+      }
 
-      const productosRef = collection(db, "usuarios", uid, "productos");
+      const productosRef = collection(db, "comercios", comercioId, "productos");
       const docRef = await addDoc(productosRef, {
         ...productData,
         fechaCreacion: new Date()
       });
-      
+
       return docRef.id;
     } catch (error) {
       console.error('Error agregando producto:', error);
@@ -218,15 +100,21 @@ class FirebaseHelpers {
   }
 
   // Actualizar producto
-  static async updateProduct(productId, productData, userId = null) {
+  static async updateProduct(productId, productData, comercioId = null) {
     try {
-      const uid = userId || auth.currentUser?.uid;
-      if (!uid) throw new Error('No hay usuario autenticado');
+      if (!comercioId) {
+        const user = auth.currentUser;
+        if (!user) throw new Error('No hay usuario autenticado');
+        const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+        comercioId = userDoc.data()?.comercioId;
+        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+      }
 
-      await updateDoc(doc(db, "usuarios", uid, "productos", productId), {
+      await updateDoc(doc(db, "comercios", comercioId, "productos", productId), {
         ...productData,
         fechaActualizacion: new Date()
       });
+
       return true;
     } catch (error) {
       console.error('Error actualizando producto:', error);
@@ -235,12 +123,17 @@ class FirebaseHelpers {
   }
 
   // Eliminar producto
-  static async deleteProduct(productId, userId = null) {
+  static async deleteProduct(productId, comercioId = null) {
     try {
-      const uid = userId || auth.currentUser?.uid;
-      if (!uid) throw new Error('No hay usuario autenticado');
+      if (!comercioId) {
+        const user = auth.currentUser;
+        if (!user) throw new Error('No hay usuario autenticado');
+        const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+        comercioId = userDoc.data()?.comercioId;
+        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+      }
 
-      await deleteDoc(doc(db, "usuarios", uid, "productos", productId));
+      await deleteDoc(doc(db, "comercios", comercioId, "productos", productId));
       return true;
     } catch (error) {
       console.error('Error eliminando producto:', error);
@@ -248,21 +141,23 @@ class FirebaseHelpers {
     }
   }
 
-  // Sincronizar JSON con Gist (llamar después de cualquier cambio)
-  static async syncToGist(userId = null) {
+  // Sincronizar JSON con Gist
+  static async syncToGist(comercioId = null) {
     try {
-      const uid = userId || auth.currentUser?.uid;
-      if (!uid) return;
+      if (!comercioId) {
+        const user = auth.currentUser;
+        if (!user) return;
+        const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+        comercioId = userDoc.data()?.comercioId;
+      }
 
       const response = await fetch('/api/export-json', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: uid })
+        body: JSON.stringify({ comercioId })
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`API error: ${response.status}`);
 
       const result = await response.json();
       console.log('✅ JSON sincronizado:', result.gist?.rawUrl);
@@ -273,37 +168,34 @@ class FirebaseHelpers {
     }
   }
 
-  // Generar JSON del comercio (basado en tu exportJSON.js)
-  static async generateCommerceJSON(userId = null) {
+  // Generar JSON del comercio
+  static async generateCommerceJSON(comercioId = null) {
     try {
-      const uid = userId || auth.currentUser?.uid;
-      if (!uid) throw new Error('No hay usuario autenticado');
-
-      const userData = await this.getUserData(uid);
-      const productos = await this.getProducts(uid);
+      const comercioData = await this.getComercioData(comercioId);
+      const productos = await this.getProducts(comercioData.comercioId);
 
       const finalJSON = {
         comercio: {
-          comercioId: userData.comercioId || Utils.generateComercioId(),
-          referralId: userData.referralId || userData.comercioId,
-          nombre: userData.nombreComercio || "",
-          direccion: userData.direccion || "",
-          telefono: userData.telefono || "",
-          horarios: userData.horarios || [],
-          descripcion: userData.descripcion || "",
-          ciudad: userData.ciudad || "",
-          provincia: userData.provincia || "",
-          pais: userData.pais || "",
-          barrio: userData.barrio || "",
-          plan: userData.plan || "basico",
-          estado: userData.estado || "trial",
-          mediosPago: userData.paymentMethods || [],
+          comercioId: comercioData.comercioId,
+          referralId: comercioData.referralId || comercioData.comercioId,
+          nombre: comercioData.nombreComercio || "",
+          direccion: comercioData.direccion || "",
+          telefono: comercioData.telefono || "",
+          horarios: comercioData.horarios || [],
+          descripcion: comercioData.descripcion || "",
+          ciudad: comercioData.ciudad || "",
+          provincia: comercioData.provincia || "",
+          pais: comercioData.pais || "",
+          barrio: comercioData.barrio || "",
+          plan: comercioData.plan || "basico",
+          estado: comercioData.estado || "trial",
+          mediosPago: comercioData.paymentMethods || [],
           asistente_ia: {
-            nombre: userData.aiName || "Asistente IA",
-            personalidad: userData.personalidad || "amigable",
-            tono: userData.tono || "profesional",
-            saludo: userData.saludoInicial || "",
-            entidad: userData.entidad || `Actúa como ${userData.aiName || "Asistente IA"}...`
+            nombre: comercioData.aiName || "Asistente IA",
+            personalidad: comercioData.personalidad || "amigable",
+            tono: comercioData.tono || "profesional",
+            saludo: comercioData.saludoInicial || "",
+            entidad: comercioData.entidad || `Actúa como ${comercioData.aiName || "Asistente IA"}...`
           }
         },
         productos: productos.map(p => ({
@@ -329,108 +221,37 @@ class FirebaseHelpers {
 }
 
 // ==========================================
-// 🎯 PLANES Y SUSCRIPCIONES (Nuevos)
-// ==========================================
-class PlansManager {
-  static plans = {
-    basico: { nombre: "Básico", precio: 15, maxProductos: 50, descripcion: "Ideal para servicios" },
-    pro: { nombre: "Pro", precio: 35, maxProductos: 500, descripcion: "Pequeños comercios" },
-    premium: { nombre: "Premium", precio: 60, maxProductos: -1, descripcion: "Productos ilimitados" }
-  };
-
-  static getPlan(planId) {
-    return this.plans[planId] || this.plans.basico;
-  }
-
-  static getAllPlans() {
-    return Object.entries(this.plans).map(([id, plan]) => ({ id, ...plan }));
-  }
-
-  // Validar límite de productos
-  static validateProductLimit(planId, currentCount) {
-    const plan = this.getPlan(planId);
-    if (plan.maxProductos === -1) return { valid: true, message: '' };
-    
-    const isValid = currentCount < plan.maxProductos;
-    const message = isValid ? 
-      `${currentCount}/${plan.maxProductos} productos cargados` :
-      `Tu plan permite hasta ${plan.maxProductos} productos. Para cargar más, actualiza tu plan`;
-    
-    return { valid: isValid, message, remaining: plan.maxProductos - currentCount };
-  }
-
-  // Verificar trial
-  static isTrialValid(trialEndDate) {
-    if (!trialEndDate) return false;
-    return new Date() < new Date(trialEndDate);
-  }
-
-  // Calcular fecha fin de trial (5 días)
-  static calculateTrialEnd() {
-    const now = new Date();
-    now.setDate(now.getDate() + 5);
-    return now.toISOString();
-  }
-}
-
-// ==========================================
-// 🔍 AUTH HELPERS (Extraído)
-// ==========================================
-class AuthHelpers {
-  // Obtener usuario actual
-  static getCurrentUser() {
-    return auth.currentUser;
-  }
-
-  // Verificar si usuario está logueado
-  static isLoggedIn() {
-    return !!auth.currentUser;
-  }
-
-  // Redirigir si no está logueado
-  static requireAuth(redirectTo = '/index.html') {
-    if (!this.isLoggedIn()) {
-      window.location.href = redirectTo;
-      return false;
-    }
-    return true;
-  }
-
-  // Logout
-  static async logout() {
-    try {
-      await auth.signOut();
-      LocalData.remove('indiceia_shared');
-      return true;
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      throw error;
-    }
-  }
-}
-
-// ==========================================
-// 🎯 INITIALIZATION (Nuevo)
-// ==========================================
+// 🎯 INITIALIZATION (Actualizado initSharedData)
 class AppInit {
-  // Inicializar datos compartidos al cargar página
   static async initSharedData() {
     try {
       if (!AuthHelpers.isLoggedIn()) return null;
 
-      const userData = await FirebaseHelpers.getUserData();
-      const sharedData = LocalData.getSharedData();
-      
+      const user = auth.currentUser;
+      const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+      const userData = userDoc.data();
+
       // Si no tiene comercioId, generarlo
       if (!userData.comercioId) {
         const comercioId = Utils.generateComercioId();
-        const referralId = comercioId; // Mismo valor
-        
-        await FirebaseHelpers.updateUserData({
-          comercioId,
-          referralId
+        const referralId = comercioId;
+
+        // Crear documento comercio vacío
+        await setDoc(doc(db, "comercios", comercioId), {
+          nombreComercio: "",
+          descripcion: "",
+          direccion: "",
+          ciudad: "",
+          pais: "",
+          telefono: "",
+          whatsapp: "",
+          plan: "basico",
+          estado: "trial",
+          productos: []
         });
-        
+
+        // Guardar comercioId y referralId en usuario
+        await FirebaseHelpers.updateUserData({ comercioId, referralId });
         userData.comercioId = comercioId;
         userData.referralId = referralId;
       }
@@ -451,34 +272,4 @@ class AppInit {
       return null;
     }
   }
-
-  // Verificar suscripción activa
-  static validateSubscription() {
-    const shared = LocalData.getSharedData();
-    const isTrialValid = PlansManager.isTrialValid(shared.trialEndDate);
-    const hasActiveSubscription = shared.subscriptionStatus === 'active';
-    
-    return {
-      hasAccess: isTrialValid || hasActiveSubscription,
-      status: shared.subscriptionStatus,
-      trialEnd: shared.trialEndDate,
-      isTrialExpired: !isTrialValid && shared.subscriptionStatus === 'trial'
-    };
-  }
 }
-
-// ==========================================
-// 📤 EXPORTS
-// ==========================================
-export {
-  Utils,
-  LocalData,
-  FirebaseHelpers,
-  PlansManager,
-  AuthHelpers,
-  AppInit,
-  // Firebase re-exports
-  auth,
-  db,
-  provider
-};
