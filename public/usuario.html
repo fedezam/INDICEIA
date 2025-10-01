@@ -3,140 +3,161 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro Usuario - INDICEIA</title>
+  <title>Completar Perfil - INDICEIA</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/css/dashboard.css">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f5f5; margin:0; padding:0; }
+    .container { max-width: 600px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    h2 { text-align: center; color: #333; margin-bottom: 20px; }
+    .form-field { display: flex; flex-direction: column; margin-bottom: 15px; }
+    .form-field label { margin-bottom: 5px; font-weight: 500; color: #555; }
+    .form-field input { padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
+    .form-field input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 5px rgba(0,123,255,0.3); }
+    .botones-eleccion { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+    .btn { padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background-color: #007bff; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background-color: #0056b3; }
+    .btn-secondary { background-color: #28a745; color: #fff; }
+    .btn-secondary:hover:not(:disabled) { background-color: #1e7e34; }
+    .btn-info { font-size: 0.9rem; color: #555; margin-bottom: 10px; }
+    @media (max-width: 600px) {
+      .container { margin: 20px; padding: 20px; }
+      .botones-eleccion { flex-direction: column; }
+    }
+  </style>
 </head>
 <body>
-  <header class="header">
-    <div class="container">
-      <div class="logo"><i class="fas fa-robot"></i> <h1>INDICEIA</h1></div>
-    </div>
-  </header>
 
-  <main class="main-content">
-    <div class="container">
-      <h2>Completa tus datos personales</h2>
-      <form id="userForm">
-        <div class="form-field">
-          <label for="nombre">Nombre completo *</label>
-          <input type="text" id="nombre" required>
-        </div>
-        <div class="form-field">
-          <label for="email">Email *</label>
-          <input type="email" id="email" required>
-        </div>
-        <div class="form-field">
-          <label for="telefono">Teléfono *</label>
-          <input type="tel" id="telefono" required>
-        </div>
-        <div class="form-field">
-          <label for="fechaNacimiento">Fecha de nacimiento</label>
-          <input type="date" id="fechaNacimiento">
-        </div>
-        <div class="form-field">
-          <label for="pais">País *</label>
-          <input type="text" id="pais" required>
-        </div>
-        <div class="form-field">
-          <label for="provincia">Provincia *</label>
-          <input type="text" id="provincia" required>
-        </div>
-        <div class="form-field">
-          <label for="localidad">Localidad *</label>
-          <input type="text" id="localidad" required>
-        </div>
-        <div class="form-field">
-          <label for="barrio">Barrio</label>
-          <input type="text" id="barrio">
-        </div>
-        <div class="form-field">
-          <label for="direccion">Calle y número *</label>
-          <input type="text" id="direccion" required>
-        </div>
-      </form>
+  <div class="container">
+    <h2>Completa tus datos personales</h2>
 
-      <div class="botones-eleccion">
-        <button id="btnComercio" class="btn btn-primary" disabled>
-          Crear mi asistente para Comercio
-        </button>
-        <button id="btnServicio" class="btn btn-secondary" disabled>
-          Crear mi asistente para Servicio
-        </button>
+    <form id="userForm">
+      <div class="form-field">
+        <label for="nombre">Nombre completo *</label>
+        <input type="text" id="nombre" required placeholder="Tu nombre y apellido">
       </div>
+      <div class="form-field">
+        <label for="email">Email *</label>
+        <input type="email" id="email" required placeholder="tu@email.com">
+      </div>
+      <div class="form-field">
+        <label for="telefono">Teléfono *</label>
+        <input type="tel" id="telefono" required placeholder="Ej: +54 9 341 1234567">
+      </div>
+      <div class="form-field">
+        <label for="fechaNacimiento">Fecha de nacimiento</label>
+        <input type="date" id="fechaNacimiento">
+      </div>
+      <div class="form-field">
+        <label for="pais">País *</label>
+        <input type="text" id="pais" required placeholder="Argentina">
+      </div>
+      <div class="form-field">
+        <label for="provincia">Provincia *</label>
+        <input type="text" id="provincia" required placeholder="Santa Fe">
+      </div>
+      <div class="form-field">
+        <label for="localidad">Localidad *</label>
+        <input type="text" id="localidad" required placeholder="Rosario">
+      </div>
+      <div class="form-field">
+        <label for="barrio">Barrio</label>
+        <input type="text" id="barrio" placeholder="Opcional">
+      </div>
+      <div class="form-field">
+        <label for="direccion">Calle y número *</label>
+        <input type="text" id="direccion" required placeholder="Ej: Av. Siempre Viva 742">
+      </div>
+    </form>
+
+    <div class="btn-info">
+      Una vez completados tus datos, elige el tipo de IA que deseas crear:
     </div>
-  </main>
+
+    <div class="botones-eleccion">
+      <button id="btnComercio" class="btn btn-primary" disabled>
+        <i class="fas fa-store"></i> Crear IA para Comercio
+      </button>
+      <button id="btnServicio" class="btn btn-secondary" disabled>
+        <i class="fas fa-concierge-bell"></i> Crear IA para Servicio
+      </button>
+    </div>
+  </div>
 
   <script type="module">
-    import { Utils, FirebaseHelpers, LocalData } from '/js/shared.js';
-    import { auth } from '/js/firebase.js';
+    import { auth, db } from './firebase.js';
+    import { doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const form = document.getElementById('userForm');
-      const btnComercio = document.getElementById('btnComercio');
-      const btnServicio = document.getElementById('btnServicio');
+    const form = document.getElementById('userForm');
+    const btnComercio = document.getElementById('btnComercio');
+    const btnServicio = document.getElementById('btnServicio');
 
-      // 🔒 Esperar a que el usuario esté autenticado
-      auth.onAuthStateChanged(user => {
-        if (!user) {
-          window.location.href = '/index.html';
-          return;
-        }
+    const enableButtonsIfValid = () => {
+      const requiredFilled = Array.from(form.querySelectorAll('[required]'))
+        .every(f => f.value.trim() !== '');
+      btnComercio.disabled = !requiredFilled;
+      btnServicio.disabled = !requiredFilled;
+    };
 
-        // Habilitar botones si todos los campos requeridos están llenos
-        const checkRequired = () => {
-          const requiredFilled = Array.from(form.querySelectorAll('[required]'))
-            .every(f => f.value.trim() !== '');
-          btnComercio.disabled = !requiredFilled;
-          btnServicio.disabled = !requiredFilled;
-        };
+    form.addEventListener('input', enableButtonsIfValid);
 
-        form.addEventListener('input', checkRequired);
+    const guardarUsuario = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        alert('No hay usuario autenticado');
+        window.location.href = '/index.html';
+        return;
+      }
 
-        // Guardar datos
-        const guardarDatos = async () => {
-          const userData = {
-            nombre: document.getElementById('nombre').value.trim(),
-            email: document.getElementById('email').value.trim(),
-            telefono: document.getElementById('telefono').value.trim(),
-            fechaNacimiento: document.getElementById('fechaNacimiento').value,
-            pais: document.getElementById('pais').value.trim(),
-            provincia: document.getElementById('provincia').value.trim(),
-            localidad: document.getElementById('localidad').value.trim(),
-            barrio: document.getElementById('barrio').value.trim(),
-            direccion: document.getElementById('direccion').value.trim()
-          };
+      const userData = {
+        nombre: document.getElementById('nombre').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        telefono: document.getElementById('telefono').value.trim(),
+        fechaNacimiento: document.getElementById('fechaNacimiento').value,
+        pais: document.getElementById('pais').value.trim(),
+        provincia: document.getElementById('provincia').value.trim(),
+        localidad: document.getElementById('localidad').value.trim(),
+        barrio: document.getElementById('barrio').value.trim(),
+        direccion: document.getElementById('direccion').value.trim(),
+        fechaCreacion: new Date().toISOString()
+      };
 
-          try {
-            await FirebaseHelpers.updateUserData(userData);
-            LocalData.updateSharedData({ userProfile: userData });
-          } catch (err) {
-            console.error('Error guardando datos:', err);
-            Utils.showToast('Error', 'No se pudieron guardar los datos. Intenta nuevamente.', 'error');
-            throw err;
-          }
-        };
+      await setDoc(doc(db, 'usuarios', user.uid), userData, { merge: true });
+      return userData;
+    };
 
-        // Eventos botones
-        btnComercio.addEventListener('click', async () => {
-          if (btnComercio.disabled) {
-            Utils.showToast('Completa los datos', 'Por favor completa todos los campos requeridos', 'warning');
-            return;
-          }
-          await guardarDatos();
-          window.location.href = '/mi-comercio.html';
-        });
+    const crearDocumentoInicial = async (tipo) => {
+      const user = auth.currentUser;
+      if (!user) return;
 
-        btnServicio.addEventListener('click', async () => {
-          if (btnServicio.disabled) {
-            Utils.showToast('Completa los datos', 'Por favor completa todos los campos requeridos', 'warning');
-            return;
-          }
-          await guardarDatos();
-          window.location.href = '/mi-servicio.html';
-        });
+      const docRef = tipo === 'comercio'
+        ? doc(db, 'comercios', user.uid)
+        : doc(db, 'servicios', user.uid);
+
+      await setDoc(docRef, {
+        userId: user.uid,
+        nombre: tipo === 'comercio' ? 'Mi Comercio' : 'Mi Servicio',
+        fechaCreacion: new Date().toISOString()
       });
+    };
+
+    btnComercio.addEventListener('click', async () => {
+      await guardarUsuario();
+      await crearDocumentoInicial('comercio');
+      window.location.href = '/mi-comercio.html';
     });
+
+    btnServicio.addEventListener('click', async () => {
+      await guardarUsuario();
+      await crearDocumentoInicial('servicio');
+      window.location.href = '/mi-servicio.html';
+    });
+
+    // Inicial check
+    enableButtonsIfValid();
   </script>
+
 </body>
 </html>
