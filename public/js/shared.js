@@ -1,26 +1,41 @@
-// 🔥 FIREBASE HELPERS (Actualizado para usar comercios/comercioId)
+// shared.js
+// ==========================================
+// 🔥 FIREBASE HELPERS
+// ==========================================
+import { auth, db } from "./firebase.js";
+import {
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
 class FirebaseHelpers {
   // Obtener comercio actual
   static async getComercioData(comercioId = null) {
     try {
       if (!comercioId) {
-        // Si no se pasa, intentar obtenerlo del usuario autenticado
         const user = auth.currentUser;
-        if (!user) throw new Error('No hay usuario autenticado');
+        if (!user) throw new Error("No hay usuario autenticado");
 
         const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-        if (!userDoc.exists()) throw new Error('Usuario no encontrado');
+        if (!userDoc.exists()) throw new Error("Usuario no encontrado");
 
         comercioId = userDoc.data()?.comercioId;
-        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+        if (!comercioId)
+          throw new Error("El usuario no tiene comercio asignado");
       }
 
       const comercioDoc = await getDoc(doc(db, "comercios", comercioId));
-      if (!comercioDoc.exists()) throw new Error('Comercio no encontrado');
+      if (!comercioDoc.exists()) throw new Error("Comercio no encontrado");
 
       return { comercioId, ...comercioDoc.data() };
     } catch (error) {
-      console.error('Error obteniendo datos comercio:', error);
+      console.error("Error obteniendo datos comercio:", error);
       throw error;
     }
   }
@@ -30,23 +45,24 @@ class FirebaseHelpers {
     try {
       if (!comercioId) {
         const user = auth.currentUser;
-        if (!user) throw new Error('No hay usuario autenticado');
+        if (!user) throw new Error("No hay usuario autenticado");
 
         const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-        if (!userDoc.exists()) throw new Error('Usuario no encontrado');
+        if (!userDoc.exists()) throw new Error("Usuario no encontrado");
 
         comercioId = userDoc.data()?.comercioId;
-        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+        if (!comercioId)
+          throw new Error("El usuario no tiene comercio asignado");
       }
 
       await updateDoc(doc(db, "comercios", comercioId), {
         ...data,
-        fechaActualizacion: new Date()
+        fechaActualizacion: new Date(),
       });
 
       return true;
     } catch (error) {
-      console.error('Error actualizando comercio:', error);
+      console.error("Error actualizando comercio:", error);
       throw error;
     }
   }
@@ -56,21 +72,22 @@ class FirebaseHelpers {
     try {
       if (!comercioId) {
         const user = auth.currentUser;
-        if (!user) throw new Error('No hay usuario autenticado');
+        if (!user) throw new Error("No hay usuario autenticado");
         const userDoc = await getDoc(doc(db, "usuarios", user.uid));
         comercioId = userDoc.data()?.comercioId;
-        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+        if (!comercioId)
+          throw new Error("El usuario no tiene comercio asignado");
       }
 
       const productosRef = collection(db, "comercios", comercioId, "productos");
       const snapshot = await getDocs(productosRef);
 
-      return snapshot.docs.map(doc => ({
+      return snapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
       }));
     } catch (error) {
-      console.error('Error obteniendo productos:', error);
+      console.error("Error obteniendo productos:", error);
       throw error;
     }
   }
@@ -80,21 +97,22 @@ class FirebaseHelpers {
     try {
       if (!comercioId) {
         const user = auth.currentUser;
-        if (!user) throw new Error('No hay usuario autenticado');
+        if (!user) throw new Error("No hay usuario no autenticado");
         const userDoc = await getDoc(doc(db, "usuarios", user.uid));
         comercioId = userDoc.data()?.comercioId;
-        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+        if (!comercioId)
+          throw new Error("El usuario no tiene comercio asignado");
       }
 
       const productosRef = collection(db, "comercios", comercioId, "productos");
       const docRef = await addDoc(productosRef, {
         ...productData,
-        fechaCreacion: new Date()
+        fechaCreacion: new Date(),
       });
 
       return docRef.id;
     } catch (error) {
-      console.error('Error agregando producto:', error);
+      console.error("Error agregando producto:", error);
       throw error;
     }
   }
@@ -104,20 +122,21 @@ class FirebaseHelpers {
     try {
       if (!comercioId) {
         const user = auth.currentUser;
-        if (!user) throw new Error('No hay usuario autenticado');
+        if (!user) throw new Error("No hay usuario no autenticado");
         const userDoc = await getDoc(doc(db, "usuarios", user.uid));
         comercioId = userDoc.data()?.comercioId;
-        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+        if (!comercioId)
+          throw new Error("El usuario no tiene comercio asignado");
       }
 
       await updateDoc(doc(db, "comercios", comercioId, "productos", productId), {
         ...productData,
-        fechaActualizacion: new Date()
+        fechaActualizacion: new Date(),
       });
 
       return true;
     } catch (error) {
-      console.error('Error actualizando producto:', error);
+      console.error("Error actualizando producto:", error);
       throw error;
     }
   }
@@ -127,21 +146,22 @@ class FirebaseHelpers {
     try {
       if (!comercioId) {
         const user = auth.currentUser;
-        if (!user) throw new Error('No hay usuario autenticado');
+        if (!user) throw new Error("No hay usuario no autenticado");
         const userDoc = await getDoc(doc(db, "usuarios", user.uid));
         comercioId = userDoc.data()?.comercioId;
-        if (!comercioId) throw new Error('El usuario no tiene comercio asignado');
+        if (!comercioId)
+          throw new Error("El usuario no tiene comercio asignado");
       }
 
       await deleteDoc(doc(db, "comercios", comercioId, "productos", productId));
       return true;
     } catch (error) {
-      console.error('Error eliminando producto:', error);
+      console.error("Error eliminando producto:", error);
       throw error;
     }
   }
 
-  // Sincronizar JSON con Gist
+  // Sincronizar JSON con API (ej: Supabase/Gist)
   static async syncToGist(comercioId = null) {
     try {
       if (!comercioId) {
@@ -151,19 +171,19 @@ class FirebaseHelpers {
         comercioId = userDoc.data()?.comercioId;
       }
 
-      const response = await fetch('/api/export-json', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ comercioId })
+      const response = await fetch("/api/export-json", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comercioId }),
       });
 
       if (!response.ok) throw new Error(`API error: ${response.status}`);
 
       const result = await response.json();
-      console.log('✅ JSON sincronizado:', result.gist?.rawUrl);
+      console.log("✅ JSON sincronizado:", result.gist?.rawUrl);
       return result;
     } catch (error) {
-      console.error('❌ Error sincronizando JSON:', error);
+      console.error("❌ Error sincronizando JSON:", error);
       throw error;
     }
   }
@@ -195,10 +215,12 @@ class FirebaseHelpers {
             personalidad: comercioData.personalidad || "amigable",
             tono: comercioData.tono || "profesional",
             saludo: comercioData.saludoInicial || "",
-            entidad: comercioData.entidad || `Actúa como ${comercioData.aiName || "Asistente IA"}...`
-          }
+            entidad:
+              comercioData.entidad ||
+              `Actúa como ${comercioData.aiName || "Asistente IA"}...`,
+          },
         },
-        productos: productos.map(p => ({
+        productos: productos.map((p) => ({
           nombre: p.nombre || "",
           codigo: p.codigo || "",
           precio: p.precio || { valor: 0, moneda: "ARS" },
@@ -206,52 +228,49 @@ class FirebaseHelpers {
           talle: p.talle || "",
           color: p.color || "",
           categoria: p.categoria || "",
-          activo: p.activo !== false
+          activo: p.activo !== false,
         })),
         lastUpdated: new Date().toISOString(),
-        version: "1.0"
+        version: "1.0",
       };
 
       return finalJSON;
     } catch (error) {
-      console.error('Error generando JSON comercio:', error);
+      console.error("Error generando JSON comercio:", error);
       throw error;
     }
   }
-}
-// 🔧 FirebaseHelpers (solo lo nuevo)
-class FirebaseHelpers {
+
+  // Actualizar datos del usuario
   static async updateUserData(data) {
     const user = auth.currentUser;
-    if (!user) throw new Error('Usuario no autenticado');
+    if (!user) throw new Error("Usuario no autenticado");
     await setDoc(doc(db, "usuarios", user.uid), data, { merge: true });
   }
-}
-// 🔹 Obtener documento de usuario por UID
+
+  // Obtener documento de usuario por UID
   static async getUserDoc(uid) {
     const docRef = doc(db, "usuarios", uid);
-    const docSnap = await getDoc(docRef);
-    return docSnap;
+    return await getDoc(docRef);
   }
 }
 
 // ==========================================
-// 🎯 INITIALIZATION (Actualizado initSharedData)
+// 🎯 INITIALIZATION
+// ==========================================
 class AppInit {
   static async initSharedData() {
     try {
-      if (!AuthHelpers.isLoggedIn()) return null;
+      if (!auth.currentUser) return null;
 
       const user = auth.currentUser;
       const userDoc = await getDoc(doc(db, "usuarios", user.uid));
       const userData = userDoc.data();
 
-      // Si no tiene comercioId, generarlo
       if (!userData.comercioId) {
         const comercioId = Utils.generateComercioId();
         const referralId = comercioId;
 
-        // Crear documento comercio vacío
         await setDoc(doc(db, "comercios", comercioId), {
           nombreComercio: "",
           descripcion: "",
@@ -262,29 +281,30 @@ class AppInit {
           whatsapp: "",
           plan: "basico",
           estado: "trial",
-          productos: []
+          productos: [],
         });
 
-        // Guardar comercioId y referralId en usuario
         await FirebaseHelpers.updateUserData({ comercioId, referralId });
         userData.comercioId = comercioId;
         userData.referralId = referralId;
       }
 
-      // Actualizar localStorage con datos frescos
       LocalData.updateSharedData({
         comercioId: userData.comercioId,
         referralId: userData.referralId,
-        planId: userData.plan || 'basico',
+        planId: userData.plan || "basico",
         trialEndDate: userData.trialEndDate || PlansManager.calculateTrialEnd(),
-        subscriptionStatus: userData.estado || 'trial',
-        userData: userData
+        subscriptionStatus: userData.estado || "trial",
+        userData: userData,
       });
 
       return userData;
     } catch (error) {
-      console.error('Error inicializando datos compartidos:', error);
+      console.error("Error inicializando datos compartidos:", error);
       return null;
     }
   }
 }
+
+export { FirebaseHelpers, AppInit };
+
