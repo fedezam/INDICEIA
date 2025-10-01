@@ -1,4 +1,5 @@
-// app.js
+
+    // app.js
 import { auth, db, provider } from "./firebase.js";
 import {
   signInWithEmailAndPassword,
@@ -12,7 +13,9 @@ import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/f
 
 let isRegisterMode = false;
 
+// ==========================
 // ⚙️ Utils
+// ==========================
 class Utils {
   static showLoading(text = "Cargando...") {
     const overlay = document.getElementById("loadingOverlay");
@@ -117,7 +120,9 @@ class Utils {
   }
 }
 
-// ✅ Toggle password
+// ==========================
+// 🔒 Toggle password
+// ==========================
 document.getElementById("togglePassword")?.addEventListener("click", function () {
   const passwordField = document.getElementById("password");
   if (!passwordField) return;
@@ -128,7 +133,39 @@ document.getElementById("togglePassword")?.addEventListener("click", function ()
   this.classList.toggle("fa-eye-slash");
 });
 
-// ✅ Login form
+// ==========================
+// 🔑 Redirección inteligente según usuario
+// ==========================
+async function redirectAfterLogin(user) {
+  const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+
+  if (!userDoc.exists()) {
+    // Usuario completamente nuevo → completar usuario.html
+    window.location.href = "usuario.html";
+    return;
+  }
+
+  const data = userDoc.data();
+
+  // Verificar si completó datos personales
+  const hasBasicData = data.nombre && data.apellido && data.direccion;
+  if (!hasBasicData) {
+    window.location.href = "usuario.html";
+    return;
+  }
+
+  // Redirigir según tipo de usuario
+  const tipo = data.tipoUsuario || "comercio"; // default comercio
+  if (tipo === "servicio") {
+    window.location.href = "mi-servicio.html";
+  } else {
+    window.location.href = "mi-comercio.html";
+  }
+}
+
+// ==========================
+// 🔑 Login con email/password
+// ==========================
 document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!Utils.validateForm()) {
@@ -139,31 +176,34 @@ document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  if (isRegisterMode) {
-    showRegistrationForm(email, password);
-  } else {
-    Utils.showLoading("Iniciando sesión...");
-    try {
+  Utils.showLoading(isRegisterMode ? "Creando cuenta..." : "Iniciando sesión...");
+
+  try {
+    if (isRegisterMode) {
+      // Mostramos formulario de registro completo en usuario.html
+      window.location.href = "usuario.html";
+    } else {
       await signInWithEmailAndPassword(auth, email, password);
+      Utils.hideLoading();
       Utils.showToast("¡Bienvenido!", "Has iniciado sesión correctamente", "success");
-      Utils.hideLoading();
-      setTimeout(() => window.location.href = "mi-comercio.html", 1000);
-    } catch (error) {
-      Utils.hideLoading();
-      let errorMessage = "Error al iniciar sesión";
-      switch (error.code) {
-        case "auth/user-not-found": errorMessage = "No existe una cuenta con este email"; break;
-        case "auth/wrong-password": errorMessage = "Contraseña incorrecta"; break;
-        case "auth/too-many-requests": errorMessage = "Demasiados intentos. Intenta más tarde"; break;
-        case "auth/invalid-credential": errorMessage = "Credenciales inválidas"; break;
-        default: errorMessage = error.message;
-      }
-      Utils.showToast("Error", errorMessage, "error");
+      redirectAfterLogin(auth.currentUser);
     }
+  } catch (error) {
+    Utils.hideLoading();
+    let errorMessage = "Error al iniciar sesión";
+    switch (error.code) {
+      case "auth/user-not-found": errorMessage = "No existe una cuenta con este email"; break;
+      case "auth/wrong-password": errorMessage = "Contraseña incorrecta"; break;
+      case "auth/too-many-requests": errorMessage = "Demasiados intentos. Intenta más tarde"; break;
+      default: errorMessage = error.message;
+    }
+    Utils.showToast("Error", errorMessage, "error");
   }
 });
 
-// ✅ Google login usando Redirect
+// ==========================
+// 🔑 Google login usando Redirect
+// ==========================
 window.addEventListener("load", async () => {
   try {
     const result = await getRedirectResult(auth);
@@ -171,11 +211,13 @@ window.addEventListener("load", async () => {
       const user = result.user;
       const userDoc = await getDoc(doc(db, "usuarios", user.uid));
       if (!userDoc.exists()) {
+        // Crear doc usuario mínimo
         await setDoc(doc(db, "usuarios", user.uid), {
           email: user.email,
           nombre: user.displayName || "",
-          nombreComercio: "",
-          telefono: "",
+          apellido: "",
+          direccion: "",
+          tipoUsuario: "",
           referralId: Utils.generateReferralId(),
           fechaRegistro: new Date(),
           plan: "basic",
@@ -184,13 +226,14 @@ window.addEventListener("load", async () => {
       }
       Utils.hideLoading();
       Utils.showToast("¡Bienvenido!", "Has iniciado sesión con Google", "success");
-      setTimeout(() => window.location.href = "mi-comercio.html", 1000);
+      redirectAfterLogin(user);
     } else {
       Utils.hideLoading();
     }
   } catch (error) {
     Utils.hideLoading();
     console.error("Error login Google:", error);
+    Utils.showToast("Error", "No se pudo iniciar sesión con Google", "error");
   }
 });
 
@@ -205,7 +248,9 @@ document.getElementById("googleLogin")?.addEventListener("click", async () => {
   }
 });
 
-// ✅ Password reset
+// ==========================
+// 🔑 Password reset
+// ==========================
 document.getElementById("forgotPassword")?.addEventListener("click", async (e) => {
   e.preventDefault();
   const email = document.getElementById("email")?.value;
@@ -222,69 +267,16 @@ document.getElementById("forgotPassword")?.addEventListener("click", async (e) =
   }
 });
 
-// ✅ Registro
-function showRegistrationForm(email, password) {
-  const loginContainer = document.getElementById("loginContainer");
-  if (!loginContainer) return;
-
-  loginContainer.innerHTML = `
-    <!-- HTML de registro aquí -->
-  `;
-
-  const newForm = document.getElementById("completeRegistration");
-  if (!newForm) return;
-
-  newForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const userData = Object.fromEntries(formData);
-
-    if (!Utils.validatePassword(password)) {
-      Utils.showToast("Contraseña débil", "Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo", "error");
-      return;
-    }
-
-    Utils.showLoading("Creando tu cuenta...");
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await setDoc(doc(db, "usuarios", userCredential.user.uid), {
-        email: email,
-        nombre: userData.nombre,
-        nombreComercio: userData.nombreComercio,
-        telefono: userData.telefono,
-        referralId: Utils.generateReferralId(),
-        fechaRegistro: new Date(),
-        plan: "basic",
-        estado: "trial",
-      });
-      Utils.hideLoading();
-      Utils.showToast("¡Cuenta creada!", "¡Bienvenido a INDICEIA! Redirigiendo...", "success");
-      setTimeout(() => window.location.href = "mi-comercio.html", 1500);
-    } catch (error) {
-      Utils.hideLoading();
-      let errorMessage = "Error al crear la cuenta";
-      switch (error.code) {
-        case "auth/email-already-in-use": errorMessage = "Este email ya está registrado"; break;
-        case "auth/invalid-email": errorMessage = "El email ingresado no es válido"; break;
-        case "auth/weak-password": errorMessage = "La contraseña es demasiado débil"; break;
-        default: errorMessage = error.message;
-      }
-      Utils.showToast("Error", errorMessage, "error");
-    }
-  });
-}
-
-// 🔄 Detectar sesión activa al cargar la app
+// ==========================
+// 🔄 Detectar sesión activa
+// ==========================
 onAuthStateChanged(auth, (user) => {
   const loadingOverlay = document.getElementById("loadingOverlay");
   if (user) {
-    console.log("Sesión detectada:", user.email);
-    window.location.href = "mi-comercio.html";
+    redirectAfterLogin(user);
   } else {
-    console.log("No hay sesión activa");
     if (loadingOverlay) loadingOverlay.classList.remove("show");
   }
 });
 
-    
 
