@@ -11,6 +11,7 @@ import {
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 let isRegisterMode = false;
+let redirectHandled = false; // Flag para evitar doble redirección
 
 // ==========================
 // ⚙️ Utils
@@ -181,34 +182,52 @@ document.getElementById("togglePassword")?.addEventListener("click", function ()
 // 🔑 Redirección inteligente según usuario
 // ==========================
 async function redirectAfterLogin(user) {
-  const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+  console.log("=== redirectAfterLogin llamado ===");
+  console.log("Usuario:", user.email, "UID:", user.uid);
 
-  if (!userDoc.exists()) {
-    // Usuario completamente nuevo → completar usuario.html
+  try {
+    const userDocRef = doc(db, "usuarios", user.uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    console.log("Documento existe?:", userDoc.exists());
+
+    if (!userDoc.exists()) {
+      console.log("→ Redirigiendo a usuario.html (no existe doc)");
+      window.location.href = "usuario.html";
+      return;
+    }
+
+    const data = userDoc.data();
+    console.log("Datos del usuario:", data);
+
+    // Verificar si completó datos personales
+    const hasBasicData = data.nombre && data.apellido && data.direccion;
+    console.log("Tiene datos básicos?:", hasBasicData);
+    
+    if (!hasBasicData) {
+      console.log("→ Redirigiendo a usuario.html (faltan datos básicos)");
+      window.location.href = "usuario.html";
+      return;
+    }
+
+    // Verificar si eligió tipo de usuario
+    if (!data.tipoUsuario) {
+      console.log("→ Redirigiendo a usuario.html (falta tipoUsuario)");
+      window.location.href = "usuario.html";
+      return;
+    }
+
+    // Redirigir según tipo de usuario
+    if (data.tipoUsuario === "servicio") {
+      console.log("→ Redirigiendo a mi-servicio.html");
+      window.location.href = "mi-servicio.html";
+    } else {
+      console.log("→ Redirigiendo a mi-comercio.html");
+      window.location.href = "mi-comercio.html";
+    }
+  } catch (error) {
+    console.error("Error en redirectAfterLogin:", error);
     window.location.href = "usuario.html";
-    return;
-  }
-
-  const data = userDoc.data();
-
-  // Verificar si completó datos personales
-  const hasBasicData = data.nombre && data.apellido && data.direccion;
-  if (!hasBasicData) {
-    window.location.href = "usuario.html";
-    return;
-  }
-
-  // Verificar si eligió tipo de usuario
-  if (!data.tipoUsuario) {
-    window.location.href = "usuario.html";
-    return;
-  }
-
-  // Redirigir según tipo de usuario
-  if (data.tipoUsuario === "servicio") {
-    window.location.href = "mi-servicio.html";
-  } else {
-    window.location.href = "mi-comercio.html";
   }
 }
 
@@ -229,32 +248,50 @@ document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
 
   try {
     if (isRegisterMode) {
+      console.log("=== REGISTRO con email ===");
       // CREAR CUENTA
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
+      console.log("Usuario creado:", user.email, "UID:", user.uid);
       
       // Crear documento básico en Firestore
-      await setDoc(doc(db, "usuarios", user.uid), {
+      const userData = {
         email: user.email,
         uid: user.uid,
         referralId: Utils.generateReferralId(),
         fechaRegistro: new Date(),
         plan: "basic",
         estado: "trial",
-      });
+      };
+
+      console.log("Intentando crear documento en Firestore...");
+      try {
+        await setDoc(doc(db, "usuarios", user.uid), userData);
+        console.log("✅ Documento creado exitosamente");
+      } catch (dbError) {
+        console.error("❌ ERROR al crear documento:", dbError);
+        console.error("Código:", dbError.code);
+        console.error("Mensaje:", dbError.message);
+      }
 
       Utils.hideLoading();
       Utils.showToast("¡Cuenta creada!", "Ahora completa tus datos personales", "success");
-      window.location.href = "usuario.html";
+      setTimeout(() => {
+        window.location.href = "usuario.html";
+      }, 1000);
     } else {
+      console.log("=== LOGIN con email ===");
       // LOGIN
       await signInWithEmailAndPassword(auth, email, password);
+      console.log("Login exitoso");
       Utils.hideLoading();
       Utils.showToast("¡Bienvenido!", "Has iniciado sesión correctamente", "success");
+      redirectHandled = true;
       await redirectAfterLogin(auth.currentUser);
     }
   } catch (error) {
     Utils.hideLoading();
+    console.error("Error en login/registro:", error);
     let errorMessage = "Error al procesar la solicitud";
     switch (error.code) {
       case "auth/user-not-found": 
@@ -278,32 +315,29 @@ document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
     Utils.showToast("Error", errorMessage, "error");
   }
 });
-window.addEventListener("load", async () => {
-  console.log("=== Verificando redirect de Google ===");
-  try {
-    const result = await getRedirectResult(auth);
-    console.log("Result:", result);
-    
-    if (result && result.user) {
-      console.log("Usuario detectado:", result.user.email);
-      const user = result.user;
-      const userDoc = await getDoc(doc(db, "usuarios", user.uid));
-      console.log("Documento existe?:", userDoc.exists());
-      
-      if (!userDoc.exists()) {
-        console.log("Creando documento...");
-        // ... resto del código
+
 // ==========================
 // 🔑 Google login usando Redirect
 // ==========================
 window.addEventListener("load", async () => {
+  console.log("=== Window load - Verificando redirect de Google ===");
+  Utils.showLoading("Verificando sesión...");
+  
   try {
     const result = await getRedirectResult(auth);
+    console.log("getRedirectResult:", result ? "Usuario detectado" : "Sin resultado");
+    
     if (result && result.user) {
       const user = result.user;
-      const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+      console.log("Usuario de Google:", user.email, "UID:", user.uid);
+      
+      const userDocRef = doc(db, "usuarios", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      console.log("Documento existe en Firestore?:", userDoc.exists());
       
       if (!userDoc.exists()) {
+        console.log("Creando documento para usuario de Google...");
+        
         // Dividir nombre completo en nombre y apellido
         const fullName = user.displayName || "";
         const nameParts = fullName.split(" ");
@@ -324,29 +358,43 @@ window.addEventListener("load", async () => {
         if (nombre) userData.nombre = nombre;
         if (apellido) userData.apellido = apellido;
 
-        await setDoc(doc(db, "usuarios", user.uid), userData);
+        console.log("Datos a guardar:", userData);
+
+        try {
+          await setDoc(userDocRef, userData);
+          console.log("✅ Documento creado exitosamente en Firestore");
+        } catch (dbError) {
+          console.error("❌ ERROR al crear documento:", dbError);
+          console.error("Código:", dbError.code);
+          console.error("Mensaje:", dbError.message);
+        }
       }
       
       Utils.hideLoading();
       Utils.showToast("¡Bienvenido!", "Has iniciado sesión con Google", "success");
+      redirectHandled = true;
       await redirectAfterLogin(user);
     } else {
+      console.log("No hay resultado de redirect");
       Utils.hideLoading();
     }
   } catch (error) {
     Utils.hideLoading();
-    console.error("Error login Google:", error);
+    console.error("❌ Error en getRedirectResult:", error);
+    console.error("Código:", error.code);
+    console.error("Mensaje:", error.message);
     Utils.showToast("Error", "No se pudo iniciar sesión con Google", "error");
   }
 });
 
 document.getElementById("googleLogin")?.addEventListener("click", async () => {
+  console.log("=== Iniciando login con Google ===");
   try {
     Utils.showLoading("Conectando con Google...");
     await signInWithRedirect(auth, provider);
   } catch (error) {
     Utils.hideLoading();
-    console.error("No se pudo iniciar Google:", error);
+    console.error("Error al iniciar redirect:", error);
     Utils.showToast("Error", "No se pudo iniciar sesión con Google", "error");
   }
 });
@@ -373,23 +421,20 @@ document.getElementById("forgotPassword")?.addEventListener("click", async (e) =
 // ==========================
 // 🔄 Detectar sesión activa
 // ==========================
-onAuthStateChanged(auth, (user) => {
-  const loadingOverlay = document.getElementById("loadingOverlay");
-  if (user) {
-    redirectAfterLogin(user);
-  } else {
-    if (loadingOverlay) loadingOverlay.classList.remove("show");
-  }
-  onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, async (user) => {
   console.log("=== onAuthStateChanged disparado ===");
-  console.log("User:", user);
+  console.log("Usuario:", user ? user.email : "null");
+  console.log("redirectHandled:", redirectHandled);
   
   const loadingOverlay = document.getElementById("loadingOverlay");
-  if (user) {
-    console.log("Redirigiendo usuario:", user.email);
+  
+  if (user && !redirectHandled) {
+    console.log("Hay usuario y no se manejó redirect aún");
     await redirectAfterLogin(user);
-  } else {
-    console.log("No hay usuario");
+  } else if (!user) {
+    console.log("No hay usuario autenticado");
     if (loadingOverlay) loadingOverlay.classList.remove("show");
+  } else {
+    console.log("Usuario ya fue redirigido");
   }
 });
