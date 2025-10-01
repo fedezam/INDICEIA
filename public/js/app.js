@@ -11,7 +11,8 @@ import {
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 let isRegisterMode = false;
-let redirectHandled = false; // Flag para evitar doble redirección
+let redirectHandled = false;
+let processingRedirect = false; // Flag para esperar a que termine getRedirectResult
 
 // ==========================
 // ⚙️ Utils
@@ -321,6 +322,7 @@ document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
 // ==========================
 window.addEventListener("load", async () => {
   console.log("=== Window load - Verificando redirect de Google ===");
+  processingRedirect = true; // MARCAR QUE ESTAMOS PROCESANDO
   Utils.showLoading("Verificando sesión...");
   
   try {
@@ -370,15 +372,18 @@ window.addEventListener("load", async () => {
         }
       }
       
+      processingRedirect = false; // YA TERMINAMOS
       Utils.hideLoading();
       Utils.showToast("¡Bienvenido!", "Has iniciado sesión con Google", "success");
       redirectHandled = true;
       await redirectAfterLogin(user);
     } else {
       console.log("No hay resultado de redirect");
+      processingRedirect = false; // YA TERMINAMOS
       Utils.hideLoading();
     }
   } catch (error) {
+    processingRedirect = false; // TERMINAR INCLUSO SI HAY ERROR
     Utils.hideLoading();
     console.error("❌ Error en getRedirectResult:", error);
     console.error("Código:", error.code);
@@ -425,16 +430,18 @@ onAuthStateChanged(auth, async (user) => {
   console.log("=== onAuthStateChanged disparado ===");
   console.log("Usuario:", user ? user.email : "null");
   console.log("redirectHandled:", redirectHandled);
+  console.log("processingRedirect:", processingRedirect);
   
   const loadingOverlay = document.getElementById("loadingOverlay");
   
-  if (user && !redirectHandled) {
+  // ESPERAR a que termine getRedirectResult antes de redirigir
+  if (user && !redirectHandled && !processingRedirect) {
     console.log("Hay usuario y no se manejó redirect aún");
     await redirectAfterLogin(user);
   } else if (!user) {
     console.log("No hay usuario autenticado");
     if (loadingOverlay) loadingOverlay.classList.remove("show");
   } else {
-    console.log("Usuario ya fue redirigido");
+    console.log("Usuario ya fue redirigido o estamos procesando redirect");
   }
 });
