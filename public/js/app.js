@@ -278,7 +278,21 @@ document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
     Utils.showToast("Error", errorMessage, "error");
   }
 });
-
+window.addEventListener("load", async () => {
+  console.log("=== Verificando redirect de Google ===");
+  try {
+    const result = await getRedirectResult(auth);
+    console.log("Result:", result);
+    
+    if (result && result.user) {
+      console.log("Usuario detectado:", result.user.email);
+      const user = result.user;
+      const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+      console.log("Documento existe?:", userDoc.exists());
+      
+      if (!userDoc.exists()) {
+        console.log("Creando documento...");
+        // ... resto del código
 // ==========================
 // 🔑 Google login usando Redirect
 // ==========================
@@ -364,6 +378,18 @@ onAuthStateChanged(auth, (user) => {
   if (user) {
     redirectAfterLogin(user);
   } else {
+    if (loadingOverlay) loadingOverlay.classList.remove("show");
+  }
+  onAuthStateChanged(auth, async (user) => {
+  console.log("=== onAuthStateChanged disparado ===");
+  console.log("User:", user);
+  
+  const loadingOverlay = document.getElementById("loadingOverlay");
+  if (user) {
+    console.log("Redirigiendo usuario:", user.email);
+    await redirectAfterLogin(user);
+  } else {
+    console.log("No hay usuario");
     if (loadingOverlay) loadingOverlay.classList.remove("show");
   }
 });
