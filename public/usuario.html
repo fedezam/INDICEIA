@@ -1,163 +1,202 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Completar Perfil - INDICEIA</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/dashboard.css">
-  <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; margin:0; padding:0; }
-    .container { max-width: 600px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    h2 { text-align: center; color: #333; margin-bottom: 20px; }
-    .form-field { display: flex; flex-direction: column; margin-bottom: 15px; }
-    .form-field label { margin-bottom: 5px; font-weight: 500; color: #555; }
-    .form-field input { padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
-    .form-field input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 5px rgba(0,123,255,0.3); }
-    .botones-eleccion { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
-    .btn { padding: 12px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-primary { background-color: #007bff; color: #fff; }
-    .btn-primary:hover:not(:disabled) { background-color: #0056b3; }
-    .btn-secondary { background-color: #28a745; color: #fff; }
-    .btn-secondary:hover:not(:disabled) { background-color: #1e7e34; }
-    .btn-info { font-size: 0.9rem; color: #555; margin-bottom: 10px; }
-    @media (max-width: 600px) {
-      .container { margin: 20px; padding: 20px; }
-      .botones-eleccion { flex-direction: column; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Completa tus datos - INDICEIA</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link rel="stylesheet" href="/css/dashboard.css">
+<style>
+  .main-content { display: flex; justify-content: center; padding: 2rem; }
+  #userForm { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 1rem; }
+  .form-field { position: relative; }
+  .error-msg { font-size: 0.8rem; color: #e53e3e; margin-top: 0.2rem; min-height: 1em; }
+  .botones-eleccion { display: flex; justify-content: space-between; margin-top: 2rem; gap: 1rem; flex-wrap: wrap; }
+  .botones-eleccion button { flex: 1; text-align: center; opacity: 0.6; transition: opacity 0.3s ease; }
+  .botones-eleccion button.enabled { opacity: 1; }
+  .btn-explanation { font-size: 0.85rem; color: #555; margin-top: 0.25rem; text-align: center; }
+  .toast { position: fixed; bottom: 2rem; right: 2rem; background: #333; color: white; padding: 1rem 1.5rem; border-radius: 8px; opacity: 0; transform: translateY(20px); transition: all 0.5s ease; z-index: 9999; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+</style>
 </head>
 <body>
+<header class="header">
+  <div class="container">
+    <div class="logo"><i class="fas fa-robot"></i> <h1>INDICEIA</h1></div>
+  </div>
+</header>
 
+<main class="main-content">
   <div class="container">
     <h2>Completa tus datos personales</h2>
-
     <form id="userForm">
       <div class="form-field">
         <label for="nombre">Nombre completo *</label>
-        <input type="text" id="nombre" required placeholder="Tu nombre y apellido">
+        <input type="text" id="nombre" required>
+        <div class="error-msg" id="err-nombre"></div>
       </div>
       <div class="form-field">
         <label for="email">Email *</label>
-        <input type="email" id="email" required placeholder="tu@email.com">
+        <input type="email" id="email" required>
+        <div class="error-msg" id="err-email"></div>
       </div>
       <div class="form-field">
         <label for="telefono">Teléfono *</label>
-        <input type="tel" id="telefono" required placeholder="Ej: +54 9 341 1234567">
+        <input type="tel" id="telefono" required>
+        <div class="error-msg" id="err-telefono"></div>
       </div>
       <div class="form-field">
         <label for="fechaNacimiento">Fecha de nacimiento</label>
         <input type="date" id="fechaNacimiento">
+        <div class="error-msg" id="err-fechaNacimiento"></div>
       </div>
       <div class="form-field">
         <label for="pais">País *</label>
-        <input type="text" id="pais" required placeholder="Argentina">
+        <input type="text" id="pais" required>
+        <div class="error-msg" id="err-pais"></div>
       </div>
       <div class="form-field">
         <label for="provincia">Provincia *</label>
-        <input type="text" id="provincia" required placeholder="Santa Fe">
+        <input type="text" id="provincia" required>
+        <div class="error-msg" id="err-provincia"></div>
       </div>
       <div class="form-field">
         <label for="localidad">Localidad *</label>
-        <input type="text" id="localidad" required placeholder="Rosario">
+        <input type="text" id="localidad" required>
+        <div class="error-msg" id="err-localidad"></div>
       </div>
       <div class="form-field">
         <label for="barrio">Barrio</label>
-        <input type="text" id="barrio" placeholder="Opcional">
+        <input type="text" id="barrio">
+        <div class="error-msg" id="err-barrio"></div>
       </div>
       <div class="form-field">
         <label for="direccion">Calle y número *</label>
-        <input type="text" id="direccion" required placeholder="Ej: Av. Siempre Viva 742">
+        <input type="text" id="direccion" required>
+        <div class="error-msg" id="err-direccion"></div>
       </div>
     </form>
 
-    <div class="btn-info">
-      Una vez completados tus datos, elige el tipo de IA que deseas crear:
-    </div>
-
     <div class="botones-eleccion">
-      <button id="btnComercio" class="btn btn-primary" disabled>
-        <i class="fas fa-store"></i> Crear IA para Comercio
-      </button>
-      <button id="btnServicio" class="btn btn-secondary" disabled>
-        <i class="fas fa-concierge-bell"></i> Crear IA para Servicio
-      </button>
+      <div>
+        <button id="btnComercio" class="btn btn-primary" disabled>
+          Crear IA para Comercio
+        </button>
+        <div class="btn-explanation">
+          Gestiona productos, horarios y ventas de tu comercio.
+        </div>
+      </div>
+      <div>
+        <button id="btnServicio" class="btn btn-secondary" disabled>
+          Crear IA para Servicio
+        </button>
+        <div class="btn-explanation">
+          Administra tus servicios: citas, agenda y clientes.
+        </div>
+      </div>
     </div>
   </div>
+</main>
 
-  <script type="module">
-    import { auth, db } from './firebase.js';
-    import { doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+<div id="toastContainer"></div>
 
-    const form = document.getElementById('userForm');
-    const btnComercio = document.getElementById('btnComercio');
-    const btnServicio = document.getElementById('btnServicio');
+<script type="module">
+import { auth, db } from '/js/firebase.js';
+import { getDoc, setDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-    const enableButtonsIfValid = () => {
-      const requiredFilled = Array.from(form.querySelectorAll('[required]'))
-        .every(f => f.value.trim() !== '');
-      btnComercio.disabled = !requiredFilled;
-      btnServicio.disabled = !requiredFilled;
-    };
+const showToast = (msg, type = 'info') => {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.classList.add('show'), 50);
+  setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 500); }, 4000);
+};
 
-    form.addEventListener('input', enableButtonsIfValid);
+document.addEventListener('DOMContentLoaded', async () => {
+  const form = document.getElementById('userForm');
+  const btnComercio = document.getElementById('btnComercio');
+  const btnServicio = document.getElementById('btnServicio');
 
-    const guardarUsuario = async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        alert('No hay usuario autenticado');
-        window.location.href = '/index.html';
-        return;
-      }
+  const user = auth.currentUser;
+  if (!user) window.location.href = '/index.html';
 
-      const userData = {
-        nombre: document.getElementById('nombre').value.trim(),
-        email: document.getElementById('email').value.trim(),
-        telefono: document.getElementById('telefono').value.trim(),
-        fechaNacimiento: document.getElementById('fechaNacimiento').value,
-        pais: document.getElementById('pais').value.trim(),
-        provincia: document.getElementById('provincia').value.trim(),
-        localidad: document.getElementById('localidad').value.trim(),
-        barrio: document.getElementById('barrio').value.trim(),
-        direccion: document.getElementById('direccion').value.trim(),
-        fechaCreacion: new Date().toISOString()
-      };
+  const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+  if (userDoc.exists()) {
+    const data = userDoc.data();
+    for (const key in data) {
+      if (form[key]) form[key].value = data[key];
+    }
+  }
 
-      await setDoc(doc(db, 'usuarios', user.uid), userData, { merge: true });
-      return userData;
-    };
+  const requiredFields = ['nombre','email','telefono','pais','provincia','localidad','direccion'];
+  const errorFields = {
+    nombre:'Ingresa tu nombre completo',
+    email:'Ingresa un email válido',
+    telefono:'Ingresa un teléfono',
+    pais:'Completa tu país',
+    provincia:'Completa tu provincia',
+    localidad:'Completa tu localidad',
+    direccion:'Completa tu calle y número'
+  };
 
-    const crearDocumentoInicial = async (tipo) => {
-      const user = auth.currentUser;
-      if (!user) return;
+  const validateForm = () => {
+    let valid = true;
+    requiredFields.forEach(f => {
+      const input = form[f];
+      const errDiv = document.getElementById('err-'+f);
+      if (!input.value.trim()) {
+        errDiv.textContent = errorFields[f];
+        valid = false;
+      } else { errDiv.textContent = ''; }
+    });
+    [btnComercio, btnServicio].forEach(btn => btn.classList.toggle('enabled', valid));
+    btnComercio.disabled = !valid;
+    btnServicio.disabled = !valid;
+    return valid;
+  };
 
-      const docRef = tipo === 'comercio'
-        ? doc(db, 'comercios', user.uid)
-        : doc(db, 'servicios', user.uid);
+  form.addEventListener('input', validateForm);
+  validateForm();
 
-      await setDoc(docRef, {
-        userId: user.uid,
-        nombre: tipo === 'comercio' ? 'Mi Comercio' : 'Mi Servicio',
+  const guardarUsuario = async () => {
+    const userData = {};
+    for (const key of Object.keys(form)) { userData[key] = form[key].value.trim(); }
+    userData.fechaCreacion = new Date().toISOString();
+    await setDoc(doc(db, 'usuarios', user.uid), userData, { merge:true });
+    return userData;
+  };
+
+  const crearDocumentoInicial = async (tipo) => {
+    const docRef = tipo === 'comercio'
+      ? doc(db,'comercios',user.uid)
+      : doc(db,'servicios',user.uid);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      await setDoc(docRef,{
+        userId:user.uid,
+        nombre: tipo==='comercio'?'Mi Comercio':'Mi Servicio',
         fechaCreacion: new Date().toISOString()
       });
-    };
+    }
+  };
 
-    btnComercio.addEventListener('click', async () => {
-      await guardarUsuario();
-      await crearDocumentoInicial('comercio');
-      window.location.href = '/mi-comercio.html';
-    });
+  btnComercio.addEventListener('click', async () => {
+    if (!validateForm()) { showToast('Completa todos los campos requeridos','warning'); return; }
+    await guardarUsuario();
+    await crearDocumentoInicial('comercio');
+    showToast('Redirigiendo a tu comercio...','success');
+    setTimeout(()=>window.location.href='/mi-comercio.html',500);
+  });
 
-    btnServicio.addEventListener('click', async () => {
-      await guardarUsuario();
-      await crearDocumentoInicial('servicio');
-      window.location.href = '/mi-servicio.html';
-    });
-
-    // Inicial check
-    enableButtonsIfValid();
-  </script>
-
+  btnServicio.addEventListener('click', async () => {
+    if (!validateForm()) { showToast('Completa todos los campos requeridos','warning'); return; }
+    await guardarUsuario();
+    await crearDocumentoInicial('servicio');
+    showToast('Redirigiendo a tu servicio...','success');
+    setTimeout(()=>window.location.href='/mi-servicio.html',500);
+  });
+});
+</script>
 </body>
 </html>
