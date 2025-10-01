@@ -1,5 +1,4 @@
-
-    // app.js
+// app.js
 import { auth, db, provider } from "./firebase.js";
 import {
   signInWithEmailAndPassword,
@@ -100,10 +99,12 @@ class Utils {
 
     const password = passwordField.value;
     const passwordError = passwordField.parentElement.parentElement.querySelector(".error-message");
-    if (!password || !Utils.validatePassword(password)) {
+    if (!password || (isRegisterMode && !Utils.validatePassword(password))) {
       passwordField.classList.add("error");
       if (passwordError) {
-        passwordError.textContent = "Mínimo 8 caracteres, una mayúscula, un número y un símbolo";
+        passwordError.textContent = isRegisterMode 
+          ? "Mínimo 8 caracteres, una mayúscula, un número y un símbolo"
+          : "La contraseña es obligatoria";
         passwordError.classList.add("show");
       }
       isValid = false;
@@ -119,6 +120,49 @@ class Utils {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   }
 }
+
+// ==========================
+// 🔄 Toggle Login/Registro
+// ==========================
+function updateUIMode() {
+  const subtitle = document.getElementById("loginSubtitle");
+  const btnText = document.getElementById("loginBtnText");
+  const btnIcon = document.getElementById("btnIcon");
+  const forgotPassword = document.getElementById("forgotPassword");
+  const registerLink = document.getElementById("registerLink");
+  const toggleLink = document.getElementById("toggleMode");
+  const passwordRules = document.getElementById("passwordRules");
+
+  if (isRegisterMode) {
+    // MODO REGISTRO
+    subtitle.textContent = "Crea tu cuenta y empieza gratis";
+    btnText.textContent = "Crear Cuenta";
+    btnIcon.className = "fas fa-user-plus";
+    forgotPassword.style.display = "none";
+    registerLink.innerHTML = '¿Ya tienes cuenta? <a href="#" id="toggleMode">Inicia sesión aquí</a>';
+    passwordRules.style.display = "block";
+  } else {
+    // MODO LOGIN
+    subtitle.textContent = "Tu vendedor IA personalizado";
+    btnText.textContent = "Iniciar Sesión";
+    btnIcon.className = "fas fa-sign-in-alt";
+    forgotPassword.style.display = "block";
+    registerLink.innerHTML = '¿No tienes cuenta? <a href="#" id="toggleMode">Regístrate aquí</a>';
+    passwordRules.style.display = "none";
+  }
+
+  // Re-attach event listener al nuevo link
+  document.getElementById("toggleMode").addEventListener("click", (e) => {
+    e.preventDefault();
+    isRegisterMode = !isRegisterMode;
+    updateUIMode();
+  });
+}
+
+// Inicializar modo al cargar
+document.addEventListener("DOMContentLoaded", () => {
+  updateUIMode();
+});
 
 // ==========================
 // 🔒 Toggle password
@@ -154,9 +198,14 @@ async function redirectAfterLogin(user) {
     return;
   }
 
+  // Verificar si eligió tipo de usuario
+  if (!data.tipoUsuario) {
+    window.location.href = "usuario.html";
+    return;
+  }
+
   // Redirigir según tipo de usuario
-  const tipo = data.tipoUsuario || "comercio"; // default comercio
-  if (tipo === "servicio") {
+  if (data.tipoUsuario === "servicio") {
     window.location.href = "mi-servicio.html";
   } else {
     window.location.href = "mi-comercio.html";
@@ -164,7 +213,7 @@ async function redirectAfterLogin(user) {
 }
 
 // ==========================
-// 🔑 Login con email/password
+// 🔑 Login/Registro con email/password
 // ==========================
 document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -180,22 +229,51 @@ document.getElementById("emailLogin")?.addEventListener("submit", async (e) => {
 
   try {
     if (isRegisterMode) {
-      // Mostramos formulario de registro completo en usuario.html
+      // CREAR CUENTA
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      // Crear documento básico en Firestore
+      await setDoc(doc(db, "usuarios", user.uid), {
+        email: user.email,
+        uid: user.uid,
+        referralId: Utils.generateReferralId(),
+        fechaRegistro: new Date(),
+        plan: "basic",
+        estado: "trial",
+      });
+
+      Utils.hideLoading();
+      Utils.showToast("¡Cuenta creada!", "Ahora completa tus datos personales", "success");
       window.location.href = "usuario.html";
     } else {
+      // LOGIN
       await signInWithEmailAndPassword(auth, email, password);
       Utils.hideLoading();
       Utils.showToast("¡Bienvenido!", "Has iniciado sesión correctamente", "success");
-      redirectAfterLogin(auth.currentUser);
+      await redirectAfterLogin(auth.currentUser);
     }
   } catch (error) {
     Utils.hideLoading();
-    let errorMessage = "Error al iniciar sesión";
+    let errorMessage = "Error al procesar la solicitud";
     switch (error.code) {
-      case "auth/user-not-found": errorMessage = "No existe una cuenta con este email"; break;
-      case "auth/wrong-password": errorMessage = "Contraseña incorrecta"; break;
-      case "auth/too-many-requests": errorMessage = "Demasiados intentos. Intenta más tarde"; break;
-      default: errorMessage = error.message;
+      case "auth/user-not-found": 
+        errorMessage = "No existe una cuenta con este email"; 
+        break;
+      case "auth/wrong-password": 
+        errorMessage = "Contraseña incorrecta"; 
+        break;
+      case "auth/email-already-in-use": 
+        errorMessage = "Este email ya está registrado. ¿Quieres iniciar sesión?"; 
+        break;
+      case "auth/weak-password": 
+        errorMessage = "La contraseña debe tener al menos 6 caracteres"; 
+        break;
+      case "auth/too-many-requests": 
+        errorMessage = "Demasiados intentos. Intenta más tarde"; 
+        break;
+      default: 
+        errorMessage = error.message;
     }
     Utils.showToast("Error", errorMessage, "error");
   }
@@ -210,23 +288,34 @@ window.addEventListener("load", async () => {
     if (result && result.user) {
       const user = result.user;
       const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+      
       if (!userDoc.exists()) {
-        // Crear doc usuario mínimo
-        await setDoc(doc(db, "usuarios", user.uid), {
+        // Dividir nombre completo en nombre y apellido
+        const fullName = user.displayName || "";
+        const nameParts = fullName.split(" ");
+        const nombre = nameParts[0] || "";
+        const apellido = nameParts.slice(1).join(" ") || "";
+
+        // Crear doc usuario básico (sin campos vacíos)
+        const userData = {
           email: user.email,
-          nombre: user.displayName || "",
-          apellido: "",
-          direccion: "",
-          tipoUsuario: "",
+          uid: user.uid,
           referralId: Utils.generateReferralId(),
           fechaRegistro: new Date(),
           plan: "basic",
           estado: "trial",
-        });
+        };
+
+        // Solo agregar nombre/apellido si existen
+        if (nombre) userData.nombre = nombre;
+        if (apellido) userData.apellido = apellido;
+
+        await setDoc(doc(db, "usuarios", user.uid), userData);
       }
+      
       Utils.hideLoading();
       Utils.showToast("¡Bienvenido!", "Has iniciado sesión con Google", "success");
-      redirectAfterLogin(user);
+      await redirectAfterLogin(user);
     } else {
       Utils.hideLoading();
     }
@@ -278,5 +367,3 @@ onAuthStateChanged(auth, (user) => {
     if (loadingOverlay) loadingOverlay.classList.remove("show");
   }
 });
-
-
