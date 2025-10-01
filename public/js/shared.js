@@ -227,7 +227,13 @@ class FirebaseHelpers {
     await setDoc(doc(db, "usuarios", user.uid), data, { merge: true });
   }
 }
-
+// 🔹 Obtener documento de usuario por UID
+  static async getUserDoc(uid) {
+    const docRef = doc(db, "usuarios", uid);
+    const docSnap = await getDoc(docRef);
+    return docSnap;
+  }
+}
 
 // ==========================================
 // 🎯 INITIALIZATION (Actualizado initSharedData)
