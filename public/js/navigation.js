@@ -2,13 +2,27 @@
 import { LocalData, Utils } from './shared.js';
 
 class Navigation {
-  // Configuración de páginas y orden
-  static pages = [
+  // Flujo Comercio
+  static pagesComercio = [
     { id: 'mi-comercio', name: 'Mi Comercio', url: 'mi-comercio.html', icon: 'fas fa-store' },
     { id: 'horarios', name: 'Horarios', url: 'horarios.html', icon: 'fas fa-clock' },
     { id: 'productos', name: 'Productos', url: 'productos.html', icon: 'fas fa-boxes' },
     { id: 'mi-ia', name: 'IA Config', url: 'mi-ia.html', icon: 'fas fa-robot' }
   ];
+
+  // Flujo Servicio
+  static pagesServicio = [
+    { id: 'mi-servicio', name: 'Mi Servicio', url: 'mi-servicio.html', icon: 'fas fa-briefcase' },
+    { id: 'horarios', name: 'Horarios', url: 'horarios.html', icon: 'fas fa-clock' },
+    { id: 'agenda', name: 'Agenda', url: 'agenda.html', icon: 'fas fa-calendar-alt' },
+    { id: 'mi-ia', name: 'IA Config', url: 'mi-ia.html', icon: 'fas fa-robot' }
+  ];
+
+  // Detectar tipo de usuario y devolver set de páginas
+  static get pages() {
+    const shared = LocalData.getSharedData();
+    return shared.tipoUsuario === 'servicio' ? this.pagesServicio : this.pagesComercio;
+  }
 
   // Obtener página actual desde URL
   static getCurrentPage() {
@@ -69,7 +83,6 @@ class Navigation {
   static renderNavigationButtons() {
     let container = document.getElementById('navigationControls');
     if (!container) {
-      // Si no existe, crear al final de main-content
       const mainContent = document.querySelector('.main-content') || document.querySelector('.container');
       if (mainContent) {
         container = document.createElement('div');
@@ -104,18 +117,16 @@ class Navigation {
   static updateProgressBar() {
     const shared = LocalData.getSharedData();
     const completedSections = shared.completedSections || [];
-    
-    // Actualizar steps según secciones completadas
+
     const steps = document.querySelectorAll('.step');
     steps.forEach((step, index) => {
       const pageId = this.pages[index].id;
       const isCompleted = completedSections.includes(pageId);
       const isCurrent = index === this.getCurrentPageIndex();
-      
+
       step.classList.toggle('completed', isCompleted);
       step.classList.toggle('current', isCurrent);
-      
-      // Agregar/remover check
+
       const existingCheck = step.querySelector('.step-check');
       if (isCompleted && !existingCheck) {
         step.insertAdjacentHTML('beforeend', '<i class="fas fa-check step-check"></i>');
@@ -124,11 +135,10 @@ class Navigation {
       }
     });
 
-    // Actualizar barra de progreso
     const completionPercent = Math.round((completedSections.length / this.pages.length) * 100);
     const fillElement = document.getElementById('completionFill');
     const textElement = document.getElementById('completionText');
-    
+
     if (fillElement) fillElement.style.width = `${completionPercent}%`;
     if (textElement) textElement.textContent = `${completionPercent}% completado`;
   }
@@ -141,12 +151,10 @@ class Navigation {
     if (prevBtn) {
       prevBtn.addEventListener('click', () => this.goToPreviousPage());
     }
-
     if (nextBtn) {
       nextBtn.addEventListener('click', () => this.goToNextPage());
     }
 
-    // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (e.altKey) {
         if (e.key === 'ArrowLeft') {
@@ -164,17 +172,14 @@ class Navigation {
   static goToPage(pageId) {
     const page = this.pages.find(p => p.id === pageId);
     if (page) {
-      // Guardar página actual antes de navegar
       LocalData.updateSharedData({ 
         currentStep: pageId,
         lastNavigation: new Date().toISOString()
       });
-      
       window.location.href = page.url;
     }
   }
 
-  // Ir a página anterior
   static goToPreviousPage() {
     const currentIndex = this.getCurrentPageIndex();
     if (currentIndex > 0) {
@@ -182,59 +187,45 @@ class Navigation {
     }
   }
 
-  // Ir a página siguiente (con validación)
   static async goToNextPage() {
     const currentIndex = this.getCurrentPageIndex();
     const currentPage = this.pages[currentIndex];
-    
-    // Validar página actual antes de continuar
+
     const isValid = await this.validateCurrentPage();
     if (!isValid) {
       Utils.showToast('Campos incompletos', 'Por favor completa todos los campos requeridos antes de continuar', 'warning');
       return;
     }
 
-    // Marcar página actual como completada
     this.markPageAsCompleted(currentPage.id);
 
-    // Ir a siguiente página
     if (currentIndex < this.pages.length - 1) {
       this.goToPage(this.pages[currentIndex + 1].id);
     } else {
-      // Última página - mostrar mensaje de finalización
       Utils.showToast('¡Configuración completa!', 'Tu IA comercial está lista para usar', 'success');
     }
   }
 
-  // Validar página actual (override en cada página específica)
   static async validateCurrentPage() {
-    const currentPage = this.getCurrentPage();
-    
-    // Llamar función de validación específica de cada página si existe
     if (window.validateCurrentPageData && typeof window.validateCurrentPageData === 'function') {
       return await window.validateCurrentPageData();
     }
-    
-    // Validación genérica - verificar campos required
+
     const form = document.querySelector('form');
     if (form) {
       const requiredFields = form.querySelectorAll('[required]');
       return Array.from(requiredFields).every(field => {
-        if (field.type === 'checkbox') {
-          return field.checked;
-        }
+        if (field.type === 'checkbox') return field.checked;
         return field.value.trim() !== '';
       });
     }
-    
     return true;
   }
 
-  // Marcar página como completada
   static markPageAsCompleted(pageId) {
     const shared = LocalData.getSharedData();
     const completed = shared.completedSections || [];
-    
+
     if (!completed.includes(pageId)) {
       completed.push(pageId);
       LocalData.updateSharedData({ 
@@ -244,14 +235,12 @@ class Navigation {
     }
   }
 
-  // Verificar si página está completada
   static isPageCompleted(pageId) {
     const shared = LocalData.getSharedData();
     const completed = shared.completedSections || [];
     return completed.includes(pageId);
   }
 
-  // Obtener progreso total
   static getOverallProgress() {
     const shared = LocalData.getSharedData();
     const completed = shared.completedSections || [];
@@ -264,11 +253,10 @@ class Navigation {
     };
   }
 
-  // Obtener próxima página incompleta
   static getNextIncompletePage() {
     const shared = LocalData.getSharedData();
     const completed = shared.completedSections || [];
-    
+
     for (const page of this.pages) {
       if (!completed.includes(page.id)) {
         return page;
@@ -277,28 +265,26 @@ class Navigation {
     return null;
   }
 
-  // Resetear progreso (útil para testing)
   static resetProgress() {
     LocalData.updateSharedData({ 
       completedSections: [],
-      currentStep: 'mi-comercio'
+      currentStep: this.pages[0].id
     });
     this.updateProgressBar();
     this.renderNavigationButtons();
   }
 }
 
-// Auto-inicializar cuando se carga la página
 document.addEventListener('DOMContentLoaded', () => {
-  // Solo inicializar en páginas del dashboard
-  const dashboardPages = ['mi-comercio.html', 'horarios.html', 'productos.html', 'mi-ia.html'];
+  const dashboardPages = [
+    'mi-comercio.html', 'mi-servicio.html',
+    'horarios.html', 'productos.html', 'agenda.html', 'mi-ia.html'
+  ];
   const currentPage = window.location.pathname.split('/').pop();
   if (dashboardPages.includes(currentPage)) {
     Navigation.init();
   }
 });
 
-// Exponer globalmente para uso en páginas individuales
 window.Navigation = Navigation;
-
 export default Navigation;
