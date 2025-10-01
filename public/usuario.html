@@ -4,82 +4,116 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro de Usuario</title>
-
   <!-- CSS -->
   <link rel="stylesheet" href="./css/dashboard.css">
-
-  <!-- Font Awesome desde CDN (evita error 403) -->
+  <!-- Font Awesome desde CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div class="container" style="max-width: 800px; margin-top: 40px;">
+    <div class="main-content">
+      <div style="padding: 30px;">
+        <h2 class="title" style="font-size: 28px; font-weight: 700; color: #333; margin-bottom: 10px;">
+          Completa tus datos personales
+        </h2>
+        <p class="subtitle" style="color: #666; margin-bottom: 30px;">
+          Estos datos se usarán para personalizar tu experiencia y conectar tu IA.
+        </p>
+
+        <form id="usuarioForm" class="form">
+          <!-- Datos Personales -->
+          <div class="form-section">
+            <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 20px;">
+              <i class="fas fa-user"></i> Información Personal
+            </h3>
+            <div class="form-fields">
+              <div class="form-field">
+                <label for="nombre">Nombre</label>
+                <input type="text" id="nombre" placeholder="Tu nombre" required>
+              </div>
+              <div class="form-field">
+                <label for="apellido">Apellido</label>
+                <input type="text" id="apellido" placeholder="Tu apellido" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ubicación -->
+          <div class="form-section">
+            <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 20px;">
+              <i class="fas fa-map-marker-alt"></i> Ubicación
+            </h3>
+            <div class="form-fields">
+              <div class="form-field">
+                <label for="direccion">Dirección</label>
+                <input type="text" id="direccion" placeholder="Ej: Av. Siempre Viva 123" required>
+              </div>
+              <div class="form-field">
+                <label for="barrio">Barrio</label>
+                <input type="text" id="barrio" placeholder="Centro">
+              </div>
+              <div class="form-field">
+                <label for="localidad">Localidad</label>
+                <input type="text" id="localidad" placeholder="Casilda" required>
+              </div>
+              <div class="form-field">
+                <label for="provincia">Provincia</label>
+                <input type="text" id="provincia" placeholder="Santa Fe" required>
+              </div>
+              <div class="form-field">
+                <label for="pais">País</label>
+                <input type="text" id="pais" placeholder="Argentina" required>
+              </div>
+              <div class="form-field">
+                <label for="nacimiento">Fecha de nacimiento</label>
+                <input type="date" id="nacimiento" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón Guardar -->
+          <div class="btn-group btn-group-end">
+            <button type="button" id="btnGuardar" class="btn btn-primary btn-lg">
+              <i class="fas fa-save"></i> Guardar Datos
+            </button>
+          </div>
+
+          <!-- Opciones de IA -->
+          <div class="form-section" style="margin-top: 40px;">
+            <p class="info-text" style="background: rgba(102, 126, 234, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #333;">
+              ⚡ Una vez guardados tus datos, elige qué tipo de IA deseas crear:
+            </p>
+            <div class="options" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+              <button type="button" id="btnComercio" class="btn" disabled style="background: #e0e0e0; cursor: not-allowed; flex-direction: column; padding: 25px; height: auto;">
+                <i class="fas fa-store" style="font-size: 32px; margin-bottom: 10px;"></i>
+                <strong style="font-size: 16px; margin-bottom: 5px;">Crear IA para Comercio</strong>
+                <p class="btn-desc" style="font-size: 13px; color: #666; margin: 0;">Ideal si vendes productos, con catálogo y horarios.</p>
+              </button>
+              <button type="button" id="btnServicio" class="btn" disabled style="background: #e0e0e0; cursor: not-allowed; flex-direction: column; padding: 25px; height: auto;">
+                <i class="fas fa-briefcase" style="font-size: 32px; margin-bottom: 10px;"></i>
+                <strong style="font-size: 16px; margin-bottom: 5px;">Crear IA para Servicio</strong>
+                <p class="btn-desc" style="font-size: 13px; color: #666; margin: 0;">Perfecto si ofreces servicios y querés agendar turnos.</p>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Logout opcional -->
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+          <button id="logoutBtn" class="btn btn-secondary btn-sm">
+            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Firebase -->
   <script type="module" src="./js/firebase.js"></script>
-
-</head>
-<body>
-  <div class="container">
-    <h2 class="title">Completa tus datos personales</h2>
-    <p class="subtitle">Estos datos se usarán para personalizar tu experiencia y conectar tu IA.</p>
-
-    <form id="usuarioForm" class="form">
-      <div class="form-group">
-        <label for="nombre">Nombre</label>
-        <input type="text" id="nombre" placeholder="Tu nombre" required>
-      </div>
-
-      <div class="form-group">
-        <label for="apellido">Apellido</label>
-        <input type="text" id="apellido" placeholder="Tu apellido" required>
-      </div>
-
-      <div class="form-group">
-        <label for="direccion">Dirección</label>
-        <input type="text" id="direccion" placeholder="Ej: Av. Siempre Viva 123" required>
-      </div>
-
-      <div class="form-group">
-        <label for="pais">País</label>
-        <input type="text" id="pais" placeholder="Argentina" required>
-      </div>
-
-      <div class="form-group">
-        <label for="provincia">Provincia</label>
-        <input type="text" id="provincia" placeholder="Santa Fe" required>
-      </div>
-
-      <div class="form-group">
-        <label for="localidad">Localidad</label>
-        <input type="text" id="localidad" placeholder="Casilda" required>
-      </div>
-
-      <div class="form-group">
-        <label for="barrio">Barrio</label>
-        <input type="text" id="barrio" placeholder="Centro">
-      </div>
-
-      <div class="form-group">
-        <label for="fechaNacimiento">Fecha de nacimiento</label>
-        <input type="date" id="fechaNacimiento" required>
-      </div>
-
-      <p class="info-text">⚡ Una vez completos tus datos, elige qué tipo de IA deseas crear:</p>
-
-      <div class="options">
-        <button type="button" id="btnComercio" class="btn disabled" disabled>
-          <i class="fas fa-store"></i> Crear IA para Comercio
-          <p class="btn-desc">Ideal si vendes productos, con catálogo y horarios.</p>
-        </button>
-
-        <button type="button" id="btnServicio" class="btn disabled" disabled>
-          <i class="fas fa-briefcase"></i> Crear IA para Servicio
-          <p class="btn-desc">Perfecto si ofreces servicios y querés agendar turnos.</p>
-        </button>
-      </div>
-    </form>
-  </div>
-
   <!-- JS -->
   <script type="module" src="./js/usuario.js"></script>
-
 </body>
 </html>
-
