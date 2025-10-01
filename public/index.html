@@ -18,10 +18,8 @@
       <div class="loading-text" id="loadingText">Cargando...</div>
     </div>
   </div>
-
   <!-- Toast container -->
   <div class="toast-container" id="toastContainer"></div>
-
   <div class="login-container slide-up" id="loginContainer">
     <div class="logo">
       <div class="logo-icon">
@@ -62,8 +60,7 @@
           <i class="fas fa-eye input-icon" id="togglePassword"></i>
         </div>
         <div class="error-message">La contraseña es obligatoria</div>
-        <!-- ✅ reglas de contraseña visibles -->
-        <small class="password-rules">
+        <small class="password-rules" id="passwordRules">
           Mínimo 8 caracteres, al menos 1 mayúscula, 1 número y 1 símbolo (@$!%*?&)
         </small>
       </div>
@@ -71,7 +68,7 @@
       <a href="#" id="forgotPassword" class="forgot-password">¿Olvidaste tu contraseña?</a>
       
       <button type="submit" class="btn btn-primary" id="loginBtn">
-        <i class="fas fa-sign-in-alt"></i>
+        <i class="fas fa-sign-in-alt" id="btnIcon"></i>
         <span id="loginBtnText">Iniciar Sesión</span>
       </button>
     </form>
@@ -90,11 +87,10 @@
       Google
     </button>
     
-    <div class="register-link">
-      ¿No tienes cuenta? <a href="#" id="registerLink">Regístrate aquí</a>
+    <div class="register-link" id="registerLink">
+      ¿No tienes cuenta? <a href="#" id="toggleMode">Regístrate aquí</a>
     </div>
   </div>
-
   <!-- Script -->
   <script type="module" src="js/app.js"></script>
 </body>
