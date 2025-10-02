@@ -1,14 +1,15 @@
-// mi-comercio-standalone.js - Versión con sincronización JSON
-import { auth, db } from '../js/firebase.js';
+// mi-comercio.js - Versión con Navigation integrado
+import { auth, db } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
 import { doc, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+import Navigation from './navigation.js';
 
 // Variables globales
 let currentUser = null;
 let userData = {};
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🚀 Iniciando mi-comercio.js (versión standalone)');
+  console.log('🚀 Iniciando mi-comercio.js');
 
   // Usar onAuthStateChanged - la forma más confiable
   onAuthStateChanged(auth, async (user) => {
@@ -115,8 +116,8 @@ function setupEventListeners() {
 }
 
 function setupNavigation() {
-  // Progress bar simple
-  updateProgressBar();
+  // Inicializar Navigation desde el módulo
+  Navigation.init();
   
   // Validación para navigation
   window.validateCurrentPageData = async () => {
@@ -158,9 +159,9 @@ async function handleSaveAndContinue() {
     hideLoading();
     showToast('¡Datos guardados!', 'Redirigiendo a horarios...', 'success');
     
-    // Redirigir a horarios
+    // Usar Navigation para ir a siguiente página
     setTimeout(() => {
-      window.location.href = '/horarios.html';
+      Navigation.goToNextPage();
     }, 1500);
 
   } catch (error) {
@@ -195,12 +196,11 @@ async function saveFormData(showSuccessToast = true) {
     fechaActualizacion: new Date()
   });
 
-  // ✅ Sincronizar con JSON/Gist (no bloqueante)
+  // Sincronizar con JSON/Gist (no bloqueante)
   try {
     await syncToGist();
   } catch (err) {
     console.error("No se pudo sincronizar JSON:", err);
-    // No bloquea el flujo principal
   }
 
   // Actualizar datos locales
@@ -213,15 +213,15 @@ async function saveFormData(showSuccessToast = true) {
   // Actualizar header por si cambió el nombre del comercio
   updateHeader();
   
-  // Actualizar progress si tiene datos básicos
-  if (updates.nombreComercio && updates.telefono) {
-    updateProgressBar(33); // 33% completado
+  // Marcar página como completada si tiene datos básicos
+  if (updates.nombreComercio && updates.telefono && updates.direccion) {
+    Navigation.markPageAsCompleted('mi-comercio');
+    Navigation.updateProgressBar();
   }
 
   console.log('💾 Datos guardados:', updates);
 }
 
-// ✅ Función para sincronizar con tu API de Vercel
 async function syncToGist() {
   try {
     const response = await fetch('/api/export-json', {
@@ -258,24 +258,6 @@ async function handleLogout() {
       showToast('Error', 'No se pudo cerrar sesión', 'error');
     }
   }
-}
-
-function updateProgressBar(percentage = 25) {
-  const fillElement = document.getElementById('completionFill');
-  const textElement = document.getElementById('completionText');
-  
-  if (fillElement) fillElement.style.width = `${percentage}%`;
-  if (textElement) textElement.textContent = `${percentage}% completado`;
-
-  // Actualizar steps
-  const steps = document.querySelectorAll('.step');
-  steps.forEach((step, index) => {
-    if (index === 0) { // Mi Comercio
-      step.classList.add('current');
-    } else {
-      step.classList.remove('current');
-    }
-  });
 }
 
 // Utility functions
