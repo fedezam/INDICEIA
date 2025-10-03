@@ -50,8 +50,12 @@ class Navigation {
     const container = document.getElementById('progressContainer') || document.querySelector('.progress-indicator');
     if (!container) return;
 
+    const shared = LocalData.getSharedData();
+    const completed = shared.completedSections || [];
     const currentPageIndex = this.getCurrentPageIndex();
-    const progressPercent = Math.round(((currentPageIndex + 1) / this.pages.length) * 100);
+    const progressPercent = completed.length > 0 
+      ? Math.round((completed.length / this.pages.length) * 100)
+      : 0;
 
     container.innerHTML = `
       <div class="progress-header">
@@ -65,16 +69,20 @@ class Navigation {
         <div class="completion-text" id="completionText">${progressPercent}% completado</div>
       </div>
       <div class="progress-steps" id="progressSteps">
-        ${this.pages.map((page, index) => `
-          <div class="step ${index <= currentPageIndex ? 'active' : ''} ${index === currentPageIndex ? 'current' : ''}" 
-               data-page="${page.id}" onclick="Navigation.goToPage('${page.id}')">
-            <div class="step-icon">
-              <i class="${page.icon}"></i>
+        ${this.pages.map((page, index) => {
+          const isCompleted = completed.includes(page.id);
+          const isCurrent = index === currentPageIndex;
+          return `
+            <div class="step ${isCompleted ? 'active' : ''} ${isCurrent ? 'current' : ''}" 
+                 data-page="${page.id}" onclick="Navigation.goToPage('${page.id}')">
+              <div class="step-icon">
+                <i class="${page.icon}"></i>
+              </div>
+              <div class="step-name">${page.name}</div>
+              ${isCompleted ? '<i class="fas fa-check step-check"></i>' : ''}
             </div>
-            <div class="step-name">${page.name}</div>
-            ${index < currentPageIndex ? '<i class="fas fa-check step-check"></i>' : ''}
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     `;
   }
@@ -124,7 +132,7 @@ class Navigation {
       const isCompleted = completedSections.includes(pageId);
       const isCurrent = index === this.getCurrentPageIndex();
 
-      step.classList.toggle('completed', isCompleted);
+      step.classList.toggle('active', isCompleted);
       step.classList.toggle('current', isCurrent);
 
       const existingCheck = step.querySelector('.step-check');
