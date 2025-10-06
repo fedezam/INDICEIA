@@ -4,13 +4,13 @@ import { getAuth, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC7Ny3pE6zaaQbfvEJqRMcZ98W6LSfJTgo",
-  authDomain: "indiceia-e2d42.firebaseapp.com",
-  projectId: "indiceia-e2d42",
-  storageBucket: "indiceia-e2d42.firebasestorage.app",
-  messagingSenderId: "630890658793",
-  appId: "1:630890658793:web:98b9a9084c308f80926978",
-  measurementId: "G-NTG5LD5YNP",
+  apiKey: "AIzaSyAiuby8CpYzd1THEXtrx_e0rTDBppX7DdU",
+  authDomain: "indiceia.firebaseapp.com",
+  projectId: "indiceia",
+  storageBucket: "indiceia.firebasestorage.app",
+  messagingSenderId: "838723462130",
+  appId: "1:838723462130:web:be8268087c6e2ed448c16b",
+  measurementId: "G-YMMMTCT8JR"
 };
 
 const app = initializeApp(firebaseConfig);
