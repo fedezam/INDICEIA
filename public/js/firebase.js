@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyAiuby8CpYzd1THEXtrx_e0rTDBppX7DdU",
   authDomain: "indiceia.firebaseapp.com",
   projectId: "indiceia",
-  storageBucket: "indiceia.firebasestorage.app",
+  storageBucket: "indiceia.appspot.com", // ✅ corregido
   messagingSenderId: "838723462130",
   appId: "1:838723462130:web:be8268087c6e2ed448c16b",
   measurementId: "G-YMMMTCT8JR"
@@ -19,3 +19,4 @@ const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
 export { app, auth, db, provider };
+
