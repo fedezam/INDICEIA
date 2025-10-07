@@ -161,7 +161,7 @@ if (guardarBtn) {
 const comercioBtn = document.getElementById("btnComercio");
 if (comercioBtn) {
   comercioBtn.addEventListener("click", () => {
-    window.location.href = "comercio.html";
+    window.location.href = "mi-comercio.html";
   });
 }
 
