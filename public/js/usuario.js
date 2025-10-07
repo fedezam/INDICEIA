@@ -37,14 +37,19 @@ class Utils {
   }
 
   static fillForm(data) {
-    document.getElementById("nombre").value = data.nombre || "";
-    document.getElementById("apellido").value = data.apellido || "";
-    document.getElementById("direccion").value = data.direccion || "";
-    document.getElementById("pais").value = data.pais || "";
-    document.getElementById("provincia").value = data.provincia || "";
-    document.getElementById("localidad").value = data.localidad || "";
-    document.getElementById("barrio").value = data.barrio || "";
-    document.getElementById("nacimiento").value = data.fechaNacimiento || "";
+    const setValueSafe = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.value = value || "";
+    };
+
+    setValueSafe("nombre", data.nombre);
+    setValueSafe("apellido", data.apellido);
+    setValueSafe("direccion", data.direccion);
+    setValueSafe("pais", data.pais);
+    setValueSafe("provincia", data.provincia);
+    setValueSafe("localidad", data.localidad);
+    setValueSafe("barrio", data.barrio);
+    setValueSafe("fechaNacimiento", data.fechaNacimiento);
   }
 }
 
@@ -73,11 +78,13 @@ onAuthStateChanged(auth, async (user) => {
       estado: "trial"
     });
   } else {
+    const userData = userSnap.data();
+    
     // Autocompletar datos existentes
-    Utils.fillForm(userSnap.data());
+    Utils.fillForm(userData);
 
     // Habilitar botones si ya tiene datos cargados
-    if (userSnap.data().nombre && userSnap.data().apellido) {
+    if (userData.nombre && userData.apellido) {
       Utils.enableIAButtons();
     }
   }
@@ -89,7 +96,7 @@ onAuthStateChanged(auth, async (user) => {
 // =========================
 // 💾 Guardar datos personales
 // =========================
-const guardarBtn = document.getElementById("btnGuardar");
+const guardarBtn = document.getElementById("saveUserData");
 if (guardarBtn) {
   guardarBtn.addEventListener("click", async () => {
     const user = auth.currentUser;
@@ -102,7 +109,7 @@ if (guardarBtn) {
     const provincia = document.getElementById("provincia").value.trim();
     const localidad = document.getElementById("localidad").value.trim();
     const barrio = document.getElementById("barrio").value.trim();
-    const fechaNacimiento = document.getElementById("nacimiento").value;
+    const fechaNacimiento = document.getElementById("fechaNacimiento").value;
 
     if (!nombre || !apellido || !direccion || !pais || !provincia || !localidad || !fechaNacimiento) {
       return Utils.showMessage("Por favor, completa todos los campos obligatorios.");
@@ -163,4 +170,3 @@ if (logoutBtn) {
     window.location.href = "index.html";
   });
 }
-
