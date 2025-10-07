@@ -3,10 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro de Usuario</title>
-  <!-- CSS -->
+  <title>Perfil de Usuario</title>
   <link rel="stylesheet" href="./css/dashboard.css">
-  <!-- Font Awesome desde CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -23,6 +21,11 @@
           Estos datos se usarán para personalizar tu experiencia y conectar tu IA.
         </p>
 
+        <div style="margin-bottom: 20px;">
+          <strong>Correo electrónico:</strong> 
+          <span id="userEmail" style="color:#555;">Cargando...</span>
+        </div>
+
         <form id="usuarioForm" class="form">
           <!-- Datos Personales -->
           <div class="form-section">
@@ -38,6 +41,10 @@
                 <label for="apellido">Apellido</label>
                 <input type="text" id="apellido" placeholder="Tu apellido" required>
               </div>
+              <div class="form-field">
+                <label for="fechaNacimiento">Fecha de nacimiento</label>
+                <input type="date" id="fechaNacimiento">
+              </div>
             </div>
           </div>
 
@@ -49,7 +56,7 @@
             <div class="form-fields">
               <div class="form-field">
                 <label for="direccion">Dirección</label>
-                <input type="text" id="direccion" placeholder="Ej: Av. Siempre Viva 123" required>
+                <input type="text" id="direccion" placeholder="Ej: Av. Siempre Viva 123">
               </div>
               <div class="form-field">
                 <label for="barrio">Barrio</label>
@@ -57,26 +64,22 @@
               </div>
               <div class="form-field">
                 <label for="localidad">Localidad</label>
-                <input type="text" id="localidad" placeholder="Casilda" required>
+                <input type="text" id="localidad" placeholder="Casilda">
               </div>
               <div class="form-field">
                 <label for="provincia">Provincia</label>
-                <input type="text" id="provincia" placeholder="Santa Fe" required>
+                <input type="text" id="provincia" placeholder="Santa Fe">
               </div>
               <div class="form-field">
                 <label for="pais">País</label>
-                <input type="text" id="pais" placeholder="Argentina" required>
-              </div>
-              <div class="form-field">
-                <label for="nacimiento">Fecha de nacimiento</label>
-                <input type="date" id="nacimiento" required>
+                <input type="text" id="pais" placeholder="Argentina">
               </div>
             </div>
           </div>
 
           <!-- Botón Guardar -->
           <div class="btn-group btn-group-end">
-            <button type="button" id="btnGuardar" class="btn btn-primary btn-lg">
+            <button type="button" id="saveUserData" class="btn btn-primary btn-lg">
               <i class="fas fa-save"></i> Guardar Datos
             </button>
           </div>
@@ -95,13 +98,13 @@
               <button type="button" id="btnServicio" class="btn" disabled style="background: #e0e0e0; cursor: not-allowed; flex-direction: column; padding: 25px; height: auto;">
                 <i class="fas fa-briefcase" style="font-size: 32px; margin-bottom: 10px;"></i>
                 <strong style="font-size: 16px; margin-bottom: 5px;">Crear IA para Servicio</strong>
-                <p class="btn-desc" style="font-size: 13px; color: #666; margin: 0;">Perfecto si ofreces servicios y querés agendar turnos.</p>
+                <p class="btn-desc" style="font-size: 13px; color: #666; margin: 0;">Perfecto si ofrecés servicios o turnos personalizados.</p>
               </button>
             </div>
           </div>
         </form>
 
-        <!-- Logout opcional -->
+        <!-- Logout -->
         <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
           <button id="logoutBtn" class="btn btn-secondary btn-sm">
             <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
