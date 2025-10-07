@@ -10,6 +10,8 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
+import { fillProvinciaSelector } from "./provincias.js";
+
 // =========================
 // 🔧 Utils
 // =========================
@@ -91,6 +93,16 @@ onAuthStateChanged(auth, async (user) => {
 
   const emailEl = document.getElementById("userEmail");
   if (emailEl) emailEl.innerText = user.email;
+
+  // Cargar provincias al cambiar país
+  const paisEl = document.getElementById("pais");
+  if (paisEl) {
+    paisEl.addEventListener('change', (e) => {
+      loadProvinciasForCountry(e.target.value);
+    });
+    // Cargar provincias iniciales para Argentina
+    loadProvinciasForCountry(paisEl.value);
+  }
 });
 
 // =========================
@@ -149,7 +161,7 @@ if (guardarBtn) {
 const comercioBtn = document.getElementById("btnComercio");
 if (comercioBtn) {
   comercioBtn.addEventListener("click", () => {
-    window.location.href = "mi-comercio.html";
+    window.location.href = "comercio.html";
   });
 }
 
@@ -169,4 +181,18 @@ if (logoutBtn) {
     await signOut(auth);
     window.location.href = "index.html";
   });
+}
+
+// =========================
+// 🌎 Función para cargar provincias
+// =========================
+function loadProvinciasForCountry(country) {
+  const provinciaEl = document.getElementById("provincia");
+  if (!provinciaEl) return;
+
+  // Limpiar opciones actuales
+  provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
+
+  // Llamar a la función importada para llenar el selector
+  fillProvinciaSelector(country, provinciaEl);
 }
