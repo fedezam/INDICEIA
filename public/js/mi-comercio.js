@@ -1,21 +1,17 @@
-
-// mi-comercio.js - Versión corregida con Firestore correcto y planes
+// mi-comercio.js - Versión corregida con estructura Firebase correcta
 import { auth, db } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
-import { doc, getDoc, updateDoc, addDoc, collection } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+import { doc, getDoc, updateDoc, setDoc, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import Navigation from './navigation.js';
 import { fillProvinciaSelector } from './provincias.js';
-import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, puedeAgregarProducto } from './plans.js';
-import { AutoSyncManager } from './sync-helper.js';
+import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from './plans.js';
 
 // Variables globales
 let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
 let selectedCategories = [];
-let autoSyncManager = null;
 let hasUnsavedChanges = false;
-let autoSaveTimeout = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 Iniciando mi-comercio.js');
@@ -36,21 +32,30 @@ async function initializePage() {
   try {
     showLoading('Cargando datos del comercio...');
 
-    // Obtener o crear comercioId
-    currentComercioId = localStorage.getItem('currentComercioId');
+    // ✅ Obtener comercioId desde el documento del usuario
+    const userRef = doc(db, 'usuarios', currentUser.uid);
+    const userDoc = await getDoc(userRef);
     
-    if (!currentComercioId) {
-      // ✅ ESTRUCTURA CORRECTA: usuarios/{uid}/comercios
-      const comerciosRef = collection(db, `usuarios/${currentUser.uid}/comercios`);
-      const newComercioRef = await addDoc(comerciosRef, {
+    if (userDoc.exists() && userDoc.data().comercioId) {
+      // Usuario ya tiene un comercio
+      currentComercioId = userDoc.data().comercioId;
+      console.log('✅ Comercio existente encontrado:', currentComercioId);
+    } else {
+      // Crear nuevo comercio
+      const newComercioRef = await addDoc(collection(db, 'comercios'), {
         dueñoId: currentUser.uid,
         fechaCreacion: new Date(),
         tipo: 'comercio',
         plan: 'trial',
-        pais: 'Argentina' // Hardcoded
+        pais: 'Argentina'
       });
       currentComercioId = newComercioRef.id;
-      localStorage.setItem('currentComercioId', currentComercioId);
+      
+      // ✅ Guardar comercioId en el documento del usuario
+      await updateDoc(userRef, {
+        comercioId: currentComercioId
+      });
+      
       console.log('✅ Nuevo comercio creado:', currentComercioId);
     }
 
@@ -63,8 +68,7 @@ async function initializePage() {
     renderPaymentMethods();
     setupEventListeners();
     setupNavigation();
-    setupAutoSave();
-    createSaveIndicator();
+    createSaveButton();
 
     hideLoading();
     console.log('✅ Página inicializada correctamente');
@@ -78,8 +82,8 @@ async function initializePage() {
 
 async function loadComercioData() {
   try {
-    // ✅ ESTRUCTURA CORRECTA
-    const comercioRef = doc(db, `usuarios/${currentUser.uid}/comercios`, currentComercioId);
+    // ✅ ESTRUCTURA CORRECTA: /comercios/{comercioId}
+    const comercioRef = doc(db, 'comercios', currentComercioId);
     const comercioDoc = await getDoc(comercioRef);
     
     if (comercioDoc.exists()) {
@@ -169,7 +173,7 @@ function fillForm() {
   const paisEl = document.getElementById('pais');
   if (paisEl) {
     paisEl.value = 'Argentina';
-    paisEl.disabled = true; // Deshabilitar selector (solo Argentina)
+    paisEl.disabled = true;
   }
 
   // Cargar provincias argentinas
@@ -178,20 +182,13 @@ function fillForm() {
   console.log('✅ Formulario llenado con datos existentes');
 }
 
-// =========================
-// 🌎 Función para cargar provincias
-// =========================
 function loadProvinciasForCountry(country) {
   const provinciaEl = document.getElementById("provincia");
   if (!provinciaEl) return;
 
-  // Limpiar opciones actuales
   provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
-
-  // Llamar a la función importada para llenar el selector
   fillProvinciaSelector(country, provinciaEl);
   
-  // Si hay provincia guardada, seleccionarla después de cargar
   if (comercioData.provincia) {
     setTimeout(() => {
       provinciaEl.value = comercioData.provincia;
@@ -203,7 +200,6 @@ function renderPlans() {
   const container = document.getElementById('planSelector');
   if (!container) return;
 
-  // Filtrar planes (sin trial en el selector)
   const planesDisponibles = Object.entries(PLANS).filter(([key]) => key !== 'trial');
   
   container.innerHTML = planesDisponibles.map(([key, plan]) => `
@@ -233,13 +229,11 @@ function renderPlans() {
     </div>
   `).join('');
 
-  // Event listeners para selección de plan
   container.querySelectorAll('.plan-card').forEach(card => {
     card.addEventListener('click', async () => {
       const planId = card.dataset.plan;
       const plan = PLANS[planId];
       
-      // No permitir cambio si tiene plan empresarial (debe contactar)
       if (plan?.contacto) {
         showToast('Plan Empresarial', 'Por favor contactanos para este plan', 'info');
         return;
@@ -249,7 +243,6 @@ function renderPlans() {
       card.classList.add('selected');
       comercioData.plan = planId;
       markAsChanged();
-      triggerAutoSave();
       updateSubscriptionBanner();
       updateHeader();
     });
@@ -317,7 +310,6 @@ function renderCategories() {
         comercioData.categories = selectedCategories;
         renderCategories();
         markAsChanged();
-        triggerAutoSave();
       }
     });
   }
@@ -332,7 +324,6 @@ function renderCategories() {
         renderCategories();
         input.value = '';
         markAsChanged();
-        triggerAutoSave();
       }
     });
   }
@@ -345,7 +336,6 @@ function renderCategories() {
       comercioData.categories = selectedCategories;
       renderCategories();
       markAsChanged();
-      triggerAutoSave();
     });
   });
 }
@@ -375,7 +365,6 @@ function renderPaymentMethods() {
   container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
     cb.addEventListener('change', () => {
       markAsChanged();
-      triggerAutoSave();
     });
   });
 }
@@ -385,54 +374,67 @@ function setupEventListeners() {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', handleLogout);
   }
-}
 
-function setupAutoSave() {
+  // Detectar cambios en el formulario
   const form = document.getElementById('miComercioForm');
-  if (!form) return;
-
-  form.querySelectorAll('input, textarea, select').forEach(field => {
-    field.addEventListener('input', () => {
-      markAsChanged();
-      triggerAutoSave();
+  if (form) {
+    form.querySelectorAll('input, textarea, select').forEach(field => {
+      field.addEventListener('input', () => {
+        markAsChanged();
+      });
     });
-  });
+  }
 }
 
-function createSaveIndicator() {
+function createSaveButton() {
   const header = document.querySelector('.header .container');
   if (!header) return;
 
-  const indicator = document.createElement('div');
-  indicator.id = 'saveIndicator';
-  indicator.className = 'save-indicator';
-  indicator.innerHTML = '<i class="fas fa-check-circle"></i> <span>Todos los cambios guardados</span>';
-  header.appendChild(indicator);
+  const saveBtn = document.createElement('button');
+  saveBtn.id = 'saveChangesBtn';
+  saveBtn.className = 'btn-save';
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+  header.appendChild(saveBtn);
+
+  saveBtn.addEventListener('click', saveFormData);
 
   const style = document.createElement('style');
   style.textContent = `
-    .save-indicator {
+    .btn-save {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      border-radius: 20px;
+      padding: 0.625rem 1.25rem;
+      border: none;
+      border-radius: 8px;
       font-size: 0.875rem;
-      font-weight: 500;
+      font-weight: 600;
+      cursor: pointer;
       transition: all 0.3s ease;
-      background: #d4edda;
-      color: #155724;
+      background: #667eea;
+      color: white;
     }
-    .save-indicator.saving {
-      background: #fff3cd;
-      color: #856404;
+    .btn-save:disabled {
+      background: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
     }
-    .save-indicator.error {
-      background: #f8d7da;
-      color: #721c24;
+    .btn-save:not(:disabled):hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
-    .save-indicator i { font-size: 1rem; }
-    .save-indicator.saving i {
+    .btn-save.saving {
+      background: #f59e0b;
+    }
+    .btn-save.saved {
+      background: #10b981;
+    }
+    .btn-save i {
+      font-size: 1rem;
+    }
+    .btn-save.saving i {
       animation: spin 1s linear infinite;
     }
     @keyframes spin {
@@ -443,41 +445,25 @@ function createSaveIndicator() {
   document.head.appendChild(style);
 }
 
-function updateSaveIndicator(status) {
-  const indicator = document.getElementById('saveIndicator');
-  if (!indicator) return;
-
-  indicator.className = 'save-indicator';
-  
-  if (status === 'saving') {
-    indicator.classList.add('saving');
-    indicator.innerHTML = '<i class="fas fa-spinner"></i> <span>Guardando cambios...</span>';
-  } else if (status === 'saved') {
-    indicator.innerHTML = '<i class="fas fa-check-circle"></i> <span>Todos los cambios guardados</span>';
-  } else if (status === 'error') {
-    indicator.classList.add('error');
-    indicator.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>Error al guardar</span>';
-  }
-}
-
 function markAsChanged() {
   hasUnsavedChanges = true;
-}
-
-function triggerAutoSave() {
-  clearTimeout(autoSaveTimeout);
-  autoSaveTimeout = setTimeout(async () => {
-    if (hasUnsavedChanges) {
-      await saveFormData();
-      hasUnsavedChanges = false;
-    }
-  }, 2000);
+  const saveBtn = document.getElementById('saveChangesBtn');
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.className = 'btn-save';
+    saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+  }
 }
 
 function setupNavigation() {
   Navigation.init();
   
   window.validateCurrentPageData = async () => {
+    if (hasUnsavedChanges) {
+      showToast('Cambios sin guardar', 'Debes guardar los cambios antes de continuar', 'warning');
+      return false;
+    }
+
     const form = document.getElementById('miComercioForm');
     const requiredFields = form?.querySelectorAll('[required]') || [];
     
@@ -503,8 +489,33 @@ async function saveFormData() {
   const form = document.getElementById('miComercioForm');
   if (!form) return;
 
+  const saveBtn = document.getElementById('saveChangesBtn');
+
   try {
-    updateSaveIndicator('saving');
+    // Validar campos requeridos
+    const requiredFields = form.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+      if (!field.value.trim()) {
+        field.classList.add('error');
+        isValid = false;
+      } else {
+        field.classList.remove('error');
+      }
+    });
+
+    if (!isValid) {
+      showToast('Campos requeridos', 'Por favor completa todos los campos obligatorios', 'warning');
+      return;
+    }
+
+    // Actualizar botón a estado "guardando"
+    if (saveBtn) {
+      saveBtn.className = 'btn-save saving';
+      saveBtn.innerHTML = '<i class="fas fa-spinner"></i> <span>Guardando...</span>';
+      saveBtn.disabled = true;
+    }
 
     const formData = new FormData(form);
     const updates = {};
@@ -513,7 +524,6 @@ async function saveFormData() {
       updates[key] = value.trim();
     }
 
-    // País siempre Argentina
     updates.pais = 'Argentina';
 
     const paymentMethods = Array.from(document.querySelectorAll('input[name="paymentMethods"]:checked'))
@@ -522,8 +532,8 @@ async function saveFormData() {
     updates.categories = selectedCategories;
     updates.plan = comercioData.plan || 'trial';
 
-    // ✅ GUARDAR CON ESTRUCTURA CORRECTA
-    const comercioRef = doc(db, `usuarios/${currentUser.uid}/comercios`, currentComercioId);
+    // ✅ GUARDAR EN /comercios/{comercioId}
+    const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
       ...updates,
       fechaActualizacion: new Date()
@@ -533,48 +543,39 @@ async function saveFormData() {
     updateHeader();
     updateSubscriptionBanner();
 
-    // Sincronización con JSON (no crítico)
-    syncToGist().catch(err => {
-      console.warn("Sincronización JSON fallida (no crítico):", err.message);
-    });
+    hasUnsavedChanges = false;
 
+    // Actualizar botón a estado "guardado"
+    if (saveBtn) {
+      saveBtn.className = 'btn-save saved';
+      saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado ✓</span>';
+      
+      setTimeout(() => {
+        saveBtn.disabled = true;
+        saveBtn.className = 'btn-save';
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+      }, 2000);
+    }
+
+    // Marcar página como completada
     if (updates.nombreComercio && updates.telefono && updates.direccion) {
       Navigation.markPageAsCompleted('mi-comercio');
       Navigation.updateProgressBar();
     }
 
-    updateSaveIndicator('saved');
-    console.log('💾 Auto-guardado exitoso');
+    showToast('Éxito', 'Cambios guardados correctamente', 'success');
+    console.log('💾 Guardado exitoso');
 
   } catch (error) {
-    console.error('Error en auto-save:', error);
-    updateSaveIndicator('error');
-    showToast('Error', 'No se pudieron guardar los cambios', 'error');
-  }
-}
-
-async function syncToGist() {
-  try {
-    const response = await fetch('/api/export-json', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        comercioId: currentComercioId,
-        userId: currentUser.uid
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`API error: ${response.status}`);
+    console.error('Error al guardar:', error);
+    
+    if (saveBtn) {
+      saveBtn.className = 'btn-save';
+      saveBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>Error al guardar</span>';
+      saveBtn.disabled = false;
     }
-
-    const result = await response.json();
-    console.log('✅ JSON sincronizado:', result.gist?.rawUrl);
-    return result;
-  } catch (error) {
-    console.error('❌ Error sincronizando JSON:', error);
-    throw error;
+    
+    showToast('Error', 'No se pudieron guardar los cambios', 'error');
   }
 }
 
@@ -582,7 +583,6 @@ async function handleLogout() {
   if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
     try {
       showLoading('Cerrando sesión...');
-      localStorage.removeItem('currentComercioId');
       await auth.signOut();
       window.location.href = '/index.html';
     } catch (error) {
