@@ -1,3 +1,4 @@
+
 // mi-comercio.js - Versión corregida con Firestore correcto y planes
 import { auth, db } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
@@ -13,6 +14,8 @@ let currentComercioId = null;
 let comercioData = {};
 let selectedCategories = [];
 let autoSyncManager = null;
+let hasUnsavedChanges = false;
+let autoSaveTimeout = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 Iniciando mi-comercio.js');
@@ -162,13 +165,38 @@ function fillForm() {
     }
   });
 
-  // Llenar selector de provincias
-  const provinciaEl = document.getElementById('provincia');
-  if (provinciaEl) {
-    fillProvinciaSelector(provinciaEl, comercioData.provincia);
+  // Hardcodear Argentina en el selector de país
+  const paisEl = document.getElementById('pais');
+  if (paisEl) {
+    paisEl.value = 'Argentina';
+    paisEl.disabled = true; // Deshabilitar selector (solo Argentina)
   }
 
+  // Cargar provincias argentinas
+  loadProvinciasForCountry('Argentina');
+
   console.log('✅ Formulario llenado con datos existentes');
+}
+
+// =========================
+// 🌎 Función para cargar provincias
+// =========================
+function loadProvinciasForCountry(country) {
+  const provinciaEl = document.getElementById("provincia");
+  if (!provinciaEl) return;
+
+  // Limpiar opciones actuales
+  provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
+
+  // Llamar a la función importada para llenar el selector
+  fillProvinciaSelector(country, provinciaEl);
+  
+  // Si hay provincia guardada, seleccionarla después de cargar
+  if (comercioData.provincia) {
+    setTimeout(() => {
+      provinciaEl.value = comercioData.provincia;
+    }, 100);
+  }
 }
 
 function renderPlans() {
