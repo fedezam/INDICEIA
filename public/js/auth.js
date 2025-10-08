@@ -117,7 +117,7 @@ window.addEventListener("load", async () => {
           referralId: Utils.generateReferral()
         });
       }
-      window.location.href = "usuarios.html";
+      window.location.href = "usuario.html";
     }
   } catch(e) { console.error(e); }
 });
