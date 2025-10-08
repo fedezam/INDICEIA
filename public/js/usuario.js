@@ -1,15 +1,6 @@
 import { auth, db } from "./firebase.js";
-import {
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-
-import {
-  doc,
-  getDoc,
-  setDoc
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 import { fillProvinciaSelector } from "./provincias.js";
 
 // =========================
@@ -38,6 +29,20 @@ class Utils {
     });
   }
 
+  static disableIAButtons() {
+    const comercioBtn = document.getElementById("btnComercio");
+    const servicioBtn = document.getElementById("btnServicio");
+
+    [comercioBtn, servicioBtn].forEach((btn) => {
+      if (btn) {
+        btn.disabled = true;
+        btn.style.background = "#e2e8f0";
+        btn.style.color = "#94a3b8";
+        btn.style.cursor = "not-allowed";
+      }
+    });
+  }
+
   static fillForm(data) {
     const setValueSafe = (id, value) => {
       const el = document.getElementById(id);
@@ -46,6 +51,7 @@ class Utils {
 
     setValueSafe("nombre", data.nombre);
     setValueSafe("apellido", data.apellido);
+    setValueSafe("telefono", data.telefono);
     setValueSafe("direccion", data.direccion);
     setValueSafe("pais", data.pais);
     setValueSafe("provincia", data.provincia);
@@ -75,21 +81,14 @@ onAuthStateChanged(auth, async (user) => {
       email: user.email,
       uid: user.uid,
       referralId: Utils.generateReferralId(),
-      fechaRegistro: new Date(),
-      plan: "basic",
-      estado: "trial"
+      fechaRegistro: new Date()
     });
   } else {
     const userData = userSnap.data();
-    
-    // Autocompletar datos existentes
     Utils.fillForm(userData);
-
-    // Habilitar botones si ya tiene datos cargados
-    if (userData.nombre && userData.apellido) {
-      Utils.enableIAButtons();
-    }
   }
+
+  Utils.disableIAButtons(); // Bloquear botones hasta guardar
 
   const emailEl = document.getElementById("userEmail");
   if (emailEl) emailEl.innerText = user.email;
@@ -97,10 +96,7 @@ onAuthStateChanged(auth, async (user) => {
   // Cargar provincias al cambiar país
   const paisEl = document.getElementById("pais");
   if (paisEl) {
-    paisEl.addEventListener('change', (e) => {
-      loadProvinciasForCountry(e.target.value);
-    });
-    // Cargar provincias iniciales para Argentina
+    paisEl.addEventListener('change', (e) => loadProvinciasForCountry(e.target.value));
     loadProvinciasForCountry(paisEl.value);
   }
 });
@@ -116,6 +112,7 @@ if (guardarBtn) {
 
     const nombre = document.getElementById("nombre").value.trim();
     const apellido = document.getElementById("apellido").value.trim();
+    const telefono = document.getElementById("telefono").value.trim();
     const direccion = document.getElementById("direccion").value.trim();
     const pais = document.getElementById("pais").value.trim();
     const provincia = document.getElementById("provincia").value.trim();
@@ -123,7 +120,7 @@ if (guardarBtn) {
     const barrio = document.getElementById("barrio").value.trim();
     const fechaNacimiento = document.getElementById("fechaNacimiento").value;
 
-    if (!nombre || !apellido || !direccion || !pais || !provincia || !localidad || !fechaNacimiento) {
+    if (!nombre || !apellido || !telefono || !direccion || !pais || !provincia || !localidad || !fechaNacimiento) {
       return Utils.showMessage("Por favor, completa todos los campos obligatorios.");
     }
 
@@ -135,6 +132,7 @@ if (guardarBtn) {
         {
           nombre,
           apellido,
+          telefono,
           direccion,
           pais,
           provincia,
@@ -161,6 +159,7 @@ if (guardarBtn) {
 const comercioBtn = document.getElementById("btnComercio");
 if (comercioBtn) {
   comercioBtn.addEventListener("click", () => {
+    if (comercioBtn.disabled) return Utils.showMessage("Debes completar y guardar tus datos antes de continuar.");
     window.location.href = "mi-comercio.html";
   });
 }
@@ -168,6 +167,7 @@ if (comercioBtn) {
 const servicioBtn = document.getElementById("btnServicio");
 if (servicioBtn) {
   servicioBtn.addEventListener("click", () => {
+    if (servicioBtn.disabled) return Utils.showMessage("Debes completar y guardar tus datos antes de continuar.");
     window.location.href = "servicio.html";
   });
 }
@@ -189,10 +189,6 @@ if (logoutBtn) {
 function loadProvinciasForCountry(country) {
   const provinciaEl = document.getElementById("provincia");
   if (!provinciaEl) return;
-
-  // Limpiar opciones actuales
   provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
-
-  // Llamar a la función importada para llenar el selector
   fillProvinciaSelector(country, provinciaEl);
 }
