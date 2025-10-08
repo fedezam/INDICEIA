@@ -3,7 +3,6 @@ import { auth, db, provider } from "./firebase.js";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
   signInWithRedirect,
   getRedirectResult,
   onAuthStateChanged
@@ -11,243 +10,123 @@ import {
 import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
 // ==========================
-// 🔧 Utils
+// ⚙️ Utils
 // ==========================
 class Utils {
-  static showLoading(text = "Cargando...") {
-    const overlay = document.getElementById("loadingOverlay");
-    const loadingText = document.getElementById("loadingText");
-    if (overlay && loadingText) {
-      loadingText.textContent = text;
-      overlay.classList.add("show");
-    }
-  }
-
-  static hideLoading() {
-    const overlay = document.getElementById("loadingOverlay");
-    if (overlay) overlay.classList.remove("show");
-  }
-
-  static showToast(title, message, type = "success") {
-    const container = document.getElementById("toastContainer");
-    if (!container) return;
-
-    const toast = document.createElement("div");
-    const icons = {
-      success: "fas fa-check-circle",
-      error: "fas fa-exclamation-circle",
-      warning: "fas fa-exclamation-triangle",
-      info: "fas fa-info-circle",
-    };
-
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-      <i class="${icons[type]}"></i>
-      <div class="toast-content">
-        <div class="toast-title">${title}</div>
-        <div class="toast-message">${message}</div>
-      </div>
-      <button class="toast-close"><i class="fas fa-times"></i></button>
-    `;
-    container.appendChild(toast);
-
-    setTimeout(() => toast.classList.add("show"), 100);
-    setTimeout(() => {
-      toast.classList.remove("show");
-      setTimeout(() => {
-        if (toast.parentNode) container.removeChild(toast);
-      }, 300);
-    }, 5000);
-
-    toast.querySelector(".toast-close").addEventListener("click", () => {
-      toast.classList.remove("show");
-      setTimeout(() => {
-        if (toast.parentNode) container.removeChild(toast);
-      }, 300);
-    });
-  }
-
-  static validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  }
-
-  static validatePassword(password) {
-    // Mínimo 8 caracteres, 1 mayúscula, 1 número, 1 símbolo
-    const re = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return re.test(password);
-  }
-
-  static validateForm(isRegister) {
-    const email = document.getElementById("email")?.value.trim();
-    const password = document.getElementById("password")?.value.trim();
-    const repeat = document.getElementById("repeatPassword")?.value.trim();
-
-    if (!email || !this.validateEmail(email)) {
-      this.showToast("Error", "Ingresa un email válido", "error");
-      return false;
-    }
-
-    if (!password || (isRegister && !this.validatePassword(password))) {
-      this.showToast(
-        "Error",
-        isRegister
-          ? "Contraseña mínima 8 caracteres, 1 mayúscula, 1 número y 1 símbolo"
-          : "Contraseña requerida",
-        "error"
-      );
-      return false;
-    }
-
-    if (isRegister && password !== repeat) {
-      this.showToast("Error", "Las contraseñas no coinciden", "error");
-      return false;
-    }
-
-    return true;
-  }
-
-  static generateReferralId() {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-  }
+  static validateEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+  static validatePassword(password) { return password.length >= 6; }
+  static showToast(msg) { alert(msg); }
+  static generateReferral() { return Math.random().toString(36).substring(2,8).toUpperCase(); }
 }
 
 // ==========================
-// 🔄 Login / Registro
+// 🔄 Toggle login / registro
 // ==========================
-let isRegisterMode = false;
+const emailLoginForm = document.getElementById("emailLogin");
+const toggleLink = document.getElementById("toggleModeLink");
+const repeatPasswordGroup = document.getElementById("repeatPasswordGroup");
+const btnText = document.getElementById("btnText");
+const loginSubtitle = document.getElementById("loginSubtitle");
 
-function toggleMode() {
-  isRegisterMode = !isRegisterMode;
-  document.getElementById("toggleModeText").textContent = isRegisterMode
-    ? "¿Ya tienes cuenta? Inicia sesión"
-    : "¿No tienes cuenta? Regístrate";
-  document.getElementById("repeatPasswordField").style.display = isRegisterMode ? "block" : "none";
-}
-
-document.getElementById("toggleModeText")?.addEventListener("click", toggleMode);
-
-document.getElementById("authForm")?.addEventListener("submit", async (e) => {
+toggleLink.addEventListener("click", e => {
   e.preventDefault();
-  if (!Utils.validateForm(isRegisterMode)) return;
+  const isRegister = emailLoginForm.dataset.register === "true";
+  emailLoginForm.dataset.register = (!isRegister).toString();
 
+  if (!isRegister) {
+    // Cambiar a registro
+    repeatPasswordGroup.style.display = "block";
+    btnText.textContent = "Crear Cuenta";
+    loginSubtitle.textContent = "Crea tu cuenta y empieza gratis";
+    toggleLink.innerHTML = '¿Ya tienes cuenta? <a href="#">Inicia sesión aquí</a>';
+  } else {
+    // Cambiar a login
+    repeatPasswordGroup.style.display = "none";
+    btnText.textContent = "Iniciar Sesión";
+    loginSubtitle.textContent = "Tu vendedor IA personalizado";
+    toggleLink.innerHTML = '¿No tienes cuenta? <a href="#">Regístrate aquí</a>';
+  }
+});
+
+// ==========================
+// 🔑 Login / Registro Email
+// ==========================
+emailLoginForm.addEventListener("submit", async e => {
+  e.preventDefault();
   const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+  const password = document.getElementById("password").value;
+  const isRegister = emailLoginForm.dataset.register === "true";
 
-  Utils.showLoading(isRegisterMode ? "Creando cuenta..." : "Iniciando sesión...");
+  if (!Utils.validateEmail(email) || !Utils.validatePassword(password)) {
+    Utils.showToast("Email o contraseña inválidos");
+    return;
+  }
+
+  if (isRegister) {
+    const repeatPass = document.getElementById("repeatPassword").value;
+    if (password !== repeatPass) {
+      Utils.showToast("Las contraseñas no coinciden");
+      return;
+    }
+  }
 
   try {
-    if (isRegisterMode) {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // Crear documento usuario en Firestore
-      const userDoc = {
+    let user;
+    if (isRegister) {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      user = cred.user;
+      await setDoc(doc(db, "usuarios", user.uid), {
         email: user.email,
         uid: user.uid,
-        referralId: Utils.generateReferralId(),
         fechaRegistro: new Date(),
-      };
-
-      await setDoc(doc(db, "usuarios", user.uid), userDoc);
-
-      Utils.hideLoading();
-      Utils.showToast("¡Cuenta creada!", "Ahora completa tus datos personales", "success");
-      setTimeout(() => (window.location.href = "usuarios.html"), 800);
+        referralId: Utils.generateReferral()
+      });
     } else {
-      await signInWithEmailAndPassword(auth, email, password);
-      Utils.hideLoading();
-      Utils.showToast("¡Bienvenido!", "Has iniciado sesión correctamente", "success");
-      redirectAfterLogin(auth.currentUser);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      user = cred.user;
     }
+    window.location.href = "usuarios.html";
   } catch (error) {
-    Utils.hideLoading();
-    console.error(error);
-    Utils.showToast("Error", error.message, "error");
+    Utils.showToast(error.message);
   }
 });
 
 // ==========================
-// 🔑 Google login
+// 🔑 Login Google
 // ==========================
 document.getElementById("googleLogin")?.addEventListener("click", async () => {
-  try {
-    Utils.showLoading("Conectando con Google...");
-    await signInWithRedirect(auth, provider);
-  } catch (error) {
-    Utils.hideLoading();
-    Utils.showToast("Error", "No se pudo iniciar sesión con Google", "error");
-  }
+  try { await signInWithRedirect(auth, provider); }
+  catch(e) { Utils.showToast("Error Google login: " + e.message); }
 });
 
+// ==========================
+// 🔄 Procesar redirect Google
+// ==========================
 window.addEventListener("load", async () => {
-  Utils.showLoading("Verificando sesión...");
   try {
     const result = await getRedirectResult(auth);
-    if (result && result.user) {
+    if (result?.user) {
       const user = result.user;
       const userRef = doc(db, "usuarios", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        // Dividir nombre completo
-        const fullName = user.displayName || "";
-        const [nombre, ...apellidoParts] = fullName.split(" ");
-        const apellido = apellidoParts.join(" ") || "";
-
-        const userDoc = {
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
           email: user.email,
           uid: user.uid,
-          referralId: Utils.generateReferralId(),
           fechaRegistro: new Date(),
-        };
-        if (nombre) userDoc.nombre = nombre;
-        if (apellido) userDoc.apellido = apellido;
-
-        await setDoc(userRef, userDoc);
+          referralId: Utils.generateReferral()
+        });
       }
-
-      redirectAfterLogin(user);
+      window.location.href = "usuarios.html";
     }
-  } catch (error) {
-    console.error(error);
-  } finally {
-    Utils.hideLoading();
-  }
+  } catch(e) { console.error(e); }
 });
-
-// ==========================
-// 🔄 Redirigir según perfil
-// ==========================
-async function redirectAfterLogin(user) {
-  if (!user) return;
-  const userRef = doc(db, "usuarios", user.uid);
-  const userSnap = await getDoc(userRef);
-  if (!userSnap.exists()) {
-    window.location.href = "usuarios.html";
-    return;
-  }
-  const data = userSnap.data();
-  // Si no tiene datos básicos
-  if (!data.nombre || !data.apellido || !data.direccion) {
-    window.location.href = "usuarios.html";
-    return;
-  }
-  // Redirigir según tipoUsuario si existe
-  if (!data.tipoUsuario) {
-    window.location.href = "usuarios.html";
-  } else if (data.tipoUsuario === "servicio") {
-    window.location.href = "mi-servicio.html";
-  } else {
-    window.location.href = "mi-comercio.html";
-  }
-}
 
 // ==========================
 // 🔄 Detectar sesión activa
 // ==========================
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    redirectAfterLogin(user);
-  }
+onAuthStateChanged(auth, user => {
+  if (user) console.log("Usuario logueado:", user.email);
 });
+
+    
