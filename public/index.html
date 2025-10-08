@@ -1,68 +1,57 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Acceso a la Plataforma</title>
   <link rel="stylesheet" href="/css/styles.css">
-  <!-- Firebase + Auth JS -->
-  <script type="module" src="/js/firebase.js"></script>
-  <script defer type="module" src="/js/auth.js"></script>
+  <script type="module" defer src="/js/auth.js"></script>
 </head>
 <body>
   <div class="login-container">
     <div class="logo">
-      <div class="logo-icon">🌐</div>
-      <h1 id="form-title">Iniciar sesión</h1>
-      <p id="form-subtitle">Accede a tu cuenta</p>
+      <div class="logo-icon">🤖</div>
+      <h1>Mi Plataforma IA</h1>
+      <p id="loginSubtitle">Tu vendedor IA personalizado</p>
     </div>
 
-    <form id="auth-form" class="login-form">
-      <!-- Email -->
+    <form id="emailLogin" data-register="false" class="login-form">
       <div class="input-group">
-        <label for="email">Correo electrónico</label>
+        <label for="email">Email</label>
         <div class="input-wrapper">
-          <i class="input-icon">📧</i>
-          <input type="email" id="email" required />
+          <input type="email" id="email" required>
         </div>
       </div>
 
-      <!-- Password -->
       <div class="input-group">
         <label for="password">Contraseña</label>
         <div class="input-wrapper">
-          <i class="input-icon">🔑</i>
-          <input type="password" id="password" required />
+          <input type="password" id="password" required>
         </div>
       </div>
 
-      <!-- Confirm password (solo registro) -->
-      <div class="input-group" id="confirm-password-group" style="display:none;">
-        <label for="confirm-password">Repetir contraseña</label>
+      <!-- Solo registro -->
+      <div class="input-group" id="repeatPasswordGroup" style="display:none;">
+        <label for="repeatPassword">Repetir Contraseña</label>
         <div class="input-wrapper">
-          <i class="input-icon">🔒</i>
-          <input type="password" id="confirm-password" />
+          <input type="password" id="repeatPassword">
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary" id="submit-btn">Iniciar sesión</button>
-
-      <div class="divider">o</div>
-      <button type="button" class="btn btn-google" id="google-btn">
-        <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="google-icon"/>
-        Continuar con Google
+      <button type="submit" class="btn btn-primary" id="loginBtn">
+        <span id="btnText">Iniciar Sesión</span>
       </button>
-
-      <a href="#" class="forgot-password" id="forgot-password-link">¿Olvidaste tu contraseña?</a>
-
-      <div class="register-link">
-        <span id="toggle-text">¿No tienes cuenta?</span>
-        <a href="#" id="toggle-form">Regístrate aquí</a>
-      </div>
     </form>
-  </div>
 
-  <!-- Toasts -->
-  <div class="toast-container" id="toast-container"></div>
+    <button class="btn btn-google" id="googleLogin">
+      <img class="google-icon" src="/img/google-icon.svg" alt="Google"> Ingresar con Google
+    </button>
+
+    <div class="divider">o</div>
+
+    <div class="register-link" id="toggleModeLink">
+      ¿No tienes cuenta? <a href="#">Regístrate aquí</a>
+    </div>
+  </div>
 </body>
 </html>
