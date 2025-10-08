@@ -15,6 +15,20 @@ class Utils {
     alert(msg);
   }
 
+  static enableIAButtons() {
+    const comercioBtn = document.getElementById("btnComercio");
+    const servicioBtn = document.getElementById("btnServicio");
+
+    [comercioBtn, servicioBtn].forEach((btn) => {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.background = "#667eea";
+        btn.style.color = "#fff";
+        btn.style.cursor = "pointer";
+      }
+    });
+  }
+
   static fillForm(data) {
     const setValueSafe = (id, value) => {
       const el = document.getElementById(id);
@@ -24,25 +38,12 @@ class Utils {
     setValueSafe("nombre", data.nombre);
     setValueSafe("apellido", data.apellido);
     setValueSafe("direccion", data.direccion);
-    setValueSafe("pais", data.pais || "Argentina");
+    setValueSafe("pais", data.pais);
     setValueSafe("provincia", data.provincia);
     setValueSafe("localidad", data.localidad);
     setValueSafe("barrio", data.barrio);
     setValueSafe("fechaNacimiento", data.fechaNacimiento);
-  }
-
-  static enableIAButtons() {
-    const comercioBtn = document.getElementById("btnComercio");
-    const servicioBtn = document.getElementById("btnServicio");
-
-    [comercioBtn, servicioBtn].forEach(btn => {
-      if (btn) {
-        btn.disabled = false;
-        btn.style.background = "#667eea";
-        btn.style.color = "#fff";
-        btn.style.cursor = "pointer";
-      }
-    });
+    setValueSafe("telefono", data.telefono);
   }
 }
 
@@ -72,6 +73,7 @@ onAuthStateChanged(auth, async (user) => {
     const userData = userSnap.data();
     Utils.fillForm(userData);
 
+    // Habilitar botones si ya tiene datos cargados
     if (userData.nombre && userData.apellido) {
       Utils.enableIAButtons();
     }
@@ -80,13 +82,14 @@ onAuthStateChanged(auth, async (user) => {
   const emailEl = document.getElementById("userEmail");
   if (emailEl) emailEl.innerText = user.email;
 
-  // Inicializar select país y provincias
+  // Cargar provincias al cambiar país
   const paisEl = document.getElementById("pais");
   if (paisEl) {
-    loadProvinciasForCountry(paisEl.value);
     paisEl.addEventListener("change", (e) => {
       loadProvinciasForCountry(e.target.value);
     });
+    // Cargar provincias iniciales para Argentina
+    loadProvinciasForCountry(paisEl.value);
   }
 });
 
@@ -107,6 +110,7 @@ if (guardarBtn) {
     const localidad = document.getElementById("localidad").value.trim();
     const barrio = document.getElementById("barrio").value.trim();
     const fechaNacimiento = document.getElementById("fechaNacimiento").value;
+    const telefono = document.getElementById("telefono")?.value.trim() || "";
 
     if (!nombre || !apellido || !direccion || !pais || !provincia || !localidad || !fechaNacimiento) {
       return Utils.showMessage("Por favor, completa todos los campos obligatorios.");
@@ -126,6 +130,7 @@ if (guardarBtn) {
           localidad,
           barrio: barrio || null,
           fechaNacimiento,
+          telefono: telefono || null,
           actualizado: new Date()
         },
         { merge: true }
@@ -175,6 +180,10 @@ function loadProvinciasForCountry(country) {
   const provinciaEl = document.getElementById("provincia");
   if (!provinciaEl) return;
 
+  // Limpiar opciones actuales
   provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
+
+  // Llamar a la función importada para llenar el selector
   fillProvinciaSelector(country, provinciaEl);
 }
+
