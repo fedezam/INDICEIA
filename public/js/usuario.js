@@ -1,6 +1,15 @@
 import { auth, db } from "./firebase.js";
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import {
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+import {
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
 import { fillProvinciaSelector } from "./provincias.js";
 
 // =========================
@@ -71,12 +80,9 @@ onAuthStateChanged(auth, async (user) => {
     });
   } else {
     const userData = userSnap.data();
+    
+    // Autocompletar datos existentes
     Utils.fillForm(userData);
-
-    // Habilitar botones si ya tiene datos cargados
-    if (userData.nombre && userData.apellido) {
-      Utils.enableIAButtons();
-    }
   }
 
   const emailEl = document.getElementById("userEmail");
@@ -85,7 +91,7 @@ onAuthStateChanged(auth, async (user) => {
   // Cargar provincias al cambiar país
   const paisEl = document.getElementById("pais");
   if (paisEl) {
-    paisEl.addEventListener("change", (e) => {
+    paisEl.addEventListener('change', (e) => {
       loadProvinciasForCountry(e.target.value);
     });
     // Cargar provincias iniciales para Argentina
@@ -110,7 +116,7 @@ if (guardarBtn) {
     const localidad = document.getElementById("localidad").value.trim();
     const barrio = document.getElementById("barrio").value.trim();
     const fechaNacimiento = document.getElementById("fechaNacimiento").value;
-    const telefono = document.getElementById("telefono")?.value.trim() || "";
+    const telefono = document.getElementById("telefono")?.value.trim();
 
     if (!nombre || !apellido || !direccion || !pais || !provincia || !localidad || !fechaNacimiento) {
       return Utils.showMessage("Por favor, completa todos los campos obligatorios.");
@@ -137,7 +143,7 @@ if (guardarBtn) {
       );
 
       Utils.showMessage("Datos guardados correctamente ✅");
-      Utils.enableIAButtons();
+      Utils.enableIAButtons(); // Solo aquí
     } catch (error) {
       console.error("Error al guardar datos:", error);
       Utils.showMessage("Ocurrió un error al guardar los datos.");
@@ -186,4 +192,3 @@ function loadProvinciasForCountry(country) {
   // Llamar a la función importada para llenar el selector
   fillProvinciaSelector(country, provinciaEl);
 }
-
