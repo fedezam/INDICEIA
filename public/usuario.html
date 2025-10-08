@@ -18,7 +18,7 @@
           Completa tus datos personales
         </h2>
         <p class="subtitle" style="color: #666; margin-bottom: 30px;">
-          Estos datos se usarán para personalizar tu experiencia y conectar tu IA.
+          Estos datos se usarán para personalizar tu experiencia.
         </p>
 
         <div style="margin-bottom: 20px;">
@@ -42,12 +42,12 @@
                 <input type="text" id="apellido" placeholder="Tu apellido" required>
               </div>
               <div class="form-field">
-                <label for="telefono">Teléfono <span style="color: #f44336;">*</span></label>
-                <input type="text" id="telefono" placeholder="Ej: 1123456789" required>
-              </div>
-              <div class="form-field">
                 <label for="fechaNacimiento">Fecha de nacimiento <span style="color: #f44336;">*</span></label>
                 <input type="date" id="fechaNacimiento" required>
+              </div>
+              <div class="form-field">
+                <label for="telefono">Teléfono <span style="color: #f44336;">*</span></label>
+                <input type="tel" id="telefono" placeholder="Ej: 03411234567" required>
               </div>
             </div>
           </div>
@@ -60,10 +60,9 @@
             <div class="form-fields">
               <div class="form-field">
                 <label for="pais">País <span style="color: #f44336;">*</span></label>
-                <select id="pais" required style="background: #f5f5f5; cursor: not-allowed;">
+                <select id="pais" required>
                   <option value="Argentina" selected>🇦🇷 Argentina</option>
                 </select>
-                <small style="color: #999; font-size: 12px;">Próximamente disponible para más países</small>
               </div>
               <div class="form-field">
                 <label for="provincia">Provincia <span style="color: #f44336;">*</span></label>
@@ -87,7 +86,7 @@
           </div>
 
           <!-- Botón Guardar -->
-          <div class="btn-group btn-group-end" style="margin-top: 20px;">
+          <div class="btn-group btn-group-end">
             <button type="button" id="saveUserData" class="btn btn-primary btn-lg">
               <i class="fas fa-save"></i> Guardar Datos
             </button>
@@ -125,6 +124,8 @@
 
   <!-- Firebase -->
   <script type="module" src="./js/firebase.js"></script>
+  <!-- Provincias -->
+  <script type="module" src="./js/provincias.js"></script>
   <!-- JS -->
   <script type="module" src="./js/usuario.js"></script>
 </body>
