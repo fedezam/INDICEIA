@@ -3,8 +3,7 @@ import { auth, db, provider } from "./firebase.js";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   onAuthStateChanged
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
@@ -95,31 +94,29 @@ emailLoginForm.addEventListener("submit", async e => {
 // 🔑 Login Google
 // ==========================
 document.getElementById("googleLogin")?.addEventListener("click", async () => {
-  try { await signInWithRedirect(auth, provider); }
-  catch(e) { Utils.showToast("Error Google login: " + e.message); }
-});
-
-// ==========================
-// 🔄 Procesar redirect Google
-// ==========================
-window.addEventListener("load", async () => {
   try {
-    const result = await getRedirectResult(auth);
-    if (result?.user) {
-      const user = result.user;
-      const userRef = doc(db, "usuarios", user.uid);
-      const userDoc = await getDoc(userRef);
-      if (!userDoc.exists()) {
-        await setDoc(userRef, {
-          email: user.email,
-          uid: user.uid,
-          fechaRegistro: new Date(),
-          referralId: Utils.generateReferral()
-        });
-      }
-      window.location.href = "usuario.html";
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    
+    // Verificar si es nuevo usuario y crear documento
+    const userRef = doc(db, "usuarios", user.uid);
+    const userDoc = await getDoc(userRef);
+    
+    if (!userDoc.exists()) {
+      await setDoc(userRef, {
+        email: user.email,
+        uid: user.uid,
+        fechaRegistro: new Date(),
+        referralId: Utils.generateReferral()
+      });
     }
-  } catch(e) { console.error(e); }
+    
+    // Redirigir
+    window.location.href = "usuario.html";
+  } catch(e) { 
+    console.error("Error en login Google:", e);
+    Utils.showToast("Error al iniciar sesión con Google: " + e.message); 
+  }
 });
 
 // ==========================
@@ -128,5 +125,3 @@ window.addEventListener("load", async () => {
 onAuthStateChanged(auth, user => {
   if (user) console.log("Usuario logueado:", user.email);
 });
-
-    
