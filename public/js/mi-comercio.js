@@ -1,28 +1,18 @@
-// mi-comercio.js - Versión con estructura correcta y auto-guardado
+// mi-comercio.js - Versión corregida con Firestore correcto y planes
 import { auth, db } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
 import { doc, getDoc, updateDoc, addDoc, collection } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 import Navigation from './navigation.js';
+import { fillProvinciaSelector } from './provincias.js';
+import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, puedeAgregarProducto } from './plans.js';
+import { AutoSyncManager } from './sync-helper.js';
 
 // Variables globales
 let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
 let selectedCategories = [];
-let hasUnsavedChanges = false;
-let autoSaveTimeout = null;
-
-// Datos de provincias por país
-const PROVINCES_BY_COUNTRY = {
-  Argentina: ["Buenos Aires", "CABA", "Catamarca", "Chaco", "Chubut", "Córdoba", "Corrientes", "Entre Ríos", "Formosa", "Jujuy", "La Pampa", "La Rioja", "Mendoza", "Misiones", "Neuquén", "Río Negro", "Salta", "San Juan", "San Luis", "Santa Cruz", "Santa Fe", "Santiago del Estero", "Tierra del Fuego", "Tucumán"],
-  México: ["Aguascalientes", "Baja California", "Ciudad de México", "Jalisco", "Nuevo León", "Quintana Roo"],
-  Colombia: ["Antioquia", "Bogotá D.C.", "Valle del Cauca", "Cundinamarca"],
-  Chile: ["Metropolitana", "Valparaíso", "Biobío"],
-  Perú: ["Lima", "Cusco", "Arequipa"],
-  España: ["Madrid", "Barcelona", "Valencia", "Andalucía"],
-  "Estados Unidos": ["California", "Texas", "Florida", "Nueva York"],
-  Brasil: ["São Paulo", "Río de Janeiro", "Minas Gerais"]
-};
+let autoSyncManager = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 Iniciando mi-comercio.js');
@@ -47,12 +37,14 @@ async function initializePage() {
     currentComercioId = localStorage.getItem('currentComercioId');
     
     if (!currentComercioId) {
-      // Crear nuevo comercio
-      const newComercioRef = await addDoc(collection(db, "comercios"), {
+      // ✅ ESTRUCTURA CORRECTA: usuarios/{uid}/comercios
+      const comerciosRef = collection(db, `usuarios/${currentUser.uid}/comercios`);
+      const newComercioRef = await addDoc(comerciosRef, {
         dueñoId: currentUser.uid,
         fechaCreacion: new Date(),
         tipo: 'comercio',
-        plan: 'trial'
+        plan: 'trial',
+        pais: 'Argentina' // Hardcoded
       });
       currentComercioId = newComercioRef.id;
       localStorage.setItem('currentComercioId', currentComercioId);
@@ -61,6 +53,7 @@ async function initializePage() {
 
     await loadComercioData();
     updateHeader();
+    updateSubscriptionBanner();
     fillForm();
     renderPlans();
     renderCategories();
@@ -82,13 +75,21 @@ async function initializePage() {
 
 async function loadComercioData() {
   try {
-    const comercioDoc = await getDoc(doc(db, "comercios", currentComercioId));
+    // ✅ ESTRUCTURA CORRECTA
+    const comercioRef = doc(db, `usuarios/${currentUser.uid}/comercios`, currentComercioId);
+    const comercioDoc = await getDoc(comercioRef);
+    
     if (comercioDoc.exists()) {
       comercioData = { id: currentComercioId, ...comercioDoc.data() };
       selectedCategories = comercioData.categories || [];
       console.log('✅ Datos de comercio cargados:', comercioData);
     } else {
-      comercioData = { id: currentComercioId, dueñoId: currentUser.uid };
+      comercioData = { 
+        id: currentComercioId, 
+        dueñoId: currentUser.uid,
+        plan: 'trial',
+        pais: 'Argentina'
+      };
     }
   } catch (error) {
     console.error('Error cargando datos comercio:', error);
@@ -104,7 +105,49 @@ function updateHeader() {
     commerceName.textContent = comercioData.nombreComercio || 'Mi Comercio';
   }
   if (planBadge) {
-    planBadge.textContent = comercioData.plan || 'Trial';
+    const plan = PLANS[comercioData.plan || 'trial'];
+    planBadge.textContent = plan ? `${plan.emoji} ${plan.nombre}` : 'Trial';
+  }
+}
+
+function updateSubscriptionBanner() {
+  const banner = document.getElementById('subscriptionBanner');
+  const message = document.getElementById('subscriptionMessage');
+  
+  if (!banner || !message) return;
+  
+  const estado = calcularEstadoPlan(comercioData);
+  const planActual = PLANS[comercioData.plan || 'trial'];
+  
+  banner.className = 'subscription-banner';
+  
+  switch(estado) {
+    case 'trial':
+      const diasRestantes = getDiasRestantesTrial(comercioData);
+      banner.classList.add('trial');
+      message.innerHTML = `🎉 <strong>Trial activo</strong> - Te quedan <strong>${diasRestantes} días</strong> para probar todas las funciones`;
+      break;
+      
+    case 'expirado':
+      banner.classList.add('expired');
+      message.innerHTML = `⚠️ <strong>Tu trial expiró.</strong> Elegí un plan para seguir usando tu IA comercial`;
+      break;
+      
+    case 'suspendido':
+      banner.classList.add('expired');
+      message.innerHTML = `❌ <strong>Servicio suspendido.</strong> Regularizá el pago para continuar`;
+      break;
+      
+    case 'activo':
+      banner.classList.add('active');
+      message.innerHTML = `✅ <strong>Plan ${planActual?.nombre} activo</strong> - Todo funcionando correctamente`;
+      break;
+      
+    case 'limite_excedido':
+      banner.classList.add('expired');
+      const limiteActual = planActual?.productos || 0;
+      message.innerHTML = `⚠️ <strong>Has superado el límite de ${limiteActual} productos.</strong> Upgrade para continuar`;
+      break;
   }
 }
 
@@ -112,21 +155,17 @@ function fillForm() {
   const form = document.getElementById('miComercioForm');
   if (!form) return;
 
-  form.querySelectorAll('input, textarea, select').forEach(field => {
+  // Llenar campos normales
+  form.querySelectorAll('input, textarea').forEach(field => {
     if (field.name && comercioData[field.name]) {
       field.value = comercioData[field.name];
     }
   });
 
-  // Cargar provincias si hay país seleccionado
-  const paisEl = document.getElementById('pais');
-  if (paisEl && comercioData.pais) {
-    paisEl.value = comercioData.pais;
-    loadProvinces(comercioData.pais);
-    const provinciaEl = document.getElementById('provincia');
-    if (provinciaEl && comercioData.provincia) {
-      provinciaEl.value = comercioData.provincia;
-    }
+  // Llenar selector de provincias
+  const provinciaEl = document.getElementById('provincia');
+  if (provinciaEl) {
+    fillProvinciaSelector(provinciaEl, comercioData.provincia);
   }
 
   console.log('✅ Formulario llenado con datos existentes');
@@ -136,33 +175,55 @@ function renderPlans() {
   const container = document.getElementById('planSelector');
   if (!container) return;
 
-  const plans = [
-    { id: 'trial', nombre: 'Trial', precio: 0, maxProductos: 10, descripcion: 'Ideal para probar' },
-    { id: 'basico', nombre: 'Básico', precio: 9, maxProductos: 50, descripcion: 'Para comenzar' },
-    { id: 'profesional', nombre: 'Profesional', precio: 19, maxProductos: 200, descripcion: 'Negocio en crecimiento' },
-    { id: 'empresa', nombre: 'Empresa', precio: 49, maxProductos: -1, descripcion: 'Sin límites' }
-  ];
-
-  container.innerHTML = plans.map(plan => `
-    <div class="plan-card ${comercioData.plan === plan.id ? 'selected' : ''}" data-plan="${plan.id}">
+  // Filtrar planes (sin trial en el selector)
+  const planesDisponibles = Object.entries(PLANS).filter(([key]) => key !== 'trial');
+  
+  container.innerHTML = planesDisponibles.map(([key, plan]) => `
+    <div class="plan-card ${comercioData.plan === key ? 'selected' : ''}" data-plan="${key}">
       <div class="plan-header">
-        <h4>${plan.nombre}</h4>
-        <div class="plan-price">$${plan.precio} USD/mes</div>
+        <h4>${plan.emoji} ${plan.nombre}</h4>
+        <div class="plan-price">
+          ${plan.precio ? `$${plan.precio} ARS/mes` : 'Consultar'}
+        </div>
       </div>
+      <p class="plan-description">${plan.descripcion}</p>
       <div class="plan-features">
-        <div class="feature"><i class="fas fa-check"></i> Hasta ${plan.maxProductos === -1 ? 'ilimitados' : plan.maxProductos} productos</div>
-        <div class="feature"><i class="fas fa-check"></i> ${plan.descripcion}</div>
+        ${plan.features.map(f => `
+          <div class="feature"><i class="fas fa-check"></i> ${f}</div>
+        `).join('')}
       </div>
+      ${plan.ejemplos ? `
+        <div class="plan-examples">
+          <strong>Ideal para:</strong> ${plan.ejemplos.join(', ')}
+        </div>
+      ` : ''}
+      ${plan.contacto ? `
+        <button class="btn btn-primary" onclick="window.location.href='mailto:soporte@indiceia.com'">
+          Contactar
+        </button>
+      ` : ''}
     </div>
   `).join('');
 
+  // Event listeners para selección de plan
   container.querySelectorAll('.plan-card').forEach(card => {
     card.addEventListener('click', async () => {
+      const planId = card.dataset.plan;
+      const plan = PLANS[planId];
+      
+      // No permitir cambio si tiene plan empresarial (debe contactar)
+      if (plan?.contacto) {
+        showToast('Plan Empresarial', 'Por favor contactanos para este plan', 'info');
+        return;
+      }
+      
       container.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
-      comercioData.plan = card.dataset.plan;
+      comercioData.plan = planId;
       markAsChanged();
       triggerAutoSave();
+      updateSubscriptionBanner();
+      updateHeader();
     });
   });
 }
@@ -174,7 +235,8 @@ function renderCategories() {
   const predefinedCategories = [
     "Ropa y Moda","Calzado","Accesorios","Joyería","Electrónicos",
     "Hogar y Decoración","Muebles","Belleza y Cosméticos","Alimentos",
-    "Bebidas","Panadería","Servicios Profesionales","Salud","Deportes"
+    "Bebidas","Panadería","Servicios Profesionales","Salud","Deportes",
+    "Automotriz","Ferretería","Librería","Juguetería","Mascotas"
   ];
 
   const allCategories = [...new Set([...predefinedCategories, ...selectedCategories])].sort();
@@ -184,13 +246,21 @@ function renderCategories() {
       <div class="category-dropdown">
         <select id="categorySelect" class="category-select">
           <option value="">Seleccionar categoría...</option>
-          ${allCategories.map(cat => `<option value="${cat}" ${selectedCategories.includes(cat) ? 'disabled' : ''}>${cat}</option>`).join("")}
+          ${allCategories.map(cat => `
+            <option value="${cat}" ${selectedCategories.includes(cat) ? 'disabled' : ''}>
+              ${cat}
+            </option>
+          `).join("")}
         </select>
-        <button type="button" class="btn btn-success" id="addSelectedCategory"><i class="fas fa-plus"></i> Agregar</button>
+        <button type="button" class="btn btn-success" id="addSelectedCategory">
+          <i class="fas fa-plus"></i> Agregar
+        </button>
       </div>
       <div class="custom-category">
         <input type="text" id="customCategory" placeholder="¿No encuentras tu rubro? Escríbelo aquí...">
-        <button type="button" class="btn btn-secondary" id="addCustomCategory"><i class="fas fa-plus"></i> Agregar Personalizada</button>
+        <button type="button" class="btn btn-secondary" id="addCustomCategory">
+          <i class="fas fa-plus"></i> Agregar Personalizada
+        </button>
       </div>
     </div>
     <div class="selected-categories">
@@ -211,7 +281,7 @@ function renderCategories() {
   const addCustomBtn = document.getElementById('addCustomCategory');
   
   if (addSelectedBtn) {
-    addSelectedBtn.addEventListener('click', async () => {
+    addSelectedBtn.addEventListener('click', () => {
       const select = document.getElementById('categorySelect');
       const cat = select.value;
       if (cat && !selectedCategories.includes(cat)) {
@@ -225,7 +295,7 @@ function renderCategories() {
   }
 
   if (addCustomBtn) {
-    addCustomBtn.addEventListener('click', async () => {
+    addCustomBtn.addEventListener('click', () => {
       const input = document.getElementById('customCategory');
       const cat = input.value.trim();
       if (cat && !selectedCategories.includes(cat)) {
@@ -240,7 +310,7 @@ function renderCategories() {
   }
 
   container.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', () => {
       const tag = btn.closest('.selected-category-tag');
       const idx = Number(tag.dataset.index);
       selectedCategories.splice(idx, 1);
@@ -256,11 +326,20 @@ function renderPaymentMethods() {
   const container = document.getElementById('paymentMethods');
   if (!container) return;
 
-  const methods = ["Efectivo", "Tarjeta de débito", "Tarjeta de crédito", "Transferencia", "MercadoPago", "PayPal"];
+  const methods = [
+    "Efectivo", 
+    "Tarjeta de débito", 
+    "Tarjeta de crédito", 
+    "Transferencia bancaria",
+    "MercadoPago", 
+    "PayPal",
+    "Criptomonedas"
+  ];
   
   container.innerHTML = methods.map(method => `
     <label class="checkbox-item">
-      <input type="checkbox" name="paymentMethods" value="${method}" ${comercioData.paymentMethods?.includes(method) ? 'checked' : ''}>
+      <input type="checkbox" name="paymentMethods" value="${method}" 
+        ${comercioData.paymentMethods?.includes(method) ? 'checked' : ''}>
       <span class="checkbox-text">${method}</span>
     </label>
   `).join('');
@@ -273,24 +352,7 @@ function renderPaymentMethods() {
   });
 }
 
-function loadProvinces(country) {
-  const select = document.getElementById('provincia');
-  if (!select) return;
-  
-  const provinces = PROVINCES_BY_COUNTRY[country] || ['Otro'];
-  select.innerHTML = provinces.map(p => `<option value="${p}">${p}</option>`).join('');
-}
-
 function setupEventListeners() {
-  const paisEl = document.getElementById('pais');
-  if (paisEl) {
-    paisEl.addEventListener('change', (e) => {
-      loadProvinces(e.target.value);
-      markAsChanged();
-      triggerAutoSave();
-    });
-  }
-
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', handleLogout);
@@ -319,7 +381,6 @@ function createSaveIndicator() {
   indicator.innerHTML = '<i class="fas fa-check-circle"></i> <span>Todos los cambios guardados</span>';
   header.appendChild(indicator);
 
-  // Agregar estilos
   const style = document.createElement('style');
   style.textContent = `
     .save-indicator {
@@ -342,9 +403,7 @@ function createSaveIndicator() {
       background: #f8d7da;
       color: #721c24;
     }
-    .save-indicator i {
-      font-size: 1rem;
-    }
+    .save-indicator i { font-size: 1rem; }
     .save-indicator.saving i {
       animation: spin 1s linear infinite;
     }
@@ -356,7 +415,7 @@ function createSaveIndicator() {
   document.head.appendChild(style);
 }
 
-function updateSaveIndicator(status, message) {
+function updateSaveIndicator(status) {
   const indicator = document.getElementById('saveIndicator');
   if (!indicator) return;
 
@@ -384,7 +443,7 @@ function triggerAutoSave() {
       await saveFormData();
       hasUnsavedChanges = false;
     }
-  }, 2000); // Espera 2 segundos después del último cambio
+  }, 2000);
 }
 
 function setupNavigation() {
@@ -405,7 +464,7 @@ function setupNavigation() {
     });
 
     if (!isValid) {
-      showToast('Campos requeridos', 'Por favor completa todos los campos marcados como obligatorios', 'warning');
+      showToast('Campos requeridos', 'Por favor completa todos los campos obligatorios', 'warning');
     }
 
     return isValid;
@@ -426,28 +485,31 @@ async function saveFormData() {
       updates[key] = value.trim();
     }
 
+    // País siempre Argentina
+    updates.pais = 'Argentina';
+
     const paymentMethods = Array.from(document.querySelectorAll('input[name="paymentMethods"]:checked'))
       .map(cb => cb.value);
     updates.paymentMethods = paymentMethods;
     updates.categories = selectedCategories;
     updates.plan = comercioData.plan || 'trial';
 
-    // Guardar en comercios
-    await updateDoc(doc(db, "comercios", currentComercioId), {
+    // ✅ GUARDAR CON ESTRUCTURA CORRECTA
+    const comercioRef = doc(db, `usuarios/${currentUser.uid}/comercios`, currentComercioId);
+    await updateDoc(comercioRef, {
       ...updates,
       fechaActualizacion: new Date()
     });
 
-    // Actualizar datos locales
     comercioData = { ...comercioData, ...updates };
     updateHeader();
+    updateSubscriptionBanner();
 
-    // Sincronización automática con JSON
+    // Sincronización con JSON (no crítico)
     syncToGist().catch(err => {
       console.warn("Sincronización JSON fallida (no crítico):", err.message);
     });
 
-    // Marcar como completado si tiene datos esenciales
     if (updates.nombreComercio && updates.telefono && updates.direccion) {
       Navigation.markPageAsCompleted('mi-comercio');
       Navigation.updateProgressBar();
@@ -467,17 +529,16 @@ async function syncToGist() {
   try {
     const response = await fetch('/api/export-json', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        comercioId: currentComercioId
+        comercioId: currentComercioId,
+        userId: currentUser.uid
       })
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(`API error: ${response.status} - ${errorData.message || errorData.error}`);
+      throw new Error(`API error: ${response.status}`);
     }
 
     const result = await response.json();
