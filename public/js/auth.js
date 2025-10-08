@@ -85,7 +85,7 @@ emailLoginForm.addEventListener("submit", async e => {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       user = cred.user;
     }
-    window.location.href = "usuarios.html";
+    window.location.href = "usuario.html";
   } catch (error) {
     Utils.showToast(error.message);
   }
