@@ -1,4 +1,4 @@
-// /api/export-json.js
+// /api/export-json.js - Versión corregida para estructura usuarios/{uid}/comercios
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 
@@ -26,14 +26,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { comercioId } = req.body;
+    // ✅ Ahora también recibimos userId
+    const { comercioId, userId } = req.body;
+    
     if (!comercioId) return res.status(400).json({ error: 'comercioId requerido' });
+    if (!userId) return res.status(400).json({ error: 'userId requerido' });
 
     const githubToken = process.env.GITHUB_TOKEN;
     if (!githubToken) return res.status(500).json({ error: 'GitHub token no configurado' });
 
-    const jsonData = await generateCommerceJSON(comercioId);
-    const gistResult = await uploadToGist(jsonData, comercioId, githubToken);
+    // ✅ Pasamos userId a la función
+    const jsonData = await generateCommerceJSON(comercioId, userId);
+    const gistResult = await uploadToGist(jsonData, comercioId, userId, githubToken);
 
     return res.status(200).json({ success: true, jsonData, gist: gistResult });
   } catch (error) {
@@ -42,21 +46,28 @@ export default async function handler(req, res) {
   }
 }
 
-// Generar JSON por comercio
-async function generateCommerceJSON(comercioId) {
-  const comercioRef = doc(db, "comercios", comercioId);
+// ✅ Generar JSON con estructura correcta
+async function generateCommerceJSON(comercioId, userId) {
+  // ✅ Nueva estructura: usuarios/{userId}/comercios/{comercioId}
+  const comercioRef = doc(db, `usuarios/${userId}/comercios`, comercioId);
   const comercioSnap = await getDoc(comercioRef);
-  if (!comercioSnap.exists()) throw new Error("Comercio no encontrado");
+  
+  if (!comercioSnap.exists()) {
+    throw new Error("Comercio no encontrado");
+  }
 
   const comercioData = comercioSnap.data();
 
-  // Productos activos
-  const productosCol = collection(db, "comercios", comercioId, "productos");
+  // ✅ Productos con nueva estructura
+  const productosCol = collection(db, `usuarios/${userId}/comercios`, comercioId, "productos");
   const productosSnap = await getDocs(productosCol);
   const productos = [];
+  
   productosSnap.forEach(pSnap => {
     const p = pSnap.data();
-    if (!p.paused) productos.push({ id: pSnap.id, ...p });
+    if (!p.paused) {
+      productos.push({ id: pSnap.id, ...p });
+    }
   });
 
   // Asistente IA
@@ -73,25 +84,50 @@ async function generateCommerceJSON(comercioId) {
     fecha_actualizacion: new Date().toISOString()
   };
 
+  // ✅ Metadata mejorada
   return {
     metadata: {
       version: "1.0",
       generado: new Date().toISOString(),
       comercioId,
+      userId,
       dueñoId: comercioData.dueñoId,
-      total_productos: productos.length
+      total_productos: productos.length,
+      plan: comercioData.plan || 'trial'
     },
-    comercio: comercioData,
+    comercio: {
+      ...comercioData,
+      // Datos básicos
+      nombre: comercioData.nombreComercio,
+      direccion: comercioData.direccion,
+      ciudad: comercioData.ciudad,
+      provincia: comercioData.provincia,
+      pais: comercioData.pais || 'Argentina',
+      telefono: comercioData.telefono,
+      whatsapp: comercioData.whatsapp,
+      email: comercioData.email,
+      website: comercioData.website,
+      // Redes sociales
+      instagram: comercioData.instagram,
+      facebook: comercioData.facebook,
+      tiktok: comercioData.tiktok,
+      // Horarios y métodos
+      horarios: comercioData.horarios || [],
+      metodos_pago: comercioData.paymentMethods || [],
+      categorias: comercioData.categories || []
+    },
     productos,
     asistente_ia
   };
 }
 
-// Subir/actualizar Gist
-async function uploadToGist(jsonData, comercioId, githubToken) {
+// ✅ Subir/actualizar Gist con nueva estructura
+async function uploadToGist(jsonData, comercioId, userId, githubToken) {
   const fileName = `comercio_${comercioId}.json`;
   const jsonString = JSON.stringify(jsonData, null, 2);
-  const comercioRef = doc(db, "comercios", comercioId);
+  
+  // ✅ Referencia correcta
+  const comercioRef = doc(db, `usuarios/${userId}/comercios`, comercioId);
   const comercioSnap = await getDoc(comercioRef);
   const existingGistId = comercioSnap.data()?.gistId;
 
@@ -104,24 +140,35 @@ async function uploadToGist(jsonData, comercioId, githubToken) {
   let response, gistId;
 
   if (existingGistId) {
+    // Actualizar Gist existente
     response = await fetch(`https://api.github.com/gists/${existingGistId}`, {
       method: 'PATCH',
       headers,
-      body: JSON.stringify({ files: { [fileName]: { content: jsonString } } })
+      body: JSON.stringify({ 
+        files: { 
+          [fileName]: { content: jsonString } 
+        } 
+      })
     });
     gistId = existingGistId;
   } else {
+    // Crear nuevo Gist
     response = await fetch('https://api.github.com/gists', {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        description: `Datos comercio - ${jsonData.comercio.nombre}`,
+        description: `Datos comercio - ${jsonData.comercio.nombre || 'Sin nombre'}`,
         public: true,
-        files: { [fileName]: { content: jsonString } }
+        files: { 
+          [fileName]: { content: jsonString } 
+        }
       })
     });
+    
     const result = await response.json();
     gistId = result.id;
+    
+    // Guardar gistId en Firestore
     await updateDoc(comercioRef, { gistId });
   }
 
@@ -130,8 +177,19 @@ async function uploadToGist(jsonData, comercioId, githubToken) {
     throw new Error(`GitHub API Error: ${error.message}`);
   }
 
+  // URL raw del JSON
   const rawUrl = `https://gist.githubusercontent.com/anonymous/${gistId}/raw/${fileName}`;
-  await updateDoc(comercioRef, { jsonUrl: rawUrl, lastJsonUpdate: new Date().toISOString() });
+  
+  // Actualizar comercio con URL del JSON
+  await updateDoc(comercioRef, { 
+    jsonUrl: rawUrl, 
+    lastJsonUpdate: new Date().toISOString() 
+  });
 
-  return { success: true, gistId, rawUrl, webUrl: `https://gist.github.com/${gistId}` };
+  return { 
+    success: true, 
+    gistId, 
+    rawUrl, 
+    webUrl: `https://gist.github.com/${gistId}` 
+  };
 }
