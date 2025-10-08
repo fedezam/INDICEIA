@@ -1,13 +1,12 @@
 // auth.js
-import { auth, db, provider } from "./firebase.js";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithRedirect,
   getRedirectResult,
   onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+} from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
 // ==========================
 // ⚙️ Utils
