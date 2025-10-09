@@ -1,23 +1,24 @@
+// vite.config.js
 import { defineConfig } from "vite";
+import { resolve } from "path";
 
-// 🧩 Configuración base optimizada para Firebase + Vercel
 export default defineConfig({
-  root: "public", // raíz del proyecto (donde está index.html)
-  publicDir: "../public", // asegura acceso a /img, /css, etc.
   build: {
-    outDir: "../dist", // salida del build
-    emptyOutDir: true, // limpia /dist antes del build
-    sourcemap: false, // puede ponerse true si querés debug
-  },
-  optimizeDeps: {
-    include: [
-      "firebase/app",
-      "firebase/auth",
-      "firebase/firestore"
-    ],
-  },
-  server: {
-    port: 5173, // default vite
-    open: true, // abre navegador automáticamente
+    rollupOptions: {
+      // Múltiples entradas (HTML)
+      input: {
+        main: resolve(__dirname, "index.html"),               // página principal (login/registro)
+        horarios: resolve(__dirname, "src/pages/horarios.html"),
+        miComercio: resolve(__dirname, "src/pages/mi-comercio.html"),
+        miIA: resolve(__dirname, "src/pages/mi-ia.html"),
+        productos: resolve(__dirname, "src/pages/productos.html"),
+        usuario: resolve(__dirname, "src/pages/usuario.html"),
+        // Si agregás más páginas, simplemente las sumás aquí:
+        // ofertas: resolve(__dirname, "src/pages/ofertas.html"),
+      },
+    },
+    outDir: "dist",       // carpeta de salida para Vercel
+    emptyOutDir: true,    // borra dist/ antes de build
   },
 });
+
