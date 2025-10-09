@@ -1,17 +1,21 @@
 {
-  "name": "mi-plataforma-ia",
+  "name": "indiceia",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "firebase": "^10.7.0"
   },
   "devDependencies": {
     "vite": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
