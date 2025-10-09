@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Productos - INDICEIA</title>
+  
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- CSS único -->
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando...</div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <div class="logo-icon">
+          <i class="fas fa-robot"></i>
+        </div>
+        <h1>INDICEIA</h1>
+      </div>
+      <div class="user-info">
+        <div class="user-details">
+          <div class="user-name" id="commerceName">Cargando...</div>
+          <div class="user-email" id="planBadge">Trial</div>
+        </div>
+        <button id="logoutBtn" class="btn-logout">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Subscription Banner -->
+  <div class="subscription-banner" id="subscriptionBanner">
+    <i class="fas fa-info-circle"></i>
+    <span id="subscriptionMessage">Cargando estado de suscripción...</span>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-indicator" id="progressContainer"></div>
+
+  <!-- Contenido principal -->
+  <main class="main-content">
+    <div class="container">
+      <!-- Control de Límites -->
+      <div class="form-section">
+        <h3><i class="fas fa-chart-bar"></i> Control de Productos</h3>
+        <div class="product-limit-info">
+          <div class="limit-counter" id="productCounter">Cargando...</div>
+          <div class="limit-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" id="productProgressFill"></div>
+            </div>
+          </div>
+          <div class="limit-warning" id="limitWarning" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            Tu plan permite hasta <span id="maxProducts">50</span> productos. Para cargar más, actualiza tu plan.
+          </div>
+        </div>
+      </div>
+
+      <!-- Selector de Tipo -->
+      <div class="form-section">
+        <h3><i class="fas fa-toggle-on"></i> Tipo de Registro</h3>
+        <p>Selecciona el tipo de registro que deseas agregar:</p>
+        <div class="type-selector" id="typeSelector">
+          <!-- Se llenará dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Formulario de Producto/Servicio -->
+      <div class="form-section">
+        <h3><i class="fas fa-edit"></i> <span id="formTitle">Agregar Producto</span></h3>
+        <form id="productForm" class="form-fields">
+          <div id="productFields">
+            <!-- Se llenará dinámicamente -->
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="clearProduct">
+              <i class="fas fa-eraser"></i> Limpiar
+            </button>
+            <button type="submit" class="btn btn-primary" id="saveProduct">
+              <i class="fas fa-save"></i> Guardar Registro
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Importación CSV -->
+      <div class="form-section">
+        <h3><i class="fas fa-file-csv"></i> Importación Masiva</h3>
+        <p>Importa múltiples productos desde un archivo CSV:</p>
+        <div class="file-upload" id="fileUpload">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <h3>Arrastra tu archivo CSV aquí</h3>
+          <p>O haz clic para seleccionar</p>
+          <input type="file" id="excelFile" accept=".csv,.xlsx,.xls" style="display: none;">
+          <button type="button" class="btn btn-outline">
+            <i class="fas fa-file-csv"></i> Seleccionar Archivo
+          </button>
+        </div>
+        <div class="csv-preview-container hidden" id="csvPreviewContainer">
+          <!-- Se llenará dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Tabla de Productos -->
+      <div class="form-section">
+        <h3><i class="fas fa-list"></i> Productos Cargados</h3>
+        <div class="table-container">
+          <div class="table-header">
+            <div class="table-title">
+              <i class="fas fa-boxes"></i> Lista de Productos/Servicios
+            </div>
+            <div class="table-actions">
+              <button class="btn btn-secondary" id="exportProducts">
+                <i class="fas fa-file-export"></i> Exportar CSV
+              </button>
+              <button class="btn btn-danger" id="clearProducts">
+                <i class="fas fa-trash"></i> Eliminar Todos
+              </button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table" id="productsTable">
+              <thead id="productsTableHead"></thead>
+              <tbody id="productsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Navegación -->
+  <div class="navigation-controls" id="navigationControls"></div>
+
+  <!-- Scripts -->
+  <script type="module">
+    import { LocalData, Utils, FirebaseHelpers, PlansManager, AuthHelpers, auth } from './js/shared.js';
+    import Navigation from './js/navigation.js';
+
+    // Datos predefinidos
+    const PREDEFINED_CATEGORIES = [
+      "Ropa y Moda","Calzado","Accesorios","Joyería","Relojes",
+      "Electrónicos","Informática","Celulares y Tablets","Audio y Video","Gaming",
+      "Hogar y Decoración","Muebles","Electrodomésticos","Jardín","Ferretería",
+      "Belleza y Cosméticos","Salud","Farmacia","Perfumería","Cuidado Personal",
+      "Alimentos","Bebidas","Panadería","Carnicería","Verdulería","Almacén",
+      "Servicios Profesionales","Educación","Turismo","Transporte","Seguros",
+      "Libros","Música","Películas","Juguetes","Deportes","Fitness",
+      "Automotor","Mascotas","Bebés y Niños","Arte y Manualidades","Oficina",
+      "Regalería","Marroquinería","Óptica","Fotografía","Instrumentos Musicales",
+      "Papelería","Librería","Floristería","Cerrajería","Tapicería"
+    ];
+
+    let userData = {};
+    let products = [];
+    let selectedCategories = [];
+    let currentProductType = "producto";
+    let csvData = [];
+    let csvHeaders = [];
+    let editingProductId = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        Utils.showLoading('Verificando sesión...');
+        
+        const user = await new Promise((resolve) => {
+          const unsubscribe = auth.onAuthStateChanged((user) => {
+            unsubscribe();
+            resolve(user);
+          });
+        });
+
+        if (!user) {
+          window.location.href = '/index.html';
+          return;
+        }
+
+        Utils.showLoading('Cargando productos...');
+        userData = await FirebaseHelpers.getUserData();
+        selectedCategories = userData.categories || PREDEFINED_CATEGORIES;
+        await loadProducts();
+        renderTypeSelector();
+        renderProductForm();
+        renderProductsTable();
+        setupEventListeners();
+        updateSubscriptionBanner();
+        Navigation.init();
+
+        window.validateCurrentPageData = () => {
+          return products.length > 0;
+        };
+
+        Utils.hideLoading();
+      } catch (error) {
+        Utils.hideLoading();
+        console.error('Error:', error);
+        Utils.showToast('Error', 'No se pudo cargar la página', 'error');
+      }
+    });
+
+    async function loadProducts() {
+      try {
+        const userProducts = await FirebaseHelpers.getProducts();
+        products = userProducts;
+        updateProductCounter();
+      } catch (error) {
+        console.error('Error loading products:', error);
+        products = [];
+      }
+    }
+
+    function renderTypeSelector() {
+      const container = document.getElementById('typeSelector');
+      if (!container) return;
+
+      container.innerHTML = `
+        <label class="type-option ${currentProductType === 'producto' ? 'active' : ''}">
+          <input type="radio" name="itemType" value="producto" ${currentProductType === 'producto' ? 'checked' : ''}>
+          <div class="type-content">
+            <i class="fas fa-box"></i>
+            <span>Producto</span>
+            <small>Bien físico con precio fijo (ej: remera, pizza, shampoo)</small>
+          </div>
+        </label>
+        <label class="type-option ${currentProductType === 'servicio' ? 'active' : ''}">
+          <input type="radio" name="itemType" value="servicio" ${currentProductType === 'servicio' ? 'checked' : ''}>
+          <div class="type-content">
+            <i class="fas fa-handshake"></i>
+            <span>Servicio</span>
+            <small>Prestación o actividad (ej: corte de pelo, reparación, clases)</small>
+          </div>
+        </label>
+      `;
+    }
+
+    function renderProductForm() {
+      const container = document.getElementById('productFields');
+      const formTitle = document.getElementById('formTitle');
+      if (!container) return;
+
+      formTitle.textContent = currentProductType === 'producto' ? 'Agregar Producto' : 'Agregar Servicio';
+
+      const commonFields = [
+        { id: "productName", label: "Nombre/Título", type: "text", required: true },
+        { id: "productCode", label: "Código/SKU", type: "text", required: false },
+        { id: "productCategory", label: "Categoría", type: "select", required: true, options: selectedCategories },
+        { id: "productSubcategory", label: "Subcategoría", type: "text", required: false },
+        { id: "productDescription", label: "Descripción", type: "textarea", required: false },
+        { id: "productImage", label: "Imagen (URL)", type: "url", required: false, placeholder: "https://ejemplo.com/imagen.jpg" }
+      ];
+
+      let specificFields = [];
+      if (currentProductType === "producto") {
+        specificFields = [
+          { id: "productPrice", label: "Precio", type: "number", required: false, step: "0.01" },
+          { id: "productStock", label: "Stock", type: "number", required: false },
+          { id: "productColor", label: "Color", type: "text", required: false },
+          { id: "productSize", label: "Talle/Tamaño", type: "text", required: false },
+          { id: "productOrigin", label: "Origen", type: "text", required: false }
+        ];
+      } else {
+        specificFields = [
+          { id: "servicePhone", label: "Teléfono de contacto", type: "tel", required: false },
+          { id: "serviceEmail", label: "Email de contacto", type: "email", required: false },
+          { id: "serviceDuration", label: "Duración estimada", type: "text", required: false },
+          { id: "serviceAvailability", label: "Disponibilidad", type: "text", required: false }
+        ];
+      }
+
+      let html = commonFields.map(field => renderFormField(field, "")).join("");
+      html += specificFields.map(field => renderFormField(field, "")).join("");
+
+      container.innerHTML = html;
+    }
+
+    function renderFormField(field, value = "") {
+      let inputHtml = "";
+      if (field.type === "textarea") {
+        inputHtml = `<textarea id="${field.id}" name="${field.id}" placeholder="${field.placeholder || ""}" ${field.required ? "required" : ""}>${value}</textarea>`;
+      } else if (field.type === "select") {
+        const options = Array.isArray(field.options) ? field.options : [];
+        inputHtml = `<select id="${field.id}" name="${field.id}" ${field.required ? "required" : ""}>
+          <option value="">Seleccionar...</option>
+          ${options.map(o => `<option value="${o}" ${value === o ? "selected" : ""}>${o}</option>`).join("")}
+        </select>`;
+      } else {
+        inputHtml = `<input type="${field.type}" id="${field.id}" name="${field.id}" value="${value}" placeholder="${field.placeholder || ""}" ${field.required ? "required" : ""} ${field.step ? `step="${field.step}"` : ""}>`;
+      }
+      return `
+        <div class="form-field">
+          <label for="${field.id}">${field.label}${field.required ? " *" : ""}</label>
+          ${inputHtml}
+          <div class="error-message">Este campo es requerido</div>
+        </div>
+      `;
+    }
+
+    function renderProductsTable() {
+      const head = document.getElementById("productsTableHead");
+      const body = document.getElementById("productsTableBody");
+      if (!head || !body) return;
+
+      if (products.length === 0) {
+        head.innerHTML = "";
+        body.innerHTML = `<tr><td colspan="6" class="empty-state-row">No hay registros cargados</td></tr>`;
+        return;
+      }
+
+      head.innerHTML = `
+        <tr>
+          <th>Nombre</th>
+          <th>Tipo</th>
+          <th>Categoría</th>
+          <th>Precio</th>
+          <th>Stock</th>
+          <th>Acciones</th>
+        </tr>
+      `;
+
+      body.innerHTML = products.map(item => {
+        const isProduct = !item.servicePhone;
+        return `
+          <tr data-product-id="${item.id}">
+            <td>${item.nombre || ""}</td>
+            <td>${isProduct ? "Producto" : "Servicio"}</td>
+            <td>${item.categoria || ""}</td>
+            <td>$${item.precio || 0}</td>
+            <td>${item.stock ?? (isProduct ? "N/A" : "-")}</td>
+            <td>
+              <div class="table-actions">
+                <button class="btn btn-sm btn-outline edit-product" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm toggle-status" title="${item.paused ? 'Activar' : 'Pausar'}">
+                  <i class="fas ${item.paused ? 'fa-play' : 'fa-pause'}"></i>
+                </button>
+                <button class="btn btn-sm btn-danger delete-product" title="Eliminar">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      body.addEventListener("click", async (e) => {
+        const row = e.target.closest("tr");
+        if (!row) return;
+        const id = row.dataset.productId;
+        if (e.target.closest(".edit-product")) {
+          editProduct(id);
+        } else if (e.target.closest(".delete-product")) {
+          await deleteProduct(id);
+        } else if (e.target.closest(".toggle-status")) {
+          await toggleProductStatus(id);
+        }
+      });
+    }
+
+    function updateProductCounter() {
+      const plan = PlansManager.getPlan(userData.plan || 'basico');
+      const currentCount = products.length;
+      const maxProducts = plan.maxProductos === -1 ? Infinity : plan.maxProductos;
+      const percentage = maxProducts === Infinity ? 0 : Math.min(100, Math.round((currentCount / maxProducts) * 100));
+
+      document.getElementById('productCounter').textContent = `${currentCount}/${maxProducts === Infinity ? '∞' : maxProducts} productos cargados`;
+      document.getElementById('maxProducts').textContent = maxProducts === Infinity ? 'ilimitados' : maxProducts;
+      document.getElementById('productProgressFill').style.width = `${percentage}%`;
+
+      const warning = document.getElementById('limitWarning');
+      if (maxProducts !== Infinity && currentCount >= maxProducts) {
+        warning.style.display = 'block';
+      } else {
+        warning.style.display = 'none';
+      }
+    }
+
+    function setupEventListeners() {
+      document.getElementById('typeSelector').addEventListener('change', (e) => {
+        if (e.target.name === 'itemType') {
+          currentProductType = e.target.value;
+          renderTypeSelector();
+          renderProductForm();
+        }
+      });
+
+      document.getElementById('productForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!validateProductForm()) return;
+        await saveProduct();
+      });
+
+      document.getElementById('clearProduct').addEventListener('click', () => {
+        document.getElementById('productForm').reset();
+        editingProductId = null;
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        if (confirm('¿Cerrar sesión?')) {
+          await AuthHelpers.logout();
+          window.location.href = '/index.html';
+        }
+      });
+
+      const fileUpload = document.getElementById('fileUpload');
+      const fileInput = document.getElementById('excelFile');
+      
+      fileUpload.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', handleCSVFile);
+      
+      fileUpload.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileUpload.classList.add('dragover');
+      });
+      
+      fileUpload.addEventListener('dragleave', () => {
+        fileUpload.classList.remove('dragover');
+      });
+      
+      fileUpload.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileUpload.classList.remove('dragover');
+        const file = e.dataTransfer?.files?.[0];
+        if (file) processCSVFile(file);
+      });
+
+      document.getElementById('exportProducts')?.addEventListener('click', exportProducts);
+      document.getElementById('clearProducts')?.addEventListener('click', clearAllProducts);
+    }
+
+    function validateProductForm() {
+      const requiredFields = ['productName', 'productCategory'];
+      let isValid = true;
+      
+      requiredFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el.value.trim()) {
+          el.classList.add('error');
+          isValid = false;
+        } else {
+          el.classList.remove('error');
+        }
+      });
+      
+      return isValid;
+    }
+
+    async function saveProduct() {
+      try {
+        const plan = PlansManager.getPlan(userData.plan || 'basico');
+        const maxProducts = plan.maxProductos === -1 ? Infinity : plan.maxProductos;
+        
+        if (products.length >= maxProducts && !editingProductId) {
+          Utils.showToast('Límite alcanzado', `Tu plan permite hasta ${maxProducts} productos. Para cargar más, actualiza tu plan.`, 'warning');
+          return;
+        }
+
+        const productData = collectProductData();
+        Utils.showLoading('Guardando producto...');
+
+        if (editingProductId) {
+          await FirebaseHelpers.updateProduct(editingProductId, productData);
+          Utils.showToast('Éxito', 'Producto actualizado', 'success');
+        } else {
+          await FirebaseHelpers.addProduct(productData);
+          Utils.showToast('Éxito', 'Producto agregado', 'success');
+        }
+
+        try {
+          await FirebaseHelpers.syncToGist();
+        } catch (err) {
+          console.error("No se pudo sincronizar JSON:", err);
+        }
+
+        await loadProducts();
+        renderProductsTable();
+        document.getElementById('productForm').reset();
+        editingProductId = null;
+        Utils.hideLoading();
+      } catch (error) {
+        Utils.hideLoading();
+        console.error('Error saving product:', error);
+        Utils.showToast('Error', 'No se pudo guardar el producto', 'error');
+      }
+    }
+
+    function collectProductData() {
+      const data = {
+        nombre: document.getElementById('productName').value.trim(),
+        codigo: document.getElementById('productCode').value.trim(),
+        categoria: document.getElementById('productCategory').value.trim(),
+        subcategoria: document.getElementById('productSubcategory').value.trim(),
+        descripcion: document.getElementById('productDescription').value.trim(),
+        imagen: document.getElementById('productImage').value.trim(),
+        paused: false
+      };
+
+      if (currentProductType === 'producto') {
+        data.precio = parseFloat(document.getElementById('productPrice').value) || 0;
+        data.stock = parseInt(document.getElementById('productStock').value) || 0;
+        data.color = document.getElementById('productColor').value.trim();
+        data.talle = document.getElementById('productSize').value.trim();
+        data.origen = document.getElementById('productOrigin').value.trim();
+      } else {
+        data.telefono = document.getElementById('servicePhone').value.trim();
+        data.email = document.getElementById('serviceEmail').value.trim();
+        data.duracion = document.getElementById('serviceDuration').value.trim();
+        data.disponibilidad = document.getElementById('serviceAvailability').value.trim();
+      }
+
+      return data;
+    }
+
+    function editProduct(id) {
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+
+      document.getElementById('productName').value = product.nombre || '';
+      document.getElementById('productCode').value = product.codigo || '';
+      document.getElementById('productCategory').value = product.categoria || '';
+      document.getElementById('productSubcategory').value = product.subcategoria || '';
+      document.getElementById('productDescription').value = product.descripcion || '';
+      document.getElementById('productImage').value = product.imagen || '';
+
+      const isProduct = product.precio !== undefined || product.stock !== undefined;
+      currentProductType = isProduct ? 'producto' : 'servicio';
+      renderTypeSelector();
+      renderProductForm();
+
+      if (isProduct) {
+        document.getElementById('productPrice').value = product.precio || '';
+        document.getElementById('productStock').value = product.stock || '';
+        document.getElementById('productColor').value = product.color || '';
+        document.getElementById('productSize').value = product.talle || '';
+        document.getElementById('productOrigin').value = product.origen || '';
+      } else {
+        document.getElementById('servicePhone').value = product.telefono || '';
+        document.getElementById('serviceEmail').value = product.email || '';
+        document.getElementById('serviceDuration').value = product.duracion || '';
+        document.getElementById('serviceAvailability').value = product.disponibilidad || '';
+      }
+
+      editingProductId = id;
+      Utils.showToast('Edición', 'Producto cargado en el formulario para editar', 'info');
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm('¿Estás seguro de eliminar este producto?')) return;
+      try {
+        Utils.showLoading('Eliminando producto...');
+        await FirebaseHelpers.deleteProduct(id);
+        
+        try {
+          await FirebaseHelpers.syncToGist();
+        } catch (err) {
+          console.error("No se pudo sincronizar JSON:", err);
+        }
+        
+        await loadProducts();
+        renderProductsTable();
+        Utils.hideLoading();
+        Utils.showToast('Producto eliminado', 'El producto ha sido eliminado correctamente', 'success');
+      } catch (error) {
+        Utils.hideLoading();
+        console.error(error);
+        Utils.showToast('Error', 'No se pudo eliminar el producto', 'error');
+      }
+    }
+
+    async function toggleProductStatus(id) {
+      try {
+        const product = products.find(p => p.id === id);
+        if (!product) return;
+        const newStatus = !product.paused;
+        await FirebaseHelpers.updateProduct(id, { paused: newStatus });
+        
+        try {
+          await FirebaseHelpers.syncToGist();
+        } catch (err) {
+          console.error("No se pudo sincronizar JSON:", err);
+        }
+        
+        await loadProducts();
+        renderProductsTable();
+        Utils.showToast('Estado actualizado', `Producto ${newStatus ? 'pausado' : 'activado'}`, 'success');
+      } catch (error) {
+        console.error('Error toggling status:', error);
+        Utils.showToast('Error', 'No se pudo cambiar el estado', 'error');
+      }
+    }
+
+    async function handleCSVFile(e) {
+      const file = e.target.files?.[0];
+      if (file) {
+        await processCSVFile(file);
+      }
+    }
+
+    async function processCSVFile(file) {
+      Utils.showToast('CSV', 'Funcionalidad de importación CSV en desarrollo', 'info');
+    }
+
+    function exportProducts() {
+      if (products.length === 0) {
+        Utils.showToast('Info', 'No hay productos para exportar', 'info');
+        return;
+      }
+      Utils.showToast('Exportar', 'Funcionalidad de exportación en desarrollo', 'info');
+    }
+
+    async function clearAllProducts() {
+      if (!confirm('¿Eliminar todos los productos? Esta acción no puede deshacerse.')) return;
+      try {
+        Utils.showLoading('Eliminando productos...');
+        Utils.hideLoading();
+        Utils.showToast('Éxito', 'Todos los productos eliminados', 'success');
+      } catch (error) {
+        Utils.hideLoading();
+        console.error(error);
+        Utils.showToast('Error', 'No se pudieron eliminar los productos', 'error');
+      }
+    }
+
+    function updateSubscriptionBanner() {
+      const banner = document.getElementById('subscriptionBanner');
+      const messageEl = document.getElementById('subscriptionMessage');
+      
+      const trialEnd = userData.trialEndDate ? new Date(userData.trialEndDate) : null;
+      const now = new Date();
+      const status = userData.estado || 'trial';
+      
+      if (status === 'active') {
+        const endDate = userData.subscriptionEndDate ? new Date(userData.subscriptionEndDate) : null;
+        const formattedDate = endDate ? endDate.toLocaleDateString('es-ES') : 'fecha no disponible';
+        messageEl.textContent = `Suscripción activa hasta ${formattedDate}`;
+        banner.className = 'subscription-banner active';
+      } else if (status === 'trial' && trialEnd) {
+        const daysLeft = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+        if (daysLeft > 0) {
+          messageEl.textContent = `Trial gratuito - ${daysLeft} días restantes`;
+          banner.className = 'subscription-banner';
+        } else {
+          messageEl.textContent = `Trial expirado - actualiza tu plan`;
+          banner.className = 'subscription-banner expired';
+        }
+      } else {
+        messageEl.textContent = `Suscripción vencida - actualiza tu plan`;
+        banner.className = 'subscription-banner expired';
+      }
+    }
+  </script>
+
+  <style>
+    .subscription-banner {
+      background: #fffbeb;
+      border-left: 4px solid #f6ad55;
+      padding: 1rem 2rem;
+      margin: 1rem 0;
+      font-weight: 600;
+      color: #975a16;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .subscription-banner.expired {
+      background: #fed7d7;
+      border-left-color: #e53e3e;
+      color: #9b2c2c;
+    }
+    .subscription-banner.active {
+      background: #c6f6d5;
+      border-left-color: #38a169;
+      color: #276749;
+    }
+    
+    .product-limit-info {
+      background: #f8fafc;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .limit-counter {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #2d3748;
+    }
+    
+    .limit-progress {
+      margin-bottom: 1rem;
+    }
+    
+    .progress-bar {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #48bb78, #38a169);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    
+    .limit-warning {
+      background: #fffbeb;
+      border: 1px solid #f6ad55;
+      border-radius: 8px;
+      padding: 1rem;
+      color: #975a16;
+    }
+    
+    .type-selector {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+    
+    .type-option {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .type-option:hover {
+      border-color: #cbd5e0;
+    }
+    
+    .type-option.active {
+      border-color: #3182ce;
+      background: #ebf8ff;
+    }
+    
+    .type-option input[type="radio"] {
+      display: none;
+    }
+    
+    .type-content {
+      text-align: center;
+    }
+    
+    .type-content i {
+      font-size: 2rem;
+      margin-bottom: 1rem
+      ;
+      color: #4299e1;
+    }
+    
+    .type-content span {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    
+    .type-content small {
+      color: #718096;
+      font-size: 0.9rem;
+    }
+    
+    .csv-preview-container {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</body>
+</html>
