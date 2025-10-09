@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfil de Usuario</title>
+  <link rel="stylesheet" href="./css/dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <div class="container" style="max-width: 800px; margin-top: 40px;">
+    <div class="main-content">
+      <div style="padding: 30px;">
+        <h2 class="title" style="font-size: 28px; font-weight: 700; color: #333; margin-bottom: 10px;">
+          Completa tus datos personales
+        </h2>
+        <p class="subtitle" style="color: #666; margin-bottom: 30px;">
+          Estos datos se usarán para personalizar tu experiencia.
+        </p>
+
+        <div style="margin-bottom: 20px;">
+          <strong>Correo electrónico:</strong> 
+          <span id="userEmail" style="color:#555;">Cargando...</span>
+        </div>
+
+        <form id="usuarioForm" class="form">
+          <!-- Datos Personales -->
+          <div class="form-section">
+            <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 20px;">
+              <i class="fas fa-user"></i> Información Personal
+            </h3>
+            <div class="form-fields">
+              <div class="form-field">
+                <label for="nombre">Nombre <span style="color: #f44336;">*</span></label>
+                <input type="text" id="nombre" placeholder="Tu nombre" required>
+              </div>
+              <div class="form-field">
+                <label for="apellido">Apellido <span style="color: #f44336;">*</span></label>
+                <input type="text" id="apellido" placeholder="Tu apellido" required>
+              </div>
+              <div class="form-field">
+                <label for="fechaNacimiento">Fecha de nacimiento <span style="color: #f44336;">*</span></label>
+                <input type="date" id="fechaNacimiento" required>
+              </div>
+              <div class="form-field">
+                <label for="telefono">Teléfono <span style="color: #f44336;">*</span></label>
+                <input type="tel" id="telefono" placeholder="Ej: 03411234567" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ubicación -->
+          <div class="form-section">
+            <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 20px;">
+              <i class="fas fa-map-marker-alt"></i> Ubicación
+            </h3>
+            <div class="form-fields">
+              <div class="form-field">
+                <label for="pais">País <span style="color: #f44336;">*</span></label>
+                <select id="pais" required>
+                  <option value="Argentina" selected>🇦🇷 Argentina</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="provincia">Provincia <span style="color: #f44336;">*</span></label>
+                <select id="provincia" required>
+                  <option value="">Seleccionar provincia...</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="localidad">Localidad <span style="color: #f44336;">*</span></label>
+                <input type="text" id="localidad" placeholder="Ej: Casilda" required>
+              </div>
+              <div class="form-field">
+                <label for="barrio">Barrio (opcional)</label>
+                <input type="text" id="barrio" placeholder="Ej: Centro">
+              </div>
+              <div class="form-field">
+                <label for="direccion">Dirección <span style="color: #f44336;">*</span></label>
+                <input type="text" id="direccion" placeholder="Ej: Catamarca 1219" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón Guardar -->
+          <div class="btn-group btn-group-end">
+            <button type="button" id="saveUserData" class="btn btn-primary btn-lg">
+              <i class="fas fa-save"></i> Guardar Datos
+            </button>
+          </div>
+
+          <!-- Opciones de IA -->
+          <div class="form-section" style="margin-top: 40px;">
+            <p class="info-text" style="background: rgba(102, 126, 234, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #333;">
+              ⚡ Una vez guardados tus datos, elige qué tipo de IA deseas crear:
+            </p>
+            <div class="options" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+              <button type="button" id="btnComercio" class="btn" disabled style="background: #e0e0e0; cursor: not-allowed; flex-direction: column; padding: 25px; height: auto;">
+                <i class="fas fa-store" style="font-size: 32px; margin-bottom: 10px;"></i>
+                <strong style="font-size: 16px; margin-bottom: 5px;">Crear IA para Comercio</strong>
+                <p class="btn-desc" style="font-size: 13px; color: #666; margin: 0;">Ideal si vendes productos, con catálogo y horarios.</p>
+              </button>
+              <button type="button" id="btnServicio" class="btn" disabled style="background: #e0e0e0; cursor: not-allowed; flex-direction: column; padding: 25px; height: auto;">
+                <i class="fas fa-briefcase" style="font-size: 32px; margin-bottom: 10px;"></i>
+                <strong style="font-size: 16px; margin-bottom: 5px;">Crear IA para Servicio</strong>
+                <p class="btn-desc" style="font-size: 13px; color: #666; margin: 0;">Perfecto si ofrecés servicios o turnos personalizados.</p>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Logout -->
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+          <button id="logoutBtn" class="btn btn-secondary btn-sm">
+            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script type="module" src="./js/firebase.js"></script>
+  <!-- Provincias -->
+  <script type="module" src="./js/provincias.js"></script>
+  <!-- JS -->
+  <script type="module" src="./js/usuario.js"></script>
+</body>
+</html>
