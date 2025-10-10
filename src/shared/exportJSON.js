@@ -1,4 +1,4 @@
-// exportJSON.js
+// src/shared/exportJSON.js
 import { getDoc, doc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 import { db } from "./firebase.js"; // tu inicialización de Firebase
 
