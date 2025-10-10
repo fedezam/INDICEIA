@@ -10,7 +10,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "firebase": "^10.7.0"
+    "firebase": "^10.7.0",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "vite": "^5.0.0"
@@ -19,4 +20,3 @@
     "node": ">=18.0.0"
   }
 }
-
