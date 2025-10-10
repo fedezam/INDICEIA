@@ -1,17 +1,11 @@
 //src/pages/usuario.js
-import { auth, db } from "./firebase.js";
-import {
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-
-import {
-  doc,
-  getDoc,
-  setDoc
-} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-
-import { fillProvinciaSelector } from "./provincias.js";
+// =========================
+// 📦 IMPORTS
+// =========================
+import { auth, db } from "../firebase.js";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { fillProvinciaSelector } from "../shared/provincias.js";
 
 // =========================
 // 🔧 Utils
@@ -62,7 +56,7 @@ class Utils {
 // =========================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = "index.html";
+    window.location.href = "/";
     return;
   }
 
@@ -84,6 +78,11 @@ onAuthStateChanged(auth, async (user) => {
     
     // Autocompletar datos existentes
     Utils.fillForm(userData);
+    
+    // Si ya guardó datos, habilitar botones
+    if (userData.nombre && userData.apellido) {
+      Utils.enableIAButtons();
+    }
   }
 
   const emailEl = document.getElementById("userEmail");
@@ -144,7 +143,7 @@ if (guardarBtn) {
       );
 
       Utils.showMessage("Datos guardados correctamente ✅");
-      Utils.enableIAButtons(); // Solo aquí
+      Utils.enableIAButtons();
     } catch (error) {
       console.error("Error al guardar datos:", error);
       Utils.showMessage("Ocurrió un error al guardar los datos.");
@@ -158,27 +157,35 @@ if (guardarBtn) {
 const comercioBtn = document.getElementById("btnComercio");
 if (comercioBtn) {
   comercioBtn.addEventListener("click", () => {
-    window.location.href = "mi-comercio.html";
+    window.location.href = "/src/pages/mi-comercio.html";
   });
 }
 
 const servicioBtn = document.getElementById("btnServicio");
 if (servicioBtn) {
   servicioBtn.addEventListener("click", () => {
-    window.location.href = "servicio.html";
+    window.location.href = "/src/pages/servicio.html";
   });
 }
 
 // =========================
 // 🚪 Cerrar sesión
 // =========================
+// Usar la función global de main.js via onclick en HTML
+// Si prefieres manejarla aquí, descomenta:
+/*
 const logoutBtn = document.getElementById("logoutBtn");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", async () => {
-    await signOut(auth);
-    window.location.href = "index.html";
+    try {
+      await signOut(auth);
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
   });
 }
+*/
 
 // =========================
 // 🌎 Función para cargar provincias
