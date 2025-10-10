@@ -1,4 +1,4 @@
-// mi-comercio.js - Versión corregida con estructura Firebase correcta
+// src/pages/mi-comercio.js
 import { auth, db } from './firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
 import { doc, getDoc, updateDoc, setDoc, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
