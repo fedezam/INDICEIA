@@ -3,8 +3,10 @@ import { defineConfig } from "vite";
 import { resolve } from "path";
 
 export default defineConfig({
-  base: "./", // 👈 ESTA LÍNEA SOLUCIONA LAS RUTAS RELATIVAS
+  root: ".", // raíz del proyecto
   build: {
+    outDir: "dist",
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
@@ -12,12 +14,14 @@ export default defineConfig({
         miComercio: resolve(__dirname, "src/pages/mi-comercio.html"),
         miIA: resolve(__dirname, "src/pages/mi-ia.html"),
         productos: resolve(__dirname, "src/pages/productos.html"),
-        usuario: resolve(__dirname, "src/pages/usuario.html"),
-      },
-    },
-    outDir: "dist",
-    emptyOutDir: true,
+        usuario: resolve(__dirname, "src/pages/usuario.html")
+      }
+    }
   },
+  server: {
+    port: 5173,
+    open: true
+  }
 });
 
 
