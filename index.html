@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Acceso a la Plataforma</title>
-  <link rel="stylesheet" href="/src/styles.css">
-  <script type="module" src="/src/main.js"></script>
+  <!-- CSS desde src, ruta relativa para producción -->
+  <link rel="stylesheet" href="./src/styles.css">
+  <!-- JS desde src, ruta relativa para producción -->
+  <script type="module" src="./src/main.js" defer></script>
 </head>
 <body>
   <div class="login-container">
@@ -44,7 +46,8 @@
     </form>
 
     <button class="btn btn-google" id="googleLogin">
-      <img class="google-icon" src="/img/google-icon.svg" alt="Google"> Ingresar con Google
+      <!-- Imagen desde public/img -->
+      <img class="google-icon" src="./img/google-icon.svg" alt="Google"> Ingresar con Google
     </button>
 
     <div class="divider">o</div>
