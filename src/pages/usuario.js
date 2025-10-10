@@ -2,9 +2,8 @@
 // =========================
 // 📦 IMPORTS
 // =========================
-import { auth, db } from "../firebase.js";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 import { fillProvinciaSelector } from "../shared/provincias.js";
 
 // =========================
@@ -157,14 +156,14 @@ if (guardarBtn) {
 const comercioBtn = document.getElementById("btnComercio");
 if (comercioBtn) {
   comercioBtn.addEventListener("click", () => {
-    window.location.href = "/src/pages/mi-comercio.html";
+    window.location.href = "../pages/mi-comercio.html";
   });
 }
 
 const servicioBtn = document.getElementById("btnServicio");
 if (servicioBtn) {
   servicioBtn.addEventListener("click", () => {
-    window.location.href = "/src/pages/servicio.html";
+    window.location.href = "../pages/servicio.html";
   });
 }
 
@@ -179,7 +178,7 @@ if (logoutBtn) {
   logoutBtn.addEventListener("click", async () => {
     try {
       await signOut(auth);
-      window.location.href = "/";
+      window.location.href = "../../index.html";
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }
