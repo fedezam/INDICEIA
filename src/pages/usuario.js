@@ -1,3 +1,4 @@
+//src/pages/usuario.js
 import { auth, db } from "./firebase.js";
 import {
   onAuthStateChanged,
