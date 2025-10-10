@@ -1,9 +1,11 @@
 // vite.config.js
+
 import { defineConfig } from "vite";
 import { resolve } from "path";
 
 export default defineConfig({
   root: ".", // raíz del proyecto
+  base: "./", // IMPORTANTE: rutas relativas para multi-page
   build: {
     outDir: "dist",
     emptyOutDir: true,
@@ -15,6 +17,11 @@ export default defineConfig({
         miIA: resolve(__dirname, "src/pages/mi-ia.html"),
         productos: resolve(__dirname, "src/pages/productos.html"),
         usuario: resolve(__dirname, "src/pages/usuario.html")
+      },
+      output: {
+        entryFileNames: "assets/js/[name].[hash].js",
+        chunkFileNames: "assets/js/[name].[hash].js",
+        assetFileNames: "assets/[ext]/[name].[hash].[ext]"
       }
     }
   },
@@ -23,6 +30,3 @@ export default defineConfig({
     open: true
   }
 });
-
-
-
