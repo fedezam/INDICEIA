@@ -83,7 +83,7 @@ emailLoginForm.addEventListener("submit", async e => {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       user = cred.user;
     }
-    window.location.href = "/src/pages/usuario.html";
+    window.location.href = "./src/pages/usuario.html";
   } catch (error) {
     Utils.showToast(error.message);
   }
@@ -111,7 +111,7 @@ document.getElementById("googleLogin")?.addEventListener("click", async () => {
     }
     
     // Redirigir
-    window.location.href = "/src/pages/usuario.html";
+    window.location.href = "./src/pages/usuario.html";
   } catch(e) { 
     console.error("Error en login Google:", e);
     Utils.showToast("Error al iniciar sesión con Google: " + e.message); 
