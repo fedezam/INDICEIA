@@ -1,4 +1,4 @@
-// public/js/plans.js
+// shared/plans.js
 
 export const PLANS = {
   trial: {
@@ -209,4 +209,32 @@ export function puedeAgregarProducto(comercioData) {
 export function getLimiteProductos(planId) {
   const plan = PLANS[planId];
   return plan ? plan.productos : 0;
+}
+// Clase helper para manejar planes
+export class PlansManager {
+  static getPlan(planId) {
+    return PLANS[planId] || PLANS.trial;
+  }
+  
+  static getAllPlans() {
+    return PLANS;
+  }
+  
+  static validateProductLimit(planId, currentCount) {
+    const plan = this.getPlan(planId);
+    if (plan.productos === null) return { valid: true, limit: Infinity };
+    return {
+      valid: currentCount < plan.productos,
+      limit: plan.productos,
+      remaining: plan.productos - currentCount
+    };
+  }
+  
+  static getPlanStatus(comercioData) {
+    return calcularEstadoPlan(comercioData);
+  }
+  
+  static getTrialDaysRemaining(comercioData) {
+    return getDiasRestantesTrial(comercioData);
+  }
 }

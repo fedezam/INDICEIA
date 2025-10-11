@@ -137,3 +137,16 @@ export async function saveHorarios(horariosData) {
     fechaActualizacion: new Date()
   });
 }
+
+/**
+ * Actualiza datos del comercio
+ */
+export async function updateUserData(updates) {
+  const comercioId = await getComercioId();
+  const comercioRef = doc(db, 'comercios', comercioId);
+  
+  await updateDoc(comercioRef, {
+    ...updates,
+    fechaActualizacion: new Date()
+  });
+}

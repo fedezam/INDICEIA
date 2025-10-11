@@ -3,86 +3,159 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi IA - Configuración</title>
-
-  <!-- CSS global del dashboard -->
-  <link rel="stylesheet" href="/css/dashboard.css">
-
-  <!-- Iconos -->
-  <script src="https://kit.fontawesome.com/a2e0e9a58f.js" crossorigin="anonymous"></script>
-
-  <!-- Navegación y progress bar -->
-  <script type="module" src="/js/navigation.js"></script>
+  <title>Mi IA - INDICEIA</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-
 <body>
-  <div class="container">
-    <header>
-      <h1>Configuración de tu IA</h1>
-      <button id="logoutBtn">Cerrar sesión</button>
-    </header>
-
-    <section>
-      <form id="aiConfigForm">
-        <div id="aiConfigFields">
-          <!-- Campos renderizados por JS -->
-        </div>
-
-        <fieldset>
-          <legend>Comportamiento ante situaciones ambiguas</legend>
-          
-          <label>
-            Producto sin precio: 
-            <select name="noPriceBehavior">
-              <option value="hide">Ocultar producto</option>
-              <option value="contact">Derivar a contacto</option>
-            </select>
-          </label>
-
-          <label>
-            Producto pausado:
-            <select name="pausedBehavior">
-              <option value="hide">Ocultar producto</option>
-              <option value="contact">Derivar a contacto</option>
-            </select>
-          </label>
-
-          <label>
-            Producto sin stock:
-            <select name="outOfStockBehavior">
-              <option value="hide">Ocultar producto</option>
-              <option value="contact">Derivar a contacto</option>
-              <option value="message">Mostrar mensaje “sin stock”</option>
-            </select>
-          </label>
-        </fieldset>
-
-        <div class="form-actions">
-          <button type="button" id="previewAI">Vista Previa</button>
-          <button type="submit">Generar Mi IA</button>
-        </div>
-      </form>
-    </section>
-
-    <section id="noAIMessage">
-      <p>IA no generada.</p>
-      <p>Completa la información de tu comercio/servicio para generar tu IA.</p>
-    </section>
-
-    <section id="aiPreviewSection" class="hidden">
-      <p>¡Tu IA está lista!</p>
-      <p>Comparte este link con tus clientes:</p>
-      <div id="aiLinkDisplay"></div>
-      <div id="aiActions">
-        <button id="copyLinkBtn">Copiar enlace</button>
-        <button id="whatsappShareBtn">Compartir por WhatsApp</button>
-      </div>
-    </section>
-
-    <div id="loadingOverlay"><span id="loadingText">Cargando...</span></div>
-    <div id="toastContainer"></div>
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p id="loadingText">Cargando...</p>
   </div>
 
-  <script type="module" src="/js/mi-ia-standalone.js"></script>
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Header -->
+  <header class="dashboard-header">
+    <div class="header-left">
+      <h1>
+        <i class="fas fa-robot"></i>
+        <span id="commerceName">Mi Comercio</span>
+      </h1>
+      <span id="planBadge" class="plan-badge">Trial</span>
+    </div>
+    <div class="header-right">
+      <button id="logoutBtn" class="btn btn-outline">
+        <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+      </button>
+    </div>
+  </header>
+
+  <!-- Subscription Banner -->
+  <div id="subscriptionBanner" class="subscription-banner">
+    <i class="fas fa-info-circle"></i>
+    <span id="subscriptionMessage">Trial gratuito activo</span>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="dashboard-nav">
+    <a href="./mi-comercio.html" class="nav-link">
+      <i class="fas fa-store"></i>
+      <span>Mi Comercio</span>
+    </a>
+    <a href="./productos.html" class="nav-link">
+      <i class="fas fa-box"></i>
+      <span>Productos</span>
+    </a>
+    <a href="./horarios.html" class="nav-link">
+      <i class="fas fa-clock"></i>
+      <span>Horarios</span>
+    </a>
+    <a href="./mi-ia.html" class="nav-link active">
+      <i class="fas fa-robot"></i>
+      <span>Mi IA</span>
+    </a>
+    <a href="./usuario.html" class="nav-link">
+      <i class="fas fa-user"></i>
+      <span>Usuario</span>
+    </a>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="dashboard-main">
+    <div class="dashboard-container">
+      
+      <!-- Page Title -->
+      <div class="page-header">
+        <h2>
+          <i class="fas fa-robot"></i>
+          Configurar Asistente Virtual
+        </h2>
+        <p class="page-description">
+          Personaliza tu asistente de IA para que represente tu negocio de manera única
+        </p>
+      </div>
+
+      <!-- AI Configuration Form -->
+      <section class="card">
+        <div class="card-header">
+          <h3>
+            <i class="fas fa-cog"></i>
+            Configuración de IA
+          </h3>
+        </div>
+        <div class="card-body">
+          <form id="aiConfigForm">
+            <div id="aiConfigFields" class="form-grid">
+              <!-- Los campos se generan dinámicamente -->
+            </div>
+            
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-magic"></i>
+                Generar IA
+              </button>
+              <button type="button" id="previewAI" class="btn btn-outline">
+                <i class="fas fa-eye"></i>
+                Ver Preview
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- AI Preview Section -->
+      <section id="aiPreviewSection" class="card hidden">
+        <div class="card-header">
+          <h3>
+            <i class="fas fa-link"></i>
+            Tu Asistente Virtual
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="ai-link-container">
+            <p class="info-text">
+              <i class="fas fa-info-circle"></i>
+              Comparte este enlace con tus clientes para que interactúen con tu asistente de IA
+            </p>
+            
+            <div class="link-display-box">
+              <code id="aiLinkDisplay">https://indiceia.vercel.app/app?user=...</code>
+            </div>
+            
+            <div class="share-actions">
+              <button id="copyLinkBtn" class="btn btn-primary">
+                <i class="fas fa-copy"></i>
+                Copiar enlace
+              </button>
+              <button id="whatsappShareBtn" class="btn btn-success">
+                <i class="fab fa-whatsapp"></i>
+                Compartir en WhatsApp
+              </button>
+            </div>
+          </div>
+
+          <div class="ai-preview-info">
+            <h4>
+              <i class="fas fa-lightbulb"></i>
+              ¿Cómo funciona?
+            </h4>
+            <ul>
+              <li>Los clientes pueden chatear con tu asistente 24/7</li>
+              <li>El asistente responde sobre productos, horarios y servicios</li>
+              <li>Puedes actualizar la configuración en cualquier momento</li>
+              <li>El enlace permanece activo mientras tu suscripción esté vigente</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Solo importar el JS de la página -->
+  <script type="module" src="./mi-ia.js"></script>
 </body>
 </html>

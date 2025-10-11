@@ -1,10 +1,11 @@
 // src/pages/mi-comercio.js
-import { auth, db } from './firebase.js';
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
-import { doc, getDoc, updateDoc, setDoc, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
-import Navigation from './navigation.js';
-import { fillProvinciaSelector } from './provincias.js';
-import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from './plans.js';
+import { auth } from '../firebase.js';
+import { onAuthStateChanged } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
+import { getUserData, updateUserData } from '../shared/firebaseHelpers.js';
+import Navigation from '../shared/navigation.js';
+import { fillProvinciaSelector } from '../shared/provincias.js';
+import { PlansManager } from '../shared/plans.js';
 
 // Variables globales
 let currentUser = null;

@@ -1,5 +1,6 @@
-// navigation.js - Control de navegación y progress bar
-import { LocalData, Utils } from './shared.js';
+// src/shared/navigation.js - Control de navegación y progress bar
+import { LocalData } from './localStorage.js';
+import { showToast } from './utils.js';
 
 class Navigation {
   // Flujo Comercio
@@ -201,7 +202,7 @@ class Navigation {
 
     const isValid = await this.validateCurrentPage();
     if (!isValid) {
-      Utils.showToast('Campos incompletos', 'Por favor completa todos los campos requeridos antes de continuar', 'warning');
+      showToast('Campos incompletos', 'Por favor completa todos los campos requeridos antes de continuar', 'warning');
       return;
     }
 
@@ -210,7 +211,7 @@ class Navigation {
     if (currentIndex < this.pages.length - 1) {
       this.goToPage(this.pages[currentIndex + 1].id);
     } else {
-      Utils.showToast('¡Configuración completa!', 'Tu IA comercial está lista para usar', 'success');
+      showToast('¡Configuración completa!', 'Tu IA comercial está lista para usar', 'success');
     }
   }
 
