@@ -1,16 +1,23 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 export default defineConfig({
-  root: '.', // la raíz del proyecto es donde está index.html
-  publicDir: 'public', // carpeta donde están las imágenes
+  root: '.',
+  publicDir: 'public',
   build: {
-    outDir: 'dist', // salida del build
+    outDir: 'dist',
     rollupOptions: {
-      input: './index.html', // punto de entrada principal
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        horarios: resolve(__dirname, 'src/pages/horarios.html'),
+        miComercio: resolve(__dirname, 'src/pages/mi-comercio.html'),
+        miIa: resolve(__dirname, 'src/pages/mi-ia.html'),
+        productos: resolve(__dirname, 'src/pages/productos.html'),
+        usuario: resolve(__dirname, 'src/pages/usuario.html'),
+      },
     },
   },
   server: {
-    open: true, // abre el navegador al iniciar
+    open: true,
   },
 });
-
