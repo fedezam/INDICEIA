@@ -2,8 +2,9 @@
 // =========================
 // 📦 IMPORTS
 // =========================
-import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { auth, db } from '../firebase.js';
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { fillProvinciaSelector } from "../shared/provincias.js";
 
 // =========================
