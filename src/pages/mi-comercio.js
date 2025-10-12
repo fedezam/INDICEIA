@@ -1,12 +1,11 @@
-
 // src/pages/mi-comercio.js
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
-import { getUserData, updateUserData } from '../shared/firebaseHelpers.js';
 import Navigation from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
-import { PlansManager, PLANS } from '../shared/plans.js';
+import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
+import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 
 // Variables globales
 let currentUser = null;
@@ -125,10 +124,43 @@ function updateSubscriptionBanner() {
   
   if (!banner || !message) return;
   
+  const estado = calcularEstadoPlan(comercioData);
   const planActual = PLANS[comercioData.plan || 'trial'];
   
-  banner.className = 'subscription-banner trial';
-  message.innerHTML = `🎉 <strong>Plan ${planActual?.nombre || 'Trial'}</strong> - Completa tu información para activar tu IA`;
+  banner.className = 'subscription-banner';
+  
+  switch(estado) {
+    case 'trial':
+      const diasRestantes = getDiasRestantesTrial(comercioData);
+      banner.classList.add('trial');
+      message.innerHTML = `🎉 <strong>Trial activo</strong> - Te quedan <strong>${diasRestantes} días</strong> para probar todas las funciones`;
+      break;
+      
+    case 'expirado':
+      banner.classList.add('expired');
+      message.innerHTML = `⚠️ <strong>Tu trial expiró.</strong> Elegí un plan para seguir usando tu IA comercial`;
+      break;
+      
+    case 'suspendido':
+      banner.classList.add('expired');
+      message.innerHTML = `❌ <strong>Servicio suspendido.</strong> Regularizá el pago para continuar`;
+      break;
+      
+    case 'activo':
+      banner.classList.add('active');
+      message.innerHTML = `✅ <strong>Plan ${planActual?.nombre} activo</strong> - Todo funcionando correctamente`;
+      break;
+      
+    case 'limite_excedido':
+      banner.classList.add('expired');
+      const limiteActual = planActual?.productos || 0;
+      message.innerHTML = `⚠️ <strong>Has superado el límite de ${limiteActual} productos.</strong> Upgrade para continuar`;
+      break;
+      
+    default:
+      banner.classList.add('trial');
+      message.innerHTML = `🎉 <strong>Plan ${planActual?.nombre || 'Trial'}</strong> - Completa tu información para activar tu IA`;
+  }
 }
 
 function fillForm() {
@@ -574,55 +606,5 @@ async function handleLogout() {
   }
 }
 
-function showLoading(text = "Cargando...") {
-  const overlay = document.getElementById("loadingOverlay");
-  const loadingText = document.getElementById("loadingText");
-  if (overlay && loadingText) {
-    loadingText.textContent = text;
-    overlay.classList.add("show");
-  }
-}
-
-function hideLoading() {
-  const overlay = document.getElementById("loadingOverlay");
-  if (overlay) overlay.classList.remove("show");
-}
-
-function showToast(title, message, type = "success") {
-  const container = document.getElementById("toastContainer");
-  if (!container) return;
-
-  const toast = document.createElement("div");
-  const icons = {
-    success: "fas fa-check-circle",
-    error: "fas fa-exclamation-circle",
-    warning: "fas fa-exclamation-triangle",
-    info: "fas fa-info-circle",
-  };
-
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `
-    <i class="${icons[type]}"></i>
-    <div class="toast-content">
-      <div class="toast-title">${title}</div>
-      <div class="toast-message">${message}</div>
-    </div>
-    <button class="toast-close"><i class="fas fa-times"></i></button>
-  `;
-  container.appendChild(toast);
-
-  setTimeout(() => toast.classList.add("show"), 100);
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => {
-      if (toast.parentNode) container.removeChild(toast);
-    }, 300);
-  }, 5000);
-
-  toast.querySelector(".toast-close").addEventListener("click", () => {
-    toast.classList.remove("show");
-    setTimeout(() => {
-      if (toast.parentNode) container.removeChild(toast);
-    }, 300);
-  });
-}
+// ✅ No redefinir las funciones que ya están en utils.js
+// showLoading, hideLoading y showToast se importan desde utils.js
