@@ -109,47 +109,116 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ==========================
-  // 🔑 Login Google
-  // ==========================
-  if (googleBtn) {
-    googleBtn.addEventListener("click", async () => {
-      try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
+// ==========================
+// 🔑 Login con Google (versión final y trazable)
+// ==========================
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 
-        // DEBUG: Ver datos recibidos de Google
-        console.log("🧩 RESULT:", result);
-        console.log("📇 user:", user);
-        console.log("🪪 providerData:", user.providerData);
+if (googleBtn) {
+  googleBtn.addEventListener("click", async () => {
+    console.log("🟢 Iniciando login con Google...");
 
-        // Extraer nombre y apellido
-        const fullName = user.displayName || "";
-        const parts = fullName.split(" ");
-        const nombre = parts[0] || "";
-        const apellido = parts.slice(1).join(" ") || "";
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
 
-        const userRef = doc(db, "usuarios", user.uid);
+      console.group("🧩 DATOS DE GOOGLE");
+      console.log("👤 user:", user);
+      console.log("📦 providerData:", user.providerData);
+      console.groupEnd();
 
-        // Guardar datos en Firestore con merge
-        await setDoc(userRef, {
-          email: user.email,
-          nombre,
-          apellido,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          fechaRegistro: new Date(),
-          referralId: Utils.generateReferral()
-        }, { merge: true });
+      // ==========================
+      // 🪪 Procesar nombre, apellido y email
+      // ==========================
+      const fullName = (user.displayName || "").trim();
+      const parts = fullName.split(" ");
+      const nombre = parts[0] || "SinNombre";
+      const apellido = parts.slice(1).join(" ") || "SinApellido";
 
-        alert(`DisplayName: ${user.displayName || "NO HAY NOMBRE"}`);
-        window.location.href = "/src/pages/usuario.html";
-      } catch (e) {
-        console.error("⚠️ Error en login Google:", e);
-        Utils.showToast("Error al iniciar sesión con Google: " + e.message);
+      const email = user.email || (user.providerData[0]?.email ?? "sin-email@desconocido.com");
+
+      if (!user.displayName) {
+        console.warn("⚠️ Google no devolvió displayName. Se usarán valores por defecto.");
       }
-    });
-  }
+      if (!user.email) {
+        console.warn("⚠️ Google no devolvió email. Se usará valor alternativo temporal.");
+      }
+
+      // ==========================
+      // 🔍 Verificar si ya existe el usuario en Firestore
+      // ==========================
+      const userRef = doc(db, "usuarios", user.uid);
+      const existingDoc = await getDoc(userRef);
+      const alreadyExists = existingDoc.exists();
+
+      if (alreadyExists) {
+        console.log("📂 Usuario existente en Firestore:", existingDoc.data());
+      } else {
+        console.log("🆕 Usuario nuevo, creando documento...");
+      }
+
+      // ==========================
+      // 🧠 Generar referralId solo si es nuevo
+      // ==========================
+      const referralId = alreadyExists
+        ? existingDoc.data().referralId
+        : Utils.generateReferral();
+
+      // ==========================
+      // 💾 Datos para guardar
+      // ==========================
+      const dataToSave = {
+        uid: user.uid,
+        email,
+        nombre,
+        apellido,
+        displayName: fullName || `${nombre} ${apellido}`.trim(),
+        photoURL: user.photoURL || "",
+        fechaRegistro: serverTimestamp(),
+        referralId
+      };
+
+      console.group("📦 Datos que se guardarán en Firestore");
+      console.log(dataToSave);
+      console.groupEnd();
+
+      // ==========================
+      // 💾 Guardar / actualizar con merge
+      // ==========================
+      await setDoc(userRef, dataToSave, { merge: true });
+
+      console.log("✅ Usuario guardado o actualizado correctamente en Firestore.");
+
+      // ==========================
+      // 🧾 Confirmar con lectura inmediata (debug)
+      // ==========================
+      const verifyDoc = await getDoc(userRef);
+      console.log("🔎 Documento verificado en Firestore:", verifyDoc.data());
+
+      // ==========================
+      // 🔔 Feedback visual
+      // ==========================
+      Utils.showToast(`Bienvenido ${nombre} 👋 Tu cuenta fue sincronizada.`);
+
+      // ==========================
+      // 🔁 Redirección
+      // ==========================
+      setTimeout(() => {
+        window.location.href = "/src/pages/usuario.html";
+      }, 800);
+
+    } catch (e) {
+      console.group("🔥 Error en login con Google");
+      console.error("📛 Código:", e.code);
+      console.error("💬 Mensaje:", e.message);
+      console.error("🧩 Error completo:", e);
+      console.groupEnd();
+
+      Utils.showToast("Error al iniciar sesión con Google: " + e.message);
+    }
+  });
+}
+
 
   // ==========================
   // 🔄 Detectar sesión activa (solo logs)
