@@ -131,7 +131,8 @@ onAuthStateChanged(auth, async (user) => {
       loadProvinciasForCountry(e.target.value);
     });
     // Cargar provincias iniciales para Argentina
-    loadProvinciasForCountry(paisEl.value);
+    const initialCountry = paisEl.value || 'Argentina';
+    loadProvinciasForCountry(initialCountry);
   }
 });
 
