@@ -115,6 +115,14 @@ if (googleBtn) {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       console.log("✅ Login Google OK:", user.email);
+      
+      // 🔍 DEBUG: Ver qué datos trae Google
+      console.log("📋 Datos completos del usuario:", {
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        uid: user.uid
+      });
 
       // Crear doc si es nuevo
       const userRef = doc(db, "usuarios", user.uid);
@@ -124,9 +132,11 @@ if (googleBtn) {
         
         // Extraer nombre y apellido del displayName
         const displayName = user.displayName || "";
-        const nameParts = displayName.split(" ");
+        const nameParts = displayName.trim().split(" ");
         const nombre = nameParts[0] || "";
         const apellido = nameParts.slice(1).join(" ") || "";
+        
+        console.log("📝 Guardando:", { nombre, apellido, displayName });
         
         await setDoc(userRef, {
           email: user.email,
@@ -138,6 +148,8 @@ if (googleBtn) {
           fechaRegistro: new Date(),
           referralId: Utils.generateReferral()
         });
+        
+        console.log("✅ Documento guardado con nombre y apellido");
       } else {
         console.log("📂 Usuario ya existe en Firestore");
       }
@@ -149,7 +161,6 @@ if (googleBtn) {
     }
   });
 }
-
   // ==========================
   // 🔄 Detectar sesión activa (solo logs)
   // ==========================
