@@ -1,68 +1,115 @@
-// ===== Login Google — crear doc con nombre completo (fallback desde email) =====
-if (googleBtn) {
-  googleBtn.addEventListener("click", async () => {
-    console.log("🌐 Abriendo popup Google...");
+// src/auth.js
+import { auth, db, provider } from "./firebase.js";
+import {
+  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
+} from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp
+} from "firebase/firestore";
+
+console.log("auth.js cargado ✅");
+
+const googleBtn = document.getElementById("googleLogin");
+const form = document.getElementById("emailLogin");
+const toggleLink = document.getElementById("toggleModeLink");
+
+let isRegisterMode = false;
+
+// ===== LOGIN / REGISTER EMAIL =====
+if (form) {
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = form.querySelector("#email").value.trim();
+    const password = form.querySelector("#password").value.trim();
+    const repeat = form.querySelector("#repeatPassword")?.value.trim();
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      if (!user) throw new Error("No se obtuvo user desde Google.");
-
-      console.log("✅ Login Google OK:", user.email, user.displayName);
-
-      // referencia al doc
-      const userRef = doc(db, "usuarios", user.uid);
-      const userDoc = await getDoc(userRef);
-
-      // Preparar valores a guardar
-      // fullName: preferimos displayName; si no existe, usamos la parte antes de @ del email
-      const email = user.email || "";
-      const display = (user.displayName || "").trim();
-      const fullName = display || (email.split("@")[0] || "");
-      
-      // Intento de separar nombre/apellido (para conveniencia, pero opcional)
-      let nombre = "";
-      let apellido = "";
-      if (fullName) {
-        const parts = fullName.split(/\s+/).filter(Boolean);
-        nombre = parts[0] || "";
-        apellido = parts.slice(1).join(" ") || "";
-      }
-
-      // Si no existe el doc, lo creamos con todos los campos requeridos
-      if (!userDoc.exists()) {
-        const referralId = Math.random().toString(36).substring(2, 10).toUpperCase();
-        await setDoc(userRef, {
+      if (isRegisterMode) {
+        if (password !== repeat) throw new Error("Las contraseñas no coinciden");
+        const res = await createUserWithEmailAndPassword(auth, email, password);
+        const user = res.user;
+        await setDoc(doc(db, "usuarios", user.uid), {
           uid: user.uid,
           mail: email,
-          nombre: fullName,      // <-- guardamos el "full name" en este campo
-          apellido: apellido,    // <-- posible vacío, está bien
-          referralId,
+          nombre: email.split("@")[0],
+          apellido: "",
+          referralId: Math.random().toString(36).substring(2, 10).toUpperCase(),
           fechaRegistro: serverTimestamp()
         });
-        console.log("📄 Nuevo doc creado en usuarios:", user.uid);
+        console.log("✅ Usuario registrado:", email);
       } else {
-        // Si ya existe, podemos asegurarnos de que los campos mínimos estén (merge opcional)
-        // (no sobrescribimos datos ya guardados por el usuario)
-        const existing = userDoc.data() || {};
-        const update = {};
-        if (!existing.mail) update.mail = email;
-        if (!existing.nombre) update.nombre = fullName;
-        if (!existing.apellido) update.apellido = apellido;
-        if (!existing.uid) update.uid = user.uid;
-        if (Object.keys(update).length > 0) {
-          await setDoc(userRef, update, { merge: true });
-          console.log("🔄 Doc existente actualizado (merge):", Object.keys(update));
-        } else {
-          console.log("📂 Usuario ya tiene datos mínimos en Firestore");
-        }
+        await signInWithEmailAndPassword(auth, email, password);
+        console.log("✅ Sesión iniciada:", email);
       }
-
-      // redirigir sin pedir nada más
       window.location.href = "/src/pages/usuario.html";
-    } catch (e) {
-      console.error("⚠️ Error en login Google:", e);
-      alert("Error al iniciar sesión con Google: " + (e.message || e));
+    } catch (err) {
+      console.error("⚠️ Error en auth:", err);
+      alert(err.message);
     }
   });
 }
 
+// ===== LOGIN GOOGLE =====
+if (googleBtn) {
+  googleBtn.addEventListener("click", async () => {
+    console.log("🌐 Login con Google iniciado...");
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      console.log("✅ Google login ok:", user.email, user.displayName);
+
+      const userRef = doc(db, "usuarios", user.uid);
+      const docSnap = await getDoc(userRef);
+
+      const email = user.email || "";
+      const fullName = (user.displayName || email.split("@")[0]).trim();
+      const parts = fullName.split(/\s+/);
+      const nombre = parts[0] || "";
+      const apellido = parts.slice(1).join(" ") || "";
+
+      if (!docSnap.exists()) {
+        await setDoc(userRef, {
+          uid: user.uid,
+          mail: email,
+          nombre: fullName,
+          apellido,
+          referralId: Math.random().toString(36).substring(2, 10).toUpperCase(),
+          fechaRegistro: serverTimestamp()
+        });
+        console.log("📄 Usuario nuevo guardado:", user.uid);
+      }
+
+      window.location.href = "/src/pages/usuario.html";
+    } catch (err) {
+      console.error("⚠️ Error en login con Google:", err);
+      alert("Error al iniciar sesión con Google: " + err.message);
+    }
+  });
+}
+
+// ===== CAMBIO DE MODO LOGIN / REGISTER =====
+if (toggleLink) {
+  toggleLink.addEventListener("click", e => {
+    e.preventDefault();
+    isRegisterMode = !isRegisterMode;
+    const repeatGroup = document.getElementById("repeatPasswordGroup");
+    const btnText = document.getElementById("btnText");
+    const subtitle = document.getElementById("loginSubtitle");
+
+    if (isRegisterMode) {
+      repeatGroup.style.display = "block";
+      btnText.textContent = "Registrarme";
+      subtitle.textContent = "Crea tu cuenta IA personalizada";
+      toggleLink.innerHTML = '¿Ya tienes cuenta? <a href="#">Inicia sesión aquí</a>';
+    } else {
+      repeatGroup.style.display = "none";
+      btnText.textContent = "Iniciar Sesión";
+      subtitle.textContent = "Tu vendedor IA personalizado";
+      toggleLink.innerHTML = '¿No tienes cuenta? <a href="#">Regístrate aquí</a>';
+    }
+  });
+}
