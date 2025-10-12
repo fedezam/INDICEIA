@@ -87,16 +87,21 @@ if (googleBtn) {
       console.log("📋 Datos extraídos:", { nombre, apellido, email });
 
       if (!docSnap.exists()) {
-        // ✅ CORRECCIÓN: Guardar nombre y apellido por separado
-        await setDoc(userRef, {
+        // ✅ Datos a guardar
+        const datosUsuario = {
           uid: user.uid,
           mail: email,
-          nombre: nombre,  // ⬅️ AQUÍ ESTABA EL ERROR (tenías fullName)
+          nombre: nombre,
           apellido: apellido,
           referralId: Math.random().toString(36).substring(2, 10).toUpperCase(),
           fechaRegistro: serverTimestamp()
-        });
-        console.log("📄 Usuario nuevo guardado:", user.uid);
+        };
+
+        console.log("💾 Guardando en Firestore:", datosUsuario);
+        
+        await setDoc(userRef, datosUsuario);
+        
+        console.log("✅ Usuario nuevo guardado:", user.uid);
       } else {
         console.log("👤 Usuario existente:", user.uid);
       }
