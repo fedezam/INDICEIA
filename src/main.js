@@ -14,18 +14,18 @@ console.log('Main JS cargado ✅');
 onAuthStateChanged(auth, user => {
   if (user) {
     console.log('Usuario autenticado:', user.email);
-    
+
     // Redirigir solo si estamos en la página de login
     const isLoginPage = window.location.pathname === '/' || 
                         window.location.pathname.endsWith('index.html');
-    
+
     if (isLoginPage) {
       console.log('Redirigiendo a panel de usuario...');
       window.location.href = '/src/pages/usuario.html';
     }
   } else {
     console.log('No hay usuario logueado');
-    
+
     // Redirigir a login si intenta acceder a páginas protegidas
     const isProtectedPage = window.location.pathname.includes('/pages/');
     if (isProtectedPage) {
@@ -51,3 +51,4 @@ export async function logout() {
 
 // Hacer logout accesible globalmente desde HTML
 window.logout = logout;
+
