@@ -105,41 +105,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ==========================
-  // 🔑 Login Google
-  // ==========================
-  if (googleBtn) {
-    googleBtn.addEventListener("click", async () => {
-      console.log("🌐 Abriendo popup Google...");
-      try {
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-        console.log("✅ Login Google OK:", user.email);
+// ==========================
+// 🔑 Login Google
+// ==========================
+if (googleBtn) {
+  googleBtn.addEventListener("click", async () => {
+    console.log("🌐 Abriendo popup Google...");
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      console.log("✅ Login Google OK:", user.email);
 
-        // Crear doc si es nuevo
-        const userRef = doc(db, "usuarios", user.uid);
-        const userDoc = await getDoc(userRef);
-        if (!userDoc.exists()) {
-          console.log("🆕 Usuario nuevo, creando doc...");
-          await setDoc(userRef, {
-            email: user.email,
-            uid: user.uid,
-            fechaRegistro: new Date(),
-            referralId: Utils.generateReferral()
-          });
-        } else {
-          console.log("📂 Usuario ya existe en Firestore");
-        }
-
-        window.location.href = "/src/pages/usuario.html";
-      } catch(e) { 
-        console.error("⚠️ Error en login Google:", e);
-        Utils.showToast("Error al iniciar sesión con Google: " + e.message); 
+      // Crear doc si es nuevo
+      const userRef = doc(db, "usuarios", user.uid);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) {
+        console.log("🆕 Usuario nuevo, creando doc...");
+        
+        // Extraer nombre y apellido del displayName
+        const displayName = user.displayName || "";
+        const nameParts = displayName.split(" ");
+        const nombre = nameParts[0] || "";
+        const apellido = nameParts.slice(1).join(" ") || "";
+        
+        await setDoc(userRef, {
+          email: user.email,
+          uid: user.uid,
+          nombre: nombre,
+          apellido: apellido,
+          displayName: user.displayName,
+          photoURL: user.photoURL || null,
+          fechaRegistro: new Date(),
+          referralId: Utils.generateReferral()
+        });
+      } else {
+        console.log("📂 Usuario ya existe en Firestore");
       }
-    });
-  } else {
-    console.error("❌ Botón Google no encontrado en el DOM");
-  }
+
+      window.location.href = "/src/pages/usuario.html";
+    } catch(e) { 
+      console.error("⚠️ Error en login Google:", e);
+      Utils.showToast("Error al iniciar sesión con Google: " + e.message); 
+    }
+  });
+}
 
   // ==========================
   // 🔄 Detectar sesión activa (solo logs)
