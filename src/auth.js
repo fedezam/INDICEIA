@@ -59,54 +59,10 @@ if (googleBtn) {
     console.log("🌐 Login con Google iniciado...");
     
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      console.log("✅ Google login ok:", user.email, user.displayName);
-
-      const userRef = doc(db, "usuarios", user.uid);
-      const docSnap = await getDoc(userRef);
-
-      // ✅ EXTRACCIÓN CORRECTA DE DATOS
-      const email = user.email || "";
-      
-      // 🔍 DEBUG: Ver QUÉ datos trae Google
-      console.log("🔍 Datos completos de Google:", {
-        displayName: user.displayName,
-        email: user.email,
-        photoURL: user.photoURL,
-        uid: user.uid
-      });
-
-      const fullName = (user.displayName || email.split("@")[0]).trim();
-      const parts = fullName.split(/\s+/);
-      
-      const nombre = parts[0] || "";
-      const apellido = parts.slice(1).join(" ") || "";
-
-      console.log("📋 Datos extraídos:", { nombre, apellido, email });
-
-      if (!docSnap.exists()) {
-        // ✅ Datos a guardar
-        const datosUsuario = {
-          uid: user.uid,
-          mail: email,
-          nombre: nombre,
-          apellido: apellido,
-          referralId: Math.random().toString(36).substring(2, 10).toUpperCase(),
-          fechaRegistro: serverTimestamp()
-        };
-
-        console.log("💾 Guardando en Firestore:", datosUsuario);
-        
-        await setDoc(userRef, datosUsuario);
-        
-        console.log("✅ Usuario nuevo guardado:", user.uid);
-      } else {
-        console.log("👤 Usuario existente:", user.uid);
-      }
-
-      window.location.href = "/src/pages/usuario.html";
+      // Solo hacer el login, main.js se encarga de guardar
+      await signInWithPopup(auth, provider);
+      console.log("✅ Login con Google exitoso");
+      // No redirigir aquí, lo hace main.js con onAuthStateChanged
       
     } catch (err) {
       console.error("⚠️ Error en login con Google:", err);
