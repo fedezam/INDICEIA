@@ -1,234 +1,103 @@
-// ==========================
-// 📦 IMPORTS
-// ==========================
 import { auth, db, provider } from './firebase.js';
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  onAuthStateChanged
-} from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { signInWithPopup, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 // ==========================
-// ⚙️ UTILS
+// 🔧 Utils
 // ==========================
 class Utils {
-  static validateEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
-  static validatePassword(password) { return password.length >= 6; }
-  static showToast(msg) { alert(msg); }
-  static generateReferral() { return Math.random().toString(36).substring(2,8).toUpperCase(); }
+  static generateReferral() {
+    return Math.random().toString(36).substring(2,8).toUpperCase();
+  }
+  static showToast(msg) {
+    alert(msg);
+  }
 }
 
 // ==========================
-// 🚀 VERSION CHECK
+// 🔑 Login con Google
 // ==========================
-console.log("🔥 VERSION TEST 1012B");
-
-// ==========================
-// 🔄 DOMContentLoaded
-// ==========================
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("📄 DOM cargado, inicializando auth...");
-
-  const emailLoginForm = document.getElementById("emailLogin");
-  const toggleLink = document.getElementById("toggleModeLink");
-  const repeatPasswordGroup = document.getElementById("repeatPasswordGroup");
-  const btnText = document.getElementById("btnText");
-  const loginSubtitle = document.getElementById("loginSubtitle");
-  const googleBtn = document.getElementById("googleLogin");
-
-  // ==========================
-  // 🔄 Toggle login / registro
-  // ==========================
-  toggleLink.addEventListener("click", e => {
-    e.preventDefault();
-    const isRegister = emailLoginForm.dataset.register === "true";
-    emailLoginForm.dataset.register = (!isRegister).toString();
-
-    if (!isRegister) {
-      repeatPasswordGroup.style.display = "block";
-      btnText.textContent = "Crear Cuenta";
-      loginSubtitle.textContent = "Crea tu cuenta y empieza gratis";
-      toggleLink.innerHTML = '¿Ya tienes cuenta? <a href="#">Inicia sesión aquí</a>';
-    } else {
-      repeatPasswordGroup.style.display = "none";
-      btnText.textContent = "Iniciar Sesión";
-      loginSubtitle.textContent = "Tu vendedor IA personalizado";
-      toggleLink.innerHTML = '¿No tienes cuenta? <a href="#">Regístrate aquí</a>';
-    }
-  });
-
-  // ==========================
-  // 🔑 Login / Registro Email
-  // ==========================
-  emailLoginForm.addEventListener("submit", async e => {
-    e.preventDefault();
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    const isRegister = emailLoginForm.dataset.register === "true";
-
-    console.log("💻 Form submit:", { email, isRegister });
-
-    if (!Utils.validateEmail(email) || !Utils.validatePassword(password)) {
-      Utils.showToast("Email o contraseña inválidos");
-      return;
-    }
-
-    if (isRegister) {
-      const repeatPass = document.getElementById("repeatPassword").value;
-      if (password !== repeatPass) {
-        Utils.showToast("Las contraseñas no coinciden");
-        return;
-      }
-    }
-
-    try {
-      let user;
-      if (isRegister) {
-        console.log("🟢 Registrando usuario...");
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        user = cred.user;
-        console.log("✅ Usuario creado:", user.uid);
-        await setDoc(doc(db, "usuarios", user.uid), {
-          email: user.email,
-          uid: user.uid,
-          fechaRegistro: new Date(),
-          referralId: Utils.generateReferral()
-        });
-      } else {
-        console.log("🔑 Logueando usuario...");
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        user = cred.user;
-        console.log("✅ Usuario logueado:", user.uid);
-      }
-      window.location.href = "/src/pages/usuario.html";
-    } catch (error) {
-      console.error("🔥 Error email login/register:", error);
-      Utils.showToast(error.message);
-    }
-  });
-
-// ==========================
-// 🔑 Login con Google (versión final y trazable)
-// ==========================
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
-
+const googleBtn = document.getElementById("googleLogin");
 if (googleBtn) {
   googleBtn.addEventListener("click", async () => {
-    console.log("🟢 Iniciando login con Google...");
-
     try {
+      console.log("🟢 Iniciando login con Google...");
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      console.group("🧩 DATOS DE GOOGLE");
-      console.log("👤 user:", user);
-      console.log("📦 providerData:", user.providerData);
-      console.groupEnd();
+      // --------------------------
+      // 📛 Procesar nombre y apellido
+      // --------------------------
+      const fullNameRaw = (user.displayName || "").trim().replace(/\s+/g, " ");
+      let nombre = "SinNombre";
+      let apellido = "SinApellido";
 
-      // ==========================
-      // 🪪 Procesar nombre, apellido y email
-      // ==========================
-      const fullName = (user.displayName || "").trim();
-      const parts = fullName.split(" ");
-      const nombre = parts[0] || "SinNombre";
-      const apellido = parts.slice(1).join(" ") || "SinApellido";
+      if (fullNameRaw) {
+        const parts = fullNameRaw.split(" ");
+        nombre = parts[0];
+        apellido = parts.slice(1).join(" ") || "SinApellido";
+      }
 
       const email = user.email || (user.providerData[0]?.email ?? "sin-email@desconocido.com");
 
-      if (!user.displayName) {
-        console.warn("⚠️ Google no devolvió displayName. Se usarán valores por defecto.");
-      }
-      if (!user.email) {
-        console.warn("⚠️ Google no devolvió email. Se usará valor alternativo temporal.");
-      }
-
-      // ==========================
-      // 🔍 Verificar si ya existe el usuario en Firestore
-      // ==========================
+      // --------------------------
+      // 🔍 Verificar si usuario ya existe
+      // --------------------------
       const userRef = doc(db, "usuarios", user.uid);
       const existingDoc = await getDoc(userRef);
       const alreadyExists = existingDoc.exists();
 
-      if (alreadyExists) {
-        console.log("📂 Usuario existente en Firestore:", existingDoc.data());
-      } else {
-        console.log("🆕 Usuario nuevo, creando documento...");
-      }
-
-      // ==========================
-      // 🧠 Generar referralId solo si es nuevo
-      // ==========================
       const referralId = alreadyExists
         ? existingDoc.data().referralId
         : Utils.generateReferral();
 
-      // ==========================
-      // 💾 Datos para guardar
-      // ==========================
+      // --------------------------
+      // 💾 Preparar datos a guardar
+      // --------------------------
       const dataToSave = {
         uid: user.uid,
         email,
         nombre,
         apellido,
-        displayName: fullName || `${nombre} ${apellido}`.trim(),
+        displayName: fullNameRaw || `${nombre} ${apellido}`,
         photoURL: user.photoURL || "",
-        fechaRegistro: serverTimestamp(),
+        fechaRegistro: alreadyExists ? existingDoc.data().fechaRegistro : serverTimestamp(),
         referralId
       };
 
-      console.group("📦 Datos que se guardarán en Firestore");
-      console.log(dataToSave);
-      console.groupEnd();
+      console.log("📦 Datos a guardar en Firestore:", dataToSave);
 
-      // ==========================
+      // --------------------------
       // 💾 Guardar / actualizar con merge
-      // ==========================
+      // --------------------------
       await setDoc(userRef, dataToSave, { merge: true });
 
-      console.log("✅ Usuario guardado o actualizado correctamente en Firestore.");
-
-      // ==========================
-      // 🧾 Confirmar con lectura inmediata (debug)
-      // ==========================
+      // --------------------------
+      // 🔎 Verificar inmediatamente
+      // --------------------------
       const verifyDoc = await getDoc(userRef);
-      console.log("🔎 Documento verificado en Firestore:", verifyDoc.data());
+      console.log("🔎 Documento verificado en Firestore:", verifyDoc.exists() ? verifyDoc.data() : "NO EXISTE");
 
-      // ==========================
-      // 🔔 Feedback visual
-      // ==========================
       Utils.showToast(`Bienvenido ${nombre} 👋 Tu cuenta fue sincronizada.`);
 
-      // ==========================
+      // --------------------------
       // 🔁 Redirección
-      // ==========================
+      // --------------------------
       setTimeout(() => {
         window.location.href = "/src/pages/usuario.html";
       }, 800);
 
-    } catch (e) {
-      console.group("🔥 Error en login con Google");
-      console.error("📛 Código:", e.code);
-      console.error("💬 Mensaje:", e.message);
-      console.error("🧩 Error completo:", e);
-      console.groupEnd();
-
-      Utils.showToast("Error al iniciar sesión con Google: " + e.message);
+    } catch (error) {
+      console.error("🔥 Error en login con Google:", error);
+      Utils.showToast("Error al iniciar sesión con Google: " + error.message);
     }
   });
 }
 
-
-  // ==========================
-  // 🔄 Detectar sesión activa (solo logs)
-  // ==========================
-  onAuthStateChanged(auth, user => {
-    if (user) {
-      console.log("🔒 Usuario logueado:", user.email);
-    } else {
-      console.log("🕳️ No hay usuario logueado");
-    }
-  });
-
-}); // Fin DOMContentLoaded
+// ==========================
+// 🔄 Detectar sesión activa (solo logs)
+// ==========================
+onAuthStateChanged(auth, user => {
+  if (user) console.log("🔒 Usuario logueado:", user.email);
+  else console.log("🕳️ No hay usuario logueado");
+});
