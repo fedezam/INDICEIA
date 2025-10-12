@@ -1,5 +1,3 @@
-console.log("🔥 VERSION TEST 1012A");
-
 // ==========================
 // 📦 IMPORTS
 // ==========================
@@ -10,7 +8,7 @@ import {
   signInWithPopup,
   onAuthStateChanged
 } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 
 // ==========================
 // ⚙️ UTILS
@@ -21,6 +19,11 @@ class Utils {
   static showToast(msg) { alert(msg); }
   static generateReferral() { return Math.random().toString(36).substring(2,8).toUpperCase(); }
 }
+
+// ==========================
+// 🚀 VERSION CHECK
+// ==========================
+console.log("🔥 VERSION TEST 1012B");
 
 // ==========================
 // 🔄 DOMContentLoaded
@@ -106,54 +109,48 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-// ==========================
-// 🔑 Login Google
-// ==========================
-if (googleBtn) {
-  googleBtn.addEventListener("click", async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      // Extraer nombre y apellido
-      const fullName = user.displayName || "";
-      const parts = fullName.split(" ");
-      const nombre = parts[0] || "";
-      const apellido = parts.slice(1).join(" ") || "";
+  // ==========================
+  // 🔑 Login Google
+  // ==========================
+  if (googleBtn) {
+    googleBtn.addEventListener("click", async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
 
-      const userRef = doc(db, "usuarios", user.uid);
-      
-      // SIEMPRE actualizar con merge
-      await setDoc(userRef, {
-        email: user.email,
-        nombre: nombre,
-        apellido: apellido,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        fechaRegistro: new Date(),
-        referralId: Utils.generateReferral()
-      }, { merge: true });
+        // DEBUG: Ver datos recibidos de Google
+        console.log("🧩 RESULT:", result);
+        console.log("📇 user:", user);
+        console.log("🪪 providerData:", user.providerData);
 
-      window.location.href = "/src/pages/usuario.html";
-    } catch(e) { 
-      console.error("Error:", e);
-      Utils.showToast("Error: " + e.message); 
-    }
-  });
-}
-        
-        console.log("✅ Documento guardado con nombre y apellido");
-      } else {
-        console.log("📂 Usuario ya existe en Firestore");
+        // Extraer nombre y apellido
+        const fullName = user.displayName || "";
+        const parts = fullName.split(" ");
+        const nombre = parts[0] || "";
+        const apellido = parts.slice(1).join(" ") || "";
+
+        const userRef = doc(db, "usuarios", user.uid);
+
+        // Guardar datos en Firestore con merge
+        await setDoc(userRef, {
+          email: user.email,
+          nombre,
+          apellido,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          fechaRegistro: new Date(),
+          referralId: Utils.generateReferral()
+        }, { merge: true });
+
+        alert(`DisplayName: ${user.displayName || "NO HAY NOMBRE"}`);
+        window.location.href = "/src/pages/usuario.html";
+      } catch (e) {
+        console.error("⚠️ Error en login Google:", e);
+        Utils.showToast("Error al iniciar sesión con Google: " + e.message);
       }
+    });
+  }
 
-      window.location.href = "/src/pages/usuario.html";
-    } catch(e) { 
-      console.error("⚠️ Error en login Google:", e);
-      Utils.showToast("Error al iniciar sesión con Google: " + e.message); 
-    }
-  });
-}
   // ==========================
   // 🔄 Detectar sesión activa (solo logs)
   // ==========================
