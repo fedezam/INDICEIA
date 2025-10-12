@@ -33,6 +33,35 @@ class Utils {
     });
   }
 
+  static disableIAButtons() {
+    const comercioBtn = document.getElementById("btnComercio");
+    const servicioBtn = document.getElementById("btnServicio");
+
+    [comercioBtn, servicioBtn].forEach((btn) => {
+      if (btn) {
+        btn.disabled = true;
+        btn.style.background = "#ccc";
+        btn.style.color = "#666";
+        btn.style.cursor = "not-allowed";
+      }
+    });
+  }
+
+  // ✅ Verificar que TODOS los campos obligatorios estén completos
+  static isProfileComplete(data) {
+    return !!(
+      data.nombre &&
+      data.apellido &&
+      data.mail &&
+      data.direccion &&
+      data.pais &&
+      data.provincia &&
+      data.localidad &&
+      data.fechaNacimiento &&
+      data.telefono
+    );
+  }
+
   static fillForm(data) {
     const setValueSafe = (id, value) => {
       const el = document.getElementById(id);
@@ -41,6 +70,7 @@ class Utils {
 
     setValueSafe("nombre", data.nombre);
     setValueSafe("apellido", data.apellido);
+    setValueSafe("mail", data.mail);  // ✅ Agregar mail
     setValueSafe("direccion", data.direccion);
     setValueSafe("pais", data.pais);
     setValueSafe("provincia", data.provincia);
@@ -73,15 +103,21 @@ onAuthStateChanged(auth, async (user) => {
       referralId: Utils.generateReferralId(),
       fechaRegistro: new Date()
     });
+    // ✅ Usuario nuevo = botones deshabilitados
+    Utils.disableIAButtons();
   } else {
     const userData = userSnap.data();
     
     // Autocompletar datos existentes
     Utils.fillForm(userData);
     
-    // Si ya guardó datos, habilitar botones
-    if (userData.nombre && userData.apellido) {
+    // ✅ SOLO habilitar botones si el perfil está COMPLETO
+    if (Utils.isProfileComplete(userData)) {
+      console.log("✅ Perfil completo - Habilitando botones IA");
       Utils.enableIAButtons();
+    } else {
+      console.log("⚠️ Perfil incompleto - Botones deshabilitados");
+      Utils.disableIAButtons();
     }
   }
 
@@ -110,6 +146,7 @@ if (guardarBtn) {
 
     const nombre = document.getElementById("nombre").value.trim();
     const apellido = document.getElementById("apellido").value.trim();
+    const mail = document.getElementById("mail").value.trim();
     const direccion = document.getElementById("direccion").value.trim();
     const pais = document.getElementById("pais").value.trim();
     const provincia = document.getElementById("provincia").value.trim();
@@ -118,8 +155,8 @@ if (guardarBtn) {
     const fechaNacimiento = document.getElementById("fechaNacimiento").value;
     const telefono = document.getElementById("telefono")?.value.trim();
 
-    if (!nombre || !apellido || !direccion || !pais || !provincia || !localidad || !fechaNacimiento) {
-      return Utils.showMessage("Por favor, completa todos los campos obligatorios.");
+    if (!nombre || !apellido || !mail || !direccion || !pais || !provincia || !localidad || !fechaNacimiento || !telefono) {
+      return Utils.showMessage("Por favor, completa todos los campos obligatorios (incluyendo teléfono).");
     }
 
     const userRef = doc(db, "usuarios", user.uid);
@@ -130,19 +167,22 @@ if (guardarBtn) {
         {
           nombre,
           apellido,
+          mail,  // ✅ Guardar el mail también
           direccion,
           pais,
           provincia,
           localidad,
           barrio: barrio || null,
           fechaNacimiento,
-          telefono: telefono || null,
+          telefono,  // ✅ Ahora es obligatorio
           actualizado: new Date()
         },
         { merge: true }
       );
 
       Utils.showMessage("Datos guardados correctamente ✅");
+      
+      // ✅ Ahora SÍ habilitar los botones después de guardar
       Utils.enableIAButtons();
     } catch (error) {
       console.error("Error al guardar datos:", error);
