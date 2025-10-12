@@ -69,6 +69,15 @@ if (googleBtn) {
 
       // ✅ EXTRACCIÓN CORRECTA DE DATOS
       const email = user.email || "";
+      
+      // 🔍 DEBUG: Ver QUÉ datos trae Google
+      console.log("🔍 Datos completos de Google:", {
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+        uid: user.uid
+      });
+
       const fullName = (user.displayName || email.split("@")[0]).trim();
       const parts = fullName.split(/\s+/);
       
