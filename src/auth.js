@@ -1,110 +1,68 @@
-// ==========================
-// 📦 IMPORTS
-// ==========================
-import { auth, db, provider } from "./firebase.js";
-import {
-  signInWithPopup,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import {
-  doc,
-  getDoc,
-  setDoc
-} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-
-// ==========================
-// 🧠 UTILS
-// ==========================
-const Utils = {
-  generateReferral() {
-    return Math.random().toString(36).substring(2, 10).toUpperCase();
-  },
-  showToast(msg) {
-    alert(msg);
-  },
-};
-
-// ==========================
-// 🔐 LOGIN CON GOOGLE
-// ==========================
-const googleBtn = document.getElementById("googleLogin");
-
+// ===== Login Google — crear doc con nombre completo (fallback desde email) =====
 if (googleBtn) {
   googleBtn.addEventListener("click", async () => {
-    console.log("🌐 Iniciando login con Google...");
+    console.log("🌐 Abriendo popup Google...");
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      console.log("✅ Login exitoso:", user.email);
+      if (!user) throw new Error("No se obtuvo user desde Google.");
 
-      // Referencia a Firestore
+      console.log("✅ Login Google OK:", user.email, user.displayName);
+
+      // referencia al doc
       const userRef = doc(db, "usuarios", user.uid);
       const userDoc = await getDoc(userRef);
 
-      // Nuevo usuario → crear documento
-      if (!userDoc.exists()) {
-        console.log("🆕 Usuario nuevo, creando documento...");
-
-        // Separar nombre y apellido
-        let nombre = "";
-        let apellido = "";
-        if (user.displayName) {
-          const parts = user.displayName.trim().split(" ");
-          nombre = parts[0] || "";
-          apellido = parts.slice(1).join(" ") || "";
-        }
-
-        await setDoc(userRef, {
-          uid: user.uid,
-          email: user.email,
-          nombre,
-          apellido,
-          fechaRegistro: new Date(),
-          referralId: Utils.generateReferral(),
-        });
-
-        console.log("📄 Documento Firestore creado correctamente");
-      } else {
-        console.log("📂 Usuario existente en Firestore");
+      // Preparar valores a guardar
+      // fullName: preferimos displayName; si no existe, usamos la parte antes de @ del email
+      const email = user.email || "";
+      const display = (user.displayName || "").trim();
+      const fullName = display || (email.split("@")[0] || "");
+      
+      // Intento de separar nombre/apellido (para conveniencia, pero opcional)
+      let nombre = "";
+      let apellido = "";
+      if (fullName) {
+        const parts = fullName.split(/\s+/).filter(Boolean);
+        nombre = parts[0] || "";
+        apellido = parts.slice(1).join(" ") || "";
       }
 
-      // Señal para usuario.html (sin perder sesión)
-      sessionStorage.setItem("loggedIn", "true");
+      // Si no existe el doc, lo creamos con todos los campos requeridos
+      if (!userDoc.exists()) {
+        const referralId = Math.random().toString(36).substring(2, 10).toUpperCase();
+        await setDoc(userRef, {
+          uid: user.uid,
+          mail: email,
+          nombre: fullName,      // <-- guardamos el "full name" en este campo
+          apellido: apellido,    // <-- posible vacío, está bien
+          referralId,
+          fechaRegistro: serverTimestamp()
+        });
+        console.log("📄 Nuevo doc creado en usuarios:", user.uid);
+      } else {
+        // Si ya existe, podemos asegurarnos de que los campos mínimos estén (merge opcional)
+        // (no sobrescribimos datos ya guardados por el usuario)
+        const existing = userDoc.data() || {};
+        const update = {};
+        if (!existing.mail) update.mail = email;
+        if (!existing.nombre) update.nombre = fullName;
+        if (!existing.apellido) update.apellido = apellido;
+        if (!existing.uid) update.uid = user.uid;
+        if (Object.keys(update).length > 0) {
+          await setDoc(userRef, update, { merge: true });
+          console.log("🔄 Doc existente actualizado (merge):", Object.keys(update));
+        } else {
+          console.log("📂 Usuario ya tiene datos mínimos en Firestore");
+        }
+      }
 
-      // Redirigir
+      // redirigir sin pedir nada más
       window.location.href = "/src/pages/usuario.html";
-    } catch (error) {
-      console.error("⚠️ Error en login con Google:", error);
-      Utils.showToast("Error: " + error.message);
+    } catch (e) {
+      console.error("⚠️ Error en login Google:", e);
+      alert("Error al iniciar sesión con Google: " + (e.message || e));
     }
   });
-} else {
-  console.warn("⚠️ Botón Google no encontrado en esta página");
 }
 
-// ==========================
-// 🚪 LOGOUT
-// ==========================
-window.logout = async function () {
-  try {
-    await signOut(auth);
-    sessionStorage.removeItem("loggedIn");
-    console.log("👋 Sesión cerrada correctamente");
-    window.location.href = "/";
-  } catch (e) {
-    console.error("❌ Error al cerrar sesión:", e);
-    Utils.showToast("Error al cerrar sesión: " + e.message);
-  }
-};
-
-// ==========================
-// 👀 VERIFICAR SESIÓN ACTIVA
-// ==========================
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    console.log("👤 Sesión activa:", user.email);
-  } else {
-    console.log("🚫 No hay sesión activa");
-  }
-});
