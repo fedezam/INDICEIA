@@ -1,49 +1,155 @@
 // src/firebase.js
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+// ==========================
+// 📦 IMPORTS
+// ==========================
+import { auth, db, provider } from './firebase.js';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  onAuthStateChanged
+} from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
-// 🔍 Debug: mostrar todas las variables de entorno usadas
-console.log("📦 Debug Firebase Variables:");
-console.log({
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? "❌ MISSING",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? "❌ MISSING",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "❌ MISSING",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ?? "❌ MISSING",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? "❌ MISSING",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID ?? "❌ MISSING",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID ?? "❌ MISSING"
-});
-
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
-};
-
-// 🔥 Inicialización con try/catch para capturar errores
-let app;
-try {
-  app = initializeApp(firebaseConfig);
-  console.log("✅ Firebase inicializado correctamente:", app.name);
-} catch (err) {
-  console.error("🔥 Error al inicializar Firebase:", err);
+// ==========================
+// ⚙️ UTILS
+// ==========================
+class Utils {
+  static validateEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+  static validatePassword(password) { return password.length >= 6; }
+  static showToast(msg) { alert(msg); }
+  static generateReferral() { return Math.random().toString(36).substring(2,8).toUpperCase(); }
 }
 
-// 🔑 Auth y Firestore
-let auth, db, provider;
-try {
-  auth = getAuth(app);
-  db = getFirestore(app);
-  provider = new GoogleAuthProvider();
-  console.log("✅ Auth y Firestore listos");
-} catch(err) {
-  console.error("🔥 Error al inicializar Auth o Firestore:", err);
-}
+// ==========================
+// 🔄 DOMContentLoaded
+// ==========================
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("📄 DOM cargado, inicializando auth...");
 
-// Exportar para el resto del proyecto
-export { app, auth, db, provider };
+  const emailLoginForm = document.getElementById("emailLogin");
+  const toggleLink = document.getElementById("toggleModeLink");
+  const repeatPasswordGroup = document.getElementById("repeatPasswordGroup");
+  const btnText = document.getElementById("btnText");
+  const loginSubtitle = document.getElementById("loginSubtitle");
+  const googleBtn = document.getElementById("googleLogin");
+
+  // ==========================
+  // 🔄 Toggle login / registro
+  // ==========================
+  toggleLink.addEventListener("click", e => {
+    e.preventDefault();
+    const isRegister = emailLoginForm.dataset.register === "true";
+    emailLoginForm.dataset.register = (!isRegister).toString();
+
+    if (!isRegister) {
+      repeatPasswordGroup.style.display = "block";
+      btnText.textContent = "Crear Cuenta";
+      loginSubtitle.textContent = "Crea tu cuenta y empieza gratis";
+      toggleLink.innerHTML = '¿Ya tienes cuenta? <a href="#">Inicia sesión aquí</a>';
+    } else {
+      repeatPasswordGroup.style.display = "none";
+      btnText.textContent = "Iniciar Sesión";
+      loginSubtitle.textContent = "Tu vendedor IA personalizado";
+      toggleLink.innerHTML = '¿No tienes cuenta? <a href="#">Regístrate aquí</a>';
+    }
+  });
+
+  // ==========================
+  // 🔑 Login / Registro Email
+  // ==========================
+  emailLoginForm.addEventListener("submit", async e => {
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const isRegister = emailLoginForm.dataset.register === "true";
+
+    console.log("💻 Form submit:", { email, isRegister });
+
+    if (!Utils.validateEmail(email) || !Utils.validatePassword(password)) {
+      Utils.showToast("Email o contraseña inválidos");
+      return;
+    }
+
+    if (isRegister) {
+      const repeatPass = document.getElementById("repeatPassword").value;
+      if (password !== repeatPass) {
+        Utils.showToast("Las contraseñas no coinciden");
+        return;
+      }
+    }
+
+    try {
+      let user;
+      if (isRegister) {
+        console.log("🟢 Registrando usuario...");
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        user = cred.user;
+        console.log("✅ Usuario creado:", user.uid);
+        await setDoc(doc(db, "usuarios", user.uid), {
+          email: user.email,
+          uid: user.uid,
+          fechaRegistro: new Date(),
+          referralId: Utils.generateReferral()
+        });
+      } else {
+        console.log("🔑 Logueando usuario...");
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        user = cred.user;
+        console.log("✅ Usuario logueado:", user.uid);
+      }
+      window.location.href = "/src/pages/usuario.html";
+    } catch (error) {
+      console.error("🔥 Error email login/register:", error);
+      Utils.showToast(error.message);
+    }
+  });
+
+  // ==========================
+  // 🔑 Login Google
+  // ==========================
+  if (googleBtn) {
+    googleBtn.addEventListener("click", async () => {
+      console.log("🌐 Abriendo popup Google...");
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        console.log("✅ Login Google OK:", user.email);
+
+        // Crear doc si es nuevo
+        const userRef = doc(db, "usuarios", user.uid);
+        const userDoc = await getDoc(userRef);
+        if (!userDoc.exists()) {
+          console.log("🆕 Usuario nuevo, creando doc...");
+          await setDoc(userRef, {
+            email: user.email,
+            uid: user.uid,
+            fechaRegistro: new Date(),
+            referralId: Utils.generateReferral()
+          });
+        } else {
+          console.log("📂 Usuario ya existe en Firestore");
+        }
+
+        window.location.href = "/src/pages/usuario.html";
+      } catch(e) { 
+        console.error("⚠️ Error en login Google:", e);
+        Utils.showToast("Error al iniciar sesión con Google: " + e.message); 
+      }
+    });
+  } else {
+    console.error("❌ Botón Google no encontrado en el DOM");
+  }
+
+  // ==========================
+  // 🔄 Detectar sesión activa (solo logs)
+  // ==========================
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      console.log("🔒 Usuario logueado:", user.email);
+    } else {
+      console.log("🕳️ No hay usuario logueado");
+    }
+  });
+
+}); // Fin DOMContentLoaded
