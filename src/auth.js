@@ -17,7 +17,6 @@ console.log("auth.js cargado ✅");
 const googleBtn = document.getElementById("googleLogin");
 const form = document.getElementById("emailLogin");
 const toggleLink = document.getElementById("toggleModeLink");
-
 let isRegisterMode = false;
 
 // ===== LOGIN / REGISTER EMAIL =====
@@ -27,6 +26,7 @@ if (form) {
     const email = form.querySelector("#email").value.trim();
     const password = form.querySelector("#password").value.trim();
     const repeat = form.querySelector("#repeatPassword")?.value.trim();
+
     try {
       if (isRegisterMode) {
         if (password !== repeat) throw new Error("Las contraseñas no coinciden");
@@ -57,33 +57,43 @@ if (form) {
 if (googleBtn) {
   googleBtn.addEventListener("click", async () => {
     console.log("🌐 Login con Google iniciado...");
+    
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      
       console.log("✅ Google login ok:", user.email, user.displayName);
 
       const userRef = doc(db, "usuarios", user.uid);
       const docSnap = await getDoc(userRef);
 
+      // ✅ EXTRACCIÓN CORRECTA DE DATOS
       const email = user.email || "";
       const fullName = (user.displayName || email.split("@")[0]).trim();
       const parts = fullName.split(/\s+/);
+      
       const nombre = parts[0] || "";
       const apellido = parts.slice(1).join(" ") || "";
 
+      console.log("📋 Datos extraídos:", { nombre, apellido, email });
+
       if (!docSnap.exists()) {
+        // ✅ CORRECCIÓN: Guardar nombre y apellido por separado
         await setDoc(userRef, {
           uid: user.uid,
           mail: email,
-          nombre: fullName,
-          apellido,
+          nombre: nombre,  // ⬅️ AQUÍ ESTABA EL ERROR (tenías fullName)
+          apellido: apellido,
           referralId: Math.random().toString(36).substring(2, 10).toUpperCase(),
           fechaRegistro: serverTimestamp()
         });
         console.log("📄 Usuario nuevo guardado:", user.uid);
+      } else {
+        console.log("👤 Usuario existente:", user.uid);
       }
 
       window.location.href = "/src/pages/usuario.html";
+      
     } catch (err) {
       console.error("⚠️ Error en login con Google:", err);
       alert("Error al iniciar sesión con Google: " + err.message);
@@ -96,6 +106,7 @@ if (toggleLink) {
   toggleLink.addEventListener("click", e => {
     e.preventDefault();
     isRegisterMode = !isRegisterMode;
+    
     const repeatGroup = document.getElementById("repeatPasswordGroup");
     const btnText = document.getElementById("btnText");
     const subtitle = document.getElementById("loginSubtitle");
