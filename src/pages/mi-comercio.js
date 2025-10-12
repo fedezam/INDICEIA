@@ -1,11 +1,12 @@
+
 // src/pages/mi-comercio.js
-import { auth } from '../firebase.js';
-import { onAuthStateChanged } from 'firebase/auth';
-import { signOut } from 'firebase/auth';
+import { auth, db } from '../firebase.js';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import { getUserData, updateUserData } from '../shared/firebaseHelpers.js';
 import Navigation from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
-import { PlansManager } from '../shared/plans.js';
+import { PlansManager, PLANS } from '../shared/plans.js';
 
 // Variables globales
 let currentUser = null;
@@ -77,7 +78,7 @@ async function initializePage() {
   } catch (error) {
     hideLoading();
     console.error('❌ Error inicializando página:', error);
-    showToast('Error', 'Hubo un problema al cargar la página', 'error');
+    showToast('Error', 'Hubo un problema al cargar la página: ' + error.message, 'error');
   }
 }
 
@@ -124,39 +125,10 @@ function updateSubscriptionBanner() {
   
   if (!banner || !message) return;
   
-  const estado = calcularEstadoPlan(comercioData);
   const planActual = PLANS[comercioData.plan || 'trial'];
   
-  banner.className = 'subscription-banner';
-  
-  switch(estado) {
-    case 'trial':
-      const diasRestantes = getDiasRestantesTrial(comercioData);
-      banner.classList.add('trial');
-      message.innerHTML = `🎉 <strong>Trial activo</strong> - Te quedan <strong>${diasRestantes} días</strong> para probar todas las funciones`;
-      break;
-      
-    case 'expirado':
-      banner.classList.add('expired');
-      message.innerHTML = `⚠️ <strong>Tu trial expiró.</strong> Elegí un plan para seguir usando tu IA comercial`;
-      break;
-      
-    case 'suspendido':
-      banner.classList.add('expired');
-      message.innerHTML = `❌ <strong>Servicio suspendido.</strong> Regularizá el pago para continuar`;
-      break;
-      
-    case 'activo':
-      banner.classList.add('active');
-      message.innerHTML = `✅ <strong>Plan ${planActual?.nombre} activo</strong> - Todo funcionando correctamente`;
-      break;
-      
-    case 'limite_excedido':
-      banner.classList.add('expired');
-      const limiteActual = planActual?.productos || 0;
-      message.innerHTML = `⚠️ <strong>Has superado el límite de ${limiteActual} productos.</strong> Upgrade para continuar`;
-      break;
-  }
+  banner.className = 'subscription-banner trial';
+  message.innerHTML = `🎉 <strong>Plan ${planActual?.nombre || 'Trial'}</strong> - Completa tu información para activar tu IA`;
 }
 
 function fillForm() {
@@ -185,16 +157,25 @@ function fillForm() {
 
 function loadProvinciasForCountry(country) {
   const provinciaEl = document.getElementById("provincia");
-  if (!provinciaEl) return;
+  if (!provinciaEl) {
+    console.error('❌ Elemento #provincia no encontrado');
+    return;
+  }
 
+  // Limpiar opciones
   provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
+  
+  // Llamar a la función de provincias.js
   fillProvinciaSelector(country, provinciaEl);
   
+  // Seleccionar provincia guardada si existe
   if (comercioData.provincia) {
     setTimeout(() => {
       provinciaEl.value = comercioData.provincia;
     }, 100);
   }
+  
+  console.log('✅ Provincias cargadas para', country);
 }
 
 function renderPlans() {
@@ -576,7 +557,7 @@ async function saveFormData() {
       saveBtn.disabled = false;
     }
     
-    showToast('Error', 'No se pudieron guardar los cambios', 'error');
+    showToast('Error', 'No se pudieron guardar los cambios: ' + error.message, 'error');
   }
 }
 
@@ -584,7 +565,7 @@ async function handleLogout() {
   if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
     try {
       showLoading('Cerrando sesión...');
-      await auth.signOut();
+      await signOut(auth);
       window.location.href = '/index.html';
     } catch (error) {
       hideLoading();
