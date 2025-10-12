@@ -109,44 +109,36 @@ document.addEventListener("DOMContentLoaded", () => {
 // ==========================
 if (googleBtn) {
   googleBtn.addEventListener("click", async () => {
-    console.log("🌐 Abriendo popup Google...");
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-      console.log("✅ Login Google OK:", user.email);
       
-      // 🔍 DEBUG: Ver qué datos trae Google
-      console.log("📋 Datos completos del usuario:", {
-        displayName: user.displayName,
-        email: user.email,
-        photoURL: user.photoURL,
-        uid: user.uid
-      });
+      // Extraer nombre y apellido
+      const fullName = user.displayName || "";
+      const parts = fullName.split(" ");
+      const nombre = parts[0] || "";
+      const apellido = parts.slice(1).join(" ") || "";
 
-      // Crear doc si es nuevo
       const userRef = doc(db, "usuarios", user.uid);
-      const userDoc = await getDoc(userRef);
-      if (!userDoc.exists()) {
-        console.log("🆕 Usuario nuevo, creando doc...");
-        
-        // Extraer nombre y apellido del displayName
-        const displayName = user.displayName || "";
-        const nameParts = displayName.trim().split(" ");
-        const nombre = nameParts[0] || "";
-        const apellido = nameParts.slice(1).join(" ") || "";
-        
-        console.log("📝 Guardando:", { nombre, apellido, displayName });
-        
-        await setDoc(userRef, {
-          email: user.email,
-          uid: user.uid,
-          nombre: nombre,
-          apellido: apellido,
-          displayName: user.displayName,
-          photoURL: user.photoURL || null,
-          fechaRegistro: new Date(),
-          referralId: Utils.generateReferral()
-        });
+      
+      // SIEMPRE actualizar con merge
+      await setDoc(userRef, {
+        email: user.email,
+        nombre: nombre,
+        apellido: apellido,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        fechaRegistro: new Date(),
+        referralId: Utils.generateReferral()
+      }, { merge: true });
+
+      window.location.href = "/src/pages/usuario.html";
+    } catch(e) { 
+      console.error("Error:", e);
+      Utils.showToast("Error: " + e.message); 
+    }
+  });
+}
         
         console.log("✅ Documento guardado con nombre y apellido");
       } else {
