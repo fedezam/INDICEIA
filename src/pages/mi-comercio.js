@@ -6,13 +6,12 @@ import Navigation from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
 
 // Variables globales
 let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
-let originalData = {};
+let originalData = {}; // ✅ Para detectar cambios
 let selectedCategories = [];
 let hasUnsavedChanges = false;
 
@@ -35,13 +34,16 @@ async function initializePage() {
   try {
     showLoading('Cargando datos del comercio...');
 
+    // ✅ Obtener comercioId desde el documento del usuario
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userDoc = await getDoc(userRef);
     
     if (userDoc.exists() && userDoc.data().comercioId) {
+      // Usuario ya tiene un comercio
       currentComercioId = userDoc.data().comercioId;
       console.log('✅ Comercio existente encontrado:', currentComercioId);
     } else {
+      // Crear nuevo comercio
       const newComercioRef = await addDoc(collection(db, 'comercios'), {
         dueñoId: currentUser.uid,
         fechaCreacion: new Date(),
@@ -51,6 +53,7 @@ async function initializePage() {
       });
       currentComercioId = newComercioRef.id;
       
+      // ✅ Guardar comercioId en el documento del usuario
       await updateDoc(userRef, {
         comercioId: currentComercioId
       });
@@ -81,12 +84,13 @@ async function initializePage() {
 
 async function loadComercioData() {
   try {
+    // ✅ ESTRUCTURA CORRECTA: /comercios/{comercioId}
     const comercioRef = doc(db, 'comercios', currentComercioId);
     const comercioDoc = await getDoc(comercioRef);
     
     if (comercioDoc.exists()) {
       comercioData = { id: currentComercioId, ...comercioDoc.data() };
-      originalData = JSON.parse(JSON.stringify(comercioData));
+      originalData = JSON.parse(JSON.stringify(comercioData)); // ✅ Copia profunda
       selectedCategories = comercioData.categories || [];
       console.log('✅ Datos de comercio cargados:', comercioData);
     } else {
@@ -166,18 +170,21 @@ function fillForm() {
   const form = document.getElementById('miComercioForm');
   if (!form) return;
 
+  // Llenar campos normales
   form.querySelectorAll('input, textarea').forEach(field => {
     if (field.name && comercioData[field.name]) {
       field.value = comercioData[field.name];
     }
   });
 
+  // Hardcodear Argentina en el selector de país
   const paisEl = document.getElementById('pais');
   if (paisEl) {
     paisEl.value = 'Argentina';
     paisEl.disabled = true;
   }
 
+  // Cargar provincias argentinas
   loadProvinciasForCountry('Argentina');
 
   console.log('✅ Formulario llenado con datos existentes');
@@ -190,9 +197,13 @@ function loadProvinciasForCountry(country) {
     return;
   }
 
+  // Limpiar opciones
   provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
+  
+  // Llamar a la función de provincias.js
   fillProvinciaSelector(country, provinciaEl);
   
+  // Seleccionar provincia guardada si existe
   if (comercioData.provincia) {
     setTimeout(() => {
       provinciaEl.value = comercioData.provincia;
@@ -381,6 +392,7 @@ function setupEventListeners() {
     logoutBtn.addEventListener('click', handleLogout);
   }
 
+  // ✅ Detectar cambios en el formulario
   const form = document.getElementById('miComercioForm');
   if (form) {
     form.querySelectorAll('input, textarea, select').forEach(field => {
@@ -393,6 +405,7 @@ function setupEventListeners() {
     });
   }
 
+  // ✅ Prevenir salida accidental con cambios sin guardar
   window.addEventListener('beforeunload', (e) => {
     if (hasUnsavedChanges) {
       e.preventDefault();
@@ -405,12 +418,14 @@ function createSaveButton() {
   const userInfo = document.querySelector('.header .user-info');
   if (!userInfo) return;
 
+  // Crear el botón antes del botón de logout
   const saveBtn = document.createElement('button');
   saveBtn.id = 'saveChangesBtn';
   saveBtn.className = 'btn-save';
   saveBtn.disabled = true;
   saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
   
+  // Insertar antes del botón de logout
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     userInfo.insertBefore(saveBtn, logoutBtn);
@@ -481,7 +496,9 @@ function markAsChanged() {
 function setupNavigation() {
   Navigation.init();
   
+  // ✅ Validación personalizada antes de navegar
   window.validateCurrentPageData = async () => {
+    // Si hay cambios sin guardar, bloquear navegación
     if (hasUnsavedChanges) {
       showToast('Cambios sin guardar', 'Debes guardar los cambios antes de continuar', 'warning');
       return false;
@@ -505,6 +522,7 @@ function setupNavigation() {
       return false;
     }
 
+    // ✅ Si es la primera vez (datos no guardados), guardar antes de continuar
     const isFirstTime = !originalData.nombreComercio;
     if (isFirstTime) {
       showToast('Guardando', 'Guardando tu información...', 'info');
@@ -523,6 +541,7 @@ async function saveFormData() {
   const saveBtn = document.getElementById('saveChangesBtn');
 
   try {
+    // ✅ Validar campos requeridos
     const requiredFields = form.querySelectorAll('[required]');
     let isValid = true;
     
@@ -540,6 +559,7 @@ async function saveFormData() {
       return false;
     }
 
+    // ✅ Actualizar botón a estado "guardando"
     if (saveBtn) {
       saveBtn.className = 'btn-save saving';
       saveBtn.innerHTML = '<i class="fas fa-spinner"></i> <span>Guardando...</span>';
@@ -561,6 +581,7 @@ async function saveFormData() {
     updates.categories = selectedCategories;
     updates.plan = comercioData.plan || 'trial';
 
+    // ✅ PASO 1: Guardar en Firestore
     console.log('💾 Guardando en Firestore...', currentComercioId);
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
@@ -570,15 +591,65 @@ async function saveFormData() {
 
     console.log('✅ Guardado en Firestore exitoso');
 
-    // ✅ PASO 2: Regenerar JSON con la API
-    console.log('🔄 Regenerando JSON...');
+    // ✅ PASO 2: Llamar a la API para actualizar JSON
+    console.log('🔄 Llamando a API /api/export-json...');
+    
     try {
-      await updateCommerceJSON(currentComercioId, currentUser.uid);
-      console.log('✅ JSON actualizado correctamente');
+      const apiUrl = '/api/export-json';
+      console.log('📡 URL API:', apiUrl);
+      console.log('📦 Payload:', { comercioId: currentComercioId, userId: currentUser.uid });
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          comercioId: currentComercioId,
+          userId: currentUser.uid
+        })
+      });
+
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response ok:', response.ok);
+
+      const responseText = await response.text();
+      console.log('📥 Response raw:', responseText);
+
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (e) {
+        console.error('❌ Error parseando JSON:', e);
+        throw new Error('La respuesta de la API no es JSON válido: ' + responseText.substring(0, 200));
+      }
+
+      if (!response.ok) {
+        console.error('❌ Error HTTP:', response.status, result);
+        throw new Error(result.message || result.error || 'Error actualizando JSON');
+      }
+
+      console.log('✅ API Response:', result);
+      console.log('✅ JSON URL:', result.gist?.rawUrl);
+
+      // Guardar URL del JSON en Firestore
+      if (result.gist?.rawUrl) {
+        await updateDoc(comercioRef, {
+          jsonUrl: result.gist.rawUrl,
+          gistId: result.gist.gistId,
+          lastJsonUpdate: new Date()
+        });
+        console.log('✅ URL del JSON guardada en Firestore');
+      }
+
     } catch (apiError) {
-      console.error('❌ Error actualizando JSON:', apiError);
-      showToast('Error en JSON', `No se pudo actualizar el JSON: ${apiError.message}`, 'error');
+      console.error('❌ Error completo en API:', apiError);
+      console.error('Stack:', apiError.stack);
       
+      // Mostrar error detallado al usuario
+      showToast('Error en API', `No se pudo actualizar el JSON: ${apiError.message}`, 'error');
+      
+      // No bloqueamos el guardado, pero informamos
       if (saveBtn) {
         saveBtn.className = 'btn-save';
         saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <span>Guardado (JSON pendiente)</span>';
@@ -588,9 +659,11 @@ async function saveFormData() {
           saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
         }, 3000);
       }
-      throw apiError;
+      
+      throw apiError; // Re-lanzar para que se maneje abajo
     }
 
+    // ✅ PASO 3: Actualizar estado local
     comercioData = { ...comercioData, ...updates };
     originalData = JSON.parse(JSON.stringify(comercioData));
     updateHeader();
@@ -598,6 +671,7 @@ async function saveFormData() {
 
     hasUnsavedChanges = false;
 
+    // ✅ Actualizar botón a estado "guardado"
     if (saveBtn) {
       saveBtn.className = 'btn-save saved';
       saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado ✓</span>';
@@ -609,17 +683,23 @@ async function saveFormData() {
       }, 2000);
     }
 
+    // ✅ Marcar página como completada
     if (updates.nombreComercio && updates.telefono && updates.direccion) {
       Navigation.markPageAsCompleted('mi-comercio');
       Navigation.updateProgressBar();
     }
 
-    showToast('Éxito', 'Cambios guardados y JSON actualizado', 'success');
+    showToast('Éxito', '✅ Cambios guardados y JSON actualizado', 'success');
     console.log('💾 Guardado completo exitoso');
     return true;
 
   } catch (error) {
     console.error('❌ Error al guardar:', error);
+    console.error('Error completo:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     
     if (saveBtn) {
       saveBtn.className = 'btn-save';
