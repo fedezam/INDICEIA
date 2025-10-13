@@ -6,12 +6,13 @@ import Navigation from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
+import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
 
 // Variables globales
 let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
-let originalData = {}; // ✅ Para detectar cambios
+let originalData = {};
 let selectedCategories = [];
 let hasUnsavedChanges = false;
 
@@ -34,16 +35,13 @@ async function initializePage() {
   try {
     showLoading('Cargando datos del comercio...');
 
-    // ✅ Obtener comercioId desde el documento del usuario
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userDoc = await getDoc(userRef);
     
     if (userDoc.exists() && userDoc.data().comercioId) {
-      // Usuario ya tiene un comercio
       currentComercioId = userDoc.data().comercioId;
       console.log('✅ Comercio existente encontrado:', currentComercioId);
     } else {
-      // Crear nuevo comercio
       const newComercioRef = await addDoc(collection(db, 'comercios'), {
         dueñoId: currentUser.uid,
         fechaCreacion: new Date(),
@@ -53,7 +51,6 @@ async function initializePage() {
       });
       currentComercioId = newComercioRef.id;
       
-      // ✅ Guardar comercioId en el documento del usuario
       await updateDoc(userRef, {
         comercioId: currentComercioId
       });
@@ -84,13 +81,12 @@ async function initializePage() {
 
 async function loadComercioData() {
   try {
-    // ✅ ESTRUCTURA CORRECTA: /comercios/{comercioId}
     const comercioRef = doc(db, 'comercios', currentComercioId);
     const comercioDoc = await getDoc(comercioRef);
     
     if (comercioDoc.exists()) {
       comercioData = { id: currentComercioId, ...comercioDoc.data() };
-      originalData = JSON.parse(JSON.stringify(comercioData)); // ✅ Copia profunda
+      originalData = JSON.parse(JSON.stringify(comercioData));
       selectedCategories = comercioData.categories || [];
       console.log('✅ Datos de comercio cargados:', comercioData);
     } else {
@@ -170,21 +166,18 @@ function fillForm() {
   const form = document.getElementById('miComercioForm');
   if (!form) return;
 
-  // Llenar campos normales
   form.querySelectorAll('input, textarea').forEach(field => {
     if (field.name && comercioData[field.name]) {
       field.value = comercioData[field.name];
     }
   });
 
-  // Hardcodear Argentina en el selector de país
   const paisEl = document.getElementById('pais');
   if (paisEl) {
     paisEl.value = 'Argentina';
     paisEl.disabled = true;
   }
 
-  // Cargar provincias argentinas
   loadProvinciasForCountry('Argentina');
 
   console.log('✅ Formulario llenado con datos existentes');
@@ -197,13 +190,9 @@ function loadProvinciasForCountry(country) {
     return;
   }
 
-  // Limpiar opciones
   provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
-  
-  // Llamar a la función de provincias.js
   fillProvinciaSelector(country, provinciaEl);
   
-  // Seleccionar provincia guardada si existe
   if (comercioData.provincia) {
     setTimeout(() => {
       provinciaEl.value = comercioData.provincia;
@@ -392,7 +381,6 @@ function setupEventListeners() {
     logoutBtn.addEventListener('click', handleLogout);
   }
 
-  // ✅ Detectar cambios en el formulario
   const form = document.getElementById('miComercioForm');
   if (form) {
     form.querySelectorAll('input, textarea, select').forEach(field => {
@@ -405,7 +393,6 @@ function setupEventListeners() {
     });
   }
 
-  // ✅ Prevenir salida accidental con cambios sin guardar
   window.addEventListener('beforeunload', (e) => {
     if (hasUnsavedChanges) {
       e.preventDefault();
@@ -418,14 +405,12 @@ function createSaveButton() {
   const userInfo = document.querySelector('.header .user-info');
   if (!userInfo) return;
 
-  // Crear el botón antes del botón de logout
   const saveBtn = document.createElement('button');
   saveBtn.id = 'saveChangesBtn';
   saveBtn.className = 'btn-save';
   saveBtn.disabled = true;
   saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
   
-  // Insertar antes del botón de logout
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     userInfo.insertBefore(saveBtn, logoutBtn);
@@ -496,9 +481,7 @@ function markAsChanged() {
 function setupNavigation() {
   Navigation.init();
   
-  // ✅ Validación personalizada antes de navegar
   window.validateCurrentPageData = async () => {
-    // Si hay cambios sin guardar, bloquear navegación
     if (hasUnsavedChanges) {
       showToast('Cambios sin guardar', 'Debes guardar los cambios antes de continuar', 'warning');
       return false;
@@ -522,7 +505,6 @@ function setupNavigation() {
       return false;
     }
 
-    // ✅ Si es la primera vez (datos no guardados), guardar antes de continuar
     const isFirstTime = !originalData.nombreComercio;
     if (isFirstTime) {
       showToast('Guardando', 'Guardando tu información...', 'info');
@@ -541,7 +523,6 @@ async function saveFormData() {
   const saveBtn = document.getElementById('saveChangesBtn');
 
   try {
-    // ✅ Validar campos requeridos
     const requiredFields = form.querySelectorAll('[required]');
     let isValid = true;
     
@@ -559,7 +540,6 @@ async function saveFormData() {
       return false;
     }
 
-    // ✅ Actualizar botón a estado "guardando"
     if (saveBtn) {
       saveBtn.className = 'btn-save saving';
       saveBtn.innerHTML = '<i class="fas fa-spinner"></i> <span>Guardando...</span>';
@@ -581,44 +561,36 @@ async function saveFormData() {
     updates.categories = selectedCategories;
     updates.plan = comercioData.plan || 'trial';
 
-    // ✅ PASO 1: Guardar en Firestore
+    console.log('💾 Guardando en Firestore...', currentComercioId);
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
       ...updates,
       fechaActualizacion: new Date()
     });
 
-    console.log('✅ Guardado en Firestore');
+    console.log('✅ Guardado en Firestore exitoso');
 
-    // ✅ PASO 2: Llamar a la API para actualizar JSON
+    // ✅ PASO 2: Regenerar JSON con la API
+    console.log('🔄 Regenerando JSON...');
     try {
-      const response = await fetch('/api/export-json', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          comercioId: currentComercioId,
-          userId: currentUser.uid
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('⚠️ Error en API:', error);
-        throw new Error(error.message || 'Error actualizando JSON');
-      }
-
-      const result = await response.json();
-      console.log('✅ JSON actualizado:', result.gist?.rawUrl || result.message);
-
+      await updateCommerceJSON(currentComercioId, currentUser.uid);
+      console.log('✅ JSON actualizado correctamente');
     } catch (apiError) {
-      console.error('❌ Error llamando a API:', apiError);
-      // No bloqueamos el guardado si falla la API
-      showToast('Advertencia', 'Datos guardados pero JSON no actualizado', 'warning');
+      console.error('❌ Error actualizando JSON:', apiError);
+      showToast('Error en JSON', `No se pudo actualizar el JSON: ${apiError.message}`, 'error');
+      
+      if (saveBtn) {
+        saveBtn.className = 'btn-save';
+        saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <span>Guardado (JSON pendiente)</span>';
+        setTimeout(() => {
+          saveBtn.disabled = true;
+          saveBtn.className = 'btn-save';
+          saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+        }, 3000);
+      }
+      throw apiError;
     }
 
-    // ✅ PASO 3: Actualizar estado local
     comercioData = { ...comercioData, ...updates };
     originalData = JSON.parse(JSON.stringify(comercioData));
     updateHeader();
@@ -626,7 +598,6 @@ async function saveFormData() {
 
     hasUnsavedChanges = false;
 
-    // ✅ Actualizar botón a estado "guardado"
     if (saveBtn) {
       saveBtn.className = 'btn-save saved';
       saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado ✓</span>';
@@ -638,13 +609,12 @@ async function saveFormData() {
       }, 2000);
     }
 
-    // ✅ Marcar página como completada
     if (updates.nombreComercio && updates.telefono && updates.direccion) {
       Navigation.markPageAsCompleted('mi-comercio');
       Navigation.updateProgressBar();
     }
 
-    showToast('Éxito', '✅ Cambios guardados y JSON actualizado', 'success');
+    showToast('Éxito', 'Cambios guardados y JSON actualizado', 'success');
     console.log('💾 Guardado completo exitoso');
     return true;
 
@@ -674,7 +644,3 @@ async function handleLogout() {
     }
   }
 }
-
-// ✅ No redefinir las funciones que ya están en utils.js
-// showLoading, hideLoading y showToast se importan desde utils.js
-   
