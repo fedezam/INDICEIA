@@ -1186,3 +1186,38 @@ body {
     flex: 1;
   }
 }
+/* Progress Bar adicional */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Arreglo del main-content para dejar espacio al nav inferior */
+.main-content {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 2rem 6rem 2rem; /* 6rem de padding-bottom para el nav */
+}
+
+/* Plan selector con mejor grid */
+.plan-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .header .user-info {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .btn-save span {
+    display: none;
+  }
+  
+  .btn-save {
+    padding: 0.625rem;
+  }
+}
