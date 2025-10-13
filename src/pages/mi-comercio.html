@@ -55,9 +55,10 @@
     <div class="container">
       <!-- Selector de Plan -->
       <div class="form-section">
-        <h3><i class="fas fa-crown"></i> Selector de Plan</h3>
-        <p>Elige el plan que mejor se adapte a tu negocio:</p>
+        <h3><i class="fas fa-crown"></i> Selector de Plan <span class="required-indicator">*</span></h3>
+        <p>Elige el plan que mejor se adapte a tu negocio. Durante 5 días podrás probarlo gratis:</p>
         <div class="plan-selector" id="planSelector"></div>
+        <p class="help-text"><i class="fas fa-info-circle"></i> Durante el trial podrás evaluar si el plan elegido se ajusta a tus necesidades</p>
       </div>
 
       <!-- Información básica -->
@@ -108,7 +109,7 @@
           </div>
           <div class="form-field">
             <label for="descripcion" class="required">Descripción del comercio</label>
-            <textarea id="descripcion" name="descripcion" required placeholder="Describe brevemente tu comercio..."></textarea>
+            <textarea id="descripcion" name="descripcion" required placeholder="Describe brevemente tu comercio..." rows="4"></textarea>
             <div class="error-message">Este campo es requerido</div>
           </div>
         </form>
@@ -128,23 +129,30 @@
             <input type="text" id="whatsapp" name="whatsapp" placeholder="Ej: +54 9 11 1234-5678">
           </div>
           <div class="form-field">
-            <label for="email">Email de contacto (opcional)</label>
-            <input type="email" id="email" name="email" placeholder="contacto@micomercio.com">
+            <label for="email" class="required">Email de contacto</label>
+            <input type="email" id="email" name="email" required placeholder="contacto@micomercio.com">
+            <div class="error-message">Este campo es requerido</div>
           </div>
+          
+          <div class="form-field full-width">
+            <label><i class="fas fa-globe"></i> Presencia Web <span class="required-indicator">*</span></label>
+            <p class="help-text">Debe tener al menos un sitio web o red social activa</p>
+          </div>
+          
           <div class="form-field">
-            <label for="website">Sitio web (opcional)</label>
+            <label for="website">Sitio web</label>
             <input type="url" id="website" name="website" placeholder="https://micomercio.com">
           </div>
           <div class="form-field">
-            <label for="instagram">Instagram (opcional)</label>
+            <label for="instagram">Instagram</label>
             <input type="url" id="instagram" name="instagram" placeholder="https://instagram.com/micomercio">
           </div>
           <div class="form-field">
-            <label for="facebook">Facebook (opcional)</label>
+            <label for="facebook">Facebook</label>
             <input type="url" id="facebook" name="facebook" placeholder="https://facebook.com/micomercio">
           </div>
           <div class="form-field">
-            <label for="tiktok">TikTok (opcional)</label>
+            <label for="tiktok">TikTok</label>
             <input type="url" id="tiktok" name="tiktok" placeholder="https://tiktok.com/@micomercio">
           </div>
         </div>
@@ -152,15 +160,15 @@
 
       <!-- Categorías -->
       <div class="form-section">
-        <h3><i class="fas fa-tags"></i> Categorías del Negocio</h3>
-        <p>Selecciona el rubro que mejor describe tu comercio.</p>
+        <h3><i class="fas fa-tags"></i> Categorías del Negocio <span class="required-indicator">*</span></h3>
+        <p>Selecciona al menos una categoría que describe tu comercio.</p>
         <div id="categoriesGrid" class="categories-section"></div>
       </div>
 
       <!-- Métodos de pago -->
       <div class="form-section">
-        <h3><i class="fas fa-credit-card"></i> Métodos de Pago</h3>
-        <p>Selecciona los métodos que aceptas:</p>
+        <h3><i class="fas fa-credit-card"></i> Métodos de Pago <span class="required-indicator">*</span></h3>
+        <p>Selecciona al menos un método de pago que aceptas:</p>
         <div class="checkbox-grid" id="paymentMethods"></div>
       </div>
     </div>
@@ -194,7 +202,47 @@
       border-left-color: #38a169;
       color: #276749;
     }
-    .required::after { content: " *"; color: #f44336; }
+    .subscription-banner.trial {
+      background: #e0e7ff;
+      border-left-color: #667eea;
+      color: #434190;
+    }
+    .required::after { 
+      content: " *"; 
+      color: #f44336; 
+    }
+    .required-indicator {
+      color: #f44336;
+      font-weight: bold;
+    }
+    .help-text {
+      color: #64748b;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .form-field.full-width {
+      grid-column: 1 / -1;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e2e8f0;
+    }
+    .form-field.error input,
+    .form-field.error textarea,
+    .form-field.error select {
+      border-color: #f44336;
+    }
+    .error-message {
+      display: none;
+      color: #f44336;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+    .form-field.error .error-message {
+      display: block;
+    }
   </style>
 </body>
 </html>
