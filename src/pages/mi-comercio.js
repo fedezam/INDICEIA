@@ -6,12 +6,13 @@ import Navigation from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
+import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
 
 // Variables globales
 let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
-let originalData = {}; // ✅ Para detectar cambios
+let originalData = {};
 let selectedCategories = [];
 let hasUnsavedChanges = false;
 
@@ -34,12 +35,11 @@ async function initializePage() {
   try {
     showLoading('Cargando datos del comercio...');
 
-    // ✅ Obtener comercioId desde el documento del usuario
+    // Obtener comercioId desde el documento del usuario
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userDoc = await getDoc(userRef);
     
     if (userDoc.exists() && userDoc.data().comercioId) {
-      // Usuario ya tiene un comercio
       currentComercioId = userDoc.data().comercioId;
       console.log('✅ Comercio existente encontrado:', currentComercioId);
     } else {
@@ -49,11 +49,11 @@ async function initializePage() {
         fechaCreacion: new Date(),
         tipo: 'comercio',
         plan: 'trial',
-        pais: 'Argentina'
+        pais: 'Argentina',
+        fechaInicioTrial: new Date()
       });
       currentComercioId = newComercioRef.id;
       
-      // ✅ Guardar comercioId en el documento del usuario
       await updateDoc(userRef, {
         comercioId: currentComercioId
       });
@@ -84,13 +84,12 @@ async function initializePage() {
 
 async function loadComercioData() {
   try {
-    // ✅ ESTRUCTURA CORRECTA: /comercios/{comercioId}
     const comercioRef = doc(db, 'comercios', currentComercioId);
     const comercioDoc = await getDoc(comercioRef);
     
     if (comercioDoc.exists()) {
       comercioData = { id: currentComercioId, ...comercioDoc.data() };
-      originalData = JSON.parse(JSON.stringify(comercioData)); // ✅ Copia profunda
+      originalData = JSON.parse(JSON.stringify(comercioData));
       selectedCategories = comercioData.categories || [];
       console.log('✅ Datos de comercio cargados:', comercioData);
     } else {
@@ -98,7 +97,8 @@ async function loadComercioData() {
         id: currentComercioId, 
         dueñoId: currentUser.uid,
         plan: 'trial',
-        pais: 'Argentina'
+        pais: 'Argentina',
+        fechaInicioTrial: new Date()
       };
       originalData = JSON.parse(JSON.stringify(comercioData));
     }
@@ -177,40 +177,29 @@ function fillForm() {
     }
   });
 
-  // Hardcodear Argentina en el selector de país
+  // Hardcodear Argentina
   const paisEl = document.getElementById('pais');
   if (paisEl) {
     paisEl.value = 'Argentina';
     paisEl.disabled = true;
   }
 
-  // Cargar provincias argentinas
   loadProvinciasForCountry('Argentina');
-
   console.log('✅ Formulario llenado con datos existentes');
 }
 
 function loadProvinciasForCountry(country) {
   const provinciaEl = document.getElementById("provincia");
-  if (!provinciaEl) {
-    console.error('❌ Elemento #provincia no encontrado');
-    return;
-  }
+  if (!provinciaEl) return;
 
-  // Limpiar opciones
   provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
-  
-  // Llamar a la función de provincias.js
   fillProvinciaSelector(country, provinciaEl);
   
-  // Seleccionar provincia guardada si existe
   if (comercioData.provincia) {
     setTimeout(() => {
       provinciaEl.value = comercioData.provincia;
     }, 100);
   }
-  
-  console.log('✅ Provincias cargadas para', country);
 }
 
 function renderPlans() {
@@ -392,20 +381,14 @@ function setupEventListeners() {
     logoutBtn.addEventListener('click', handleLogout);
   }
 
-  // ✅ Detectar cambios en el formulario
   const form = document.getElementById('miComercioForm');
   if (form) {
     form.querySelectorAll('input, textarea, select').forEach(field => {
-      field.addEventListener('input', () => {
-        markAsChanged();
-      });
-      field.addEventListener('change', () => {
-        markAsChanged();
-      });
+      field.addEventListener('input', () => markAsChanged());
+      field.addEventListener('change', () => markAsChanged());
     });
   }
 
-  // ✅ Prevenir salida accidental con cambios sin guardar
   window.addEventListener('beforeunload', (e) => {
     if (hasUnsavedChanges) {
       e.preventDefault();
@@ -418,14 +401,12 @@ function createSaveButton() {
   const userInfo = document.querySelector('.header .user-info');
   if (!userInfo) return;
 
-  // Crear el botón antes del botón de logout
   const saveBtn = document.createElement('button');
   saveBtn.id = 'saveChangesBtn';
   saveBtn.className = 'btn-save';
   saveBtn.disabled = true;
   saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
   
-  // Insertar antes del botón de logout
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     userInfo.insertBefore(saveBtn, logoutBtn);
@@ -479,6 +460,10 @@ function createSaveButton() {
     .btn-save.saving i {
       animation: spin 1s linear infinite;
     }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   `;
   document.head.appendChild(style);
 }
@@ -496,42 +481,84 @@ function markAsChanged() {
 function setupNavigation() {
   Navigation.init();
   
-  // ✅ Validación personalizada antes de navegar
   window.validateCurrentPageData = async () => {
-    // Si hay cambios sin guardar, bloquear navegación
+    // Validar cambios sin guardar
     if (hasUnsavedChanges) {
       showToast('Cambios sin guardar', 'Debes guardar los cambios antes de continuar', 'warning');
       return false;
     }
 
-    const form = document.getElementById('miComercioForm');
-    const requiredFields = form?.querySelectorAll('[required]') || [];
-    
-    let isValid = true;
-    requiredFields.forEach(field => {
-      if (!field.value.trim()) {
-        field.classList.add('error');
-        isValid = false;
-      } else {
-        field.classList.remove('error');
-      }
-    });
-
-    if (!isValid) {
-      showToast('Campos requeridos', 'Por favor completa todos los campos obligatorios', 'warning');
+    // Validar campos requeridos
+    const validation = validateRequiredFields();
+    if (!validation.isValid) {
+      showToast('Campos requeridos', validation.message, 'warning');
       return false;
-    }
-
-    // ✅ Si es la primera vez (datos no guardados), guardar antes de continuar
-    const isFirstTime = !originalData.nombreComercio;
-    if (isFirstTime) {
-      showToast('Guardando', 'Guardando tu información...', 'info');
-      const saved = await saveFormData();
-      return saved;
     }
 
     return true;
   };
+}
+
+function validateRequiredFields() {
+  const form = document.getElementById('miComercioForm');
+  const errors = [];
+
+  // Campos de texto requeridos
+  const requiredTextFields = [
+    { id: 'nombreComercio', label: 'Nombre del comercio' },
+    { id: 'provincia', label: 'Provincia' },
+    { id: 'ciudad', label: 'Ciudad' },
+    { id: 'direccion', label: 'Dirección' },
+    { id: 'descripcion', label: 'Descripción' },
+    { id: 'telefono', label: 'Teléfono' },
+    { id: 'email', label: 'Email' }
+  ];
+
+  requiredTextFields.forEach(field => {
+    const el = document.getElementById(field.id);
+    if (!el || !el.value.trim()) {
+      errors.push(field.label);
+      el?.classList.add('error');
+    } else {
+      el?.classList.remove('error');
+    }
+  });
+
+  // Al menos una red social o website
+  const socialFields = ['website', 'instagram', 'facebook', 'tiktok'];
+  const hasSocial = socialFields.some(id => {
+    const el = document.getElementById(id);
+    return el && el.value.trim();
+  });
+  if (!hasSocial) {
+    errors.push('Al menos una red social o sitio web');
+  }
+
+  // Al menos una categoría
+  if (!selectedCategories || selectedCategories.length === 0) {
+    errors.push('Al menos una categoría');
+  }
+
+  // Al menos un método de pago
+  const paymentMethods = document.querySelectorAll('input[name="paymentMethods"]:checked');
+  if (paymentMethods.length === 0) {
+    errors.push('Al menos un método de pago');
+  }
+
+  // Plan seleccionado (no puede quedar en trial sin elegir)
+  const selectedPlan = document.querySelector('.plan-card.selected');
+  if (!selectedPlan) {
+    errors.push('Debes elegir un plan');
+  }
+
+  if (errors.length > 0) {
+    return {
+      isValid: false,
+      message: `Completa: ${errors.join(', ')}`
+    };
+  }
+
+  return { isValid: true };
 }
 
 async function saveFormData() {
@@ -541,25 +568,14 @@ async function saveFormData() {
   const saveBtn = document.getElementById('saveChangesBtn');
 
   try {
-    // ✅ Validar campos requeridos
-    const requiredFields = form.querySelectorAll('[required]');
-    let isValid = true;
-    
-    requiredFields.forEach(field => {
-      if (!field.value.trim()) {
-        field.classList.add('error');
-        isValid = false;
-      } else {
-        field.classList.remove('error');
-      }
-    });
-
-    if (!isValid) {
-      showToast('Campos requeridos', 'Por favor completa todos los campos obligatorios', 'warning');
+    // Validar campos requeridos
+    const validation = validateRequiredFields();
+    if (!validation.isValid) {
+      showToast('Campos requeridos', validation.message, 'warning');
       return false;
     }
 
-    // ✅ Actualizar botón a estado "guardando"
+    // Actualizar botón a estado "guardando"
     if (saveBtn) {
       saveBtn.className = 'btn-save saving';
       saveBtn.innerHTML = '<i class="fas fa-spinner"></i> <span>Guardando...</span>';
@@ -581,7 +597,7 @@ async function saveFormData() {
     updates.categories = selectedCategories;
     updates.plan = comercioData.plan || 'trial';
 
-    // ✅ PASO 1: Guardar en Firestore
+    // PASO 1: Guardar en Firestore
     console.log('💾 Guardando en Firestore...', currentComercioId);
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
@@ -591,79 +607,26 @@ async function saveFormData() {
 
     console.log('✅ Guardado en Firestore exitoso');
 
-    // ✅ PASO 2: Llamar a la API para actualizar JSON
-    console.log('🔄 Llamando a API /api/export-json...');
-    
+    // PASO 2: Llamar a la función compartida para actualizar JSON
     try {
-      const apiUrl = '/api/export-json';
-      console.log('📡 URL API:', apiUrl);
-      console.log('📦 Payload:', { comercioId: currentComercioId, userId: currentUser.uid });
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          comercioId: currentComercioId,
-          userId: currentUser.uid
-        })
-      });
-
-      console.log('📥 Response status:', response.status);
-      console.log('📥 Response ok:', response.ok);
-
-      const responseText = await response.text();
-      console.log('📥 Response raw:', responseText);
-
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (e) {
-        console.error('❌ Error parseando JSON:', e);
-        throw new Error('La respuesta de la API no es JSON válido: ' + responseText.substring(0, 200));
-      }
-
-      if (!response.ok) {
-        console.error('❌ Error HTTP:', response.status, result);
-        throw new Error(result.message || result.error || 'Error actualizando JSON');
-      }
-
-      console.log('✅ API Response:', result);
-      console.log('✅ JSON URL:', result.gist?.rawUrl);
-
+      const result = await updateCommerceJSON(currentComercioId, currentUser.uid);
+      
       // Guardar URL del JSON en Firestore
-      if (result.gist?.rawUrl) {
+      if (result.jsonUrl) {
         await updateDoc(comercioRef, {
-          jsonUrl: result.gist.rawUrl,
-          gistId: result.gist.gistId,
+          jsonUrl: result.jsonUrl,
+          gistId: result.gistId,
           lastJsonUpdate: new Date()
         });
         console.log('✅ URL del JSON guardada en Firestore');
       }
 
     } catch (apiError) {
-      console.error('❌ Error completo en API:', apiError);
-      console.error('Stack:', apiError.stack);
-      
-      // Mostrar error detallado al usuario
-      showToast('Error en API', `No se pudo actualizar el JSON: ${apiError.message}`, 'error');
-      
-      // No bloqueamos el guardado, pero informamos
-      if (saveBtn) {
-        saveBtn.className = 'btn-save';
-        saveBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <span>Guardado (JSON pendiente)</span>';
-        setTimeout(() => {
-          saveBtn.disabled = true;
-          saveBtn.className = 'btn-save';
-          saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-        }, 3000);
-      }
-      
-      throw apiError; // Re-lanzar para que se maneje abajo
+      console.error('❌ Error actualizando JSON:', apiError);
+      showToast('Advertencia', 'Datos guardados pero JSON no actualizado', 'warning');
     }
 
-    // ✅ PASO 3: Actualizar estado local
+    // PASO 3: Actualizar estado local
     comercioData = { ...comercioData, ...updates };
     originalData = JSON.parse(JSON.stringify(comercioData));
     updateHeader();
@@ -671,7 +634,7 @@ async function saveFormData() {
 
     hasUnsavedChanges = false;
 
-    // ✅ Actualizar botón a estado "guardado"
+    // Actualizar botón a estado "guardado"
     if (saveBtn) {
       saveBtn.className = 'btn-save saved';
       saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado ✓</span>';
@@ -683,11 +646,9 @@ async function saveFormData() {
       }, 2000);
     }
 
-    // ✅ Marcar página como completada
-    if (updates.nombreComercio && updates.telefono && updates.direccion) {
-      Navigation.markPageAsCompleted('mi-comercio');
-      Navigation.updateProgressBar();
-    }
+    // Marcar página como completada
+    Navigation.markPageAsCompleted('mi-comercio');
+    Navigation.updateProgressBar();
 
     showToast('Éxito', '✅ Cambios guardados y JSON actualizado', 'success');
     console.log('💾 Guardado completo exitoso');
@@ -695,11 +656,6 @@ async function saveFormData() {
 
   } catch (error) {
     console.error('❌ Error al guardar:', error);
-    console.error('Error completo:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
     
     if (saveBtn) {
       saveBtn.className = 'btn-save';
