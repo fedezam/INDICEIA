@@ -11,6 +11,7 @@ import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
+let originalData = {}; // ✅ Para detectar cambios
 let selectedCategories = [];
 let hasUnsavedChanges = false;
 
@@ -89,6 +90,7 @@ async function loadComercioData() {
     
     if (comercioDoc.exists()) {
       comercioData = { id: currentComercioId, ...comercioDoc.data() };
+      originalData = JSON.parse(JSON.stringify(comercioData)); // ✅ Copia profunda
       selectedCategories = comercioData.categories || [];
       console.log('✅ Datos de comercio cargados:', comercioData);
     } else {
@@ -98,6 +100,7 @@ async function loadComercioData() {
         plan: 'trial',
         pais: 'Argentina'
       };
+      originalData = JSON.parse(JSON.stringify(comercioData));
     }
   } catch (error) {
     console.error('Error cargando datos comercio:', error);
@@ -389,32 +392,56 @@ function setupEventListeners() {
     logoutBtn.addEventListener('click', handleLogout);
   }
 
-  // Detectar cambios en el formulario
+  // ✅ Detectar cambios en el formulario
   const form = document.getElementById('miComercioForm');
   if (form) {
     form.querySelectorAll('input, textarea, select').forEach(field => {
       field.addEventListener('input', () => {
         markAsChanged();
       });
+      field.addEventListener('change', () => {
+        markAsChanged();
+      });
     });
   }
+
+  // ✅ Prevenir salida accidental con cambios sin guardar
+  window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedChanges) {
+      e.preventDefault();
+      e.returnValue = '¿Seguro que quieres salir? Tienes cambios sin guardar.';
+    }
+  });
 }
 
 function createSaveButton() {
-  const header = document.querySelector('.header .container');
-  if (!header) return;
+  const userInfo = document.querySelector('.header .user-info');
+  if (!userInfo) return;
 
+  // Crear el botón antes del botón de logout
   const saveBtn = document.createElement('button');
   saveBtn.id = 'saveChangesBtn';
   saveBtn.className = 'btn-save';
   saveBtn.disabled = true;
   saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-  header.appendChild(saveBtn);
+  
+  // Insertar antes del botón de logout
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    userInfo.insertBefore(saveBtn, logoutBtn);
+  } else {
+    userInfo.appendChild(saveBtn);
+  }
 
   saveBtn.addEventListener('click', saveFormData);
 
   const style = document.createElement('style');
   style.textContent = `
+    .header .user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
     .btn-save {
       display: flex;
       align-items: center;
@@ -428,6 +455,7 @@ function createSaveButton() {
       transition: all 0.3s ease;
       background: #667eea;
       color: white;
+      white-space: nowrap;
     }
     .btn-save:disabled {
       background: #e2e8f0;
@@ -451,10 +479,6 @@ function createSaveButton() {
     .btn-save.saving i {
       animation: spin 1s linear infinite;
     }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
   `;
   document.head.appendChild(style);
 }
@@ -472,7 +496,9 @@ function markAsChanged() {
 function setupNavigation() {
   Navigation.init();
   
+  // ✅ Validación personalizada antes de navegar
   window.validateCurrentPageData = async () => {
+    // Si hay cambios sin guardar, bloquear navegación
     if (hasUnsavedChanges) {
       showToast('Cambios sin guardar', 'Debes guardar los cambios antes de continuar', 'warning');
       return false;
@@ -493,20 +519,29 @@ function setupNavigation() {
 
     if (!isValid) {
       showToast('Campos requeridos', 'Por favor completa todos los campos obligatorios', 'warning');
+      return false;
     }
 
-    return isValid;
+    // ✅ Si es la primera vez (datos no guardados), guardar antes de continuar
+    const isFirstTime = !originalData.nombreComercio;
+    if (isFirstTime) {
+      showToast('Guardando', 'Guardando tu información...', 'info');
+      const saved = await saveFormData();
+      return saved;
+    }
+
+    return true;
   };
 }
 
 async function saveFormData() {
   const form = document.getElementById('miComercioForm');
-  if (!form) return;
+  if (!form) return false;
 
   const saveBtn = document.getElementById('saveChangesBtn');
 
   try {
-    // Validar campos requeridos
+    // ✅ Validar campos requeridos
     const requiredFields = form.querySelectorAll('[required]');
     let isValid = true;
     
@@ -521,10 +556,10 @@ async function saveFormData() {
 
     if (!isValid) {
       showToast('Campos requeridos', 'Por favor completa todos los campos obligatorios', 'warning');
-      return;
+      return false;
     }
 
-    // Actualizar botón a estado "guardando"
+    // ✅ Actualizar botón a estado "guardando"
     if (saveBtn) {
       saveBtn.className = 'btn-save saving';
       saveBtn.innerHTML = '<i class="fas fa-spinner"></i> <span>Guardando...</span>';
@@ -546,20 +581,52 @@ async function saveFormData() {
     updates.categories = selectedCategories;
     updates.plan = comercioData.plan || 'trial';
 
-    // ✅ GUARDAR EN /comercios/{comercioId}
+    // ✅ PASO 1: Guardar en Firestore
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
       ...updates,
       fechaActualizacion: new Date()
     });
 
+    console.log('✅ Guardado en Firestore');
+
+    // ✅ PASO 2: Llamar a la API para actualizar JSON
+    try {
+      const response = await fetch('/api/export-json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          comercioId: currentComercioId,
+          userId: currentUser.uid
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('⚠️ Error en API:', error);
+        throw new Error(error.message || 'Error actualizando JSON');
+      }
+
+      const result = await response.json();
+      console.log('✅ JSON actualizado:', result.gist?.rawUrl || result.message);
+
+    } catch (apiError) {
+      console.error('❌ Error llamando a API:', apiError);
+      // No bloqueamos el guardado si falla la API
+      showToast('Advertencia', 'Datos guardados pero JSON no actualizado', 'warning');
+    }
+
+    // ✅ PASO 3: Actualizar estado local
     comercioData = { ...comercioData, ...updates };
+    originalData = JSON.parse(JSON.stringify(comercioData));
     updateHeader();
     updateSubscriptionBanner();
 
     hasUnsavedChanges = false;
 
-    // Actualizar botón a estado "guardado"
+    // ✅ Actualizar botón a estado "guardado"
     if (saveBtn) {
       saveBtn.className = 'btn-save saved';
       saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado ✓</span>';
@@ -571,17 +638,18 @@ async function saveFormData() {
       }, 2000);
     }
 
-    // Marcar página como completada
+    // ✅ Marcar página como completada
     if (updates.nombreComercio && updates.telefono && updates.direccion) {
       Navigation.markPageAsCompleted('mi-comercio');
       Navigation.updateProgressBar();
     }
 
-    showToast('Éxito', 'Cambios guardados correctamente', 'success');
-    console.log('💾 Guardado exitoso');
+    showToast('Éxito', '✅ Cambios guardados y JSON actualizado', 'success');
+    console.log('💾 Guardado completo exitoso');
+    return true;
 
   } catch (error) {
-    console.error('Error al guardar:', error);
+    console.error('❌ Error al guardar:', error);
     
     if (saveBtn) {
       saveBtn.className = 'btn-save';
@@ -590,6 +658,7 @@ async function saveFormData() {
     }
     
     showToast('Error', 'No se pudieron guardar los cambios: ' + error.message, 'error');
+    return false;
   }
 }
 
@@ -608,3 +677,4 @@ async function handleLogout() {
 
 // ✅ No redefinir las funciones que ya están en utils.js
 // showLoading, hideLoading y showToast se importan desde utils.js
+   
