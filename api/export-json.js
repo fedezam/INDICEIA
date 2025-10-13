@@ -1,23 +1,18 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+// api/export-json.js - Vercel Serverless Function
+import admin from 'firebase-admin';
 
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.FIREBASE_APP_ID
-};
-
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
+// Inicializar Firebase Admin (solo una vez)
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
 }
 
-const db = getFirestore(app);
+const db = admin.firestore();
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -33,34 +28,51 @@ export default async function handler(req, res) {
     const githubToken = process.env.GITHUB_TOKEN;
     if (!githubToken) return res.status(500).json({ error: 'GitHub token no configurado' });
 
+    console.log('📦 Generando JSON para comercio:', comercioId);
+
     const jsonData = await generateCommerceJSON(comercioId, userId);
     const gistResult = await uploadToGist(jsonData, comercioId, githubToken);
 
-    return res.status(200).json({ success: true, jsonData, gist: gistResult });
+    console.log('✅ JSON actualizado:', gistResult.rawUrl);
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'JSON actualizado correctamente',
+      jsonData, 
+      gist: gistResult 
+    });
   } catch (error) {
-    console.error('Error en export-json API:', error);
-    return res.status(500).json({ error: 'Error interno del servidor', message: error.message });
+    console.error('❌ Error en export-json API:', error);
+    return res.status(500).json({ 
+      error: 'Error interno del servidor', 
+      message: error.message 
+    });
   }
 }
 
 async function generateCommerceJSON(comercioId, userId) {
-  const comercioRef = doc(db, 'comercios', comercioId);
-  const comercioSnap = await getDoc(comercioRef);
+  const comercioRef = db.collection('comercios').doc(comercioId);
+  const comercioSnap = await comercioRef.get();
   
-  if (!comercioSnap.exists()) {
+  if (!comercioSnap.exists) {
     throw new Error("Comercio no encontrado");
   }
 
   const comercioData = comercioSnap.data();
 
-  const productosCol = collection(db, 'comercios', comercioId, 'productos');
-  const productosSnap = await getDocs(productosCol);
+  // Obtener productos (subcolección)
+  const productosCol = comercioRef.collection('productos');
+  const productosSnap = await productosCol.get();
   const productos = [];
   
   productosSnap.forEach(pSnap => {
     const p = pSnap.data();
+    // Solo incluir productos activos (no pausados)
     if (!p.paused) {
-      productos.push({ id: pSnap.id, ...p });
+      productos.push({ 
+        id: pSnap.id, 
+        ...p 
+      });
     }
   });
 
@@ -88,22 +100,24 @@ async function generateCommerceJSON(comercioId, userId) {
       plan: comercioData.plan || 'trial'
     },
     comercio: {
-      ...comercioData,
-      nombre: comercioData.nombreComercio,
-      direccion: comercioData.direccion,
-      ciudad: comercioData.ciudad,
-      provincia: comercioData.provincia,
+      nombre: comercioData.nombreComercio || '',
+      descripcion: comercioData.descripcion || '',
+      direccion: comercioData.direccion || '',
+      ciudad: comercioData.ciudad || '',
+      provincia: comercioData.provincia || '',
       pais: comercioData.pais || 'Argentina',
-      telefono: comercioData.telefono,
-      whatsapp: comercioData.whatsapp,
-      email: comercioData.email,
-      website: comercioData.website,
-      instagram: comercioData.instagram,
-      facebook: comercioData.facebook,
-      tiktok: comercioData.tiktok,
+      barrio: comercioData.barrio || '',
+      telefono: comercioData.telefono || '',
+      whatsapp: comercioData.whatsapp || '',
+      email: comercioData.email || '',
+      website: comercioData.website || '',
+      instagram: comercioData.instagram || '',
+      facebook: comercioData.facebook || '',
+      tiktok: comercioData.tiktok || '',
       horarios: comercioData.horarios || [],
       metodos_pago: comercioData.paymentMethods || [],
-      categorias: comercioData.categories || []
+      categorias: comercioData.categories || [],
+      plan: comercioData.plan || 'trial'
     },
     productos,
     asistente_ia
@@ -114,8 +128,8 @@ async function uploadToGist(jsonData, comercioId, githubToken) {
   const fileName = `comercio_${comercioId}.json`;
   const jsonString = JSON.stringify(jsonData, null, 2);
   
-  const comercioRef = doc(db, 'comercios', comercioId);
-  const comercioSnap = await getDoc(comercioRef);
+  const comercioRef = db.collection('comercios').doc(comercioId);
+  const comercioSnap = await comercioRef.get();
   const existingGistId = comercioSnap.data()?.gistId;
 
   const headers = {
@@ -127,6 +141,8 @@ async function uploadToGist(jsonData, comercioId, githubToken) {
   let response, gistId;
 
   if (existingGistId) {
+    // Actualizar Gist existente
+    console.log('📝 Actualizando Gist existente:', existingGistId);
     response = await fetch(`https://api.github.com/gists/${existingGistId}`, {
       method: 'PATCH',
       headers,
@@ -138,6 +154,8 @@ async function uploadToGist(jsonData, comercioId, githubToken) {
     });
     gistId = existingGistId;
   } else {
+    // Crear nuevo Gist
+    console.log('🆕 Creando nuevo Gist');
     response = await fetch('https://api.github.com/gists', {
       method: 'POST',
       headers,
@@ -153,7 +171,8 @@ async function uploadToGist(jsonData, comercioId, githubToken) {
     const result = await response.json();
     gistId = result.id;
     
-    await updateDoc(comercioRef, { gistId });
+    // Guardar gistId en Firestore
+    await comercioRef.update({ gistId });
   }
 
   if (!response.ok) {
@@ -161,9 +180,11 @@ async function uploadToGist(jsonData, comercioId, githubToken) {
     throw new Error(`GitHub API Error: ${error.message}`);
   }
 
-  const rawUrl = `https://gist.githubusercontent.com/anonymous/${gistId}/raw/${fileName}`;
+  const gistData = await response.json();
+  const rawUrl = gistData.files[fileName].raw_url;
   
-  await updateDoc(comercioRef, { 
+  // Actualizar URL y timestamp en Firestore
+  await comercioRef.update({ 
     jsonUrl: rawUrl, 
     lastJsonUpdate: new Date().toISOString() 
   });
@@ -172,6 +193,6 @@ async function uploadToGist(jsonData, comercioId, githubToken) {
     success: true, 
     gistId, 
     rawUrl, 
-    webUrl: `https://gist.github.com/${gistId}` 
+    webUrl: gistData.html_url
   };
 }
