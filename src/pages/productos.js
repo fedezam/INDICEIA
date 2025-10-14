@@ -19,6 +19,69 @@ let currentUser = null;
 let editingProductId = null;
 let hasUnsavedChanges = false;
 
+// Calcular flags automáticos
+function calcularFlagsAutomaticos(producto) {
+  return {
+    sin_precio: !producto.precio || producto.precio === 0,
+    sin_stock: !producto.stock || producto.stock === 0,
+    sin_imagen: !producto.imagen || producto.imagen.trim() === '',
+    activo: !producto.pausado && 
+            !producto.deleted && 
+            producto.precio > 0 && 
+            producto.nombre && 
+            producto.nombre.trim() !== ''
+  };
+}
+
+// Buscar producto existente para UPSERT
+function findExistingProduct(productData) {
+  // Prioridad 1: Buscar por código
+  if (productData.codigo && productData.codigo.trim() !== '') {
+    const found = products.find(p => 
+      p.codigo && 
+      p.codigo.toLowerCase() === productData.codigo.toLowerCase()
+    );
+    if (found) return found;
+  }
+  
+  // Prioridad 2: Buscar por nombre
+  if (productData.nombre && productData.nombre.trim() !== '') {
+    const found = products.find(p => 
+      p.nombre && 
+      p.nombre.toLowerCase() === productData.nombre.toLowerCase()
+    );
+    if (found) return found;
+  }
+  
+  return null;
+}
+
+// UPSERT: CREATE o UPDATE automático
+async function upsertProduct(productData) {
+  const existing = findExistingProduct(productData);
+  const dataWithFlags = {
+    ...productData,
+    ...calcularFlagsAutomaticos(productData),
+    deleted: false
+  };
+  
+  if (existing) {
+    await updateProduct(existing.id, {
+      ...dataWithFlags,
+      fechaActualizacion: new Date().toISOString()
+    });
+    return { action: 'updated', id: existing.id };
+  } else {
+    const newId = await addProduct({
+      ...dataWithFlags,
+      fechaCreacion: new Date().toISOString(),
+      fechaActualizacion: new Date().toISOString()
+    });
+    return { action: 'created', id: newId };
+  }
+}
+
+// INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     showLoading('Verificando sesión...');
@@ -43,15 +106,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     updateHeader();
     updateSubscriptionBanner();
-    renderProductForm();
+    fillCategorySelect();
     renderProductsTable();
     setupEventListeners();
-    setupNavigation();
-    createSaveButton();
+    Navigation.init();
 
     window.validateCurrentPageData = () => {
       if (hasUnsavedChanges) {
-        showToast('Cambios sin guardar', 'Guarda los cambios del formulario antes de continuar', 'warning');
+        showToast('Cambios sin guardar', 'Guarda antes de continuar', 'warning');
         return false;
       }
       return products.length > 0;
@@ -61,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     hideLoading();
     console.error('Error:', error);
-    showToast('Error', 'No se pudo cargar la página: ' + error.message, 'error');
+    showToast('Error', 'No se pudo cargar: ' + error.message, 'error');
   }
 });
 
@@ -95,64 +157,29 @@ function updateSubscriptionBanner() {
   if (!banner || !messageEl) return;
   
   const plan = userData.plan || 'trial';
-  const status = userData.estado || 'trial';
-  
-  if (status === 'active' || plan !== 'trial') {
+  if (plan === 'trial') {
+    messageEl.textContent = '🎉 Trial gratuito - Configura tus productos';
+    banner.className = 'subscription-banner trial';
+  } else {
     messageEl.textContent = `✅ Plan ${plan} activo`;
     banner.className = 'subscription-banner active';
-  } else {
-    messageEl.textContent = `🎉 Trial gratuito - Configura tus productos`;
-    banner.className = 'subscription-banner trial';
   }
 }
 
-function renderProductForm() {
-  const container = document.getElementById('productFields');
-  if (!container) return;
-
-  const categorias = userData.categorias && Array.isArray(userData.categorias) ? userData.categorias : [];
-
-  const fields = [
-    { id: "nombre", label: "Nombre/Título", type: "text", required: true },
-    { id: "codigo", label: "Código/SKU", type: "text", required: false },
-    { id: "categoria", label: "Categoría", type: "select", required: true, options: categorias },
-    { id: "subcategoria", label: "Subcategoría", type: "text", required: false },
-    { id: "descripcion", label: "Descripción", type: "textarea", required: false },
-    { id: "imagen", label: "Imagen (URL)", type: "url", required: false },
-    { id: "precio", label: "Precio", type: "number", required: true, step: "0.01" },
-    { id: "stock", label: "Stock", type: "number", required: false },
-    { id: "color", label: "Color", type: "text", required: false },
-    { id: "talle", label: "Talle/Tamaño", type: "text", required: false },
-    { id: "origen", label: "Origen", type: "text", required: false }
-  ];
-
-  let html = '<div class="form-row">';
-  fields.forEach((field, idx) => {
-    if (idx > 0 && idx % 2 === 0) html += '</div><div class="form-row">';
-    
-    let fieldHtml = '';
-    if (field.type === 'textarea') {
-      fieldHtml = `<textarea id="${field.id}" placeholder="" ${field.required ? 'required' : ''} rows="4"></textarea>`;
-    } else if (field.type === 'select') {
-      const opts = Array.isArray(field.options) ? field.options : [];
-      fieldHtml = `<select id="${field.id}" ${field.required ? 'required' : ''}>
-        <option value="">Seleccionar...</option>
-        ${opts.map(o => `<option value="${o}">${o}</option>`).join('')}
-      </select>`;
-    } else {
-      fieldHtml = `<input type="${field.type}" id="${field.id}" placeholder="" ${field.required ? 'required' : ''} ${field.step ? `step="${field.step}"` : ''}>`;
-    }
-
-    html += `
-      <div class="form-group">
-        <label for="${field.id}">${field.label}${field.required ? ' <span class="required">*</span>' : ''}</label>
-        ${fieldHtml}
-      </div>
-    `;
+function fillCategorySelect() {
+  const select = document.getElementById('categoria');
+  if (!select) return;
+  
+  const categorias = userData.categorias && Array.isArray(userData.categorias) 
+    ? userData.categorias 
+    : [];
+  
+  categorias.forEach(cat => {
+    const option = document.createElement('option');
+    option.value = cat;
+    option.textContent = cat;
+    select.appendChild(option);
   });
-  html += '</div>';
-
-  container.innerHTML = html;
 }
 
 function renderProductsTable() {
@@ -162,30 +189,50 @@ function renderProductsTable() {
 
   if (products.length === 0) {
     head.innerHTML = '';
-    body.innerHTML = `<tr><td colspan="7" class="empty-state-row">No hay productos cargados</td></tr>`;
+    body.innerHTML = '<tr><td colspan="9" class="empty-state-row">No hay productos cargados</td></tr>';
     return;
   }
 
   head.innerHTML = `
     <tr>
       <th>Nombre</th>
+      <th>Código</th>
       <th>Categoría</th>
       <th>Precio</th>
       <th>Stock</th>
+      <th>Estado IA</th>
       <th>Estado</th>
       <th colspan="3">Acciones</th>
     </tr>
   `;
 
-  body.innerHTML = products.map(product => `
+  body.innerHTML = products.map(product => {
+    const flags = calcularFlagsAutomaticos(product);
+    const warnings = [];
+    if (flags.sin_precio) warnings.push('Sin precio');
+    if (flags.sin_stock) warnings.push('Sin stock');
+    if (flags.sin_imagen) warnings.push('Sin imagen');
+    
+    return `
     <tr data-product-id="${product.id}" class="${product.pausado ? 'paused-row' : ''}">
       <td><strong>${product.nombre}</strong></td>
+      <td>${product.codigo || '-'}</td>
       <td>${product.categoria || '-'}</td>
-      <td>$${(product.precio || 0).toFixed(2)}</td>
-      <td>${product.stock ?? '-'}</td>
+      <td class="editable-cell" data-field="precio" data-type="number" title="Doble click para editar">
+        $${(product.precio || 0).toFixed(2)}
+      </td>
+      <td class="editable-cell" data-field="stock" data-type="number" title="Doble click para editar">
+        ${product.stock ?? 0}
+      </td>
+      <td>
+        ${flags.activo 
+          ? '<span class="badge badge-active">✓ Activo</span>' 
+          : '<span class="badge badge-paused">⚠ Inactivo</span>'}
+        ${warnings.length > 0 ? `<small>${warnings.join(', ')}</small>` : ''}
+      </td>
       <td>
         <span class="badge ${product.pausado ? 'badge-paused' : 'badge-active'}">
-          ${product.pausado ? 'Pausado' : 'Activo'}
+          ${product.pausado ? '⏸ Pausado' : '▶ Activo'}
         </span>
       </td>
       <td>
@@ -194,7 +241,7 @@ function renderProductsTable() {
         </button>
       </td>
       <td>
-        <button class="btn btn-sm toggle-status" title="${product.pausado ? 'Activar' : 'Pausar'}">
+        <button class="btn btn-sm btn-outline toggle-status" title="${product.pausado ? 'Activar' : 'Pausar'}">
           <i class="fas ${product.pausado ? 'fa-play' : 'fa-pause'}"></i>
         </button>
       </td>
@@ -204,7 +251,7 @@ function renderProductsTable() {
         </button>
       </td>
     </tr>
-  `).join("");
+  `}).join("");
 
   body.addEventListener("click", async (e) => {
     const row = e.target.closest("tr");
@@ -219,6 +266,71 @@ function renderProductsTable() {
       await toggleProductStatus(id);
     }
   });
+
+  // Doble click para editar inline
+  body.addEventListener("dblclick", async (e) => {
+    const cell = e.target.closest(".editable-cell");
+    if (!cell) return;
+    
+    const row = cell.closest("tr");
+    const productId = row.dataset.productId;
+    const field = cell.dataset.field;
+    
+    await editInlineCell(cell, productId, field);
+  });
+}
+
+async function editInlineCell(cell, productId, field) {
+  const product = products.find(p => p.id === productId);
+  if (!product) return;
+  
+  const currentValue = product[field] || '';
+  const originalHTML = cell.innerHTML;
+  
+  const input = document.createElement('input');
+  input.type = field === 'precio' ? 'number' : 'number';
+  input.value = currentValue;
+  input.step = field === 'precio' ? '0.01' : '1';
+  input.style.width = '100%';
+  input.style.padding = '0.5rem';
+  input.style.border = '2px solid #4299e1';
+  input.style.borderRadius = '4px';
+  
+  cell.innerHTML = '';
+  cell.appendChild(input);
+  input.focus();
+  input.select();
+  
+  const saveValue = async () => {
+    try {
+      const newValue = field === 'precio' 
+        ? parseFloat(input.value) || 0
+        : parseInt(input.value) || 0;
+      
+      await updateProduct(productId, { 
+        [field]: newValue,
+        fechaActualizacion: new Date().toISOString()
+      });
+      
+      try { await syncToGist(); } catch (err) { console.warn(err); }
+      
+      await loadProducts();
+      renderProductsTable();
+      showToast('Guardado', `${field} actualizado`, 'success');
+    } catch (error) {
+      cell.innerHTML = originalHTML;
+      showToast('Error', 'No se pudo guardar', 'error');
+    }
+  };
+  
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') saveValue();
+    if (e.key === 'Escape') {
+      cell.innerHTML = originalHTML;
+    }
+  });
+  
+  input.addEventListener('blur', saveValue);
 }
 
 function updateProductCounter() {
@@ -248,7 +360,7 @@ function setupEventListeners() {
     document.getElementById('productForm').reset();
     editingProductId = null;
     hasUnsavedChanges = false;
-    updateSaveButton();
+    document.getElementById('saveProduct').textContent = '💾 Guardar Producto';
   });
 
   document.getElementById('logoutBtn')?.addEventListener('click', async () => {
@@ -258,17 +370,10 @@ function setupEventListeners() {
     }
   });
 
-  // Marcar cambios en el formulario
   document.getElementById('productForm')?.addEventListener('input', () => {
     hasUnsavedChanges = true;
-    updateSaveButton();
-  });
-  document.getElementById('productForm')?.addEventListener('change', () => {
-    hasUnsavedChanges = true;
-    updateSaveButton();
   });
 
-  // CSV
   const fileUpload = document.getElementById('fileUpload');
   const fileInput = document.getElementById('excelFile');
   
@@ -294,33 +399,9 @@ function setupEventListeners() {
   window.addEventListener('beforeunload', (e) => {
     if (hasUnsavedChanges) {
       e.preventDefault();
-      e.returnValue = 'Tienes cambios sin guardar en el formulario.';
+      e.returnValue = 'Tienes cambios sin guardar.';
     }
   });
-}
-
-function setupNavigation() {
-  Navigation.init();
-}
-
-function createSaveButton() {
-  const userInfo = document.querySelector('.header .user-info');
-  if (!userInfo) return;
-
-  const saveBtn = document.createElement('button');
-  saveBtn.id = 'saveChangesBtn';
-  saveBtn.className = 'btn-save';
-  saveBtn.disabled = true;
-  saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar</span>';
-  
-  userInfo.insertBefore(saveBtn, document.getElementById('logoutBtn'));
-  saveBtn.addEventListener('click', saveProduct);
-}
-
-function updateSaveButton() {
-  const saveBtn = document.getElementById('saveChangesBtn');
-  if (!saveBtn) return;
-  saveBtn.disabled = !hasUnsavedChanges;
 }
 
 function collectProductData() {
@@ -366,11 +447,6 @@ async function saveProduct() {
     const plan = PlansManager.getPlan(userData.plan || 'trial');
     const maxProducts = plan.maxProductos === -1 ? Infinity : plan.maxProductos;
     
-    if (!editingProductId && products.length >= maxProducts) {
-      showToast('Límite alcanzado', `Tu plan permite ${maxProducts} productos`, 'warning');
-      return;
-    }
-
     const productData = collectProductData();
     
     if (!productData.nombre || !productData.precio) {
@@ -380,28 +456,30 @@ async function saveProduct() {
 
     showLoading('Guardando producto...');
 
+    let result;
     if (editingProductId) {
-      await updateProduct(editingProductId, productData);
+      await updateProduct(editingProductId, {
+        ...productData,
+        ...calcularFlagsAutomaticos(productData),
+        fechaActualizacion: new Date().toISOString()
+      });
+      result = { action: 'updated' };
       editingProductId = null;
     } else {
-      await addProduct(productData);
+      result = await upsertProduct(productData);
     }
 
-    try {
-      await syncToGist();
-    } catch (err) {
-      console.warn('JSON no sincronizado:', err);
-    }
+    try { await syncToGist(); } catch (err) { console.warn(err); }
 
     await loadProducts();
     renderProductsTable();
     document.getElementById('productForm').reset();
     document.getElementById('saveProduct').textContent = '💾 Guardar Producto';
     hasUnsavedChanges = false;
-    updateSaveButton();
 
     hideLoading();
-    showToast('Éxito', editingProductId ? 'Producto actualizado' : 'Producto agregado', 'success');
+    const msg = result.action === 'created' ? 'Producto creado' : 'Producto actualizado';
+    showToast('Éxito', msg, 'success');
   } catch (error) {
     hideLoading();
     console.error('Error:', error);
@@ -431,7 +509,10 @@ async function toggleProductStatus(id) {
     const product = products.find(p => p.id === id);
     if (!product) return;
     
-    await updateProduct(id, { pausado: !product.pausado });
+    await updateProduct(id, { 
+      pausado: !product.pausado,
+      fechaActualizacion: new Date().toISOString()
+    });
     try { await syncToGist(); } catch (err) { console.warn(err); }
     await loadProducts();
     renderProductsTable();
@@ -443,7 +524,6 @@ async function toggleProductStatus(id) {
 
 async function handleCSVFile(file) {
   if (!file) return;
-  
   showLoading('Procesando CSV...');
   
   Papa.parse(file, {
@@ -451,18 +531,20 @@ async function handleCSVFile(file) {
     dynamicTyping: true,
     skipEmptyLines: true,
     complete: async (results) => {
-      await processCSVImport(results.data, results.meta.fields);
+      await processCSVImport(results.data);
     },
     error: (error) => {
       hideLoading();
-      showToast('Error', 'No se pudo leer el archivo: ' + error.message, 'error');
+      showToast('Error', 'No se pudo leer el archivo', 'error');
     }
   });
 }
 
-async function processCSVImport(data, fields) {
+async function processCSVImport(data) {
   try {
-    showLoading(`Importando ${data.length} productos...`);
+    showLoading(`Procesando ${data.length} productos...`);
+
+    let created = 0, updated = 0, skipped = 0;
 
     for (const row of data) {
       const productData = {
@@ -480,24 +562,27 @@ async function processCSVImport(data, fields) {
         pausado: row.pausado === 1 || row.pausado === 'Sí' || row.pausado === 'true'
       };
 
-      if (!productData.nombre || !productData.precio) continue;
-
-      const existing = products.find(p => p.codigo === productData.codigo && productData.codigo);
-      if (existing) {
-        await updateProduct(existing.id, productData);
-      } else {
-        await addProduct(productData);
+      if (!productData.nombre || !productData.precio) {
+        skipped++;
+        continue;
       }
+
+      const result = await upsertProduct(productData);
+      if (result.action === 'created') created++;
+      if (result.action === 'updated') updated++;
     }
 
     try { await syncToGist(); } catch (err) { console.warn(err); }
     await loadProducts();
     renderProductsTable();
     hideLoading();
-    showToast('Éxito', `${data.length} productos importados/actualizados`, 'success');
+    
+    showToast('Importación completa', 
+      `✅ ${created} creados | 🔄 ${updated} actualizados | ⚠️ ${skipped} omitidos`, 
+      'success');
   } catch (error) {
     hideLoading();
-    showToast('Error', 'Error en importación: ' + error.message, 'error');
+    showToast('Error', 'Error en importación', 'error');
   }
 }
 
@@ -528,7 +613,7 @@ function exportProducts() {
 }
 
 async function clearAllProducts() {
-  if (!confirm('¿Eliminar TODOS los productos? No se puede deshacer.')) return;
+  if (!confirm('¿Eliminar TODOS los productos?')) return;
   
   try {
     showLoading('Eliminando...');
