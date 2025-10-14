@@ -110,10 +110,12 @@ function renderProductForm() {
   const container = document.getElementById('productFields');
   if (!container) return;
 
+  const categorias = userData.categorias && Array.isArray(userData.categorias) ? userData.categorias : [];
+
   const fields = [
     { id: "nombre", label: "Nombre/Título", type: "text", required: true },
     { id: "codigo", label: "Código/SKU", type: "text", required: false },
-    { id: "categoria", label: "Categoría", type: "select", required: true, options: userData.categorias || [] },
+    { id: "categoria", label: "Categoría", type: "select", required: true, options: categorias },
     { id: "subcategoria", label: "Subcategoría", type: "text", required: false },
     { id: "descripcion", label: "Descripción", type: "textarea", required: false },
     { id: "imagen", label: "Imagen (URL)", type: "url", required: false },
