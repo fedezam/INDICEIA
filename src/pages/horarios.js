@@ -214,6 +214,47 @@ function setupEventListeners() {
   const grid = document.getElementById('scheduleGrid');
   
   grid.addEventListener('change', (e) => {
+    // Si es el checkbox de habilitación del día
+    if (e.target.type === 'checkbox' && e.target.closest('.day-toggle')) {
+      const dayEl = e.target.closest('.schedule-day');
+      const dayHours = dayEl.querySelector('.day-hours');
+      const isEnabled = e.target.checked;
+      
+      // Actualizar visibilidad de los inputs
+      if (isEnabled) {
+        dayHours.classList.remove('disabled');
+      } else {
+        dayHours.classList.add('disabled');
+      }
+    }
+    
+    // Si es el radio de modo (continuo/cortado)
+    if (e.target.type === 'radio' && e.target.name.includes('_mode')) {
+      const dayEl = e.target.closest('.schedule-day');
+      const isContinuous = e.target.value === 'continuous';
+      
+      const continuousBlock = dayEl.querySelector('.continuous-schedule');
+      const splitBlock = dayEl.querySelector('.split-schedule');
+      
+      if (isContinuous) {
+        continuousBlock.classList.remove('hidden');
+        splitBlock.classList.add('hidden');
+      } else {
+        continuousBlock.classList.add('hidden');
+        splitBlock.classList.remove('hidden');
+      }
+    }
+    
+    // Si es el checkbox de mañana/tarde, habilitar/deshabilitar inputs
+    if (e.target.type === 'checkbox' && (e.target.closest('.morning-hours') || e.target.closest('.afternoon-hours'))) {
+      const timeRange = e.target.closest('.morning-hours, .afternoon-hours').querySelector('.time-range');
+      const inputs = timeRange.querySelectorAll('input[type="time"]');
+      
+      inputs.forEach(input => {
+        input.disabled = !e.target.checked;
+      });
+    }
+    
     markAsChanged();
   });
 
