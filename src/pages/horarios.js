@@ -17,6 +17,8 @@ const DAYS = [
 let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
+let originalHorarios = {};
+let hasUnsavedChanges = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
@@ -53,13 +55,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (comercioDoc.exists()) {
       comercioData = { id: currentComercioId, ...comercioDoc.data() };
     }
-    
+
+    // Inicializar horarios originales
+    originalHorarios = JSON.parse(JSON.stringify(comercioData.horarios || {}));
+
     renderScheduleForm();
     setupEventListeners();
     updateHeader();
     updateSubscriptionBanner();
     Navigation.init();
+    createSaveButton();
 
+    // Validación global para navegación
     window.validateCurrentPageData = () => {
       const horarios = getScheduleData();
       const hasValidSchedule = Object.values(horarios).some(day => {
@@ -82,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     hideLoading();
     console.error('Error:', error);
-    showToast('Error', 'No se pudo cargar la página', 'error');
+    showToast('Error', 'No se pudo cargar la página: ' + error.message, 'error');
   }
 });
 
@@ -94,7 +101,8 @@ function updateHeader() {
     commerceName.textContent = comercioData.nombreComercio || 'Mi Comercio';
   }
   if (planBadge) {
-    planBadge.textContent = comercioData.plan ? comercioData.plan.toUpperCase() : 'TRIAL';
+    const plan = comercioData.plan || 'trial';
+    planBadge.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
   }
 }
 
@@ -104,27 +112,25 @@ function updateSubscriptionBanner() {
   
   if (!banner || !messageEl) return;
   
-  const trialEnd = comercioData.trialEndDate ? new Date(comercioData.trialEndDate) : null;
   const now = new Date();
-  const status = comercioData.estado || 'trial';
+  const trialStart = comercioData.fechaInicioTrial ? new Date(comercioData.fechaInicioTrial) : null;
+  const trialEnd = trialStart ? new Date(trialStart.getTime() + 5 * 24 * 60 * 60 * 1000) : null;
   
-  if (status === 'active') {
-    const endDate = comercioData.subscriptionEndDate ? new Date(comercioData.subscriptionEndDate) : null;
-    const formattedDate = endDate ? endDate.toLocaleDateString('es-ES') : 'fecha no disponible';
-    messageEl.textContent = `Suscripción activa hasta ${formattedDate}`;
-    banner.className = 'subscription-banner active';
-  } else if (status === 'trial' && trialEnd) {
+  if (comercioData.plan === 'trial' && trialEnd) {
     const daysLeft = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
     if (daysLeft > 0) {
-      messageEl.textContent = `Trial gratuito - ${daysLeft} días restantes`;
-      banner.className = 'subscription-banner';
+      messageEl.innerHTML = `🎉 <strong>Trial activo</strong> - Te quedan <strong>${daysLeft} días</strong>`;
+      banner.className = 'subscription-banner trial';
     } else {
-      messageEl.textContent = `Trial expirado - actualiza tu plan`;
+      messageEl.innerHTML = `⚠️ <strong>Tu trial expiró.</strong> Elige un plan para continuar`;
       banner.className = 'subscription-banner expired';
     }
+  } else if (comercioData.plan && comercioData.plan !== 'trial') {
+    messageEl.innerHTML = `✅ <strong>Plan ${comercioData.plan}</strong> activo`;
+    banner.className = 'subscription-banner active';
   } else {
-    messageEl.textContent = `Suscripción vencida - actualiza tu plan`;
-    banner.className = 'subscription-banner expired';
+    messageEl.textContent = 'Completa tu información para activar tu IA';
+    banner.className = 'subscription-banner';
   }
 }
 
@@ -208,47 +214,109 @@ function setupEventListeners() {
   const grid = document.getElementById('scheduleGrid');
   
   grid.addEventListener('change', (e) => {
-    if (e.target.type === 'checkbox' && e.target.closest('.day-toggle')) {
-      const dayEl = e.target.closest('.schedule-day');
-      const hoursEl = dayEl.querySelector('.day-hours');
-      if (e.target.checked) {
-        hoursEl.classList.remove('disabled');
-      } else {
-        hoursEl.classList.add('disabled');
-      }
-    }
-    
-    if (e.target.type === 'radio' && e.target.name.includes('_mode')) {
-      const dayKey = e.target.name.replace('_mode', '');
-      const dayEl = document.querySelector(`[data-day="${dayKey}"]`);
-      const continuousBlock = dayEl.querySelector('.continuous-schedule');
-      const splitBlock = dayEl.querySelector('.split-schedule');
-      
-      if (e.target.value === 'continuous') {
-        continuousBlock.classList.remove('hidden');
-        splitBlock.classList.add('hidden');
-      } else {
-        continuousBlock.classList.add('hidden');
-        splitBlock.classList.remove('hidden');
-      }
-    }
-    
-    if (e.target.type === 'checkbox' && e.target.closest('.morning-hours, .afternoon-hours')) {
-      const timeInputs = e.target.closest('label').nextElementSibling.querySelectorAll('input[type="time"]');
-      if (e.target.checked) {
-        timeInputs.forEach(input => input.disabled = false);
-      } else {
-        timeInputs.forEach(input => input.disabled = true);
-      }
+    markAsChanged();
+  });
+
+  grid.addEventListener('input', (e) => {
+    if (e.target.type === 'time') {
+      markAsChanged();
     }
   });
 
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
     if (confirm('¿Cerrar sesión?')) {
       await signOut(auth);
       window.location.href = '/index.html';
     }
   });
+
+  window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedChanges) {
+      e.preventDefault();
+      e.returnValue = '¿Seguro que quieres salir? Tienes cambios sin guardar.';
+    }
+  });
+}
+
+function markAsChanged() {
+  hasUnsavedChanges = true;
+  const saveBtn = document.getElementById('saveChangesBtn');
+  if (saveBtn) {
+    saveBtn.disabled = false;
+    saveBtn.className = 'btn-save';
+    saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+  }
+}
+
+function createSaveButton() {
+  const userInfo = document.querySelector('.header .user-info');
+  if (!userInfo) return;
+
+  const saveBtn = document.createElement('button');
+  saveBtn.id = 'saveChangesBtn';
+  saveBtn.className = 'btn-save';
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+  
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    userInfo.insertBefore(saveBtn, logoutBtn);
+  } else {
+    userInfo.appendChild(saveBtn);
+  }
+
+  saveBtn.addEventListener('click', saveScheduleData);
+
+  const style = document.createElement('style');
+  style.textContent = `
+    .header .user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .btn-save {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #667eea;
+      color: white;
+      white-space: nowrap;
+    }
+    .btn-save:disabled {
+      background: #e2e8f0;
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+    .btn-save:not(:disabled):hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .btn-save.saving {
+      background: #f59e0b;
+    }
+    .btn-save.saved {
+      background: #10b981;
+    }
+    .btn-save i {
+      font-size: 1rem;
+    }
+    .btn-save.saving i {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 function getScheduleData() {
@@ -305,30 +373,79 @@ function getScheduleData() {
 }
 
 async function saveScheduleData() {
+  const saveBtn = document.getElementById('saveChangesBtn');
+  
+  // Validar
   const horarios = getScheduleData();
+  const hasValidSchedule = Object.values(horarios).some(day => {
+    if (day.closed) return false;
+    if (day.continuous) {
+      return day.open && day.close && day.open !== "00:00" && day.close !== "00:00";
+    } else {
+      const hasMorning = day.morning?.enabled && day.morning?.open && day.morning?.close && day.morning.open !== "00:00";
+      const hasAfternoon = day.afternoon?.enabled && day.afternoon?.open && day.afternoon?.close && day.afternoon.open !== "00:00";
+      return hasMorning || hasAfternoon;
+    }
+  });
+
+  if (!hasValidSchedule) {
+    showToast('Horarios', 'Debes configurar al menos un horario válido', 'warning');
+    return false;
+  }
+
   try {
+    if (saveBtn) {
+      saveBtn.className = 'btn-save saving';
+      saveBtn.innerHTML = '<i class="fas fa-spinner"></i> <span>Guardando...</span>';
+      saveBtn.disabled = true;
+    }
+
+    // Guardar en Firestore
     const comercioRef = doc(db, 'comercios', currentComercioId);
-    await updateDoc(comercioRef, { horarios });
-    comercioData.horarios = horarios;
-    
+    await updateDoc(comercioRef, { 
+      horarios,
+      fechaActualizacion: new Date()
+    });
+
+    // Actualizar JSON
     try {
       await updateComercioJSON(currentComercioId, currentUser.uid);
     } catch (jsonError) {
-      console.error('Error actualizando JSON:', jsonError);
+      console.warn('JSON actualizado parcialmente:', jsonError.message);
+      showToast('Advertencia', 'Horarios guardados, pero JSON no actualizado', 'warning');
     }
+
+    // Actualizar estado local
+    comercioData.horarios = horarios;
+    originalHorarios = JSON.parse(JSON.stringify(horarios));
+    hasUnsavedChanges = false;
+
+    // UI feedback
+    if (saveBtn) {
+      saveBtn.className = 'btn-save saved';
+      saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado ✓</span>';
+      setTimeout(() => {
+        saveBtn.disabled = true;
+        saveBtn.className = 'btn-save';
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+      }, 2000);
+    }
+
+    // Marcar como completado
+    Navigation.markPageAsCompleted('horarios');
+    Navigation.updateProgressBar();
+
+    showToast('Éxito', 'Horarios guardados y JSON actualizado', 'success');
+    return true;
+
   } catch (error) {
-    console.error('Error saving schedule:', error);
+    console.error('Error al guardar horarios:', error);
+    if (saveBtn) {
+      saveBtn.className = 'btn-save';
+      saveBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>Error</span>';
+      saveBtn.disabled = false;
+    }
+    showToast('Error', 'No se pudieron guardar los horarios: ' + error.message, 'error');
+    return false;
   }
 }
-
-const originalGoToNextPage = Navigation.goToNextPage;
-Navigation.goToNextPage = async function() {
-  await saveScheduleData();
-  return originalGoToNextPage.call(this);
-};
-
-const originalGoToPreviousPage = Navigation.goToPreviousPage;
-Navigation.goToPreviousPage = async function() {
-  await saveScheduleData();
-  return originalGoToPreviousPage.call(this);
-};
