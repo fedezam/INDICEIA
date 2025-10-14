@@ -8,7 +8,6 @@
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../styles.css">
-
 </head>
 <body>
   <!-- Loading overlay -->
@@ -61,10 +60,11 @@
         <p class="help-text"><i class="fas fa-info-circle"></i> Durante el trial podrás evaluar si el plan elegido se ajusta a tus necesidades</p>
       </div>
 
-      <!-- Información básica -->
-      <div class="form-section">
-        <h3><i class="fas fa-store"></i> Información Básica</h3>
-        <form id="miComercioForm" class="form-fields">
+      <!-- TODO EL FORMULARIO COMPLETO DENTRO DE UN SOLO <form> -->
+      <form id="miComercioForm" class="form-fields">
+        <!-- Información básica -->
+        <div class="form-section">
+          <h3><i class="fas fa-store"></i> Información Básica</h3>
           <div class="form-field">
             <label for="nombreComercio" class="required">Nombre del comercio</label>
             <input type="text" id="nombreComercio" name="nombreComercio" required placeholder="Ej: Panadería San Juan">
@@ -112,13 +112,11 @@
             <textarea id="descripcion" name="descripcion" required placeholder="Describe brevemente tu comercio..." rows="4"></textarea>
             <div class="error-message">Este campo es requerido</div>
           </div>
-        </form>
-      </div>
+        </div>
 
-      <!-- Contacto -->
-      <div class="form-section">
-        <h3><i class="fas fa-phone"></i> Información de Contacto</h3>
-        <div class="form-fields">
+        <!-- Información de Contacto y Presencia Web DENTRO del form -->
+        <div class="form-section">
+          <h3><i class="fas fa-phone"></i> Información de Contacto</h3>
           <div class="form-field">
             <label for="telefono" class="required">Teléfono</label>
             <input type="text" id="telefono" name="telefono" required placeholder="Ej: +54 9 11 1234-5678">
@@ -133,12 +131,12 @@
             <input type="email" id="email" name="email" required placeholder="contacto@micomercio.com">
             <div class="error-message">Este campo es requerido</div>
           </div>
-          
+
           <div class="form-field full-width">
             <label><i class="fas fa-globe"></i> Presencia Web <span class="required-indicator">*</span></label>
             <p class="help-text">Debe tener al menos un sitio web o red social activa</p>
           </div>
-          
+
           <div class="form-field">
             <label for="website">Sitio web</label>
             <input type="url" id="website" name="website" placeholder="https://micomercio.com">
@@ -156,16 +154,16 @@
             <input type="url" id="tiktok" name="tiktok" placeholder="https://tiktok.com/@micomercio">
           </div>
         </div>
-      </div>
+      </form> <!-- CIERRE DEL FORMULARIO -->
 
-      <!-- Categorías -->
+      <!-- Categorías (fuera del form, gestionado por JS) -->
       <div class="form-section">
         <h3><i class="fas fa-tags"></i> Categorías del Negocio <span class="required-indicator">*</span></h3>
         <p>Selecciona al menos una categoría que describe tu comercio.</p>
         <div id="categoriesGrid" class="categories-section"></div>
       </div>
 
-      <!-- Métodos de pago -->
+      <!-- Métodos de pago (fuera del form, gestionado por JS) -->
       <div class="form-section">
         <h3><i class="fas fa-credit-card"></i> Métodos de Pago <span class="required-indicator">*</span></h3>
         <p>Selecciona al menos un método de pago que aceptas:</p>
