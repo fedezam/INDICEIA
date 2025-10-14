@@ -3,218 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Productos - INDICEIA</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <title>Panel de Productos</title>
   <link rel="stylesheet" href="/src/styles.css">
-  <style>
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-    .form-group { display: flex; flex-direction: column; }
-    .form-group label { font-weight: 600; color: #2d3748; margin-bottom: 0.5rem; }
-    .form-group input, .form-group select, .form-group textarea {
-      padding: 0.75rem; border: 1px solid #cbd5e0; border-radius: 8px; font-size: 1rem; font-family: inherit;
-    }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-      outline: none; border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
-    }
-    .form-group textarea { min-height: 100px; resize: vertical; }
-    .required { color: #ef4444; }
-    .editable-cell { cursor: pointer; padding: 1rem !important; background: #f8fafc; border-radius: 4px; transition: all 0.2s; }
-    .editable-cell:hover { background: #ebf8ff; box-shadow: inset 0 0 0 2px #4299e1; }
-    .badge { display: inline-block; padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin: 0.2rem; }
-    .badge-active { background: #d1fae5; color: #065f46; }
-    .badge-paused { background: #fed7d7; color: #742a2a; }
-    .table tbody tr { transition: all 0.2s; }
-    .table tbody tr:hover { background: #f8fafc; }
-    .table tbody tr.paused-row { opacity: 0.6; background: #f3f4f6; }
-    .table td { padding: 1rem; border-bottom: 1px solid #e2e8f0; color: #4a5568; }
-    .table td small { display: block; margin-top: 0.25rem; font-size: 0.75rem; color: #f6ad55; }
-    .form-actions { display: flex; gap: 1rem; margin-top: 2rem; }
-    .file-upload { border: 2px dashed #cbd5e0; border-radius: 12px; padding: 3rem; text-align: center; cursor: pointer; transition: all 0.3s; }
-    .file-upload:hover { border-color: #4299e1; background: #ebf8ff; }
-    .file-upload.dragover { border-color: #3182ce; background: #bee3f8; }
-    .file-upload i { font-size: 3rem; color: #4299e1; margin-bottom: 1rem; }
-    .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-    .table-title { font-size: 1.1rem; font-weight: 600; color: #2d3748; display: flex; align-items: center; gap: 0.5rem; }
-    .table-actions { display: flex; gap: 0.75rem; }
-    .btn-sm { padding: 0.5rem; font-size: 0.875rem; }
-    .btn-outline { background: white; border: 1px solid #cbd5e0; color: #4a5568; }
-    .btn-outline:hover { background: #f8fafc; }
-    .btn-danger { background: #ef4444; color: white; }
-    .btn-danger:hover { background: #dc2626; }
-    .empty-state-row { text-align: center; color: #a0aec0; font-style: italic; padding: 3rem !important; }
-    .product-limit-info { background: #f8fafc; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; }
-    .limit-counter { font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; color: #2d3748; }
-    .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 1rem; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, #48bb78, #38a169); border-radius: 4px; transition: width 0.3s; }
-    .limit-warning { background: #fffbeb; border: 1px solid #f6ad55; border-radius: 8px; padding: 1rem; color: #975a16; display: none; }
-    .subscription-banner { background: #fffbeb; border-left: 4px solid #f6ad55; padding: 1rem 2rem; margin: 0; font-weight: 600; color: #975a16; display: flex; align-items: center; gap: 0.5rem; }
-    .subscription-banner.active { background: #c6f6d5; border-left-color: #38a169; color: #276749; }
-    .subscription-banner.trial { background: #dbeafe; border-left-color: #3b82f6; color: #1e40af; }
-    @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } .table { font-size: 0.9rem; } .table td { padding: 0.75rem; } }
-  </style>
 </head>
 <body>
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">Cargando...</div>
-  </div>
-
-  <div class="toast-container" id="toastContainer"></div>
-
+  <!-- ================= HEADER ================= -->
   <header class="header">
-    <div class="container">
-      <div class="logo">
-        <div class="logo-icon"><i class="fas fa-robot"></i></div>
-        <h1>INDICEIA</h1>
-      </div>
-      <div class="user-info">
-        <div class="user-details">
-          <div class="user-name" id="commerceName">Mi Comercio</div>
-          <div class="user-email" id="planBadge">Trial</div>
-        </div>
-        <button id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i></button>
-      </div>
+    <div class="header-left">
+      <img src="/img/logo.svg" alt="Logo" class="logo">
+      <h1>Panel de Comercio</h1>
+    </div>
+    <div class="header-right">
+      <span id="userEmail" class="user-email"></span>
+      <button id="logoutBtn" class="btn-logout">Cerrar sesión</button>
     </div>
   </header>
 
-  <div class="subscription-banner" id="subscriptionBanner">
-    <i class="fas fa-info-circle"></i>
-    <span id="subscriptionMessage">Cargando...</span>
+  <!-- ================= LAYOUT ================= -->
+  <div class="layout">
+    <!-- ======= NAV ======= -->
+    <nav class="sidebar">
+      <ul>
+        <li><a href="/src/pages/usuario.html">👤 Mi Perfil</a></li>
+        <li><a href="/src/pages/mi-comercio.html">🏪 Mi Comercio</a></li>
+        <li><a href="/src/pages/productos.html" class="active">🧾 Productos</a></li>
+        <li><a href="/src/pages/servicio.html">🛠️ Servicios</a></li>
+      </ul>
+    </nav>
+
+    <!-- ======= MAIN ======= -->
+    <main class="content">
+      <section class="panel">
+        <h2>📦 Gestión de Productos</h2>
+
+        <!-- Formulario -->
+        <form id="productForm" class="form">
+          <input id="nombre" placeholder="Nombre del producto" required>
+          <input id="precio" type="number" placeholder="Precio" required>
+          <input id="origen" placeholder="Origen (opcional)">
+          <input id="imagen" type="url" placeholder="URL de imagen (opcional)">
+          <button type="submit" id="saveProduct">Guardar Producto</button>
+        </form>
+
+        <!-- Botones CSV -->
+        <div class="csv-section">
+          <input type="file" id="csvInput" accept=".csv">
+          <button id="previewCsv">Previsualizar CSV</button>
+          <button id="importCsv">Importar CSV</button>
+        </div>
+
+        <!-- Tabla -->
+        <table id="productTable">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Precio</th>
+              <th>Origen</th>
+              <th>Imagen</th>
+              <th>Pausado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="productList"></tbody>
+        </table>
+      </section>
+    </main>
   </div>
 
-  <div class="progress-indicator" id="progressContainer"></div>
-
-  <main class="main-content">
-    <div class="container">
-      <div class="form-section">
-        <h3><i class="fas fa-chart-bar"></i> Control de Productos</h3>
-        <div class="product-limit-info">
-          <div class="limit-counter" id="productCounter">Cargando...</div>
-          <div class="progress-bar">
-            <div class="progress-fill" id="productProgressFill"></div>
-          </div>
-          <div class="limit-warning" id="limitWarning">
-            <i class="fas fa-exclamation-triangle"></i> Tu plan permite hasta <span id="maxProducts">50</span> productos.
-          </div>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <h3><i class="fas fa-edit"></i> Agregar Producto</h3>
-        <p>Carga un nuevo producto manualmente.</p>
-        <form id="productForm">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="nombre">Nombre/Título <span class="required">*</span></label>
-              <input type="text" id="nombre" required>
-            </div>
-            <div class="form-group">
-              <label for="codigo">Código/SKU</label>
-              <input type="text" id="codigo">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="categoria">Categoría <span class="required">*</span></label>
-              <select id="categoria" required>
-                <option value="">Seleccionar...</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="subcategoria">Subcategoría</label>
-              <input type="text" id="subcategoria">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="descripcion">Descripción</label>
-            <textarea id="descripcion"></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="imagen">Imagen (URL)</label>
-              <input type="url" id="imagen">
-            </div>
-            <div class="form-group">
-              <label for="precio">Precio <span class="required">*</span></label>
-              <input type="number" id="precio" step="0.01" required>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="stock">Stock</label>
-              <input type="number" id="stock">
-            </div>
-            <div class="form-group">
-              <label for="color">Color</label>
-              <input type="text" id="color">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="talle">Talle/Tamaño</label>
-              <input type="text" id="talle">
-            </div>
-            <div class="form-group">
-              <label for="origen">Origen</label>
-              <input type="text" id="origen">
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="btn btn-secondary" id="clearProduct">
-              <i class="fas fa-eraser"></i> Limpiar
-            </button>
-            <button type="submit" class="btn btn-primary" id="saveProduct">
-              <i class="fas fa-save"></i> Guardar Producto
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <div class="form-section">
-        <h3><i class="fas fa-file-csv"></i> Importación Masiva</h3>
-        <p>Importa múltiples productos desde CSV.</p>
-        <div class="file-upload" id="fileUpload">
-          <i class="fas fa-cloud-upload-alt"></i>
-          <h3>Arrastra tu CSV aquí</h3>
-          <p>O haz clic para seleccionar</p>
-          <input type="file" id="excelFile" accept=".csv,.xlsx,.xls" style="display: none;">
-          <button type="button" class="btn btn-outline">
-            <i class="fas fa-file-csv"></i> Seleccionar Archivo
-          </button>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <h3><i class="fas fa-list"></i> Productos Cargados</h3>
-        <div class="table-header">
-          <div class="table-title"><i class="fas fa-boxes"></i> Lista de Productos</div>
-          <div class="table-actions">
-            <button class="btn btn-secondary" id="exportProducts">
-              <i class="fas fa-file-export"></i> Exportar
-            </button>
-            <button class="btn btn-danger" id="clearProducts">
-              <i class="fas fa-trash"></i> Eliminar Todos
-            </button>
-          </div>
-        </div>
-        <div style="overflow-x: auto;">
-          <table class="table" id="productsTable">
-            <thead id="productsTableHead"></thead>
-            <tbody id="productsTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <div class="navigation-controls" id="navigationControls"></div>
-
-  <script type="module" src="./productos.js"></script>
+  <!-- ================= SCRIPTS ================= -->
+  <script type="module" src="/src/firebase.js"></script>
+  <script type="module" src="/src/pages/productos.js"></script>
 </body>
 </html>
