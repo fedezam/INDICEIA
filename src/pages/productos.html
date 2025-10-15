@@ -3,75 +3,112 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de Productos</title>
-  <link rel="stylesheet" href="/src/styles.css">
+  <title>Productos - Indice IA</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <!-- ================= HEADER ================= -->
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando...</div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Header -->
   <header class="header">
-    <div class="header-left">
-      <img src="/img/logo.svg" alt="Logo" class="logo">
-      <h1>Panel de Comercio</h1>
-    </div>
-    <div class="header-right">
-      <span id="userEmail" class="user-email"></span>
-      <button id="logoutBtn" class="btn-logout">Cerrar sesión</button>
+    <div class="container">
+      <div class="logo">
+        <div class="logo-icon">🤖</div>
+        <div>
+          <h1 id="commerceName">Mi Comercio</h1>
+          <span class="plan-badge" id="planBadge">Trial</span>
+        </div>
+      </div>
+      <div class="user-info">
+        <button class="btn-logout" id="logoutBtn">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- ================= LAYOUT ================= -->
-  <div class="layout">
-    <!-- ======= NAV ======= -->
-    <nav class="sidebar">
-      <ul>
-        <li><a href="/src/pages/usuario.html">👤 Mi Perfil</a></li>
-        <li><a href="/src/pages/mi-comercio.html">🏪 Mi Comercio</a></li>
-        <li><a href="/src/pages/productos.html" class="active">🧾 Productos</a></li>
-        <li><a href="/src/pages/servicio.html">🛠️ Servicios</a></li>
-      </ul>
-    </nav>
-
-    <!-- ======= MAIN ======= -->
-    <main class="content">
-      <section class="panel">
-        <h2>📦 Gestión de Productos</h2>
-
-        <!-- Formulario -->
-        <form id="productForm" class="form">
-          <input id="nombre" placeholder="Nombre del producto" required>
-          <input id="precio" type="number" placeholder="Precio" required>
-          <input id="origen" placeholder="Origen (opcional)">
-          <input id="imagen" type="url" placeholder="URL de imagen (opcional)">
-          <button type="submit" id="saveProduct">Guardar Producto</button>
-        </form>
-
-        <!-- Botones CSV -->
-        <div class="csv-section">
-          <input type="file" id="csvInput" accept=".csv">
-          <button id="previewCsv">Previsualizar CSV</button>
-          <button id="importCsv">Importar CSV</button>
-        </div>
-
-        <!-- Tabla -->
-        <table id="productTable">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Precio</th>
-              <th>Origen</th>
-              <th>Imagen</th>
-              <th>Pausado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="productList"></tbody>
-        </table>
-      </section>
-    </main>
+  <!-- Subscription Banner -->
+  <div class="subscription-banner" id="subscriptionBanner">
+    <span id="subscriptionMessage">Completa tu información</span>
   </div>
 
-  <!-- ================= SCRIPTS ================= -->
-  <script type="module" src="/src/firebase.js"></script>
-  <script type="module" src="/src/pages/productos.js"></script>
+  <!-- Progress Indicator -->
+  <div class="progress-indicator" id="progressContainer"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    
+    <!-- Sección de Acciones -->
+    <div class="form-section">
+      <h3><i class="fas fa-tools"></i> Gestión de Productos</h3>
+      <p>Carga tus productos manualmente, desde CSV, o gestiona columnas personalizadas</p>
+      
+      <div class="actions-bar" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
+        <button class="btn btn-primary" id="btnUploadCSV">
+          <i class="fas fa-upload"></i> Subir CSV
+        </button>
+        <button class="btn btn-success" id="btnAddManual">
+          <i class="fas fa-plus"></i> Agregar Producto
+        </button>
+        <button class="btn btn-secondary" id="btnAddColumn">
+          <i class="fas fa-columns"></i> Nueva Columna
+        </button>
+      </div>
+
+      <input type="file" id="fileInput" accept=".csv" style="display: none;">
+    </div>
+
+    <!-- Área de Mapeo CSV -->
+    <div class="form-section" id="mappingArea" style="display: none;">
+      <h3><i class="fas fa-map"></i> Mapeo de Columnas CSV</h3>
+      <p>Selecciona cómo mapear las columnas de tu CSV a los campos del producto</p>
+      <div id="mappingFields" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin: 1rem 0;"></div>
+      <button class="btn btn-primary" id="btnApplyMapping">
+        <i class="fas fa-check"></i> Aplicar Mapeo
+      </button>
+      <button class="btn btn-secondary" id="btnCancelMapping">
+        <i class="fas fa-times"></i> Cancelar
+      </button>
+    </div>
+
+    <!-- Límite de Productos -->
+    <div class="form-section" id="limitBanner" style="display: none; background: #fff3cd; border-left: 4px solid #ffc107;">
+      <p style="margin: 0; color: #856404;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Límite de productos:</strong> <span id="limitText"></span>
+      </p>
+    </div>
+
+    <!-- Tabla de Productos -->
+    <div class="form-section">
+      <h3><i class="fas fa-table"></i> Productos</h3>
+      <div style="overflow-x: auto;">
+        <table class="table" id="productsTable">
+          <thead>
+            <tr id="tableHeader"></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <p id="emptyMessage" style="text-align: center; color: #6b7280; margin-top: 2rem; display: none;">
+        <i class="fas fa-inbox"></i> No hay productos cargados. Agrega uno manualmente o sube un CSV.
+      </p>
+    </div>
+
+  </main>
+
+  <!-- Navigation Controls (insertado por Navigation.js) -->
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script type="module" src="./productos.js"></script>
 </body>
 </html>
