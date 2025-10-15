@@ -3,112 +3,148 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Productos - Indice IA</title>
-  <link rel="stylesheet" href="../styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>Productos - Mi Comercio</title>
+  <link rel="stylesheet" href="styles.css"> <!-- Tu CSS completo que me pasaste -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
-  <!-- Loading Overlay -->
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">Cargando...</div>
+<!-- ================= HEADER ================= -->
+<header class="header">
+  <div class="container">
+    <div class="logo">
+      <div class="logo-icon">🛒</div>
+      <h1>Mi Comercio</h1>
+    </div>
+    <div class="user-info">
+      <div class="user-details">
+        <div class="user-name">Fede Zambrano</div>
+        <div class="user-email">fede@example.com</div>
+      </div>
+      <button class="btn-logout">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<!-- ================= MAIN CONTENT ================= -->
+<main class="main-content">
+
+  <!-- ====== PASOS DE PROGRESO ====== -->
+  <div class="progress-indicator">
+    <div class="progress-header">
+      <div class="progress-title">Configuración de Comercio</div>
+      <div class="progress-subtitle">Paso 3: Productos</div>
+    </div>
+    <div class="progress-steps">
+      <div class="step active">
+        <div class="step-icon">1</div>
+        <div class="step-name">Horarios</div>
+      </div>
+      <div class="step current">
+        <div class="step-icon">2</div>
+        <div class="step-name">Productos</div>
+      </div>
+      <div class="step">
+        <div class="step-icon">3</div>
+        <div class="step-name">Finalizar</div>
+      </div>
+    </div>
   </div>
 
-  <!-- Toast Container -->
-  <div class="toast-container" id="toastContainer"></div>
+  <!-- ================= FORMULARIO PRODUCTOS ================= -->
+  <section class="form-section">
 
-  <!-- Header -->
-  <header class="header">
-    <div class="container">
-      <div class="logo">
-        <div class="logo-icon">🤖</div>
-        <div>
-          <h1 id="commerceName">Mi Comercio</h1>
-          <span class="plan-badge" id="planBadge">Trial</span>
+    <h3>Gestión de Productos</h3>
+    <p>Podés cargar productos de forma manual o masiva, y luego exportarlos.</p>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" data-target="manualSection">Carga Manual</button>
+      <button class="tab" data-target="massSection">Carga Masiva</button>
+      <button class="tab" data-target="dataSection">Datos Cargados</button>
+    </div>
+
+    <!-- ===== MANUAL ===== -->
+    <div id="manualSection" class="tab-content active">
+      <form id="manualForm" class="form-fields">
+        <div class="form-field"><label>Código</label><input id="codigo" placeholder="Opcional"/></div>
+        <div class="form-field required"><label>Artículo</label><input id="articulo" required/></div>
+        <div class="form-field required"><label>Descripción</label><input id="descripcion" required/></div>
+        <div class="form-field"><label>Precio</label><input id="precio_final" type="number" step="0.01"/></div>
+        <div class="form-field"><label>Stock</label><input id="stock" type="number"/></div>
+        <div class="form-field"><label>Categoría</label><input id="categoria"/></div>
+        <div class="form-field"><label>Subcategoría</label><input id="subcategoria"/></div>
+        <div class="form-field"><label>Marca</label><input id="marca"/></div>
+        <div class="form-field">
+          <label>Disponibilidad</label>
+          <select id="disponibilidad">
+            <option value="inmediata">Inmediata</option>
+            <option value="bajo pedido">Bajo pedido</option>
+          </select>
         </div>
+        <div class="form-field"><label>Imagen (URL)</label><input id="imagen"/></div>
+        <div class="form-field"><label>Etiquetas (coma separadas)</label><input id="etiquetas"/></div>
+
+        <h4>Atributos Personalizados</h4>
+        <div id="atributosList"></div>
+        <button type="button" id="addAtributo" class="btn btn-secondary">➕ Agregar Atributo</button><br><br>
+
+        <button type="submit" class="btn btn-primary">Agregar Producto</button>
+      </form>
+    </div>
+
+    <!-- ===== MASIVA ===== -->
+    <div id="massSection" class="tab-content">
+      <div class="form-field">
+        <label>Archivo Excel/CSV</label>
+        <input type="file" id="fileInput" accept=".xlsx,.csv"/>
       </div>
-      <div class="user-info">
-        <button class="btn-logout" id="logoutBtn">
-          <i class="fas fa-sign-out-alt"></i>
-        </button>
+      <button id="uploadBtn" class="btn btn-primary">Importar Archivo</button>
+      <h4>Vista Previa</h4>
+      <table id="previewTable" class="table"></table>
+    </div>
+
+    <!-- ===== DATOS CARGADOS ===== -->
+    <div id="dataSection" class="tab-content">
+      <table id="dataTable" class="table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Artículo</th>
+            <th>Descripción</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Categoría</th>
+            <th>Disponibilidad</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="actions-bar">
+        <button id="exportJSON" class="btn btn-success">Exportar JSON</button>
+        <button id="exportExcel" class="btn btn-success">Exportar Excel</button>
       </div>
     </div>
-  </header>
 
-  <!-- Subscription Banner -->
-  <div class="subscription-banner" id="subscriptionBanner">
-    <span id="subscriptionMessage">Completa tu información</span>
+  </section>
+</main>
+
+<!-- ================= NAVIGATION ================= -->
+<div class="navigation-controls">
+  <div class="nav-buttons">
+    <a href="horarios.html" class="btn btn-secondary">⬅ Volver</a>
+    <a href="finalizar.html" class="btn btn-primary">Siguiente ➡</a>
   </div>
+  <div class="nav-info">Paso 3 de 3</div>
+</div>
 
-  <!-- Progress Indicator -->
-  <div class="progress-indicator" id="progressContainer"></div>
+<!-- ================= TOAST & LOADING ================= -->
+<div class="toast-container"></div>
+<div class="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Cargando...</div>
+</div>
 
-  <!-- Main Content -->
-  <main class="main-content">
-    
-    <!-- Sección de Acciones -->
-    <div class="form-section">
-      <h3><i class="fas fa-tools"></i> Gestión de Productos</h3>
-      <p>Carga tus productos manualmente, desde CSV, o gestiona columnas personalizadas</p>
-      
-      <div class="actions-bar" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem;">
-        <button class="btn btn-primary" id="btnUploadCSV">
-          <i class="fas fa-upload"></i> Subir CSV
-        </button>
-        <button class="btn btn-success" id="btnAddManual">
-          <i class="fas fa-plus"></i> Agregar Producto
-        </button>
-        <button class="btn btn-secondary" id="btnAddColumn">
-          <i class="fas fa-columns"></i> Nueva Columna
-        </button>
-      </div>
-
-      <input type="file" id="fileInput" accept=".csv" style="display: none;">
-    </div>
-
-    <!-- Área de Mapeo CSV -->
-    <div class="form-section" id="mappingArea" style="display: none;">
-      <h3><i class="fas fa-map"></i> Mapeo de Columnas CSV</h3>
-      <p>Selecciona cómo mapear las columnas de tu CSV a los campos del producto</p>
-      <div id="mappingFields" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin: 1rem 0;"></div>
-      <button class="btn btn-primary" id="btnApplyMapping">
-        <i class="fas fa-check"></i> Aplicar Mapeo
-      </button>
-      <button class="btn btn-secondary" id="btnCancelMapping">
-        <i class="fas fa-times"></i> Cancelar
-      </button>
-    </div>
-
-    <!-- Límite de Productos -->
-    <div class="form-section" id="limitBanner" style="display: none; background: #fff3cd; border-left: 4px solid #ffc107;">
-      <p style="margin: 0; color: #856404;">
-        <i class="fas fa-exclamation-triangle"></i>
-        <strong>Límite de productos:</strong> <span id="limitText"></span>
-      </p>
-    </div>
-
-    <!-- Tabla de Productos -->
-    <div class="form-section">
-      <h3><i class="fas fa-table"></i> Productos</h3>
-      <div style="overflow-x: auto;">
-        <table class="table" id="productsTable">
-          <thead>
-            <tr id="tableHeader"></tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-      <p id="emptyMessage" style="text-align: center; color: #6b7280; margin-top: 2rem; display: none;">
-        <i class="fas fa-inbox"></i> No hay productos cargados. Agrega uno manualmente o sube un CSV.
-      </p>
-    </div>
-
-  </main>
-
-  <!-- Navigation Controls (insertado por Navigation.js) -->
-
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script type="module" src="./productos.js"></script>
+<script type="module" src="mi-comercio.js"></script>
 </body>
 </html>
