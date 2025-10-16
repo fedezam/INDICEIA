@@ -14,6 +14,7 @@ export default defineConfig({
         miIa: resolve(__dirname, 'src/pages/mi-ia.html'),
         productos: resolve(__dirname, 'src/pages/productos.html'),
         usuario: resolve(__dirname, 'src/pages/usuario.html'),
+        dashboard: resolve(__dirname, 'src/pages/dashboard.html'),
       },
     },
   },
