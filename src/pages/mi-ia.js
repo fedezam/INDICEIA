@@ -196,7 +196,15 @@ function loadAIConfig() {
 function renderProductosDestacados() {
   const content = document.getElementById('productosDestacadosContent');
   
-  if (!content) return;
+  console.log('🔍 Renderizando productos destacados...');
+  console.log('🔍 Content element:', content);
+  console.log('🔍 Categorías:', categorias);
+  console.log('🔍 Productos:', productos.length);
+  
+  if (!content) {
+    console.error('❌ No se encontró el elemento productosDestacadosContent');
+    return;
+  }
   
   if (categorias.length === 0 && productos.length === 0) {
     content.innerHTML = `
@@ -205,6 +213,7 @@ function renderProductosDestacados() {
         Primero cargá productos en la sección <strong>Productos</strong>
       </p>
     `;
+    console.log('⚠️ No hay productos ni categorías');
     return;
   }
 
@@ -241,6 +250,7 @@ function renderProductosDestacados() {
     checkboxes.forEach(cb => {
       cb.addEventListener('change', () => markAsChanged());
     });
+    console.log('✅ Categorías renderizadas:', categorias.length);
   } else {
     content.innerHTML = `
       <p style="text-align: center; color: #6b7280; padding: 2rem;">
@@ -249,13 +259,22 @@ function renderProductosDestacados() {
         Agregá categorías en la sección <strong>Productos</strong> para poder destacarlas.
       </p>
     `;
+    console.log('⚠️ Productos sin categorías');
   }
 }
 
 // ==================== VALIDACIÓN DE CONTACTOS ====================
 function renderContactosValidacion() {
   const container = document.getElementById('contactosValidacion');
-  if (!container) return;
+  
+  console.log('🔍 Renderizando validación de contactos...');
+  console.log('🔍 Container element:', container);
+  console.log('🔍 Comercio data:', comercioData);
+  
+  if (!container) {
+    console.error('❌ No se encontró el elemento contactosValidacion');
+    return;
+  }
   
   const contactos = [
     { 
@@ -295,6 +314,8 @@ function renderContactosValidacion() {
     }
   ];
 
+  console.log('🔍 Contactos:', contactos);
+
   const hasInvalidContacts = contactos.some(c => !c.valid);
 
   container.innerHTML = `
@@ -325,6 +346,8 @@ function renderContactosValidacion() {
       </div>
     `).join('')}
   `;
+  
+  console.log('✅ Contactos renderizados');
 }
 
 // ==================== EVENT LISTENERS ====================
@@ -340,6 +363,9 @@ function setupEventListeners() {
   const toggleMessages = document.getElementById('toggleMessages');
   const messagesForm = document.getElementById('aiMessagesForm');
   
+  console.log('🔍 Toggle button:', toggleMessages);
+  console.log('🔍 Messages form:', messagesForm);
+  
   if (toggleMessages && messagesForm) {
     toggleMessages.addEventListener('click', () => {
       const isVisible = messagesForm.style.display === 'block';
@@ -347,7 +373,10 @@ function setupEventListeners() {
       toggleMessages.innerHTML = isVisible 
         ? '➕ Configurar mensajes personalizados' 
         : '➖ Ocultar mensajes personalizados';
+      console.log('✅ Toggle clicked, now visible:', !isVisible);
     });
+  } else {
+    console.error('❌ No se encontraron elementos de toggle');
   }
 
   // Detectar cambios en todos los campos
