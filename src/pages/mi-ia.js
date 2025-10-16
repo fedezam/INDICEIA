@@ -104,7 +104,7 @@ async function loadProducts() {
       ...doc.data()
     }));
 
-    // Extraer categorías únicas
+    // Extraer categorías únicas (solo las que tienen productos)
     categorias = [...new Set(productos
       .map(p => p.categoria)
       .filter(c => c && c.trim() !== ''))];
@@ -194,17 +194,137 @@ function loadAIConfig() {
 
 // ==================== PRODUCTOS DESTACADOS ====================
 function renderProductosDestacados() {
-  const section = document.getElementById('productosDestacadosSection');
   const content = document.getElementById('productosDestacadosContent');
   
+  if (!content) return;
+  
   if (categorias.length === 0 && productos.length === 0) {
-    // No hay productos ni categorías
     content.innerHTML = `
       <p style="text-align: center; color: #6b7280; padding: 2rem;">
         <i class="fas fa-box-open" style="font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>
         Primero cargá productos en la sección <strong>Productos</strong>
       </p>
     `;
+    return;
+  }
+
+  const aiConfig = comercioData.aiConfig || {};
+  const destacados = aiConfig.categoriasDestacadas || [];
+
+  if (categorias.length > 0) {
+    content.innerHTML = `
+      <div class="form-field">
+        <label>
+          Elegí las categorías que querés priorizar
+          <span class="tooltip-icon" title="El asistente mencionará estos productos con mayor frecuencia">
+            <i class="fas fa-question-circle"></i>
+          </span>
+        </label>
+        <div style="display: grid; gap: 0.5rem; margin-top: 0.5rem;">
+          ${categorias.map(cat => `
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem;">
+              <input 
+                type="checkbox" 
+                name="categoriaDestacada" 
+                value="${cat}"
+                ${destacados.includes(cat) ? 'checked' : ''}
+              >
+              <span>⭐ ${cat}</span>
+            </label>
+          `).join('')}
+        </div>
+        <small>El asistente sugerirá estos productos cuando sea relevante</small>
+      </div>
+    `;
+
+    const checkboxes = content.querySelectorAll('input[name="categoriaDestacada"]');
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', () => markAsChanged());
+    });
+  } else {
+    content.innerHTML = `
+      <p style="text-align: center; color: #6b7280; padding: 2rem;">
+        <i class="fas fa-tag" style="font-size: 2rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>
+        Tus productos no tienen categorías asignadas.<br>
+        Agregá categorías en la sección <strong>Productos</strong> para poder destacarlas.
+      </p>
+    `;
+  }
+}
+
+// ==================== VALIDACIÓN DE CONTACTOS ====================
+function renderContactosValidacion() {
+  const container = document.getElementById('contactosValidacion');
+  if (!container) return;
+  
+  const contactos = [
+    { 
+      id: 'whatsapp', 
+      icon: '📱', 
+      label: 'WhatsApp', 
+      value: comercioData.whatsapp,
+      valid: !!comercioData.whatsapp && comercioData.whatsapp.trim() !== ''
+    },
+    { 
+      id: 'instagram', 
+      icon: '📸', 
+      label: 'Instagram', 
+      value: comercioData.instagram,
+      valid: !!comercioData.instagram && comercioData.instagram.trim() !== ''
+    },
+    { 
+      id: 'sitioWeb', 
+      icon: '🌐', 
+      label: 'Sitio Web', 
+      value: comercioData.sitioWeb,
+      valid: !!comercioData.sitioWeb && comercioData.sitioWeb.trim() !== ''
+    },
+    { 
+      id: 'email', 
+      icon: '📧', 
+      label: 'Email', 
+      value: comercioData.email,
+      valid: !!comercioData.email && comercioData.email.trim() !== ''
+    },
+    { 
+      id: 'telefono', 
+      icon: '☎️', 
+      label: 'Teléfono', 
+      value: comercioData.telefono,
+      valid: !!comercioData.telefono && comercioData.telefono.trim() !== ''
+    }
+  ];
+
+  const hasInvalidContacts = contactos.some(c => !c.valid);
+
+  container.innerHTML = `
+    ${hasInvalidContacts ? `
+      <div class="alert alert-warning" style="grid-column: 1/-1;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Algunos contactos no están configurados.</strong> 
+        El asistente no podrá derivar a esos canales.
+      </div>
+    ` : ''}
+    
+    ${contactos.map(contacto => `
+      <div class="contacto-item ${contacto.valid ? 'valid' : 'invalid'}">
+        <div class="contacto-icon">${contacto.icon}</div>
+        <div class="contacto-info">
+          <strong>${contacto.label}</strong>
+          ${contacto.valid 
+            ? `<span class="contacto-value">${contacto.value}</span>`
+            : `<span class="contacto-missing">No configurado</span>`
+          }
+        </div>
+        <div class="contacto-status">
+          ${contacto.valid 
+            ? '<i class="fas fa-check-circle" style="color: #10b981;"></i>'
+            : '<i class="fas fa-times-circle" style="color: #ef4444;"></i>'
+          }
+        </div>
+      </div>
+    `).join('')}
+  `;
 }
 
 // ==================== EVENT LISTENERS ====================
@@ -222,7 +342,7 @@ function setupEventListeners() {
   
   if (toggleMessages && messagesForm) {
     toggleMessages.addEventListener('click', () => {
-      const isVisible = messagesForm.style.display !== 'none';
+      const isVisible = messagesForm.style.display === 'block';
       messagesForm.style.display = isVisible ? 'none' : 'block';
       toggleMessages.innerHTML = isVisible 
         ? '➕ Configurar mensajes personalizados' 
@@ -279,9 +399,6 @@ function markAsChanged() {
     saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
   }
 }
-
-// Exponer para uso en HTML
-window.markAsChanged = markAsChanged;
 
 async function saveAIConfig() {
   const saveBtn = document.getElementById('saveChangesBtn');
@@ -353,7 +470,7 @@ async function saveAIConfig() {
       aiGenerated: true
     };
 
-    // Guardar en Firestore
+    // Guardar en Firestore (igual que productos.js)
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
       aiConfig,
@@ -362,7 +479,7 @@ async function saveAIConfig() {
 
     console.log('✅ Configuración IA guardada en Firestore');
 
-    // Actualizar JSON en Gist
+    // Actualizar JSON en Gist (igual que productos.js)
     try {
       await updateCommerceJSON(currentComercioId, currentUser.uid);
       console.log('✅ JSON actualizado en Gist');
@@ -421,119 +538,3 @@ async function handleLogout() {
     }
   }
 }
-    return;
-  }
-
-  const aiConfig = comercioData.aiConfig || {};
-  const destacados = aiConfig.categoriasDestacadas || [];
-
-  // Renderizar checkboxes de categorías
-  if (categorias.length > 0) {
-    content.innerHTML = `
-      <div class="form-field">
-        <label>
-          Elegí las categorías que querés priorizar
-          <span class="tooltip-icon" title="El asistente mencionará estos productos con mayor frecuencia">
-            <i class="fas fa-question-circle"></i>
-          </span>
-        </label>
-        <div style="display: grid; gap: 0.5rem; margin-top: 0.5rem;">
-          ${categorias.map(cat => `
-            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-              <input 
-                type="checkbox" 
-                name="categoriaDestacada" 
-                value="${cat}"
-                ${destacados.includes(cat) ? 'checked' : ''}
-                onchange="markAsChanged()"
-              >
-              <span>⭐ ${cat}</span>
-            </label>
-          `).join('')}
-        </div>
-        <small>El asistente sugerirá estos productos cuando sea relevante</small>
-      </div>
-    `;
-  } else {
-    content.innerHTML = `
-      <p style="text-align: center; color: #6b7280; padding: 2rem;">
-        <i class="fas fa-tag" style="font-size: 2rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>
-        Tus productos no tienen categorías asignadas.<br>
-        Agregá categorías en la sección <strong>Productos</strong> para poder destacarlas.
-      </p>
-    `;
-  }
-}
-
-// ==================== VALIDACIÓN DE CONTACTOS ====================
-function renderContactosValidacion() {
-  const container = document.getElementById('contactosValidacion');
-  
-  const contactos = [
-    { 
-      id: 'whatsapp', 
-      icon: '📱', 
-      label: 'WhatsApp', 
-      value: comercioData.whatsapp,
-      valid: !!comercioData.whatsapp && comercioData.whatsapp.trim() !== ''
-    },
-    { 
-      id: 'instagram', 
-      icon: '📸', 
-      label: 'Instagram', 
-      value: comercioData.instagram,
-      valid: !!comercioData.instagram && comercioData.instagram.trim() !== ''
-    },
-    { 
-      id: 'sitioWeb', 
-      icon: '🌐', 
-      label: 'Sitio Web', 
-      value: comercioData.sitioWeb,
-      valid: !!comercioData.sitioWeb && comercioData.sitioWeb.trim() !== ''
-    },
-    { 
-      id: 'email', 
-      icon: '📧', 
-      label: 'Email', 
-      value: comercioData.email,
-      valid: !!comercioData.email && comercioData.email.trim() !== ''
-    },
-    { 
-      id: 'telefono', 
-      icon: '☎️', 
-      label: 'Teléfono', 
-      value: comercioData.telefono,
-      valid: !!comercioData.telefono && comercioData.telefono.trim() !== ''
-    }
-  ];
-
-  const hasInvalidContacts = contactos.some(c => !c.valid);
-
-  container.innerHTML = `
-    ${hasInvalidContacts ? `
-      <div class="alert alert-warning" style="grid-column: 1/-1;">
-        <i class="fas fa-exclamation-triangle"></i>
-        <strong>Algunos contactos no están configurados.</strong> 
-        El asistente no podrá derivar a esos canales.
-      </div>
-    ` : ''}
-    
-    ${contactos.map(contacto => `
-      <div class="contacto-item ${contacto.valid ? 'valid' : 'invalid'}">
-        <div class="contacto-icon">${contacto.icon}</div>
-        <div class="contacto-info">
-          <strong>${contacto.label}</strong>
-          ${contacto.valid 
-            ? `<span class="contacto-value">${contacto.value}</span>`
-            : `<span class="contacto-missing">No configurado</span>`
-          }
-        </div>
-        <div class="contacto-status">
-          ${contacto.valid 
-            ? '<i class="fas fa-check-circle" style="color: #10b981;"></i>'
-            : '<i class="fas fa-times-circle" style="color: #ef4444;"></i>'
-          }
-        </div>
-      </div>
-    `).join('')}
-  `;
