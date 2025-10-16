@@ -1,162 +1,32 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mi IA - Indice IA</title>
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* ==================== MI-IA ESTILOS ESPECÍFICOS ==================== */
-    
-    /* Contactos Grid */
-    .contactos-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .contacto-item {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 1rem;
-      background: var(--gray-50);
-      border: 2px solid var(--gray-200);
-      border-radius: 12px;
-      transition: all 0.3s;
-    }
-
-    .contacto-item.valid {
-      background: rgba(34, 197, 94, 0.05);
-      border-color: var(--success);
-    }
-
-    .contacto-item.invalid {
-      background: rgba(239, 68, 68, 0.05);
-      border-color: #fca5a5;
-    }
-
-    .contacto-item:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow);
-    }
-
-    .contacto-icon {
-      font-size: 1.8rem;
-      line-height: 1;
-    }
-
-    .contacto-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .contacto-info strong {
-      display: block;
-      color: var(--gray-900);
-      margin-bottom: 0.25rem;
-      font-size: 0.9rem;
-    }
-
-    .contacto-value {
-      display: block;
-      color: var(--gray-600);
-      font-size: 0.85rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .contacto-missing {
-      display: block;
-      color: var(--danger);
-      font-size: 0.85rem;
-      font-style: italic;
-    }
-
-    .contacto-status {
-      font-size: 1.5rem;
-    }
-
-    /* Alert */
-    .alert {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-    }
-
-    .alert-warning {
-      background: #fffbeb;
-      border: 1px solid #fde68a;
-      color: #92400e;
-    }
-
-    .alert i {
-      font-size: 1.2rem;
-    }
-
-    /* Campo select con emojis */
-    .form-field select option {
-      padding: 0.5rem;
-    }
-
-    /* Small text debajo de inputs */
-    .form-field small {
-      display: block;
-      margin-top: 0.4rem;
-      font-size: 0.85rem;
-      color: var(--gray-500);
-    }
-
-    /* Categorías destacadas en checkboxes */
-    .form-field label[style*="cursor: pointer"]:hover {
-      background: var(--gray-50);
-      border-radius: 6px;
-      padding: 0.4rem 0.6rem;
-      margin: -0.4rem -0.6rem;
-    }
-
-    /* Toggle personalizado para mensajes */
-    #aiMessagesForm {
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 2px dashed var(--gray-200);
-    }
-
-    /* Responsive para contactos */
-    @media (max-width: 768px) {
-      .contactos-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .contacto-item {
-        padding: 0.875rem;
-      }
-
-      .contacto-icon {
-        font-size: 1.5rem;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .ai-helper-content h4 {
-        font-size: 1.2rem;
-      }
-
-      .form-field label {
-        font-size: 0.9rem;
-      }
-
-      .tooltip-icon {
-        display: inline-block;
-        margin-left: 0.15rem;
-      }
-    }
+    /* ==================== MI-IA ESTILOS ESPECÍFICOS (idénticos a los que tenías) ==================== */
+    /* (copié solo lo esencial para que la página se vea consistente) */
+    .contactos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .contacto-item { display:flex; align-items:center; gap:1rem; padding:1rem; background:var(--gray-50); border:2px solid var(--gray-200); border-radius:12px; transition:all .3s; }
+    .contacto-item.valid{ background:rgba(34,197,94,.05); border-color:var(--success) }
+    .contacto-item.invalid{ background:rgba(239,68,68,.05); border-color:#fca5a5 }
+    .contacto-icon{ font-size:1.8rem }
+    .contacto-info{ flex:1; min-width:0 }
+    .contacto-value{ color:var(--gray-600); overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+    .contacto-missing{ color:var(--danger); font-style:italic }
+    .alert{ display:flex; align-items:center; gap:.75rem; padding:1rem; border-radius:8px; margin-bottom:1rem }
+    .alert-warning{ background:#fffbeb; border:1px solid #fde68a; color:#92400e }
+    .form-field small{ display:block; margin-top:.4rem; font-size:.85rem; color:var(--gray-500) }
+    .btn-save { background:#111827; color:#fff; border-radius:8px; padding:.45rem .7rem; border:none; cursor:pointer }
+    .btn-save.saving { opacity:.9 }
+    .btn-save.saved { background:#10b981 }
+    .loading-overlay{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.7); z-index:9999; display:none }
+    .loading-overlay.active{ display:flex }
+    .spinner{ width:36px; height:36px; border:4px solid rgba(0,0,0,.08); border-top-color:#111; border-radius:50%; animation:spin 1s linear infinite }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
   </style>
 </head>
 <body>
@@ -181,7 +51,8 @@
         </div>
       </div>
       <div class="user-info">
-        <button class="btn-logout" id="logoutBtn">
+        <!-- Save button se inyecta desde JS -->
+        <button class="btn-logout" id="logoutBtn" title="Cerrar sesión">
           <i class="fas fa-sign-out-alt"></i>
         </button>
       </div>
@@ -208,75 +79,35 @@
         <div class="ai-helper-content">
           <h4>¿Primera vez configurando tu IA?</h4>
           <p>Nuestro asistente te guía paso a paso en la personalización (gratis, sin registro)</p>
-          <a 
-            href="https://claude.ai/new" 
-            target="_blank" 
-            class="btn btn-primary"
-            id="openAssistant"
-          >
-            💬 Hablar con el Asistente
-          </a>
+          <a href="https://claude.ai/new" target="_blank" class="btn btn-primary" id="openAssistant">💬 Hablar con el Asistente</a>
           <small>Se abre en una nueva pestaña</small>
         </div>
       </div>
     </div>
 
-    <!-- ========================================
-         1️⃣ IDENTIDAD DEL ASISTENTE
-         ======================================== -->
+    <!-- 1️⃣ IDENTIDAD -->
     <section class="form-section">
       <h3><i class="fas fa-user-robot"></i> 1️⃣ Identidad del Asistente</h3>
-      <p class="section-description">
-        💡 <strong>Dale personalidad a tu asistente virtual.</strong> Esto define cómo se presenta a tus clientes.
-      </p>
-
       <form id="aiIdentityForm">
-        
-        <!-- Nombre -->
         <div class="form-field">
-          <label class="required">
-            Nombre del asistente
-            <span class="tooltip-icon" title="¿Cómo querés que se llame tu asistente?">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
-          <input 
-            type="text" 
-            id="aiName" 
-            name="aiName" 
-            placeholder='Ej: "Ana", "Carlos", "Sofía"'
-            required
-          >
-          <small>Elegí un nombre amigable y fácil de recordar</small>
+          <label class="required">Nombre del asistente <span class="tooltip-icon" title="¿Cómo querés que se llame tu asistente?"><i class="fas fa-question-circle"></i></span></label>
+          <input type="text" id="aiName" name="aiName" placeholder='Ej: "Ana"' required>
+          <small>Elegí un nombre amigable</small>
         </div>
-
-        <!-- Personalidad -->
         <div class="form-field">
-          <label class="required">
-            Personalidad
-            <span class="tooltip-icon" title="¿Cómo querés que se comporte con los clientes?">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
+          <label class="required">Personalidad <span class="tooltip-icon" title="¿Cómo querés que se comporte?"><i class="fas fa-question-circle"></i></span></label>
           <select id="aiPersonality" name="aiPersonality" required>
             <option value="">-- Elegí una opción --</option>
-            <option value="amigable">😊 Amigable y cercano</option>
+            <option value="amigable">😊 Amigable</option>
             <option value="profesional">👔 Profesional</option>
             <option value="divertido">🎉 Divertido</option>
             <option value="formal">🎩 Formal</option>
             <option value="casual">😎 Casual</option>
           </select>
-          <small>Esto define el estilo general de las respuestas</small>
+          <small>Define el estilo</small>
         </div>
-
-        <!-- Tono -->
         <div class="form-field">
-          <label class="required">
-            Tono de voz
-            <span class="tooltip-icon" title="¿Con qué energía querés que hable?">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
+          <label class="required">Tono de voz <span class="tooltip-icon" title="¿Con qué energía?"><i class="fas fa-question-circle"></i></span></label>
           <select id="aiTone" name="aiTone" required>
             <option value="">-- Elegí una opción --</option>
             <option value="entusiasta">🔥 Entusiasta</option>
@@ -285,68 +116,31 @@
             <option value="jovial">😄 Jovial</option>
             <option value="elegante">✨ Elegante</option>
           </select>
-          <small>Define la energía de las conversaciones</small>
         </div>
-
-        <!-- Idioma -->
         <div class="form-field">
-          <label class="required">
-            Idioma principal
-            <span class="tooltip-icon" title="¿En qué idioma atenderá a tus clientes?">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
+          <label class="required">Idioma principal <span class="tooltip-icon" title="¿En qué idioma atenderá?"><i class="fas fa-question-circle"></i></span></label>
           <select id="aiLanguage" name="aiLanguage" required>
             <option value="">-- Elegí una opción --</option>
             <option value="es-AR">🇦🇷 Español (Argentina)</option>
             <option value="es-ES">🇪🇸 Español (España)</option>
             <option value="es-MX">🇲🇽 Español (México)</option>
             <option value="en-US">🇺🇸 Inglés</option>
-            <option value="multi">🌍 Multiidioma (detectar automáticamente)</option>
+            <option value="multi">🌍 Multiidioma</option>
           </select>
-          <small>El asistente puede adaptar expresiones según el país</small>
         </div>
-
-        <!-- Saludo -->
         <div class="form-field">
-          <label class="required">
-            Saludo inicial
-            <span class="tooltip-icon" title="Primera frase que verán tus clientes al abrir el chat">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
-          <textarea 
-            id="aiGreeting" 
-            name="aiGreeting" 
-            rows="3"
-            placeholder='Ej: "¡Hola! Soy Ana, tu asistente virtual. Estoy acá para ayudarte con nuestros productos y responder todas tus consultas. ¿En qué te puedo ayudar hoy?"'
-            required
-          ></textarea>
-          <small>Será lo primero que lean tus clientes al iniciar una conversación</small>
+          <label class="required">Saludo inicial <span class="tooltip-icon" title="Primera frase que verán tus clientes"><i class="fas fa-question-circle"></i></span></label>
+          <textarea id="aiGreeting" name="aiGreeting" rows="3" placeholder='Ej: "¡Hola! Soy Ana..."' required></textarea>
         </div>
-
       </form>
     </section>
 
-    <!-- ========================================
-         2️⃣ COMPORTAMIENTOS
-         ======================================== -->
+    <!-- 2️⃣ COMPORTAMIENTOS -->
     <section class="form-section">
       <h3><i class="fas fa-sliders-h"></i> 2️⃣ Comportamientos del Asistente</h3>
-      <p class="section-description">
-        💡 <strong>Enseñale cómo actuar en cada situación.</strong> Estas reglas guían las respuestas automáticas.
-      </p>
-
       <form id="aiBehaviorsForm">
-
-        <!-- Si no hay precio -->
         <div class="form-field">
-          <label class="required">
-            ¿Qué hacer si un cliente pregunta el precio de un producto sin precio configurado?
-            <span class="tooltip-icon" title="Algunos productos pueden no tener precio. Elegí cómo manejar esa situación">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
+          <label class="required">¿Qué hacer si un cliente pregunta el precio de un producto sin precio configurado?</label>
           <select id="sinPrecio" name="sinPrecio" required>
             <option value="">-- Elegí una opción --</option>
             <option value="whatsapp">📱 Derivar a WhatsApp</option>
@@ -355,203 +149,93 @@
             <option value="web">🌐 Derivar a sitio web</option>
             <option value="telefono">☎️ Derivar a teléfono</option>
           </select>
-          <small>El asistente le dirá al cliente que consulte directamente por ese canal</small>
         </div>
-
-        <!-- Si no hay stock -->
         <div class="form-field">
-          <label class="required">
-            ¿Qué hacer si un producto no tiene stock?
-            <span class="tooltip-icon" title="Define cómo manejar productos agotados">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
+          <label class="required">¿Qué hacer si un producto no tiene stock?</label>
           <select id="sinStock" name="sinStock" required>
             <option value="">-- Elegí una opción --</option>
-            <option value="no_ofrecer">❌ No ofrecer el producto</option>
-            <option value="sugerir_similar">💡 Sugerir producto similar del catálogo</option>
-            <option value="consultar">📞 Consultar disponibilidad por contacto</option>
+            <option value="no_ofrecer">❌ No ofrecer</option>
+            <option value="sugerir_similar">💡 Sugerir similar</option>
+            <option value="consultar">📞 Consultar por contacto</option>
           </select>
-          <small>Evita ofrecer productos que no podés entregar</small>
         </div>
-
-        <!-- Local cerrado -->
         <div class="form-field">
-          <label class="required">
-            ¿Qué hacer cuando el local físico está cerrado?
-            <span class="tooltip-icon" title="El asistente funciona 24/7, pero tu local no. ¿Cómo lo maneja?">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
+          <label class="required">¿Qué hacer cuando el local está cerrado?</label>
           <select id="localCerrado" name="localCerrado" required>
             <option value="">-- Elegí una opción --</option>
-            <option value="informar">🕐 Solo informar próximo horario de apertura</option>
-            <option value="tomar_consulta">📱 Tomar consulta y pedir que contacte en horario</option>
-            <option value="derivar">📞 Derivar a contacto inmediatamente</option>
+            <option value="informar">🕐 Informar horario</option>
+            <option value="tomar_consulta">📱 Tomar consulta</option>
+            <option value="derivar">📞 Derivar a contacto</option>
           </select>
-          <small>Recordá: tu asistente trabaja 24/7, pero puede aclarar horarios de atención presencial</small>
         </div>
-
-        <!-- Proactividad -->
         <div class="form-field">
-          <label class="required">
-            Nivel de proactividad en ventas
-            <span class="tooltip-icon" title="¿Qué tan activo querés que sea ofreciendo productos?">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
+          <label class="required">Nivel de proactividad</label>
           <select id="proactividad" name="proactividad" required>
             <option value="">-- Elegí una opción --</option>
-            <option value="muy_proactivo">🔥 Muy proactivo (siempre sugiere productos complementarios)</option>
-            <option value="moderado">😊 Moderado (sugiere solo cuando es relevante)</option>
-            <option value="pasivo">😌 Pasivo (solo responde lo que preguntan)</option>
+            <option value="muy_proactivo">🔥 Muy proactivo</option>
+            <option value="moderado">😊 Moderado</option>
+            <option value="pasivo">😌 Pasivo</option>
           </select>
-          <small>Define qué tan "vendedor" querés que sea tu asistente</small>
         </div>
-
-        <!-- Formato respuestas -->
         <div class="form-field">
-          <label class="required">
-            Formato de respuestas
-            <span class="tooltip-icon" title="¿Querés respuestas largas y detalladas o breves y directas?">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
+          <label class="required">Formato de respuestas</label>
           <select id="formatoRespuestas" name="formatoRespuestas" required>
             <option value="">-- Elegí una opción --</option>
-            <option value="detalladas">📝 Detalladas y explicativas</option>
-            <option value="breves">⚡ Breves y concisas</option>
-            <option value="balanceadas">🎯 Balanceadas (depende de la pregunta)</option>
+            <option value="detalladas">📝 Detalladas</option>
+            <option value="breves">⚡ Breves</option>
+            <option value="balanceadas">🎯 Balanceadas</option>
           </select>
-          <small>Algunos clientes prefieren respuestas rápidas, otros más info</small>
         </div>
-
       </form>
     </section>
 
-    <!-- ========================================
-         3️⃣ MENSAJES PERSONALIZADOS
-         ======================================== -->
+    <!-- 3️⃣ MENSAJES PERSONALIZADOS -->
     <section class="form-section">
       <h3><i class="fas fa-comments"></i> 3️⃣ Mensajes Personalizados</h3>
-      <p class="section-description">
-        💡 <strong>Personaliza los mensajes cuando el asistente derive a tus canales.</strong> Estas frases se mostrarán al cliente.
-      </p>
-
-      <!-- Toggle avanzado -->
       <div class="form-mode-toggle">
-        <button type="button" id="toggleMessages" class="btn btn-secondary">
-          ➕ Configurar mensajes personalizados
-        </button>
+        <button type="button" id="toggleMessages" class="btn btn-secondary">➕ Configurar mensajes personalizados</button>
       </div>
 
-      <div id="aiMessagesForm" style="display: none;">
-
-        <!-- WhatsApp -->
+      <div id="aiMessagesForm" style="display:none;">
         <div class="form-field">
-          <label>
-            📱 Mensaje para derivar a WhatsApp
-            <span class="tooltip-icon" title="Frase que verá el cliente cuando el asistente lo derive a WhatsApp">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
-          <textarea 
-            id="mensajeWhatsapp" 
-            name="mensajeWhatsapp" 
-            rows="2"
-            placeholder='Ej: "¡Escribinos al WhatsApp +54 9 11 1234-5678 para coordinar tu pedido! 📱"'
-          ></textarea>
-          <small>Incluí tu número de WhatsApp en el mensaje</small>
+          <label>📱 Mensaje para derivar a WhatsApp</label>
+          <textarea id="mensajeWhatsapp" rows="2"></textarea>
         </div>
-
-        <!-- Instagram -->
         <div class="form-field">
-          <label>
-            📸 Mensaje para derivar a Instagram
-            <span class="tooltip-icon" title="Frase que verá el cliente cuando el asistente lo derive a Instagram">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
-          <textarea 
-            id="mensajeInstagram" 
-            name="mensajeInstagram" 
-            rows="2"
-            placeholder='Ej: "¡Seguinos en Instagram @tucomercio y escribinos por DM! 📸"'
-          ></textarea>
-          <small>Incluí tu usuario de Instagram</small>
+          <label>📸 Mensaje para derivar a Instagram</label>
+          <textarea id="mensajeInstagram" rows="2"></textarea>
         </div>
-
-        <!-- Web/Email -->
         <div class="form-field">
-          <label>
-            🌐 Mensaje para derivar a Web/Email
-            <span class="tooltip-icon" title="Frase que verá el cliente cuando el asistente lo derive a tu sitio web o email">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
-          <textarea 
-            id="mensajeWeb" 
-            name="mensajeWeb" 
-            rows="2"
-            placeholder='Ej: "Visitá nuestra tienda en www.tucomercio.com o escribinos a contacto@tucomercio.com 🌐"'
-          ></textarea>
-          <small>Incluí tu sitio web o email de contacto</small>
+          <label>🌐 Mensaje para derivar a Web/Email</label>
+          <textarea id="mensajeWeb" rows="2"></textarea>
         </div>
-
-        <!-- Respuesta por defecto -->
         <div class="form-field">
-          <label>
-            ❓ Respuesta cuando no entiende la consulta
-            <span class="tooltip-icon" title="Mensaje que usa cuando el cliente hace una pregunta poco clara">
-              <i class="fas fa-question-circle"></i>
-            </span>
-          </label>
-          <textarea 
-            id="mensajeDefault" 
-            name="mensajeDefault" 
-            rows="2"
-            placeholder='Ej: "No estoy seguro de haber entendido tu consulta. ¿Podrías reformularla? O escribinos directamente a WhatsApp: +54 9 11 1234-5678"'
-          ></textarea>
-          <small>Se usa cuando el asistente no puede interpretar bien la pregunta</small>
+          <label>❓ Respuesta cuando no entiende la consulta</label>
+          <textarea id="mensajeDefault" rows="2"></textarea>
         </div>
-
       </div>
     </section>
 
-    <!-- ========================================
-         4️⃣ PRODUCTOS DESTACADOS
-         ======================================== -->
+    <!-- 4️⃣ PRODUCTOS DESTACADOS -->
     <section class="form-section" id="productosDestacadosSection">
       <h3><i class="fas fa-star"></i> 4️⃣ Productos o Categorías Destacadas</h3>
-      <p class="section-description">
-        💡 <strong>¿Qué querés que mencione con mayor frecuencia?</strong> El asistente priorizará estos productos/categorías.
-      </p>
-
       <div id="productosDestacadosContent">
-        <p style="text-align: center; color: #6b7280; padding: 2rem;">
-          <i class="fas fa-box-open" style="font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>
+        <p style="text-align:center; color:#6b7280; padding:2rem;">
+          <i class="fas fa-box-open" style="font-size:3rem; display:block; margin-bottom:1rem; opacity:.3;"></i>
           Primero cargá productos en la sección <strong>Productos</strong>
         </p>
       </div>
     </section>
 
-    <!-- ========================================
-         5️⃣ VALIDACIÓN DE CONTACTOS
-         ======================================== -->
+    <!-- 5️⃣ VALIDACIÓN DE CONTACTOS -->
     <section class="form-section">
       <h3><i class="fas fa-check-circle"></i> 5️⃣ Verificación de Contactos</h3>
-      <p class="section-description">
-        💡 <strong>Revisá que tus canales estén configurados.</strong> El asistente los usa para derivar consultas.
-      </p>
-
-      <div id="contactosValidacion" class="contactos-grid">
-        <!-- Se llena dinámicamente desde JS -->
+      <div class="section-description">
+        <p>Revisá que tus canales estén configurados. El asistente los usa para derivar consultas.</p>
       </div>
-
-      <div style="margin-top: 1rem;">
-        <a href="./mi-comercio.html" class="btn btn-secondary">
-          <i class="fas fa-edit"></i> Editar contactos en Mi Comercio
-        </a>
+      <div id="contactosValidacion" class="contactos-grid"></div>
+      <div style="margin-top:1rem;">
+        <a href="./mi-comercio.html" class="btn btn-secondary"><i class="fas fa-edit"></i> Editar contactos en Mi Comercio</a>
       </div>
     </section>
 
@@ -560,6 +244,426 @@
   <!-- Navigation Controls -->
   <div class="navigation-controls" id="navigationControls"></div>
 
-  <script type="module" src="./mi-ia.js"></script>
+  <!-- Script corregido (type=module) -->
+  <script type="module">
+  // ===================== IMPORTS =====================
+  import { auth, db } from '../firebase.js';
+  import { onAuthStateChanged, signOut } from 'firebase/auth';
+  import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+  import Navigation from '../shared/navigation.js';
+  import { showLoading, hideLoading, showToast } from '../shared/utils.js';
+  import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
+  import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
+
+  // ==================== GLOBALS ====================
+  let currentUser = null;
+  let currentComercioId = null;
+  let comercioData = {};
+  let productos = [];
+  let categorias = [];
+  let hasUnsavedChanges = false;
+  let originalAIConfig = null;
+
+  // Simple helpers for UI
+  const $ = id => document.getElementById(id);
+  function enableLoading(txt = 'Cargando...'){ $('loadingOverlay')?.classList.add('active'); if($('loadingText')) $('loadingText').textContent = txt; }
+  function disableLoading(){ $('loadingOverlay')?.classList.remove('active'); if($('loadingText')) $('loadingText').textContent = 'Cargando...'; }
+
+  // ==================== INIT ====================
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Iniciando mi-ia.js (patched)');
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        console.log('✅ Usuario autenticado:', user.email);
+        currentUser = user;
+        await initializePage();
+      } else {
+        console.log('❌ Usuario no autenticado, redirigiendo...');
+        window.location.href = '/index.html';
+      }
+    });
+  });
+
+  async function initializePage(){
+    try {
+      showLoading('Cargando configuración de IA...');
+      // Obtener comercioId
+      const userRef = doc(db, 'usuarios', currentUser.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists() || !userDoc.data()?.comercioId) {
+        console.warn('No existe comercioId en usuario -> redirigir a mi-comercio');
+        hideLoading();
+        window.location.href = './mi-comercio.html';
+        return;
+      }
+
+      currentComercioId = userDoc.data().comercioId;
+
+      // Cargar comercio
+      const comercioRef = doc(db, 'comercios', currentComercioId);
+      const comercioDoc = await getDoc(comercioRef);
+      comercioData = comercioDoc.exists() ? { id: currentComercioId, ...comercioDoc.data()} : {};
+
+      // Cargar productos para categorías
+      await loadProducts();
+
+      // UI init
+      updateHeader();
+      updateSubscriptionBanner();
+      loadAIConfig();
+      renderProductosDestacados();
+      renderContactosValidacion();
+      setupEventListeners();
+      try { Navigation.init(); } catch(e){ console.warn('Navigation.init fallo', e); }
+      createSaveButton();
+
+      // validate for nav
+      window.validateCurrentPageData = () => {
+        if (!comercioData.aiConfig || !comercioData.aiConfig.aiName) {
+          showToast('warning', 'Configuración requerida', '👋 Ey! Necesitás configurar tu asistente IA antes de continuar');
+          return false;
+        }
+        if (hasUnsavedChanges) {
+          showToast('warning', 'Cambios sin guardar', 'Guardá los cambios antes de continuar');
+          return false;
+        }
+        return true;
+      };
+
+      hideLoading();
+      console.log('✅ Página inicializada correctamente');
+    } catch(error){
+      hideLoading();
+      console.error('❌ Error inicializando página:', error);
+      showToast('error', 'Error', 'No se pudo cargar la página: ' + (error.message || error));
+    }
+  }
+
+  // ==================== LOAD PRODUCTS ====================
+  async function loadProducts(){
+    try {
+      if (!currentComercioId) { productos = []; categorias = []; return; }
+      const productosRef = collection(db, 'comercios', currentComercioId, 'productos');
+      const snapshot = await getDocs(productosRef);
+      productos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      categorias = [...new Set(productos.map(p => p.categoria).filter(c => c && c.toString().trim() !== ''))];
+      console.log('✅ Productos cargados:', productos.length, 'categorias:', categorias.length);
+    } catch(err){
+      console.error('❌ Error cargando productos:', err);
+      productos = []; categorias = [];
+    }
+  }
+
+  // ==================== HEADER & BANNER ====================
+  function updateHeader(){
+    const commerceName = $('commerceName');
+    const planBadge = $('planBadge');
+    if (commerceName) commerceName.textContent = comercioData.nombreComercio || 'Mi Comercio';
+    if (planBadge) {
+      const plan = PLANS[comercioData.plan || 'trial'];
+      planBadge.textContent = plan ? `${plan.emoji} ${plan.nombre}` : 'Trial';
+    }
+  }
+
+  function updateSubscriptionBanner(){
+    const banner = $('subscriptionBanner');
+    const message = $('subscriptionMessage');
+    if (!banner || !message) return;
+
+    banner.className = 'subscription-banner'; // reset
+    const estado = calcularEstadoPlan(comercioData);
+    const planActual = PLANS[comercioData.plan || 'trial'];
+
+    switch(estado){
+      case 'trial': {
+        const diasRestantes = getDiasRestantesTrial(comercioData);
+        banner.classList.add('trial');
+        message.innerHTML = `🎉 <strong>Trial activo</strong> - Te quedan <strong>${diasRestantes} días</strong>`;
+        break;
+      }
+      case 'expirado':
+        banner.classList.add('expired');
+        message.innerHTML = `⚠️ <strong>Tu trial expiró.</strong> Elegí un plan para continuar`;
+        break;
+      case 'activo':
+        banner.classList.add('active');
+        message.innerHTML = `✅ <strong>Plan ${planActual?.nombre} activo</strong>`;
+        break;
+      default:
+        banner.classList.add('trial');
+        message.innerHTML = `🤖 <strong>Configurá tu asistente IA</strong>`;
+    }
+  }
+
+  // ==================== LOAD AI CONFIG ====================
+  function loadAIConfig(){
+    const aiConfig = comercioData.aiConfig || {};
+    originalAIConfig = JSON.parse(JSON.stringify(aiConfig || {}));
+
+    const safeSet = (id, value) => {
+      const el = $(id);
+      if (el) el.value = value ?? '';
+    };
+
+    safeSet('aiName', aiConfig.aiName || '');
+    safeSet('aiPersonality', aiConfig.aiPersonality || '');
+    safeSet('aiTone', aiConfig.aiTone || '');
+    safeSet('aiLanguage', aiConfig.aiLanguage || 'es-AR');
+    safeSet('aiGreeting', aiConfig.aiGreeting || '');
+
+    safeSet('sinPrecio', aiConfig.sinPrecio || '');
+    safeSet('sinStock', aiConfig.sinStock || '');
+    safeSet('localCerrado', aiConfig.localCerrado || '');
+    safeSet('proactividad', aiConfig.proactividad || '');
+    safeSet('formatoRespuestas', aiConfig.formatoRespuestas || '');
+
+    safeSet('mensajeWhatsapp', aiConfig.mensajeWhatsapp || '');
+    safeSet('mensajeInstagram', aiConfig.mensajeInstagram || '');
+    safeSet('mensajeWeb', aiConfig.mensajeWeb || '');
+    safeSet('mensajeDefault', aiConfig.mensajeDefault || '');
+
+    // Auto-abrir mensajes si hay contenido
+    const anyMsg = (aiConfig.mensajeWhatsapp || aiConfig.mensajeInstagram || aiConfig.mensajeWeb || aiConfig.mensajeDefault);
+    const messagesForm = $('aiMessagesForm'), toggleMessages = $('toggleMessages');
+    if (anyMsg && messagesForm) {
+      messagesForm.style.display = 'block';
+      if (toggleMessages) toggleMessages.innerHTML = '➖ Ocultar mensajes personalizados';
+    }
+
+    console.log('✅ Configuración IA cargada (safe)');
+  }
+
+  // ==================== PRODUCTOS DESTACADOS ====================
+  function renderProductosDestacados(){
+    const content = $('productosDestacadosContent');
+    console.log('🔍 Renderizando productos destacados...', { content: !!content, categoriasLength: categorias.length, productosLength: productos.length });
+    if (!content) { console.error('❌ No se encontró productosDestacadosContent'); return; }
+
+    if ((!categorias || categorias.length === 0) && (!productos || productos.length === 0)) {
+      content.innerHTML = `
+        <div class="notice">
+          <p style="text-align:center; color:#6b7280; padding:2rem;">
+            <i class="fas fa-box-open" style="font-size:3rem; display:block; margin-bottom:1rem; opacity:.3;"></i>
+            <strong>Aún no hay productos cargados.</strong><br>
+            Cargá productos en la sección <a href="./productos.html">Productos</a> para poder destacarlos.
+          </p>
+        </div>`;
+      return;
+    }
+
+    const aiConfig = comercioData.aiConfig || {};
+    const destacados = Array.isArray(aiConfig.categoriasDestacadas) ? aiConfig.categoriasDestacadas : [];
+
+    if (categorias && categorias.length > 0) {
+      content.innerHTML = `
+        <div class="form-field">
+          <label>Elegí las categorías que querés priorizar</label>
+          <div style="display:grid; gap:.5rem; margin-top:.5rem;">
+            ${categorias.map(cat => `
+              <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; padding:.5rem;">
+                <input type="checkbox" name="categoriaDestacada" value="${cat}" ${destacados.includes(cat) ? 'checked' : ''}>
+                <span>⭐ ${cat}</span>
+              </label>`).join('')}
+          </div>
+          <small>El asistente sugerirá estos productos cuando sea relevante</small>
+        </div>`;
+      const checkboxes = content.querySelectorAll('input[name="categoriaDestacada"]') || [];
+      checkboxes.forEach(cb => cb.addEventListener('change', markAsChanged));
+      console.log('✅ Categorías renderizadas:', categorias.length);
+      return;
+    }
+
+    content.innerHTML = `<div style="padding:1rem;"><p style="color:#6b7280;">Tus productos no tienen categorías asignadas.<br>Agregá categorías en <a href="./productos.html">Productos</a>.</p></div>`;
+  }
+
+  // ==================== CONTACTS VALIDATION ====================
+  function renderContactosValidacion(){
+    const container = $('contactosValidacion');
+    console.log('🔍 Renderizando validación de contactos...', { container: !!container, comercioDataSummary: { whatsapp: !!comercioData.whatsapp, instagram: !!comercioData.instagram }});
+    if (!container) { console.error('❌ No se encontró contactosValidacion'); return; }
+
+    const contactos = [
+      { id:'whatsapp', icon:'📱', label:'WhatsApp', value: comercioData.whatsapp || '', valid: !!(comercioData.whatsapp && comercioData.whatsapp.toString().trim()) },
+      { id:'instagram', icon:'📸', label:'Instagram', value: comercioData.instagram || '', valid: !!(comercioData.instagram && comercioData.instagram.toString().trim()) },
+      { id:'sitioWeb', icon:'🌐', label:'Sitio Web', value: comercioData.sitioWeb || '', valid: !!(comercioData.sitioWeb && comercioData.sitioWeb.toString().trim()) },
+      { id:'email', icon:'📧', label:'Email', value: comercioData.email || '', valid: !!(comercioData.email && comercioData.email.toString().trim()) },
+      { id:'telefono', icon:'☎️', label:'Teléfono', value: comercioData.telefono || '', valid: !!(comercioData.telefono && comercioData.telefono.toString().trim()) }
+    ];
+
+    const hasInvalid = contactos.some(c => !c.valid);
+
+    container.innerHTML = `
+      ${hasInvalid ? `<div class="alert alert-warning" style="grid-column:1/-1;"><i class="fas fa-exclamation-triangle"></i><strong>Algunos contactos no están configurados.</strong> El asistente no podrá derivar a esos canales.</div>` : ''}
+      <div class="contactos-grid">
+        ${contactos.map(c => `
+          <div class="contacto-item ${c.valid ? 'valid' : 'invalid'}">
+            <div class="contacto-icon">${c.icon}</div>
+            <div class="contacto-info">
+              <strong>${c.label}</strong>
+              ${c.valid ? `<span class="contacto-value">${c.value}</span>` : `<span class="contacto-missing">No configurado</span>`}
+            </div>
+            <div class="contacto-status">${c.valid ? '<i class="fas fa-check-circle" style="color:#10b981;"></i>' : '<i class="fas fa-times-circle" style="color:#ef4444;"></i>'}</div>
+          </div>`).join('')}
+      </div>
+    `;
+    console.log('✅ Contactos renderizados');
+  }
+
+  // ==================== EVENT LISTENERS ====================
+  function setupEventListeners(){
+    $('openAssistant')?.addEventListener('click', ()=> {
+      showToast('info', '🤖 Asistente abierto', 'En la nueva pestaña, decile a Claude: "Soy de Indice IA y necesito ayuda configurando mi IA"', 8000);
+    });
+
+    const toggleMessages = $('toggleMessages'), messagesForm = $('aiMessagesForm');
+    console.log('🔍 Toggle button exists:', !!toggleMessages, 'messagesForm exists:', !!messagesForm);
+    if (toggleMessages && messagesForm){
+      const anyMessagePreFilled = (( $('mensajeWhatsapp')?.value || '' ).trim() || ( $('mensajeInstagram')?.value || '' ).trim() || ( $('mensajeWeb')?.value || '' ).trim() || ( $('mensajeDefault')?.value || '' ).trim());
+      if (anyMessagePreFilled) {
+        messagesForm.style.display = 'block';
+        toggleMessages.innerHTML = '➖ Ocultar mensajes personalizados';
+      }
+      toggleMessages.addEventListener('click', () => {
+        const isVisible = messagesForm.style.display === 'block';
+        messagesForm.style.display = isVisible ? 'none' : 'block';
+        toggleMessages.innerHTML = isVisible ? '➕ Configurar mensajes personalizados' : '➖ Ocultar mensajes personalizados';
+      });
+    } else {
+      console.warn('⚠️ toggleMessages o messagesForm no encontrados');
+    }
+
+    // inputs detect change
+    const allInputs = document.querySelectorAll('input, select, textarea') || [];
+    allInputs.forEach(input => {
+      input.addEventListener('change', markAsChanged);
+      input.addEventListener('input', markAsChanged);
+    });
+
+    $('logoutBtn')?.addEventListener('click', handleLogout);
+
+    window.addEventListener('beforeunload', (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '¿Seguro que querés salir? Tienes cambios sin guardar.';
+      }
+    });
+  }
+
+  // ==================== SAVE UI ====================
+  function createSaveButton(){
+    const userInfo = document.querySelector('.header .user-info') || document.querySelector('.user-info');
+    if (!userInfo) return;
+    if ($('saveChangesBtn')) return; // evitar duplicados
+
+    const saveBtn = document.createElement('button');
+    saveBtn.id = 'saveChangesBtn'; saveBtn.className = 'btn-save'; saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+
+    const logoutBtn = $('logoutBtn');
+    if (logoutBtn) userInfo.insertBefore(saveBtn, logoutBtn); else userInfo.appendChild(saveBtn);
+
+    saveBtn.addEventListener('click', saveAIConfig);
+  }
+
+  function markAsChanged(){
+    hasUnsavedChanges = true;
+    const saveBtn = $('saveChangesBtn');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.className = 'btn-save'; saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>'; }
+  }
+
+  async function saveAIConfig(){
+    const saveBtn = $('saveChangesBtn');
+    try {
+      const aiName = $('aiName')?.value.trim() || '';
+      const aiPersonality = $('aiPersonality')?.value || '';
+      const aiTone = $('aiTone')?.value || '';
+      const aiLanguage = $('aiLanguage')?.value || '';
+      const aiGreeting = $('aiGreeting')?.value.trim() || '';
+
+      if (!aiName || !aiPersonality || !aiTone || !aiLanguage || !aiGreeting) {
+        showToast('warning','Campos requeridos','👋 Ey! Completá todos los campos de Identidad del Asistente');
+        return false;
+      }
+
+      const sinPrecio = $('sinPrecio')?.value || '';
+      const sinStock = $('sinStock')?.value || '';
+      const localCerrado = $('localCerrado')?.value || '';
+      const proactividad = $('proactividad')?.value || '';
+      const formatoRespuestas = $('formatoRespuestas')?.value || '';
+
+      if (!sinPrecio || !sinStock || !localCerrado || !proactividad || !formatoRespuestas) {
+        showToast('warning','Campos requeridos','👋 Ey! Completá todos los campos de Comportamientos');
+        return false;
+      }
+
+      if (saveBtn) { saveBtn.className = 'btn-save saving'; saveBtn.innerHTML = '<i class="fas fa-spinner"></i> <span>Guardando...</span>'; saveBtn.disabled = true; }
+      showLoading('Guardando configuración de IA...');
+
+      const categoriasDestacadas = Array.from(document.querySelectorAll('input[name="categoriaDestacada"]:checked') || []).map(cb => cb.value);
+
+      const aiConfig = {
+        aiName, aiPersonality, aiTone, aiLanguage, aiGreeting,
+        sinPrecio, sinStock, localCerrado, proactividad, formatoRespuestas,
+        mensajeWhatsapp: ($('mensajeWhatsapp')?.value || '').trim(),
+        mensajeInstagram: ($('mensajeInstagram')?.value || '').trim(),
+        mensajeWeb: ($('mensajeWeb')?.value || '').trim(),
+        mensajeDefault: ($('mensajeDefault')?.value || '').trim(),
+        categoriasDestacadas,
+        fechaActualizacion: new Date(),
+        aiGenerated: true
+      };
+
+      const comercioRef = doc(db, 'comercios', currentComercioId);
+      await updateDoc(comercioRef, { aiConfig, fechaActualizacion: new Date() });
+
+      try {
+        await updateCommerceJSON(currentComercioId, currentUser.uid);
+        console.log('✅ JSON actualizado en Gist');
+      } catch(jsonError){ console.warn('⚠️ Error actualizando JSON:', jsonError); showToast('warning','Advertencia','Configuración guardada pero JSON no actualizado'); }
+
+      comercioData.aiConfig = aiConfig;
+      originalAIConfig = JSON.parse(JSON.stringify(aiConfig));
+      hasUnsavedChanges = false;
+
+      if (saveBtn) {
+        saveBtn.className = 'btn-save saved';
+        saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado ✓</span>';
+        setTimeout(()=>{ if(saveBtn){ saveBtn.disabled = true; saveBtn.className='btn-save'; saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>'; } },2000);
+      }
+
+      try { Navigation.markPageAsCompleted('mi-ia'); Navigation.updateProgressBar(); } catch(e){ /* ignore */ }
+
+      hideLoading();
+      showToast('success','✅ Configuración guardada','Tu asistente IA está listo para usar');
+      return true;
+
+    } catch(error){
+      console.error('❌ Error guardando configuración:', error);
+      hideLoading();
+      if ($('saveChangesBtn')){ $('saveChangesBtn').className='btn-save'; $('saveChangesBtn').innerHTML='<i class="fas fa-exclamation-circle"></i> <span>Error</span>'; $('saveChangesBtn').disabled=false; }
+      showToast('error','Error','No se pudo guardar: ' + (error.message || error));
+      return false;
+    }
+  }
+
+  // ==================== LOGOUT ====================
+  async function handleLogout(){
+    if (!confirm('¿Estás seguro que deseas cerrar sesión?')) return;
+    try { showLoading('Cerrando sesión...'); await signOut(auth); window.location.href = '/index.html'; }
+    catch(e){ hideLoading(); showToast('error','Error','No se pudo cerrar sesión'); }
+  }
+
+  // ==================== EXPORTS / DEBUG ====================
+  window.markAsChanged = markAsChanged;
+  window.saveAIConfig = saveAIConfig;
+  window.renderProductosDestacados = renderProductosDestacados;
+  window.renderContactosValidacion = renderContactosValidacion;
+
+  // small wrappers for shared show/hide loading to integrate with your utils
+  function showLoading(msg){ try{ enableLoading(msg); } catch(e){ console.log('loading',msg); } }
+  function hideLoading(){ try{ disableLoading(); } catch(e){} }
+
+  </script>
 </body>
 </html>
