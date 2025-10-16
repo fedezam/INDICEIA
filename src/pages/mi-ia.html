@@ -3,159 +3,563 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi IA - INDICEIA</title>
+  <title>Mi IA - Indice IA</title>
   <link rel="stylesheet" href="../styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ==================== MI-IA ESTILOS ESPECÍFICOS ==================== */
+    
+    /* Contactos Grid */
+    .contactos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .contacto-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--gray-50);
+      border: 2px solid var(--gray-200);
+      border-radius: 12px;
+      transition: all 0.3s;
+    }
+
+    .contacto-item.valid {
+      background: rgba(34, 197, 94, 0.05);
+      border-color: var(--success);
+    }
+
+    .contacto-item.invalid {
+      background: rgba(239, 68, 68, 0.05);
+      border-color: #fca5a5;
+    }
+
+    .contacto-item:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .contacto-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+    }
+
+    .contacto-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .contacto-info strong {
+      display: block;
+      color: var(--gray-900);
+      margin-bottom: 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    .contacto-value {
+      display: block;
+      color: var(--gray-600);
+      font-size: 0.85rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .contacto-missing {
+      display: block;
+      color: var(--danger);
+      font-size: 0.85rem;
+      font-style: italic;
+    }
+
+    .contacto-status {
+      font-size: 1.5rem;
+    }
+
+    /* Alert */
+    .alert {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .alert-warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+    }
+
+    .alert i {
+      font-size: 1.2rem;
+    }
+
+    /* Campo select con emojis */
+    .form-field select option {
+      padding: 0.5rem;
+    }
+
+    /* Small text debajo de inputs */
+    .form-field small {
+      display: block;
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--gray-500);
+    }
+
+    /* Categorías destacadas en checkboxes */
+    .form-field label[style*="cursor: pointer"]:hover {
+      background: var(--gray-50);
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+      margin: -0.4rem -0.6rem;
+    }
+
+    /* Toggle personalizado para mensajes */
+    #aiMessagesForm {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 2px dashed var(--gray-200);
+    }
+
+    /* Responsive para contactos */
+    @media (max-width: 768px) {
+      .contactos-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .contacto-item {
+        padding: 0.875rem;
+      }
+
+      .contacto-icon {
+        font-size: 1.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .ai-helper-content h4 {
+        font-size: 1.2rem;
+      }
+
+      .form-field label {
+        font-size: 0.9rem;
+      }
+
+      .tooltip-icon {
+        display: inline-block;
+        margin-left: 0.15rem;
+      }
+    }
+  </style>
 </head>
 <body>
+
   <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="loading-overlay">
-    <div class="loading-spinner"></div>
-    <p id="loadingText">Cargando...</p>
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando...</div>
   </div>
 
   <!-- Toast Container -->
-  <div id="toastContainer" class="toast-container"></div>
+  <div class="toast-container" id="toastContainer"></div>
 
   <!-- Header -->
-  <header class="dashboard-header">
-    <div class="header-left">
-      <h1>
-        <i class="fas fa-robot"></i>
-        <span id="commerceName">Mi Comercio</span>
-      </h1>
-      <span id="planBadge" class="plan-badge">Trial</span>
-    </div>
-    <div class="header-right">
-      <button id="logoutBtn" class="btn btn-outline">
-        <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-      </button>
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <div class="logo-icon">🤖</div>
+        <div>
+          <h1 id="commerceName">Mi Comercio</h1>
+          <span class="plan-badge" id="planBadge">Trial</span>
+        </div>
+      </div>
+      <div class="user-info">
+        <button class="btn-logout" id="logoutBtn">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
     </div>
   </header>
 
   <!-- Subscription Banner -->
-  <div id="subscriptionBanner" class="subscription-banner">
-    <i class="fas fa-info-circle"></i>
-    <span id="subscriptionMessage">Trial gratuito activo</span>
+  <div class="subscription-banner" id="subscriptionBanner">
+    <span id="subscriptionMessage">Completa tu información</span>
   </div>
 
-  <!-- Navigation -->
-  <nav class="dashboard-nav">
-    <a href="./mi-comercio.html" class="nav-link">
-      <i class="fas fa-store"></i>
-      <span>Mi Comercio</span>
-    </a>
-    <a href="./productos.html" class="nav-link">
-      <i class="fas fa-box"></i>
-      <span>Productos</span>
-    </a>
-    <a href="./horarios.html" class="nav-link">
-      <i class="fas fa-clock"></i>
-      <span>Horarios</span>
-    </a>
-    <a href="./mi-ia.html" class="nav-link active">
-      <i class="fas fa-robot"></i>
-      <span>Mi IA</span>
-    </a>
-    <a href="./usuario.html" class="nav-link">
-      <i class="fas fa-user"></i>
-      <span>Usuario</span>
-    </a>
-  </nav>
+  <!-- Progress Indicator -->
+  <div class="progress-indicator" id="progressContainer"></div>
 
   <!-- Main Content -->
-  <main class="dashboard-main">
-    <div class="dashboard-container">
-      
-      <!-- Page Title -->
-      <div class="page-header">
-        <h2>
-          <i class="fas fa-robot"></i>
-          Configurar Asistente Virtual
-        </h2>
-        <p class="page-description">
-          Personaliza tu asistente de IA para que represente tu negocio de manera única
-        </p>
+  <main class="main-content">
+
+    <!-- ========================================
+         ASISTENTE IA
+         ======================================== -->
+    <div class="ai-helper-section">
+      <div class="ai-helper-card">
+        <div class="ai-helper-icon">🤖</div>
+        <div class="ai-helper-content">
+          <h4>¿Primera vez configurando tu IA?</h4>
+          <p>Nuestro asistente te guía paso a paso en la personalización (gratis, sin registro)</p>
+          <a 
+            href="https://claude.ai/new" 
+            target="_blank" 
+            class="btn btn-primary"
+            id="openAssistant"
+          >
+            💬 Hablar con el Asistente
+          </a>
+          <small>Se abre en una nueva pestaña</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+         1️⃣ IDENTIDAD DEL ASISTENTE
+         ======================================== -->
+    <section class="form-section">
+      <h3><i class="fas fa-user-robot"></i> 1️⃣ Identidad del Asistente</h3>
+      <p class="section-description">
+        💡 <strong>Dale personalidad a tu asistente virtual.</strong> Esto define cómo se presenta a tus clientes.
+      </p>
+
+      <form id="aiIdentityForm">
+        
+        <!-- Nombre -->
+        <div class="form-field">
+          <label class="required">
+            Nombre del asistente
+            <span class="tooltip-icon" title="¿Cómo querés que se llame tu asistente?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <input 
+            type="text" 
+            id="aiName" 
+            name="aiName" 
+            placeholder='Ej: "Ana", "Carlos", "Sofía"'
+            required
+          >
+          <small>Elegí un nombre amigable y fácil de recordar</small>
+        </div>
+
+        <!-- Personalidad -->
+        <div class="form-field">
+          <label class="required">
+            Personalidad
+            <span class="tooltip-icon" title="¿Cómo querés que se comporte con los clientes?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="aiPersonality" name="aiPersonality" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="amigable">😊 Amigable y cercano</option>
+            <option value="profesional">👔 Profesional</option>
+            <option value="divertido">🎉 Divertido</option>
+            <option value="formal">🎩 Formal</option>
+            <option value="casual">😎 Casual</option>
+          </select>
+          <small>Esto define el estilo general de las respuestas</small>
+        </div>
+
+        <!-- Tono -->
+        <div class="form-field">
+          <label class="required">
+            Tono de voz
+            <span class="tooltip-icon" title="¿Con qué energía querés que hable?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="aiTone" name="aiTone" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="entusiasta">🔥 Entusiasta</option>
+            <option value="relajado">😌 Relajado</option>
+            <option value="serio">🧐 Serio</option>
+            <option value="jovial">😄 Jovial</option>
+            <option value="elegante">✨ Elegante</option>
+          </select>
+          <small>Define la energía de las conversaciones</small>
+        </div>
+
+        <!-- Idioma -->
+        <div class="form-field">
+          <label class="required">
+            Idioma principal
+            <span class="tooltip-icon" title="¿En qué idioma atenderá a tus clientes?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="aiLanguage" name="aiLanguage" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="es-AR">🇦🇷 Español (Argentina)</option>
+            <option value="es-ES">🇪🇸 Español (España)</option>
+            <option value="es-MX">🇲🇽 Español (México)</option>
+            <option value="en-US">🇺🇸 Inglés</option>
+            <option value="multi">🌍 Multiidioma (detectar automáticamente)</option>
+          </select>
+          <small>El asistente puede adaptar expresiones según el país</small>
+        </div>
+
+        <!-- Saludo -->
+        <div class="form-field">
+          <label class="required">
+            Saludo inicial
+            <span class="tooltip-icon" title="Primera frase que verán tus clientes al abrir el chat">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <textarea 
+            id="aiGreeting" 
+            name="aiGreeting" 
+            rows="3"
+            placeholder='Ej: "¡Hola! Soy Ana, tu asistente virtual. Estoy acá para ayudarte con nuestros productos y responder todas tus consultas. ¿En qué te puedo ayudar hoy?"'
+            required
+          ></textarea>
+          <small>Será lo primero que lean tus clientes al iniciar una conversación</small>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- ========================================
+         2️⃣ COMPORTAMIENTOS
+         ======================================== -->
+    <section class="form-section">
+      <h3><i class="fas fa-sliders-h"></i> 2️⃣ Comportamientos del Asistente</h3>
+      <p class="section-description">
+        💡 <strong>Enseñale cómo actuar en cada situación.</strong> Estas reglas guían las respuestas automáticas.
+      </p>
+
+      <form id="aiBehaviorsForm">
+
+        <!-- Si no hay precio -->
+        <div class="form-field">
+          <label class="required">
+            ¿Qué hacer si un cliente pregunta el precio de un producto sin precio configurado?
+            <span class="tooltip-icon" title="Algunos productos pueden no tener precio. Elegí cómo manejar esa situación">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="sinPrecio" name="sinPrecio" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="whatsapp">📱 Derivar a WhatsApp</option>
+            <option value="instagram">📸 Derivar a Instagram</option>
+            <option value="email">📧 Derivar a Email</option>
+            <option value="web">🌐 Derivar a sitio web</option>
+            <option value="telefono">☎️ Derivar a teléfono</option>
+          </select>
+          <small>El asistente le dirá al cliente que consulte directamente por ese canal</small>
+        </div>
+
+        <!-- Si no hay stock -->
+        <div class="form-field">
+          <label class="required">
+            ¿Qué hacer si un producto no tiene stock?
+            <span class="tooltip-icon" title="Define cómo manejar productos agotados">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="sinStock" name="sinStock" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="no_ofrecer">❌ No ofrecer el producto</option>
+            <option value="sugerir_similar">💡 Sugerir producto similar del catálogo</option>
+            <option value="consultar">📞 Consultar disponibilidad por contacto</option>
+          </select>
+          <small>Evita ofrecer productos que no podés entregar</small>
+        </div>
+
+        <!-- Local cerrado -->
+        <div class="form-field">
+          <label class="required">
+            ¿Qué hacer cuando el local físico está cerrado?
+            <span class="tooltip-icon" title="El asistente funciona 24/7, pero tu local no. ¿Cómo lo maneja?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="localCerrado" name="localCerrado" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="informar">🕐 Solo informar próximo horario de apertura</option>
+            <option value="tomar_consulta">📱 Tomar consulta y pedir que contacte en horario</option>
+            <option value="derivar">📞 Derivar a contacto inmediatamente</option>
+          </select>
+          <small>Recordá: tu asistente trabaja 24/7, pero puede aclarar horarios de atención presencial</small>
+        </div>
+
+        <!-- Proactividad -->
+        <div class="form-field">
+          <label class="required">
+            Nivel de proactividad en ventas
+            <span class="tooltip-icon" title="¿Qué tan activo querés que sea ofreciendo productos?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="proactividad" name="proactividad" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="muy_proactivo">🔥 Muy proactivo (siempre sugiere productos complementarios)</option>
+            <option value="moderado">😊 Moderado (sugiere solo cuando es relevante)</option>
+            <option value="pasivo">😌 Pasivo (solo responde lo que preguntan)</option>
+          </select>
+          <small>Define qué tan "vendedor" querés que sea tu asistente</small>
+        </div>
+
+        <!-- Formato respuestas -->
+        <div class="form-field">
+          <label class="required">
+            Formato de respuestas
+            <span class="tooltip-icon" title="¿Querés respuestas largas y detalladas o breves y directas?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="formatoRespuestas" name="formatoRespuestas" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="detalladas">📝 Detalladas y explicativas</option>
+            <option value="breves">⚡ Breves y concisas</option>
+            <option value="balanceadas">🎯 Balanceadas (depende de la pregunta)</option>
+          </select>
+          <small>Algunos clientes prefieren respuestas rápidas, otros más info</small>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- ========================================
+         3️⃣ MENSAJES PERSONALIZADOS
+         ======================================== -->
+    <section class="form-section">
+      <h3><i class="fas fa-comments"></i> 3️⃣ Mensajes Personalizados</h3>
+      <p class="section-description">
+        💡 <strong>Personaliza los mensajes cuando el asistente derive a tus canales.</strong> Estas frases se mostrarán al cliente.
+      </p>
+
+      <!-- Toggle avanzado -->
+      <div class="form-mode-toggle">
+        <button type="button" id="toggleMessages" class="btn btn-secondary">
+          ➕ Configurar mensajes personalizados
+        </button>
       </div>
 
-      <!-- AI Configuration Form -->
-      <section class="card">
-        <div class="card-header">
-          <h3>
-            <i class="fas fa-cog"></i>
-            Configuración de IA
-          </h3>
-        </div>
-        <div class="card-body">
-          <form id="aiConfigForm">
-            <div id="aiConfigFields" class="form-grid">
-              <!-- Los campos se generan dinámicamente -->
-            </div>
-            
-            <div class="form-actions">
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-magic"></i>
-                Generar IA
-              </button>
-              <button type="button" id="previewAI" class="btn btn-outline">
-                <i class="fas fa-eye"></i>
-                Ver Preview
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
+      <form id="aiMessagesForm" style="display: none;">
 
-      <!-- AI Preview Section -->
-      <section id="aiPreviewSection" class="card hidden">
-        <div class="card-header">
-          <h3>
-            <i class="fas fa-link"></i>
-            Tu Asistente Virtual
-          </h3>
+        <!-- WhatsApp -->
+        <div class="form-field">
+          <label>
+            📱 Mensaje para derivar a WhatsApp
+            <span class="tooltip-icon" title="Frase que verá el cliente cuando el asistente lo derive a WhatsApp">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <textarea 
+            id="mensajeWhatsapp" 
+            name="mensajeWhatsapp" 
+            rows="2"
+            placeholder='Ej: "¡Escribinos al WhatsApp +54 9 11 1234-5678 para coordinar tu pedido! 📱"'
+          ></textarea>
+          <small>Incluí tu número de WhatsApp en el mensaje</small>
         </div>
-        <div class="card-body">
-          <div class="ai-link-container">
-            <p class="info-text">
-              <i class="fas fa-info-circle"></i>
-              Comparte este enlace con tus clientes para que interactúen con tu asistente de IA
-            </p>
-            
-            <div class="link-display-box">
-              <code id="aiLinkDisplay">https://indiceia.vercel.app/app?user=...</code>
-            </div>
-            
-            <div class="share-actions">
-              <button id="copyLinkBtn" class="btn btn-primary">
-                <i class="fas fa-copy"></i>
-                Copiar enlace
-              </button>
-              <button id="whatsappShareBtn" class="btn btn-success">
-                <i class="fab fa-whatsapp"></i>
-                Compartir en WhatsApp
-              </button>
-            </div>
-          </div>
 
-          <div class="ai-preview-info">
-            <h4>
-              <i class="fas fa-lightbulb"></i>
-              ¿Cómo funciona?
-            </h4>
-            <ul>
-              <li>Los clientes pueden chatear con tu asistente 24/7</li>
-              <li>El asistente responde sobre productos, horarios y servicios</li>
-              <li>Puedes actualizar la configuración en cualquier momento</li>
-              <li>El enlace permanece activo mientras tu suscripción esté vigente</li>
-            </ul>
-          </div>
+        <!-- Instagram -->
+        <div class="form-field">
+          <label>
+            📸 Mensaje para derivar a Instagram
+            <span class="tooltip-icon" title="Frase que verá el cliente cuando el asistente lo derive a Instagram">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <textarea 
+            id="mensajeInstagram" 
+            name="mensajeInstagram" 
+            rows="2"
+            placeholder='Ej: "¡Seguinos en Instagram @tucomercio y escribinos por DM! 📸"'
+          ></textarea>
+          <small>Incluí tu usuario de Instagram</small>
         </div>
-      </section>
 
-    </div>
+        <!-- Web/Email -->
+        <div class="form-field">
+          <label>
+            🌐 Mensaje para derivar a Web/Email
+            <span class="tooltip-icon" title="Frase que verá el cliente cuando el asistente lo derive a tu sitio web o email">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <textarea 
+            id="mensajeWeb" 
+            name="mensajeWeb" 
+            rows="2"
+            placeholder='Ej: "Visitá nuestra tienda en www.tucomercio.com o escribinos a contacto@tucomercio.com 🌐"'
+          ></textarea>
+          <small>Incluí tu sitio web o email de contacto</small>
+        </div>
+
+        <!-- Respuesta por defecto -->
+        <div class="form-field">
+          <label>
+            ❓ Respuesta cuando no entiende la consulta
+            <span class="tooltip-icon" title="Mensaje que usa cuando el cliente hace una pregunta poco clara">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <textarea 
+            id="mensajeDefault" 
+            name="mensajeDefault" 
+            rows="2"
+            placeholder='Ej: "No estoy seguro de haber entendido tu consulta. ¿Podrías reformularla? O escribinos directamente a WhatsApp: +54 9 11 1234-5678"'
+          ></textarea>
+          <small>Se usa cuando el asistente no puede interpretar bien la pregunta</small>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- ========================================
+         4️⃣ PRODUCTOS DESTACADOS
+         ======================================== -->
+    <section class="form-section" id="productosDestacadosSection">
+      <h3><i class="fas fa-star"></i> 4️⃣ Productos o Categorías Destacadas</h3>
+      <p class="section-description">
+        💡 <strong>¿Qué querés que mencione con mayor frecuencia?</strong> El asistente priorizará estos productos/categorías.
+      </p>
+
+      <div id="productosDestacadosContent">
+        <p style="text-align: center; color: #6b7280; padding: 2rem;">
+          <i class="fas fa-box-open" style="font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>
+          Primero cargá productos en la sección <strong>Productos</strong>
+        </p>
+      </div>
+    </section>
+
+    <!-- ========================================
+         5️⃣ VALIDACIÓN DE CONTACTOS
+         ======================================== -->
+    <section class="form-section">
+      <h3><i class="fas fa-check-circle"></i> 5️⃣ Verificación de Contactos</h3>
+      <p class="section-description">
+        💡 <strong>Revisá que tus canales estén configurados.</strong> El asistente los usa para derivar consultas.
+      </p>
+
+      <div id="contactosValidacion" class="contactos-grid">
+        <!-- Se llena dinámicamente desde JS -->
+      </div>
+
+      <div style="margin-top: 1rem;">
+        <a href="./mi-comercio.html" class="btn btn-secondary">
+          <i class="fas fa-edit"></i> Editar contactos en Mi Comercio
+        </a>
+      </div>
+    </section>
+
   </main>
 
-  <!-- Solo importar el JS de la página -->
+  <!-- Navigation Controls -->
+  <div class="navigation-controls" id="navigationControls"></div>
+
   <script type="module" src="./mi-ia.js"></script>
 </body>
 </html>
