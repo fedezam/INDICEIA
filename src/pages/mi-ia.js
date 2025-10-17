@@ -1,4 +1,4 @@
-// src/pages/mi-ia.js
+// src/pages/miIa.js
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
