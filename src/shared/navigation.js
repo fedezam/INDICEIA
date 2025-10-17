@@ -8,7 +8,7 @@ class Navigation {
     { id: 'mi-comercio', name: 'Mi Comercio', url: 'mi-comercio.html', icon: 'fas fa-store' },
     { id: 'horarios', name: 'Horarios', url: 'horarios.html', icon: 'fas fa-clock' },
     { id: 'productos', name: 'Productos', url: 'productos.html', icon: 'fas fa-boxes' },
-    { id: 'mi-ia', name: 'IA Config', url: 'mi-ia.html', icon: 'fas fa-robot' }
+    { id: 'miIA', name: 'IA Config', url: 'mi-ia.html', icon: 'fas fa-robot' }
   ];
 
   // Flujo Servicio
