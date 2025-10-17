@@ -8,7 +8,7 @@ class Navigation {
     { id: 'mi-comercio', name: 'Mi Comercio', url: 'mi-comercio.html', icon: 'fas fa-store' },
     { id: 'horarios', name: 'Horarios', url: 'horarios.html', icon: 'fas fa-clock' },
     { id: 'productos', name: 'Productos', url: 'productos.html', icon: 'fas fa-boxes' },
-    { id: 'miIA', name: 'IA Config', url: 'mi-ia.html', icon: 'fas fa-robot' }
+    { id: 'miIa', name: 'IA Config', url: 'mi-ia.html', icon: 'fas fa-robot' }
   ];
 
   // Flujo Servicio
@@ -16,7 +16,7 @@ class Navigation {
     { id: 'mi-servicio', name: 'Mi Servicio', url: 'mi-servicio.html', icon: 'fas fa-briefcase' },
     { id: 'horarios', name: 'Horarios', url: 'horarios.html', icon: 'fas fa-clock' },
     { id: 'agenda', name: 'Agenda', url: 'agenda.html', icon: 'fas fa-calendar-alt' },
-    { id: 'miIA', name: 'IA Config', url: 'mi-ia.html', icon: 'fas fa-robot' }
+    { id: 'miIa', name: 'IA Config', url: 'mi-ia.html', icon: 'fas fa-robot' }
   ];
 
   // Detectar tipo de usuario y devolver set de páginas
