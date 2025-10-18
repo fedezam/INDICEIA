@@ -8,7 +8,7 @@ class Navigation {
     { id: 'mi-comercio', name: 'Mi Comercio', url: 'mi-comercio.html', icon: 'fas fa-store' },
     { id: 'horarios', name: 'Horarios', url: 'horarios.html', icon: 'fas fa-clock' },
     { id: 'productos', name: 'Productos', url: 'productos.html', icon: 'fas fa-boxes' },
-    { id: 'miIa', name: 'IA Config', url: 'miIa.html', icon: 'fas fa-robot' }
+    { id: 'ia-config', name: 'IA Config', url: 'ia-config.html', icon: 'fas fa-robot' }
   ];
 
   // Flujo Servicio
@@ -16,7 +16,7 @@ class Navigation {
     { id: 'mi-servicio', name: 'Mi Servicio', url: 'mi-servicio.html', icon: 'fas fa-briefcase' },
     { id: 'horarios', name: 'Horarios', url: 'horarios.html', icon: 'fas fa-clock' },
     { id: 'agenda', name: 'Agenda', url: 'agenda.html', icon: 'fas fa-calendar-alt' },
-    { id: 'miIa', name: 'IA Config', url: 'miIa.html', icon: 'fas fa-robot' }
+    { id: 'ia-config', name: 'IA Config', url: 'ia-config.html', icon: 'fas fa-robot' }
   ];
 
   // Detectar tipo de usuario y devolver set de páginas
@@ -202,7 +202,7 @@ class Navigation {
 
     const isValid = await this.validateCurrentPage();
     if (!isValid) {
-      showToast('Campos incompletos', 'Por favor completa todos los campos requeridos antes de continuar', 'warning');
+      showToast('warning', 'Campos incompletos', 'Por favor completa todos los campos requeridos antes de continuar');
       return;
     }
 
@@ -211,7 +211,7 @@ class Navigation {
     if (currentIndex < this.pages.length - 1) {
       this.goToPage(this.pages[currentIndex + 1].id);
     } else {
-      showToast('¡Configuración completa!', 'Tu IA comercial está lista para usar', 'success');
+      showToast('success', '¡Configuración completa!', 'Tu IA comercial está lista para usar');
     }
   }
 
