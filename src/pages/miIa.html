@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -73,6 +72,12 @@
       color: #92400e; 
     }
     
+    .alert-info {
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+      color: #1e40af;
+    }
+    
     .form-field small { 
       display: block; 
       margin-top: 0.4rem; 
@@ -90,13 +95,13 @@
       color: var(--primary);
     }
     
-    .form-mode-toggle {
-      margin-bottom: 1rem;
-    }
-    
     .section-description {
-      margin-bottom: 1rem;
-      color: var(--gray-600);
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: var(--gray-50);
+      border-radius: 8px;
+      color: var(--gray-700);
+      line-height: 1.6;
     }
     
     .ai-helper-section {
@@ -138,6 +143,163 @@
       display: block;
       margin-top: 0.5rem;
     }
+
+    /* Productos Destacados */
+    .productos-destacados-container {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.5rem;
+      border: 2px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--gray-400);
+    }
+
+    .search-results {
+      margin-top: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      background: white;
+    }
+
+    .search-result-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+    .search-result-item:hover {
+      background: var(--gray-50);
+    }
+
+    .search-result-item:last-child {
+      border-bottom: none;
+    }
+
+    .producto-info {
+      flex: 1;
+    }
+
+    .producto-codigo {
+      font-weight: 600;
+      color: var(--primary);
+      font-size: 0.85rem;
+    }
+
+    .producto-nombre {
+      color: var(--gray-800);
+      margin: 0.25rem 0;
+    }
+
+    .producto-precio {
+      color: var(--gray-600);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .destacados-list {
+      margin-top: 1.5rem;
+    }
+
+    .destacados-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .destacados-counter {
+      font-size: 0.9rem;
+      color: var(--gray-600);
+      font-weight: 600;
+    }
+
+    .destacado-item {
+      padding: 1rem;
+      background: rgba(34, 197, 94, 0.05);
+      border: 2px solid var(--success);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-destacar, .btn-quitar {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+
+    .btn-destacar {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-destacar:hover:not(:disabled) {
+      background: #16a34a;
+      transform: translateY(-1px);
+    }
+
+    .btn-destacar:disabled {
+      background: var(--gray-300);
+      cursor: not-allowed;
+    }
+
+    .btn-quitar {
+      background: var(--gray-200);
+      color: var(--gray-700);
+    }
+
+    .btn-quitar:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--gray-500);
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 1rem;
+      opacity: 0.3;
+    }
     
     @media (max-width: 768px) {
       .ai-helper-card {
@@ -148,6 +310,18 @@
       
       .contactos-grid {
         grid-template-columns: 1fr;
+      }
+
+      .search-result-item,
+      .destacado-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+
+      .btn-destacar,
+      .btn-quitar {
+        width: 100%;
       }
     }
   </style>
@@ -213,6 +387,9 @@
     <!-- 1️⃣ IDENTIDAD -->
     <section class="form-section">
       <h3><i class="fas fa-user-robot"></i> 1️⃣ Identidad del Asistente</h3>
+      <div class="section-description">
+        Define la personalidad básica de tu asistente virtual. Estos campos son obligatorios para que tu IA tenga una identidad clara y coherente.
+      </div>
       <form id="aiIdentityForm">
         <div class="form-field">
           <label class="required">
@@ -221,14 +398,14 @@
               <i class="fas fa-question-circle"></i>
             </span>
           </label>
-          <input type="text" id="aiName" name="aiName" placeholder='Ej: "Ana"' required>
-          <small>Elegí un nombre amigable</small>
+          <input type="text" id="aiName" name="aiName" placeholder='Ej: "Ana", "Carlos", "Sofia"' required>
+          <small>Elegí un nombre amigable y fácil de recordar</small>
         </div>
         
         <div class="form-field">
           <label class="required">
             Personalidad 
-            <span class="tooltip-icon" title="¿Cómo querés que se comporte?">
+            <span class="tooltip-icon" title="¿Cómo querés que se comporte con los clientes?">
               <i class="fas fa-question-circle"></i>
             </span>
           </label>
@@ -240,13 +417,13 @@
             <option value="formal">🎩 Formal</option>
             <option value="casual">😎 Casual</option>
           </select>
-          <small>Define el estilo</small>
+          <small>Define el estilo de comunicación general</small>
         </div>
         
         <div class="form-field">
           <label class="required">
             Tono de voz 
-            <span class="tooltip-icon" title="¿Con qué energía?">
+            <span class="tooltip-icon" title="¿Con qué energía debe comunicarse?">
               <i class="fas fa-question-circle"></i>
             </span>
           </label>
@@ -258,12 +435,13 @@
             <option value="jovial">😄 Jovial</option>
             <option value="elegante">✨ Elegante</option>
           </select>
+          <small>El nivel de energía en las respuestas</small>
         </div>
         
         <div class="form-field">
           <label class="required">
             Idioma principal 
-            <span class="tooltip-icon" title="¿En qué idioma atenderá?">
+            <span class="tooltip-icon" title="¿En qué idioma atenderá principalmente?">
               <i class="fas fa-question-circle"></i>
             </span>
           </label>
@@ -275,17 +453,19 @@
             <option value="en-US">🇺🇸 Inglés</option>
             <option value="multi">🌍 Multiidioma</option>
           </select>
+          <small>El asistente se adaptará al idioma y modismos locales</small>
         </div>
         
         <div class="form-field">
           <label class="required">
             Saludo inicial 
-            <span class="tooltip-icon" title="Primera frase que verán tus clientes">
+            <span class="tooltip-icon" title="Primera frase que verán tus clientes al iniciar la conversación">
               <i class="fas fa-question-circle"></i>
             </span>
           </label>
           <textarea id="aiGreeting" name="aiGreeting" rows="3" 
-                    placeholder='Ej: "¡Hola! Soy Ana..."' required></textarea>
+                    placeholder='Ej: "¡Hola! Soy Ana, la asistente virtual de Calzados Tino. ¿En qué puedo ayudarte hoy?"' required></textarea>
+          <small>Escribí un saludo cálido que represente tu negocio</small>
         </div>
       </form>
     </section>
@@ -293,6 +473,9 @@
     <!-- 2️⃣ COMPORTAMIENTOS -->
     <section class="form-section">
       <h3><i class="fas fa-sliders-h"></i> 2️⃣ Comportamientos del Asistente</h3>
+      <div class="section-description">
+        Configurá cómo debe reaccionar tu asistente en situaciones específicas. Estos comportamientos son obligatorios para asegurar una experiencia consistente.
+      </div>
       <form id="aiBehaviorsForm">
         <div class="form-field">
           <label class="required">
@@ -306,98 +489,135 @@
             <option value="web">🌐 Derivar a sitio web</option>
             <option value="telefono">☎️ Derivar a teléfono</option>
           </select>
+          <small>El asistente invitará al cliente a consultar directamente por este medio</small>
         </div>
         
         <div class="form-field">
           <label class="required">¿Qué hacer si un producto no tiene stock?</label>
           <select id="sinStock" name="sinStock" required>
             <option value="">-- Elegí una opción --</option>
-            <option value="no_ofrecer">❌ No ofrecer</option>
-            <option value="sugerir_similar">💡 Sugerir similar</option>
-            <option value="consultar">📞 Consultar por contacto</option>
+            <option value="no_ofrecer">❌ No ofrecer el producto</option>
+            <option value="sugerir_similar">💡 Sugerir productos similares</option>
+            <option value="consultar">📞 Pedir que consulte disponibilidad</option>
           </select>
+          <small>Define cómo manejar productos sin stock disponible</small>
         </div>
         
         <div class="form-field">
           <label class="required">¿Qué hacer cuando el local está cerrado?</label>
           <select id="localCerrado" name="localCerrado" required>
             <option value="">-- Elegí una opción --</option>
-            <option value="informar">🕐 Informar horario</option>
-            <option value="tomar_consulta">📱 Tomar consulta</option>
-            <option value="derivar">📞 Derivar a contacto</option>
+            <option value="informar">🕐 Informar horarios de apertura</option>
+            <option value="tomar_consulta">📱 Tomar consulta y responder después</option>
+            <option value="derivar">📞 Derivar a contacto directo</option>
           </select>
+          <small>Cómo atender fuera del horario laboral</small>
         </div>
         
         <div class="form-field">
           <label class="required">Nivel de proactividad</label>
           <select id="proactividad" name="proactividad" required>
             <option value="">-- Elegí una opción --</option>
-            <option value="muy_proactivo">🔥 Muy proactivo</option>
-            <option value="moderado">😊 Moderado</option>
-            <option value="pasivo">😌 Pasivo</option>
+            <option value="muy_proactivo">🔥 Muy proactivo (sugiere productos activamente)</option>
+            <option value="moderado">😊 Moderado (sugiere cuando es relevante)</option>
+            <option value="pasivo">😌 Pasivo (solo responde lo que se pregunta)</option>
           </select>
+          <small>Qué tan activo será el asistente en sugerir productos</small>
         </div>
         
         <div class="form-field">
           <label class="required">Formato de respuestas</label>
           <select id="formatoRespuestas" name="formatoRespuestas" required>
             <option value="">-- Elegí una opción --</option>
-            <option value="detalladas">📝 Detalladas</option>
-            <option value="breves">⚡ Breves</option>
-            <option value="balanceadas">🎯 Balanceadas</option>
+            <option value="detalladas">📝 Detalladas (explicaciones completas)</option>
+            <option value="breves">⚡ Breves (respuestas concisas)</option>
+            <option value="balanceadas">🎯 Balanceadas (equilibrio entre ambas)</option>
           </select>
+          <small>La extensión típica de las respuestas</small>
         </div>
       </form>
     </section>
 
     <!-- 3️⃣ MENSAJES PERSONALIZADOS -->
     <section class="form-section">
-      <h3><i class="fas fa-comments"></i> 3️⃣ Mensajes Personalizados</h3>
-      <div class="form-mode-toggle">
-        <button type="button" id="toggleMessages" class="btn btn-secondary">
-          ➕ Configurar mensajes personalizados
-        </button>
+      <h3><i class="fas fa-comments"></i> 3️⃣ Mensajes Personalizados (Opcional)</h3>
+      <div class="section-description">
+        Personalizá los mensajes que tu asistente usará en situaciones específicas. Si dejás estos campos en blanco, se usarán mensajes por defecto inteligentes.
       </div>
 
-      <div id="aiMessagesForm" style="display:none;">
-        <div class="form-field">
-          <label>📱 Mensaje para derivar a WhatsApp</label>
-          <textarea id="mensajeWhatsapp" rows="2"></textarea>
-        </div>
-        
-        <div class="form-field">
-          <label>📸 Mensaje para derivar a Instagram</label>
-          <textarea id="mensajeInstagram" rows="2"></textarea>
-        </div>
-        
-        <div class="form-field">
-          <label>🌐 Mensaje para derivar a Web/Email</label>
-          <textarea id="mensajeWeb" rows="2"></textarea>
-        </div>
-        
-        <div class="form-field">
-          <label>❓ Respuesta cuando no entiende la consulta</label>
-          <textarea id="mensajeDefault" rows="2"></textarea>
-        </div>
+      <div class="form-field">
+        <label>📱 Mensaje para derivar a WhatsApp (opcional)</label>
+        <textarea id="mensajeWhatsapp" rows="2" 
+                  placeholder='Ej: "Para consultas sobre este producto, escribime al WhatsApp +54 9 11 1234-5678 📱"'></textarea>
+        <small>Se muestra cuando el asistente deriva una consulta a WhatsApp</small>
+      </div>
+      
+      <div class="form-field">
+        <label>📸 Mensaje para derivar a Instagram (opcional)</label>
+        <textarea id="mensajeInstagram" rows="2"
+                  placeholder='Ej: "¡Seguime en Instagram @micomercio para ver más productos y ofertas! 📸"'></textarea>
+        <small>Se muestra cuando el asistente deriva a Instagram</small>
+      </div>
+      
+      <div class="form-field">
+        <label>🌐 Mensaje para derivar a Web o Email (opcional)</label>
+        <textarea id="mensajeWeb" rows="2"
+                  placeholder='Ej: "Visitá nuestra web www.micomercio.com o escribime a contacto@micomercio.com"'></textarea>
+        <small>Se muestra cuando deriva a sitio web o correo electrónico</small>
+      </div>
+      
+      <div class="form-field">
+        <label>❓ Respuesta cuando no entiende la consulta (opcional)</label>
+        <textarea id="mensajeDefault" rows="2"
+                  placeholder='Ej: "Disculpá, no entendí tu consulta. ¿Podrías reformularla de otra manera? 🤔"'></textarea>
+        <small>Mensaje de fallback cuando el asistente no puede interpretar la pregunta</small>
       </div>
     </section>
 
     <!-- 4️⃣ PRODUCTOS DESTACADOS -->
     <section class="form-section" id="productosDestacadosSection">
-      <h3><i class="fas fa-star"></i> 4️⃣ Productos o Categorías Destacadas</h3>
-      <div id="productosDestacadosContent">
-        <p style="text-align:center; color:#6b7280; padding:2rem;">
-          <i class="fas fa-box-open" style="font-size:3rem; display:block; margin-bottom:1rem; opacity:.3;"></i>
-          Primero cargá productos en la sección <strong>Productos</strong>
-        </p>
+      <h3><i class="fas fa-star"></i> 4️⃣ Productos Destacados (Opcional)</h3>
+      <div class="section-description">
+        Seleccioná hasta 10 productos que querés que tu asistente mencione con mayor frecuencia. Estos productos aparecerán más seguido en las recomendaciones.
+      </div>
+      
+      <div class="productos-destacados-container">
+        <!-- Buscador -->
+        <div>
+          <h4>Buscar producto</h4>
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input 
+              type="text" 
+              id="searchProductos" 
+              placeholder="Buscá por código o nombre de producto..."
+            >
+          </div>
+          <div id="searchResults" class="search-results" style="display: none;"></div>
+        </div>
+
+        <!-- Lista de destacados -->
+        <div>
+          <div class="destacados-header">
+            <h4>Productos destacados</h4>
+            <span class="destacados-counter" id="destacadosCounter">0/10</span>
+          </div>
+          <div id="destacadosList">
+            <div class="empty-state">
+              <i class="fas fa-star"></i>
+              <p>Aún no seleccionaste productos destacados</p>
+              <small>Usá el buscador arriba para agregar hasta 10 productos</small>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
     <!-- 5️⃣ VALIDACIÓN DE CONTACTOS -->
     <section class="form-section">
-      <h3><i class="fas fa-check-circle"></i> 5️⃣ Verificación de Contactos</h3>
+      <h3><i class="fas fa-check-circle"></i> 5️⃣ Verificación de Contactos (Informativo)</h3>
       <div class="section-description">
-        <p>Revisá que tus canales estén configurados. El asistente los usa para derivar consultas.</p>
+        Revisá que tus canales de contacto estén configurados correctamente. El asistente los usará para derivar consultas según la configuración de comportamientos.
       </div>
       <div id="contactosValidacion" class="contactos-grid"></div>
       <div style="margin-top:1rem;">
@@ -417,3 +637,4 @@
 
 </body>
 </html>
+         
