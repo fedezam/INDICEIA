@@ -6,6 +6,7 @@ import Navigation from '../shared/navigation.js';
 import { showLoading, hideLoading, showToast } from '../shared/utils.js';
 import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
+import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
@@ -879,6 +880,7 @@ async function saveAllProducts() {
 
     hideLoading();
     showToast('success', '✅ Productos guardados', 'Todos los cambios se guardaron correctamente');
+    setTimeout(() => {redirectToNextStep();
     return true;
 
   } catch (error) {
