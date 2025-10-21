@@ -6,6 +6,7 @@ import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { fillProvinciaSelector } from "../shared/provincias.js";
+import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 // =========================
 // 🔧 Utils
@@ -186,6 +187,8 @@ if (guardarBtn) {
 
       // ✅ Ahora SÍ habilitar los botones después de guardar
       Utils.enableIAButtons();
+      setTimeout(() => redirectToNextStep(), 800);
+      
     } catch (error) {
       console.error("Error al guardar datos:", error);
       Utils.showMessage("Ocurrió un error al guardar los datos.");
