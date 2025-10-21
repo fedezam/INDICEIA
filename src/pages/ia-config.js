@@ -173,15 +173,48 @@ function loadAIConfig() {
   safeSet('mensajeWeb', aiConfig.mensajeWeb);
   safeSet('mensajeDefault', aiConfig.mensajeDefault);
 
-  productosDestacados = Array.isArray(aiConfig.productosDestacados) 
-    ? aiConfig.productosDestacados.map(p => ({
-        ...p,
-        precio_final: Number(p.precio_final || 0),
-        precio: Number(p.precio_final || 0)
-      })) 
+  // 🔄 sincronizar productosDestacados con los productos reales cargados
+  const destacadosGuardados = Array.isArray(aiConfig.productosDestacados)
+    ? aiConfig.productosDestacados
     : [];
 
+  productosDestacados = destacadosGuardados.map((dest) => {
+    const productoReal =
+      productos.find((p) => p.id === dest.id) ||
+      productos.find((p) => p.codigo === dest.codigo);
+
+    if (productoReal) {
+      // usar los datos reales de la DB
+      return {
+        id: productoReal.id,
+        codigo: productoReal.codigo || dest.codigo || '',
+        nombre: productoReal.nombre || dest.nombre || '',
+        descripcion: productoReal.descripcion || dest.descripcion || '',
+        precio_final:
+          productoReal.precio_final != null
+            ? Number(productoReal.precio_final)
+            : Number(dest.precio_final || 0),
+        precio:
+          productoReal.precio_final != null
+            ? Number(productoReal.precio_final)
+            : Number(dest.precio || 0),
+      };
+    }
+
+    // fallback si el producto fue borrado de la DB
+    return {
+      id: dest.id || null,
+      codigo: dest.codigo || '',
+      nombre: dest.nombre || '',
+      descripcion: dest.descripcion || '',
+      precio_final: Number(dest.precio_final || 0),
+      precio: Number(dest.precio || 0),
+    };
+  });
+
   renderDestacados();
+
+  console.log('✅ IA Config cargada y sincronizada con productos reales:', productosDestacados);
 }
 
 // ==================== PRODUCTOS DESTACADOS ====================
@@ -193,78 +226,43 @@ function renderDestacados() {
   counter.textContent = `${productosDestacados.length}/10`;
 
   if (productosDestacados.length === 0) {
-    list.innerHTML = `<div class="empty-state"><i class="fas fa-star"></i><p>Aún no seleccionaste productos destacados</p><small>Usá el buscador para agregar hasta 10</small></div>`;
+    list.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-star"></i>
+        <p>Aún no seleccionaste productos destacados</p>
+        <small>Usá el buscador para agregar hasta 10</small>
+      </div>`;
     return;
   }
 
-  list.innerHTML = productosDestacados.map(p => `
-    <div class="destacado-item">
-      <div class="producto-info">
-        <div class="producto-codigo">[${p.codigo || 'SIN CÓDIGO'}]</div>
-        <div class="producto-nombre">${p.nombre || 'Sin nombre'}</div>
-        <div class="producto-precio">${p.precio_final>0 ? `$${p.precio_final.toLocaleString('es-AR',{minimumFractionDigits:2})}` : 'Sin precio'}</div>
-      </div>
-      <button class="btn-quitar" onclick="window.quitarDestacado('${p.id}')"><i class="fas fa-trash"></i> Quitar</button>
-    </div>
-  `).join('');
+  list.innerHTML = productosDestacados
+    .map((p) => {
+      const precioNum =
+        p.precio_final != null && p.precio_final > 0
+          ? Number(p.precio_final)
+          : p.precio != null && p.precio > 0
+          ? Number(p.precio)
+          : null;
+      const precioStr =
+        precioNum != null
+          ? `$${precioNum.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
+          : 'Sin precio';
+
+      return `
+        <div class="destacado-item">
+          <div class="producto-info">
+            <div class="producto-codigo">[${p.codigo || 'SIN CÓDIGO'}]</div>
+            <div class="producto-nombre">${p.nombre || 'Sin nombre'}</div>
+            <div class="producto-precio">${precioStr}</div>
+          </div>
+          <button class="btn-quitar" onclick="window.quitarDestacado('${p.id}')">
+            <i class="fas fa-trash"></i> Quitar
+          </button>
+        </div>
+      `;
+    })
+    .join('');
 }
-
-function buscarProductos(query) {
-  const resultsDiv = $('searchResults');
-  if (!resultsDiv) return;
-
-  if (!query || query.length < 2) { resultsDiv.style.display='none'; return; }
-
-  const q = query.toLowerCase();
-  const filtrados = productos.filter(p => {
-    if (productosDestacados.some(d => d.id===p.id)) return false;
-    return [p.codigo, p.nombre, p.descripcion].some(t => (t||'').toLowerCase().includes(q));
-  }).slice(0,10);
-
-  if (filtrados.length===0) {
-    resultsDiv.innerHTML=`<div class="empty-state"><i class="fas fa-search"></i><p>No se encontraron productos con "${query}"</p></div>`;
-    resultsDiv.style.display='block';
-    return;
-  }
-
-  const maxDestacados = productosDestacados.length>=10;
-
-  resultsDiv.innerHTML = filtrados.map(p => `
-    <div class="search-result-item">
-      <div class="producto-info">
-        <div class="producto-codigo">[${p.codigo || 'SIN CÓDIGO'}]</div>
-        <div class="producto-nombre">${p.nombre || 'Sin nombre'}</div>
-        <div class="producto-precio">${p.precio_final>0 ? `$${p.precio_final.toLocaleString('es-AR',{minimumFractionDigits:2})}` : 'Sin precio'}</div>
-      </div>
-      <button class="btn-destacar" onclick="window.agregarDestacado('${p.id}')" ${maxDestacados?'disabled':''}><i class="fas fa-plus"></i> Destacar</button>
-    </div>
-  `).join('');
-  resultsDiv.style.display='block';
-}
-
-window.agregarDestacado = (productoId) => {
-  if (productosDestacados.length>=10){ showToast('warning','Límite alcanzado','Máximo 10 productos'); return; }
-  const producto = productos.find(p=>p.id===productoId);
-  if (!producto) return;
-  productosDestacados.push({...producto});
-  renderDestacados();
-  markAsChanged();
-  const searchInput = $('searchProductos');
-  if(searchInput) buscarProductos(searchInput.value);
-  showToast('success','Producto agregado',`${producto.nombre} destacado`);
-};
-
-window.quitarDestacado = (productoId) => {
-  const index = productosDestacados.findIndex(p=>p.id===productoId);
-  if (index===-1) return;
-  const producto = productosDestacados[index];
-  productosDestacados.splice(index,1);
-  renderDestacados();
-  markAsChanged();
-  const searchInput = $('searchProductos');
-  if(searchInput && searchInput.value) buscarProductos(searchInput.value);
-  showToast('info','Producto quitado',`${producto.nombre} removido de destacados`);
-};
 
 // ==================== CONTACTOS ====================
 function renderContactosValidacion() {
