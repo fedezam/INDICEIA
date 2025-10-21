@@ -7,6 +7,7 @@ import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
+import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 // Variables globales
 let currentUser = null;
@@ -652,6 +653,7 @@ async function saveFormData() {
 
     showToast('Éxito', '✅ Cambios guardados y JSON actualizado', 'success');
     console.log('💾 Guardado completo exitoso');
+    setTimeout(() => redirectToNextStep(), 1000);
     return true;
 
   } catch (error) {
