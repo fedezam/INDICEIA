@@ -3,6 +3,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import Navigation from '../shared/navigation.js';
 import { showLoading, hideLoading, showToast, updateComercioJSON } from '../shared/utils.js';
+import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 const DAYS = [
   { key: "lunes", label: "Lunes" },
@@ -477,6 +478,7 @@ async function saveScheduleData() {
     Navigation.updateProgressBar();
 
     showToast('Éxito', 'Horarios guardados y JSON actualizado', 'success');
+    setTimeout(() => redirectToNextStep(), 1000);
     return true;
 
   } catch (error) {
