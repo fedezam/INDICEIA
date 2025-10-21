@@ -1,4 +1,4 @@
-// src/pages/miIa.js
+// src/pages/ia-config.js
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
@@ -151,6 +151,8 @@ async function loadProducts() {
     }));
 
     console.log('✅ Productos cargados:', productos.length);
+    if (productos.length > 0) console.log('📦 Ejemplo producto:', productos[0]);
+
   } catch (error) {
     console.error('❌ Error cargando productos:', error);
     productos = [];
@@ -258,7 +260,9 @@ function renderDestacados() {
       <div class="producto-info">
         <div class="producto-codigo">[${p.codigo || 'SIN CÓDIGO'}]</div>
         <div class="producto-nombre">${p.nombre || 'Sin nombre'}</div>
-        <div class="producto-precio">${p.precio ? `$${p.precio.toLocaleString()}` : 'Sin precio'}</div>
+        <div class="producto-precio">${p.precio_final ? 
+          `$${p.precio_final.toLocaleString('es-AR', {minimumFractionDigits: 2})}` : 
+          'Sin precio'}</div>
       </div>
       <button class="btn-quitar" onclick="window.quitarDestacado('${p.id}')">
         <i class="fas fa-trash"></i> Quitar
@@ -305,7 +309,9 @@ function buscarProductos(query) {
       <div class="producto-info">
         <div class="producto-codigo">[${p.codigo || 'SIN CÓDIGO'}]</div>
         <div class="producto-nombre">${p.nombre || 'Sin nombre'}</div>
-        <div class="producto-precio">${p.precio ? `$${p.precio.toLocaleString()}` : 'Sin precio'}</div>
+        <div class="producto-precio">${p.precio_final ? 
+          `$${p.precio_final.toLocaleString('es-AR', {minimumFractionDigits: 2})}` : 
+          'Sin precio'}</div>
       </div>
       <button 
         class="btn-destacar" 
@@ -334,7 +340,8 @@ window.agregarDestacado = (productoId) => {
     codigo: producto.codigo || '',
     nombre: producto.nombre || '',
     descripcion: producto.descripcion || '',
-    precio: producto.precio || 0
+    precio_final: producto.precio_final || 0,
+    precio: producto.precio_final || 0
   };
 
   productosDestacados.push(productoData);
@@ -377,41 +384,11 @@ function renderContactosValidacion() {
   }
 
   const contactos = [
-    {
-      id: 'whatsapp',
-      icon: '📱',
-      label: 'WhatsApp',
-      value: comercioData.whatsapp || '',
-      valid: !!(comercioData.whatsapp && comercioData.whatsapp.toString().trim())
-    },
-    {
-      id: 'instagram',
-      icon: '📸',
-      label: 'Instagram',
-      value: comercioData.instagram || '',
-      valid: !!(comercioData.instagram && comercioData.instagram.toString().trim())
-    },
-    {
-      id: 'sitioWeb',
-      icon: '🌐',
-      label: 'Sitio Web',
-      value: comercioData.sitioWeb || '',
-      valid: !!(comercioData.sitioWeb && comercioData.sitioWeb.toString().trim())
-    },
-    {
-      id: 'email',
-      icon: '📧',
-      label: 'Email',
-      value: comercioData.email || '',
-      valid: !!(comercioData.email && comercioData.email.toString().trim())
-    },
-    {
-      id: 'telefono',
-      icon: '☎️',
-      label: 'Teléfono',
-      value: comercioData.telefono || '',
-      valid: !!(comercioData.telefono && comercioData.telefono.toString().trim())
-    }
+    { id: 'whatsapp', icon: '📱', label: 'WhatsApp', value: comercioData.whatsapp || '', valid: !!(comercioData.whatsapp && comercioData.whatsapp.toString().trim()) },
+    { id: 'instagram', icon: '📸', label: 'Instagram', value: comercioData.instagram || '', valid: !!(comercioData.instagram && comercioData.instagram.toString().trim()) },
+    { id: 'sitioWeb', icon: '🌐', label: 'Sitio Web', value: comercioData.sitioWeb || '', valid: !!(comercioData.sitioWeb && comercioData.sitioWeb.toString().trim()) },
+    { id: 'email', icon: '📧', label: 'Email', value: comercioData.email || '', valid: !!(comercioData.email && comercioData.email.toString().trim()) },
+    { id: 'telefono', icon: '☎️', label: 'Teléfono', value: comercioData.telefono || '', valid: !!(comercioData.telefono && comercioData.telefono.toString().trim()) }
   ];
 
   const hasInvalid = contactos.some(c => !c.valid);
@@ -424,7 +401,6 @@ function renderContactosValidacion() {
         El asistente no podrá derivar a esos canales.
       </div>
     ` : ''}
-
     ${contactos.map(c => `
       <div class="contacto-item ${c.valid ? 'valid' : 'invalid'}">
         <div class="contacto-icon">${c.icon}</div>
@@ -525,123 +501,55 @@ async function saveAIConfig() {
     const aiGreeting = safeGet('aiGreeting');
 
     if (!aiName || !aiPersonality || !aiTone || !aiLanguage || !aiGreeting) {
-      showToast('warning', 'Campos requeridos', 'Completá Identidad');
-      return false;
+      showToast('warning', 'Campos incompletos', 'Completá Identidad del Asistente');
+      return;
     }
 
-    const sinPrecio = safeGet('sinPrecio');
-    const sinStock = safeGet('sinStock');
-    const localCerrado = safeGet('localCerrado');
-    const proactividad = safeGet('proactividad');
-    const formatoRespuestas = safeGet('formatoRespuestas');
+    saveBtn.disabled = true;
+    saveBtn.className = 'btn-saving';
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Guardando...</span>';
 
-    if (!sinPrecio || !sinStock || !localCerrado || !proactividad || !formatoRespuestas) {
-      showToast('warning', 'Campos requeridos', 'Completá Comportamientos');
-      return false;
-    }
+    const comercioRef = doc(db, 'comercios', currentComercioId);
 
-    if (saveBtn) {
-      saveBtn.className = 'btn-save saving';
-      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Guardando...</span>';
-      saveBtn.disabled = true;
-    }
-
-    showLoading('Guardando...');
-
-    const aiConfig = {
+    const updatedConfig = {
       aiName,
       aiPersonality,
       aiTone,
       aiLanguage,
       aiGreeting,
-      sinPrecio,
-      sinStock,
-      localCerrado,
-      proactividad,
-      formatoRespuestas,
+      sinPrecio: safeGet('sinPrecio'),
+      sinStock: safeGet('sinStock'),
+      localCerrado: safeGet('localCerrado'),
+      proactividad: safeGet('proactividad'),
+      formatoRespuestas: safeGet('formatoRespuestas'),
       mensajeWhatsapp: safeGet('mensajeWhatsapp'),
       mensajeInstagram: safeGet('mensajeInstagram'),
       mensajeWeb: safeGet('mensajeWeb'),
       mensajeDefault: safeGet('mensajeDefault'),
-      productosDestacados,
-      fechaActualizacion: new Date(),
-      aiGenerated: true
+      productosDestacados: productosDestacados
     };
 
-    const comercioRef = doc(db, 'comercios', currentComercioId);
-    await updateDoc(comercioRef, {
-      aiConfig,
-      fechaActualizacion: new Date()
-    });
+    await updateDoc(comercioRef, { aiConfig: updatedConfig });
+    await updateCommerceJSON(currentComercioId);
 
-    console.log('✅ Guardado en Firestore');
-
-    try {
-      await updateCommerceJSON(currentComercioId, currentUser.uid);
-      console.log('✅ JSON actualizado');
-    } catch (jsonError) {
-      console.warn('⚠️ Error JSON:', jsonError);
-    }
-
-    comercioData.aiConfig = aiConfig;
-    originalAIConfig = JSON.parse(JSON.stringify(aiConfig));
     hasUnsavedChanges = false;
+    saveBtn.disabled = true;
+    saveBtn.className = 'btn-saved';
+    saveBtn.innerHTML = '<i class="fas fa-check"></i> <span>Guardado</span>';
 
-    if (saveBtn) {
-      saveBtn.className = 'btn-save saved';
-      saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado ✓</span>';
-      setTimeout(() => {
-        if (saveBtn) {
-          saveBtn.disabled = true;
-          saveBtn.className = 'btn-save';
-          saveBtn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar</span>';
-        }
-      }, 2000);
-    }
-
-    try {
-      Navigation.markPageAsCompleted('mi-ia');
-      Navigation.updateProgressBar();
-    } catch (e) {
-      console.warn('⚠️ Error marcando:', e);
-    }
-
-    hideLoading();
-    showToast('success', '✅ Guardado', 'Config lista');
-    setTimeout(() => redirectToNextStep(), 1500);
-    return true;
+    showToast('success', 'Cambios guardados', 'Configuración actualizada');
 
   } catch (error) {
-    console.error('❌ Error:', error);
-    hideLoading();
-
-    if (saveBtn) {
-      saveBtn.className = 'btn-save';
-      saveBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>Error</span>';
-      saveBtn.disabled = false;
-    }
-
-    showToast('error', 'Error', 'No se pudo guardar: ' + (error.message || error));
-    return false;
+    console.error('❌ Error guardando:', error);
+    showToast('error', 'Error', 'No se pudo guardar');
+  } finally {
+    saveBtn.disabled = !hasUnsavedChanges;
   }
 }
 
+// ==================== LOGOUT ====================
 async function handleLogout() {
-  if (!confirm('¿Cerrar sesión?')) return;
-
-  try {
-    showLoading('Cerrando...');
-    await signOut(auth);
-    window.location.href = '/index.html';
-  } catch (error) {
-    hideLoading();
-    console.error('❌ Error logout:', error);
-    showToast('error', 'Error', 'No se pudo cerrar sesión');
-  }
+  if (hasUnsavedChanges && !confirm('Tenés cambios sin guardar. ¿Salir igual?')) return;
+  await signOut(auth);
+  window.location.href = '/index.html';
 }
-
-// ==================== EXPORTS ====================
-window.markAsChanged = markAsChanged;
-window.saveAIConfig = saveAIConfig;
-
-console.log('📦 miIa.js cargado');
