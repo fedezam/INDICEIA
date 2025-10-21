@@ -6,6 +6,7 @@ import Navigation from '../shared/navigation.js';
 import { showLoading, hideLoading, showToast } from '../shared/utils.js';
 import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
+import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
@@ -607,6 +608,7 @@ async function saveAIConfig() {
 
     hideLoading();
     showToast('success', '✅ Guardado', 'Config lista');
+    setTimeout(() => redirectToNextStep(), 1500);
     return true;
 
   } catch (error) {
