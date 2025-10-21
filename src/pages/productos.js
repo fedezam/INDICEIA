@@ -881,8 +881,8 @@ async function saveAllProducts() {
     hideLoading();
     showToast('success', '✅ Productos guardados', 'Todos los cambios se guardaron correctamente');
     setTimeout(() => {
-  redirectToNextStep();
-}, 2000);
+    redirectToNextStep();
+    }, 2000);
     return true;
 
   } catch (error) {
