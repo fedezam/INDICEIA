@@ -287,7 +287,7 @@ class Navigation {
 document.addEventListener('DOMContentLoaded', () => {
   const dashboardPages = [
     'mi-comercio.html', 'mi-servicio.html',
-    'horarios.html', 'productos.html', 'agenda.html', 'mi-ia.html'
+    'horarios.html', 'productos.html', 'agenda.html', 'ia-config.html'
   ];
   const currentPage = window.location.pathname.split('/').pop();
   if (dashboardPages.includes(currentPage)) {
