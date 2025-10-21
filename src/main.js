@@ -13,17 +13,15 @@ console.log('Main JS cargado ✅');
 // ==========================
 // 🔄 Detectar sesión activa y guardar datos
 // ==========================
-import { redirectToNextStep } from './shared/redirect-dashboard.js';
-
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     console.log('Usuario autenticado:', user.email);
-
+    
     // Guardar datos en Firestore si es usuario nuevo
     try {
       const userRef = doc(db, "usuarios", user.uid);
       const docSnap = await getDoc(userRef);
-
+      
       if (!docSnap.exists()) {
         const email = user.email || "";
         const fullName = (user.displayName || email.split("@")[0]).trim();
@@ -31,9 +29,9 @@ onAuthStateChanged(auth, async (user) => {
         
         const nombre = parts[0] || "";
         const apellido = parts.slice(1).join(" ") || "";
-
+        
         console.log("💾 Guardando usuario nuevo:", { nombre, apellido, email });
-
+        
         await setDoc(userRef, {
           uid: user.uid,
           mail: email,
@@ -42,13 +40,13 @@ onAuthStateChanged(auth, async (user) => {
           referralId: Math.random().toString(36).substring(2, 10).toUpperCase(),
           fechaRegistro: serverTimestamp()
         });
-
+        
         console.log("✅ Usuario guardado en Firestore");
       }
     } catch (error) {
       console.error("❌ Error al guardar usuario:", error);
     }
-
+    
     // ✅ NUEVO: Redirección inteligente
     const isLoginPage = window.location.pathname === '/' || 
                         window.location.pathname.endsWith('index.html');
@@ -60,6 +58,7 @@ onAuthStateChanged(auth, async (user) => {
   } else {
     console.log('No hay usuario logueado');
     const isProtectedPage = window.location.pathname.includes('/pages/');
+    
     if (isProtectedPage) {
       console.log('Acceso denegado, redirigiendo a login...');
       window.location.href = '/';
