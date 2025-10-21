@@ -111,16 +111,16 @@ export async function redirectToNextStep() {
       return redirectTo("productos.html");
     }
     
-    // Productos completos pero falta IA → ir a mi-ia
+    // Productos completos pero falta IA → ir a ia-config
     if (checks.productos && !checks.ia) {
-      return redirectTo("mi-ia.html");
+      return redirectTo("ia-config.html");
     }
     
     // Todo completo → dashboard
     if (checks.usuario && checks.comercio && checks.horarios && checks.productos && checks.ia) {
       // Solo redirigir a dashboard si NO estamos ya en una página de configuración
       // (para permitir ediciones desde el dashboard)
-      const pagesWithEdit = ["usuario.html", "mi-comercio.html", "horarios.html", "productos.html", "mi-ia.html"];
+      const pagesWithEdit = ["usuario.html", "mi-comercio.html", "horarios.html", "productos.html", "ia-config.html"];
       
       if (pagesWithEdit.includes(currentPage)) {
         // Estamos en una página de configuración y todo está completo
