@@ -6,6 +6,7 @@ import { auth, db } from './firebase.js';
 import './auth.js';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { redirectToNextStep } from './shared/redirect-dashboard.js';
 
 console.log('Main JS cargado ✅');
 
