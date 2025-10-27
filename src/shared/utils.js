@@ -1,3 +1,6 @@
+// src/shared/utils.js
+// ==================== HELPERS GENERALES ====================
+
 export function showLoading(text = "Cargando...") {
   const overlay = document.getElementById("loadingOverlay");
   const loadingText = document.getElementById("loadingText");
@@ -63,29 +66,5 @@ export function generateReferral() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-export async function updateComercioJSON(comercioId, userId) {
-  try {
-    const response = await fetch('/api/export-json', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        comercioId,
-        userId
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error actualizando JSON');
-    }
-
-    const result = await response.json();
-    console.log('✅ JSON actualizado en Gist:', result.gist?.rawUrl);
-    return result;
-  } catch (error) {
-    console.error('❌ Error actualizando JSON del comercio:', error);
-    throw error;
-  }
-}
+// ✅ FIN - Ya no hay updateComercioJSON aquí
+// Usar updateCommerceJSON.js para operaciones de JSON/Gist
