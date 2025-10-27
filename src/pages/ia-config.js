@@ -114,7 +114,7 @@ async function loadProducts() {
   }
 }
 
-// ==================== HEADER Y SUBSCRIPCIÓN ====================
+// ==================== HEADER Y SUSCRIPCIÓN ====================
 function updateHeader() {
   const commerceName = $('commerceName');
   const planBadge = $('planBadge');
@@ -245,7 +245,7 @@ function renderDestacados() {
           : null;
       const precioStr =
         precioNum != null
-          ? `$${precioNum.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
+          ? `${precioNum.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
           : 'Sin precio';
 
       return `
@@ -364,7 +364,10 @@ async function saveAIConfig() {
       productosDestacados:productosDestacados.map(p=>({ ...p, precio_final:Number(p.precio_final||0), precio:Number(p.precio_final||0) }))
     };
     await updateDoc(comercioRef,{aiConfig:updatedConfig});
-    await updateCommerceJSON(currentComercioId);
+    
+    // ✅ CORREGIDO: Ahora pasa userId como segundo parámetro
+    await updateCommerceJSON(currentComercioId, currentUser.uid);
+    
     hasUnsavedChanges=false;
     saveBtn.disabled=true; saveBtn.className='btn-saved'; saveBtn.innerHTML='<i class="fas fa-check"></i> <span>Guardado</span>';
     showToast('success','Cambios guardados','Configuración actualizada');
@@ -378,6 +381,3 @@ async function handleLogout() {
   await signOut(auth);
   window.location.href='/index.html';
 }
-
-
-  
