@@ -295,6 +295,99 @@ function renderContactosValidacion() {
   `;
 }
 
+// ==================== BÚSQUEDA DE PRODUCTOS ====================
+function buscarProductos(query) {
+  const resultadosContainer = $('productosResultados');
+  if (!resultadosContainer) return;
+
+  const searchTerm = query.trim().toLowerCase();
+  
+  if (!searchTerm) {
+    resultadosContainer.innerHTML = '<div class="empty-search">Escribe para buscar productos...</div>';
+    resultadosContainer.style.display = 'none';
+    return;
+  }
+
+  // Filtrar productos que coincidan con la búsqueda
+  const resultados = productos.filter(p => {
+    const nombre = (p.nombre || '').toLowerCase();
+    const codigo = (p.codigo || '').toLowerCase();
+    const descripcion = (p.descripcion || '').toLowerCase();
+    return nombre.includes(searchTerm) || codigo.includes(searchTerm) || descripcion.includes(searchTerm);
+  }).slice(0, 10); // Limitar a 10 resultados
+
+  if (resultados.length === 0) {
+    resultadosContainer.innerHTML = '<div class="empty-search">No se encontraron productos</div>';
+    resultadosContainer.style.display = 'block';
+    return;
+  }
+
+  resultadosContainer.innerHTML = resultados.map(p => {
+    const yaDestacado = productosDestacados.some(d => d.id === p.id);
+    const disabled = yaDestacado || productosDestacados.length >= 10;
+    
+    const precioStr = p.precio_final > 0 
+      ? `${p.precio_final.toLocaleString('es-AR', { minimumFractionDigits: 2 })}` 
+      : 'Sin precio';
+
+    return `
+      <div class="producto-resultado ${disabled ? 'disabled' : ''}" data-producto-id="${p.id}">
+        <div class="producto-info">
+          <div class="producto-codigo">[${p.codigo || 'SIN CÓDIGO'}]</div>
+          <div class="producto-nombre">${p.nombre || 'Sin nombre'}</div>
+          <div class="producto-precio">${precioStr}</div>
+        </div>
+        <button 
+          class="btn btn-sm btn-primary" 
+          ${disabled ? 'disabled' : ''}
+          onclick="agregarDestacado('${p.id}')"
+        >
+          ${yaDestacado ? 'Ya agregado' : 'Agregar'}
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  resultadosContainer.style.display = 'block';
+}
+
+// ==================== AGREGAR/QUITAR DESTACADOS ====================
+window.agregarDestacado = (productoId) => {
+  if (productosDestacados.length >= 10) {
+    showToast('warning', 'Límite alcanzado', 'Solo puedes tener 10 productos destacados');
+    return;
+  }
+
+  const producto = productos.find(p => p.id === productoId);
+  if (!producto) return;
+
+  if (productosDestacados.some(p => p.id === productoId)) {
+    showToast('info', 'Ya agregado', 'Este producto ya está en destacados');
+    return;
+  }
+
+  productosDestacados.push(producto);
+  renderDestacados();
+  markAsChanged();
+  
+  // Actualizar búsqueda para reflejar cambios
+  const searchInput = $('searchProductos');
+  if (searchInput) buscarProductos(searchInput.value);
+};
+
+window.quitarDestacado = (productoId) => {
+  const index = productosDestacados.findIndex(p => p.id === productoId);
+  if (index === -1) return;
+
+  productosDestacados.splice(index, 1);
+  renderDestacados();
+  markAsChanged();
+  
+  // Actualizar búsqueda para reflejar cambios
+  const searchInput = $('searchProductos');
+  if (searchInput) buscarProductos(searchInput.value);
+};
+
 // ==================== EVENT LISTENERS ====================
 function setupEventListeners() {
   $('openAssistant')?.addEventListener('click',()=>showToast('info','🤖 Asistente','Decile: "Soy de Indice IA"',8000));
