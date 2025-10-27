@@ -2,7 +2,8 @@ import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import Navigation from '../shared/navigation.js';
-import { showLoading, hideLoading, showToast, updateComercioJSON } from '../shared/utils.js';
+import { showLoading, hideLoading, showToast } from '../shared/utils.js';
+import { updateCommerceJSON } from '../shared/updateCommerceJSON.js'; // ✅ CORREGIDO
 import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 const DAYS = [
@@ -449,9 +450,9 @@ async function saveScheduleData() {
       fechaActualizacion: new Date()
     });
 
-    // Actualizar JSON
+    // Actualizar JSON (✅ NOMBRE Y PARÁMETROS CORREGIDOS)
     try {
-      await updateComercioJSON(currentComercioId, currentUser.uid);
+      await updateCommerceJSON(currentComercioId, currentUser.uid);
     } catch (jsonError) {
       console.warn('JSON actualizado parcialmente:', jsonError.message);
       showToast('Advertencia', 'Horarios guardados, pero JSON no actualizado', 'warning');
