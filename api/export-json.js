@@ -1,4 +1,9 @@
-// api/export-json.js - Vercel Serverless Function con Vercel Blob
+// ============================================
+// api/export-json.js - Vercel Serverless Function
+// Exporta el JSON de un comercio a Vercel Blob
+// con verificación inteligente de cambios
+// ============================================
+
 import admin from 'firebase-admin';
 import { put } from '@vercel/blob';
 
@@ -22,83 +27,114 @@ export default async function handler(req, res) {
 
   try {
     const { comercioId, userId } = req.body;
-    
+
     if (!comercioId) return res.status(400).json({ error: 'comercioId requerido' });
     if (!userId) return res.status(400).json({ error: 'userId requerido' });
 
     console.log('📦 Generando JSON para comercio:', comercioId);
 
-    // Generar el JSON desde Firebase
+    // 1️⃣ Generar nuevo JSON
     const jsonData = await generateCommerceJSON(comercioId, userId);
-    
-    // Subir a Vercel Blob
+
+    // 2️⃣ Obtener última versión para comparar
+    const comercioRef = db.collection('comercios').doc(comercioId);
+    const comercioSnap = await comercioRef.get();
+    let lastJsonUrl = comercioSnap.data()?.jsonUrl;
+
+    if (lastJsonUrl) {
+      try {
+        const lastResponse = await fetch(lastJsonUrl);
+        if (lastResponse.ok) {
+          const lastJson = await lastResponse.json();
+          const oldHash = JSON.stringify(lastJson);
+          const newHash = JSON.stringify(jsonData);
+
+          if (oldHash === newHash) {
+            console.log('⚡ No hay cambios en los datos. No se actualiza el Blob.');
+            return res.status(200).json({
+              success: true,
+              message: 'No se detectaron cambios. JSON existente sigue vigente.',
+              jsonUrl: lastJsonUrl,
+              lastUpdated: comercioSnap.data()?.lastJsonUpdate,
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ No se pudo comparar con versión previa:', e.message);
+      }
+    }
+
+    // 3️⃣ Subir a Vercel Blob (solo si hay cambios)
     const blobResult = await uploadToVercelBlob(jsonData, comercioId);
 
     console.log('✅ JSON actualizado en Vercel Blob:', blobResult.url);
 
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       message: 'JSON actualizado correctamente',
-      jsonData, 
-      blob: blobResult 
+      jsonData,
+      blob: blobResult,
     });
   } catch (error) {
     console.error('❌ Error en export-json API:', error);
-    return res.status(500).json({ 
-      error: 'Error interno del servidor', 
-      message: error.message 
+    return res.status(500).json({
+      error: 'Error interno del servidor',
+      message: error.message,
     });
   }
 }
 
+// ===================================================
+// 🔧 Función para generar el JSON del comercio completo
+// ===================================================
 async function generateCommerceJSON(comercioId, userId) {
   const comercioRef = db.collection('comercios').doc(comercioId);
   const comercioSnap = await comercioRef.get();
-  
-  if (!comercioSnap.exists) {
-    throw new Error("Comercio no encontrado");
-  }
 
+  if (!comercioSnap.exists) throw new Error('Comercio no encontrado');
   const comercioData = comercioSnap.data();
 
-  // Obtener productos (subcolección)
+  // Subcolección: productos
   const productosCol = comercioRef.collection('productos');
   const productosSnap = await productosCol.get();
   const productos = [];
-  
-  productosSnap.forEach(pSnap => {
+
+  productosSnap.forEach((pSnap) => {
     const p = pSnap.data();
-    // Solo incluir productos activos (no pausados)
     if (!p.paused) {
-      productos.push({ 
-        id: pSnap.id, 
-        ...p 
+      productos.push({
+        id: pSnap.id,
+        ...p,
       });
     }
   });
 
+  // Configuración del asistente IA
   const asistente_ia = {
-    nombre: comercioData.aiName || "Asistente Virtual",
-    personalidad: comercioData.aiConfig?.aiPersonality || "Amigable y cercano",
-    tono: comercioData.aiConfig?.aiTone || "Entusiasta",
-    saludo_inicial: comercioData.aiGreeting || comercioData.aiConfig?.aiGreeting || "¡Hola! ¿En qué puedo ayudarte?",
+    nombre: comercioData.aiName || 'Asistente Virtual',
+    personalidad: comercioData.aiConfig?.aiPersonality || 'Amigable y cercano',
+    tono: comercioData.aiConfig?.aiTone || 'Entusiasta',
+    saludo_inicial:
+      comercioData.aiGreeting ||
+      comercioData.aiConfig?.aiGreeting ||
+      '¡Hola! ¿En qué puedo ayudarte?',
     configuracion: {
       precios_pausados: comercioData.aiConfig?.pricesPaused || false,
-      comportamiento_sin_precio: comercioData.aiConfig?.noPriceBehavior || "contact",
-      comportamiento_pausados: comercioData.aiConfig?.pausedBehavior || "hide"
+      comportamiento_sin_precio: comercioData.aiConfig?.noPriceBehavior || 'contact',
+      comportamiento_pausados: comercioData.aiConfig?.pausedBehavior || 'hide',
     },
-    fecha_actualizacion: new Date().toISOString()
+    fecha_actualizacion: new Date().toISOString(),
   };
 
   return {
     metadata: {
-      version: "1.0",
+      version: '1.0',
       generado: new Date().toISOString(),
       comercioId,
       userId,
       dueñoId: comercioData.dueñoId,
       total_productos: productos.length,
-      plan: comercioData.plan || 'trial'
+      plan: comercioData.plan || 'trial',
     },
     comercio: {
       nombre: comercioData.nombreComercio || '',
@@ -118,36 +154,38 @@ async function generateCommerceJSON(comercioId, userId) {
       horarios: comercioData.horarios || [],
       metodos_pago: comercioData.paymentMethods || [],
       categorias: comercioData.categories || [],
-      plan: comercioData.plan || 'trial'
+      plan: comercioData.plan || 'trial',
     },
     productos,
-    asistente_ia
+    asistente_ia,
   };
 }
 
+// ===================================================
+// ☁️ Subir JSON al Blob y actualizar Firestore
+// ===================================================
 async function uploadToVercelBlob(jsonData, comercioId) {
   const fileName = `comercio-${comercioId}.json`;
   const jsonString = JSON.stringify(jsonData, null, 2);
-  
+
   // Subir a Vercel Blob con acceso público
   const blob = await put(fileName, jsonString, {
     access: 'public',
     contentType: 'application/json',
-    addRandomSuffix: false // Mantener el mismo nombre de archivo
+    addRandomSuffix: false, // Mantener el mismo nombre de archivo
   });
 
+  // Guardar referencia en Firestore
   const comercioRef = db.collection('comercios').doc(comercioId);
-  
-  // Guardar URL del blob en Firestore
-  await comercioRef.update({ 
+  await comercioRef.update({
     jsonUrl: blob.url,
     blobUrl: blob.url,
-    lastJsonUpdate: new Date().toISOString() 
+    lastJsonUpdate: new Date().toISOString(),
   });
 
-  return { 
-    success: true, 
+  return {
+    success: true,
     url: blob.url,
-    downloadUrl: blob.downloadUrl
+    downloadUrl: blob.downloadUrl,
   };
 }
