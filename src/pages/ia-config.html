@@ -1,181 +1,639 @@
-// ===================================================
-// 🚀 ia-config.js — versión completa optimizada (producción)
-// ===================================================
-
-console.log('🚀 Iniciando ia-config.js (producción)');
-
-// ----------------------------
-// 🧩 VARIABLES GLOBALES
-// ----------------------------
-let productos = [];
-let iaConfig = [];
-
-// ----------------------------
-// 📦 CARGA DE PRODUCTOS E IA CONFIG
-// ----------------------------
-async function cargarDatos() {
-  try {
-    // Cargar catálogo real
-    const resProd = await fetch('productos.json');
-    productos = await resProd.json();
-
-    // Cargar configuración de la IA
-    const resIa = await fetch('ia-config.json');
-    iaConfig = await resIa.json();
-
-    console.log(`✅ Productos cargados: ${productos.length}`);
-    console.log('📦 Ejemplo de productos cargados:', productos.slice(0, 3));
-    console.log('✅ IA Config cargada y sincronizada con productos reales:', iaConfig);
-  } catch (err) {
-    console.error('❌ Error cargando datos:', err);
-  }
-}
-
-// ----------------------------
-// 🧭 INICIALIZACIÓN PRINCIPAL
-// ----------------------------
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('📥 Iniciando carga de datos...');
-  await cargarDatos();
-  inicializarBuscador();
-  inicializarControlesIA();
-  console.log('✅ Todo listo para interactuar con el panel.');
-});
-
-// ----------------------------
-// 🎛️ INICIALIZAR CONTROLES IA
-// ----------------------------
-function inicializarControlesIA() {
-  const guardarBtn = document.getElementById('guardarIAConfig');
-  if (guardarBtn) {
-    guardarBtn.addEventListener('click', guardarConfiguracionIA);
-  }
-
-  console.log('🧠 Controles IA inicializados.');
-}
-
-// ----------------------------
-// 💾 GUARDAR CONFIGURACIÓN DE IA
-// ----------------------------
-function guardarConfiguracionIA() {
-  try {
-    const data = iaConfig.map(item => ({
-      id: item.id,
-      activo: item.activo || false,
-      prioridad: item.prioridad || 0
-    }));
-
-    console.log('💾 Configuración IA guardada:', data);
-
-    // Simular guardado en servidor
-    alert('✅ Configuración de IA actualizada correctamente');
-  } catch (err) {
-    console.error('❌ Error guardando IA config:', err);
-  }
-}
-
-// ===================================================
-// 🔍 BÚSQUEDA REACTIVA DE PRODUCTOS
-// ===================================================
-
-let debounceTimer = null;
-
-function inicializarBuscador() {
-  const inputBusqueda = document.getElementById('searchProductos');
-  const resultadosContainer = document.getElementById('searchResults');
-
-  if (!inputBusqueda || !resultadosContainer) {
-    console.warn('⚠️ No se encontraron elementos de búsqueda.');
-    return;
-  }
-
-  console.log('✅ Input y contenedor de resultados listos');
-
-  // Escuchar entrada de texto
-  inputBusqueda.addEventListener('input', (e) => {
-    const termino = e.target.value.trim();
-
-    if (!termino) {
-      ocultarResultados();
-      return;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mi IA - Indice IA</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ==================== MI-IA ESTILOS ESPECÍFICOS ==================== */
+    .contactos-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+      gap: 1rem; 
+      margin-top: 1rem; 
+    }
+    
+    .contacto-item { 
+      display: flex; 
+      align-items: center; 
+      gap: 1rem; 
+      padding: 1rem; 
+      background: var(--gray-50); 
+      border: 2px solid var(--gray-200); 
+      border-radius: 12px; 
+      transition: all 0.3s; 
+    }
+    
+    .contacto-item.valid { 
+      background: rgba(34, 197, 94, 0.05); 
+      border-color: var(--success); 
+    }
+    
+    .contacto-item.invalid { 
+      background: rgba(239, 68, 68, 0.05); 
+      border-color: #fca5a5; 
+    }
+    
+    .contacto-icon { 
+      font-size: 1.8rem; 
+    }
+    
+    .contacto-info { 
+      flex: 1; 
+      min-width: 0; 
+    }
+    
+    .contacto-value { 
+      color: var(--gray-600); 
+      overflow: hidden; 
+      text-overflow: ellipsis; 
+      white-space: nowrap; 
+    }
+    
+    .contacto-missing { 
+      color: var(--danger); 
+      font-style: italic; 
+    }
+    
+    .alert { 
+      display: flex; 
+      align-items: center; 
+      gap: 0.75rem; 
+      padding: 1rem; 
+      border-radius: 8px; 
+      margin-bottom: 1rem; 
+    }
+    
+    .alert-warning { 
+      background: #fffbeb; 
+      border: 1px solid #fde68a; 
+      color: #92400e; 
+    }
+    
+    .alert-info {
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+      color: #1e40af;
+    }
+    
+    .form-field small { 
+      display: block; 
+      margin-top: 0.4rem; 
+      font-size: 0.85rem; 
+      color: var(--gray-500); 
+    }
+    
+    .tooltip-icon {
+      cursor: help;
+      color: var(--gray-400);
+      margin-left: 0.25rem;
+    }
+    
+    .tooltip-icon:hover {
+      color: var(--primary);
+    }
+    
+    .section-description {
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: var(--gray-50);
+      border-radius: 8px;
+      color: var(--gray-700);
+      line-height: 1.6;
+    }
+    
+    .ai-helper-section {
+      margin-bottom: 2rem;
+    }
+    
+    .ai-helper-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 2rem;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .ai-helper-icon {
+      font-size: 3rem;
+      opacity: 0.9;
+    }
+    
+    .ai-helper-content {
+      flex: 1;
+    }
+    
+    .ai-helper-content h4 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.25rem;
+    }
+    
+    .ai-helper-content p {
+      margin: 0 0 1rem 0;
+      opacity: 0.9;
+    }
+    
+    .ai-helper-content small {
+      opacity: 0.8;
+      display: block;
+      margin-top: 0.5rem;
     }
 
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => buscarProductos(termino), 300);
-  });
-
-  // Ocultar al hacer clic fuera
-  document.addEventListener('click', (e) => {
-    if (!resultadosContainer.contains(e.target) && e.target !== inputBusqueda) {
-      ocultarResultados();
+    /* Productos Destacados */
+    .productos-destacados-container {
+      display: grid;
+      gap: 1.5rem;
     }
-  });
-}
 
-// ----------------------------
-// 🔎 FUNCIÓN DE BÚSQUEDA AVANZADA
-// ----------------------------
-function buscarProductos(termino) {
-  const resultadosContainer = document.getElementById('searchResults');
-  if (!resultadosContainer) return;
+    .search-box {
+      position: relative;
+    }
 
-  termino = termino.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  console.log(`🔍 Buscando: ${termino}`);
+    .search-box input {
+      width: 100%;
+      padding: 0.75rem 1rem 0.75rem 2.5rem;
+      border: 2px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
 
-  const resultados = productos.filter(p => {
-    const campos = [
-      p.nombre,
-      p.codigo,
-      p.marca,
-      p.descripcion,
-      p.categoria
-    ]
-      .filter(Boolean)
-      .map(v => v.toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+    .search-box input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
 
-    return campos.some(campo => campo.includes(termino));
-  });
+    .search-box i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--gray-400);
+    }
 
-  console.log(`📊 Resultados encontrados: ${resultados.length}`);
+    .search-results {
+      margin-top: 1rem;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      background: white;
+    }
 
-  resultadosContainer.innerHTML = '';
+    .search-result-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
 
-  if (resultados.length === 0) {
-    ocultarResultados();
-    return;
-  }
+    .search-result-item:hover {
+      background: var(--gray-50);
+    }
 
-  resultados.slice(0, 10).forEach(prod => {
-    const div = document.createElement('div');
-    div.className = 'producto-item';
-    div.innerHTML = `
-      <strong>${prod.nombre}</strong><br>
-      <small>Código: ${prod.codigo || '—'} — ${prod.marca || ''}</small>
-    `;
-    div.addEventListener('click', () => {
-      document.getElementById('searchProductos').value = prod.nombre;
-      ocultarResultados();
-      console.log('🟢 Producto seleccionado:', prod);
-    });
-    resultadosContainer.appendChild(div);
-  });
+    .search-result-item:last-child {
+      border-bottom: none;
+    }
 
-  mostrarResultados();
-}
+    .producto-info {
+      flex: 1;
+    }
 
-// ----------------------------
-// 🎨 MOSTRAR / OCULTAR RESULTADOS
-// ----------------------------
-function mostrarResultados() {
-  const cont = document.getElementById('searchResults');
-  cont.classList.add('show');
-  cont.classList.remove('hide');
-  cont.style.display = 'block';
-}
+    .producto-codigo {
+      font-weight: 600;
+      color: var(--primary);
+      font-size: 0.85rem;
+    }
 
-function ocultarResultados() {
-  const cont = document.getElementById('searchResults');
-  cont.classList.add('hide');
-  cont.classList.remove('show');
-  setTimeout(() => (cont.style.display = 'none'), 200);
-}
+    .producto-nombre {
+      color: var(--gray-800);
+      margin: 0.25rem 0;
+    }
+
+    .producto-precio {
+      color: var(--gray-600);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .destacados-list {
+      margin-top: 1.5rem;
+    }
+
+    .destacados-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .destacados-counter {
+      font-size: 0.9rem;
+      color: var(--gray-600);
+      font-weight: 600;
+    }
+
+    .destacado-item {
+      padding: 1rem;
+      background: rgba(34, 197, 94, 0.05);
+      border: 2px solid var(--success);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-destacar, .btn-quitar {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+
+    .btn-destacar {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-destacar:hover:not(:disabled) {
+      background: #16a34a;
+      transform: translateY(-1px);
+    }
+
+    .btn-destacar:disabled {
+      background: var(--gray-300);
+      cursor: not-allowed;
+    }
+
+    .btn-quitar {
+      background: var(--gray-200);
+      color: var(--gray-700);
+    }
+
+    .btn-quitar:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--gray-500);
+    }
+
+    .empty-state i {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 1rem;
+      opacity: 0.3;
+    }
+    
+    @media (max-width: 768px) {
+      .ai-helper-card {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem;
+      }
+      
+      .contactos-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-result-item,
+      .destacado-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+
+      .btn-destacar,
+      .btn-quitar {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando...</div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <div class="logo-icon">🤖</div>
+        <div>
+          <h1 id="commerceName">Mi Comercio</h1>
+          <span class="plan-badge" id="planBadge">Trial</span>
+        </div>
+      </div>
+      <div class="user-info">
+        <!-- Save button se inyecta desde JS -->
+        <button class="btn-logout" id="logoutBtn" title="Cerrar sesión">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Subscription Banner -->
+  <div class="subscription-banner" id="subscriptionBanner">
+    <span id="subscriptionMessage">Completa tu información</span>
+  </div>
+
+  <!-- Progress Indicator -->
+  <div class="progress-indicator" id="progressContainer"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- ========================================
+         ASISTENTE IA
+         ======================================== -->
+    <div class="ai-helper-section">
+      <div class="ai-helper-card">
+        <div class="ai-helper-icon">🤖</div>
+        <div class="ai-helper-content">
+          <h4>¿Primera vez configurando tu IA?</h4>
+          <p>Nuestro asistente te guía paso a paso en la personalización (gratis, sin registro)</p>
+          <a href="https://claude.ai/new" target="_blank" class="btn btn-primary" id="openAssistant">
+            💬 Hablar con el Asistente
+          </a>
+          <small>Se abre en una nueva pestaña</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1️⃣ IDENTIDAD -->
+    <section class="form-section">
+      <h3><i class="fas fa-user-robot"></i> 1️⃣ Identidad del Asistente</h3>
+      <div class="section-description">
+        Define la personalidad básica de tu asistente virtual. Estos campos son obligatorios para que tu IA tenga una identidad clara y coherente.
+      </div>
+      <form id="aiIdentityForm">
+        <div class="form-field">
+          <label class="required">
+            Nombre del asistente 
+            <span class="tooltip-icon" title="¿Cómo querés que se llame tu asistente?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <input type="text" id="aiName" name="aiName" placeholder='Ej: "Ana", "Carlos", "Sofia"' required>
+          <small>Elegí un nombre amigable y fácil de recordar</small>
+        </div>
+        
+        <div class="form-field">
+          <label class="required">
+            Personalidad 
+            <span class="tooltip-icon" title="¿Cómo querés que se comporte con los clientes?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="aiPersonality" name="aiPersonality" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="amigable">😊 Amigable</option>
+            <option value="profesional">👔 Profesional</option>
+            <option value="divertido">🎉 Divertido</option>
+            <option value="formal">🎩 Formal</option>
+            <option value="casual">😎 Casual</option>
+          </select>
+          <small>Define el estilo de comunicación general</small>
+        </div>
+        
+        <div class="form-field">
+          <label class="required">
+            Tono de voz 
+            <span class="tooltip-icon" title="¿Con qué energía debe comunicarse?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="aiTone" name="aiTone" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="entusiasta">🔥 Entusiasta</option>
+            <option value="relajado">😌 Relajado</option>
+            <option value="serio">🧐 Serio</option>
+            <option value="jovial">😄 Jovial</option>
+            <option value="elegante">✨ Elegante</option>
+          </select>
+          <small>El nivel de energía en las respuestas</small>
+        </div>
+        
+        <div class="form-field">
+          <label class="required">
+            Idioma principal 
+            <span class="tooltip-icon" title="¿En qué idioma atenderá principalmente?">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <select id="aiLanguage" name="aiLanguage" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="es-AR">🇦🇷 Español (Argentina)</option>
+            <option value="es-ES">🇪🇸 Español (España)</option>
+            <option value="es-MX">🇲🇽 Español (México)</option>
+            <option value="en-US">🇺🇸 Inglés</option>
+            <option value="multi">🌍 Multiidioma</option>
+          </select>
+          <small>El asistente se adaptará al idioma y modismos locales</small>
+        </div>
+        
+        <div class="form-field">
+          <label class="required">
+            Saludo inicial 
+            <span class="tooltip-icon" title="Primera frase que verán tus clientes al iniciar la conversación">
+              <i class="fas fa-question-circle"></i>
+            </span>
+          </label>
+          <textarea id="aiGreeting" name="aiGreeting" rows="3" 
+                    placeholder='Ej: "¡Hola! Soy Ana, la asistente virtual de Calzados Tino. ¿En qué puedo ayudarte hoy?"' required></textarea>
+          <small>Escribí un saludo cálido que represente tu negocio</small>
+        </div>
+      </form>
+    </section>
+
+    <!-- 2️⃣ COMPORTAMIENTOS -->
+    <section class="form-section">
+      <h3><i class="fas fa-sliders-h"></i> 2️⃣ Comportamientos del Asistente</h3>
+      <div class="section-description">
+        Configurá cómo debe reaccionar tu asistente en situaciones específicas. Estos comportamientos son obligatorios para asegurar una experiencia consistente.
+      </div>
+      <form id="aiBehaviorsForm">
+        <div class="form-field">
+          <label class="required">
+            ¿Qué hacer si un cliente pregunta el precio de un producto sin precio configurado?
+          </label>
+          <select id="sinPrecio" name="sinPrecio" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="whatsapp">📱 Derivar a WhatsApp</option>
+            <option value="instagram">📸 Derivar a Instagram</option>
+            <option value="email">📧 Derivar a Email</option>
+            <option value="web">🌐 Derivar a sitio web</option>
+            <option value="telefono">☎️ Derivar a teléfono</option>
+          </select>
+          <small>El asistente invitará al cliente a consultar directamente por este medio</small>
+        </div>
+        
+        <div class="form-field">
+          <label class="required">¿Qué hacer si un producto no tiene stock?</label>
+          <select id="sinStock" name="sinStock" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="no_ofrecer">❌ No ofrecer el producto</option>
+            <option value="sugerir_similar">💡 Sugerir productos similares</option>
+            <option value="consultar">📞 Pedir que consulte disponibilidad</option>
+          </select>
+          <small>Define cómo manejar productos sin stock disponible</small>
+        </div>
+        
+        <div class="form-field">
+          <label class="required">¿Qué hacer cuando el local está cerrado?</label>
+          <select id="localCerrado" name="localCerrado" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="informar">🕐 Informar horarios de apertura</option>
+            <option value="tomar_consulta">📱 Tomar consulta y responder después</option>
+            <option value="derivar">📞 Derivar a contacto directo</option>
+          </select>
+          <small>Cómo atender fuera del horario laboral</small>
+        </div>
+        
+        <div class="form-field">
+          <label class="required">Nivel de proactividad</label>
+          <select id="proactividad" name="proactividad" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="muy_proactivo">🔥 Muy proactivo (sugiere productos activamente)</option>
+            <option value="moderado">😊 Moderado (sugiere cuando es relevante)</option>
+            <option value="pasivo">😌 Pasivo (solo responde lo que se pregunta)</option>
+          </select>
+          <small>Qué tan activo será el asistente en sugerir productos</small>
+        </div>
+        
+        <div class="form-field">
+          <label class="required">Formato de respuestas</label>
+          <select id="formatoRespuestas" name="formatoRespuestas" required>
+            <option value="">-- Elegí una opción --</option>
+            <option value="detalladas">📝 Detalladas (explicaciones completas)</option>
+            <option value="breves">⚡ Breves (respuestas concisas)</option>
+            <option value="balanceadas">🎯 Balanceadas (equilibrio entre ambas)</option>
+          </select>
+          <small>La extensión típica de las respuestas</small>
+        </div>
+      </form>
+    </section>
+
+    <!-- 3️⃣ MENSAJES PERSONALIZADOS -->
+    <section class="form-section">
+      <h3><i class="fas fa-comments"></i> 3️⃣ Mensajes Personalizados (Opcional)</h3>
+      <div class="section-description">
+        Personalizá los mensajes que tu asistente usará en situaciones específicas. Si dejás estos campos en blanco, se usarán mensajes por defecto inteligentes.
+      </div>
+
+      <div class="form-field">
+        <label>📱 Mensaje para derivar a WhatsApp (opcional)</label>
+        <textarea id="mensajeWhatsapp" rows="2" 
+                  placeholder='Ej: "Para consultas sobre este producto, escribime al WhatsApp +54 9 11 1234-5678 📱"'></textarea>
+        <small>Se muestra cuando el asistente deriva una consulta a WhatsApp</small>
+      </div>
+      
+      <div class="form-field">
+        <label>📸 Mensaje para derivar a Instagram (opcional)</label>
+        <textarea id="mensajeInstagram" rows="2"
+                  placeholder='Ej: "¡Seguime en Instagram @micomercio para ver más productos y ofertas! 📸"'></textarea>
+        <small>Se muestra cuando el asistente deriva a Instagram</small>
+      </div>
+      
+      <div class="form-field">
+        <label>🌐 Mensaje para derivar a Web o Email (opcional)</label>
+        <textarea id="mensajeWeb" rows="2"
+                  placeholder='Ej: "Visitá nuestra web www.micomercio.com o escribime a contacto@micomercio.com"'></textarea>
+        <small>Se muestra cuando deriva a sitio web o correo electrónico</small>
+      </div>
+      
+      <div class="form-field">
+        <label>❓ Respuesta cuando no entiende la consulta (opcional)</label>
+        <textarea id="mensajeDefault" rows="2"
+                  placeholder='Ej: "Disculpá, no entendí tu consulta. ¿Podrías reformularla de otra manera? 🤔"'></textarea>
+        <small>Mensaje de fallback cuando el asistente no puede interpretar la pregunta</small>
+      </div>
+    </section>
+
+    <!-- 4️⃣ PRODUCTOS DESTACADOS -->
+    <section class="form-section" id="productosDestacadosSection">
+      <h3><i class="fas fa-star"></i> 4️⃣ Productos Destacados (Opcional)</h3>
+      <div class="section-description">
+        Seleccioná hasta 10 productos que querés que tu asistente mencione con mayor frecuencia. Estos productos aparecerán más seguido en las recomendaciones.
+      </div>
+      
+      <div class="productos-destacados-container">
+        <!-- Buscador -->
+        <div>
+          <h4>Buscar producto</h4>
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input 
+              type="text" 
+              id="searchProductos" 
+              placeholder="Buscá por código o nombre de producto..."
+            >
+          </div>
+          <div id="searchResults" class="search-results" style="display: none;"></div>
+        </div>
+
+        <!-- Lista de destacados -->
+        <div>
+          <div class="destacados-header">
+            <h4>Productos destacados</h4>
+            <span class="destacados-counter" id="destacadosCounter">0/10</span>
+          </div>
+          <div id="destacadosList">
+            <div class="empty-state">
+              <i class="fas fa-star"></i>
+              <p>Aún no seleccionaste productos destacados</p>
+              <small>Usá el buscador arriba para agregar hasta 10 productos</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5️⃣ VALIDACIÓN DE CONTACTOS -->
+    <section class="form-section">
+      <h3><i class="fas fa-check-circle"></i> 5️⃣ Verificación de Contactos (Informativo)</h3>
+      <div class="section-description">
+        Revisá que tus canales de contacto estén configurados correctamente. El asistente los usará para derivar consultas según la configuración de comportamientos.
+      </div>
+      <div id="contactosValidacion" class="contactos-grid"></div>
+      <div style="margin-top:1rem;">
+        <a href="./mi-comercio.html" class="btn btn-secondary">
+          <i class="fas fa-edit"></i> Editar contactos en Mi Comercio
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Navigation Controls -->
+  <div class="navigation-controls" id="navigationControls"></div>
+
+  <!-- ✅ TODA LA LÓGICA ESTÁ EN EL JS SEPARADO -->
+  <script type="module" src="../pages/ia-config.js"></script>
+
+</body>
+</html>
