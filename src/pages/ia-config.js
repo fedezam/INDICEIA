@@ -113,7 +113,6 @@ async function loadProducts() {
     });
     console.log('✅ Productos cargados:', productos.length);
     
-    // DEBUG: Mostrar 3 productos de ejemplo
     if (productos.length > 0) {
       console.log('📦 Ejemplo de productos cargados:', productos.slice(0, 3));
     }
@@ -182,7 +181,6 @@ function loadAIConfig() {
   safeSet('mensajeWeb', aiConfig.mensajeWeb);
   safeSet('mensajeDefault', aiConfig.mensajeDefault);
 
-  // 🔄 sincronizar productosDestacados con los productos reales cargados
   const destacadosGuardados = Array.isArray(aiConfig.productosDestacados)
     ? aiConfig.productosDestacados
     : [];
@@ -193,7 +191,6 @@ function loadAIConfig() {
       productos.find((p) => p.codigo === dest.codigo);
 
     if (productoReal) {
-      // usar los datos reales de la DB
       return {
         id: productoReal.id,
         codigo: productoReal.codigo || dest.codigo || '',
@@ -210,7 +207,6 @@ function loadAIConfig() {
       };
     }
 
-    // fallback si el producto fue borrado de la DB
     return {
       id: dest.id || null,
       codigo: dest.codigo || '',
@@ -222,7 +218,6 @@ function loadAIConfig() {
   });
 
   renderDestacados();
-
   console.log('✅ IA Config cargada y sincronizada con productos reales:', productosDestacados);
 }
 
@@ -305,11 +300,15 @@ function renderContactosValidacion() {
 }
 
 // ==================== BÚSQUEDA DE PRODUCTOS ====================
+function normalizeString(str) {
+  return (str || '').toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 function buscarProductos(query) {
   const resultadosContainer = $('productosResultados');
   if (!resultadosContainer) return;
 
-  const searchTerm = query.trim().toLowerCase();
+  const searchTerm = normalizeString(query);
   
   if (!searchTerm) {
     resultadosContainer.innerHTML = '<div class="empty-search">Escribe para buscar productos...</div>';
@@ -317,13 +316,11 @@ function buscarProductos(query) {
     return;
   }
 
-  // Filtrar productos que coincidan con la búsqueda
   const resultados = productos.filter(p => {
-    const nombre = (p.nombre || '').toLowerCase();
-    const codigo = (p.codigo || '').toLowerCase();
-    const descripcion = (p.descripcion || '').toLowerCase();
-    return nombre.includes(searchTerm) || codigo.includes(searchTerm) || descripcion.includes(searchTerm);
-  }).slice(0, 10); // Limitar a 10 resultados
+    return normalizeString(p.nombre).includes(searchTerm) ||
+           normalizeString(p.codigo).includes(searchTerm) ||
+           normalizeString(p.descripcion).includes(searchTerm);
+  }).slice(0, 10);
 
   if (resultados.length === 0) {
     resultadosContainer.innerHTML = '<div class="empty-search">No se encontraron productos</div>';
@@ -362,8 +359,6 @@ function buscarProductos(query) {
 
 // ==================== AGREGAR/QUITAR DESTACADOS ====================
 window.agregarDestacado = (productoId) => {
-  console.log('🔍 Intentando agregar producto:', productoId);
-  
   if (productosDestacados.length >= 10) {
     showToast('Límite alcanzado', 'Solo puedes tener 10 productos destacados', 'warning');
     return;
@@ -371,7 +366,6 @@ window.agregarDestacado = (productoId) => {
 
   const producto = productos.find(p => p.id === productoId);
   if (!producto) {
-    console.error('❌ Producto no encontrado:', productoId);
     showToast('Error', 'Producto no encontrado', 'error');
     return;
   }
@@ -382,12 +376,9 @@ window.agregarDestacado = (productoId) => {
   }
 
   productosDestacados.push(producto);
-  console.log('✅ Producto agregado. Total destacados:', productosDestacados.length);
-  
   renderDestacados();
   markAsChanged();
   
-  // Actualizar búsqueda para reflejar cambios
   const searchInput = $('searchProductos');
   if (searchInput && searchInput.value) {
     buscarProductos(searchInput.value);
@@ -397,22 +388,14 @@ window.agregarDestacado = (productoId) => {
 };
 
 window.quitarDestacado = (productoId) => {
-  console.log('🗑️ Intentando quitar producto:', productoId);
-  
   const index = productosDestacados.findIndex(p => p.id === productoId);
-  if (index === -1) {
-    console.error('❌ Producto no encontrado en destacados:', productoId);
-    return;
-  }
+  if (index === -1) return;
 
   const producto = productosDestacados[index];
   productosDestacados.splice(index, 1);
-  console.log('✅ Producto quitado. Total destacados:', productosDestacados.length);
-  
   renderDestacados();
   markAsChanged();
-  
-  // Actualizar búsqueda para reflejar cambios
+
   const searchInput = $('searchProductos');
   if (searchInput && searchInput.value) {
     buscarProductos(searchInput.value);
@@ -427,16 +410,12 @@ function setupEventListeners() {
   
   const searchInput = $('searchProductos');
   if (searchInput) {
-    console.log('✅ Input de búsqueda encontrado');
     searchInput.addEventListener('input', e => {
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
-        console.log('🔍 Buscando:', e.target.value);
         buscarProductos(e.target.value);
       }, 300);
     });
-  } else {
-    console.error('❌ No se encontró el input searchProductos');
   }
   
   document.querySelectorAll('input, select, textarea').forEach(input=>{
@@ -449,8 +428,6 @@ function setupEventListeners() {
   window.addEventListener('beforeunload',e=>{
     if(hasUnsavedChanges){ e.preventDefault(); e.returnValue='Cambios sin guardar'; }
   });
-  
-  console.log('✅ Event listeners configurados');
 }
 
 // ==================== SAVE ====================
@@ -504,7 +481,6 @@ async function saveAIConfig() {
     };
     await updateDoc(comercioRef,{aiConfig:updatedConfig});
     
-    // ✅ CORREGIDO: Ahora pasa userId como segundo parámetro
     await updateCommerceJSON(currentComercioId, currentUser.uid);
     
     hasUnsavedChanges=false;
