@@ -353,48 +353,83 @@ function buscarProductos(query) {
 
 // ==================== AGREGAR/QUITAR DESTACADOS ====================
 window.agregarDestacado = (productoId) => {
+  console.log('🔍 Intentando agregar producto:', productoId);
+  
   if (productosDestacados.length >= 10) {
-    showToast('warning', 'Límite alcanzado', 'Solo puedes tener 10 productos destacados');
+    showToast('Límite alcanzado', 'Solo puedes tener 10 productos destacados', 'warning');
     return;
   }
 
   const producto = productos.find(p => p.id === productoId);
-  if (!producto) return;
+  if (!producto) {
+    console.error('❌ Producto no encontrado:', productoId);
+    showToast('Error', 'Producto no encontrado', 'error');
+    return;
+  }
 
   if (productosDestacados.some(p => p.id === productoId)) {
-    showToast('info', 'Ya agregado', 'Este producto ya está en destacados');
+    showToast('Ya agregado', 'Este producto ya está en destacados', 'info');
     return;
   }
 
   productosDestacados.push(producto);
+  console.log('✅ Producto agregado. Total destacados:', productosDestacados.length);
+  
   renderDestacados();
   markAsChanged();
   
   // Actualizar búsqueda para reflejar cambios
   const searchInput = $('searchProductos');
-  if (searchInput) buscarProductos(searchInput.value);
+  if (searchInput && searchInput.value) {
+    buscarProductos(searchInput.value);
+  }
+  
+  showToast('Producto agregado', `${producto.nombre} agregado a destacados`, 'success');
 };
 
 window.quitarDestacado = (productoId) => {
+  console.log('🗑️ Intentando quitar producto:', productoId);
+  
   const index = productosDestacados.findIndex(p => p.id === productoId);
-  if (index === -1) return;
+  if (index === -1) {
+    console.error('❌ Producto no encontrado en destacados:', productoId);
+    return;
+  }
 
+  const producto = productosDestacados[index];
   productosDestacados.splice(index, 1);
+  console.log('✅ Producto quitado. Total destacados:', productosDestacados.length);
+  
   renderDestacados();
   markAsChanged();
   
   // Actualizar búsqueda para reflejar cambios
   const searchInput = $('searchProductos');
-  if (searchInput) buscarProductos(searchInput.value);
+  if (searchInput && searchInput.value) {
+    buscarProductos(searchInput.value);
+  }
+  
+  showToast('Producto quitado', `${producto.nombre} quitado de destacados`, 'info');
 };
 
 // ==================== EVENT LISTENERS ====================
 function setupEventListeners() {
   $('openAssistant')?.addEventListener('click',()=>showToast('info','🤖 Asistente','Decile: "Soy de Indice IA"',8000));
-  $('searchProductos')?.addEventListener('input',e=>{
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(()=>buscarProductos(e.target.value),300);
-  });
+  
+  const searchInput = $('searchProductos');
+  if (searchInput) {
+    console.log('✅ Input de búsqueda encontrado');
+    searchInput.addEventListener('input', e => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        console.log('🔍 Buscando:', e.target.value);
+        buscarProductos(e.target.value);
+      }, 300);
+    });
+  } else {
+    console.error('❌ No se encontró el input searchProductos');
+  }
+  
   document.querySelectorAll('input, select, textarea').forEach(input=>{
     if(input.id!=='searchProductos'){
       input.addEventListener('change',markAsChanged);
@@ -405,6 +440,8 @@ function setupEventListeners() {
   window.addEventListener('beforeunload',e=>{
     if(hasUnsavedChanges){ e.preventDefault(); e.returnValue='Cambios sin guardar'; }
   });
+  
+  console.log('✅ Event listeners configurados');
 }
 
 // ==================== SAVE ====================
