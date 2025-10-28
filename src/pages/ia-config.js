@@ -93,7 +93,11 @@ async function initializePage() {
 // ==================== LOAD PRODUCTS ====================
 async function loadProducts() {
   try {
-    if (!currentComercioId) { productos = []; return; }
+    if (!currentComercioId) { 
+      productos = []; 
+      console.warn('⚠️ No hay comercioId, productos = []');
+      return; 
+    }
 
     const snapshot = await getDocs(collection(db, 'comercios', currentComercioId, 'productos'));
     productos = snapshot.docs.map(d => {
@@ -108,6 +112,11 @@ async function loadProducts() {
       };
     });
     console.log('✅ Productos cargados:', productos.length);
+    
+    // DEBUG: Mostrar 3 productos de ejemplo
+    if (productos.length > 0) {
+      console.log('📦 Ejemplo de productos cargados:', productos.slice(0, 3));
+    }
   } catch (error) {
     console.error('❌ Error cargando productos:', error);
     productos = [];
