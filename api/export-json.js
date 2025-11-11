@@ -1,191 +1,170 @@
-// ============================================
-// api/export-json.js - Vercel Serverless Function
-// Exporta el JSON de un comercio a Vercel Blob
-// con verificación inteligente de cambios
-// ============================================
+// api/export-json.js
+import express from 'express';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { Blob } from '@vercel/blob';
+import { v4 as uuidv4 } from 'uuid';
+import { readFile } from 'fs/promises';
 
-import admin from 'firebase-admin';
-import { put } from '@vercel/blob';
+const app = express();
+app.use(express.json({ limit: '10mb' }));
 
-// Inicializar Firebase Admin (solo una vez)
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
+// === Firebase Admin ===
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+initializeApp({ credential: cert(serviceAccount) });
+const db = getFirestore();
+
+// === BLOQUE A: UNIVERSAL LER CORE (100% ENGLISH) ===
+const BLOQUE_A = { /* ← TU BLOQUE_A EN INGLÉS (ya lo tenés) */ };
+
+// === BLOQUE C: VISUAL MODULE ===
+let BLOQUE_C = null;
+(async () => {
+  try {
+    const data = await readFile('./skins/visual_slate_amber_v15.json', 'utf-8');
+    BLOQUE_C = JSON.parse(data);
+  } catch (err) {
+    console.warn('Visual skin not found.');
+  }
+})();
+
+// === HELPERS ===
+function extractWhatsAppNumber(url) {
+  return url?.match(/wa\.me\/(\d+)/)?.[1] || '';
+}
+function extractDaysOpen(hoursString = '') {
+  const map = {
+    monday: /lunes|lun|monday/i,
+    tuesday: /martes|tue|tuesday/i,
+    wednesday: /mi[eé]rcoles|wed|wednesday/i,
+    thursday: /jueves|thu|thursday/i,
+    friday: /viernes|fri|friday/i,
+    saturday: /s[aá]bado|sat|saturday/i,
+    sunday: /domingo|sun|sunday/i
+  };
+  return Object.keys(map).filter(day => map[day].test(hoursString));
+}
+function normalizeCurrency(country) {
+  const map = { Argentina: 'ARS', México: 'MXN', Colombia: 'COP', Chile: 'CLP' };
+  return map[country] || 'USD';
+}
+function sanitizeName(name) {
+  return (name || 'Bot').replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
 }
 
-const db = admin.firestore();
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+// === MAIN ENDPOINT ===
+app.post('/api/export-json', async (req, res) => {
+  const { comercioId, visualEnabled = false } = req.body;
+  if (!comercioId) return res.status(400).json({ error: 'comercioId is required' });
 
   try {
-    const { comercioId, userId } = req.body;
+    const comercioDoc = await db.collection('comercios').doc(comercioId).get();
+    if (!comercioDoc.exists) return res.status(404).json({ error: 'Commerce not found' });
 
-    if (!comercioId) return res.status(400).json({ error: 'comercioId requerido' });
-    if (!userId) return res.status(400).json({ error: 'userId requerido' });
+    const comercio = comercioDoc.data();
+    const productosSnap = await db.collection('comercios').doc(comercioId).collection('productos').get();
+    const productos = productosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    console.log('📦 Generando JSON para comercio:', comercioId);
-
-    // 1️⃣ Generar nuevo JSON
-    const jsonData = await generateCommerceJSON(comercioId, userId);
-
-    // 2️⃣ Obtener última versión para comparar
-    const comercioRef = db.collection('comercios').doc(comercioId);
-    const comercioSnap = await comercioRef.get();
-    let lastJsonUrl = comercioSnap.data()?.jsonUrl;
-
-    if (lastJsonUrl) {
-      try {
-        const lastResponse = await fetch(lastJsonUrl);
-        if (lastResponse.ok) {
-          const lastJson = await lastResponse.json();
-          const oldHash = JSON.stringify(lastJson);
-          const newHash = JSON.stringify(jsonData);
-
-          if (oldHash === newHash) {
-            console.log('⚡ No hay cambios en los datos. No se actualiza el Blob.');
-            return res.status(200).json({
-              success: true,
-              message: 'No se detectaron cambios. JSON existente sigue vigente.',
-              jsonUrl: lastJsonUrl,
-              lastUpdated: comercioSnap.data()?.lastJsonUpdate,
-            });
-          }
+    const bloqueB = {
+      bloque_B_contexto_comercial: {
+        mutable: true,
+        language: comercio.aiConfig?.aiLanguage || 'es-AR',
+        identity: {
+          business_id: comercioId,
+          business_name: comercio.nombreComercio || 'My Business',
+          bot_name: comercio.aiConfig?.aiName || 'Assistant',
+          description: comercio.descripcion || '',
+          business_type: comercio.tipo || 'retail',
+          semantic_tags: comercio.categories || []
+        },
+        contact: {
+          phone: comercio.telefono || '',
+          whatsapp_url: comercio.whatsapp || '',
+          whatsapp_number: extractWhatsAppNumber(comercio.whatsapp),
+          email: comercio.email || '',
+          address: comercio.direccion || '',
+          city: comercio.ciudad || '',
+          province: comercio.provincia || '',
+          country: comercio.pais || 'Argentina',
+          neighborhood: comercio.barrio || '',
+          website: comercio.website || ''
+        },
+        social_media: { instagram: comercio.instagram || '', facebook: comercio.facebook || '', tiktok: comercio.tiktok || '' },
+        schedule: { hours: comercio.horariosString || '', days_open: extractDaysOpen(comercio.horariosString || ''), timezone: "America/Argentina/Buenos_Aires" },
+        commercial: {
+          currency: normalizeCurrency(comercio.pais),
+          language: comercio.aiConfig?.aiLanguage || 'es-AR',
+          payment_methods: comercio.paymentMethods || [],
+          discount_cash: comercio.aiConfig?.descuentoEfectivo || '',
+          discount_percentage: 0
+        },
+        shipping: { free_zones: comercio.envios?.free_zones || [], paid_zones: comercio.envios?.paid_zones || {}, delivery_time: comercio.delivery_time || '30-45 min' },
+        catalog: {
+          categories: [...new Set(productos.map(p => p.categoria).filter(Boolean))],
+          items: productos.filter(p => !p.paused).map(p => ({
+            id: p.codigo || p.id,
+            name: p.nombre || '',
+            description: p.descripcion || '',
+            category: p.categoria || '',
+            price: p.precio_final || 0,
+            price_mediana: p.precio_mediana || null,
+            price_grande: p.precio_grande || null,
+            currency: normalizeCurrency(comercio.pais),
+            stock: p.stock || 0,
+            available: !p.paused,
+            attributes: p.atributos || {},
+            tags: p.etiquetas || [],
+            image_url: p.imagen || ''
+          })),
+          metadata: { total_items: productos.length, last_sync: new Date().toISOString() }
+        },
+        runtime: {
+          state: "ready",
+          activation_message: comercio.aiConfig?.aiGreeting || `Hi! I'm ${comercio.aiConfig?.aiName || 'your assistant'}. How can I help?`,
+          active_glyph: "origin"
         }
-      } catch (e) {
-        console.warn('⚠️ No se pudo comparar con versión previa:', e.message);
       }
+    };
+
+    const finalJSON = {
+      meta: {
+        name: `IA-Comercial-LER_${sanitizeName(comercio.nombreComercio)}_v2`,
+        version: "2.0.0",
+        type: "unified_commercial_instance",
+        purpose: "Autonomous NapoBot with semantic flexibility and anti-hallucination",
+        architecture: "LER Dual + Flexible Path + Semantic Search + Visual Plug-and-Play",
+        created_at: new Date().toISOString().split('T')[0],
+        author: "Grok xAI + Fede Zambrano",
+        comercio_id: comercioId
+      },
+      ...BLOQUE_A,
+      ...bloqueB
+    };
+
+    if (visualEnabled && BLOQUE_C) {
+      finalJSON.bloque_C_visual_module = BLOQUE_C.bloque_C_visual_module;
     }
 
-    // 3️⃣ Subir a Vercel Blob (solo si hay cambios)
-    const blobResult = await uploadToVercelBlob(jsonData, comercioId);
+    const blob = await Blob.put(`bots/${comercioId}-${uuidv4()}.json`, JSON.stringify(finalJSON, null, 2), {
+      access: 'public',
+      addRandomSuffix: false
+    });
 
-    console.log('✅ JSON actualizado en Vercel Blob:', blobResult.url);
-
-    return res.status(200).json({
+    res.json({
       success: true,
-      message: 'JSON actualizado correctamente',
-      jsonData,
-      blob: blobResult,
-    });
-  } catch (error) {
-    console.error('❌ Error en export-json API:', error);
-    return res.status(500).json({
-      error: 'Error interno del servidor',
-      message: error.message,
-    });
-  }
-}
-
-// ===================================================
-// 🔧 Función para generar el JSON del comercio completo
-// ===================================================
-async function generateCommerceJSON(comercioId, userId) {
-  const comercioRef = db.collection('comercios').doc(comercioId);
-  const comercioSnap = await comercioRef.get();
-
-  if (!comercioSnap.exists) throw new Error('Comercio no encontrado');
-  const comercioData = comercioSnap.data();
-
-  // Subcolección: productos
-  const productosCol = comercioRef.collection('productos');
-  const productosSnap = await productosCol.get();
-  const productos = [];
-
-  productosSnap.forEach((pSnap) => {
-    const p = pSnap.data();
-    if (!p.paused) {
-      productos.push({
-        id: pSnap.id,
-        ...p,
-      });
-    }
-  });
-
-  // Configuración del asistente IA
-  const asistente_ia = {
-    nombre: comercioData.aiName || 'Asistente Virtual',
-    personalidad: comercioData.aiConfig?.aiPersonality || 'Amigable y cercano',
-    tono: comercioData.aiConfig?.aiTone || 'Entusiasta',
-    saludo_inicial:
-      comercioData.aiGreeting ||
-      comercioData.aiConfig?.aiGreeting ||
-      '¡Hola! ¿En qué puedo ayudarte?',
-    configuracion: {
-      precios_pausados: comercioData.aiConfig?.pricesPaused || false,
-      comportamiento_sin_precio: comercioData.aiConfig?.noPriceBehavior || 'contact',
-      comportamiento_pausados: comercioData.aiConfig?.pausedBehavior || 'hide',
-    },
-    fecha_actualizacion: new Date().toISOString(),
-  };
-
-  return {
-    metadata: {
-      version: '1.0',
-      generado: new Date().toISOString(),
+      url: blob.url,
       comercioId,
-      userId,
-      dueñoId: comercioData.dueñoId,
-      total_productos: productos.length,
-      plan: comercioData.plan || 'trial',
-    },
-    comercio: {
-      nombre: comercioData.nombreComercio || '',
-      descripcion: comercioData.descripcion || '',
-      direccion: comercioData.direccion || '',
-      ciudad: comercioData.ciudad || '',
-      provincia: comercioData.provincia || '',
-      pais: comercioData.pais || 'Argentina',
-      barrio: comercioData.barrio || '',
-      telefono: comercioData.telefono || '',
-      whatsapp: comercioData.whatsapp || '',
-      email: comercioData.email || '',
-      website: comercioData.website || '',
-      instagram: comercioData.instagram || '',
-      facebook: comercioData.facebook || '',
-      tiktok: comercioData.tiktok || '',
-      horarios: comercioData.horarios || [],
-      metodos_pago: comercioData.paymentMethods || [],
-      categorias: comercioData.categories || [],
-      plan: comercioData.plan || 'trial',
-    },
-    productos,
-    asistente_ia,
-  };
-}
+      visualEnabled,
+      items_count: bloqueB.bloque_B_contexto_comercial.catalog.items.length,
+      generated_at: new Date().toISOString()
+    });
 
-// ===================================================
-// ☁️ Subir JSON al Blob y actualizar Firestore
-// ===================================================
-async function uploadToVercelBlob(jsonData, comercioId) {
-  const fileName = `comercio-${comercioId}.json`;
-  const jsonString = JSON.stringify(jsonData, null, 2);
+  } catch (error) {
+    console.error('Export failed:', error);
+    res.status(500).json({ error: 'Failed to generate JSON', details: error.message });
+  }
+});
 
-  // Subir a Vercel Blob con acceso público
-  const blob = await put(fileName, jsonString, {
-    access: 'public',
-    contentType: 'application/json',
-    addRandomSuffix: false, // Mantener el mismo nombre de archivo
-  });
+app.get('/health', (req, res) => res.json({ status: 'OK', time: new Date().toISOString() }));
 
-  // Guardar referencia en Firestore
-  const comercioRef = db.collection('comercios').doc(comercioId);
-  await comercioRef.update({
-    jsonUrl: blob.url,
-    blobUrl: blob.url,
-    lastJsonUpdate: new Date().toISOString(),
-  });
-
-  return {
-    success: true,
-    url: blob.url,
-    downloadUrl: blob.downloadUrl,
-  };
-}
+export default app;
