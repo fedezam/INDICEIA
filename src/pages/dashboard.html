@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - INDICEIA</title>
-  
+ 
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../styles.css">
-  
+ 
   <style>
     .subscription-banner {
       background: #fffbeb;
@@ -22,53 +22,10 @@
       justify-content: space-between;
       gap: 1rem;
     }
-    .subscription-banner.expired {
-      background: #fed7d7;
-      border-left-color: #e53e3e;
-      color: #9b2c2c;
-    }
-    .subscription-banner.active {
-      background: #c6f6d5;
-      border-left-color: #38a169;
-      color: #276749;
-    }
-    .subscription-banner.trial {
-      background: #e0e7ff;
-      border-left-color: #667eea;
-      color: #434190;
-    }
-    .subscription-info {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .subscription-actions {
-      display: flex;
-      gap: 0.75rem;
-    }
-    .btn-banner {
-      padding: 0.5rem 1rem;
-      border-radius: 6px;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      font-size: 0.875rem;
-    }
-    .btn-banner.primary {
-      background: white;
-      color: #667eea;
-    }
-    .btn-banner.secondary {
-      background: rgba(255, 255, 255, 0.2);
-      color: inherit;
-    }
-    .btn-banner:hover {
-      transform: translateY(-1px);
-      opacity: 0.9;
-    }
+    .subscription-banner.expired { background: #fed7d7; border-left-color: #e53e3e; color: #9b2c2c; }
+    .subscription-banner.active { background: #c6f6d5; border-left-color: #38a169; color: #276749; }
+    .subscription-banner.trial { background: #e0e7ff; border-left-color: #667eea; color: #434190; }
 
-    /* Hero Section - Asistente */
     .ai-status-card {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -83,13 +40,9 @@
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
-    .ai-status-header i {
-      font-size: 2rem;
-    }
-    .ai-status-header h3 {
-      margin: 0;
-      font-size: 1.5rem;
-    }
+    .ai-status-header i { font-size: 2.5rem; }
+    .ai-status-header h3 { margin: 0; font-size: 1.8rem; font-weight: 800; }
+
     .ai-info {
       display: flex;
       flex-wrap: wrap;
@@ -97,73 +50,29 @@
       margin-bottom: 2rem;
       font-size: 1.1rem;
     }
-    .ai-info span {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+    .ai-info span { display: flex; align-items: center; gap: 0.5rem; }
+
     .ai-link-container {
       background: rgba(255, 255, 255, 0.15);
-      padding: 1.5rem;
-      border-radius: 12px;
-      margin-bottom: 1.5rem;
+      padding: 2rem;
+      border-radius: 16px;
       backdrop-filter: blur(10px);
     }
     .ai-link-container h4 {
-      margin: 0 0 1rem 0;
-      font-size: 1.1rem;
+      margin: 0 0 1.5rem 0;
+      font-size: 1.3rem;
+      font-weight: 700;
     }
-    .link-placeholder {
-      background: rgba(255, 255, 255, 0.95);
-      color: #334155;
-      padding: 1.5rem;
-      border-radius: 10px;
-      text-align: center;
-    }
-    .link-placeholder i {
-      font-size: 2.5rem;
-      color: #667eea;
-      margin-bottom: 1rem;
-    }
-    .link-placeholder p {
-      margin: 0.5rem 0;
-      line-height: 1.6;
-    }
-    .link-placeholder .small-text {
-      font-size: 0.9rem;
-      color: #64748b;
-      margin-top: 1rem;
-    }
+
     .link-display {
-      background: white;
-      color: #1f2937;
-      padding: 1rem;
-      border-radius: 8px;
-      font-family: 'Courier New', monospace;
-      word-break: break-all;
-      margin-bottom: 1rem;
-      font-size: 0.95rem;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 1.2rem;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
     }
-    .link-actions {
-      display: flex;
-      gap: 1rem;
-    }
-    .link-actions button {
-      flex: 1;
-      padding: 0.75rem 1.5rem;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      background: white;
-      color: #667eea;
-      font-size: 1rem;
-    }
-    .link-actions button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
+
     .btn-config {
       background: rgba(255, 255, 255, 0.2);
       color: white;
@@ -177,12 +86,8 @@
       align-items: center;
       gap: 0.5rem;
     }
-    .btn-config:hover {
-      background: white;
-      color: #667eea;
-    }
+    .btn-config:hover { background: white; color: #667eea; }
 
-    /* Grid de Resumen */
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -202,95 +107,11 @@
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
       border-color: #667eea;
     }
-    .summary-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.25rem;
-      padding-bottom: 1rem;
-      border-bottom: 2px solid #f1f5f9;
-    }
-    .summary-card-title {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .summary-card-title i {
-      font-size: 1.5rem;
-      color: #667eea;
-    }
-    .summary-card-title h4 {
-      margin: 0;
-      font-size: 1.1rem;
-      color: #1f2937;
-    }
-    .summary-data {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      margin-bottom: 1.25rem;
-    }
-    .summary-data-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      font-size: 0.95rem;
-      color: #475569;
-      line-height: 1.5;
-    }
-    .summary-data-item i {
-      color: #10b981;
-      margin-top: 0.2rem;
-    }
-    .summary-data-item.warning i {
-      color: #f59e0b;
-    }
-    .summary-data-item strong {
-      color: #1f2937;
-    }
-    .btn-edit {
-      width: 100%;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 8px;
-      background: #667eea;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-    .btn-edit:hover {
-      background: #5568d3;
-      transform: translateY(-2px);
-    }
 
-    /* Responsive */
     @media (max-width: 768px) {
-      .summary-grid {
-        grid-template-columns: 1fr;
-      }
-      .ai-info {
-        flex-direction: column;
-        gap: 1rem;
-      }
-      .link-actions {
-        flex-direction: column;
-      }
-      .subscription-banner {
-        flex-direction: column;
-        align-items: flex-start;
-        padding: 1rem;
-      }
-      .subscription-actions {
-        width: 100%;
-      }
-      .btn-banner {
-        flex: 1;
-      }
+      .summary-grid { grid-template-columns: 1fr; }
+      .ai-info { flex-direction: column; }
+      .subscription-banner { flex-direction: column; text-align: center; }
     }
   </style>
 </head>
@@ -300,8 +121,6 @@
     <div class="spinner"></div>
     <div class="loading-text" id="loadingText">Cargando dashboard...</div>
   </div>
-
-  <!-- Toast container -->
   <div class="toast-container" id="toastContainer"></div>
 
   <!-- Header -->
@@ -331,26 +150,66 @@
       <i class="fas fa-info-circle"></i>
       <span id="subscriptionMessage">Cargando estado de suscripción...</span>
     </div>
-    <div class="subscription-actions">
-      <button class="btn-banner primary" onclick="alert('Función en desarrollo')">
-        Renovar
-      </button>
-      <button class="btn-banner secondary" onclick="alert('Función en desarrollo')">
-        Cambiar plan
-      </button>
-    </div>
   </div>
 
   <!-- Contenido principal -->
   <main class="main-content">
     <div class="container">
-      
-      <!-- Hero: Asistente Virtual -->
-      <div id="aiStatusSection"></div>
+     
+      <!-- Hero: Asistente Virtual - NAPOBOT 2025 -->
+      <div id="aiStatusSection">
+        <div class="ai-status-card">
+          <div class="ai-status-header">
+            <i class="fas fa-robot"></i>
+            <h3>Tu NapoBot está listo para nacer</h3>
+          </div>
+
+          <div class="ai-info">
+            <span><i class="fas fa-brain"></i> LER Dual v2.0 + Anti-hallucination</span>
+            <span><i class="fas fa-shield-alt"></i> 100% autónomo · sin APIs externas</span>
+            <span><i class="fas fa-flag"></i> Argentina · 11 de noviembre de 2025</span>
+          </div>
+
+          <div class="ai-link-container">
+            <h4 class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                <path d="M2 17l10 5 10-5"></path>
+                <path d="M2 12l10 5 10-5"></path>
+              </svg>
+              NapoBot Autónomo · Generación 2025
+            </h4>
+
+            <div id="botStatus" class="link-display mb-5 p-4 bg-white/20 rounded-lg text-center">
+              <div class="flex items-center justify-center gap-3">
+                <div class="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
+                <span>Listo para generar tu bot autónomo en segundos…</span>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <button id="btn-generar-bot" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-5 px-10 rounded-2xl text-xl shadow-2xl transform hover:scale-105 transition-all flex items-center gap-4 mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                  <path d="M2 17l10 5 10-5"></path>
+                  <path d="M2 12l10 5 10-5"></path>
+                </svg>
+                GENERAR MI NAPOBOT AUTÓNOMO
+              </button>
+              <p class="text-sm opacity-80 mt-4">Un solo click → tu asistente vive para siempre</p>
+            </div>
+          </div>
+
+          <div class="text-center mt-8">
+            <button class="btn-config" onclick="window.location.href='./mi-ia.html'">
+              <i class="fas fa-cog"></i> Ajustar configuración IA
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- Grid de Resumen -->
       <div class="summary-grid" id="summaryGrid"></div>
-
     </div>
   </main>
 
