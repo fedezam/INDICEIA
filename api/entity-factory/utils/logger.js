@@ -1,173 +1,90 @@
-// /api/entity-factory/utils/logger.js
-
 /**
- * Logger Universal para EntityFactory
- *
- * Soporta:
- * - Console output (siempre)
- * - Webhook notifications (Discord/Slack para errores)
- * - Blob persistence (guardar logs críticos)
+ * utils/logger.js
+ * Sistema unificado de logging para EntityFactory
  */
 
-import { put } from '@vercel/blob';
-import {
-  LOG_LEVEL,
-  WEBHOOK_URL,
-  VERCEL_BLOB_TOKEN,
-  VERCEL_BLOB_NAMESPACE
-} from '../config/constants.js';
+const isProd = process.env.NODE_ENV === 'production';
+const LOG_LEVELS = ['debug', 'info', 'warn', 'error'];
 
-export const Logger = {
-  levels: { debug: 1, info: 2, warn: 3, error: 4 },
-
-  /**
-   * Log principal
-   */
-  log(level, message, meta = {}) {
-    if (!this.shouldLog(level)) return;
-
+export class Logger {
+  static #format(level, message, context = {}) {
     const timestamp = new Date().toISOString();
-    const formatted = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
+    const base = `[${timestamp}] ${level.toUpperCase()}: ${message}`;
 
-    // 1️⃣ CONSOLE
-    this.logToConsole(level, formatted, meta);
-
-    // 2️⃣ WEBHOOK (errores / warnings)
-    if (WEBHOOK_URL && (level === 'error' || level === 'warn')) {
-      this.sendToWebhook(level, message, meta).catch(err => {
-        console.error('[Logger] Webhook failed:', err.message);
-      });
+    // Colores (solo si no es producción)
+    if (!isProd) {
+      const colors = {
+        debug: '\x1b[36m', // cyan
+        info: '\x1b[32m',  // green
+        warn: '\x1b[33m',  // yellow
+        error: '\x1b[31m'  // red
+      };
+      return `${colors[level] || ''}${base}\x1b[0m`;
     }
 
-    // 3️⃣ BLOB (solo errores críticos)
-    if (VERCEL_BLOB_TOKEN && level === 'error') {
-      this.saveToBlob(level, message, meta).catch(err => {
-        console.error('[Logger] Blob save failed:', err.message);
-      });
-    }
-  },
-
-  // Shortcuts
-  debug(msg, meta) { this.log('debug', msg, meta); },
-  info(msg, meta) { this.log('info', msg, meta); },
-  warn(msg, meta) { this.log('warn', msg, meta); },
-  error(msg, meta) { this.log('error', msg, meta); },
+    return base;
+  }
 
   /**
-   * Verificar si debe loguear según nivel configurado
+   * Log genérico
    */
-  shouldLog(level) {
-    const current = this.levels[LOG_LEVEL] ?? this.levels.info;
-    const incoming = this.levels[level] ?? this.levels.info;
-    return incoming >= current;
-  },
-
-  /**
-   * Log a consola con color según nivel
-   */
-  logToConsole(level, formatted, meta) {
-    const colors = {
-      debug: '\x1b[36m', // Cyan
-      info: '\x1b[32m',  // Green
-      warn: '\x1b[33m',  // Yellow
-      error: '\x1b[31m'  // Red
-    };
-    const reset = '\x1b[0m';
-    const msg = `${colors[level] || ''}${formatted}${reset}`;
-    const fn = level === 'debug' ? 'log' : level;
-    Object.keys(meta).length ? console[fn](msg, meta) : console[fn](msg);
-  },
-
-  /**
-   * Enviar notificación a webhook (Discord/Slack)
-   */
-  async sendToWebhook(level, message, meta) {
-    const emoji = { warn: '⚠️', error: '🚨' }[level] || '📢';
-    const color = { warn: 16776960, error: 16711680 }[level] || 3447003;
-
-    const payload = {
-      embeds: [{
-        title: `${emoji} EntityFactory ${level.toUpperCase()}`,
-        description: message,
-        color,
-        fields: Object.keys(meta).length > 0 ? [{
-          name: 'Details',
-          value: `\`\`\`json\n${JSON.stringify(meta, null, 2).slice(0, 1000)}\n\`\`\``
-        }] : [],
-        timestamp: new Date().toISOString(),
-        footer: { text: 'ÍndiceIA EntityFactory' }
-      }]
-    };
-
-    const res = await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) {
-      throw new Error(`Webhook responded with ${res.status}`);
-    }
-  },
-
-  /**
-   * Guardar log crítico en Blob Storage
-   */
-  async saveToBlob(level, message, meta) {
-    const entry = {
-      level,
-      message,
-      meta,
-      timestamp: new Date().toISOString(),
-      build_id: meta?.build_id || 'unknown'
-    };
-
-    const filename = `${VERCEL_BLOB_NAMESPACE}/logs/errors/${Date.now()}-${level}.json`;
-    const content = JSON.stringify(entry, null, 2);
-
-    await put(filename, content, {
-      access: 'public',
-      token: VERCEL_BLOB_TOKEN,
-      contentType: 'application/json'
-    });
-
-    console.log(`[Logger] Error log saved: ${filename}`);
-  },
-
-  /**
-   * Guardar log completo de un build (debug)
-   */
-  async saveBuildLog(build_id, logs) {
+  static log(level, message, context = {}) {
+    if (!LOG_LEVELS.includes(level)) level = 'info';
     try {
-      const filename = `${VERCEL_BLOB_NAMESPACE}/logs/builds/${build_id}.json`;
-      const content = JSON.stringify({
-        build_id,
-        logs,
-        generated_at: new Date().toISOString()
-      }, null, 2);
+      const formatted = this.#format(level, message, context);
 
-      await put(filename, content, {
-        access: 'public',
-        token: VERCEL_BLOB_TOKEN,
-        contentType: 'application/json'
-      });
+      if (context && Object.keys(context).length > 0) {
+        console[level] ? console[level](formatted, context)
+                       : console.log(formatted, context);
+      } else {
+        console[level] ? console[level](formatted)
+                       : console.log(formatted);
+      }
 
-      this.info(`Build log saved: ${filename}`);
-      return filename;
+      // 🔄 Integración opcional: enviar a servicio remoto (e.g. Firestore, Datadog, Logtail)
+      if (process.env.LOG_REMOTE === 'true') {
+        this.sendToRemote(level, message, context);
+      }
+
     } catch (err) {
-      this.error('Failed to save build log', { build_id, error: err.message });
-      return null;
+      console.error('⚠️ Logger internal failure:', err.message);
     }
   }
-};
 
-/**
- * EJEMPLO DE USO:
- * 
- * Logger.info('Build started', { build_id: 'builder-xxx' });
- * Logger.warn('Missing image', { item_id: 'P07' });
- * Logger.error('Upload failed', { build_id: 'builder-xxx', error: 'Network timeout' });
- * await Logger.saveBuildLog('builder-xxx', allLogs);
- */
+  /**
+   * Niveles estándar
+   */
+  static info(msg, ctx = {})  { this.log('info', msg, ctx); }
+  static warn(msg, ctx = {})  { this.log('warn', msg, ctx); }
+  static error(msg, ctx = {}) { this.log('error', msg, ctx); }
+  static debug(msg, ctx = {}) { 
+    if (!isProd || process.env.DEBUG === 'true') {
+      this.log('debug', msg, ctx); 
+    }
+  }
+
+  /**
+   * Envía logs a un servicio remoto (opcional)
+   * Ejemplo: Firestore, Logtail, Supabase, o tu propio endpoint /logs
+   */
+  static async sendToRemote(level, message, context = {}) {
+    try {
+      const payload = {
+        timestamp: new Date().toISOString(),
+        level,
+        message,
+        context
+      };
+      
+      // En producción podrías usar:
+      // await fetch(process.env.LOG_ENDPOINT, { method: 'POST', body: JSON.stringify(payload) });
+      
+      // Por ahora, solo simula envío:
+      if (!isProd) console.debug('🛰️ [Simulated Remote Log]', payload);
+    } catch (err) {
+      console.error('Failed to send remote log:', err.message);
+    }
+  }
+}
 
 export default Logger;
