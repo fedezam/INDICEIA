@@ -1,0 +1,152 @@
+{
+  "registry_version": "1.0.0",
+  "last_updated": "2025-11-12",
+  "total_templates": 2,
+  
+  "templates": [
+    {
+      "id": "C1_Napolitana",
+      "name": "Menú Simple - Napolitana Style",
+      "version": "1.0.0",
+      "status": "stable",
+      "path": "/api/templates/C1_Napolitana",
+      "component": "component.jsx",
+      "metadata": "metadata.json",
+      
+      "preview": {
+        "thumbnail": "https://placeholder.com/c1_napolitana.jpg",
+        "demo_url": "https://tudominio.com/demos/c1"
+      },
+      
+      "use_cases": [
+        "Restaurantes",
+        "Pizzerías",
+        "Cafeterías",
+        "Bares",
+        "Panaderías",
+        "Heladerías",
+        "Fast food"
+      ],
+      
+      "key_features": [
+        "1 imagen por producto",
+        "Categorías dinámicas",
+        "Carrito funcional",
+        "WhatsApp checkout",
+        "Múltiples tamaños (opcional)"
+      ],
+      
+      "recommended_for": {
+        "product_count": "5-100 productos",
+        "categories": "2-10 categorías",
+        "business_size": "pequeño a mediano"
+      }
+    },
+    
+    {
+      "id": "C2_CatalogoVisual",
+      "name": "Catálogo Visual - Multi Imagen",
+      "version": "1.0.0",
+      "status": "stable",
+      "path": "/api/templates/C2_CatalogoVisual",
+      "component": "component.jsx",
+      "metadata": "metadata.json",
+      
+      "preview": {
+        "thumbnail": "https://placeholder.com/c2_catalogo.jpg",
+        "demo_url": "https://tudominio.com/demos/c2"
+      },
+      
+      "use_cases": [
+        "Automotrices",
+        "Inmobiliarias",
+        "Mueblerías",
+        "Electrónica",
+        "Joyerías",
+        "Arte y decoración",
+        "Maquinaria"
+      ],
+      
+      "key_features": [
+        "Múltiples imágenes por producto",
+        "Galería con navegación",
+        "Modal de detalle",
+        "Sistema de favoritos",
+        "Compartir productos",
+        "Specs detalladas"
+      ],
+      
+      "recommended_for": {
+        "product_count": "10-500 productos",
+        "categories": "2-20 categorías",
+        "business_size": "mediano a grande"
+      }
+    }
+  ],
+  
+  "template_selection_logic": {
+    "description": "Lógica para que el AutoBuilder seleccione template automáticamente",
+    
+    "rules": [
+      {
+        "condition": "tipo_negocio IN ['pizzería', 'restaurante', 'cafetería', 'bar', 'panadería']",
+        "recommended_template": "C1_Napolitana",
+        "confidence": "high"
+      },
+      {
+        "condition": "tipo_negocio IN ['automotriz', 'inmobiliaria', 'mueblería']",
+        "recommended_template": "C2_CatalogoVisual",
+        "confidence": "high"
+      },
+      {
+        "condition": "items[].images.length > 1 (most products have multiple images)",
+        "recommended_template": "C2_CatalogoVisual",
+        "confidence": "medium"
+      },
+      {
+        "condition": "items[].precio_mediana EXISTS (multiple size variants)",
+        "recommended_template": "C1_Napolitana",
+        "confidence": "medium"
+      },
+      {
+        "condition": "DEFAULT fallback",
+        "recommended_template": "C1_Napolitana",
+        "confidence": "low"
+      }
+    ]
+  },
+  
+  "coming_soon": [
+    {
+      "id": "C3_Marketplace",
+      "name": "Marketplace Multi-vendedor",
+      "status": "planned",
+      "eta": "2025-Q1"
+    },
+    {
+      "id": "C4_Servicios",
+      "name": "Reservas y Servicios",
+      "status": "planned",
+      "eta": "2025-Q2"
+    },
+    {
+      "id": "C5_Minimal",
+      "name": "Lista Minimalista",
+      "status": "planned",
+      "eta": "2025-Q1"
+    },
+    {
+      "id": "C6_Premium3D",
+      "name": "Experiencia 3D Premium",
+      "status": "concept",
+      "eta": "2025-Q3"
+    }
+  ],
+  
+  "api_integration": {
+    "endpoint": "/api/templates/list",
+    "methods": ["GET"],
+    "response_format": "json",
+    "example": "GET /api/templates/list → returns this registry"
+  }
+}
