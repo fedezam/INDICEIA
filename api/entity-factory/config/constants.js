@@ -54,6 +54,12 @@ export const CACHE_TTL = {
 export const LOG_LEVEL = process.env.LOG_LEVEL || 'info'; // 'debug' | 'info' | 'warn' | 'error'
 export const WEBHOOK_URL = process.env.WEBHOOK_URL || null; // Webhook opcional (Discord, Slack, etc.)
 
+/** 🧩 Rutas internas de componentes base */
+export const PATHS = {
+  BLOQUE_A: '/api/entity-factory/base/blockA.json',
+  BLOQUE_C_REGISTRY: '/api/link-builder/templates/registry.json',
+};
+
 /**
  * 🧩 Ejemplo de archivo `.env`
  * 
