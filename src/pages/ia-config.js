@@ -12,7 +12,6 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 import Navigation from '../shared/navigation.js';
 import { showLoading, hideLoading, showToast } from '../shared/utils.js';
-import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 
 // ==================== GLOBAL STATE ====================
