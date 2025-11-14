@@ -6,13 +6,10 @@ import {
   updateDoc, 
   setDoc, 
   collection, 
-  query, 
-  where, 
   getDocs,
   addDoc,
   deleteDoc 
 } from 'firebase/firestore';
-import { updateComercioJSON } from './utils.js';
 
 /**
  * Obtiene el comercioId del usuario actual
@@ -97,24 +94,6 @@ export async function deleteProduct(productId) {
   const comercioId = await getComercioId();
   const productRef = doc(db, 'comercios', comercioId, 'productos', productId);
   await deleteDoc(productRef);
-}
-
-/**
- * Sincroniza datos del comercio a Gist (JSON público)
- */
-export async function syncToGist() {
-  try {
-    const user = auth.currentUser;
-    if (!user) return;
-    
-    const comercioId = await getComercioId();
-    await updateComercioJSON(comercioId, user.uid);
-    
-    console.log('✅ Sincronización a Gist exitosa');
-  } catch (error) {
-    console.error('❌ Error sincronizando a Gist:', error);
-    throw error;
-  }
 }
 
 /**
