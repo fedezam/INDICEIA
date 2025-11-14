@@ -1,9 +1,9 @@
+// src/pages/horarios.js
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import Navigation from '../shared/navigation.js';
 import { showLoading, hideLoading, showToast } from '../shared/utils.js';
-import { updateCommerceJSON } from '../shared/updateCommerceJSON.js'; // ✅ CORREGIDO
 import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 const DAYS = [
@@ -58,7 +58,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       comercioData = { id: currentComercioId, ...comercioDoc.data() };
     }
 
-    // Inicializar horarios originales
     originalHorarios = JSON.parse(JSON.stringify(comercioData.horarios || {}));
 
     renderScheduleForm();
@@ -68,7 +67,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     Navigation.init();
     createSaveButton();
 
-    // Validación global para navegación
     window.validateCurrentPageData = () => {
       const horarios = getScheduleData();
       const hasValidSchedule = Object.values(horarios).some(day => {
@@ -121,14 +119,14 @@ function updateSubscriptionBanner() {
   if (comercioData.plan === 'trial' && trialEnd) {
     const daysLeft = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
     if (daysLeft > 0) {
-      messageEl.innerHTML = `🎉 <strong>Trial activo</strong> - Te quedan <strong>${daysLeft} días</strong>`;
+      messageEl.innerHTML = `<strong>Trial activo</strong> - Te quedan <strong>${daysLeft} días</strong>`;
       banner.className = 'subscription-banner trial';
     } else {
-      messageEl.innerHTML = `⚠️ <strong>Tu trial expiró.</strong> Elige un plan para continuar`;
+      messageEl.innerHTML = `<strong>Tu trial expiró.</strong> Elige un plan para continuar`;
       banner.className = 'subscription-banner expired';
     }
   } else if (comercioData.plan && comercioData.plan !== 'trial') {
-    messageEl.innerHTML = `✅ <strong>Plan ${comercioData.plan}</strong> activo`;
+    messageEl.innerHTML = `<strong>Plan ${comercioData.plan}</strong> activo`;
     banner.className = 'subscription-banner active';
   } else {
     messageEl.textContent = 'Completa tu información para activar tu IA';
@@ -216,54 +214,33 @@ function setupEventListeners() {
   const grid = document.getElementById('scheduleGrid');
   
   grid.addEventListener('change', (e) => {
-    // Si es el checkbox de habilitación del día
     if (e.target.type === 'checkbox' && e.target.closest('.day-toggle')) {
       const dayEl = e.target.closest('.schedule-day');
       const dayHours = dayEl.querySelector('.day-hours');
       const isEnabled = e.target.checked;
-      
-      // Actualizar visibilidad de los inputs
-      if (isEnabled) {
-        dayHours.classList.remove('disabled');
-      } else {
-        dayHours.classList.add('disabled');
-      }
+      dayHours.classList.toggle('disabled', !isEnabled);
     }
     
-    // Si es el radio de modo (continuo/cortado)
     if (e.target.type === 'radio' && e.target.name.includes('_mode')) {
       const dayEl = e.target.closest('.schedule-day');
       const isContinuous = e.target.value === 'continuous';
-      
       const continuousBlock = dayEl.querySelector('.continuous-schedule');
       const splitBlock = dayEl.querySelector('.split-schedule');
-      
-      if (isContinuous) {
-        continuousBlock.classList.remove('hidden');
-        splitBlock.classList.add('hidden');
-      } else {
-        continuousBlock.classList.add('hidden');
-        splitBlock.classList.remove('hidden');
-      }
+      continuousBlock.classList.toggle('hidden', !isContinuous);
+      splitBlock.classList.toggle('hidden', isContinuous);
     }
     
-    // Si es el checkbox de mañana/tarde, habilitar/deshabilitar inputs
     if (e.target.type === 'checkbox' && (e.target.closest('.morning-hours') || e.target.closest('.afternoon-hours'))) {
       const timeRange = e.target.closest('.morning-hours, .afternoon-hours').querySelector('.time-range');
       const inputs = timeRange.querySelectorAll('input[type="time"]');
-      
-      inputs.forEach(input => {
-        input.disabled = !e.target.checked;
-      });
+      inputs.forEach(input => input.disabled = !e.target.checked);
     }
     
     markAsChanged();
   });
 
   grid.addEventListener('input', (e) => {
-    if (e.target.type === 'time') {
-      markAsChanged();
-    }
+    if (e.target.type === 'time') markAsChanged();
   });
 
   document.getElementById('logoutBtn')?.addEventListener('click', async () => {
@@ -312,52 +289,20 @@ function createSaveButton() {
 
   const style = document.createElement('style');
   style.textContent = `
-    .header .user-info {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
+    .header .user-info { display: flex; align-items: center; gap: 1rem; }
     .btn-save {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.625rem 1.25rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      background: #667eea;
-      color: white;
+      display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem;
+      border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; transition: all 0.3s ease; background: #667eea; color: white;
       white-space: nowrap;
     }
-    .btn-save:disabled {
-      background: #e2e8f0;
-      color: #94a3b8;
-      cursor: not-allowed;
-    }
-    .btn-save:not(:disabled):hover {
-      background: #5568d3;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-    .btn-save.saving {
-      background: #f59e0b;
-    }
-    .btn-save.saved {
-      background: #10b981;
-    }
-    .btn-save i {
-      font-size: 1rem;
-    }
-    .btn-save.saving i {
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
+    .btn-save:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+    .btn-save:not(:disabled):hover { background: #5568d3; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+    .btn-save.saving { background: #f59e0b; }
+    .btn-save.saved { background: #10b981; }
+    .btn-save i { font-size: 1rem; }
+    .btn-save.saving i { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   `;
   document.head.appendChild(style);
 }
@@ -418,7 +363,6 @@ function getScheduleData() {
 async function saveScheduleData() {
   const saveBtn = document.getElementById('saveChangesBtn');
   
-  // Validar
   const horarios = getScheduleData();
   const hasValidSchedule = Object.values(horarios).some(day => {
     if (day.closed) return false;
@@ -443,30 +387,22 @@ async function saveScheduleData() {
       saveBtn.disabled = true;
     }
 
-    // Guardar en Firestore
+    // GUARDAR SOLO EN FIRESTORE
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, { 
       horarios,
       fechaActualizacion: new Date()
     });
 
-    // Actualizar JSON (✅ NOMBRE Y PARÁMETROS CORREGIDOS)
-    try {
-      await updateCommerceJSON(currentComercioId, currentUser.uid);
-    } catch (jsonError) {
-      console.warn('JSON actualizado parcialmente:', jsonError.message);
-      showToast('Advertencia', 'Horarios guardados, pero JSON no actualizado', 'warning');
-    }
-
-    // Actualizar estado local
+    // ACTUALIZAR ESTADO LOCAL
     comercioData.horarios = horarios;
     originalHorarios = JSON.parse(JSON.stringify(horarios));
     hasUnsavedChanges = false;
 
-    // UI feedback
+    // UI FEEDBACK
     if (saveBtn) {
       saveBtn.className = 'btn-save saved';
-      saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado ✓</span>';
+      saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado</span>';
       setTimeout(() => {
         saveBtn.disabled = true;
         saveBtn.className = 'btn-save';
@@ -474,11 +410,10 @@ async function saveScheduleData() {
       }, 2000);
     }
 
-    // Marcar como completado
     Navigation.markPageAsCompleted('horarios');
     Navigation.updateProgressBar();
 
-    showToast('Éxito', 'Horarios guardados y JSON actualizado', 'success');
+    showToast('Éxito', 'Horarios guardados correctamente', 'success');
     setTimeout(() => redirectToNextStep(), 1000);
     return true;
 
