@@ -1,3 +1,4 @@
+```javascript
 // src/pages/ia-config.js
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
@@ -28,7 +29,16 @@ const safeSet = (id, value, defaultValue = '') => {
 };
 const safeGet = (id) => {
   const el = $(id);
-  return el ? el.value.trim() : '';
+  if (!el) return '';
+  
+  // Si es select, devolver value directamente
+  if (el.tagName === 'SELECT') {
+    return el.value || '';
+  }
+  
+  // Si es input/textarea, hacer trim
+  const value = el.value || '';
+  return value.trim();
 };
 
 // ==================== INIT ====================
@@ -64,12 +74,58 @@ async function initializePage() {
     setupEventListeners();
     createSaveButton();
     try { Navigation.init(); } catch (e) { console.warn('Navigation.init falló:', e); }
+    
+    // Validación para navegación
     window.validateCurrentPageData = async () => {
-      const requiredFields = ['aiName','aiPersonality','aiTone','aiLanguage','aiGreeting','sinPrecio','sinStock','localCerrado','proactividad','formatoRespuestas'];
-      for (const f of requiredFields) if (!safeGet(f)) { showToast('warning','Campos incompletos','Completá todos los campos'); return false; }
-      if (hasUnsavedChanges) { showToast('warning','Cambios sin guardar','Guardá antes de continuar'); return false; }
+      const requiredFields = [
+        { id: 'aiName', label: 'Nombre del asistente' },
+        { id: 'aiPersonality', label: 'Personalidad' },
+        { id: 'aiTone', label: 'Tono de voz' },
+        { id: 'aiLanguage', label: 'Idioma principal' },
+        { id: 'aiGreeting', label: 'Saludo inicial' },
+        { id: 'sinPrecio', label: 'Comportamiento sin precio' },
+        { id: 'sinStock', label: 'Comportamiento sin stock' },
+        { id: 'localCerrado', label: 'Comportamiento local cerrado' },
+        { id: 'proactividad', label: 'Nivel de proactividad' },
+        { id: 'formatoRespuestas', label: 'Formato de respuestas' }
+      ];
+      
+      const emptyFields = [];
+      
+      for (const field of requiredFields) {
+        const value = safeGet(field.id);
+        const element = $(field.id);
+        
+        if (!value || value.trim() === '') {
+          emptyFields.push(field.label);
+          // Agregar clase de error
+          if (element) {
+            element.style.borderColor = '#ef4444';
+            element.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+          }
+        } else {
+          // Quitar clase de error si estaba
+          if (element) {
+            element.style.borderColor = '';
+            element.style.boxShadow = '';
+          }
+        }
+      }
+      
+      if (emptyFields.length > 0) {
+        showToast('warning', 'Campos incompletos', 
+          `Faltan: ${emptyFields.slice(0, 3).join(', ')}${emptyFields.length > 3 ? '...' : ''}`);
+        return false;
+      }
+      
+      if (hasUnsavedChanges) { 
+        showToast('warning', 'Cambios sin guardar', 'Guardá antes de continuar'); 
+        return false; 
+      }
+      
       return true;
     };
+    
     hideLoading();
   } catch (error) {
     hideLoading();
@@ -146,20 +202,21 @@ function updateSubscriptionBanner() {
 function loadAIConfig() {
   const aiConfig = comercioData.aiConfig || {};
   originalAIConfig = JSON.parse(JSON.stringify(aiConfig));
-  safeSet('aiName', aiConfig.aiName);
-  safeSet('aiPersonality', aiConfig.aiPersonality);
-  safeSet('aiTone', aiConfig.aiTone);
-  safeSet('aiLanguage', aiConfig.aiLanguage, 'es-AR');
-  safeSet('aiGreeting', aiConfig.aiGreeting);
-  safeSet('sinPrecio', aiConfig.sinPrecio);
-  safeSet('sinStock', aiConfig.sinStock);
-  safeSet('localCerrado', aiConfig.localCerrado);
-  safeSet('proactividad', aiConfig.proactividad);
-  safeSet('formatoRespuestas', aiConfig.formatoRespuestas);
-  safeSet('mensajeWhatsapp', aiConfig.mensajeWhatsapp);
-  safeSet('mensajeInstagram', aiConfig.mensajeInstagram);
-  safeSet('mensajeWeb', aiConfig.mensajeWeb);
-  safeSet('mensajeDefault', aiConfig.mensajeDefault);
+  
+  safeSet('aiName', (aiConfig.aiName || '').trim());
+  safeSet('aiPersonality', (aiConfig.aiPersonality || '').trim());
+  safeSet('aiTone', (aiConfig.aiTone || '').trim());
+  safeSet('aiLanguage', aiConfig.aiLanguage || 'es-AR');
+  safeSet('aiGreeting', (aiConfig.aiGreeting || '').trim());
+  safeSet('sinPrecio', (aiConfig.sinPrecio || '').trim());
+  safeSet('sinStock', (aiConfig.sinStock || '').trim());
+  safeSet('localCerrado', (aiConfig.localCerrado || '').trim());
+  safeSet('proactividad', (aiConfig.proactividad || '').trim());
+  safeSet('formatoRespuestas', (aiConfig.formatoRespuestas || '').trim());
+  safeSet('mensajeWhatsapp', (aiConfig.mensajeWhatsapp || '').trim());
+  safeSet('mensajeInstagram', (aiConfig.mensajeInstagram || '').trim());
+  safeSet('mensajeWeb', (aiConfig.mensajeWeb || '').trim());
+  safeSet('mensajeDefault', (aiConfig.mensajeDefault || '').trim());
 
   const destacadosGuardados = Array.isArray(aiConfig.productosDestacados) ? aiConfig.productosDestacados : [];
   productosDestacados = destacadosGuardados.map((dest) => {
@@ -303,16 +360,16 @@ function buscarProductos(query) {
 // ==================== AGREGAR/QUITAR DESTACADOS ====================
 window.agregarDestacado = (productoId) => {
   if (productosDestacados.length >= 10) {
-    showToast('Límite alcanzado', 'Solo puedes tener 10 productos destacados', 'warning');
+    showToast('warning', 'Límite alcanzado', 'Solo puedes tener 10 productos destacados');
     return;
   }
   const producto = productos.find(p => p.id === productoId);
   if (!producto) {
-    showToast('Error', 'Producto no encontrado', 'error');
+    showToast('error', 'Error', 'Producto no encontrado');
     return;
   }
   if (productosDestacados.some(p => p.id === productoId)) {
-    showToast('Ya agregado', 'Este producto ya está en destacados', 'info');
+    showToast('info', 'Ya agregado', 'Este producto ya está en destacados');
     return;
   }
   productosDestacados.push(producto);
@@ -320,7 +377,7 @@ window.agregarDestacado = (productoId) => {
   markAsChanged();
   const searchInput = $('searchProductos');
   if (searchInput && searchInput.value) buscarProductos(searchInput.value);
-  showToast('Producto agregado', `${producto.nombre} agregado a destacados`, 'success');
+  showToast('success', 'Producto agregado', `${producto.nombre} agregado a destacados`);
 };
 
 window.quitarDestacado = (productoId) => {
@@ -332,7 +389,7 @@ window.quitarDestacado = (productoId) => {
   markAsChanged();
   const searchInput = $('searchProductos');
   if (searchInput && searchInput.value) buscarProductos(searchInput.value);
-  showToast('Producto quitado', `${producto.nombre} quitado de destacados`, 'info');
+  showToast('info', 'Producto quitado', `${producto.nombre} quitado de destacados`);
 };
 
 // ==================== EVENT LISTENERS ====================
@@ -383,43 +440,90 @@ function markAsChanged() {
 
 async function saveAIConfig() {
   const saveBtn = $('saveChangesBtn');
-  try{
-    const requiredFields=['aiName','aiPersonality','aiTone','aiLanguage','aiGreeting'];
-    for(const f of requiredFields) if(!safeGet(f)){ showToast('warning','Campos incompletos','Completá identidad del asistente'); return; }
-    saveBtn.disabled=true; saveBtn.className='btn-saving'; saveBtn.innerHTML='<span>Guardando...</span>';
+  try {
+    // Validar 10 campos obligatorios
+    const requiredFields = [
+      'aiName','aiPersonality','aiTone','aiLanguage','aiGreeting',
+      'sinPrecio','sinStock','localCerrado','proactividad','formatoRespuestas'
+    ];
     
-    const comercioRef = doc(db,'comercios',currentComercioId);
+    for (const f of requiredFields) {
+      if (!safeGet(f)) { 
+        showToast('warning','Campos incompletos',`Completá todos los campos obligatorios`); 
+        return; 
+      }
+    }
+
+    // Validar que los contactos elegidos existan
+    const sinPrecioValue = safeGet('sinPrecio');
+    const contactosRequeridos = [];
+
+    if (sinPrecioValue === 'whatsapp' && !comercioData.whatsapp) {
+      contactosRequeridos.push('WhatsApp');
+    }
+    if (sinPrecioValue === 'instagram' && !comercioData.instagram) {
+      contactosRequeridos.push('Instagram');
+    }
+    if (sinPrecioValue === 'email' && !comercioData.email) {
+      contactosRequeridos.push('Email');
+    }
+    if (sinPrecioValue === 'web' && !comercioData.sitioWeb) {
+      contactosRequeridos.push('Sitio Web');
+    }
+    if (sinPrecioValue === 'telefono' && !comercioData.telefono) {
+      contactosRequeridos.push('Teléfono');
+    }
+
+    if (contactosRequeridos.length > 0) {
+      showToast('warning', 'Contactos faltantes', 
+        `Configurá en Mi Comercio: ${contactosRequeridos.join(', ')}`);
+      return;
+    }
+    
+    saveBtn.disabled = true;
+    saveBtn.className = 'btn-saving';
+    saveBtn.innerHTML = '<span>Guardando...</span>';
+    
+    const comercioRef = doc(db, 'comercios', currentComercioId);
     const updatedConfig = {
-      aiName:safeGet('aiName'),
-      aiPersonality:safeGet('aiPersonality'),
-      aiTone:safeGet('aiTone'),
-      aiLanguage:safeGet('aiLanguage'),
-      aiGreeting:safeGet('aiGreeting'),
-      sinPrecio:safeGet('sinPrecio'),
-      sinStock:safeGet('sinStock'),
-      localCerrado:safeGet('localCerrado'),
-      proactividad:safeGet('proactividad'),
-      formatoRespuestas:safeGet('formatoRespuestas'),
-      mensajeWhatsapp:safeGet('mensajeWhatsapp'),
-      mensajeInstagram:safeGet('mensajeInstagram'),
-      mensajeWeb:safeGet('mensajeWeb'),
-      mensajeDefault:safeGet('mensajeDefault'),
-      productosDestacados:productosDestacados.map(p=>({ ...p, precio_final:Number(p.precio_final||0), precio:Number(p.precio_final||0) }))
+      aiName: safeGet('aiName'),
+      aiPersonality: safeGet('aiPersonality'),
+      aiTone: safeGet('aiTone'),
+      aiLanguage: safeGet('aiLanguage'),
+      aiGreeting: safeGet('aiGreeting'),
+      sinPrecio: safeGet('sinPrecio'),
+      sinStock: safeGet('sinStock'),
+      localCerrado: safeGet('localCerrado'),
+      proactividad: safeGet('proactividad'),
+      formatoRespuestas: safeGet('formatoRespuestas'),
+      mensajeWhatsapp: safeGet('mensajeWhatsapp'),
+      mensajeInstagram: safeGet('mensajeInstagram'),
+      mensajeWeb: safeGet('mensajeWeb'),
+      mensajeDefault: safeGet('mensajeDefault'),
+      productosDestacados: productosDestacados.map(p => ({
+        ...p,
+        precio_final: Number(p.precio_final || 0),
+        precio: Number(p.precio_final || 0)
+      }))
     };
    
-    await updateDoc(comercioRef,{
-      aiConfig:updatedConfig,
+    await updateDoc(comercioRef, {
+      aiConfig: updatedConfig,
       fechaActualizacion: new Date()
     });
    
-    hasUnsavedChanges=false;
-    saveBtn.disabled=true; saveBtn.className='btn-saved'; saveBtn.innerHTML='<span>Guardado</span>';
-    showToast('success','Cambios guardados','Configuración actualizada');
-  }catch(e){
-    console.error('Error guardando:',e);
-    showToast('error','Error','No se pudo guardar');
+    hasUnsavedChanges = false;
+    saveBtn.disabled = true;
+    saveBtn.className = 'btn-saved';
+    saveBtn.innerHTML = '<span>✓ Guardado</span>';
+    showToast('success', 'Cambios guardados', 'Configuración actualizada');
+    
+  } catch (e) {
+    console.error('Error guardando:', e);
+    showToast('error', 'Error', 'No se pudo guardar: ' + (e.message || e));
+  } finally {
+    if (saveBtn) saveBtn.disabled = !hasUnsavedChanges;
   }
-  finally{ if(saveBtn) saveBtn.disabled=!hasUnsavedChanges; }
 }
 
 // ==================== LOGOUT ====================
@@ -428,3 +532,4 @@ async function handleLogout() {
   await signOut(auth);
   window.location.href='/index.html';
 }
+```
