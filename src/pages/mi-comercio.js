@@ -6,7 +6,6 @@ import Navigation from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
 import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 // Variables globales
@@ -18,15 +17,15 @@ let selectedCategories = [];
 let hasUnsavedChanges = false;
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🚀 Iniciando mi-comercio.js');
+  console.log('Iniciando mi-comercio.js');
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      console.log('✅ Usuario autenticado:', user.email);
+      console.log('Usuario autenticado:', user.email);
       currentUser = user;
       await initializePage();
     } else {
-      console.log('❌ Usuario no autenticado, redirigiendo...');
+      console.log('Usuario no autenticado, redirigiendo...');
       window.location.href = '/index.html';
     }
   });
@@ -36,15 +35,13 @@ async function initializePage() {
   try {
     showLoading('Cargando datos del comercio...');
 
-    // Obtener comercioId desde el documento del usuario
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userDoc = await getDoc(userRef);
     
     if (userDoc.exists() && userDoc.data().comercioId) {
       currentComercioId = userDoc.data().comercioId;
-      console.log('✅ Comercio existente encontrado:', currentComercioId);
+      console.log('Comercio existente encontrado:', currentComercioId);
     } else {
-      // Crear nuevo comercio
       const newComercioRef = await addDoc(collection(db, 'comercios'), {
         dueñoId: currentUser.uid,
         fechaCreacion: new Date(),
@@ -59,7 +56,7 @@ async function initializePage() {
         comercioId: currentComercioId
       });
       
-      console.log('✅ Nuevo comercio creado:', currentComercioId);
+      console.log('Nuevo comercio creado:', currentComercioId);
     }
 
     await loadComercioData();
@@ -74,11 +71,11 @@ async function initializePage() {
     createSaveButton();
 
     hideLoading();
-    console.log('✅ Página inicializada correctamente');
+    console.log('Página inicializada correctamente');
 
   } catch (error) {
     hideLoading();
-    console.error('❌ Error inicializando página:', error);
+    console.error('Error inicializando página:', error);
     showToast('Error', 'Hubo un problema al cargar la página: ' + error.message, 'error');
   }
 }
@@ -92,7 +89,7 @@ async function loadComercioData() {
       comercioData = { id: currentComercioId, ...comercioDoc.data() };
       originalData = JSON.parse(JSON.stringify(comercioData));
       selectedCategories = comercioData.categories || [];
-      console.log('✅ Datos de comercio cargados:', comercioData);
+      console.log('Datos de comercio cargados:', comercioData);
     } else {
       comercioData = { 
         id: currentComercioId, 
@@ -137,33 +134,33 @@ function updateSubscriptionBanner() {
     case 'trial':
       const diasRestantes = getDiasRestantesTrial(comercioData);
       banner.classList.add('trial');
-      message.innerHTML = `🎉 <strong>Trial activo</strong> - Te quedan <strong>${diasRestantes} días</strong> para probar todas las funciones`;
+      message.innerHTML = `<strong>Trial activo</strong> - Te quedan <strong>${diasRestantes} días</strong> para probar todas las funciones`;
       break;
       
     case 'expirado':
       banner.classList.add('expired');
-      message.innerHTML = `⚠️ <strong>Tu trial expiró.</strong> Elegí un plan para seguir usando tu IA comercial`;
+      message.innerHTML = `<strong>Tu trial expiró.</strong> Elegí un plan para seguir usando tu IA comercial`;
       break;
       
     case 'suspendido':
       banner.classList.add('expired');
-      message.innerHTML = `❌ <strong>Servicio suspendido.</strong> Regularizá el pago para continuar`;
+      message.innerHTML = `<strong>Servicio suspendido.</strong> Regularizá el pago para continuar`;
       break;
       
     case 'activo':
       banner.classList.add('active');
-      message.innerHTML = `✅ <strong>Plan ${planActual?.nombre} activo</strong> - Todo funcionando correctamente`;
+      message.innerHTML = `<strong>Plan ${planActual?.nombre} activo</strong> - Todo funcionando correctamente`;
       break;
       
     case 'limite_excedido':
       banner.classList.add('expired');
       const limiteActual = planActual?.productos || 0;
-      message.innerHTML = `⚠️ <strong>Has superado el límite de ${limiteActual} productos.</strong> Upgrade para continuar`;
+      message.innerHTML = `<strong>Has superado el límite de ${limiteActual} productos.</strong> Upgrade para continuar`;
       break;
       
     default:
       banner.classList.add('trial');
-      message.innerHTML = `🎉 <strong>Plan ${planActual?.nombre || 'Trial'}</strong> - Completa tu información para activar tu IA`;
+      message.innerHTML = `<strong>Plan ${planActual?.nombre || 'Trial'}</strong> - Completa tu información para activar tu IA`;
   }
 }
 
@@ -171,14 +168,12 @@ function fillForm() {
   const form = document.getElementById('miComercioForm');
   if (!form) return;
 
-  // Llenar campos normales
   form.querySelectorAll('input, textarea').forEach(field => {
     if (field.name && comercioData[field.name]) {
       field.value = comercioData[field.name];
     }
   });
 
-  // Hardcodear Argentina
   const paisEl = document.getElementById('pais');
   if (paisEl) {
     paisEl.value = 'Argentina';
@@ -186,7 +181,7 @@ function fillForm() {
   }
 
   loadProvinciasForCountry('Argentina');
-  console.log('✅ Formulario llenado con datos existentes');
+  console.log('Formulario llenado con datos existentes');
 }
 
 function loadProvinciasForCountry(country) {
@@ -281,23 +276,23 @@ function renderCategories() {
           `).join("")}
         </select>
         <button type="button" class="btn btn-success" id="addSelectedCategory">
-          <i class="fas fa-plus"></i> Agregar
+          Agregar
         </button>
       </div>
       <div class="custom-category">
         <input type="text" id="customCategory" placeholder="¿No encuentras tu rubro? Escríbelo aquí...">
         <button type="button" class="btn btn-secondary" id="addCustomCategory">
-          <i class="fas fa-plus"></i> Agregar Personalizada
+          Agregar Personalizada
         </button>
       </div>
     </div>
     <div class="selected-categories">
-      <h4><i class="fas fa-check-circle"></i> Categorías de tu Negocio</h4>
+      <h4>Categorías de tu Negocio</h4>
       <div class="selected-categories-grid" id="selectedCategoriesGrid">
         ${selectedCategories.map((cat, idx) => `
           <div class="selected-category-tag" data-index="${idx}">
             <span>${cat}</span>
-            <button class="remove-btn"><i class="fas fa-times"></i></button>
+            <button class="remove-btn">x</button>
           </div>
         `).join("")}
       </div>
@@ -483,13 +478,11 @@ function setupNavigation() {
   Navigation.init();
   
   window.validateCurrentPageData = async () => {
-    // Validar cambios sin guardar
     if (hasUnsavedChanges) {
       showToast('Cambios sin guardar', 'Debes guardar los cambios antes de continuar', 'warning');
       return false;
     }
 
-    // Validar campos requeridos
     const validation = validateRequiredFields();
     if (!validation.isValid) {
       showToast('Campos requeridos', validation.message, 'warning');
@@ -504,7 +497,6 @@ function validateRequiredFields() {
   const form = document.getElementById('miComercioForm');
   const errors = [];
 
-  // Campos de texto requeridos
   const requiredTextFields = [
     { id: 'nombreComercio', label: 'Nombre del comercio' },
     { id: 'provincia', label: 'Provincia' },
@@ -525,7 +517,6 @@ function validateRequiredFields() {
     }
   });
 
-  // Al menos una red social o website
   const socialFields = ['website', 'instagram', 'facebook', 'tiktok'];
   const hasSocial = socialFields.some(id => {
     const el = document.getElementById(id);
@@ -535,18 +526,15 @@ function validateRequiredFields() {
     errors.push('Al menos una red social o sitio web');
   }
 
-  // Al menos una categoría
   if (!selectedCategories || selectedCategories.length === 0) {
     errors.push('Al menos una categoría');
   }
 
-  // Al menos un método de pago
   const paymentMethods = document.querySelectorAll('input[name="paymentMethods"]:checked');
   if (paymentMethods.length === 0) {
     errors.push('Al menos un método de pago');
   }
 
-  // Plan seleccionado (no puede quedar en trial sin elegir)
   const selectedPlan = document.querySelector('.plan-card.selected');
   if (!selectedPlan) {
     errors.push('Debes elegir un plan');
@@ -569,14 +557,12 @@ async function saveFormData() {
   const saveBtn = document.getElementById('saveChangesBtn');
 
   try {
-    // Validar campos requeridos
     const validation = validateRequiredFields();
     if (!validation.isValid) {
       showToast('Campos requeridos', validation.message, 'warning');
       return false;
     }
 
-    // Actualizar botón a estado "guardando"
     if (saveBtn) {
       saveBtn.className = 'btn-save saving';
       saveBtn.innerHTML = '<i class="fas fa-spinner"></i> <span>Guardando...</span>';
@@ -591,43 +577,22 @@ async function saveFormData() {
     }
 
     updates.pais = 'Argentina';
-
-    const paymentMethods = Array.from(document.querySelectorAll('input[name="paymentMethods"]:checked'))
+    updates.paymentMethods = Array.from(document.querySelectorAll('input[name="paymentMethods"]:checked'))
       .map(cb => cb.value);
-    updates.paymentMethods = paymentMethods;
     updates.categories = selectedCategories;
     updates.plan = comercioData.plan || 'trial';
 
-    // PASO 1: Guardar en Firestore
-    console.log('💾 Guardando en Firestore...', currentComercioId);
+    // GUARDAR SOLO EN FIRESTORE
+    console.log('Guardando en Firestore...', currentComercioId);
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
       ...updates,
       fechaActualizacion: new Date()
     });
 
-    console.log('✅ Guardado en Firestore exitoso');
+    console.log('Guardado en Firestore exitoso');
 
-    // PASO 2: Llamar a la función compartida para actualizar JSON
-    try {
-      const result = await updateCommerceJSON(currentComercioId, currentUser.uid);
-      
-      // Guardar URL del JSON en Firestore
-      if (result.jsonUrl) {
-        await updateDoc(comercioRef, {
-          jsonUrl: result.jsonUrl,
-          gistId: result.gistId,
-          lastJsonUpdate: new Date()
-        });
-        console.log('✅ URL del JSON guardada en Firestore');
-      }
-
-    } catch (apiError) {
-      console.error('❌ Error actualizando JSON:', apiError);
-      showToast('Advertencia', 'Datos guardados pero JSON no actualizado', 'warning');
-    }
-
-    // PASO 3: Actualizar estado local
+    // ACTUALIZAR ESTADO LOCAL
     comercioData = { ...comercioData, ...updates };
     originalData = JSON.parse(JSON.stringify(comercioData));
     updateHeader();
@@ -635,10 +600,9 @@ async function saveFormData() {
 
     hasUnsavedChanges = false;
 
-    // Actualizar botón a estado "guardado"
     if (saveBtn) {
       saveBtn.className = 'btn-save saved';
-      saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado ✓</span>';
+      saveBtn.innerHTML = '<i class="fas fa-check-circle"></i> <span>Guardado</span>';
       
       setTimeout(() => {
         saveBtn.disabled = true;
@@ -647,17 +611,16 @@ async function saveFormData() {
       }, 2000);
     }
 
-    // Marcar página como completada
     Navigation.markPageAsCompleted('mi-comercio');
     Navigation.updateProgressBar();
 
-    showToast('Éxito', '✅ Cambios guardados y JSON actualizado', 'success');
-    console.log('💾 Guardado completo exitoso');
+    showToast('Éxito', 'Cambios guardados correctamente', 'success');
+    console.log('Guardado completo exitoso');
     setTimeout(() => redirectToNextStep(), 1000);
     return true;
 
   } catch (error) {
-    console.error('❌ Error al guardar:', error);
+    console.error('Error al guardar:', error);
     
     if (saveBtn) {
       saveBtn.className = 'btn-save';
