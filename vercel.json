@@ -1,18 +1,26 @@
 {
   "functions": {
-    "api/export-json.js": {
+    "api/entity-factory.js": {
+      "memory": 1024,
+      "maxDuration": 60
+    },
+    "api/link-builder.js": {
       "memory": 1024,
       "maxDuration": 30
     },
-    "api/comercio/[comercioId].js": {
+    "api/comercio.js": {
       "memory": 1024,
       "maxDuration": 10
+    },
+    "api/export-json.js": {
+      "memory": 1024,
+      "maxDuration": 30
     }
   },
   "rewrites": [
     {
       "source": "/api/comercio/:id",
-      "destination": "/api/comercio/[comercioId].js"
+      "destination": "/api/comercio?comercioId=:id"
     }
   ]
 }
