@@ -2,7 +2,7 @@
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
-import { showLoading, hideLoading, showToast } from '../shared/utils.js';
+import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 
 let currentUser = null;
