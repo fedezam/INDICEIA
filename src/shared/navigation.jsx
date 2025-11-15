@@ -104,16 +104,20 @@ class Navigation {
     if (!container) return;
 
     const currentIndex = this.getCurrentPageIndex();
+    const currentPage = this.pages[currentIndex];
     const hasPrev = currentIndex > 0;
-    const hasNext = currentIndex < this.pages.length - 1;
+    const isLastPage = currentIndex === this.pages.length - 1;
+    
+    // ✅ Verificar si la página actual ya fue completada
+    const isCurrentPageCompleted = this.isPageCompleted(currentPage.id);
 
     container.innerHTML = `
       <div class="nav-buttons">
         <button class="btn btn-secondary" id="prevBtn" ${!hasPrev ? 'disabled' : ''}>
           <i class="fas fa-arrow-left"></i> Atrás
         </button>
-        <button class="btn btn-primary" id="nextBtn" ${!hasNext ? 'disabled' : ''}>
-          ${hasNext ? 'Siguiente' : 'Finalizado'} <i class="fas fa-arrow-right"></i>
+        <button class="btn btn-primary" id="nextBtn" ${!isCurrentPageCompleted ? 'disabled' : ''}>
+          ${isLastPage ? 'Finalizado <i class="fas fa-check"></i>' : 'Siguiente <i class="fas fa-arrow-right"></i>'}
         </button>
       </div>
       <div class="nav-info">
@@ -200,19 +204,17 @@ class Navigation {
     const currentIndex = this.getCurrentPageIndex();
     const currentPage = this.pages[currentIndex];
 
-    const isValid = await this.validateCurrentPage();
-    if (!isValid) {
-      showToast('warning', 'Campos incompletos', 'Por favor completa todos los campos requeridos antes de continuar');
+    // Si es la última página, redirigir al dashboard
+    if (currentIndex === this.pages.length - 1) {
+      showToast('success', '¡Configuración completa!', 'Redirigiendo al dashboard...');
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 1500);
       return;
     }
 
-    this.markPageAsCompleted(currentPage.id);
-
-    if (currentIndex < this.pages.length - 1) {
-      this.goToPage(this.pages[currentIndex + 1].id);
-    } else {
-      showToast('success', '¡Configuración completa!', 'Tu IA comercial está lista para usar');
-    }
+    // Para páginas intermedias, ir a la siguiente
+    this.goToPage(this.pages[currentIndex + 1].id);
   }
 
   static async validateCurrentPage() {
@@ -242,6 +244,10 @@ class Navigation {
         [`${pageId}_completed`]: new Date().toISOString()
       });
     }
+    
+    // ✅ RE-RENDERIZAR EL BOTÓN PARA HABILITARLO
+    this.renderNavigationButtons();
+    this.updateProgressBar();
   }
 
   static isPageCompleted(pageId) {
