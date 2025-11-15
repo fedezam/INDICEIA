@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import Navigation from '../shared/navigation.jsx';
 import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
-import { redirectToNextStep } from '../shared/redirect-dashboard.jsx';
+import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 const DAYS = [
   { key: "lunes", label: "Lunes" },
