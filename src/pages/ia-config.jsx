@@ -458,24 +458,26 @@ async function saveAIConfig() {
     setButtonState(btn, 'saved');
     showToast('success', 'Guardado', 'Configuración IA guardada correctamente');
 
-    // === MARCAR COMO COMPLETADA Y ACTUALIZAR UI ===
-    const currentPage = Navigation.getCurrentPage();
-    Navigation.markPageAsCompleted(currentPage.id);
+    setTimeout(() => {
+      btn.disabled = true;
+      btn.className = 'btn-save';
+      btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+    }, 2000);
+
+    // === MARCAR COMO COMPLETADA ===
+    Navigation.markPageAsCompleted('ia-config');
     Navigation.updateProgressBar();
-    Navigation.renderNavigationButtons(); // 👈 ESTO ACTIVA EL BOTÓN "FINALIZADO"
 
     // === REDIRECCIÓN AUTOMÁTICA ===
-    setTimeout(() => {
-      // Si es la última página → dashboard
-      if (Navigation.getCurrentPageIndex() === Navigation.pages.length - 1) {
-        showToast('success', '¡Configuración completa!', 'Tu IA está lista');
-        setTimeout(() => {
-          window.location.href = 'dashboard.html';
-        }, 800);
-      } else {
+    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
+      setTimeout(() => {
+        window.location.href = "dashboard.html";
+      }, 1000);
+    } else {
+      setTimeout(() => {
         Navigation.goToNextPage();
-      }
-    }, 1200);
+      }, 1000);
+    }
 
   } catch (error) {
     console.error('Error guardando IA:', error);
