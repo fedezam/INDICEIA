@@ -458,13 +458,14 @@ async function saveAIConfig() {
     setButtonState(btn, 'saved');
     showToast('success', 'Guardado', 'Configuración IA guardada correctamente');
 
-    // === MARCAR COMO COMPLETADA ===
-    Navigation.markPageAsCompleted('ia-config');
-    Navigation.updateProgressBar(); // Botón "Finalizado" se activa
+    // === MARCAR COMO COMPLETADA Y ACTUALIZAR UI ===
+    const currentPage = Navigation.getCurrentPage();
+    Navigation.markPageAsCompleted(currentPage.id);
+    Navigation.updateProgressBar();
+    Navigation.renderNavigationButtons(); // 👈 ESTO ACTIVA EL BOTÓN "FINALIZADO"
 
     // === REDIRECCIÓN AUTOMÁTICA ===
     setTimeout(() => {
-      // Si es la última página → dashboard
       if (Navigation.getCurrentPageIndex() === Navigation.pages.length - 1) {
         showToast('success', '¡Configuración completa!', 'Tu IA está lista');
         setTimeout(() => {
