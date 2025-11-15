@@ -389,7 +389,7 @@ function markAsChanged() {
   if (btn) setButtonState(btn, 'enabled');
 }
 
-// ==================== GUARDAR (SOLO FIRESTORE + REDIRECCIÓN) ====================
+// ==================== GUARDAR (FIRESTORE + REDIRECCIÓN) ====================
 async function saveAIConfig() {
   const btn = $('saveChangesBtn');
   if (!btn) return;
@@ -466,6 +466,7 @@ async function saveAIConfig() {
 
     // === REDIRECCIÓN AUTOMÁTICA ===
     setTimeout(() => {
+      // Si es la última página → dashboard
       if (Navigation.getCurrentPageIndex() === Navigation.pages.length - 1) {
         showToast('success', '¡Configuración completa!', 'Tu IA está lista');
         setTimeout(() => {
