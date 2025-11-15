@@ -1,6 +1,5 @@
 // src/shared/navigation.jsx - Control de navegación y progress bar
 import { LocalData } from './localStorage.js';
-import { LocalData } from './localStorage.js';
 import { showToast } from './utils.jsx';
 
 class Navigation {
