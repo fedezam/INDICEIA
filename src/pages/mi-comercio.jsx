@@ -2,10 +2,10 @@
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
-import Navigation from '../shared/navigation.jsxx';
+import Navigation from '../shared/navigation.jsx';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
-import { showToast, showLoading, hideLoading } from '../shared/utils.jsxx';
+import { showToast, showLoading, hideLoading } from '../shared/utils.jsx';
 import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 // Variables globales
