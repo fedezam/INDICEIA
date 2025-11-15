@@ -515,3 +515,18 @@ window.validateCurrentPageData = async function () {
 
   return true; // ✔ Todo completo → habilita botón Finalizado/Siguiente
 };
+
+// ==================== VALIDACIÓN PARA NAVEGACIÓN ====================
+window.validateCurrentPageData = async function () {
+  const required = [
+    'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
+    'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
+  ];
+
+  for (const id of required) {
+    if (!safeGet(id)) return false;
+  }
+
+  return true;
+};
+
