@@ -6,7 +6,6 @@ import Navigation from '../shared/navigation.jsx';
 import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
 import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
-import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 // ==================== ESTADO GLOBAL ====================
 let currentUser = null;
@@ -23,8 +22,7 @@ const $ = (id) => document.getElementById(id);
 
 function safeSet(id, value, defaultValue = '') {
   const el = $(id);
-  if (!el) return;
-  el.value = value ?? defaultValue;
+  if (el) el.value = value ?? defaultValue;
 }
 
 function safeGet(id) {
@@ -35,10 +33,10 @@ function safeGet(id) {
 function setButtonState(btn, state) {
   if (!btn) return;
   const states = {
-    saving: { disabled: true, class: 'btn-saving', html: '<span>Guardando...</span>' },
-    saved: { disabled: true, class: 'btn-saved', html: '<span>Guardado</span>' },
-    enabled: { disabled: false, class: 'btn-save', html: '<span>Guardar</span>' },
-    idle: { disabled: true, class: 'btn-save', html: '<span>Guardar</span>' }
+    saving: { disabled: true, class: 'btn-save saving', html: '<i class="fas fa-spinner"></i> <span>Guardando...</span>' },
+    saved: { disabled: true, class: 'btn-save saved', html: '<i class="fas fa-check-circle"></i> <span>Guardado</span>' },
+    enabled: { disabled: false, class: 'btn-save', html: '<i class="fas fa-save"></i> <span>Guardar Cambios</span>' },
+    idle: { disabled: true, class: 'btn-save', html: '<i class="fas fa-save"></i> <span>Guardar Cambios</span>' }
   };
   const s = states[state] || states.idle;
   btn.disabled = s.disabled;
@@ -78,22 +76,24 @@ async function initializePage() {
     // 3. Cargar productos
     await loadProducts();
 
-    // 4. UI
+    // 4. UI: header, banner, config, contactos
     updateHeader();
     updateSubscriptionBanner();
     loadAIConfig();
     renderContactosValidacion();
+
+    // 5. Eventos
     setupEventListeners();
-    createSaveButton();
 
-    // 5. Navigation
+    // 6. Navigation
     Navigation.init();
-
-    // 6. Validación para siguiente paso
     window.validateCurrentPageData = () => validateBeforeNext();
 
+    // 7. CREAR BOTÓN AL FINAL (DOM ya listo)
+    createSaveButton();
+
     hideLoading();
-    console.log('Página ia-config inicializada');
+    console.log('Página ia-config inicializada correctamente');
   } catch (error) {
     hideLoading();
     console.error('Error inicializando ia-config:', error);
@@ -150,10 +150,11 @@ function loadAIConfig() {
   originalAIConfig = JSON.parse(JSON.stringify(config));
 
   // Campos de texto
-  ['aiName', 'aiPersonality', 'aiTone', 'aiGreeting', 'sinPrecio', 'sinStock', 'localCerrado',
-   'proactividad', 'formatoRespuestas', 'mensajeWhatsapp', 'mensajeInstagram', 'mensajeWeb', 'mensajeDefault'].forEach(id => {
-    safeSet(id, config[id]);
-  });
+  [
+    'aiName', 'aiPersonality', 'aiTone', 'aiGreeting', 'sinPrecio', 'sinStock', 'localCerrado',
+    'proactividad', 'formatoRespuestas', 'mensajeWhatsapp', 'mensajeInstagram', 'mensajeWeb', 'mensajeDefault'
+  ].forEach(id => safeSet(id, config[id]));
+
   safeSet('aiLanguage', config.aiLanguage || 'es-AR');
 
   // Productos destacados
@@ -169,9 +170,10 @@ function loadAIConfig() {
           precio_final: Number(real.precio_final || 0)
         };
       }
-      return { id: dest.id || null, codigo: dest.codigo || '', nombre: dest.nombre || '', precio_final: Number(dest.precio_final || 0) };
+      return null;
     })
-    .filter(p => p.nombre); // solo con nombre
+    .filter(Boolean)
+    .filter(p => p.nombre);
 
   renderDestacados();
 }
@@ -291,25 +293,25 @@ function renderContactosValidacion() {
   if (!container) return;
 
   const contactos = [
-    { id: 'whatsapp', icon: 'WhatsApp', value: comercioData.whatsapp },
-    { id: 'instagram', icon: 'Instagram', value: comercioData.instagram },
-    { id: 'sitioWeb', icon: 'Sitio Web', value: comercioData.sitioWeb },
-    { id: 'email', icon: 'Email', value: comercioData.email },
-    { id: 'telefono', icon: 'Teléfono', value: comercioData.telefono }
+    { key: 'whatsapp', icon: 'WhatsApp', label: 'WhatsApp' },
+    { key: 'instagram', icon: 'Instagram', label: 'Instagram' },
+    { key: 'website', icon: 'Sitio Web', label: 'Sitio Web' },
+    { key: 'email', icon: 'Email', label: 'Email' },
+    { key: 'telefono', icon: 'Teléfono', label: 'Teléfono' }
   ];
 
-  const missing = contactos.some(c => !c.value?.trim());
-  let html = missing ? `<div class="alert alert-warning"><strong>Faltan contactos</strong></div>` : '';
+  const missing = contactos.filter(c => !comercioData[c.key]?.trim());
+  let html = missing.length ? `<div class="alert alert-warning"><strong>Faltan contactos</strong></div>` : '';
 
   contactos.forEach(c => {
-    const valid = !!c.value?.trim();
+    const valid = !!comercioData[c.key]?.trim();
     html += `
       <div class="contacto-item ${valid ? 'valid' : 'invalid'}">
         <div class="contacto-icon">${c.icon}</div>
         <div class="contacto-info">
           <strong>${c.label}</strong>
           <span class="${valid ? 'contacto-value' : 'contacto-missing'}">
-            ${valid ? c.value : 'No configurado'}
+            ${valid ? comercioData[c.key] : 'No configurado'}
           </span>
         </div>
         <div class="contacto-status">
@@ -361,11 +363,35 @@ function createSaveButton() {
   btn.id = 'saveChangesBtn';
   btn.className = 'btn-save';
   btn.disabled = true;
-  btn.innerHTML = '<span>Guardar</span>';
+  btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
 
   const logoutBtn = $('logoutBtn');
-  logoutBtn ? userInfo.insertBefore(btn, logoutBtn) : userInfo.appendChild(btn);
+  if (logoutBtn) {
+    userInfo.insertBefore(btn, logoutBtn);
+  } else {
+    userInfo.appendChild(btn);
+  }
+
   btn.addEventListener('click', saveAIConfig);
+
+  // ESTILOS (mismo que los otros)
+  const style = document.createElement('style');
+  style.textContent = `
+    .btn-save {
+      display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem;
+      border: none; border-radius: 8px; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; transition: all 0.3s ease; background: #667eea; color: white;
+      white-space: nowrap;
+    }
+    .btn-save:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+    .btn-save:not(:disabled):hover { background: #5568d3; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+    .btn-save.saving { background: #f59e0b; }
+    .btn-save.saved { background: #10b981; }
+    .btn-save i { font-size: 1rem; }
+    .btn-save.saving i { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  `;
+  document.head.appendChild(style);
 }
 
 function markAsChanged() {
@@ -383,13 +409,13 @@ function validateBeforeNext() {
 
   const missing = required.filter(id => !safeGet(id));
   if (missing.length) {
-  showToast('warning', 'Faltan campos', `Completá: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '...' : ''}`);
-  missing.forEach(id => {
-    const el = $(id);
-    if (el) el.style.borderColor = '#ef4444';
-  });
-  return false;
-}
+    showToast('warning', 'Faltan campos', `Completá: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '...' : ''}`);
+    missing.forEach(id => {
+      const el = $(id);
+      if (el) el.style.borderColor = '#ef4444';
+    });
+    return false;
+  }
 
   if (hasUnsavedChanges) {
     showToast('warning', 'Cambios sin guardar', 'Guardá antes de continuar');
@@ -402,19 +428,28 @@ function validateBeforeNext() {
 // ==================== GUARDAR ====================
 async function saveAIConfig() {
   const btn = $('saveChangesBtn');
+  if (!btn) return;
   setButtonState(btn, 'saving');
 
   try {
-    // Validación final
-    if (!validateBeforeNext()) {
+    // Validar campos requeridos
+    const required = [
+      'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
+      'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
+    ];
+
+    const missing = required.filter(id => !safeGet(id));
+    if (missing.length) {
+      showToast('warning', 'Faltan campos', `Completá: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '...' : ''}`);
+      missing.forEach(id => $(id)?.style.setProperty('border-color', '#ef4444'));
       setButtonState(btn, 'enabled');
       return;
     }
 
-    // Validar contactos según sinPrecio
+    // Validar contacto según sinPrecio
     const sinPrecio = safeGet('sinPrecio');
-    const canales = { whatsapp: 'whatsapp', instagram: 'instagram', email: 'email', web: 'sitioWeb', telefono: 'telefono' };
-    const faltante = canales[sinPrecio];
+    const canalMap = { whatsapp: 'whatsapp', instagram: 'instagram', email: 'email', web: 'website', telefono: 'telefono' };
+    const faltante = canalMap[sinPrecio];
     if (faltante && !comercioData[faltante]?.trim()) {
       showToast('warning', 'Falta contacto', `Configurá ${faltante} en Mi Comercio`);
       setButtonState(btn, 'enabled');
@@ -444,20 +479,25 @@ async function saveAIConfig() {
       }))
     };
 
+    console.log('Guardando config IA:', config);
+
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
       aiConfig: config,
       fechaActualizacion: new Date()
     });
 
-    // Actualizar JSON en Gist
+    console.log('Guardado en Firestore');
+
+    // Actualizar JSON
     try {
       await updateCommerceJSON(currentComercioId, currentUser.uid);
+      console.log('JSON actualizado');
     } catch (e) {
       console.warn('JSON no actualizado:', e);
     }
 
-    // Éxito
+    // Actualizar estado local
     hasUnsavedChanges = false;
     comercioData.aiConfig = config;
     originalAIConfig = JSON.parse(JSON.stringify(config));
@@ -468,32 +508,19 @@ async function saveAIConfig() {
     Navigation.markPageAsCompleted('ia-config');
     Navigation.updateProgressBar();
 
-    // === REDIRECCIÓN INTELIGENTE ===
-
-    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
-
-      setTimeout(() => {
-
+    // Redirección inteligente
+    setTimeout(() => {
+      if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
         window.location.href = "dashboard.html";
-
-      }, 1000);
-
-    } else {
-
-      setTimeout(() => {
-
+      } else {
         Navigation.goToNextPage();
-
-      }, 1000);
-
-    }
+      }
+    }, 1000);
 
   } catch (error) {
     console.error('Error guardando IA:', error);
     showToast('error', 'Error', 'No se pudo guardar: ' + error.message);
     setButtonState(btn, 'enabled');
-  } finally {
-    hideLoading();
   }
 }
 
@@ -501,12 +528,11 @@ async function saveAIConfig() {
 async function handleLogout() {
   if (hasUnsavedChanges && !confirm('¿Salir sin guardar?')) return;
   try {
+    showLoading('Cerrando sesión...');
     await signOut(auth);
     window.location.href = '/index.html';
   } catch (error) {
+    hideLoading();
     showToast('error', 'Error', 'No se pudo cerrar sesión');
   }
 }
-
-// ==================== EXPORTS PARA DEBUG ====================
-window.__iaConfig = { loadAIConfig, saveAIConfig, agregarDestacado, renderDestacados };
