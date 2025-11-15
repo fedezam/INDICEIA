@@ -4,9 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import Navigation from '../shared/navigation.jsx';
 import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
-import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
-import { redirectToNextStep } from '../shared/redirect-dashboard.js';
 
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
@@ -23,7 +21,6 @@ let etiquetas = [];
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('Iniciando productos.js');
-
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
@@ -37,24 +34,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function initializePage() {
   try {
     showLoading('Cargando productos...');
-
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userDoc = await getDoc(userRef);
-
     if (!userDoc.exists() || !userDoc.data().comercioId) {
       window.location.href = './mi-comercio.html';
       return;
     }
-
     currentComercioId = userDoc.data().comercioId;
-
     const comercioRef = doc(db, 'comercios', currentComercioId);
     const comercioDoc = await getDoc(comercioRef);
-
     if (comercioDoc.exists()) {
       comercioData = { id: currentComercioId, ...comercioDoc.data() };
     }
-
     await loadProducts();
     updateHeader();
     updateSubscriptionBanner();
@@ -62,7 +53,6 @@ async function initializePage() {
     setupEventListeners();
     Navigation.init();
     createSaveButton();
-
     window.validateCurrentPageData = () => {
       const activeProducts = productos.filter(p => !p.paused);
       if (activeProducts.length === 0) {
@@ -75,9 +65,7 @@ async function initializePage() {
       }
       return true;
     };
-
     hideLoading();
-
   } catch (error) {
     hideLoading();
     showToast('Error', 'No se pudo cargar la página: ' + error.message, 'error');
@@ -89,12 +77,10 @@ async function loadProducts() {
   try {
     const productosRef = collection(db, 'comercios', currentComercioId, 'productos');
     const snapshot = await getDocs(productosRef);
-
     productos = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-
     originalProductos = JSON.parse(JSON.stringify(productos));
     document.getElementById('productCount').textContent = productos.length;
   } catch (error) {
@@ -106,7 +92,6 @@ async function loadProducts() {
 function updateHeader() {
   const commerceName = document.getElementById('commerceName');
   const planBadge = document.getElementById('planBadge');
-
   if (commerceName) {
     commerceName.textContent = comercioData.nombreComercio || 'Mi Comercio';
   }
@@ -119,14 +104,10 @@ function updateHeader() {
 function updateSubscriptionBanner() {
   const banner = document.getElementById('subscriptionBanner');
   const message = document.getElementById('subscriptionMessage');
-
   if (!banner || !message) return;
-
   const estado = calcularEstadoPlan(comercioData);
   const planActual = PLANS[comercioData.plan || 'trial'];
-
   banner.className = 'subscription-banner';
-
   switch (estado) {
     case 'trial':
       const diasRestantes = getDiasRestantesTrial(comercioData);
@@ -150,13 +131,12 @@ function updateSubscriptionBanner() {
 // ==================== EVENT LISTENERS ====================
 function setupEventListeners() {
   document.getElementById('openAssistant')?.addEventListener('click', () => {
-    showToast('info', 'Asistente abierto', 
+    showToast('info', 'Asistente abierto',
       'En la nueva pestaña, decile a Claude: "Soy de Indice IA y necesito ayuda cargando productos"', 8000);
   });
 
   const toggleMode = document.getElementById('toggleMode');
   const advancedFields = document.getElementById('advancedFields');
-
   if (toggleMode && advancedFields) {
     toggleMode.addEventListener('click', () => {
       const isVisible = advancedFields.style.display !== 'none';
@@ -180,7 +160,6 @@ function setupEventListeners() {
 
   const fileUploadZone = document.getElementById('fileUploadZone');
   const fileInput = document.getElementById('fileInput');
-
   if (fileUploadZone && fileInput) {
     fileUploadZone.addEventListener('click', () => fileInput.click());
     fileUploadZone.addEventListener('dragover', (e) => {
@@ -228,7 +207,6 @@ function setupEventListeners() {
 function addAtributoField() {
   const container = document.getElementById('atributosList');
   const index = atributos.length;
-
   const div = document.createElement('div');
   div.className = 'atributo-field';
   div.innerHTML = `
@@ -257,7 +235,6 @@ window.removeEtiqueta = (index) => {
 async function handleManualSubmit(e) {
   e.preventDefault();
   const formData = new FormData(e.target);
-
   const newProduct = {
     codigo: formData.get('codigo') || generateCodigo(),
     nombre: formData.get('nombre'),
@@ -296,7 +273,6 @@ async function handleManualSubmit(e) {
       fechaCreacion: new Date(),
       fechaActualizacion: new Date()
     });
-
     newProduct.id = docRef.id;
     productos.push(newProduct);
     renderProductsTable();
@@ -307,47 +283,39 @@ async function handleManualSubmit(e) {
     document.getElementById('etiquetasList').innerHTML = '';
     document.getElementById('advancedFields').style.display = 'none';
     document.getElementById('toggleMode').innerHTML = 'Agregar más detalles';
-
     hideLoading();
     showToast('success', 'Producto agregado', 'El producto se guardó correctamente');
     document.getElementById('productsTable').scrollIntoView({ behavior: 'smooth' });
-
   } catch (error) {
     hideLoading();
     showToast('error', 'Error', 'No se pudo guardar el producto: ' + error.message);
   }
 }
 
-// ==================== FILE PARSING ====================
+// ==================== FILE PARSING (XLSX) ====================
 function parseFile(file) {
   showLoading('Procesando archivo...');
   const reader = new FileReader();
-
   reader.onload = (e) => {
     try {
       const data = e.target.result;
       const workbook = XLSX.read(data, { type: 'binary' });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
-
       if (jsonData.length === 0) throw new Error('El archivo está vacío');
-
       csvData = jsonData;
       csvColumns = Object.keys(jsonData[0]);
       showPreview();
       hideLoading();
-
     } catch (error) {
       hideLoading();
       showToast('error', 'Error', 'No se pudo leer el archivo: ' + error.message);
     }
   };
-
   reader.onerror = () => {
     hideLoading();
     showToast('error', 'Error', 'No se pudo leer el archivo');
   };
-
   reader.readAsBinaryString(file);
 }
 
@@ -357,13 +325,11 @@ function showPreview() {
   const previewBody = document.getElementById('previewBody');
   const mappingFields = document.getElementById('mappingFields');
   const importCount = document.getElementById('importCount');
-
   previewSection.style.display = 'block';
-
   const preview = csvData.slice(0, 5);
   previewHeader.innerHTML = `<tr>${csvColumns.map(col => `<th>${col}</th>`).join('')}</tr>`;
   previewBody.innerHTML = preview.map(row => `<tr>${csvColumns.map(col => `<td>${row[col] || ''}</td>`).join('')}</tr>`).join('');
-
+  
   const camposBase = [
     { value: '', label: '-- Ignorar --' },
     { value: 'codigo', label: 'Código' },
@@ -392,7 +358,6 @@ function showPreview() {
       </div>
     `;
   }).join('');
-
   importCount.textContent = csvData.length;
   showToast('info', 'Archivo cargado', `Se detectaron ${csvData.length} productos. Revisá el mapeo.`, 5000);
   previewSection.scrollIntoView({ behavior: 'smooth' });
@@ -412,7 +377,6 @@ function detectColumnMapping(columnName) {
     'imagen': ['imagen', 'image', 'foto', 'picture', 'url_imagen'],
     'disponibilidad': ['disponibilidad', 'availability', 'estado']
   };
-
   for (const [field, aliases] of Object.entries(mappings)) {
     if (aliases.some(alias => normalized.includes(alias))) {
       return field;
@@ -424,7 +388,6 @@ function detectColumnMapping(columnName) {
 function applyMapping() {
   const selects = document.querySelectorAll('#mappingFields select');
   const mapping = {};
-
   selects.forEach(select => {
     const csvColumn = select.dataset.csvColumn;
     const targetField = select.value;
@@ -432,7 +395,6 @@ function applyMapping() {
       mapping[csvColumn] = targetField;
     }
   });
-
   mergeCSVData(mapping);
 }
 
@@ -440,21 +402,17 @@ function mergeCSVData(mapping) {
   showLoading('Importando productos...');
   let added = 0;
   let updated = 0;
-
   csvData.forEach(row => {
     const newProduct = { paused: false, atributos: {}, etiquetas: [] };
-
     Object.keys(row).forEach(csvColumn => {
       const targetField = mapping[csvColumn];
       let value = row[csvColumn];
       if (!targetField || !value) return;
-
       if (targetField.startsWith('__atributo__')) {
         const attrName = targetField.replace('__atributo__', '');
         newProduct.atributos[attrName] = value;
         return;
       }
-
       if (targetField === 'precio_final') {
         value = parsePrecio(value);
       } else if (targetField === 'stock') {
@@ -462,12 +420,10 @@ function mergeCSVData(mapping) {
       }
       newProduct[targetField] = value;
     });
-
     if (!newProduct.nombre && !newProduct.descripcion) return;
     if (!newProduct.codigo || newProduct.codigo.trim() === '') {
       newProduct.codigo = generateCodigo();
     }
-
     const existingIndex = productos.findIndex(p => p.codigo === newProduct.codigo);
     if (existingIndex >= 0) {
       productos[existingIndex] = {
@@ -480,14 +436,12 @@ function mergeCSVData(mapping) {
       added++;
     }
   });
-
   document.getElementById('csvPreviewSection').style.display = 'none';
   csvData = [];
   csvColumns = [];
   renderProductsTable();
   markAsChanged();
   hideLoading();
-
   showToast('success', 'Importación completa', `${added} nuevos, ${updated} actualizados`, 5000);
   document.getElementById('productsTable').scrollIntoView({ behavior: 'smooth' });
 }
@@ -495,17 +449,14 @@ function mergeCSVData(mapping) {
 function parsePrecio(value) {
   if (typeof value === 'number') return value;
   if (!value) return 0;
-
   let clean = value
     .toString()
     .replace(/[^\d,.-]/g, '')
     .replace(',', '.');
-
   const parts = clean.split('.');
   if (parts.length > 2) {
     clean = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
   }
-
   const num = parseFloat(clean);
   return isNaN(num) ? 0 : num;
 }
@@ -515,21 +466,16 @@ function renderProductsTable() {
   const tableBody = document.getElementById('tableBody');
   const emptyMessage = document.getElementById('emptyMessage');
   const productCount = document.getElementById('productCount');
-
   productCount.textContent = productos.length;
-
   if (productos.length === 0) {
     emptyMessage.style.display = 'block';
     tableBody.innerHTML = '';
     return;
   }
-
   emptyMessage.style.display = 'none';
-
   tableBody.innerHTML = productos.map((producto, index) => {
     const isActive = !producto.paused;
     const rowClass = producto.paused ? 'paused-row' : '';
-
     return `
       <tr class="${rowClass}" data-index="${index}">
         <td style="text-align: center;">
@@ -547,7 +493,6 @@ function renderProductsTable() {
       </tr>
     `;
   }).join('');
-
   document.querySelectorAll('.editable-cell').forEach(cell => {
     cell.addEventListener('click', () => makeEditable(cell));
   });
@@ -572,17 +517,14 @@ function makeEditable(cell) {
   const field = cell.dataset.field;
   const index = parseInt(cell.dataset.index);
   const currentValue = productos[index][field] || '';
-
   const input = document.createElement('input');
   input.type = field === 'precio_final' || field === 'stock' ? 'number' : 'text';
   input.value = field === 'precio_final' ? (currentValue || 0) : currentValue;
   input.style.width = '100%';
   input.style.boxSizing = 'border-box';
-
   cell.textContent = '';
   cell.appendChild(input);
   input.focus();
-
   const save = () => {
     let newValue = input.value.trim();
     if (field === 'precio_final') newValue = parseFloat(newValue) || 0;
@@ -591,7 +533,6 @@ function makeEditable(cell) {
     renderProductsTable();
     markAsChanged();
   };
-
   input.addEventListener('blur', save);
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -623,24 +564,21 @@ function formatNumber(num) {
   return new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 }
 
-// ==================== GUARDAR ====================
+// ==================== GUARDAR (SOLO FIRESTORE) ====================
 function createSaveButton() {
   const userInfo = document.querySelector('.header .user-info');
   if (!userInfo) return;
-
   const saveBtn = document.createElement('button');
   saveBtn.id = 'saveChangesBtn';
   saveBtn.className = 'btn-save';
   saveBtn.disabled = true;
   saveBtn.innerHTML = '<span>Guardar Cambios</span>';
-
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     userInfo.insertBefore(saveBtn, logoutBtn);
   } else {
     userInfo.appendChild(saveBtn);
   }
-
   saveBtn.addEventListener('click', saveAllProducts);
 }
 
@@ -656,30 +594,30 @@ function markAsChanged() {
 
 async function saveAllProducts() {
   const saveBtn = document.getElementById('saveChangesBtn');
-
   try {
     if (productos.length === 0) {
       showToast('warning', 'Sin productos', 'Agregá al menos 1 producto');
       return false;
     }
-
     if (saveBtn) {
       saveBtn.className = 'btn-save saving';
       saveBtn.innerHTML = '<span>Guardando...</span>';
       saveBtn.disabled = true;
     }
-
     showLoading('Guardando productos...');
+
     const productosRef = collection(db, 'comercios', currentComercioId, 'productos');
     const currentIds = new Set(productos.map(p => p.id).filter(id => id));
     const allDocs = await getDocs(productosRef);
 
+    // Eliminar productos borrados
     for (const docSnap of allDocs.docs) {
       if (!currentIds.has(docSnap.id)) {
         await deleteDoc(doc(db, 'comercios', currentComercioId, 'productos', docSnap.id));
       }
     }
 
+    // Guardar/actualizar productos
     for (const producto of productos) {
       const { id, ...productData } = producto;
       if (id) {
@@ -695,18 +633,14 @@ async function saveAllProducts() {
       }
     }
 
-    try {
-      await updateCommerceJSON(currentComercioId, currentUser.uid);
-    } catch (jsonError) {
-      showToast('warning', 'Advertencia', 'Productos guardados pero JSON no actualizado');
-    }
-
+    // Actualizar cantidad en comercio
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
       cantidadProductos: productos.length,
       fechaActualizacion: new Date()
     });
 
+    // Estado final
     originalProductos = JSON.parse(JSON.stringify(productos));
     hasUnsavedChanges = false;
 
@@ -724,27 +658,17 @@ async function saveAllProducts() {
     Navigation.updateProgressBar();
     hideLoading();
     showToast('success', 'Productos guardados', 'Todos los cambios se guardaron correctamente');
-    // === REDIRECCIÓN INTELIGENTE ===
 
-    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
-
-      setTimeout(() => {
-
+    // Redirección
+    setTimeout(() => {
+      if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
         window.location.href = "dashboard.html";
-
-      }, 1000);
-
-    } else {
-
-      setTimeout(() => {
-
+      } else {
         Navigation.goToNextPage();
+      }
+    }, 1000);
 
-      }, 1000);
-
-    }
     return true;
-
   } catch (error) {
     hideLoading();
     if (saveBtn) {
