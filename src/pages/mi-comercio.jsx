@@ -616,7 +616,25 @@ async function saveFormData() {
 
     showToast('Éxito', 'Cambios guardados correctamente', 'success');
     console.log('Guardado completo exitoso');
-    setTimeout(() => redirectToNextStep(), 1000);
+    // === REDIRECCIÓN INTELIGENTE ===
+
+    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
+
+      setTimeout(() => {
+
+        window.location.href = "dashboard.html";
+
+      }, 1000);
+
+    } else {
+
+      setTimeout(() => {
+
+        Navigation.goToNextPage();
+
+      }, 1000);
+
+    }
     return true;
 
   } catch (error) {

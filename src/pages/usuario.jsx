@@ -187,7 +187,25 @@ if (guardarBtn) {
 
       // ✅ Ahora SÍ habilitar los botones después de guardar
       Utils.enableIAButtons();
-      setTimeout(() => redirectToNextStep(), 800);
+    // === REDIRECCIÓN INTELIGENTE ===
+
+    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
+
+      setTimeout(() => {
+
+        window.location.href = "dashboard.html";
+
+      }, 1000);
+
+    } else {
+
+      setTimeout(() => {
+
+        Navigation.goToNextPage();
+
+      }, 1000);
+
+    }
       
     } catch (error) {
       console.error("Error al guardar datos:", error);

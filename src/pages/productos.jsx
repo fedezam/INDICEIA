@@ -724,7 +724,25 @@ async function saveAllProducts() {
     Navigation.updateProgressBar();
     hideLoading();
     showToast('success', 'Productos guardados', 'Todos los cambios se guardaron correctamente');
-    setTimeout(() => redirectToNextStep(), 2000);
+    // === REDIRECCIÓN INTELIGENTE ===
+
+    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
+
+      setTimeout(() => {
+
+        window.location.href = "dashboard.html";
+
+      }, 1000);
+
+    } else {
+
+      setTimeout(() => {
+
+        Navigation.goToNextPage();
+
+      }, 1000);
+
+    }
     return true;
 
   } catch (error) {

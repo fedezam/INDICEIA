@@ -414,7 +414,25 @@ async function saveScheduleData() {
     Navigation.updateProgressBar();
 
     showToast('Éxito', 'Horarios guardados correctamente', 'success');
-    setTimeout(() => redirectToNextStep(), 1000);
+    // === REDIRECCIÓN INTELIGENTE ===
+
+    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
+
+      setTimeout(() => {
+
+        window.location.href = "dashboard.html";
+
+      }, 1000);
+
+    } else {
+
+      setTimeout(() => {
+
+        Navigation.goToNextPage();
+
+      }, 1000);
+
+    }
     return true;
 
   } catch (error) {
