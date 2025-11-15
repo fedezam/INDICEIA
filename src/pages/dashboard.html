@@ -1,219 +1,56 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - INDICEIA</title>
- 
-  <!-- Font Awesome -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="../styles.css">
- 
-  <style>
-    .subscription-banner {
-      background: #fffbeb;
-      border-left: 4px solid #f6ad55;
-      padding: 1rem 2rem;
-      margin: 0;
-      font-weight: 600;
-      color: #975a16;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-    .subscription-banner.expired { background: #fed7d7; border-left-color: #e53e3e; color: #9b2c2c; }
-    .subscription-banner.active { background: #c6f6d5; border-left-color: #38a169; color: #276749; }
-    .subscription-banner.trial { background: #e0e7ff; border-left-color: #667eea; color: #434190; }
-
-    .ai-status-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 2.5rem;
-      border-radius: 16px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-      margin-bottom: 2rem;
-    }
-    .ai-status-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .ai-status-header i { font-size: 2.5rem; }
-    .ai-status-header h3 { margin: 0; font-size: 1.8rem; font-weight: 800; }
-
-    .ai-info {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-      font-size: 1.1rem;
-    }
-    .ai-info span { display: flex; align-items: center; gap: 0.5rem; }
-
-    .ai-link-container {
-      background: rgba(255, 255, 255, 0.15);
-      padding: 2rem;
-      border-radius: 16px;
-      backdrop-filter: blur(10px);
-    }
-    .ai-link-container h4 {
-      margin: 0 0 1.5rem 0;
-      font-size: 1.3rem;
-      font-weight: 700;
-    }
-
-    .link-display {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 1.2rem;
-      border-radius: 12px;
-      text-align: center;
-      margin-bottom: 1.5rem;
-      font-weight: 500;
-    }
-
-    .btn-config {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 2px solid white;
-      padding: 0.75rem 1.5rem;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .btn-config:hover { background: white; color: #667eea; }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .summary-card {
-      background: white;
-      padding: 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s;
-      border: 2px solid transparent;
-    }
-    .summary-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-      border-color: #667eea;
-    }
-
-    @media (max-width: 768px) {
-      .summary-grid { grid-template-columns: 1fr; }
-      .ai-info { flex-direction: column; }
-      .subscription-banner { flex-direction: column; text-align: center; }
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard | IA Comercial</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../styles.css"/>
+  <script type="module" src="../src/pages/dashboard.jsx" defer></script>
 </head>
 <body>
-  <!-- Loading overlay -->
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">Cargando dashboard...</div>
-  </div>
-  <div class="toast-container" id="toastContainer"></div>
-
-  <!-- Header -->
+  <!-- HEADER -->
   <header class="header">
     <div class="container">
       <div class="logo">
-        <div class="logo-icon">
-          <i class="fas fa-robot"></i>
-        </div>
-        <h1>INDICEIA</h1>
+        <div class="logo-icon"><i class="fas fa-robot"></i></div>
+        <h1>IA Comercial</h1>
       </div>
       <div class="user-info">
         <div class="user-details">
           <div class="user-name" id="commerceName">Cargando...</div>
           <div class="user-email" id="planBadge">Trial</div>
         </div>
-        <button id="logoutBtn" class="btn-logout">
-          <i class="fas fa-sign-out-alt"></i>
-        </button>
+        <button class="btn-logout" id="logoutBtn"><i class="fas fa-sign-out-alt"></i></button>
       </div>
     </div>
   </header>
 
-  <!-- Subscription Banner -->
-  <div class="subscription-banner" id="subscriptionBanner">
-    <div class="subscription-info">
-      <i class="fas fa-info-circle"></i>
-      <span id="subscriptionMessage">Cargando estado de suscripción...</span>
-    </div>
+  <!-- NAVBAR -->
+  <div id="dashboardNavbar" class="container" style="margin: 2rem auto;"></div>
+
+  <!-- ALERTA PLAN -->
+  <div id="planAlert" class="container"></div>
+
+  <!-- CHECKLIST -->
+  <div id="checklistSection" class="container"></div>
+
+  <!-- ESTADÍSTICAS -->
+  <div id="statsSection" class="container" style="margin: 2rem 0;"></div>
+
+  <!-- ASISTENTE IA -->
+  <div id="aiCard" class="container" style="margin: 2rem 0;"></div>
+
+  <!-- RESUMEN -->
+  <div id="summaryGrid" class="container grid-4" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));"></div>
+
+  <!-- TOAST -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- LOADING -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Cargando dashboard...</div>
   </div>
-
-  <!-- Contenido principal -->
-  <main class="main-content">
-    <div class="container">
-     
-      <!-- Hero: Asistente Virtual - NAPOBOT 2025 -->
-      <div id="aiStatusSection">
-        <div class="ai-status-card">
-          <div class="ai-status-header">
-            <i class="fas fa-robot"></i>
-            <h3>Tu NapoBot está listo para nacer</h3>
-          </div>
-
-          <div class="ai-info">
-            <span><i class="fas fa-brain"></i> LER Dual v2.0 + Anti-hallucination</span>
-            <span><i class="fas fa-shield-alt"></i> 100% autónomo · sin APIs externas</span>
-            <span><i class="fas fa-flag"></i> Argentina · 11 de noviembre de 2025</span>
-          </div>
-
-          <div class="ai-link-container">
-            <h4 class="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                <path d="M2 17l10 5 10-5"></path>
-                <path d="M2 12l10 5 10-5"></path>
-              </svg>
-              NapoBot Autónomo · Generación 2025
-            </h4>
-
-            <div id="botStatus" class="link-display mb-5 p-4 bg-white/20 rounded-lg text-center">
-              <div class="flex items-center justify-center gap-3">
-                <div class="w-3 h-3 bg-amber-400 rounded-full animate-pulse"></div>
-                <span>Listo para generar tu bot autónomo en segundos…</span>
-              </div>
-            </div>
-
-            <div class="text-center">
-              <button id="btn-generar-bot" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-5 px-10 rounded-2xl text-xl shadow-2xl transform hover:scale-105 transition-all flex items-center gap-4 mx-auto">
-                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                  <path d="M2 17l10 5 10-5"></path>
-                  <path d="M2 12l10 5 10-5"></path>
-                </svg>
-                GENERAR MI NAPOBOT AUTÓNOMO
-              </button>
-              <p class="text-sm opacity-80 mt-4">Un solo click → tu asistente vive para siempre</p>
-            </div>
-          </div>
-
-          <div class="text-center mt-8">
-            <button class="btn-config" onclick="window.location.href='./mi-ia.html'">
-              <i class="fas fa-cog"></i> Ajustar configuración IA
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Grid de Resumen -->
-      <div class="summary-grid" id="summaryGrid"></div>
-    </div>
-  </main>
-
-  <!-- Scripts -->
-  <script type="module" src="/src/pages/dashboard.jsx"></script>
 </body>
 </html>
