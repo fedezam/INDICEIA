@@ -1,4 +1,4 @@
-// src/pages/mi-comercio.js
+// src/pages/mi-comercio.jsx
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';

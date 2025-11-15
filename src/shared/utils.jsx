@@ -1,4 +1,4 @@
-// src/shared/utils.js
+// src/shared/utils.jsx
 // ==================== HELPERS GENERALES ====================
 
 export function showLoading(text = "Cargando...") {

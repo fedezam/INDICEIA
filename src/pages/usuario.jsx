@@ -1,4 +1,4 @@
-//src/pages/usuario.js
+//src/pages/usuario.jsx
 // =========================
 // 📦 IMPORTS
 // =========================

@@ -1,6 +1,6 @@
-// src/shared/navigation.js - Control de navegación y progress bar
-import { LocalData } from './localStorage.js';
-import { showToast } from './utils.js';
+// src/shared/navigation.jsx - Control de navegación y progress bar
+import { LocalData } from './localStorage.jsx';
+import { showToast } from './utils.jsx';
 
 class Navigation {
   // Flujo Comercio

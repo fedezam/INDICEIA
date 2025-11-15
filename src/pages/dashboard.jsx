@@ -1,4 +1,4 @@
-// src/pages/dashboard.js
+// src/pages/dashboard.jsx
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';

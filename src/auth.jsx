@@ -1,4 +1,4 @@
-// src/auth.js
+// src/auth.jsx
 import { auth, db, provider } from "./firebase.js";
 import {
   signInWithPopup,
