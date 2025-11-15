@@ -4,7 +4,6 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 import Navigation from '../shared/navigation.jsx';
 import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
-import { updateCommerceJSON } from '../shared/updateCommerceJSON.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 
 // ==================== ESTADO GLOBAL ====================
@@ -46,7 +45,6 @@ function setButtonState(btn, state) {
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Iniciando ia-config.js');
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
       window.location.href = '/index.html';
@@ -71,12 +69,16 @@ async function initializePage() {
 
     // 2. Cargar comercio
     const comercioDoc = await getDoc(doc(db, 'comercios', currentComercioId));
-    comercioData = comercioDoc.exists() ? { id: currentComercioId, ...comercioDoc.data() } : { id: currentComercioId };
+    if (!comercioDoc.exists()) {
+      showToast('error', 'Error', 'Comercio no encontrado');
+      return;
+    }
+    comercioData = { id: currentComercioId, ...comercioDoc.data() };
 
     // 3. Cargar productos
     await loadProducts();
 
-    // 4. UI: header, banner, config, contactos
+    // 4. UI
     updateHeader();
     updateSubscriptionBanner();
     loadAIConfig();
@@ -89,11 +91,10 @@ async function initializePage() {
     Navigation.init();
     window.validateCurrentPageData = () => validateBeforeNext();
 
-    // 7. CREAR BOTÓN AL FINAL (DOM ya listo)
+    // 7. CREAR BOTÓN AL FINAL (DOM listo)
     createSaveButton();
 
     hideLoading();
-    console.log('Página ia-config inicializada correctamente');
   } catch (error) {
     hideLoading();
     console.error('Error inicializando ia-config:', error);
@@ -106,7 +107,6 @@ async function loadProducts() {
   try {
     const snap = await getDocs(collection(db, 'comercios', currentComercioId, 'productos'));
     productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    console.log(`Productos cargados: ${productos.length}`);
   } catch (error) {
     console.error('Error cargando productos:', error);
     productos = [];
@@ -149,10 +149,11 @@ function loadAIConfig() {
   const config = comercioData.aiConfig || {};
   originalAIConfig = JSON.parse(JSON.stringify(config));
 
-  // Campos de texto
+  // Campos
   [
-    'aiName', 'aiPersonality', 'aiTone', 'aiGreeting', 'sinPrecio', 'sinStock', 'localCerrado',
-    'proactividad', 'formatoRespuestas', 'mensajeWhatsapp', 'mensajeInstagram', 'mensajeWeb', 'mensajeDefault'
+    'aiName', 'aiPersonality', 'aiTone', 'aiGreeting', 'sinPrecio', 'sinStock',
+    'localCerrado', 'proactividad', 'formatoRespuestas', 'mensajeWhatsapp',
+    'mensajeInstagram', 'mensajeWeb', 'mensajeDefault'
   ].forEach(id => safeSet(id, config[id]));
 
   safeSet('aiLanguage', config.aiLanguage || 'es-AR');
@@ -161,16 +162,14 @@ function loadAIConfig() {
   const saved = Array.isArray(config.productosDestacados) ? config.productosDestacados : [];
   productosDestacados = saved
     .map(dest => {
-      const real = productos.find(p => p.id === dest.id || p.codigo === dest.codigo);
-      if (real) {
-        return {
-          id: real.id,
-          codigo: real.codigo || '',
-          nombre: real.nombre || '',
-          precio_final: Number(real.precio_final || 0)
-        };
-      }
-      return null;
+      const p = productos.find(x => x.id === dest.id || x.codigo === dest.codigo);
+      if (!p) return null;
+      return {
+        id: p.id,
+        codigo: p.codigo || '',
+        nombre: p.nombre || '',
+        precio_final: Number(p.precio_final || 0)
+      };
     })
     .filter(Boolean)
     .filter(p => p.nombre);
@@ -204,7 +203,7 @@ function renderDestacados() {
           <div class="producto-nombre">${p.nombre}</div>
           <div class="producto-precio">${precio}</div>
         </div>
-        <button class="btn-quitar" data-id="${p.id || ''}">Quitar</button>
+        <button class="btn-quitar" data-id="${p.id}">Quitar</button>
       </div>`;
   }).join('');
 
@@ -229,10 +228,7 @@ function buscarProductos(query) {
   }
 
   const results = productos
-    .filter(p => {
-      const fields = [p.nombre, p.codigo, p.descripcion].join(' ').toLowerCase();
-      return fields.includes(term);
-    })
+    .filter(p => [p.nombre, p.codigo, p.descripcion].join(' ').toLowerCase().includes(term))
     .slice(0, 20);
 
   if (!results.length) {
@@ -259,7 +255,6 @@ function buscarProductos(query) {
   }).join('');
 
   container.style.display = 'block';
-
   container.querySelectorAll('.btn-destacar').forEach(btn => {
     btn.onclick = () => agregarDestacado(btn.dataset.id);
   });
@@ -287,7 +282,7 @@ function agregarDestacado(id) {
   if (input?.value) buscarProductos(input.value);
 }
 
-// ==================== CONTACTOS VALIDACIÓN ====================
+// ==================== CONTACTOS ====================
 function renderContactosValidacion() {
   const container = $('contactosValidacion');
   if (!container) return;
@@ -295,7 +290,7 @@ function renderContactosValidacion() {
   const contactos = [
     { key: 'whatsapp', icon: 'WhatsApp', label: 'WhatsApp' },
     { key: 'instagram', icon: 'Instagram', label: 'Instagram' },
-    { key: 'website', icon: 'Sitio Web', label: 'Sitio Web' },
+    { key: 'sitioWeb', icon: 'Sitio Web', label: 'Sitio Web' },
     { key: 'email', icon: 'Email', label: 'Email' },
     { key: 'telefono', icon: 'Teléfono', label: 'Teléfono' }
   ];
@@ -314,16 +309,14 @@ function renderContactosValidacion() {
             ${valid ? comercioData[c.key] : 'No configurado'}
           </span>
         </div>
-        <div class="contacto-status">
-          ${valid ? 'Validado' : 'Falta'}
-        </div>
+        <div class="contacto-status">${valid ? 'Validado' : 'Falta'}</div>
       </div>`;
   });
 
   container.innerHTML = html;
 }
 
-// ==================== EVENT LISTENERS ====================
+// ==================== EVENTOS ====================
 function setupEventListeners() {
   $('openAssistant')?.addEventListener('click', () => {
     showToast('info', 'Asistente IA', 'Decile: "Soy de Indice IA"', 8000);
@@ -374,7 +367,7 @@ function createSaveButton() {
 
   btn.addEventListener('click', saveAIConfig);
 
-  // ESTILOS (mismo que los otros)
+  // Estilos (mismo que otros)
   const style = document.createElement('style');
   style.textContent = `
     .btn-save {
@@ -400,7 +393,7 @@ function markAsChanged() {
   if (btn) setButtonState(btn, 'enabled');
 }
 
-// ==================== VALIDACIÓN ANTES DE SALIR ====================
+// ==================== VALIDACIÓN ====================
 function validateBeforeNext() {
   const required = [
     'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
@@ -410,10 +403,7 @@ function validateBeforeNext() {
   const missing = required.filter(id => !safeGet(id));
   if (missing.length) {
     showToast('warning', 'Faltan campos', `Completá: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '...' : ''}`);
-    missing.forEach(id => {
-      const el = $(id);
-      if (el) el.style.borderColor = '#ef4444';
-    });
+    missing.forEach(id => $(id)?.style.setProperty('border-color', '#ef4444'));
     return false;
   }
 
@@ -425,14 +415,14 @@ function validateBeforeNext() {
   return true;
 }
 
-// ==================== GUARDAR ====================
+// ==================== GUARDAR (SOLO FIRESTORE) ====================
 async function saveAIConfig() {
   const btn = $('saveChangesBtn');
   if (!btn) return;
   setButtonState(btn, 'saving');
 
   try {
-    // Validar campos requeridos
+    // Validar campos
     const required = [
       'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
       'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
@@ -448,7 +438,7 @@ async function saveAIConfig() {
 
     // Validar contacto según sinPrecio
     const sinPrecio = safeGet('sinPrecio');
-    const canalMap = { whatsapp: 'whatsapp', instagram: 'instagram', email: 'email', web: 'website', telefono: 'telefono' };
+    const canalMap = { whatsapp: 'whatsapp', instagram: 'instagram', email: 'email', web: 'sitioWeb', telefono: 'telefono' };
     const faltante = canalMap[sinPrecio];
     if (faltante && !comercioData[faltante]?.trim()) {
       showToast('warning', 'Falta contacto', `Configurá ${faltante} en Mi Comercio`);
@@ -479,36 +469,26 @@ async function saveAIConfig() {
       }))
     };
 
-    console.log('Guardando config IA:', config);
-
+    // GUARDAR EN FIRESTORE
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
       aiConfig: config,
       fechaActualizacion: new Date()
     });
 
-    console.log('Guardado en Firestore');
-
-    // Actualizar JSON
-    try {
-      await updateCommerceJSON(currentComercioId, currentUser.uid);
-      console.log('JSON actualizado');
-    } catch (e) {
-      console.warn('JSON no actualizado:', e);
-    }
-
     // Actualizar estado local
     hasUnsavedChanges = false;
     comercioData.aiConfig = config;
     originalAIConfig = JSON.parse(JSON.stringify(config));
 
+    // Feedback
     setButtonState(btn, 'saved');
-    showToast('success', 'Guardado', 'Configuración IA actualizada');
+    showToast('success', 'Guardado', 'Configuración guardada correctamente');
 
     Navigation.markPageAsCompleted('ia-config');
     Navigation.updateProgressBar();
 
-    // Redirección inteligente
+    // Redirección
     setTimeout(() => {
       if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
         window.location.href = "dashboard.html";
