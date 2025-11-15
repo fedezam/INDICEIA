@@ -89,9 +89,8 @@ async function initializePage() {
 
     // 6. Navigation
     Navigation.init();
-    window.validateCurrentPageData = () => validateBeforeNext();
 
-    // 7. CREAR BOTÓN AL FINAL (DOM listo)
+    // 7. CREAR BOTÓN AL FINAL
     createSaveButton();
 
     hideLoading();
@@ -149,7 +148,6 @@ function loadAIConfig() {
   const config = comercioData.aiConfig || {};
   originalAIConfig = JSON.parse(JSON.stringify(config));
 
-  // Campos
   [
     'aiName', 'aiPersonality', 'aiTone', 'aiGreeting', 'sinPrecio', 'sinStock',
     'localCerrado', 'proactividad', 'formatoRespuestas', 'mensajeWhatsapp',
@@ -158,7 +156,6 @@ function loadAIConfig() {
 
   safeSet('aiLanguage', config.aiLanguage || 'es-AR');
 
-  // Productos destacados
   const saved = Array.isArray(config.productosDestacados) ? config.productosDestacados : [];
   productosDestacados = saved
     .map(dest => {
@@ -367,7 +364,6 @@ function createSaveButton() {
 
   btn.addEventListener('click', saveAIConfig);
 
-  // Estilos (mismo que otros)
   const style = document.createElement('style');
   style.textContent = `
     .btn-save {
@@ -393,29 +389,7 @@ function markAsChanged() {
   if (btn) setButtonState(btn, 'enabled');
 }
 
-// ==================== VALIDACIÓN ====================
-function validateBeforeNext() {
-  const required = [
-    'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
-    'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
-  ];
-
-  const missing = required.filter(id => !safeGet(id));
-  if (missing.length) {
-    showToast('warning', 'Faltan campos', `Completá: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '...' : ''}`);
-    missing.forEach(id => $(id)?.style.setProperty('border-color', '#ef4444'));
-    return false;
-  }
-
-  if (hasUnsavedChanges) {
-    showToast('warning', 'Cambios sin guardar', 'Guardá antes de continuar');
-    return false;
-  }
-
-  return true;
-}
-
-// ==================== GUARDAR (SOLO FIRESTORE) ====================
+// ==================== GUARDAR (SOLO FIRESTORE + REDIRECCIÓN) ====================
 async function saveAIConfig() {
   const btn = $('saveChangesBtn');
   if (!btn) return;
@@ -436,7 +410,6 @@ async function saveAIConfig() {
       return;
     }
 
-    // Validar contacto según sinPrecio
     const sinPrecio = safeGet('sinPrecio');
     const canalMap = { whatsapp: 'whatsapp', instagram: 'instagram', email: 'email', web: 'sitioWeb', telefono: 'telefono' };
     const faltante = canalMap[sinPrecio];
@@ -476,26 +449,31 @@ async function saveAIConfig() {
       fechaActualizacion: new Date()
     });
 
-    // Actualizar estado local
+    // === ÉXITO ===
     hasUnsavedChanges = false;
     comercioData.aiConfig = config;
     originalAIConfig = JSON.parse(JSON.stringify(config));
 
     // Feedback
     setButtonState(btn, 'saved');
-    showToast('success', 'Guardado', 'Configuración guardada correctamente');
+    showToast('success', 'Guardado', 'Configuración IA guardada correctamente');
 
+    // === MARCAR COMO COMPLETADA ===
     Navigation.markPageAsCompleted('ia-config');
-    Navigation.updateProgressBar();
+    Navigation.updateProgressBar(); // Botón "Finalizado" se activa
 
-    // Redirección
+    // === REDIRECCIÓN AUTOMÁTICA ===
     setTimeout(() => {
-      if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
-        window.location.href = "dashboard.html";
+      // Si es la última página → dashboard
+      if (Navigation.getCurrentPageIndex() === Navigation.pages.length - 1) {
+        showToast('success', '¡Configuración completa!', 'Tu IA está lista');
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 800);
       } else {
         Navigation.goToNextPage();
       }
-    }, 1000);
+    }, 1200);
 
   } catch (error) {
     console.error('Error guardando IA:', error);
