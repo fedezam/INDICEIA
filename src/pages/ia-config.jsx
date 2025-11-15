@@ -498,3 +498,20 @@ async function handleLogout() {
     showToast('error', 'Error', 'No se pudo cerrar sesión');
   }
 }
+
+
+// =========================================================
+// 🚀 **VALIDACIÓN PARA QUE LA NAVEGACIÓN SE HABILITE**
+// =========================================================
+window.validateCurrentPageData = async function () {
+  const required = [
+    'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
+    'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
+  ];
+
+  for (const id of required) {
+    if (!safeGet(id)) return false;
+  }
+
+  return true; // ✔ Todo completo → habilita botón Finalizado/Siguiente
+};
