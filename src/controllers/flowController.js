@@ -1,4 +1,4 @@
-// src/shared/flowController.js
+// src/controllers/flowController.js
 import { auth, db } from "../firebase.js";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
@@ -12,7 +12,8 @@ export async function handleEntryFlow() {
   return new Promise(resolve => {
     auth.onAuthStateChanged(async user => {
       if (!user) {
-        window.location.href = "index.html";
+        // LOGIN ESTÁ EN LA RAÍZ
+        window.location.href = "/index.html";
         return resolve();
       }
 
@@ -32,13 +33,16 @@ export async function handleEntryFlow() {
           }
         });
 
-        window.location.href = "usuario.html";
+        window.location.href = "/src/pages/usuario.html";
         return resolve();
       }
 
       const completed = snap.data().completed || {};
 
-      // Si TODO está completo → dashboard
+      /* -------------------------
+         ORDEN LÓGICO DEL FLUJO
+      -------------------------- */
+
       if (
         completed.usuario &&
         completed.comercio &&
@@ -46,29 +50,32 @@ export async function handleEntryFlow() {
         completed.productos &&
         completed.ia
       ) {
-        window.location.href = "dashboard.html";
+        window.location.href = "/src/pages/dashboard.html";
         return resolve();
       }
 
-      // Orden lógico de flujo
       if (!completed.usuario) {
-        window.location.href = "usuario.html";
+        window.location.href = "/src/pages/usuario.html";
         return resolve();
       }
+
       if (!completed.comercio) {
-        window.location.href = "mi-comercio.html";
+        window.location.href = "/src/pages/mi-comercio.html";
         return resolve();
       }
+
       if (!completed.horarios) {
-        window.location.href = "horarios.html";
+        window.location.href = "/src/pages/horarios.html";
         return resolve();
       }
+
       if (!completed.productos) {
-        window.location.href = "productos.html";
+        window.location.href = "/src/pages/productos.html";
         return resolve();
       }
+
       if (!completed.ia) {
-        window.location.href = "ia-config.html";
+        window.location.href = "/src/pages/ia-config.html";
         return resolve();
       }
 
@@ -90,3 +97,4 @@ export async function markSectionCompleted(section) {
     [`completed.${section}`]: true
   });
 }
+
