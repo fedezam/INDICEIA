@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
-import { createHtmlPlugin } from 'vite-plugin-html';
 import fs from 'fs';
 
 export default defineConfig({
