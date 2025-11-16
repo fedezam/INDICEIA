@@ -47,7 +47,6 @@
         </div>
       </div>
 
-      <!-- Solo registro -->
       <div class="input-group" id="repeatPasswordGroup" style="display:none;">
         <label for="repeatPassword">Repetir Contraseña</label>
         <div class="input-wrapper">
@@ -61,7 +60,6 @@
     </form>
 
     <button class="btn btn-google" id="googleLogin">
-      <!-- ✅ Las imágenes del public/ se referencian directo desde /img -->
       <img class="google-icon" src="./img/google-icon.svg" alt="Google" />
       Ingresar con Google
     </button>
@@ -72,5 +70,11 @@
       ¿No tienes cuenta? <a href="#">Regístrate aquí</a>
     </div>
   </div>
+
+  <!-- 🔥 LLAMAMOS EL FLOW AQUÍ -->
+  <script type="module">
+    import { handleEntryFlow } from "/src/controllers/flowController.js";
+    handleEntryFlow();
+  </script>
 </body>
 </html>
