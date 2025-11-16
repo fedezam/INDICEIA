@@ -1,5 +1,5 @@
 // src/shared/flowController.js
-import { auth, db } from "../firebase.js";
+import { auth, db } from "./firebase.js";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
 /**
