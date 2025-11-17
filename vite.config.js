@@ -13,9 +13,9 @@ export default defineConfig({
         // PÁGINA PRINCIPAL
         main: resolve(__dirname, 'index.html'),
 
-        // ONBOARDING (nombres planos → output en raíz)
+        // ONBOARDING - CLAVES = NOMBRE DEL ARCHIVO FINAL (SIN .html)
         usuario: resolve(__dirname, 'src/pages/usuario.html'),
-        'mi-comercio': resolve(__dirname, 'src/pages/mi-comercio.html'),
+        'mi-comercio': resolve(__dirname, 'src/pages/mi-comercio.html'),  // ← CLAVE EN COMILLAS
         horarios: resolve(__dirname, 'src/pages/horarios.html'),
         productos: resolve(__dirname, 'src/pages/productos.html'),
         'ia-config': resolve(__dirname, 'src/pages/ia-config.html'),
