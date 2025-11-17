@@ -1,13 +1,7 @@
 // src/shared/navigation.jsx
-// Navigation — versión final (solo UI, sin lógica de flujo)
-
-import { showToast } from "./utils.jsx";
+// Navigation — Solo UI, sin navegación
 
 class Navigation {
-  /**
-   * Inicializa la barra de progreso y los botones
-   * Requiere que window.flowState ya esté disponible
-   */
   static init() {
     if (!window.flowState) {
       console.warn("Navigation: flowState no está definido");
@@ -16,7 +10,6 @@ class Navigation {
 
     this.renderProgressBar();
     this.renderNavigationButtons();
-    this.bindEvents();
   }
 
   /** ------------------------------
@@ -43,32 +36,27 @@ class Navigation {
       <div class="completion-indicator">
         <div class="completion-bar">
           <div class="completion-fill"
-               id="completionFill"
                style="width: ${progressPercent}%"></div>
         </div>
-        <div class="completion-text" id="completionText">
+        <div class="completion-text">
           ${progressPercent}% completado
         </div>
       </div>
 
-      <div class="progress-steps" id="progressSteps">
+      <div class="progress-steps">
         ${pages
-          .map((p, index) => {
+          .map((p) => {
             const isCompleted = completed.includes(p.id);
             const isCurrent = p.id === current.id;
 
             return `
               <div class="step
                           ${isCompleted ? "active" : ""}
-                          ${isCurrent ? "current" : ""}"
-                   onclick="Navigation.goTo('${p.id}')">
-
+                          ${isCurrent ? "current" : ""}">
                 <div class="step-icon">
                   <i class="${p.icon}"></i>
                 </div>
-
                 <div class="step-name">${p.name}</div>
-
                 ${isCompleted ? '<i class="fas fa-check step-check"></i>' : ""}
               </div>
             `;
@@ -79,28 +67,24 @@ class Navigation {
   }
 
   /** ------------------------------
-   *  Botones
+   *  Botones (solo apariencia)
    * -------------------------------*/
   static renderNavigationButtons() {
     const container = document.getElementById("navigationControls");
     if (!container) return;
 
-    const { current, previous, next, completed, pages } = window.flowState;
+    const { current, completed, pages } = window.flowState;
 
     const isCurrentCompleted = completed.includes(current.id);
-    const isLast = next === null;
+    const isLast = current.index === pages.length - 1;
 
     container.innerHTML = `
       <div class="nav-buttons">
-        <button class="btn btn-secondary"
-                id="prevBtn"
-                ${previous ? "" : "disabled"}>
+        <button class="btn btn-secondary" id="prevBtn" disabled>
           <i class="fas fa-arrow-left"></i> Atrás
         </button>
 
-        <button class="btn btn-primary"
-                id="nextBtn"
-                ${isCurrentCompleted ? "" : "disabled"}>
+        <button class="btn btn-primary" id="nextBtn" ${isCurrentCompleted ? "" : "disabled"}>
           ${
             isLast
               ? 'Finalizar <i class="fas fa-check"></i>'
@@ -113,39 +97,6 @@ class Navigation {
         Página ${current.index + 1} de ${pages.length}
       </div>
     `;
-  }
-
-  /** ------------------------------
-   *  Eventos
-   * -------------------------------*/
-  static bindEvents() {
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-
-    if (prevBtn) {
-      prevBtn.onclick = () => this.goPrev();
-    }
-
-    if (nextBtn) {
-      nextBtn.onclick = () => this.goNext();
-    }
-  }
-
-  /** ------------------------------
-   *  Acciones (sin lógica)
-   * -------------------------------*/
-
-  static goTo(pageId) {
-    // Solo manda a flow-redirect con un parámetro
-    window.location.href = `/src/controllers/flow-redirect.html?page=${pageId}`;
-  }
-
-  static goPrev() {
-    window.location.href = `/src/controllers/flow-redirect.html?nav=prev`;
-  }
-
-  static goNext() {
-    window.location.href = `/src/controllers/flow-redirect.html?nav=next`;
   }
 }
 
