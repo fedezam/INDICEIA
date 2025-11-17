@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node move-html.js",
     "build:final": "vite build && node move-html.js",
     "preview": "vite preview",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "deploy": "vite build"
   },
   "dependencies": {
     "@vercel/blob": "^0.23.0",
