@@ -2,44 +2,51 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
-const pagesDir = 'src/pages';
-
 export default defineConfig({
-  root: '.',
-  publicDir: 'public',
-  base: '/',
+  root: '.', // Carpeta raíz del proyecto (donde está package.json y index.html)
+  publicDir: 'public', // Carpeta para assets estáticos que se copian tal cual
   build: {
-    outDir: 'dist',
-    emptyOutDir: true,
+    outDir: 'dist', // Carpeta de salida
+    emptyOutDir: true, // Limpiar la carpeta antes de construir
     rollupOptions: {
       input: {
-        // PÁGINA PRINCIPAL
+        // Define explícitamente cada archivo HTML como entrada
+        // La clave es el nombre del archivo de salida en dist/ (sin extensión)
+        // El valor es la ruta absoluta desde __dirname
         main: resolve(__dirname, 'index.html'),
-
-        // ONBOARDING - CLAVE = NOMBRE FINAL, VALOR = PATH ABSOLUTO
-        usuario: resolve(__dirname, `${pagesDir}/usuario.html`),
-        'mi-comercio': resolve(__dirname, `${pagesDir}/mi-comercio.html`),
-        horarios: resolve(__dirname, `${pagesDir}/horarios.html`),
-        productos: resolve(__dirname, `${pagesDir}/productos.html`),
-        'ia-config': resolve(__dirname, `${pagesDir}/ia-config.html`),
-        dashboard: resolve(__dirname, `${pagesDir}/dashboard.html`),
+        usuario: resolve(__dirname, 'src/pages/usuario.html'),
+        miComercio: resolve(__dirname, 'src/pages/mi-comercio.html'),
+        horarios: resolve(__dirname, 'src/pages/horarios.html'),
+        productos: resolve(__dirname, 'src/pages/productos.html'),
+        iaConfig: resolve(__dirname, 'src/pages/ia-config.html'),
+        dashboard: resolve(__dirname, 'src/pages/dashboard.html'),
+        // Agrega aquí otros HTMLs si los tienes
       },
       output: {
-        // Forzar salida plana para HTML
-        manualChunks: undefined,
-        entryFileNames: 'assets/[name]-[hash].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
+        // Opcional: Define cómo se nombran los archivos JS/CSS/Assets
+        entryFileNames: 'assets/js/[name].[hash].js',
+        chunkFileNames: 'assets/js/[name].[hash].js',
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name.endsWith('.html')) {
-            // ¡HTML EN RAÍZ!
-            return '[name][extname]';
+          // Asegura que los archivos HTML se generen en la RAÍZ de dist/
+          if (assetInfo.name?.endsWith('.html')) {
+            // [name] = clave definida en input (e.g., usuario), [extname] = .html
+            return '[name][extname]'; // -> dist/usuario.html
           }
-          return 'assets/[name]-[hash][extname]';
+          // Maneja otros assets (CSS, imágenes, etc.)
+          // Puedes organizarlos en subcarpetas dentro de assets/
+          if (/\.(gif|jpe?g|png|svg)$/.test(assetInfo.name ?? '')) {
+            return 'assets/img/[name].[hash][extname]';
+          }
+          if (/\.css$/.test(assetInfo.name ?? '')) {
+            return 'assets/css/[name].[hash][extname]';
+          }
+          // Para otros tipos, usar carpeta genérica o por extensión
+          return 'assets/[ext]/[name].[hash][extname]';
         },
       },
     },
   },
   server: {
-    open: true,
+    open: true, // Abre el navegador automáticamente en dev
   },
 });
