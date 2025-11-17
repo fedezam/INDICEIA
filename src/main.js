@@ -1,3 +1,4 @@
+// src/main.js
 // ==========================
 // 📦 IMPORTS
 // ==========================
@@ -6,7 +7,7 @@ import { auth, db } from './firebase.js';
 import './auth.jsx';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { redirectToNextStep } from './shared/redirect-dashboard.js';
+import { runFlowController } from './controllers/flowController.js';
 
 console.log('Main JS cargado ✅');
 
@@ -47,13 +48,13 @@ onAuthStateChanged(auth, async (user) => {
       console.error("❌ Error al guardar usuario:", error);
     }
     
-    // ✅ NUEVO: Redirección inteligente
+    // ✅ REDIRECCIÓN CON FLOW CONTROLLER
     const isLoginPage = window.location.pathname === '/' || 
                         window.location.pathname.endsWith('index.html');
     
     if (isLoginPage) {
-      console.log('Login detectado - redirigiendo según flujo...');
-      await redirectToNextStep();
+      console.log('Login detectado - ejecutando flow controller...');
+      runFlowController(user.uid);
     }
   } else {
     console.log('No hay usuario logueado');
