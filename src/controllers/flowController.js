@@ -1,97 +1,35 @@
-// flowController.js (VERSIÓN FINAL)
+// flowController.js
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "./firebase.js";
 
+// Orden estricto del onboarding
 const FLOW_STEPS = [
-  "usuario.html",
-  "comercio.html",
-  "horarios.html",
-  "productos.html",
-  "ia-config.html",
-  "dashboard.html"
+  "usuario",
+  "comercio",
+  "horarios",
+  "productos",
+  "ia-config",
 ];
 
-// -----------------------------------------------
-// Obtiene el paso actual según filename
-// -----------------------------------------------
-function getCurrentStep() {
-  const path = window.location.pathname;
-  return path.split("/").pop();
-}
+// ---------------------------------------------------------
+// Ejecuta el flujo y redirige a donde corresponde
+// ---------------------------------------------------------
+export async function runFlowController(uid) {
+  if (!uid) return;
 
-// -----------------------------------------------
-// Guarda un estado simple por pantalla
-// -----------------------------------------------
-export function markStepCompleted(stepName) {
-  const state = JSON.parse(localStorage.getItem("flowState") || "{}");
-  state[stepName] = true;
-  localStorage.setItem("flowState", JSON.stringify(state));
-}
+  const ref = doc(db, "onboarding", uid);
+  const snap = await getDoc(ref);
 
-// -----------------------------------------------
-// Verifica si el paso está completado
-// -----------------------------------------------
-function isStepCompleted(stepName) {
-  const state = JSON.parse(localStorage.getItem("flowState") || "{}");
-  return state[stepName] === true;
-}
+  const data = snap.exists() ? snap.data() : {};
 
-// -----------------------------------------------
-// Activa/desactiva el botón "Siguiente"
-// -----------------------------------------------
-export function attachNextButton(nextButtonId) {
-  const current = getCurrentStep();
-  const nextBtn = document.getElementById(nextButtonId);
-
-  if (!nextBtn) return;
-
-  function updateButton() {
-    if (isStepCompleted(current)) {
-      nextBtn.disabled = false;
-      nextBtn.classList.remove("disabled");
-    } else {
-      nextBtn.disabled = true;
-      nextBtn.classList.add("disabled");
+  // Buscar el primer paso que está incompleto
+  for (const step of FLOW_STEPS) {
+    if (!data[step]) {
+      window.location.href = `${step}.html`;
+      return;
     }
   }
 
-  updateButton();
-  setInterval(updateButton, 500); // Revisa por si se guarda async
+  // Si TODOS están en true → dashboard
+  window.location.href = "dashboard.html";
 }
-
-// -----------------------------------------------
-// Ir al siguiente paso
-// -----------------------------------------------
-export function goToNextStep() {
-  const current = getCurrentStep();
-  const index = FLOW_STEPS.indexOf(current);
-
-  if (index === -1 || index === FLOW_STEPS.length - 1) return;
-
-  const next = FLOW_STEPS[index + 1];
-  window.location.href = next;
-}
-
-// -----------------------------------------------
-// Para botón atrás (opcional)
-// -----------------------------------------------
-export function goToPreviousStep() {
-  const current = getCurrentStep();
-  const index = FLOW_STEPS.indexOf(current);
-
-  if (index <= 0) return;
-
-  const previous = FLOW_STEPS[index - 1];
-  window.location.href = previous;
-}
-
-// -----------------------------------------------
-// Debug manual (opcional)
-// -----------------------------------------------
-window.__flowDebug = {
-  reset() {
-    localStorage.removeItem("flowState");
-    alert("Estado del flujo reseteado.");
-  },
-  state() {
-    console.log(JSON.parse(localStorage.getItem("flowState") || "{}"));
-  }
-};
