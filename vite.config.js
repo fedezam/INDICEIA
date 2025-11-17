@@ -5,23 +5,20 @@ import { resolve } from 'path';
 export default defineConfig({
   root: '.',
   publicDir: 'public',
+  base: '/', // ← CRÍTICO: asegura rutas absolutas
+
   build: {
     outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        // PÁGINA PRINCIPAL
         main: resolve(__dirname, 'index.html'),
-
-        // ONBOARDING - CLAVES = NOMBRE DEL ARCHIVO FINAL (SIN .html)
-        usuario: resolve(__dirname, 'src/pages/usuario.html'),
-        'mi-comercio': resolve(__dirname, 'src/pages/mi-comercio.html'),  // ← CLAVE EN COMILLAS
-        horarios: resolve(__dirname, 'src/pages/horarios.html'),
-        productos: resolve(__dirname, 'src/pages/productos.html'),
-        'ia-config': resolve(__dirname, 'src/pages/ia-config.html'),
-
-        // FINAL
-        dashboard: resolve(__dirname, 'src/pages/dashboard.html'),
+        usuario: 'src/pages/usuario.html',           // ← ¡SOLO EL PATH!
+        'mi-comercio': 'src/pages/mi-comercio.html', // ← ¡SIN resolve()!
+        horarios: 'src/pages/horarios.html',
+        productos: 'src/pages/productos.html',
+        'ia-config': 'src/pages/ia-config.html',
+        dashboard: 'src/pages/dashboard.html',
       },
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
