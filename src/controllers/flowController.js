@@ -1,59 +1,55 @@
 // src/controllers/flowController.js
 import { auth, db } from "../firebase.js";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 
 /**
- * Maneja el flujo principal de acceso:
- * - Usuario nuevo → usuario.html
- * - Usuario a medias → lo envía a la primera incompleta
- * - Usuario completo → dashboard.html
+ * FLOW CONTROLLER – Solo lectura
+ *
+ * Flow solo decide dónde debe estar el usuario.
+ * No escribe, no crea documentos, no marca secciones.
  */
+
 export async function handleEntryFlow() {
   return new Promise(resolve => {
     auth.onAuthStateChanged(async user => {
       if (!user) {
-        // LOGIN ESTÁ EN LA RAÍZ
         window.location.href = "/index.html";
         return resolve();
       }
 
-      // Referencia en Firestore
       const ref = doc(db, "users", user.uid);
-      let snap = await getDoc(ref);
+      const snap = await getDoc(ref);
 
-      // Si el usuario NO existe → crear estructura inicial
+      // Si NO existe documento → usuario nuevo → arrancar por usuario.html
       if (!snap.exists()) {
-        await setDoc(ref, {
-          completed: {
-            usuario: false,
-            comercio: false,
-            horarios: false,
-            productos: false,
-            ia: false
-          }
-        });
-
         window.location.href = "/src/pages/usuario.html";
         return resolve();
       }
 
-      const completed = snap.data().completed || {};
+      const data = snap.data();
 
-      /* -------------------------
-         ORDEN LÓGICO DEL FLUJO
-      -------------------------- */
+      const completed = {
+        usuario: data.usuario_completed || false,
+        comercio: data.comercio_completed || false,
+        horarios: data.horarios_completed || false,
+        productos: data.productos_completed || false,
+        ia: data.ia_completed || false
+      };
 
-      if (
+      // Mostrar dashboard si ya completó TODO
+      const allCompleted =
         completed.usuario &&
         completed.comercio &&
         completed.horarios &&
         completed.productos &&
-        completed.ia
-      ) {
+        completed.ia;
+
+      if (allCompleted) {
         window.location.href = "/src/pages/dashboard.html";
         return resolve();
       }
 
+      // Flujo de onboarding → enviar a la primera incompleta
       if (!completed.usuario) {
         window.location.href = "/src/pages/usuario.html";
         return resolve();
@@ -83,18 +79,3 @@ export async function handleEntryFlow() {
     });
   });
 }
-
-/**
- * Marca una sección como completada en Firestore
- * Uso: markSectionCompleted("productos")
- */
-export async function markSectionCompleted(section) {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const ref = doc(db, "users", user.uid);
-  await updateDoc(ref, {
-    [`completed.${section}`]: true
-  });
-}
-
