@@ -6,7 +6,7 @@ import Navigation from '../shared/navigation.jsx';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.jsx';
-import { runFlowController } from '../shared/flowController.js';
+import { runFlowController } from '../controllers/flowController.js';
 
 // Variables globales
 let currentUser = null;
