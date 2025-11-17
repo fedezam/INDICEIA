@@ -1,52 +1,40 @@
-// vite.config.js
 import { defineConfig } from 'vite';
-import { resolve } from 'path';
+import path from 'path';
 
 export default defineConfig({
-  root: '.', // Carpeta raíz del proyecto (donde está package.json y index.html)
-  publicDir: 'public', // Carpeta para assets estáticos que se copian tal cual
+  root: '.', // raíz del proyecto
   build: {
-    outDir: 'dist', // Carpeta de salida
-    emptyOutDir: true, // Limpiar la carpeta antes de construir
+    outDir: 'dist',
     rollupOptions: {
       input: {
-        // Define explícitamente cada archivo HTML como entrada
-        // La clave es el nombre del archivo de salida en dist/ (sin extensión)
-        // El valor es la ruta absoluta desde __dirname
-        main: resolve(__dirname, 'index.html'),
-        usuario: resolve(__dirname, 'src/pages/usuario.html'),
-        miComercio: resolve(__dirname, 'src/pages/mi-comercio.html'),
-        horarios: resolve(__dirname, 'src/pages/horarios.html'),
-        productos: resolve(__dirname, 'src/pages/productos.html'),
-        iaConfig: resolve(__dirname, 'src/pages/ia-config.html'),
-        dashboard: resolve(__dirname, 'src/pages/dashboard.html'),
-        // Agrega aquí otros HTMLs si los tienes
+        index: path.resolve(__dirname, 'index.html'),
+        dashboard: path.resolve(__dirname, 'src/pages/dashboard.html'),
+        miComercio: path.resolve(__dirname, 'src/pages/mi-comercio.html'),
+        productos: path.resolve(__dirname, 'src/pages/productos.html'),
+        horarios: path.resolve(__dirname, 'src/pages/horarios.html'),
+        usuario: path.resolve(__dirname, 'src/pages/usuario.html'),
+        iaConfig: path.resolve(__dirname, 'src/pages/ia-config.html')
       },
       output: {
-        // Opcional: Define cómo se nombran los archivos JS/CSS/Assets
+        // mantener la estructura plana para Vercel
         entryFileNames: 'assets/js/[name].[hash].js',
         chunkFileNames: 'assets/js/[name].[hash].js',
-        assetFileNames: (assetInfo) => {
-          // Asegura que los archivos HTML se generen en la RAÍZ de dist/
-          if (assetInfo.name?.endsWith('.html')) {
-            // [name] = clave definida en input (e.g., usuario), [extname] = .html
-            return '[name][extname]'; // -> dist/usuario.html
-          }
-          // Maneja otros assets (CSS, imágenes, etc.)
-          // Puedes organizarlos en subcarpetas dentro de assets/
-          if (/\.(gif|jpe?g|png|svg)$/.test(assetInfo.name ?? '')) {
-            return 'assets/img/[name].[hash][extname]';
-          }
-          if (/\.css$/.test(assetInfo.name ?? '')) {
+        assetFileNames: ({ name }) => {
+          if (/\.(css)$/.test(name ?? '')) {
             return 'assets/css/[name].[hash][extname]';
           }
-          // Para otros tipos, usar carpeta genérica o por extensión
-          return 'assets/[ext]/[name].[hash][extname]';
-        },
-      },
+          if (/\.(png|jpe?g|svg|gif|webp)$/.test(name ?? '')) {
+            return 'assets/img/[name].[hash][extname]';
+          }
+          return 'assets/[name].[hash][extname]';
+        }
+      }
     },
+    emptyOutDir: true
   },
-  server: {
-    open: true, // Abre el navegador automáticamente en dev
-  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src')
+    }
+  }
 });
