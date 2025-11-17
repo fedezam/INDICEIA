@@ -6,7 +6,7 @@ import Navigation from '../shared/navigation.jsx';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.jsx';
-import { redirectToNextStep } from '../shared/redirect-dashboard.js';
+import { runFlowController } from '../shared/flowController.js';
 
 // Variables globales
 let currentUser = null;
@@ -48,7 +48,14 @@ async function initializePage() {
         tipo: 'comercio',
         plan: 'trial',
         pais: 'Argentina',
-        fechaInicioTrial: new Date()
+        fechaInicioTrial: new Date(),
+        onboardingSteps: {
+          usuario: false,
+          comercio: false,
+          horarios: false,
+          productos: false,
+          'ia-config': false
+        }
       });
       currentComercioId = newComercioRef.id;
       
@@ -96,7 +103,14 @@ async function loadComercioData() {
         dueñoId: currentUser.uid,
         plan: 'trial',
         pais: 'Argentina',
-        fechaInicioTrial: new Date()
+        fechaInicioTrial: new Date(),
+        onboardingSteps: {
+          usuario: false,
+          comercio: false,
+          horarios: false,
+          productos: false,
+          'ia-config': false
+        }
       };
       originalData = JSON.parse(JSON.stringify(comercioData));
     }
@@ -582,7 +596,10 @@ async function saveFormData() {
     updates.categories = selectedCategories;
     updates.plan = comercioData.plan || 'trial';
 
-    // GUARDAR SOLO EN FIRESTORE
+    // MARCAR PASO COMO COMPLETADO
+    updates['onboardingSteps.comercio'] = true;
+
+    // GUARDAR EN FIRESTORE
     console.log('Guardando en Firestore...', currentComercioId);
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
@@ -590,7 +607,7 @@ async function saveFormData() {
       fechaActualizacion: new Date()
     });
 
-    console.log('Guardado en Firestore exitoso');
+    console.log('Guardado exitoso - paso "comercio" completado');
 
     // ACTUALIZAR ESTADO LOCAL
     comercioData = { ...comercioData, ...updates };
@@ -611,30 +628,13 @@ async function saveFormData() {
       }, 2000);
     }
 
-    Navigation.markPageAsCompleted('mi-comercio');
-    Navigation.updateProgressBar();
-
     showToast('Éxito', 'Cambios guardados correctamente', 'success');
-    console.log('Guardado completo exitoso');
-    // === REDIRECCIÓN INTELIGENTE ===
 
-    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
+    // EJECUTAR FLOW CONTROLLER
+    setTimeout(() => {
+      runFlowController(currentUser.uid);
+    }, 1000);
 
-      setTimeout(() => {
-
-        window.location.href = "dashboard.html";
-
-      }, 1000);
-
-    } else {
-
-      setTimeout(() => {
-
-        Navigation.goToNextPage();
-
-      }, 1000);
-
-    }
     return true;
 
   } catch (error) {
