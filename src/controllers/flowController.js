@@ -5,7 +5,7 @@ import { db } from "../firebase.js";  // ← Sube un nivel desde controllers/ a 
 // Orden estricto del onboarding
 const FLOW_STEPS = [
   "usuario",
-  "comercio",
+  "mi-comercio",
   "horarios",
   "productos",
   "ia-config",
