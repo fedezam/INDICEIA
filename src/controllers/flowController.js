@@ -1,81 +1,97 @@
-// src/controllers/flowController.js
-import { auth, db } from "../firebase.js";
-import { doc, getDoc } from "firebase/firestore";
+// flowController.js (VERSIÓN FINAL)
 
-/**
- * FLOW CONTROLLER – Solo lectura
- *
- * Flow solo decide dónde debe estar el usuario.
- * No escribe, no crea documentos, no marca secciones.
- */
+const FLOW_STEPS = [
+  "usuario.html",
+  "comercio.html",
+  "horarios.html",
+  "productos.html",
+  "ia-config.html",
+  "dashboard.html"
+];
 
-export async function handleEntryFlow() {
-  return new Promise(resolve => {
-    auth.onAuthStateChanged(async user => {
-      if (!user) {
-        window.location.href = "/index.html";
-        return resolve();
-      }
-
-      const ref = doc(db, "users", user.uid);
-      const snap = await getDoc(ref);
-
-      // Si NO existe documento → usuario nuevo → arrancar por usuario.html
-      if (!snap.exists()) {
-        window.location.href = "/src/pages/usuario.html";
-        return resolve();
-      }
-
-      const data = snap.data();
-
-      const completed = {
-        usuario: data.usuario_completed || false,
-        comercio: data.comercio_completed || false,
-        horarios: data.horarios_completed || false,
-        productos: data.productos_completed || false,
-        ia: data.ia_completed || false
-      };
-
-      // Mostrar dashboard si ya completó TODO
-      const allCompleted =
-        completed.usuario &&
-        completed.comercio &&
-        completed.horarios &&
-        completed.productos &&
-        completed.ia;
-
-      if (allCompleted) {
-        window.location.href = "/src/pages/dashboard.html";
-        return resolve();
-      }
-
-      // Flujo de onboarding → enviar a la primera incompleta
-      if (!completed.usuario) {
-        window.location.href = "/src/pages/usuario.html";
-        return resolve();
-      }
-
-      if (!completed.comercio) {
-        window.location.href = "/src/pages/mi-comercio.html";
-        return resolve();
-      }
-
-      if (!completed.horarios) {
-        window.location.href = "/src/pages/horarios.html";
-        return resolve();
-      }
-
-      if (!completed.productos) {
-        window.location.href = "/src/pages/productos.html";
-        return resolve();
-      }
-
-      if (!completed.ia) {
-        window.location.href = "/src/pages/ia-config.html";
-        return resolve();
-      }
-
-      resolve();
-    });
-  });
+// -----------------------------------------------
+// Obtiene el paso actual según filename
+// -----------------------------------------------
+function getCurrentStep() {
+  const path = window.location.pathname;
+  return path.split("/").pop();
 }
+
+// -----------------------------------------------
+// Guarda un estado simple por pantalla
+// -----------------------------------------------
+export function markStepCompleted(stepName) {
+  const state = JSON.parse(localStorage.getItem("flowState") || "{}");
+  state[stepName] = true;
+  localStorage.setItem("flowState", JSON.stringify(state));
+}
+
+// -----------------------------------------------
+// Verifica si el paso está completado
+// -----------------------------------------------
+function isStepCompleted(stepName) {
+  const state = JSON.parse(localStorage.getItem("flowState") || "{}");
+  return state[stepName] === true;
+}
+
+// -----------------------------------------------
+// Activa/desactiva el botón "Siguiente"
+// -----------------------------------------------
+export function attachNextButton(nextButtonId) {
+  const current = getCurrentStep();
+  const nextBtn = document.getElementById(nextButtonId);
+
+  if (!nextBtn) return;
+
+  function updateButton() {
+    if (isStepCompleted(current)) {
+      nextBtn.disabled = false;
+      nextBtn.classList.remove("disabled");
+    } else {
+      nextBtn.disabled = true;
+      nextBtn.classList.add("disabled");
+    }
+  }
+
+  updateButton();
+  setInterval(updateButton, 500); // Revisa por si se guarda async
+}
+
+// -----------------------------------------------
+// Ir al siguiente paso
+// -----------------------------------------------
+export function goToNextStep() {
+  const current = getCurrentStep();
+  const index = FLOW_STEPS.indexOf(current);
+
+  if (index === -1 || index === FLOW_STEPS.length - 1) return;
+
+  const next = FLOW_STEPS[index + 1];
+  window.location.href = next;
+}
+
+// -----------------------------------------------
+// Para botón atrás (opcional)
+// -----------------------------------------------
+export function goToPreviousStep() {
+  const current = getCurrentStep();
+  const index = FLOW_STEPS.indexOf(current);
+
+  if (index <= 0) return;
+
+  const previous = FLOW_STEPS[index - 1];
+  window.location.href = previous;
+}
+
+// -----------------------------------------------
+// Debug manual (opcional)
+// -----------------------------------------------
+window.__flowDebug = {
+  reset() {
+    localStorage.removeItem("flowState");
+    alert("Estado del flujo reseteado.");
+  },
+  state() {
+    console.log(JSON.parse(localStorage.getItem("flowState") || "{}"));
+  }
+};
