@@ -16,20 +16,42 @@ const FLOW_STEPS = [
 // ---------------------------------------------------------
 export async function runFlowController(uid) {
   if (!uid) return;
-
-  const ref = doc(db, "onboarding", uid);
-  const snap = await getDoc(ref);
-
-  const data = snap.exists() ? snap.data() : {};
-
-  // Buscar el primer paso que está incompleto
+  
+  // 1. Obtener el comercioId del usuario
+  const userRef = doc(db, "usuarios", uid);
+  const userSnap = await getDoc(userRef);
+  
+  if (!userSnap.exists()) {
+    console.error("Usuario no encontrado");
+    return;
+  }
+  
+  const comercioId = userSnap.data().comercioId;
+  if (!comercioId) {
+    console.error("Usuario sin comercioId");
+    return;
+  }
+  
+  // 2. Leer los pasos completados del comercio
+  const comercioRef = doc(db, "comercios", comercioId);
+  const comercioSnap = await getDoc(comercioRef);
+  
+  if (!comercioSnap.exists()) {
+    console.error("Comercio no encontrado");
+    return;
+  }
+  
+  const data = comercioSnap.data();
+  const steps = data.onboardingSteps || {};
+  
+  // 3. Buscar el primer paso incompleto
   for (const step of FLOW_STEPS) {
-    if (!data[step]) {
+    if (!steps[step]) {
       window.location.href = `${step}.html`;
       return;
     }
   }
-
-  // Si TODOS están en true → dashboard
+  
+  // 4. Si TODOS están en true → dashboard
   window.location.href = "dashboard.html";
 }
