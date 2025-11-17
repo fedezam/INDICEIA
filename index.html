@@ -56,21 +56,5 @@
       ¿No tienes cuenta? <a href="#">Regístrate aquí</a>
     </div>
   </div>
-
-  <!-- Flow Controller: Redirige automáticamente si hay sesión activa -->
-  <script type="module">
-    import { auth } from "/src/firebase.js";
-    import { onAuthStateChanged } from "firebase/auth";
-    import { runFlowController } from "/src/controllers/flowController.js";
-
-    // Escuchar cambios de autenticación
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // Usuario autenticado → ejecutar flow
-        runFlowController(user.uid);
-      }
-      // Si NO hay usuario, se queda en index.html (login)
-    });
-  </script>
 </body>
 </html>
