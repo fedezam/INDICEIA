@@ -6,7 +6,7 @@ import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { fillProvinciaSelector } from "../shared/provincias.js";
-import { redirectToNextStep } from '../shared/redirect-dashboard.js';
+import { runFlowController } from '../controllers/flowController.js';
 
 // =========================
 // 🔧 Utils
@@ -71,7 +71,7 @@ class Utils {
 
     setValueSafe("nombre", data.nombre);
     setValueSafe("apellido", data.apellido);
-    setValueSafe("mail", data.mail);  // ✅ Agregar mail
+    setValueSafe("mail", data.mail);
     setValueSafe("direccion", data.direccion);
     setValueSafe("pais", data.pais);
     setValueSafe("provincia", data.provincia);
@@ -131,8 +131,7 @@ onAuthStateChanged(auth, async (user) => {
     paisEl.addEventListener('change', (e) => {
       loadProvinciasForCountry(e.target.value);
     });
-    // Cargar provincias iniciales para Argentina
-    loadProvinciasForCountry(paisEl.value);
+    // Cargar provincias iniciales
     const initialCountry = paisEl.value || 'Argentina';
     loadProvinciasForCountry(initialCountry);
   }
@@ -165,47 +164,51 @@ if (guardarBtn) {
     const userRef = doc(db, "usuarios", user.uid);
 
     try {
+      // Obtener el comercioId si existe
+      const userSnap = await getDoc(userRef);
+      const comercioId = userSnap.exists() ? userSnap.data().comercioId : null;
+
+      // Guardar datos del usuario
       await setDoc(
         userRef,
         {
           nombre,
           apellido,
-          mail,  // ✅ Guardar el mail también
+          mail,
           direccion,
           pais,
           provincia,
           localidad,
           barrio: barrio || null,
           fechaNacimiento,
-          telefono,  // ✅ Ahora es obligatorio
+          telefono,
           actualizado: new Date()
         },
         { merge: true }
       );
 
+      // Si tiene comercio, marcar el paso como completado
+      if (comercioId) {
+        const comercioRef = doc(db, "comercios", comercioId);
+        await setDoc(
+          comercioRef,
+          {
+            'onboardingSteps.usuario': true
+          },
+          { merge: true }
+        );
+        console.log("✅ Paso 'usuario' marcado como completado");
+      }
+
       Utils.showMessage("Datos guardados correctamente ✅");
 
-      // ✅ Ahora SÍ habilitar los botones después de guardar
+      // ✅ Habilitar los botones después de guardar
       Utils.enableIAButtons();
-    // === REDIRECCIÓN INTELIGENTE ===
 
-    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
-
+      // Ejecutar flow controller después de 1 segundo
       setTimeout(() => {
-
-        window.location.href = "dashboard.html";
-
+        runFlowController(user.uid);
       }, 1000);
-
-    } else {
-
-      setTimeout(() => {
-
-        Navigation.goToNextPage();
-
-      }, 1000);
-
-    }
       
     } catch (error) {
       console.error("Error al guardar datos:", error);
