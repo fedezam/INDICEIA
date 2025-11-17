@@ -1,6 +1,6 @@
-// flowController.js
+// src/controllers/flowController.js
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "./firebase.js";
+import { db } from "../firebase.js";  // ← Sube un nivel desde controllers/ a src/
 
 // Orden estricto del onboarding
 const FLOW_STEPS = [
