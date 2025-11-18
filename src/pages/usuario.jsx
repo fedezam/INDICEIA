@@ -7,7 +7,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { fillProvinciaSelector } from "../shared/provincias.js";
 import { runFlowController } from "../controllers/flowController.js";
 
-/ =========================
+// =========================
 // 🔄 INIT FLOW CONTROLLER
 // =========================
 onAuthStateChanged(auth, async (user) => {
