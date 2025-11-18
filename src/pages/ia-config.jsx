@@ -5,6 +5,7 @@ import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore'
 import Navigation from '../shared/navigation.jsx';
 import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
+import { runFlowController } from '../controllers/flowController.js';
 
 // ==================== ESTADO GLOBAL ====================
 let currentUser = null;
@@ -59,7 +60,6 @@ async function initializePage() {
   try {
     showLoading('Cargando configuración de IA...');
 
-    // 1. Obtener comercioId
     const userDoc = await getDoc(doc(db, 'usuarios', currentUser.uid));
     if (!userDoc.exists() || !userDoc.data().comercioId) {
       window.location.href = './mi-comercio.html';
@@ -67,7 +67,6 @@ async function initializePage() {
     }
     currentComercioId = userDoc.data().comercioId;
 
-    // 2. Cargar comercio
     const comercioDoc = await getDoc(doc(db, 'comercios', currentComercioId));
     if (!comercioDoc.exists()) {
       showToast('error', 'Error', 'Comercio no encontrado');
@@ -75,22 +74,14 @@ async function initializePage() {
     }
     comercioData = { id: currentComercioId, ...comercioDoc.data() };
 
-    // 3. Cargar productos
     await loadProducts();
 
-    // 4. UI
     updateHeader();
     updateSubscriptionBanner();
     loadAIConfig();
     renderContactosValidacion();
-
-    // 5. Eventos
     setupEventListeners();
-
-    // 6. Navigation
     Navigation.init();
-
-    // 7. CREAR BOTÓN AL FINAL
     createSaveButton();
 
     hideLoading();
@@ -389,14 +380,13 @@ function markAsChanged() {
   if (btn) setButtonState(btn, 'enabled');
 }
 
-// ==================== GUARDAR (FIRESTORE + REDIRECCIÓN) ====================
+// ==================== GUARDAR ====================
 async function saveAIConfig() {
   const btn = $('saveChangesBtn');
   if (!btn) return;
   setButtonState(btn, 'saving');
 
   try {
-    // Validar campos
     const required = [
       'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
       'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
@@ -442,42 +432,29 @@ async function saveAIConfig() {
       }))
     };
 
-    // GUARDAR EN FIRESTORE
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
       aiConfig: config,
+      'onboardingSteps.ia-config': true,
       fechaActualizacion: new Date()
     });
 
-    // === ÉXITO ===
+    console.log('✅ Configuración IA guardada y paso "ia-config" marcado como completado');
+
     hasUnsavedChanges = false;
     comercioData.aiConfig = config;
     originalAIConfig = JSON.parse(JSON.stringify(config));
 
-    // Feedback
     setButtonState(btn, 'saved');
     showToast('success', 'Guardado', 'Configuración IA guardada correctamente');
 
     setTimeout(() => {
-      btn.disabled = true;
-      btn.className = 'btn-save';
-      btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+      setButtonState(btn, 'idle');
     }, 2000);
 
-    // === MARCAR COMO COMPLETADA ===
-    Navigation.markPageAsCompleted('ia-config');
-    Navigation.updateProgressBar();
-
-    // === REDIRECCIÓN AUTOMÁTICA ===
-    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 1000);
-    } else {
-      setTimeout(() => {
-        Navigation.goToNextPage();
-      }, 1000);
-    }
+    setTimeout(() => {
+      runFlowController(currentUser.uid);
+    }, 1000);
 
   } catch (error) {
     console.error('Error guardando IA:', error);
@@ -499,23 +476,6 @@ async function handleLogout() {
   }
 }
 
-
-// =========================================================
-// 🚀 **VALIDACIÓN PARA QUE LA NAVEGACIÓN SE HABILITE**
-// =========================================================
-window.validateCurrentPageData = async function () {
-  const required = [
-    'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
-    'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
-  ];
-
-  for (const id of required) {
-    if (!safeGet(id)) return false;
-  }
-
-  return true; // ✔ Todo completo → habilita botón Finalizado/Siguiente
-};
-
 // ==================== VALIDACIÓN PARA NAVEGACIÓN ====================
 window.validateCurrentPageData = async function () {
   const required = [
@@ -529,4 +489,3 @@ window.validateCurrentPageData = async function () {
 
   return true;
 };
-
