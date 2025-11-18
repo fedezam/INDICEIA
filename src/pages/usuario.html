@@ -1,152 +1,107 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Datos del Usuario – ÍndiceIA</title>
-    <meta name="description" content="Completá tus datos personales para comenzar la configuración de tu asistente ÍndiceIA.">
-    <meta name="robots" content="noindex, nofollow">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Datos del Usuario – ÍndiceIA">
-    <meta property="og:description" content="Completá tu perfil para activar tu asistente inteligente.">
-    <meta property="og:image" content="/images/og-image.jpg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css">
-    <script type="module" src="/src/controllers/flowController.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Datos del Usuario - Índice IA</title>
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/forms.css" />
+
+  <!-- FontAwesome -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+  />
 </head>
 
 <body>
-  <!-- Toast Container -->
-  <div id="toastContainer" class="toast-container"></div>
+  <div class="container">
+    <header class="section-header">
+      <h1><i class="fas fa-user"></i> Datos del Usuario</h1>
+      <p>Completa tu información personal para continuar con el alta del comercio.</p>
+    </header>
 
-  <div class="container" style="max-width: 800px; margin-top: 40px;">
-    <div class="main-content">
-      <div style="padding: 30px;">
-        <h2 class="title" style="font-size: 28px; font-weight: 700; color: #333; margin-bottom: 10px;">
-          Completa tus datos personales
-        </h2>
-        <p class="subtitle" style="color: #666; margin-bottom: 30px;">
-          Estos datos se usarán para personalizar tu experiencia.
-        </p>
+    <section class="form-section">
+      <form id="userForm">
 
-        <form id="usuarioForm" class="form">
-          <!-- Datos Personales -->
-          <div class="form-section">
-            <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 20px;">
-              <i class="fas fa-user"></i> Información Personal
-            </h3>
-            <div class="form-fields">
-              <div class="form-field">
-                <label for="nombre">Nombre <span style="color: #f44336;">*</span></label>
-                <input type="text" id="nombre" placeholder="Tu nombre" required>
-              </div>
-              <div class="form-field">
-                <label for="apellido">Apellido <span style="color: #f44336;">*</span></label>
-                <input type="text" id="apellido" placeholder="Tu apellido" required>
-              </div>
-              <!-- ✅ CAMPO DE MAIL AGREGADO -->
-              <div class="form-field">
-                <label for="mail">Email <span style="color: #f44336;">*</span></label>
-                <input 
-                  type="email" 
-                  id="mail" 
-                  placeholder="tu@email.com" 
-                  readonly 
-                  required
-                  style="background: #f5f5f5; cursor: not-allowed;"
-                  title="Este email proviene de tu cuenta de Google y no puede modificarse"
-                >
-              </div>
-              <div class="form-field">
-                <label for="fechaNacimiento">Fecha de nacimiento <span style="color: #f44336;">*</span></label>
-                <input type="date" id="fechaNacimiento" required>
-              </div>
-              <div class="form-field">
-                <label for="telefono">Teléfono <span style="color: #f44336;">*</span></label>
-                <input type="tel" id="telefono" placeholder="Ej: 03411234567" required>
-              </div>
-            </div>
+        <!-- Nombre -->
+        <div class="form-group">
+          <label for="nombre">Nombre <span class="required">*</span></label>
+          <input type="text" id="nombre" required />
+        </div>
+
+        <!-- Apellido -->
+        <div class="form-group">
+          <label for="apellido">Apellido <span class="required">*</span></label>
+          <input type="text" id="apellido" required />
+        </div>
+
+        <!-- Teléfono -->
+        <div class="form-group">
+          <label for="telefono">Teléfono <span class="required">*</span></label>
+          <input type="tel" id="telefono" required />
+        </div>
+
+        <!-- Provincia -->
+        <div class="form-group">
+          <label for="provincia">Provincia <span class="required">*</span></label>
+          <select id="provincia" required>
+            <option value="">Seleccione provincia</option>
+          </select>
+        </div>
+
+        <!-- Ciudad -->
+        <div class="form-group">
+          <label for="ciudad">Ciudad <span class="required">*</span></label>
+          <select id="ciudad" required>
+            <option value="">Seleccione ciudad</option>
+          </select>
+        </div>
+
+        <!-- ¿Es comercio o servicio? -->
+        <div class="form-group">
+          <label>Tipo de actividad <span class="required">*</span></label>
+
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" id="checkComercio" />
+              Comercio
+            </label>
+
+            <label class="checkbox-item">
+              <input type="checkbox" id="checkServicio" />
+              Servicio
+            </label>
           </div>
+        </div>
 
-          <!-- Ubicación -->
-          <div class="form-section">
-            <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 20px;">
-              <i class="fas fa-map-marker-alt"></i> Ubicación
-            </h3>
-            <div class="form-fields">
-              <div class="form-field">
-                <label for="pais">País <span style="color: #f44336;">*</span></label>
-                <select id="pais" required>
-                  <option value="Argentina" selected>🇦🇷 Argentina</option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label for="provincia">Provincia <span style="color: #f44336;">*</span></label>
-                <select id="provincia" required>
-                  <option value="">Seleccionar provincia...</option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label for="localidad">Localidad <span style="color: #f44336;">*</span></label>
-                <input type="text" id="localidad" placeholder="Ej: Casilda" required>
-              </div>
-              <div class="form-field">
-                <label for="barrio">Barrio (opcional)</label>
-                <input type="text" id="barrio" placeholder="Ej: Centro">
-              </div>
-              <div class="form-field">
-                <label for="direccion">Dirección <span style="color: #f44336;">*</span></label>
-                <input type="text" id="direccion" placeholder="Ej: Catamarca 1219" required>
-              </div>
-            </div>
-          </div>
-
-          <!-- Botón Guardar -->
-          <div class="btn-group btn-group-end">
-            <button type="button" id="saveUserData" class="btn btn-primary btn-lg">
-              <i class="fas fa-save"></i> Guardar Datos
-            </button>
-          </div>
-
-          <!-- Opciones de IA -->
-          <div class="form-section" style="margin-top: 40px;">
-            <p class="info-text" style="background: rgba(102, 126, 234, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #333;">
-              ⚡ Una vez guardados tus datos, elige qué tipo de IA deseas crear:
-            </p>
-            <div class="options" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-              <button type="button" id="btnComercio" class="btn" disabled style="background: #e0e0e0; cursor: not-allowed; flex-direction: column; padding: 25px; height: auto;">
-                <i class="fas fa-store" style="font-size: 32px; margin-bottom: 10px;"></i>
-                <strong style="font-size: 16px; margin-bottom: 5px;">Crear IA para Comercio</strong>
-                <p class="btn-desc" style="font-size: 13px; color: #666; margin: 0;">Ideal si vendes productos, con catálogo y horarios.</p>
-              </button>
-              <button type="button" id="btnServicio" class="btn" disabled style="background: #e0e0e0; cursor: not-allowed; flex-direction: column; padding: 25px; height: auto;">
-                <i class="fas fa-briefcase" style="font-size: 32px; margin-bottom: 10px;"></i>
-                <strong style="font-size: 16px; margin-bottom: 5px;">Crear IA para Servicio</strong>
-                <p class="btn-desc" style="font-size: 13px; color: #666; margin: 0;">Perfecto si ofrecés servicios o turnos personalizados.</p>
-              </button>
-            </div>
-          </div>
-        </form>
-
-        <!-- Logout -->
-        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-          <button onclick="logout()" class="btn btn-secondary btn-sm">
-            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+        <!-- Botón Guardar -->
+        <div class="btn-group btn-group-end">
+          <button type="button" id="saveUserData" class="btn btn-primary btn-lg">
+            <i class="fas fa-save"></i> Guardar Datos
           </button>
         </div>
-      </div>
-    </div>
+
+        <!-- Botón Siguiente (NUEVO) -->
+        <div class="btn-group btn-group-end" style="margin-top: 15px;">
+          <button 
+            type="button" 
+            id="btnSiguiente" 
+            class="btn btn-secondary btn-lg" 
+            disabled 
+            style="opacity: 0.5; cursor: not-allowed;"
+          >
+            <i class="fas fa-arrow-right"></i> Siguiente
+          </button>
+        </div>
+
+      </form>
+    </section>
   </div>
 
-  <!-- Firebase -->
-  <script type="module" src="../firebase.js"></script>
-  <!-- Provincias -->
-  <script type="module" src="../shared/provincias.js"></script>
-  <!-- JS -->
-  <script type="module" src="./usuario.jsx"></script>
+  <script type="module" src="../controllers/usuario.js"></script>
+
 </body>
 </html>
