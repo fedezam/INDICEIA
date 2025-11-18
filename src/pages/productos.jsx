@@ -7,7 +7,7 @@ import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { runFlowController } from '../controllers/flowController.js';
 
-/ =========================
+// =========================
 // 🔄 INIT FLOW CONTROLLER
 // =========================
 onAuthStateChanged(auth, async (user) => {
