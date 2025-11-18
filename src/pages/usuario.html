@@ -4,25 +4,27 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Datos del Usuario – ÍndiceIA</title>
     <meta name="description" content="Completá tus datos personales para comenzar la configuración de tu asistente ÍndiceIA.">
     <meta name="robots" content="noindex, nofollow">
-
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
-
     <meta property="og:type" content="website">
     <meta property="og:title" content="Datos del Usuario – ÍndiceIA">
     <meta property="og:description" content="Completá tu perfil para activar tu asistente inteligente.">
     <meta property="og:image" content="/images/og-image.jpg">
-
+    
+    <!-- Google Fonts (esto sí queda igual) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="/src/styles/global.css">
-
-    <link rel="stylesheet" href="/styles.css">
+    
+    <!-- CSS – rutas relativas reales desde src/pages/usuario.html -->
+    <link rel="stylesheet" href="../styles.css">        <!-- este es el que tienes en src/styles.css -->
+    
+    <!-- Si también usas global.css y está en src/styles/global.css, descomenta la siguiente línea -->
+    <!-- <link rel="stylesheet" href="../styles/global.css"> -->
+    
+    <!-- Script controlador – ruta relativa real (esta ya te funcionaba perfecto antes) -->
     <script type="module" src="../controllers/flowController.js"></script>
 </head>
 
