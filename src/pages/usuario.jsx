@@ -1,12 +1,11 @@
-//src/pages/usuario.jsx
 // =========================
 // 📦 IMPORTS
 // =========================
-import { auth, db } from '../firebase.js';
+import { auth, db } from "../firebase.js";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { fillProvinciaSelector } from "../shared/provincias.js";
-import { runFlowController } from '../controllers/flowController.js';
+import { runFlowController } from "../controllers/flowController.js";
 
 // =========================
 // 🔧 Utils
@@ -48,39 +47,18 @@ class Utils {
     });
   }
 
-  // ✅ Verificar que TODOS los campos obligatorios estén completos EN FIRESTORE
   static isProfileComplete(data) {
-    const required = [
-      data.nombre,
-      data.apellido,
-      data.mail,
-      data.direccion,
-      data.pais,
-      data.provincia,
-      data.localidad,
-      data.fechaNacimiento,
+    return !!(
+      data.nombre &&
+      data.apellido &&
+      data.mail &&
+      data.direccion &&
+      data.pais &&
+      data.provincia &&
+      data.localidad &&
+      data.fechaNacimiento &&
       data.telefono
-    ];
-    
-    const allFilled = required.every(field => field && String(field).trim() !== "");
-    
-    console.log("🔍 Verificando perfil:", {
-      completo: allFilled,
-      provincia: data.provincia || "❌ FALTA",
-      campos: {
-        nombre: !!data.nombre,
-        apellido: !!data.apellido,
-        mail: !!data.mail,
-        direccion: !!data.direccion,
-        pais: !!data.pais,
-        provincia: !!data.provincia,
-        localidad: !!data.localidad,
-        fechaNacimiento: !!data.fechaNacimiento,
-        telefono: !!data.telefono
-      }
-    });
-    
-    return allFilled;
+    );
   }
 
   static fillForm(data) {
@@ -122,43 +100,36 @@ onAuthStateChanged(auth, async (user) => {
       email: user.email,
       uid: user.uid,
       referralId: Utils.generateReferralId(),
-      fechaRegistro: new Date()
+      fechaRegistro: new Date(),
+      onboardingSteps: {
+        usuario: false,
+      },
     });
-    // ✅ Usuario nuevo = botones deshabilitados
     Utils.disableIAButtons();
   } else {
     const userData = userSnap.data();
-    
-    // 1️⃣ PRIMERO: Cargar las provincias del país correcto
-    const paisEl = document.getElementById("pais");
-    const initialCountry = userData.pais || paisEl?.value || "Argentina";
-    loadProvinciasForCountry(initialCountry);
-    
-    // 2️⃣ SEGUNDO: Esperar a que el DOM se actualice ANTES de llenar el form
-    requestAnimationFrame(() => {
-      // Ahora sí llenar el formulario (provincia ya tiene opciones disponibles)
-      Utils.fillForm(userData);
-      
-      // 3️⃣ TERCERO: Verificar perfil con los datos de FIRESTORE, no del DOM
-      if (Utils.isProfileComplete(userData)) {
-        console.log("✅ Perfil completo (según Firestore) - Habilitando botones IA");
-        Utils.enableIAButtons();
-      } else {
-        console.log("⚠️ Perfil incompleto - Botones deshabilitados");
-        Utils.disableIAButtons();
-      }
-    });
+
+    Utils.fillForm(userData);
+
+    if (Utils.isProfileComplete(userData)) {
+      console.log("✅ Perfil completo - Habilitando IA");
+      Utils.enableIAButtons();
+    } else {
+      console.log("⚠️ Perfil incompleto - Deshabilitando IA");
+      Utils.disableIAButtons();
+    }
   }
 
   const emailEl = document.getElementById("userEmail");
   if (emailEl) emailEl.innerText = user.email;
 
-  // Listener para cambio de país
   const paisEl = document.getElementById("pais");
   if (paisEl) {
-    paisEl.addEventListener('change', (e) => {
+    paisEl.addEventListener("change", (e) => {
       loadProvinciasForCountry(e.target.value);
     });
+
+    loadProvinciasForCountry(paisEl.value || "Argentina");
   }
 });
 
@@ -183,17 +154,13 @@ if (guardarBtn) {
     const telefono = document.getElementById("telefono")?.value.trim();
 
     if (!nombre || !apellido || !mail || !direccion || !pais || !provincia || !localidad || !fechaNacimiento || !telefono) {
-      return Utils.showMessage("Por favor, completa todos los campos obligatorios (incluyendo teléfono).");
+      return Utils.showMessage("Por favor, completa todos los campos obligatorios.");
     }
 
     const userRef = doc(db, "usuarios", user.uid);
 
     try {
-      // Obtener el comercioId si existe
-      const userSnap = await getDoc(userRef);
-      const comercioId = userSnap.exists() ? userSnap.data().comercioId : null;
-
-      // Guardar datos del usuario
+      // 1️⃣ Guardar datos personales
       await setDoc(
         userRef,
         {
@@ -207,43 +174,61 @@ if (guardarBtn) {
           barrio: barrio || null,
           fechaNacimiento,
           telefono,
-          actualizado: new Date()
+          actualizado: new Date(),
         },
         { merge: true }
       );
 
-      // Si tiene comercio, marcar el paso como completado
+      console.log("✅ Datos de usuario guardados");
+
+      // 2️⃣ Marcar paso "usuario" SIEMPRE en el usuario
+      await setDoc(
+        userRef,
+        {
+          onboardingSteps: {
+            usuario: true,
+          },
+        },
+        { merge: true }
+      );
+
+      console.log("✅ Paso 'usuario' marcado en usuario");
+
+      // 3️⃣ Si tiene comercio, marcar también el paso en comercio
+      const newSnap = await getDoc(userRef);
+      const comercioId = newSnap.data()?.comercioId;
+
       if (comercioId) {
         const comercioRef = doc(db, "comercios", comercioId);
+
         await setDoc(
           comercioRef,
           {
-            'onboardingSteps.usuario': true
+            "onboardingSteps.usuario": true,
           },
           { merge: true }
         );
-        console.log("✅ Paso 'usuario' marcado como completado");
+
+        console.log("✅ Paso 'usuario' marcado también en comercio:", comercioId);
       }
 
       Utils.showMessage("Datos guardados correctamente ✅");
-
-      // ✅ Habilitar los botones después de guardar
       Utils.enableIAButtons();
 
-      // Ejecutar flow controller después de 1 segundo
+      // Flow Controller después de 1 segundo
       setTimeout(() => {
         runFlowController(user.uid);
       }, 1000);
-      
+
     } catch (error) {
-      console.error("Error al guardar datos:", error);
+      console.error("❌ Error al guardar datos:", error);
       Utils.showMessage("Ocurrió un error al guardar los datos.");
     }
   });
 }
 
 // =========================
-// ⚡ Botones de creación de IA
+// ⚡ Botones IA
 // =========================
 const comercioBtn = document.getElementById("btnComercio");
 if (comercioBtn) {
@@ -260,34 +245,12 @@ if (servicioBtn) {
 }
 
 // =========================
-// 🚪 Cerrar sesión
-// =========================
-// Usar la función global de main.js via onclick en HTML
-// Si prefieres manejarla aquí, descomenta:
-/*
-const logoutBtn = document.getElementById("logoutBtn");
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", async () => {
-    try {
-      await signOut(auth);
-      window.location.href = "../../index.html";
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-    }
-  });
-}
-*/
-
-// =========================
-// 🌎 Función para cargar provincias
+// 🌎 Provincias
 // =========================
 function loadProvinciasForCountry(country) {
   const provinciaEl = document.getElementById("provincia");
   if (!provinciaEl) return;
 
-  // Limpiar opciones actuales
   provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
-
-  // Llamar a la función importada para llenar el selector
   fillProvinciaSelector(country, provinciaEl);
 }
