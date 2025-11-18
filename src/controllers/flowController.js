@@ -1,14 +1,30 @@
 // src/controllers/flowController.js
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase.js"; // Sube un nivel desde controllers/ a src/
+import { db } from "../firebase.js"; 
 
+// ---------------------------------------------------------
+// 🔥 FIX GLOBAL PARA PRODUCCIÓN (Vercel + Vite)
+// Limpia rutas fantasmas "/pages/*" que aparecen en el build
+// ---------------------------------------------------------
+if (typeof window !== "undefined") {
+  const path = window.location.pathname;
+
+  if (path.startsWith("/pages/")) {
+    const clean = path.replace("/pages/", "/");
+    console.warn("🔧 Corrigiendo ruta fantasma:", path, "→", clean);
+    window.location.replace(clean);
+  }
+}
+
+// ---------------------------------------------------------
 // ORDEN ESTRICTO DEL ONBOARDING
-// Los nombres deben coincidir EXACTAMENTE con:
-// 1. El nombre del archivo HTML (sin .html)
-// 2. La clave guardada en Firestore (onboardingSteps.[nombre])
+// Debe coincidir EXACTAMENTE con:
+// 1. nombre del archivo HTML (sin .html)
+// 2. la clave en Firestore onboardingSteps.[nombre]
+// ---------------------------------------------------------
 const FLOW_STEPS = [
   "usuario",
-  "mi-comercio",   // CORREGIDO: antes decía "comercio"
+  "mi-comercio",
   "horarios",
   "productos",
   "ia-config",
@@ -18,7 +34,7 @@ const FLOW_STEPS = [
 // Ejecuta el flujo y redirige al siguiente paso o dashboard
 // ---------------------------------------------------------
 export async function runFlowController(uid) {
-  // Evita ejecución en servidor (SSR, build, etc.)
+  // Evita ejecución en SSR o build
   if (typeof window === 'undefined') return;
 
   if (!uid) {
@@ -56,18 +72,18 @@ export async function runFlowController(uid) {
     // 3. Buscar el primer paso incompleto
     for (const step of FLOW_STEPS) {
       if (!steps[step]) {
-        // Redirección absoluta para Vercel + Vite
-        window.location.replace(`/${step}.html`);
+        const target = `/${step}.html`;
+        console.log("➡️ Redirigiendo a:", target);
+        window.location.href = target; // ← más seguro que replace
         return;
       }
     }
 
     // 4. Todos los pasos completos → dashboard
-    window.location.replace("/dashboard.html");
+    window.location.href = "/dashboard.html";
 
   } catch (error) {
     console.error("Error en runFlowController:", error);
-    // Opcional: redirigir a error o login
-    // window.location.href = "/error.html";
   }
 }
+
