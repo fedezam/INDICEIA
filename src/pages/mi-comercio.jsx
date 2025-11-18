@@ -51,7 +51,7 @@ async function initializePage() {
         fechaInicioTrial: new Date(),
         onboardingSteps: {
           usuario: false,
-          comercio: false,
+          'mi-comercio': false,
           horarios: false,
           productos: false,
           'ia-config': false
@@ -106,7 +106,7 @@ async function loadComercioData() {
         fechaInicioTrial: new Date(),
         onboardingSteps: {
           usuario: false,
-          comercio: false,
+          'mi-comercio': false,
           horarios: false,
           productos: false,
           'ia-config': false
@@ -597,7 +597,7 @@ async function saveFormData() {
     updates.plan = comercioData.plan || 'trial';
 
     // MARCAR PASO COMO COMPLETADO
-    updates['onboardingSteps.comercio'] = true;
+    updates['onboardingSteps.mi-comercio'] = true;
 
     // GUARDAR EN FIRESTORE
     console.log('Guardando en Firestore...', currentComercioId);
