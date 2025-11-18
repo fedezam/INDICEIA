@@ -48,19 +48,39 @@ class Utils {
     });
   }
 
-  // ✅ Verificar que TODOS los campos obligatorios estén completos
+  // ✅ Verificar que TODOS los campos obligatorios estén completos EN FIRESTORE
   static isProfileComplete(data) {
-    return !!(
-      data.nombre &&
-      data.apellido &&
-      data.mail &&
-      data.direccion &&
-      data.pais &&
-      data.provincia &&
-      data.localidad &&
-      data.fechaNacimiento &&
+    const required = [
+      data.nombre,
+      data.apellido,
+      data.mail,
+      data.direccion,
+      data.pais,
+      data.provincia,
+      data.localidad,
+      data.fechaNacimiento,
       data.telefono
-    );
+    ];
+    
+    const allFilled = required.every(field => field && String(field).trim() !== "");
+    
+    console.log("🔍 Verificando perfil:", {
+      completo: allFilled,
+      provincia: data.provincia || "❌ FALTA",
+      campos: {
+        nombre: !!data.nombre,
+        apellido: !!data.apellido,
+        mail: !!data.mail,
+        direccion: !!data.direccion,
+        pais: !!data.pais,
+        provincia: !!data.provincia,
+        localidad: !!data.localidad,
+        fechaNacimiento: !!data.fechaNacimiento,
+        telefono: !!data.telefono
+      }
+    });
+    
+    return allFilled;
   }
 
   static fillForm(data) {
@@ -108,32 +128,37 @@ onAuthStateChanged(auth, async (user) => {
     Utils.disableIAButtons();
   } else {
     const userData = userSnap.data();
-
-    // Autocompletar datos existentes
-    Utils.fillForm(userData);
-
-    // ✅ SOLO habilitar botones si el perfil está COMPLETO
-    if (Utils.isProfileComplete(userData)) {
-      console.log("✅ Perfil completo - Habilitando botones IA");
-      Utils.enableIAButtons();
-    } else {
-      console.log("⚠️ Perfil incompleto - Botones deshabilitados");
-      Utils.disableIAButtons();
-    }
+    
+    // 1️⃣ PRIMERO: Cargar las provincias del país correcto
+    const paisEl = document.getElementById("pais");
+    const initialCountry = userData.pais || paisEl?.value || "Argentina";
+    loadProvinciasForCountry(initialCountry);
+    
+    // 2️⃣ SEGUNDO: Esperar a que el DOM se actualice ANTES de llenar el form
+    requestAnimationFrame(() => {
+      // Ahora sí llenar el formulario (provincia ya tiene opciones disponibles)
+      Utils.fillForm(userData);
+      
+      // 3️⃣ TERCERO: Verificar perfil con los datos de FIRESTORE, no del DOM
+      if (Utils.isProfileComplete(userData)) {
+        console.log("✅ Perfil completo (según Firestore) - Habilitando botones IA");
+        Utils.enableIAButtons();
+      } else {
+        console.log("⚠️ Perfil incompleto - Botones deshabilitados");
+        Utils.disableIAButtons();
+      }
+    });
   }
 
   const emailEl = document.getElementById("userEmail");
   if (emailEl) emailEl.innerText = user.email;
 
-  // Cargar provincias al cambiar país
+  // Listener para cambio de país
   const paisEl = document.getElementById("pais");
   if (paisEl) {
     paisEl.addEventListener('change', (e) => {
       loadProvinciasForCountry(e.target.value);
     });
-    // Cargar provincias iniciales
-    const initialCountry = paisEl.value || 'Argentina';
-    loadProvinciasForCountry(initialCountry);
   }
 });
 
