@@ -8,16 +8,18 @@ import { fillProvinciaSelector } from "../shared/provincias.js";
 import { runFlowController } from "../controllers/flowController.js";
 
 // =========================
-// 🔄 INIT FLOW CONTROLLER
+// 🔄 INIT FLOW CONTROLLER (MANTENER ESTA)
 // =========================
+let flowControllerExecuted = false; // 👈 Bandera para evitar doble ejecución
+
 onAuthStateChanged(auth, async (user) => {
   if (user) {
+    flowControllerExecuted = true; // 👈 Marcar que ya se ejecutó
     await runFlowController(user.uid);
   } else {
     window.location.href = "/login.html";
   }
 });
-
 
 // =========================
 // 🔧 Utils
@@ -93,21 +95,32 @@ class Utils {
 }
 
 // =========================
-// 👤 Sesión
+// 👤 Sesión (SEGUNDA LLAMADA - SOLO PARA CARGAR UI)
 // =========================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = "/";
+    window.location.href = "/login.html";
     return;
   }
+
+  // 👇 ESPERAR A QUE FLOWCONTROLLER TERMINE
+  // Si ya redirigió, esta función no debería ejecutarse más
+  await new Promise(resolve => {
+    const checkInterval = setInterval(() => {
+      if (flowControllerExecuted) {
+        clearInterval(checkInterval);
+        resolve();
+      }
+    }, 50);
+  });
 
   console.log("Usuario autenticado:", user.uid);
 
   const userRef = doc(db, "usuarios", user.uid);
   const userSnap = await getDoc(userRef);
 
-  const emailEl = document.getElementById("userEmail");
-  if (emailEl) emailEl.innerText = user.email;
+  const emailEl = document.getElementById("mail");
+  if (emailEl) emailEl.value = user.email; // 👈 Llenar email automáticamente
 
   const paisEl = document.getElementById("pais");
 
@@ -237,7 +250,7 @@ if (guardarBtn) {
       Utils.showMessage("Datos guardados correctamente ✅");
       Utils.enableIAButtons();
 
-      // Ejecutar Flow Controller después de un segundo
+      // 👇 VOLVER A EJECUTAR FLOWCONTROLLER
       setTimeout(() => {
         runFlowController(user.uid);
       }, 1000);
