@@ -7,6 +7,18 @@ import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { runFlowController } from '../controllers/flowController.js';
 
+/ =========================
+// 🔄 INIT FLOW CONTROLLER
+// =========================
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    await runFlowController(user.uid);
+  } else {
+    window.location.href = "/login.html";
+  }
+});
+
+
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
 let currentComercioId = null;
