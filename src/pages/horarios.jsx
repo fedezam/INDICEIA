@@ -6,6 +6,18 @@ import Navigation from '../shared/navigation.jsx';
 import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
 import { runFlowController } from '../controllers/flowController.js';
 
+/ =========================
+// 🔄 INIT FLOW CONTROLLER
+// =========================
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    await runFlowController(user.uid);
+  } else {
+    window.location.href = "/login.html";
+  }
+});
+
+
 const DAYS = [
   { key: "lunes", label: "Lunes" },
   { key: "martes", label: "Martes" },
