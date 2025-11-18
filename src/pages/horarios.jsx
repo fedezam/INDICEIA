@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import Navigation from '../shared/navigation.jsx';
 import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
-import { redirectToNextStep } from '../shared/redirect-dashboard.js';
+import { runFlowController } from '../controllers/flowController.js';
 
 const DAYS = [
   { key: "lunes", label: "Lunes" },
@@ -387,12 +387,15 @@ async function saveScheduleData() {
       saveBtn.disabled = true;
     }
 
-    // GUARDAR SOLO EN FIRESTORE
+    // ✅ GUARDAR EN FIRESTORE Y MARCAR PASO COMPLETADO
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, { 
       horarios,
+      'onboardingSteps.horarios': true,
       fechaActualizacion: new Date()
     });
+
+    console.log('✅ Horarios guardados y paso "horarios" marcado como completado');
 
     // ACTUALIZAR ESTADO LOCAL
     comercioData.horarios = horarios;
@@ -410,33 +413,17 @@ async function saveScheduleData() {
       }, 2000);
     }
 
-    Navigation.markPageAsCompleted('horarios');
-    Navigation.updateProgressBar();
-
     showToast('Éxito', 'Horarios guardados correctamente', 'success');
-    // === REDIRECCIÓN INTELIGENTE ===
 
-    if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
+    // ✅ EJECUTAR FLOW CONTROLLER
+    setTimeout(() => {
+      runFlowController(currentUser.uid);
+    }, 1000);
 
-      setTimeout(() => {
-
-        window.location.href = "dashboard.html";
-
-      }, 1000);
-
-    } else {
-
-      setTimeout(() => {
-
-        Navigation.goToNextPage();
-
-      }, 1000);
-
-    }
     return true;
 
   } catch (error) {
-    console.error('Error al guardar horarios:', error);
+    console.error('❌ Error al guardar horarios:', error);
     if (saveBtn) {
       saveBtn.className = 'btn-save';
       saveBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i> <span>Error</span>';
