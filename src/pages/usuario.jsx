@@ -1,225 +1,220 @@
-// =========================
-// 📦 IMPORTS
-// =========================
-import { auth, db } from "../firebase.js";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { fillProvinciaSelector } from "../shared/provincias.js";
+// ================================
+// usuario.js — Onboarding Paso 1
+// ================================
+
+import { auth } from "../firebase.js";
+import { db } from "../firebase.js";
+import {
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+
 import { runFlowController } from "../controllers/flowController.js";
 
-// =========================
-// 🔧 Utils
-// =========================
-class Utils {
-  static generateReferralId() {
-    return Math.random().toString(36).substring(2, 10).toUpperCase();
+
+// -----------------------------
+// ELEMENTOS DEL DOM
+// -----------------------------
+const inputNombre = document.getElementById("nombre");
+const inputLocalidad = document.getElementById("localidad");
+const inputPais = document.getElementById("pais");
+const inputEmail = document.getElementById("email");
+
+const chkComercio = document.getElementById("tipoComercio");
+const chkServicio = document.getElementById("tipoServicio");
+
+const btnGuardar = document.getElementById("btnGuardar");
+const btnSiguiente = document.getElementById("btnSiguiente");
+
+
+// ========================================================
+// ESTADO LOCAL
+// ========================================================
+let uid = null;
+let comercioId = null;
+let dataOriginal = {};     // Para detectar ediciones
+let tipoSeleccionado = null; // "comercio" | "servicio"
+
+
+// ========================================================
+// HABILITA/DESHABILITA BOTONES
+// ========================================================
+function actualizarBotones() {
+  const completo = (
+    inputNombre.value.trim() !== "" &&
+    inputLocalidad.value.trim() !== "" &&
+    inputPais.value.trim() !== "" &&
+    tipoSeleccionado !== null
+  );
+
+  // Detectar si hubo cambios
+  const hayCambios =
+    inputNombre.value !== dataOriginal.nombre ||
+    inputLocalidad.value !== dataOriginal.localidad ||
+    inputPais.value !== dataOriginal.pais ||
+    tipoSeleccionado !== dataOriginal.tipo;
+
+  // -----------------------
+  // BOTÓN GUARDAR
+  // -----------------------
+  if (completo && hayCambios) {
+    btnGuardar.disabled = false;
+  } else {
+    btnGuardar.disabled = true;
   }
 
-  static showMessage(msg) {
-    alert(msg);
-  }
-
-  static enableIAButtons() {
-    const comercioBtn = document.getElementById("btnComercio");
-    const servicioBtn = document.getElementById("btnServicio");
-
-    [comercioBtn, servicioBtn].forEach((btn) => {
-      if (btn) {
-        btn.disabled = false;
-        btn.style.background = "#667eea";
-        btn.style.color = "#fff";
-        btn.style.cursor = "pointer";
-      }
-    });
-  }
-
-  static disableIAButtons() {
-    const comercioBtn = document.getElementById("btnComercio");
-    const servicioBtn = document.getElementById("btnServicio");
-
-    [comercioBtn, servicioBtn].forEach((btn) => {
-      if (btn) {
-        btn.disabled = true;
-        btn.style.background = "#ccc";
-        btn.style.color = "#666";
-        btn.style.cursor = "not-allowed";
-      }
-    });
-  }
-
-  static isProfileComplete(data) {
-    return !!(
-      data.nombre &&
-      data.apellido &&
-      data.mail &&
-      data.direccion &&
-      data.pais &&
-      data.provincia &&
-      data.localidad &&
-      data.fechaNacimiento &&
-      data.telefono
-    );
-  }
-
-  static fillForm(data) {
-    const setValueSafe = (id, value) => {
-      const el = document.getElementById(id);
-      if (el) el.value = value || "";
-    };
-
-    setValueSafe("nombre", data.nombre);
-    setValueSafe("apellido", data.apellido);
-    setValueSafe("mail", data.mail);
-    setValueSafe("direccion", data.direccion);
-    setValueSafe("pais", data.pais);
-    setValueSafe("provincia", data.provincia);
-    setValueSafe("localidad", data.localidad);
-    setValueSafe("barrio", data.barrio);
-    setValueSafe("fechaNacimiento", data.fechaNacimiento);
-    setValueSafe("telefono", data.telefono);
+  // -----------------------
+  // BOTÓN SIGUIENTE
+  // -----------------------
+  if (completo && !hayCambios && comercioId) {
+    btnSiguiente.disabled = false;
+  } else {
+    btnSiguiente.disabled = true;
   }
 }
 
-// =========================
-// 👤 ÚNICO onAuthStateChanged
-// =========================
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "/login.html";
+
+
+// ========================================================
+// SELECCIÓN EXCLUSIVA (comercio / servicio)
+// ========================================================
+function seleccionarTipo(tipo) {
+  if (tipo === "comercio") {
+    chkComercio.checked = true;
+    chkServicio.checked = false;
+  } else {
+    chkComercio.checked = false;
+    chkServicio.checked = true;
+  }
+  tipoSeleccionado = tipo;
+  actualizarBotones();
+}
+
+chkComercio.addEventListener("change", () => seleccionarTipo("comercio"));
+chkServicio.addEventListener("change", () => seleccionarTipo("servicio"));
+
+
+// ========================================================
+// CARGAR DATOS DEL USUARIO
+// ========================================================
+async function cargarUsuario(uid) {
+  const ref = doc(db, "usuarios", uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    console.log("➡️ Usuario nuevo, esperando ingreso de datos.");
     return;
   }
 
-  const userRef = doc(db, "usuarios", user.uid);
-  let userSnap = await getDoc(userRef);
+  const data = snap.data();
+  dataOriginal = {
+    nombre: data.nombre || "",
+    localidad: data.localidad || "",
+    pais: data.pais || "",
+    tipo: data.tipo || null,
+  };
 
-  // ======================
-  // Nuevo usuario → crear base
-  // ======================
-  if (!userSnap.exists()) {
-    await setDoc(userRef, {
-      email: user.email,
-      uid: user.uid,
-      referralId: Utils.generateReferralId(),
-      fechaRegistro: new Date(),
-      onboardingSteps: { usuario: false }
-    });
-    userSnap = await getDoc(userRef);
-  }
+  comercioId = data.comercioId || null;
 
-  const userData = userSnap.data();
-  const comercioId = userData?.comercioId || null;
+  // Llenar form
+  inputNombre.value = dataOriginal.nombre;
+  inputLocalidad.value = dataOriginal.localidad;
+  inputPais.value = dataOriginal.pais;
+  inputEmail.value = auth.currentUser?.email || data.email || "";
 
-  const emailEl = document.getElementById("mail");
-  if (emailEl) emailEl.value = user.email;
+  if (dataOriginal.tipo) seleccionarTipo(dataOriginal.tipo);
 
-  // ======================
-  // Provincias
-  // ======================
-  const paisEl = document.getElementById("pais");
-  if (paisEl) {
-    paisEl.addEventListener("change", (e) => loadProvinciasForCountry(e.target.value));
-    loadProvinciasForCountry(paisEl.value || "Argentina");
-  }
+  actualizarBotones();
+}
 
-  await new Promise((res) => setTimeout(res, 50));
 
-  // ======================
-  // Cargar datos del usuario
-  // ======================
-  Utils.fillForm(userData);
+// ========================================================
+// CREAR COMERCIO (si no existe)
+// ========================================================
+async function crearComercio(uid) {
+  const nuevoId = crypto.randomUUID();
 
-  if (Utils.isProfileComplete(userData)) {
-    Utils.enableIAButtons();
-  } else {
-    Utils.disableIAButtons();
-  }
-
-  // ======================
-  // AHORA SÍ → FlowController con comercioId cargado
-  // ======================
-  await runFlowController(user.uid);
-});
-
-// =========================
-// 💾 Guardar datos personales
-// =========================
-const guardarBtn = document.getElementById("saveUserData");
-if (guardarBtn) {
-  guardarBtn.addEventListener("click", async () => {
-    const user = auth.currentUser;
-    if (!user) return Utils.showMessage("No hay sesión activa.");
-
-    const fields = [
-      "nombre", "apellido", "mail", "direccion",
-      "pais", "provincia", "localidad",
-      "fechaNacimiento", "telefono"
-    ];
-
-    const data = {};
-    for (const f of fields) {
-      const el = document.getElementById(f);
-      if (!el || !el.value.trim()) return Utils.showMessage("Completa todos los campos.");
-      data[f] = el.value.trim();
-    }
-
-    const barrio = document.getElementById("barrio")?.value.trim() || null;
-
-    const userRef = doc(db, "usuarios", user.uid);
-
-    try {
-      await setDoc(userRef, { ...data, barrio, actualizado: new Date() }, { merge: true });
-
-      await setDoc(
-        userRef,
-        { onboardingSteps: { usuario: true } },
-        { merge: true }
-      );
-
-      const newSnap = await getDoc(userRef);
-      const comercioId = newSnap.data()?.comercioId;
-
-      // ===========================
-      // Actualizar paso en comercio
-      // ===========================
-      if (comercioId) {
-        const comercioRef = doc(db, "comercios", comercioId);
-        await setDoc(
-          comercioRef,
-          { onboardingSteps: { usuario: true } },
-          { merge: true }
-        );
-      }
-
-      Utils.showMessage("Datos guardados correctamente");
-      Utils.enableIAButtons();
-
-      await runFlowController(user.uid);
-
-    } catch (err) {
-      console.error(err);
-      Utils.showMessage("Error al guardar.");
+  await setDoc(doc(db, "comercios", nuevoId), {
+    owner: uid,
+    tipo: tipoSeleccionado,
+    fechaRegistro: serverTimestamp(),
+    onboardingSteps: {
+      usuario: true,
     }
   });
+
+  return nuevoId;
 }
 
-// =========================
-// ⚡ Botones IA
-// =========================
-document.getElementById("btnComercio")?.addEventListener("click", () => {
-  window.location.href = "../mi-comercio.html";
-});
 
-document.getElementById("btnServicio")?.addEventListener("click", () => {
-  window.location.href = "../servicio.html";
-});
+// ========================================================
+// GUARDAR CAMBIOS EN USUARIO
+// ========================================================
+async function guardarDatos() {
+  if (!uid) return;
 
-// =========================
-// 🌎 Provincias
-// =========================
-function loadProvinciasForCountry(country) {
-  const provinciaEl = document.getElementById("provincia");
-  if (!provinciaEl) return;
+  let nuevoComercioId = comercioId;
 
-  provinciaEl.innerHTML = '<option value="">Selecciona una provincia</option>';
-  fillProvinciaSelector(country, provinciaEl);
+  // Crear comercio si no existe
+  if (!comercioId) {
+    nuevoComercioId = await crearComercio(uid);
+    comercioId = nuevoComercioId; // actualizar el estado local
+  }
+
+  await updateDoc(doc(db, "usuarios", uid), {
+    nombre: inputNombre.value.trim(),
+    localidad: inputLocalidad.value.trim(),
+    pais: inputPais.value.trim(),
+    email: inputEmail.value.trim(),
+    tipo: tipoSeleccionado,
+    comercioId: nuevoComercioId,
+    fechaActualizacion: serverTimestamp()
+  });
+
+  console.log("💾 Datos guardados");
+
+  // Actualizar copia local para detectar cambios
+  dataOriginal = {
+    nombre: inputNombre.value.trim(),
+    localidad: inputLocalidad.value.trim(),
+    pais: inputPais.value.trim(),
+    tipo: tipoSeleccionado
+  };
+
+  actualizarBotones();
 }
+
+
+// ========================================================
+// MANEJO DE EVENTOS
+// ========================================================
+btnGuardar.addEventListener("click", guardarDatos);
+
+btnSiguiente.addEventListener("click", () => {
+  window.location.href = "/mi-comercio.html";
+});
+
+inputNombre.addEventListener("input", actualizarBotones);
+inputLocalidad.addEventListener("input", actualizarBotones);
+inputPais.addEventListener("input", actualizarBotones);
+
+
+// ========================================================
+// AUTENTICACIÓN
+// ========================================================
+auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    console.warn("⚠️ No hay usuario autenticado");
+    return;
+  }
+
+  uid = user.uid;
+
+  await cargarUsuario(uid);
+
+  // Ejecutar Flow Controller DESPUÉS de cargar los datos
+  runFlowController(uid);
+});
