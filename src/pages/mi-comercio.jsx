@@ -8,7 +8,7 @@ import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plan
 import { showToast, showLoading, hideLoading } from '../shared/utils.jsx';
 import { runFlowController } from '../controllers/flowController.js';
 
-/ =========================
+// =========================
 // 🔄 INIT FLOW CONTROLLER
 // =========================
 onAuthStateChanged(auth, async (user) => {
