@@ -5,6 +5,7 @@ import { doc, getDoc, collection, getDocs, addDoc, updateDoc, deleteDoc } from '
 import Navigation from '../shared/navigation.jsx';
 import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
+import { runFlowController } from '../controllers/flowController.js';
 
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
@@ -564,7 +565,7 @@ function formatNumber(num) {
   return new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 }
 
-// ==================== GUARDAR (SOLO FIRESTORE) ====================
+// ==================== GUARDAR ====================
 function createSaveButton() {
   const userInfo = document.querySelector('.header .user-info');
   if (!userInfo) return;
@@ -610,14 +611,12 @@ async function saveAllProducts() {
     const currentIds = new Set(productos.map(p => p.id).filter(id => id));
     const allDocs = await getDocs(productosRef);
 
-    // Eliminar productos borrados
     for (const docSnap of allDocs.docs) {
       if (!currentIds.has(docSnap.id)) {
         await deleteDoc(doc(db, 'comercios', currentComercioId, 'productos', docSnap.id));
       }
     }
 
-    // Guardar/actualizar productos
     for (const producto of productos) {
       const { id, ...productData } = producto;
       if (id) {
@@ -633,14 +632,15 @@ async function saveAllProducts() {
       }
     }
 
-    // Actualizar cantidad en comercio
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, {
       cantidadProductos: productos.length,
+      'onboardingSteps.productos': true,
       fechaActualizacion: new Date()
     });
 
-    // Estado final
+    console.log('✅ Productos guardados y paso "productos" marcado como completado');
+
     originalProductos = JSON.parse(JSON.stringify(productos));
     hasUnsavedChanges = false;
 
@@ -654,18 +654,11 @@ async function saveAllProducts() {
       }, 2000);
     }
 
-    Navigation.markPageAsCompleted('productos');
-    Navigation.updateProgressBar();
     hideLoading();
     showToast('success', 'Productos guardados', 'Todos los cambios se guardaron correctamente');
 
-    // Redirección
     setTimeout(() => {
-      if (window.history.length > 2 && document.referrer.includes("dashboard.html")) {
-        window.location.href = "dashboard.html";
-      } else {
-        Navigation.goToNextPage();
-      }
+      runFlowController(currentUser.uid);
     }, 1000);
 
     return true;
