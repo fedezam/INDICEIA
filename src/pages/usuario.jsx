@@ -94,6 +94,28 @@ onAuthStateChanged(auth, async (user) => {
   const userRef = doc(db, "usuarios", user.uid);
   const userSnap = await getDoc(userRef);
 
+  const emailEl = document.getElementById("userEmail");
+  if (emailEl) emailEl.innerText = user.email;
+
+  const paisEl = document.getElementById("pais");
+
+  // ===========================
+  // 1️⃣ Primero cargamos provincias
+  // ===========================
+  if (paisEl) {
+    paisEl.addEventListener("change", (e) => {
+      loadProvinciasForCountry(e.target.value);
+    });
+
+    loadProvinciasForCountry(paisEl.value || "Argentina");
+  }
+
+  // Esperar un tick para que las provincias carguen
+  await new Promise((res) => setTimeout(res, 50));
+
+  // ===========================
+  // 2️⃣ Recién ahora cargamos datos del usuario
+  // ===========================
   if (!userSnap.exists()) {
     console.log("Creando documento base para nuevo usuario...");
     await setDoc(userRef, {
@@ -118,18 +140,6 @@ onAuthStateChanged(auth, async (user) => {
       console.log("⚠️ Perfil incompleto - Deshabilitando IA");
       Utils.disableIAButtons();
     }
-  }
-
-  const emailEl = document.getElementById("userEmail");
-  if (emailEl) emailEl.innerText = user.email;
-
-  const paisEl = document.getElementById("pais");
-  if (paisEl) {
-    paisEl.addEventListener("change", (e) => {
-      loadProvinciasForCountry(e.target.value);
-    });
-
-    loadProvinciasForCountry(paisEl.value || "Argentina");
   }
 });
 
@@ -181,7 +191,7 @@ if (guardarBtn) {
 
       console.log("✅ Datos de usuario guardados");
 
-      // 2️⃣ Marcar paso "usuario" SIEMPRE en el usuario
+      // 2️⃣ Marcar paso "usuario" en el usuario
       await setDoc(
         userRef,
         {
@@ -194,7 +204,7 @@ if (guardarBtn) {
 
       console.log("✅ Paso 'usuario' marcado en usuario");
 
-      // 3️⃣ Si tiene comercio, marcar también el paso en comercio
+      // 3️⃣ Marcar paso en comercio (si existe)
       const newSnap = await getDoc(userRef);
       const comercioId = newSnap.data()?.comercioId;
 
@@ -215,7 +225,7 @@ if (guardarBtn) {
       Utils.showMessage("Datos guardados correctamente ✅");
       Utils.enableIAButtons();
 
-      // Flow Controller después de 1 segundo
+      // Ejecutar Flow Controller después de un segundo
       setTimeout(() => {
         runFlowController(user.uid);
       }, 1000);
