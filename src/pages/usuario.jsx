@@ -243,14 +243,14 @@ if (guardarBtn) {
 const comercioBtn = document.getElementById("btnComercio");
 if (comercioBtn) {
   comercioBtn.addEventListener("click", () => {
-    window.location.href = "../pages/mi-comercio.html";
+    window.location.href = "../mi-comercio.html";
   });
 }
 
 const servicioBtn = document.getElementById("btnServicio");
 if (servicioBtn) {
   servicioBtn.addEventListener("click", () => {
-    window.location.href = "../pages/servicio.html";
+    window.location.href = "../servicio.html";
   });
 }
 
