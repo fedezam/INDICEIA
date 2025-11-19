@@ -4,8 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "vite build && node move-html.js"
-  },
+  "dev": "vite",
+  "build": "vite build && node move-html.js",
+  "preview": "vite preview"
+},
+
   "dependencies": {
     "@vercel/blob": "^0.23.0",
     "firebase": "^10.7.0",
