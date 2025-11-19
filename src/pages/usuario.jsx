@@ -4,7 +4,7 @@ import {
   getDoc,
   setDoc,
 } from "firebase/firestore";
-import { db } from "../firebase/config";
+import { db } from "../firebase";
 
 // ==================== ELEMENTOS DEL DOM ====================
 const nombre = document.getElementById("nombre");
