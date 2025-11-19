@@ -1,11 +1,12 @@
 // ================================
-// usuario.js — Onboarding Paso 1
+// usuario.jsx — Onboarding Paso 1 (VERSIÓN PRODUCCIÓN)
 // ================================
-import '../styles/base.css'
-import '../styles/layout.css'
-import '../styles/components.css'
-import '../styles/forms.css'
+import '../styles/base.css';
+import '../styles/layout.css';
+import '../styles/components.css';
+import '../styles/forms.css';
 import "./usuario.css";
+
 import { auth } from "../firebase.js";
 import { db } from "../firebase.js";
 import {
@@ -20,18 +21,26 @@ import { runFlowController } from "../controllers/flowController.js";
 
 
 // -----------------------------
-// ELEMENTOS DEL DOM
+// ELEMENTOS DEL DOM (IDs reales del HTML)
 // -----------------------------
 const inputNombre = document.getElementById("nombre");
+const inputApellido = document.getElementById("apellido");
+const inputEmail = document.getElementById("mail");
+const inputFechaNacimiento = document.getElementById("fechaNacimiento");
+const inputTelefono = document.getElementById("telefono");
+const selectPais = document.getElementById("pais");
+const selectProvincia = document.getElementById("provincia");
 const inputLocalidad = document.getElementById("localidad");
-const inputPais = document.getElementById("pais");
-const inputEmail = document.getElementById("email");
+const inputBarrio = document.getElementById("barrio");
+const inputDireccion = document.getElementById("direccion");
 
-const chkComercio = document.getElementById("tipoComercio");
-const chkServicio = document.getElementById("tipoServicio");
+const chkComercio = document.getElementById("checkComercio");
+const chkServicio = document.getElementById("checkServicio");
 
-const btnGuardar = document.getElementById("btnGuardar");
-const btnSiguiente = document.getElementById("btnSiguiente");
+const btnGuardar = document.getElementById("saveUserData");
+
+const btnComercio = document.getElementById("btnComercio");
+const btnServicio = document.getElementById("btnServicio");
 
 
 // ========================================================
@@ -39,53 +48,62 @@ const btnSiguiente = document.getElementById("btnSiguiente");
 // ========================================================
 let uid = null;
 let comercioId = null;
-let dataOriginal = {};     // Para detectar ediciones
-let tipoSeleccionado = null; // "comercio" | "servicio"
+
+let dataOriginal = {};
+let tipoSeleccionado = null;
 
 
 // ========================================================
-// HABILITA/DESHABILITA BOTONES
+// HABILITA/DESHABILITA BOTONES DE IA
 // ========================================================
-function actualizarBotones() {
-  const completo = (
-    inputNombre.value.trim() !== "" &&
-    inputLocalidad.value.trim() !== "" &&
-    inputPais.value.trim() !== "" &&
-    tipoSeleccionado !== null
-  );
+function actualizarBotonesIA() {
+  const completo =
+    inputNombre.value.trim() &&
+    inputApellido.value.trim() &&
+    inputLocalidad.value.trim() &&
+    inputDireccion.value.trim() &&
+    tipoSeleccionado !== null;
 
-  // Detectar si hubo cambios
-  const hayCambios =
-    inputNombre.value !== dataOriginal.nombre ||
-    inputLocalidad.value !== dataOriginal.localidad ||
-    inputPais.value !== dataOriginal.pais ||
-    tipoSeleccionado !== dataOriginal.tipo;
+  if (completo) {
+    btnComercio.disabled = false;
+    btnServicio.disabled = false;
 
-  // -----------------------
-  // BOTÓN GUARDAR
-  // -----------------------
-  if (completo && hayCambios) {
-    btnGuardar.disabled = false;
-  } else {
-    btnGuardar.disabled = true;
-  }
-
-  // -----------------------
-  // BOTÓN SIGUIENTE
-  // -----------------------
-  if (completo && !hayCambios && comercioId) {
-    btnSiguiente.disabled = false;
-  } else {
-    btnSiguiente.disabled = true;
+    btnComercio.style.background = "";
+    btnServicio.style.background = "";
+    btnComercio.style.cursor = "pointer";
+    btnServicio.style.cursor = "pointer";
   }
 }
 
+
+// ========================================================
+// DETECTAR CAMBIOS + HABILITAR BOTÓN GUARDAR
+// ========================================================
+function detectarCambios() {
+  if (!dataOriginal) return;
+
+  const hayCambios =
+    inputNombre.value !== dataOriginal.nombre ||
+    inputApellido.value !== dataOriginal.apellido ||
+    inputTelefono.value !== dataOriginal.telefono ||
+    inputLocalidad.value !== dataOriginal.localidad ||
+    selectProvincia.value !== dataOriginal.provincia ||
+    inputDireccion.value !== dataOriginal.direccion ||
+    inputBarrio.value !== dataOriginal.barrio ||
+    tipoSeleccionado !== dataOriginal.tipo;
+
+  btnGuardar.disabled = !hayCambios;
+
+  actualizarBotonesIA();
+}
 
 
 // ========================================================
 // SELECCIÓN EXCLUSIVA (comercio / servicio)
 // ========================================================
 function seleccionarTipo(tipo) {
+  tipoSeleccionado = tipo;
+
   if (tipo === "comercio") {
     chkComercio.checked = true;
     chkServicio.checked = false;
@@ -93,8 +111,8 @@ function seleccionarTipo(tipo) {
     chkComercio.checked = false;
     chkServicio.checked = true;
   }
-  tipoSeleccionado = tipo;
-  actualizarBotones();
+
+  detectarCambios();
 }
 
 chkComercio.addEventListener("change", () => seleccionarTipo("comercio"));
@@ -102,41 +120,52 @@ chkServicio.addEventListener("change", () => seleccionarTipo("servicio"));
 
 
 // ========================================================
-// CARGAR DATOS DEL USUARIO
+// CARGAR USUARIO DESDE FIRESTORE
 // ========================================================
 async function cargarUsuario(uid) {
   const ref = doc(db, "usuarios", uid);
   const snap = await getDoc(ref);
 
   if (!snap.exists()) {
-    console.log("➡️ Usuario nuevo, esperando ingreso de datos.");
+    console.log("➡️ Usuario nuevo");
+    inputEmail.value = auth.currentUser?.email || "";
     return;
   }
 
   const data = snap.data();
+
   dataOriginal = {
     nombre: data.nombre || "",
+    apellido: data.apellido || "",
+    telefono: data.telefono || "",
+    provincia: data.provincia || "",
     localidad: data.localidad || "",
-    pais: data.pais || "",
+    direccion: data.direccion || "",
+    barrio: data.barrio || "",
     tipo: data.tipo || null,
   };
 
   comercioId = data.comercioId || null;
 
-  // Llenar form
+  // Cargar en el DOM
   inputNombre.value = dataOriginal.nombre;
+  inputApellido.value = dataOriginal.apellido;
+  inputTelefono.value = dataOriginal.telefono;
+  selectProvincia.value = dataOriginal.provincia;
   inputLocalidad.value = dataOriginal.localidad;
-  inputPais.value = dataOriginal.pais;
+  inputDireccion.value = dataOriginal.direccion;
+  inputBarrio.value = dataOriginal.barrio;
+
   inputEmail.value = auth.currentUser?.email || data.email || "";
 
   if (dataOriginal.tipo) seleccionarTipo(dataOriginal.tipo);
 
-  actualizarBotones();
+  detectarCambios();
 }
 
 
 // ========================================================
-// CREAR COMERCIO (si no existe)
+// CREAR COMERCIO SI NO EXISTE
 // ========================================================
 async function crearComercio(uid) {
   const nuevoId = crypto.randomUUID();
@@ -155,23 +184,26 @@ async function crearComercio(uid) {
 
 
 // ========================================================
-// GUARDAR CAMBIOS EN USUARIO
+// GUARDAR DATOS DE USUARIO
 // ========================================================
 async function guardarDatos() {
   if (!uid) return;
 
   let nuevoComercioId = comercioId;
 
-  // Crear comercio si no existe
-  if (!comercioId) {
+  if (!nuevoComercioId) {
     nuevoComercioId = await crearComercio(uid);
-    comercioId = nuevoComercioId; // actualizar el estado local
+    comercioId = nuevoComercioId;
   }
 
   await updateDoc(doc(db, "usuarios", uid), {
     nombre: inputNombre.value.trim(),
+    apellido: inputApellido.value.trim(),
+    telefono: inputTelefono.value.trim(),
+    provincia: selectProvincia.value,
     localidad: inputLocalidad.value.trim(),
-    pais: inputPais.value.trim(),
+    direccion: inputDireccion.value.trim(),
+    barrio: inputBarrio.value.trim(),
     email: inputEmail.value.trim(),
     tipo: tipoSeleccionado,
     comercioId: nuevoComercioId,
@@ -180,45 +212,61 @@ async function guardarDatos() {
 
   console.log("💾 Datos guardados");
 
-  // Actualizar copia local para detectar cambios
+  // Actualizar copia local
   dataOriginal = {
     nombre: inputNombre.value.trim(),
+    apellido: inputApellido.value.trim(),
+    telefono: inputTelefono.value.trim(),
+    provincia: selectProvincia.value,
     localidad: inputLocalidad.value.trim(),
-    pais: inputPais.value.trim(),
+    direccion: inputDireccion.value.trim(),
+    barrio: inputBarrio.value.trim(),
     tipo: tipoSeleccionado
   };
 
-  actualizarBotones();
+  btnGuardar.disabled = true;
+  actualizarBotonesIA();
 }
 
 
 // ========================================================
-// MANEJO DE EVENTOS
+// EVENTOS
 // ========================================================
+[
+  inputNombre,
+  inputApellido,
+  inputTelefono,
+  inputLocalidad,
+  inputDireccion,
+  inputBarrio,
+  selectProvincia
+].forEach(el => el?.addEventListener("input", detectarCambios));
+
 btnGuardar.addEventListener("click", guardarDatos);
 
-btnSiguiente.addEventListener("click", () => {
-  window.location.href = "/mi-comercio.html";
+
+// ========================================================
+// ACCIONES DE IA
+// ========================================================
+btnComercio.addEventListener("click", () => {
+  window.location.href = "/ia-config.html?tipo=comercio";
 });
 
-inputNombre.addEventListener("input", actualizarBotones);
-inputLocalidad.addEventListener("input", actualizarBotones);
-inputPais.addEventListener("input", actualizarBotones);
+btnServicio.addEventListener("click", () => {
+  window.location.href = "/ia-config.html?tipo=servicio";
+});
 
 
 // ========================================================
 // AUTENTICACIÓN
 // ========================================================
 auth.onAuthStateChanged(async (user) => {
-  if (!user) {
-    console.warn("⚠️ No hay usuario autenticado");
-    return;
-  }
+  if (!user) return;
 
   uid = user.uid;
 
   await cargarUsuario(uid);
 
-  // Ejecutar Flow Controller DESPUÉS de cargar los datos
+  // Ejecutar Flow Controller (importante)
   runFlowController(uid);
 });
