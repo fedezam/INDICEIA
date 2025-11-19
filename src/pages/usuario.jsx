@@ -1,15 +1,26 @@
-// ==================== IMPORTS ====================
-import '../styles/base.css'
-import '../styles/layout.css'
-import '../styles/components.css'
-import '../styles/forms.css'
-import './usuario.css'
+// ================================
+// usuario.jsx — Onboarding Paso 1 (VERSIÓN PRODUCCIÓN)
+// ================================
+
+// CSS
+import '../styles/base.css';
+import '../styles/layout.css';
+import '../styles/components.css';
+import '../styles/forms.css';
+import "./usuario.css";
+import './usuario.css';
+
+// Firebase
+import { auth } from "../firebase.js";
+import { db } from "../firebase.js";
 import {
-  doc,
-  getDoc,
-  setDoc,
+  serverTimestamp,
 } from "firebase/firestore";
-import { db } from "../firebase";
+
+// Lógica interna
+import { runFlowController } from "../controllers/flowController.js";
+import { fillProvinciaSelector } from "../shared/provincias.js";
+
 
 // ==================== ELEMENTOS DEL DOM ====================
 const nombre = document.getElementById("nombre");
