@@ -1,126 +1,122 @@
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Datos del Usuario – ÍndiceIA</title>
-    <meta name="description" content="Completá tus datos personales para comenzar la configuración de tu asistente ÍndiceIA.">
-    <meta name="robots" content="noindex, nofollow">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Datos del Usuario – ÍndiceIA">
-    <meta property="og:description" content="Completá tu perfil para activar tu asistente inteligente.">
-    <meta property="og:image" content="/images/og-image.jpg">
-    
-    <!-- Google Fonts - Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script type="module" src="../controllers/flowController.js"></script>
-    <script type="module" src="./usuario.jsx"></script>
-</head>
-
-<body>
+<body class="usuario-page">
   <div class="container">
-    <header class="section-header">
-      <h1><i class="fas fa-user"></i> Datos del Usuario</h1>
-      <p>Completa tu información personal para continuar con el alta del comercio.</p>
-    </header>
+    <div class="main-content">
 
-    <section class="form-section">
-      <form id="userForm">
+      <h1 class="title">
+        <i class="fas fa-user"></i> Datos del Usuario
+      </h1>
+      <p class="subtitle">
+        Completa tu información personal para continuar con el alta del comercio.
+      </p>
 
-        <div class="form-group">
-          <label for="nombre">Nombre <span class="required">*</span></label>
-          <input type="text" id="nombre" required />
-        </div>
+      <section class="form-section">
+        <h3><i class="fas fa-id-card"></i> Información Personal</h3>
 
-        <div class="form-group">
-          <label for="apellido">Apellido <span class="required">*</span></label>
-          <input type="text" id="apellido" required />
-        </div>
+        <div class="form-fields">
 
-        <div class="form-group">
-          <label for="mail">Email <span class="required">*</span></label>
-          <input type="email" id="mail" readonly required />
-        </div>
-
-        <div class="form-group">
-          <label for="fechaNacimiento">Fecha de nacimiento <span class="required">*</span></label>
-          <input type="date" id="fechaNacimiento" required />
-        </div>
-
-        <div class="form-group">
-          <label for="telefono">Teléfono <span class="required">*</span></label>
-          <input type="tel" id="telefono" required />
-        </div>
-
-        <div class="form-group">
-          <label for="pais">País <span class="required">*</span></label>
-          <select id="pais" required>
-            <option value="Argentina">Argentina</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="provincia">Provincia <span class="required">*</span></label>
-          <select id="provincia" required>
-            <option value="">Seleccione provincia</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="localidad">Localidad <span class="required">*</span></label>
-          <input type="text" id="localidad" required />
-        </div>
-
-        <div class="form-group">
-          <label for="barrio">Barrio (opcional)</label>
-          <input type="text" id="barrio" />
-        </div>
-
-        <div class="form-group">
-          <label for="direccion">Dirección <span class="required">*</span></label>
-          <input type="text" id="direccion" required />
-        </div>
-
-        <div class="form-group">
-          <label>Tipo de actividad</label>
-          <div class="checkbox-group">
-            <label class="checkbox-item">
-              <input type="checkbox" id="checkComercio" /> Comercio
-            </label>
-
-            <label class="checkbox-item">
-              <input type="checkbox" id="checkServicio" /> Servicio
-            </label>
+          <div class="form-field">
+            <label for="nombre">Nombre <span class="required"></span></label>
+            <input type="text" id="nombre" required>
           </div>
+
+          <div class="form-field">
+            <label for="apellido">Apellido <span class="required"></span></label>
+            <input type="text" id="apellido" required>
+          </div>
+
+          <div class="form-field">
+            <label for="mail">Email</label>
+            <input type="email" id="mail" readonly>
+          </div>
+
+          <div class="form-field">
+            <label for="fechaNacimiento">Fecha de Nacimiento</label>
+            <input type="date" id="fechaNacimiento">
+          </div>
+
+          <div class="form-field">
+            <label for="telefono">Teléfono</label>
+            <input type="tel" id="telefono">
+          </div>
+
+          <div class="form-field">
+            <label for="pais">País</label>
+            <select id="pais">
+              <option value="Argentina">Argentina</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="provincia">Provincia</label>
+            <select id="provincia">
+              <option value="">Seleccione provincia</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="localidad">Localidad</label>
+            <input type="text" id="localidad">
+          </div>
+
+          <div class="form-field">
+            <label for="barrio">Barrio</label>
+            <input type="text" id="barrio">
+          </div>
+
+          <div class="form-field">
+            <label for="direccion">Dirección</label>
+            <input type="text" id="direccion">
+          </div>
+
+          <div class="form-field">
+            <label>Tipo de Actividad</label>
+            <div class="checkbox-grid">
+              <label class="checkbox-item">
+                <input type="checkbox" id="checkComercio"> Comercio
+              </label>
+
+              <label class="checkbox-item">
+                <input type="checkbox" id="checkServicio"> Servicio
+              </label>
+            </div>
+          </div>
+
         </div>
 
         <div class="btn-group btn-group-end">
-          <button type="button" id="saveUserData" class="btn btn-primary btn-lg">
+          <button id="saveUserData" class="btn btn-primary btn-lg" type="button">
             <i class="fas fa-save"></i> Guardar Datos
           </button>
         </div>
 
-        <div class="form-group" style="margin-top: 40px;">
-          <p style="background: rgba(102, 126, 234, 0.1); padding: 15px; border-radius: 8px;">⚡ Una vez guardados tus datos, elige qué tipo de IA deseas crear:</p>
+        <p class="info-text">⚡ Una vez guardados tus datos, elige qué tipo de IA deseas crear:</p>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-            <button id="btnComercio" type="button" class="btn btn-secondary" disabled>Crear IA para Comercio</button>
+        <div class="options">
 
-            <button id="btnServicio" type="button" class="btn btn-secondary" disabled>Crear IA para Servicio</button>
-          </div>
+          <button id="btnComercio" class="btn ia-btn" disabled>
+            <i class="fas fa-store"></i>
+            <strong>Crear IA para Comercio</strong>
+            <p class="btn-desc">Categorías + catálogo de productos.</p>
+          </button>
+
+          <button id="btnServicio" class="btn ia-btn" disabled>
+            <i class="fas fa-briefcase"></i>
+            <strong>Crear IA para Servicio</strong>
+            <p class="btn-desc">Turnos + agenda + consultas.</p>
+          </button>
+
         </div>
 
-      </form>
-    </section>
+        <div class="logout-section">
+          <button class="btn btn-secondary" id="btnLogout" type="button">
+            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+          </button>
+        </div>
+
+      </section>
+
+    </div>
   </div>
 
-  <script type="module" src="/src/pages/usuario.jsx"></script>
+  <script type="module" src="./usuario.jsx"></script>
 </body>
-</html>
