@@ -1,0 +1,113 @@
+/* ==================== USUARIO PAGE ==================== */
+
+/* Page Container */
+body.usuario-page .container {
+  max-width: 800px;
+  margin-top: 40px;
+}
+
+body.usuario-page .main-content {
+  padding: 30px;
+}
+
+/* Title & Subtitle */
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  color: var(--gray-600);
+  margin-bottom: 30px;
+}
+
+/* Form Sections */
+.usuario-page .form-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 20px;
+}
+
+/* Options Grid */
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.options .btn {
+  flex-direction: column;
+  padding: 25px;
+  height: auto;
+  text-align: center;
+}
+
+.options .btn:disabled {
+  background: var(--gray-200);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.options .btn i {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.options .btn strong {
+  font-size: 16px;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.btn-desc {
+  font-size: 13px;
+  color: var(--gray-600);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Info Text */
+.info-text {
+  background: rgba(102, 126, 234, 0.1);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  color: var(--gray-900);
+}
+
+/* Logout Section */
+.usuario-page .logout-section {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--gray-200);
+}
+
+/* Email field readonly */
+.usuario-page input[readonly] {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  body.usuario-page .container {
+    margin-top: 20px;
+  }
+
+  body.usuario-page .main-content {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .options {
+    grid-template-columns: 1fr;
+  }
+}
