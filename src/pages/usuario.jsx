@@ -1,12 +1,15 @@
 // ================================
 // usuario.jsx — Onboarding Paso 1 (VERSIÓN PRODUCCIÓN)
 // ================================
+
+// CSS
 import '../styles/base.css';
 import '../styles/layout.css';
 import '../styles/components.css';
 import '../styles/forms.css';
-import "./usuario.css";
+import './usuario.css';
 
+// Firebase
 import { auth } from "../firebase.js";
 import { db } from "../firebase.js";
 import {
@@ -17,30 +20,31 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
+// Lógica interna
 import { runFlowController } from "../controllers/flowController.js";
+import { fillProvinciaSelector } from "../shared/provincias.js";
 
 
 // -----------------------------
-// ELEMENTOS DEL DOM (IDs reales del HTML)
+// ELEMENTOS DEL DOM
 // -----------------------------
-const inputNombre = document.getElementById("nombre");
-const inputApellido = document.getElementById("apellido");
-const inputEmail = document.getElementById("mail");
+const inputNombre        = document.getElementById("nombre");
+const inputApellido      = document.getElementById("apellido");
+const inputEmail         = document.getElementById("mail");
 const inputFechaNacimiento = document.getElementById("fechaNacimiento");
-const inputTelefono = document.getElementById("telefono");
-const selectPais = document.getElementById("pais");
-const selectProvincia = document.getElementById("provincia");
-const inputLocalidad = document.getElementById("localidad");
-const inputBarrio = document.getElementById("barrio");
-const inputDireccion = document.getElementById("direccion");
+const inputTelefono      = document.getElementById("telefono");
+const selectPais         = document.getElementById("pais");
+const selectProvincia    = document.getElementById("provincia");
+const inputLocalidad     = document.getElementById("localidad");
+const inputBarrio        = document.getElementById("barrio");
+const inputDireccion     = document.getElementById("direccion");
 
-const chkComercio = document.getElementById("checkComercio");
-const chkServicio = document.getElementById("checkServicio");
+const chkComercio        = document.getElementById("checkComercio");
+const chkServicio        = document.getElementById("checkServicio");
 
-const btnGuardar = document.getElementById("saveUserData");
-
-const btnComercio = document.getElementById("btnComercio");
-const btnServicio = document.getElementById("btnServicio");
+const btnGuardar         = document.getElementById("saveUserData");
+const btnComercio        = document.getElementById("btnComercio");
+const btnServicio        = document.getElementById("btnServicio");
 
 
 // ========================================================
@@ -48,7 +52,6 @@ const btnServicio = document.getElementById("btnServicio");
 // ========================================================
 let uid = null;
 let comercioId = null;
-
 let dataOriginal = {};
 let tipoSeleccionado = null;
 
@@ -104,13 +107,8 @@ function detectarCambios() {
 function seleccionarTipo(tipo) {
   tipoSeleccionado = tipo;
 
-  if (tipo === "comercio") {
-    chkComercio.checked = true;
-    chkServicio.checked = false;
-  } else {
-    chkComercio.checked = false;
-    chkServicio.checked = true;
-  }
+  chkComercio.checked = tipo === "comercio";
+  chkServicio.checked = tipo === "servicio";
 
   detectarCambios();
 }
@@ -147,7 +145,7 @@ async function cargarUsuario(uid) {
 
   comercioId = data.comercioId || null;
 
-  // Cargar en el DOM
+  // Cargar valores en el DOM
   inputNombre.value = dataOriginal.nombre;
   inputApellido.value = dataOriginal.apellido;
   inputTelefono.value = dataOriginal.telefono;
@@ -212,7 +210,7 @@ async function guardarDatos() {
 
   console.log("💾 Datos guardados");
 
-  // Actualizar copia local
+  // Cache local
   dataOriginal = {
     nombre: inputNombre.value.trim(),
     apellido: inputApellido.value.trim(),
@@ -258,7 +256,7 @@ btnServicio.addEventListener("click", () => {
 
 
 // ========================================================
-// AUTENTICACIÓN
+// AUTENTICACIÓN + FLUJO
 // ========================================================
 auth.onAuthStateChanged(async (user) => {
   if (!user) return;
@@ -267,6 +265,9 @@ auth.onAuthStateChanged(async (user) => {
 
   await cargarUsuario(uid);
 
-  // Ejecutar Flow Controller (importante)
+  // 🔥 cargar provincias AHORA SÍ
+  fillProvinciaSelector("Argentina", selectProvincia);
+
+  // Ejecutar Flow Controller
   runFlowController(uid);
 });
