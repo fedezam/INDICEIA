@@ -105,23 +105,18 @@ validarFormulario();
 
 // ==================== CARGA INICIAL ====================
 async function cargarDatosUsuario() {
-// 1️⃣ Obtener userId desde localStorage
 const storedId = localStorage.getItem("userId");
 if (!storedId) return;
 userId = storedId;
-console.log("Cargando usuario:", userId);
 
-// 2️⃣ Llenar select de provincias
+// Llenar select de provincias
 await fillProvinciaSelector();
 
-// 3️⃣ Obtener datos de Firestore
 const ref = doc(db, "usuarios", userId);
 const snap = await getDoc(ref);
 if (!snap.exists()) return;
 const data = snap.data();
-console.log("Datos Firestore:", data);
 
-// 4️⃣ Asignar valores a inputs
 nombre.value = data.nombre || "";
 apellido.value = data.apellido || "";
 mail.value = data.mail || "";
@@ -151,7 +146,7 @@ validarFormulario();
 
 cargarDatosUsuario();
 
-// ==================== GUARDAR DATOS Y MARCADOR ONBOARDING ====================
+// ==================== GUARDAR DATOS ====================
 btnGuardar.addEventListener("click", async () => {
 if (!userId) return alert("Error: usuario no encontrado.");
 
@@ -159,6 +154,10 @@ const fechaISO = fechaToISO(fechaNacimiento.value);
 if (!fechaISO) return alert("La fecha de nacimiento no tiene un formato válido (DD/MM/AAAA).");
 
 const ref = doc(db, "usuarios", userId);
+
+// Guardar datos + marcador onboardingSteps
+const snapAnterior = await getDoc(ref);
+const prevSteps = snapAnterior.exists() ? snapAnterior.data().onboardingSteps || {} : {};
 
 await setDoc(ref, {
 nombre: nombre.value.trim(),
@@ -173,25 +172,19 @@ barrio: barrio.value.trim() || "",
 direccion: direccion.value.trim(),
 tipoActividad: tipoSeleccionado,
 updatedAt: new Date().toISOString(),
-
-```
-// 🔹 Marcador para FlowController  
-onboardingSteps: {  
-  ...(await getDoc(ref).then(snap => snap.exists() ? snap.data().onboardingSteps || {} : {})),  
-  usuario: true  
-}  
-```
-
+onboardingSteps: { ...prevSteps, usuario: true }
 }, { merge: true });
 
 alert("Datos guardados correctamente.");
 btnCrearIA.disabled = false;
 
-// 🔹 Ejecutar FlowController para decidir redirección automáticamente
+// FlowController decide navegación, la página no redirige directamente
 runFlowController(userId);
 });
 
-// ==================== BOTÓN CREAR IA (solo habilita, navegación por FlowController) ====================
+// ==================== BOTÓN CREAR IA ====================
 btnCrearIA.addEventListener("click", () => {
-// No hace nada: FlowController se encarga de la navegación
+if (!tipoSeleccionado) return;
+// Solo habilita el botón; la navegación la controla FlowController
 });
+
