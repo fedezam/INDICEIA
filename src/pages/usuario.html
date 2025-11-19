@@ -25,179 +25,152 @@
     <script type="module" src="./usuario.jsx"></script>
 </head>
 
-<body class="usuario-page">
-  <!-- Toast Container -->
-  <div id="toastContainer" class="toast-container"></div>
+<body>
+  <div class="container">
+    <!-- TU HEADER ACTUAL -->
+    <header class="section-header">
+      <h1><i class="fas fa-user"></i> Datos del Usuario</h1>
+      <p>Completa tu información personal para continuar con el alta del comercio.</p>
+    </header>
 
-  <div class="container" style="max-width: 800px; margin-top: 40px;">
-    <div class="main-content">
-      <div style="padding: 30px;">
-        <!-- TU HEADER ORIGINAL -->
-        <h2 class="title" style="font-size: 28px; font-weight: 700; color: #333; margin-bottom: 10px;">
-          <i class="fas fa-user"></i> Datos del Usuario
-        </h2>
-        <p class="subtitle" style="color: #666; margin-bottom: 30px;">
-          Completa tu información personal para continuar con el alta del comercio.
-        </p>
+    <section class="form-section">
+      <form id="userForm">
 
-        <form id="usuarioForm" class="form">
-          <!-- Sección: Información Personal -->
-          <div class="form-section">
-            <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 20px;">
-              <i class="fas fa-user"></i> Información Personal
-            </h3>
-            <div class="form-fields">
-              <!-- Nombre -->
-              <div class="form-field">
-                <label for="nombre">Nombre <span style="color: #f44336;">*</span></label>
-                <input type="text" id="nombre" placeholder="Tu nombre" required>
-              </div>
+        <!-- Nombre -->
+        <div class="form-group">
+          <label for="nombre">Nombre <span class="required">*</span></label>
+          <input type="text" id="nombre" required />
+        </div>
 
-              <!-- Apellido -->
-              <div class="form-field">
-                <label for="apellido">Apellido <span style="color: #f44336;">*</span></label>
-                <input type="text" id="apellido" placeholder="Tu apellido" required>
-              </div>
+        <!-- Apellido -->
+        <div class="form-group">
+          <label for="apellido">Apellido <span class="required">*</span></label>
+          <input type="text" id="apellido" required />
+        </div>
 
-              <!-- Email -->
-              <div class="form-field">
-                <label for="mail">Email <span style="color: #f44336;">*</span></label>
-                <input 
-                  type="email" 
-                  id="mail" 
-                  placeholder="tu@email.com" 
-                  readonly 
-                  required
-                  style="background: #f5f5f5; cursor: not-allowed;"
-                  title="Este email proviene de tu cuenta de Google y no puede modificarse"
-                >
-              </div>
+        <!-- ✅ EMAIL (NUEVO) -->
+        <div class="form-group">
+          <label for="mail">Email <span class="required">*</span></label>
+          <input 
+            type="email" 
+            id="mail" 
+            placeholder="tu@email.com" 
+            readonly 
+            required
+            style="background: #f5f5f5; cursor: not-allowed;"
+            title="Este email proviene de tu cuenta de Google y no puede modificarse"
+          />
+        </div>
 
-              <!-- Fecha de Nacimiento -->
-              <div class="form-field">
-                <label for="fechaNacimiento">Fecha de nacimiento <span style="color: #f44336;">*</span></label>
-                <input type="date" id="fechaNacimiento" required>
-              </div>
+        <!-- ✅ FECHA DE NACIMIENTO (NUEVO) -->
+        <div class="form-group">
+          <label for="fechaNacimiento">Fecha de nacimiento <span class="required">*</span></label>
+          <input type="date" id="fechaNacimiento" required />
+        </div>
 
-              <!-- Teléfono -->
-              <div class="form-field">
-                <label for="telefono">Teléfono <span style="color: #f44336;">*</span></label>
-                <input type="tel" id="telefono" placeholder="Ej: 03411234567" required>
-              </div>
-            </div>
+        <!-- Teléfono -->
+        <div class="form-group">
+          <label for="telefono">Teléfono <span class="required">*</span></label>
+          <input type="tel" id="telefono" required />
+        </div>
+
+        <!-- ✅ PAÍS (NUEVO) -->
+        <div class="form-group">
+          <label for="pais">País <span class="required">*</span></label>
+          <select id="pais" required>
+            <option value="Argentina" selected>🇦🇷 Argentina</option>
+          </select>
+        </div>
+
+        <!-- Provincia -->
+        <div class="form-group">
+          <label for="provincia">Provincia <span class="required">*</span></label>
+          <select id="provincia" required>
+            <option value="">Seleccione provincia</option>
+          </select>
+        </div>
+
+        <!-- ✅ LOCALIDAD (NUEVO - reemplaza o complementa "Ciudad") -->
+        <div class="form-group">
+          <label for="localidad">Localidad <span class="required">*</span></label>
+          <input type="text" id="localidad" placeholder="Ej: Casilda" required />
+        </div>
+
+        <!-- ✅ BARRIO (NUEVO - OPCIONAL) -->
+        <div class="form-group">
+          <label for="barrio">Barrio (opcional)</label>
+          <input type="text" id="barrio" placeholder="Ej: Centro" />
+        </div>
+
+        <!-- ✅ DIRECCIÓN (NUEVO) -->
+        <div class="form-group">
+          <label for="direccion">Dirección <span class="required">*</span></label>
+          <input type="text" id="direccion" placeholder="Ej: Catamarca 1219" required />
+        </div>
+
+        <!-- ¿Es comercio o servicio? -->
+        <div class="form-group">
+          <label>Tipo de actividad <span class="required">*</span></label>
+
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" id="checkComercio" />
+              Comercio
+            </label>
+
+            <label class="checkbox-item">
+              <input type="checkbox" id="checkServicio" />
+              Servicio
+            </label>
           </div>
+        </div>
 
-          <!-- Sección: Ubicación -->
-          <div class="form-section">
-            <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 20px;">
-              <i class="fas fa-map-marker-alt"></i> Ubicación
-            </h3>
-            <div class="form-fields">
-              <!-- País -->
-              <div class="form-field">
-                <label for="pais">País <span style="color: #f44336;">*</span></label>
-                <select id="pais" required>
-                  <option value="Argentina" selected>🇦🇷 Argentina</option>
-                </select>
-              </div>
-
-              <!-- Provincia -->
-              <div class="form-field">
-                <label for="provincia">Provincia <span style="color: #f44336;">*</span></label>
-                <select id="provincia" required>
-                  <option value="">Seleccionar provincia...</option>
-                </select>
-              </div>
-
-              <!-- Localidad -->
-              <div class="form-field">
-                <label for="localidad">Localidad <span style="color: #f44336;">*</span></label>
-                <input type="text" id="localidad" placeholder="Ej: Casilda" required>
-              </div>
-
-              <!-- Barrio (opcional) -->
-              <div class="form-field">
-                <label for="barrio">Barrio (opcional)</label>
-                <input type="text" id="barrio" placeholder="Ej: Centro">
-              </div>
-
-              <!-- Dirección -->
-              <div class="form-field">
-                <label for="direccion">Dirección <span style="color: #f44336;">*</span></label>
-                <input type="text" id="direccion" placeholder="Ej: Catamarca 1219" required>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sección: Tipo de Actividad -->
-          <div class="form-section">
-            <h3 style="font-size: 18px; font-weight: 600; color: #333; margin-bottom: 20px;">
-              Tipo de actividad <span style="color: #f44336;">*</span>
-            </h3>
-            <div class="checkbox-grid">
-              <label class="checkbox-item">
-                <input type="checkbox" id="checkComercio">
-                <span class="checkbox-text">Comercio</span>
-              </label>
-
-              <label class="checkbox-item">
-                <input type="checkbox" id="checkServicio">
-                <span class="checkbox-text">Servicio</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Botón Guardar -->
-          <div class="btn-group btn-group-end">
-            <button type="button" id="saveUserData" class="btn btn-primary btn-lg">
-              <i class="fas fa-save"></i> Guardar Datos
-            </button>
-          </div>
-
-          <!-- Sección de Opciones de IA -->
-          <div class="form-section" style="margin-top: 40px;">
-            <p class="info-text">
-              ⚡ Una vez guardados tus datos, elige qué tipo de IA deseas crear:
-            </p>
-            
-            <div class="options">
-              <button 
-                type="button" 
-                id="btnComercio" 
-                class="btn btn-secondary" 
-                disabled
-              >
-                <i class="fas fa-store"></i>
-                <strong>Crear IA para Comercio</strong>
-                <p class="btn-desc">Ideal si vendes productos, con catálogo y horarios.</p>
-              </button>
-              
-              <button 
-                type="button" 
-                id="btnServicio" 
-                class="btn btn-secondary" 
-                disabled
-              >
-                <i class="fas fa-briefcase"></i>
-                <strong>Crear IA para Servicio</strong>
-                <p class="btn-desc">Perfecto si ofrecés servicios o turnos personalizados.</p>
-              </button>
-            </div>
-          </div>
-        </form>
-
-        <!-- Logout Section -->
-        <div class="logout-section">
-          <button onclick="logout()" class="btn btn-secondary btn-sm">
-            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+        <!-- Botón Guardar -->
+        <div class="btn-group btn-group-end">
+          <button type="button" id="saveUserData" class="btn btn-primary btn-lg">
+            <i class="fas fa-save"></i> Guardar Datos
           </button>
         </div>
-      </div>
-    </div>
+
+        <!-- ✅ SECCIÓN DE OPCIONES DE IA (NUEVA) -->
+        <div class="form-group" style="margin-top: 40px;">
+          <p style="background: rgba(102, 126, 234, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #333;">
+            ⚡ Una vez guardados tus datos, elige qué tipo de IA deseas crear:
+          </p>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            <button 
+              type="button" 
+              id="btnComercio" 
+              class="btn btn-secondary" 
+              disabled 
+              style="background: #e0e0e0; cursor: not-allowed; padding: 25px; height: auto; display: flex; flex-direction: column; align-items: center; text-align: center;"
+            >
+              <i class="fas fa-store" style="font-size: 32px; margin-bottom: 10px;"></i>
+              <strong style="font-size: 16px; margin-bottom: 5px;">Crear IA para Comercio</strong>
+              <span style="font-size: 13px; color: #666;">Ideal si vendes productos, con catálogo y horarios.</span>
+            </button>
+            
+            <button 
+              type="button" 
+              id="btnServicio" 
+              class="btn btn-secondary" 
+              disabled 
+              style="background: #e0e0e0; cursor: not-allowed; padding: 25px; height: auto; display: flex; flex-direction: column; align-items: center; text-align: center;"
+            >
+              <i class="fas fa-briefcase" style="font-size: 32px; margin-bottom: 10px;"></i>
+              <strong style="font-size: 16px; margin-bottom: 5px;">Crear IA para Servicio</strong>
+              <span style="font-size: 13px; color: #666;">Perfecto si ofrecés servicios o turnos personalizados.</span>
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </section>
   </div>
 
-  <!-- Scripts -->
   <script type="module" src="/src/controllers/flowController.js"></script>
+  <!-- ✅ Scripts adicionales necesarios -->
   <script type="module" src="../firebase.js"></script>
   <script type="module" src="../shared/provincias.js"></script>
 
