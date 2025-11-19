@@ -1,0 +1,253 @@
+/* ==================== PRODUCTOS PAGE ==================== */
+
+/* Table Styles */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.table thead {
+  background: var(--gray-100);
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.table th {
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table tbody tr {
+  transition: var(--transition);
+}
+
+.table tbody tr:hover {
+  background: var(--gray-50);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Editable Cells */
+.editable-cell {
+  cursor: text;
+  position: relative;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: var(--transition);
+}
+
+.editable-cell:hover {
+  background: var(--gray-100);
+}
+
+.editable-cell:hover::after {
+  content: "✏️";
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.8rem;
+  opacity: 0.5;
+}
+
+/* Paused Row */
+.paused-row {
+  opacity: 0.5;
+  background: var(--gray-100);
+}
+
+.paused-row:hover {
+  opacity: 0.7;
+}
+
+/* Actions Column */
+.table .actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.table .actions button {
+  padding: 0.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--gray-600);
+  transition: var(--transition);
+  border-radius: 4px;
+}
+
+.table .actions button:hover {
+  background: var(--gray-100);
+  color: var(--danger);
+}
+
+/* Preview Table */
+#previewTable {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+#previewTable th {
+  background: var(--primary);
+  color: white;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+/* Products Destacados */
+.productos-destacados-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.destacados-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.destacados-counter {
+  background: var(--primary);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+#destacadosList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.destacado-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--gray-50);
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+
+.destacado-item .remove-destacado {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: var(--transition);
+}
+
+.destacado-item .remove-destacado:hover {
+  background: var(--danger);
+  color: white;
+}
+
+/* Search Results */
+#searchResults {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.search-result-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--gray-200);
+  transition: var(--transition);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: var(--gray-50);
+}
+
+.search-result-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Grid Layouts */
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  .table {
+    font-size: 0.85rem;
+    display: block;
+    overflow-x: auto;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.5rem;
+    min-width: 100px;
+  }
+
+  .editable-cell:hover::after {
+    display: none;
+  }
+
+  .productos-destacados-container {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .table {
+    font-size: 0.75rem;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.4rem;
+    min-width: 80px;
+  }
+}
