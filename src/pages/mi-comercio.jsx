@@ -16,8 +16,8 @@ import { runFlowController } from '../controllers/flowController.js';
 
 // ==================== DATOS ESTÁTICOS ====================
 const CATEGORIAS_COMUNES = [
-  "Panadería", "Carnicería", "Verdulería", "Kiosco", "Supermercado", "Restaurante", 
-  "Cafetería", "Pizzería", "Heladería", "Bar", "Ropa", "Zapatería", "Belleza", 
+  "Panadería", "Carnicería", "Verdulería", "Kiosco", "Supermercado", "Restaurante",
+  "Cafetería", "Pizzería", "Heladería", "Bar", "Ropa", "Zapatería", "Belleza",
   "Peluquería", "Gimnasio", "Farmacia", "Ferretería", "Librería", "Juguetería",
   "Electrónica", "Mascotas", "Óptica", "Limpieza", "Regalería", "Tienda de deportes"
 ];
@@ -54,7 +54,6 @@ async function initializePage() {
   try {
     showLoading('Cargando tu comercio...');
 
-    // Obtener o crear comercio
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userSnap = await getDoc(userRef);
 
@@ -130,7 +129,7 @@ function updateSubscriptionBanner() {
     case 'trial':
       const dias = getDiasRestantesTrial(comercioData);
       banner.classList.add('trial');
-      msg.innerHTML = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong> para probar todo gratis`;
+      msg.innerHTML = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong> gratis`;
       break;
     case 'activo':
       banner.classList.add('active');
@@ -142,7 +141,7 @@ function updateSubscriptionBanner() {
       break;
     default:
       banner.classList.add('trial');
-      msg.innerHTML = `Completa tu comercio para activar tu IA`;
+      msg.innerHTML = `Completá tu comercio para activar tu IA`;
   }
 }
 
@@ -176,7 +175,7 @@ function renderPlans() {
       comercioData.plan = key;
       markAsChanged();
       updateSubscriptionBanner();
-      showToast('Plan seleccionado', `Ahora tienes el plan ${plan.nombre}`, 'info');
+      showToast('Plan seleccionado', `Ahora tenés el plan ${plan.nombre}`, 'info');
     };
 
     container.appendChild(card);
@@ -188,7 +187,6 @@ function renderCategoriesSection() {
   container.innerHTML = `
     <div class="categories-selector">
 
-      <!-- MENÚ DESPLEGABLE (sin botón al lado) -->
       <div class="category-dropdown">
         <select id="categorySelect" class="category-select">
           <option value="">Seleccionar categoría común...</option>
@@ -196,7 +194,6 @@ function renderCategoriesSection() {
         </select>
       </div>
 
-      <!-- OPCIÓN PERSONALIZADA (con su botón que SÍ funciona) -->
       <div class="custom-category">
         <input type="text" id="customCatInput" placeholder="O agregá una personalizada...">
         <button id="addCustomBtn" class="btn btn-primary">
@@ -213,22 +210,18 @@ function renderCategoriesSection() {
     </div>
   `;
 
-  renderSelectedTags();
+  renderSelectedTags(); // ← Primero renderizamos
 
-  // ←←← AQUÍ ESTÁ LA LÓGICA CORREGIDA ←←←
-
-  // 1. Al seleccionar del menú → se agrega automáticamente
   document.getElementById('categorySelect').addEventListener('change', (e) => {
     const val = e.target.value.trim();
     if (val && !selectedCategories.includes(val)) {
       selectedCategories.push(val);
-      e.target.value = ''; // limpia el select
+      e.target.value = '';
       renderSelectedTags();
       markAsChanged();
     }
   });
 
-  // 2. El botón de categoría personalizada (el que SÍ funciona)
   document.getElementById('addCustomBtn').addEventListener('click', () => {
     const input = document.getElementById('customCatInput');
     const val = input.value.trim();
@@ -240,12 +233,31 @@ function renderCategoriesSection() {
     }
   });
 
-  // Bonus: también con Enter en el input
   document.getElementById('customCatInput').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       document.getElementById('addCustomBtn').click();
     }
+  });
+}
+
+function renderSelectedTags() {
+  const grid = document.getElementById('selectedTags');
+  if (!grid) return;
+
+  grid.innerHTML = selectedCategories.map(cat => `
+    <div class="selected-category-tag">
+      ${cat}
+      <button type="button" class="remove-btn" data-cat="${cat}">×</button>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.onclick = () => {
+      selectedCategories = selectedCategories.filter(c => c !== btn.dataset.cat);
+      renderSelectedTags();
+      markAsChanged();
+    };
   });
 }
 
@@ -267,10 +279,10 @@ function renderPaymentMethods() {
       </div>
     `;
 
-    // Para detectar cambios y activar el botón Guardar
     container.lastElementChild.querySelector('input').addEventListener('change', markAsChanged);
   });
 }
+
 // ==================== FORM & SAVE ====================
 function fillForm() {
   const form = document.getElementById('miComercioForm');
@@ -296,7 +308,6 @@ function createSaveButton() {
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
   userInfo.insertBefore(btn, document.getElementById('logoutBtn'));
-
   btn.addEventListener('click', saveFormData);
 }
 
@@ -321,22 +332,20 @@ async function saveFormData() {
   const btn = document.getElementById('saveChangesBtn');
   const form = document.getElementById('miComercioForm');
 
-  // Validación
   const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
   let missing = [];
   required.forEach(id => {
     const el = document.getElementById(id);
-    if (!el.value.trim()) missing.push(el.previousElementSibling.textContent);
+    if (!el.value.trim()) missing.push(el.previousElementSibling?.textContent || id);
   });
 
   const hasSocial = ['website', 'instagram', 'facebook', 'tiktok'].some(id => document.getElementById(id).value.trim());
   if (!hasSocial) missing.push('al menos una red social o web');
-
   if (selectedCategories.length === 0) missing.push('categorías');
   if (!document.querySelector('.plan-card.selected')) missing.push('un plan');
 
   if (missing.length > 0) {
-    showToast('Faltan datos', 'Completa: ' + missing.join(', '), 'warning');
+    showToast('Faltan datos', 'Completá: ' + missing.join(', '), 'warning');
     return;
   }
 
@@ -382,7 +391,6 @@ async function saveFormData() {
   }
 }
 
-// ==================== AI HELPER CARD ====================
 function insertAIHelperCard() {
   const container = document.querySelector('main .container');
   if (document.querySelector('.ai-helper-card')) return;
@@ -400,10 +408,9 @@ function insertAIHelperCard() {
   container.insertBefore(card, container.firstChild);
 }
 
-// Validación para Navigation
 window.validateCurrentPageData = async () => {
   if (hasUnsavedChanges) {
-    showToast('Tienes cambios sin guardar', 'Guarda antes de continuar', 'warning');
+    showToast('Cambios sin guardar', 'Guardá antes de continuar', 'warning');
     return false;
   }
   return true;
