@@ -210,3 +210,10 @@
     gap: 0.5rem;
   }
 }
+
+.checkbox-item.highlight {
+  border: 2px solid #10b981 !important;
+  background: #f0fdf4 !important;
+  border-radius: 12px;
+  padding: 0.75rem !important;
+}
