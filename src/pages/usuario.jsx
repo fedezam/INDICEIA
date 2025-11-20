@@ -1,3 +1,4 @@
+
 // ================================
 // usuario.jsx — Onboarding Paso 1 (Simplificado)
 // ================================
@@ -11,7 +12,7 @@ import './usuario.css';
 
 // Firebase
 import { auth, db } from "../firebase.js";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, addDoc, collection, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 // Lógica interna
@@ -237,6 +238,36 @@ if (btnGuardar) {
         updatedAt: new Date().toISOString(),
         onboardingSteps: { ...prevSteps, usuario: true }
       }, { merge: true });
+
+      // 🔹 Verificar si ya tiene comercioId (usuario editando)
+      const userDoc = await getDoc(ref);
+      const existingComercioId = userDoc.data()?.comercioId;
+
+      // 🔹 Si NO tiene comercioId → CREAR comercio
+      if (!existingComercioId) {
+        const newComercioRef = await addDoc(collection(db, 'comercios'), {
+          dueñoId: userId,
+          fechaCreacion: new Date(),
+          tipo: tipoSeleccionado,
+          plan: 'trial',
+          pais: 'Argentina',
+          onboardingSteps: {
+            "mi-comercio": false,
+            "horarios": false,
+            "productos": false,
+            "ia-config": false
+          }
+        });
+        
+        // Guardar comercioId en usuario
+        await updateDoc(ref, {
+          comercioId: newComercioRef.id
+        });
+        
+        console.log("✅ Nuevo comercio creado:", newComercioRef.id);
+      } else {
+        console.log("✅ Comercio existente:", existingComercioId);
+      }
 
       // Cambiar botón a estado guardado
       btnGuardar.classList.remove("saving");
