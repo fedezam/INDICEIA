@@ -234,16 +234,15 @@ if (btnGuardar) {
     }
 
     try {
+      // Activar animación de guardado
+      btnGuardar.classList.add("saving");
       btnGuardar.disabled = true;
-      btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
       const ref = doc(db, "usuarios", userId);
-
-      // Obtener steps previos
       const snapAnterior = await getDoc(ref);
       const prevSteps = snapAnterior.exists() ? (snapAnterior.data().onboardingSteps || {}) : {};
 
-      // Guardar datos
+      // Guardar datos en Firestore
       await setDoc(ref, {
         nombre: nombre.value.trim(),
         apellido: apellido.value.trim(),
@@ -260,18 +259,46 @@ if (btnGuardar) {
         onboardingSteps: { ...prevSteps, usuario: true }
       }, { merge: true });
 
-      console.log("💾 Datos guardados correctamente");
-      
-      btnGuardar.innerHTML = '<i class="fas fa-check"></i> Guardado';
+      // Cambiar botón a estado guardado
+      btnGuardar.classList.remove("saving");
+      btnGuardar.classList.add("saved");
+
+      // Habilitar y estilizar botón de Crear IA
+      if (btnCrearIA) {
+        if (tipoSeleccionado) {
+          btnCrearIA.disabled = false;
+          btnCrearIA.classList.add("btn-primary");
+          btnCrearIA.classList.remove("btn-secondary");
+        } else {
+          btnCrearIA.disabled = true;
+          btnCrearIA.classList.add("btn-secondary");
+          btnCrearIA.classList.remove("btn-primary");
+        }
+      }
+
+      // Mostrar toast de éxito
+      const toastContainer = document.querySelector(".toast-container");
+      if (toastContainer) {
+        const toast = document.createElement("div");
+        toast.className = "toast success show";
+        toast.innerHTML = `
+          <i class="fas fa-check-circle"></i>
+          <div class="toast-content">
+            <div class="toast-title">¡Guardado!</div>
+            <div class="toast-message">Tus datos se guardaron correctamente.</div>
+          </div>
+        `;
+        toastContainer.appendChild(toast);
+        setTimeout(() => {
+          toast.remove();
+        }, 3500);
+      }
+
+      // Restaurar botón después de 2s
       setTimeout(() => {
-        btnGuardar.innerHTML = '<i class="fas fa-save"></i> Guardar Datos';
+        btnGuardar.classList.remove("saved");
         btnGuardar.disabled = false;
       }, 2000);
-
-      // Habilitar botón de crear IA
-      if (btnCrearIA) {
-        btnCrearIA.disabled = false;
-      }
 
       // Ejecutar flow controller
       await runFlowController(userId);
@@ -279,7 +306,7 @@ if (btnGuardar) {
     } catch (error) {
       console.error("❌ Error al guardar:", error);
       alert("Error al guardar los datos. Por favor, intenta nuevamente.");
-      btnGuardar.innerHTML = '<i class="fas fa-save"></i> Guardar Datos';
+      btnGuardar.classList.remove("saving");
       btnGuardar.disabled = false;
     }
   });
@@ -292,11 +319,24 @@ if (btnCrearIA) {
       alert("Por favor, selecciona si es comercio o servicio");
       return;
     }
-    
+
+    btnCrearIA.disabled = true;
+    btnCrearIA.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
     console.log("🤖 Iniciando creación de IA tipo:", tipoSeleccionado);
-    
-    // El flowController manejará la navegación
-    await runFlowController(userId);
+
+    try {
+      await runFlowController(userId);
+    } catch (error) {
+      console.error("❌ Error al crear IA:", error);
+      alert("Error al crear la IA. Por favor, intenta nuevamente.");
+    } finally {
+      btnCrearIA.disabled = false;
+      if (tipoSeleccionado === "comercio") {
+        btnCrearIA.innerHTML = '<i class="fas fa-store"></i> Crear IA para Comercio';
+      } else if (tipoSeleccionado === "servicio") {
+        btnCrearIA.innerHTML = '<i class="fas fa-briefcase"></i> Crear IA para Servicio';
+      }
+    }
   });
 }
 
