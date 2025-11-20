@@ -1,5 +1,5 @@
 // ================================
-// usuario.jsx — Onboarding Paso 1 (Producción)
+// usuario.jsx — Onboarding Paso 1 (Simplificado)
 // ================================
 
 // CSS
@@ -34,7 +34,6 @@ const checkComercio = document.getElementById("checkComercio");
 const checkServicio = document.getElementById("checkServicio");
 
 const btnGuardar = document.getElementById("saveUserData");
-const btnCrearIA = document.getElementById("btnCrearIA");
 
 // ==================== ESTADO ====================
 let userId = null;
@@ -92,7 +91,7 @@ function validarFormulario() {
 
 // Listeners para validación
 [nombre, apellido, mail, fechaNacimiento, telefono, pais, provincia, localidad, direccion]
-  .filter(el => el) // Filtrar elementos que existen
+  .filter(el => el)
   .forEach(el => el.addEventListener("input", validarFormulario));
 
 if (provincia) {
@@ -100,23 +99,6 @@ if (provincia) {
 }
 
 // ==================== HANDLERS ACTIVIDAD ====================
-function actualizarBotonIA() {
-  if (!btnCrearIA) return;
-  
-  if (!tipoSeleccionado) {
-    btnCrearIA.disabled = true;
-    btnCrearIA.innerHTML = '<i class="fas fa-robot"></i> Crear IA';
-    return;
-  }
-  
-  btnCrearIA.disabled = false;
-  if (tipoSeleccionado === "comercio") {
-    btnCrearIA.innerHTML = '<i class="fas fa-store"></i> Crear IA para Comercio';
-  } else {
-    btnCrearIA.innerHTML = '<i class="fas fa-briefcase"></i> Crear IA para Servicio';
-  }
-}
-
 if (checkComercio) {
   checkComercio.addEventListener("change", () => {
     if (checkComercio.checked) {
@@ -125,7 +107,6 @@ if (checkComercio) {
     } else {
       tipoSeleccionado = null;
     }
-    actualizarBotonIA();
     validarFormulario();
   });
 }
@@ -138,7 +119,6 @@ if (checkServicio) {
     } else {
       tipoSeleccionado = null;
     }
-    actualizarBotonIA();
     validarFormulario();
   });
 }
@@ -148,7 +128,7 @@ async function cargarDatosUsuario(uid) {
   try {
     console.log("🔄 Cargando datos del usuario:", uid);
     
-    // Llenar select de provincias CORREGIDO
+    // Llenar select de provincias
     fillProvinciaSelector(pais.value, provincia);
 
     // Cargar datos de Firestore
@@ -176,7 +156,7 @@ async function cargarDatosUsuario(uid) {
     if (telefono) telefono.value = data.telefono || "";
     if (pais) pais.value = data.pais || "Argentina";
 
-    // 🔹 RE-LLENAR provincias tras asignar país
+    // RE-LLENAR provincias tras asignar país
     fillProvinciaSelector(pais.value, provincia);
     if (provincia && data.provincia) {
       provincia.value = data.provincia;
@@ -201,7 +181,6 @@ async function cargarDatosUsuario(uid) {
       }
     }
 
-    actualizarBotonIA();
     validarFormulario();
 
   } catch (error) {
@@ -210,7 +189,7 @@ async function cargarDatosUsuario(uid) {
   }
 }
 
-// 🔹 Actualizar provincias si se cambia el país
+// Actualizar provincias si se cambia el país
 if (pais && provincia) {
   pais.addEventListener("change", () => {
     fillProvinciaSelector(pais.value, provincia);
@@ -218,7 +197,7 @@ if (pais && provincia) {
   });
 }
 
-// ==================== GUARDAR DATOS ====================
+// ==================== GUARDAR DATOS Y CREAR IA ====================
 if (btnGuardar) {
   btnGuardar.addEventListener("click", async () => {
     if (!userId) {
@@ -263,19 +242,6 @@ if (btnGuardar) {
       btnGuardar.classList.remove("saving");
       btnGuardar.classList.add("saved");
 
-      // Habilitar y estilizar botón de Crear IA
-      if (btnCrearIA) {
-        if (tipoSeleccionado) {
-          btnCrearIA.disabled = false;
-          btnCrearIA.classList.add("btn-primary");
-          btnCrearIA.classList.remove("btn-secondary");
-        } else {
-          btnCrearIA.disabled = true;
-          btnCrearIA.classList.add("btn-secondary");
-          btnCrearIA.classList.remove("btn-primary");
-        }
-      }
-
       // Mostrar toast de éxito
       const toastContainer = document.querySelector(".toast-container");
       if (toastContainer) {
@@ -284,8 +250,8 @@ if (btnGuardar) {
         toast.innerHTML = `
           <i class="fas fa-check-circle"></i>
           <div class="toast-content">
-            <div class="toast-title">¡Guardado!</div>
-            <div class="toast-message">Tus datos se guardaron correctamente.</div>
+            <div class="toast-title">¡Datos guardados!</div>
+            <div class="toast-message">Creando tu IA comercial...</div>
           </div>
         `;
         toastContainer.appendChild(toast);
@@ -312,34 +278,6 @@ if (btnGuardar) {
   });
 }
 
-// ==================== BOTÓN CREAR IA ====================
-if (btnCrearIA) {
-  btnCrearIA.addEventListener("click", async () => {
-    if (!tipoSeleccionado) {
-      alert("Por favor, selecciona si es comercio o servicio");
-      return;
-    }
-
-    btnCrearIA.disabled = true;
-    btnCrearIA.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-    console.log("🤖 Iniciando creación de IA tipo:", tipoSeleccionado);
-
-    try {
-      await runFlowController(userId);
-    } catch (error) {
-      console.error("❌ Error al crear IA:", error);
-      alert("Error al crear la IA. Por favor, intenta nuevamente.");
-    } finally {
-      btnCrearIA.disabled = false;
-      if (tipoSeleccionado === "comercio") {
-        btnCrearIA.innerHTML = '<i class="fas fa-store"></i> Crear IA para Comercio';
-      } else if (tipoSeleccionado === "servicio") {
-        btnCrearIA.innerHTML = '<i class="fas fa-briefcase"></i> Crear IA para Servicio';
-      }
-    }
-  });
-}
-
 // ==================== AUTENTICACIÓN ====================
 console.log("🔐 Esperando autenticación...");
 
@@ -360,4 +298,3 @@ onAuthStateChanged(auth, async (user) => {
   // Cargar datos del usuario
   await cargarDatosUsuario(user.uid);
 });
-
