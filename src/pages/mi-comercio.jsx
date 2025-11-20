@@ -7,7 +7,7 @@ import './mi-comercio.css'
 
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import Navigation from '../shared/navigation.jsx';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
@@ -19,7 +19,7 @@ const CATEGORIAS_COMUNES = [
   "Panadería", "Carnicería", "Verdulería", "Kiosco", "Supermercado", "Restaurante", 
   "Cafetería", "Pizzería", "Heladería", "Bar", "Ropa", "Zapatería", "Belleza", 
   "Peluquería", "Gimnasio", "Farmacia", "Ferretería", "Librería", "Juguetería",
-  "Electrónica", "Mascotas", "Óptica", "Limpieza", "Regalería"
+  "Electrónica", "Mascotas", "Óptica", "Limpieza", "Regalería", "Tienda de deportes"
 ];
 
 const METODOS_PAGO = [
@@ -27,7 +27,7 @@ const METODOS_PAGO = [
   { value: "tarjeta_debito", label: "Tarjeta de débito", icon: "fa-credit-card" },
   { value: "tarjeta_credito", label: "Tarjeta de crédito", icon: "fa-credit-card" },
   { value: "mercado_pago", label: "Mercado Pago", icon: "fa-qrcode" },
-  { value: "transferencia", label: "Transferencia bancaria", icon: "fa-university" },
+  { value: "transferencia", label: "Transferencia", icon: "fa-university" },
   { value: "uala", label: "Ualá", icon: "fa-mobile-alt" },
   { value: "modo", label: "MODO", icon: "fa-wallet" },
   { value: "cripto", label: "Criptomonedas", icon: "fa-bitcoin" }
@@ -43,13 +43,13 @@ let hasUnsavedChanges = false;
 
 // ==================== INICIALIZACIÓN ====================
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    currentUser = user;
-    await initializePage();
-    runFlowController(user.uid);
-  } else {
+  if (!user) {
     window.location.href = "/login.html";
+    return;
   }
+  currentUser = user;
+  await initializePage();
+  runFlowController(user.uid);
 });
 
 async function initializePage() {
@@ -58,12 +58,11 @@ async function initializePage() {
 
     // Obtener o crear comercio
     const userRef = doc(db, 'usuarios', currentUser.uid);
-    const userDoc = await getDoc(userRef);
+    const userSnap = await getDoc(userRef);
 
-    if (userDoc.exists() && userDoc.data().comercioId) {
-      currentComercioId = userDoc.data().comercioId;
+    if (userSnap.exists() && userSnap.data().comercioId) {
+      currentComercioId = userSnap.data().comercioId;
     } else {
-      // Crear nuevo comercio si no existe
       const nuevo = await addDoc(collection(db, 'comercios'), {
         dueñoId: currentUser.uid,
         fechaCreacion: new Date(),
@@ -77,7 +76,6 @@ async function initializePage() {
     }
 
     await loadComercioData();
-
     updateHeader();
     updateSubscriptionBanner();
     renderPlans();
@@ -87,14 +85,13 @@ async function initializePage() {
     createSaveButton();
     setupEventListeners();
     Navigation.init();
-
-    // AI Helper Card solo en este paso
     insertAIHelperCard();
 
     hideLoading();
-  } catch (error) {
+  } catch (err) {
+    console.error(err);
     hideLoading();
-    showToast('Error', 'Error al cargar: ' + error.message, 'error');
+    showToast('Error', 'No se pudo cargar la página: ' + err.message, 'error');
   }
 }
 
@@ -105,11 +102,50 @@ async function loadComercioData() {
     comercioData = { id: currentComercioId, ...snap.data() };
     selectedCategories = comercioData.categories || [];
   } else {
-    comercioData.plan = 'trial';
-    comercioData.pais = 'Argentina';
+    comercioData = { plan: 'trial', pais: 'Argentina' };
     selectedCategories = [];
   }
   originalData = JSON.parse(JSON.stringify(comercioData));
+}
+
+// ==================== HEADER & BANNER ====================
+function updateHeader() {
+  const nameEl = document.getElementById('commerceName');
+  const badgeEl = document.getElementById('planBadge');
+  if (nameEl) nameEl.textContent = comercioData.nombreComercio || 'Mi Comercio';
+  if (badgeEl) {
+    const plan = PLANS[comercioData.plan || 'trial'];
+    badgeEl.textContent = plan ? `${plan.emoji} ${plan.nombre}` : 'Trial';
+  }
+}
+
+function updateSubscriptionBanner() {
+  const banner = document.getElementById('subscriptionBanner');
+  const msg = document.getElementById('subscriptionMessage');
+  if (!banner || !msg) return;
+
+  const estado = calcularEstadoPlan(comercioData);
+  const plan = PLANS[comercioData.plan || 'trial'];
+
+  banner.className = 'subscription-banner';
+  switch (estado) {
+    case 'trial':
+      const dias = getDiasRestantesTrial(comercioData);
+      banner.classList.add('trial');
+      msg.innerHTML = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong> para probar todo gratis`;
+      break;
+    case 'activo':
+      banner.classList.add('active');
+      msg.innerHTML = `<strong>Plan ${plan.nombre} activo</strong> – Todo funcionando`;
+      break;
+    case 'expirado':
+      banner.classList.add('expired');
+      msg.innerHTML = `Trial expirado – Elegí un plan para continuar`;
+      break;
+    default:
+      banner.classList.add('trial');
+      msg.innerHTML = `Completa tu comercio para activar tu IA`;
+  }
 }
 
 // ==================== RENDERS ====================
@@ -118,32 +154,32 @@ function renderPlans() {
   container.innerHTML = '';
 
   Object.entries(PLANS).forEach(([key, plan]) => {
-    if (key === 'trial') return; // no mostrar trial como opción pagada
+    if (key === 'trial') return;
+    const selected = comercioData.plan === key;
 
     const card = document.createElement('div');
-    card.className = `plan-card ${comercioData.plan === key ? 'selected' : ''}`;
+    card.className = `plan-card ${selected ? 'selected' : ''}`;
     card.dataset.plan = key;
-
     card.innerHTML = `
       <div class="plan-header">
         <h4>${plan.emoji} ${plan.nombre}</h4>
-        <div class="plan-price">$${plan.precio || 'Gratis'}<small>/mes</small></div>
+        <div class="plan-price">$${plan.precio || 0}<small>/mes</small></div>
       </div>
       <p class="plan-description">${plan.descripcion}</p>
       <div class="plan-features">
         ${plan.features.map(f => `<div class="feature"><i class="fas fa-check"></i> ${f}</div>`).join('')}
       </div>
-      ${plan.masVendido ? '<div class="badge" style="background: #10b981; color: white; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.8rem; margin-top: 1rem;">MÁS VENDIDO</div>' : ''}
+      ${plan.masVendido ? '<div style="background:#10b981;color:white;padding:0.25rem 0.75rem;border-radius:8px;font-size:0.8rem;margin-top:1rem;">MÁS VENDIDO</div>' : ''}
     `;
 
-    card.addEventListener('click', () => {
+    card.onclick = () => {
       document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       comercioData.plan = key;
       markAsChanged();
       updateSubscriptionBanner();
-      showToast('Plan cambiado', `Seleccionaste el plan ${plan.nombre}`, 'info');
-    });
+      showToast('Plan seleccionado', `Ahora tienes el plan ${plan.nombre}`, 'info');
+    };
 
     container.appendChild(card);
   });
@@ -155,60 +191,44 @@ function renderCategoriesSection() {
     <div class="categories-selector">
       <div class="category-dropdown">
         <select id="categorySelect" class="category-select">
-          <option value="">Categorías populares...</option>
-          ${CATEGORIAS_COMUNES.map(c => `<option value="${c}">${c}</option>`).join('')}
+          <option value="">Elige una categoría popular...</option>
+          ${CATEGORIAS_COMUNES.map(c => `<option>${c}</option>`).join('')}
         </select>
-        <button id="addCommonCategory" class="btn btn-primary">Añadir</button>
+        <button id="addCommonBtn" class="btn btn-primary">Añadir</button>
       </div>
-
       <div class="custom-category">
-        <input type="text" id="customCategoryInput" placeholder="Ej: Tienda de artesanías...">
-        <button id="addCustomCategory" class="btn btn-primary">Añadir</button>
+        <input type="text" id="customCatInput" placeholder="O escribe una personalizada...">
+        <button id="addCustomBtn" class="btn btn-primary">Añadir</button>
       </div>
     </div>
 
     <div class="selected-categories">
-      <h4><i class="fas fa-tags"></i> Categorías seleccionadas (${selectedCategories.length})</h4>
+      <h4>Categorías seleccionadas (${selectedCategories.length})</h4>
       <div class="selected-categories-grid" id="selectedTags"></div>
-      ${selectedCategories.length === 0 ? '<p class="empty-categories">Ninguna categoría seleccionada aún</p>' : ''}
+      ${selectedCategories.length === 0 ? '<p class="empty-categories">Aún no seleccionaste categorías</p>' : ''}
     </div>
   `;
 
   renderSelectedTags();
 
-  document.getElementById('addCommonCategory').addEventListener('click', addCategoryFromSelect);
-  document.getElementById('addCustomCategory').addEventListener('click', addCustomCategory);
-  document.getElementById('customCategoryInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') addCustomCategory();
-  });
-}
+  document.getElementById('addCommonBtn').onclick = () => {
+    const val = document.getElementById('categorySelect').value;
+    if (val && !selectedCategories.includes(val)) {
+      selectedCategories.push(val);
+      renderSelectedTags();
+      markAsChanged();
+    }
+  };
 
-function addCategoryFromSelect() {
-  const select = document.getElementById('categorySelect');
-  const value = select.value.trim();
-  if (value && !selectedCategories.includes(value)) {
-    selectedCategories.push(value);
-    select.value = '';
-    renderSelectedTags();
-    markAsChanged();
-  }
-}
-
-function addCustomCategory() {
-  const input = document.getElementById('customCategoryInput');
-  const value = input.value.trim();
-  if (value && !selectedCategories.includes(value)) {
-    selectedCategories.push(value);
-    input.value = '';
-    renderSelectedTags();
-    markAsChanged();
-  }
-}
-
-function removeCategory(category) {
-  selectedCategories = selectedCategories.filter(c => c !== category);
-  renderSelectedTags();
-  markAsChanged();
+  document.getElementById('addCustomBtn').onclick = () => {
+    const val = document.getElementById('customCatInput').value.trim();
+    if (val && !selectedCategories.includes(val)) {
+      selectedCategories.push(val);
+      document.getElementById('customCatInput').value = '';
+      renderSelectedTags();
+      markAsChanged();
+    }
+  };
 }
 
 function renderSelectedTags() {
@@ -216,45 +236,60 @@ function renderSelectedTags() {
   grid.innerHTML = selectedCategories.map(cat => `
     <div class="selected-category-tag">
       ${cat}
-      <button type="button" class="remove-btn" data-category="${cat}">×</button>
+      <button type="button" class="remove-btn" data-cat="${cat}">×</button>
     </div>
   `).join('');
 
-  // Event delegation para eliminar
   grid.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      removeCategory(btn.dataset.category);
-    });
+    btn.onclick = () => {
+      selectedCategories = selectedCategories.filter(c => c !== btn.dataset.cat);
+      renderSelectedTags();
+      markAsChanged();
+    };
   });
 }
 
 function renderPaymentMethods() {
   const container = document.getElementById('paymentMethods');
   container.innerHTML = '';
-
   METODOS_PAGO.forEach(m => {
-    const checked = comercioData.paymentMethods?.includes(m.value) || false;
-
-    const item = document.createElement('div');
-    item.className = 'checkbox-item';
-    item.innerHTML = `
-      <input type="checkbox" id="pay_${m.value}" name="paymentMethods" value="${m.value}" ${checked ? 'checked' : ''}>
-      <label for="pay_${m.value}"><i class="fas ${m.icon}"></i> ${m.label}</label>
+    const checked = comercioData.paymentMethods?.includes(m.value);
+    container.innerHTML += `
+      <div class="checkbox-item">
+        <input type="checkbox" id="pay_${m.value}" name="paymentMethods" value="${m.value}" ${checked ? 'checked' : ''}>
+        <label for="pay_${m.value}"><i class="fas ${m.icon}"></i> ${m.label}</label>
+      </div>
     `;
-
-    item.querySelector('input').addEventListener('change', markAsChanged);
-    container.appendChild(item);
   });
 }
 
-// ==================== EVENT LISTENERS & SAVE ====================
-function setupEventListeners() {
-  // Form inputs
-  document.getElementById('miComercioForm').addEventListener('input', markAsChanged);
-  document.getElementById('miComercioForm').addEventListener('change', markAsChanged);
+// ==================== FORM & SAVE ====================
+function fillForm() {
+  const form = document.getElementById('miComercioForm');
+  if (!form) return;
 
-  // Logout
-  document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+  Object.keys(comercioData).forEach(key => {
+    const field = form.elements[key];
+    if (field) field.value = comercioData[key] || '';
+  });
+
+  document.getElementById('pais').value = 'Argentina';
+  document.getElementById('pais').disabled = true;
+  fillProvinciaSelector('Argentina', document.getElementById('provincia'));
+}
+
+function createSaveButton() {
+  const userInfo = document.querySelector('.header .user-info');
+  if (!userInfo || document.getElementById('saveChangesBtn')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'saveChangesBtn';
+  btn.className = 'btn-save';
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+  userInfo.insertBefore(btn, document.getElementById('logoutBtn'));
+
+  btn.addEventListener('click', saveFormData);
 }
 
 function markAsChanged() {
@@ -267,38 +302,101 @@ function markAsChanged() {
   }
 }
 
-// ... (el resto del código: validateRequiredFields, saveFormData, etc. es exactamente el mismo que tenías, solo que ahora FUNCIONA todo)
+function setupEventListeners() {
+  document.getElementById('miComercioForm').addEventListener('input', markAsChanged);
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    if (confirm('¿Cerrar sesión?')) signOut(auth);
+  });
+}
 
 async function saveFormData() {
-  // (tu código de saveFormData pero con una mejora visual)
-  const saveBtn = document.getElementById('saveChangesBtn');
-  saveBtn.classList.add('saving');
-  saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+  const btn = document.getElementById('saveChangesBtn');
+  const form = document.getElementById('miComercioForm');
 
-  // ... tu lógica de guardado ...
+  // Validación
+  const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
+  let missing = [];
+  required.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) missing.push(el.previousElementSibling.textContent);
+  });
 
-  // Al final:
-  saveBtn.classList.remove('saving');
-  saveBtn.classList.add('saved');
-  saveBtn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
-  setTimeout(() => {
-    saveBtn.classList.remove('saved');
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Cambios';
-  }, 3000);
+  const hasSocial = ['website', 'instagram', 'facebook', 'tiktok'].some(id => document.getElementById(id).value.trim());
+  if (!hasSocial) missing.push('al menos una red social o web');
+
+  if (selectedCategories.length === 0) missing.push('categorías');
+  if (!document.querySelector('.plan-card.selected')) missing.push('un plan');
+
+  if (missing.length > 0) {
+    showToast('Faltan datos', 'Completa: ' + missing.join(', '), 'warning');
+    return;
+  }
+
+  try {
+    btn.classList.add('saving');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+
+    const formData = new FormData(form);
+    const updates = {};
+    for (let [k, v] of formData) updates[k] = v.trim();
+
+    updates.categories = selectedCategories;
+    updates.paymentMethods = Array.from(document.querySelectorAll('input[name="paymentMethods"]:checked')).map(i => i.value);
+    updates.plan = document.querySelector('.plan-card.selected')?.dataset.plan || 'trial';
+    updates['onboardingSteps.mi-comercio'] = true;
+    updates.fechaActualizacion = new Date();
+
+    await updateDoc(doc(db, 'comercios', currentComercioId), updates);
+
+    comercioData = { ...comercioData, ...updates };
+    originalData = JSON.parse(JSON.stringify(comercioData));
+    hasUnsavedChanges = false;
+
+    btn.classList.remove('saving');
+    btn.classList.add('saved');
+    btn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+
+    setTimeout(() => {
+      btn.disabled = true;
+      btn.className = 'btn-save';
+      btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+    }, 2500);
+
+    showToast('Éxito', 'Todo guardado correctamente', 'success');
+    updateHeader();
+    updateSubscriptionBanner();
+
+  } catch (err) {
+    console.error(err);
+    btn.className = 'btn-save';
+    btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+    showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
+  }
 }
 
+// ==================== AI HELPER CARD ====================
 function insertAIHelperCard() {
-  const main = document.querySelector('main .container');
-  const helper = document.createElement('div');
-  helper.className = 'ai-helper-card';
-  helper.innerHTML = `
-    <div class="ai-helper-icon">🧠</div>
+  const container = document.querySelector('main .container');
+  if (document.querySelector('.ai-helper-card')) return;
+
+  const card = document.createElement('div');
+  card.className = 'ai-helper-card';
+  card.innerHTML = `
+    <div class="ai-helper-icon">AI</div>
     <div class="ai-helper-content">
-      <h4>¡Tu IA está aprendiendo!</h4>
-      <p>Con esta información crearé una IA comercial ultra-personalizada que hable como vos, conozca tus productos y convierta visitas en ventas.</p>
-      <small>Cuanta más info des, mejor será tu asistente</small>
+      <h4>¡Tu IA está tomando forma!</h4>
+      <p>Con esta información crearé un asistente inteligente que conozca tu negocio al detalle y convierta más ventas.</p>
+      <small>Cuanto más completes, mejor será tu IA</small>
     </div>
   `;
-  main.insertBefore(helper, main.firstChild);
+  container.insertBefore(card, container.firstChild);
 }
+
+// Validación para Navigation
+window.validateCurrentPageData = async () => {
+  if (hasUnsavedChanges) {
+    showToast('Tienes cambios sin guardar', 'Guarda antes de continuar', 'warning');
+    return false;
+  }
+  return true;
+};
