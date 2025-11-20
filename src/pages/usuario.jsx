@@ -148,8 +148,8 @@ async function cargarDatosUsuario(uid) {
   try {
     console.log("🔄 Cargando datos del usuario:", uid);
     
-    // Llenar select de provincias
-    await fillProvinciaSelector();
+    // Llenar select de provincias CORREGIDO
+    fillProvinciaSelector(pais.value, provincia);
 
     // Cargar datos de Firestore
     const ref = doc(db, "usuarios", uid);
@@ -158,7 +158,6 @@ async function cargarDatosUsuario(uid) {
     if (!snap.exists()) {
       console.log("ℹ️ Usuario nuevo, sin datos previos");
       
-      // Pre-llenar email desde auth
       if (mail && auth.currentUser?.email) {
         mail.value = auth.currentUser.email;
       }
@@ -176,17 +175,21 @@ async function cargarDatosUsuario(uid) {
     if (mail) mail.value = data.mail || auth.currentUser?.email || "";
     if (telefono) telefono.value = data.telefono || "";
     if (pais) pais.value = data.pais || "Argentina";
-    if (provincia) provincia.value = data.provincia || "";
+
+    // 🔹 RE-LLENAR provincias tras asignar país
+    fillProvinciaSelector(pais.value, provincia);
+    if (provincia && data.provincia) {
+      provincia.value = data.provincia;
+    }
+
     if (localidad) localidad.value = data.localidad || "";
     if (barrio) barrio.value = data.barrio || "";
     if (direccion) direccion.value = data.direccion || "";
 
-    // Fecha de nacimiento
     if (fechaNacimiento && data.fechaNacimiento) {
       fechaNacimiento.value = fechaFromISO(data.fechaNacimiento);
     }
 
-    // Tipo de actividad
     if (data.tipoActividad) {
       const tipo = data.tipoActividad.toLowerCase();
       if (tipo === "comercio" && checkComercio) {
@@ -205,6 +208,14 @@ async function cargarDatosUsuario(uid) {
     console.error("❌ Error al cargar datos:", error);
     alert("Error al cargar tus datos. Por favor, recarga la página.");
   }
+}
+
+// 🔹 Actualizar provincias si se cambia el país
+if (pais && provincia) {
+  pais.addEventListener("change", () => {
+    fillProvinciaSelector(pais.value, provincia);
+    validarFormulario();
+  });
 }
 
 // ==================== GUARDAR DATOS ====================
