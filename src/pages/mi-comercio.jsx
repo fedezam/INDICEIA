@@ -23,14 +23,12 @@ const CATEGORIAS_COMUNES = [
 ];
 
 const METODOS_PAGO = [
-  { value: "efectivo", label: "Efectivo", icon: "fa-money-bill-wave" },
-  { value: "tarjeta_debito", label: "Tarjeta de débito", icon: "fa-credit-card" },
-  { value: "tarjeta_credito", label: "Tarjeta de crédito", icon: "fa-credit-card" },
-  { value: "mercado_pago", label: "Mercado Pago", icon: "fa-qrcode" },
-  { value: "transferencia", label: "Transferencia", icon: "fa-university" },
-  { value: "uala", label: "Ualá", icon: "fa-mobile-alt" },
-  { value: "modo", label: "MODO", icon: "fa-wallet" },
-  { value: "cripto", label: "Criptomonedas", icon: "fa-bitcoin" }
+  { value: "efectivo",          label: "Efectivo",                                 icon: "fa-money-bill-wave" },
+  { value: "billetera",         label: "Billetera virtual (Mercado Pago, MODO, Ualá, etc.)", icon: "fa-mobile-alt", highlight: true },
+  { value: "tarjeta_credito",   label: "Tarjeta de crédito",                       icon: "fa-credit-card" },
+  { value: "tarjeta_debito",    label: "Tarjeta de débito (física)",               icon: "fa-credit-card" },
+  { value: "transferencia",     label: "Transferencia bancaria",                   icon: "fa-university" },
+  { value: "cripto",            label: "Criptomonedas",                            icon: "fa-bitcoin" }
 ];
 
 // ==================== VARIABLES GLOBALES ====================
@@ -189,80 +187,90 @@ function renderCategoriesSection() {
   const container = document.getElementById('categoriesGrid');
   container.innerHTML = `
     <div class="categories-selector">
+
+      <!-- MENÚ DESPLEGABLE (sin botón al lado) -->
       <div class="category-dropdown">
         <select id="categorySelect" class="category-select">
-          <option value="">Elige una categoría popular...</option>
-          ${CATEGORIAS_COMUNES.map(c => `<option>${c}</option>`).join('')}
+          <option value="">Seleccionar categoría común...</option>
+          ${CATEGORIAS_COMUNES.map(c => `<option value="${c}">${c}</option>`).join('')}
         </select>
-        <button id="addCommonBtn" class="btn btn-primary">Añadir</button>
       </div>
+
+      <!-- OPCIÓN PERSONALIZADA (con su botón que SÍ funciona) -->
       <div class="custom-category">
-        <input type="text" id="customCatInput" placeholder="O escribe una personalizada...">
-        <button id="addCustomBtn" class="btn btn-primary">Añadir</button>
+        <input type="text" id="customCatInput" placeholder="O agregá una personalizada...">
+        <button id="addCustomBtn" class="btn btn-primary">
+          <i class="fas fa-plus"></i> Añadir
+        </button>
       </div>
+
     </div>
 
     <div class="selected-categories">
-      <h4>Categorías seleccionadas (${selectedCategories.length})</h4>
+      <h4><i class="fas fa-tags"></i> Categorías seleccionadas (${selectedCategories.length})</h4>
       <div class="selected-categories-grid" id="selectedTags"></div>
-      ${selectedCategories.length === 0 ? '<p class="empty-categories">Aún no seleccionaste categorías</p>' : ''}
+      ${selectedCategories.length === 0 ? '<p class="empty-categories">Aún no seleccionaste ninguna categoría</p>' : ''}
     </div>
   `;
 
   renderSelectedTags();
 
-  document.getElementById('addCommonBtn').onclick = () => {
-    const val = document.getElementById('categorySelect').value;
+  // ←←← AQUÍ ESTÁ LA LÓGICA CORREGIDA ←←←
+
+  // 1. Al seleccionar del menú → se agrega automáticamente
+  document.getElementById('categorySelect').addEventListener('change', (e) => {
+    const val = e.target.value.trim();
     if (val && !selectedCategories.includes(val)) {
       selectedCategories.push(val);
+      e.target.value = ''; // limpia el select
       renderSelectedTags();
       markAsChanged();
     }
-  };
+  });
 
-  document.getElementById('addCustomBtn').onclick = () => {
-    const val = document.getElementById('customCatInput').value.trim();
+  // 2. El botón de categoría personalizada (el que SÍ funciona)
+  document.getElementById('addCustomBtn').addEventListener('click', () => {
+    const input = document.getElementById('customCatInput');
+    const val = input.value.trim();
     if (val && !selectedCategories.includes(val)) {
       selectedCategories.push(val);
-      document.getElementById('customCatInput').value = '';
+      input.value = '';
       renderSelectedTags();
       markAsChanged();
     }
-  };
-}
+  });
 
-function renderSelectedTags() {
-  const grid = document.getElementById('selectedTags');
-  grid.innerHTML = selectedCategories.map(cat => `
-    <div class="selected-category-tag">
-      ${cat}
-      <button type="button" class="remove-btn" data-cat="${cat}">×</button>
-    </div>
-  `).join('');
-
-  grid.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.onclick = () => {
-      selectedCategories = selectedCategories.filter(c => c !== btn.dataset.cat);
-      renderSelectedTags();
-      markAsChanged();
-    };
+  // Bonus: también con Enter en el input
+  document.getElementById('customCatInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('addCustomBtn').click();
+    }
   });
 }
 
 function renderPaymentMethods() {
   const container = document.getElementById('paymentMethods');
   container.innerHTML = '';
+
   METODOS_PAGO.forEach(m => {
-    const checked = comercioData.paymentMethods?.includes(m.value);
+    const checked = comercioData.paymentMethods?.includes(m.value) || false;
+
     container.innerHTML += `
-      <div class="checkbox-item">
+      <div class="checkbox-item ${m.highlight ? 'highlight' : ''}">
         <input type="checkbox" id="pay_${m.value}" name="paymentMethods" value="${m.value}" ${checked ? 'checked' : ''}>
-        <label for="pay_${m.value}"><i class="fas ${m.icon}"></i> ${m.label}</label>
+        <label for="pay_${m.value}">
+          <i class="fas ${m.icon}"></i> 
+          <strong>${m.label}</strong>
+          ${m.highlight ? '<span style="color:#10b981; font-size:0.8rem; margin-left:0.5rem;">(la más usada)</span>' : ''}
+        </label>
       </div>
     `;
+
+    // Para detectar cambios y activar el botón Guardar
+    container.lastElementChild.querySelector('input').addEventListener('change', markAsChanged);
   });
 }
-
 // ==================== FORM & SAVE ====================
 function fillForm() {
   const form = document.getElementById('miComercioForm');
