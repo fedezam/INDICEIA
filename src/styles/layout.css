@@ -383,3 +383,132 @@
     font-size: 1rem;
   }
 }
+
+/* ==================== ONBOARDING PROGRESS BAR - LAYOUT GLOBAL ==================== */
+.onboarding-progress {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 1.5rem 2rem;
+  margin: 1.5rem 0;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+  animation: slideUp 0.6s ease forwards;
+}
+
+.progress-header h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--gray-900);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.progress-subtitle {
+  color: var(--gray-600);
+  font-size: 0.95rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.progress-bar-container {
+  margin: 1.75rem 0;
+}
+
+.progress-bar {
+  height: 10px;
+  background: var(--gray-200);
+  border-radius: 50px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: 50px;
+  transition: width 0.8s ease;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.step-item {
+  text-align: center;
+  opacity: 0.65;
+  transition: all 0.3s ease;
+}
+
+.step-item.completed,
+.step-item.current {
+  opacity: 1;
+}
+
+.step-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--gray-200);
+  color: var(--gray-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  border: 3px solid transparent;
+}
+
+.step-item.completed .step-circle {
+  background: var(--success);
+  color: white;
+  border-color: var(--success);
+}
+
+.step-item.current .step-circle {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.2);
+  animation: pulse 2s infinite;
+}
+
+.step-label {
+  font-size: 0.875rem;
+  color: var(--gray-700);
+  font-weight: 500;
+}
+
+.step-item.current .step-label {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.step-item.completed .step-label {
+  color: var(--success);
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .onboarding-progress {
+    padding: 1.25rem 1.5rem;
+    margin: 1rem 0;
+  }
+  .steps-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+  .step-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  .step-label {
+    font-size: 0.8rem;
+  }
+}
