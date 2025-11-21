@@ -268,21 +268,28 @@ function renderPaymentMethods() {
   METODOS_PAGO.forEach(m => {
     const checked = comercioData.paymentMethods?.includes(m.value) || false;
 
-    container.innerHTML += `
-      <div class="checkbox-item ${m.highlight ? 'highlight' : ''}">
-        <input type="checkbox" id="pay_${m.value}" name="paymentMethods" value="${m.value}" ${checked ? 'checked' : ''}>
-        <label for="pay_${m.value}">
-          <i class="fas ${m.icon}"></i> 
-          <strong>${m.label}</strong>
-          ${m.highlight ? '<span style="color:#10b981; font-size:0.8rem; margin-left:0.5rem;">(la más usada)</span>' : ''}
-        </label>
-      </div>
+    const tag = document.createElement('div');
+    tag.className = `payment-tag ${checked ? 'selected' : ''}`;
+    tag.innerHTML = `
+      <input type="checkbox" id="pay_${m.value}" name="paymentMethods" value="${m.value}" ${checked ? 'checked' : ''}>
+      <label for="pay_${m.value}">
+        <i class="fas ${m.icon}"></i>
+        ${m.label}
+      </label>
     `;
 
-    container.lastElementChild.querySelector('input').addEventListener('change', markAsChanged);
+    // Al hacer click en cualquier parte del tag → se activa/desactiva
+    tag.addEventListener('click', (e) => {
+      e.preventDefault();
+      const checkbox = tag.querySelector('input');
+      checkbox.checked = !checkbox.checked;
+      tag.classList.toggle('selected', checkbox.checked);
+      markAsChanged();
+    });
+
+    container.appendChild(tag);
   });
 }
-
 // ==================== FORM & SAVE ====================
 function fillForm() {
   const form = document.getElementById('miComercioForm');
