@@ -521,7 +521,57 @@
   margin-bottom: 1rem;
   opacity: 0.3;
 }
+/* ==================== BOTTOM ACTION BAR - COMPONENTE REUTILIZABLE ==================== */
+.bottom-action-bar {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 1.5rem 2rem;
+  text-align: center;
+  border-top: 1px solid var(--gray-200);
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+  z-index: 90;
+  margin: 3rem -2rem -2rem;
+  backdrop-filter: blur(10px);
+}
 
+#saveChangesBtnBottom {
+  font-size: 1.15rem;
+  padding: 1.1rem 3rem;
+  border-radius: 50px;
+  font-weight: 700;
+  min-width: 280px;
+  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);
+  transition: all 0.3s ease;
+}
+
+#saveChangesBtnBottom:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 40px rgba(99, 102, 241, 0.45);
+}
+
+#saveChangesBtnBottom.saving {
+  background: #f59e0b !important;
+}
+
+#saveChangesBtnBottom.saved {
+  background: #10b981 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .bottom-action-bar {
+    padding: 1.25rem 1rem;
+    margin: 2rem -1rem -1rem;
+  }
+  
+  #saveChangesBtnBottom {
+    width: 100%;
+    min-width: auto;
+    padding: 1rem;
+    font-size: 1.1rem;
+  }
+}
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
   .btn-save span {
