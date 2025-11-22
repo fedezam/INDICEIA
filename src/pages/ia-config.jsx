@@ -7,7 +7,7 @@ import './ia-config.css'
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
-import Navigation from '../shared/navigation.jsx';
+import Navigation from '../shared/navigation.js';
 import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { runFlowController } from '../controllers/flowController.js';
