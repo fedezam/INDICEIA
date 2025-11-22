@@ -1,4 +1,4 @@
-// src/pages/ia-config.jsx
+// src/pages/ia-config.js
 import '../styles/base.css'
 import '../styles/layout.css'
 import '../styles/components.css'
@@ -7,8 +7,8 @@ import './ia-config.css'
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
-import Navigation from '../shared/navigation.js';
-import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
+import * as Navigation from '../shared/navigation.js';
+import { showLoading, hideLoading, showToast } from '../shared/utils.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { runFlowController } from '../controllers/flowController.js';
 
@@ -97,7 +97,7 @@ async function initializePage() {
     loadAIConfig();
     renderContactosValidacion();
     setupEventListeners();
-    Navigation.init();
+    initNavigation();
     createSaveButton();
 
     hideLoading();

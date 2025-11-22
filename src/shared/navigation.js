@@ -1,4 +1,4 @@
-// src/shared/navigation.jsx
+// src/shared/navigation.js
 
 const CONTAINER_ID = 'progressContainer';
 

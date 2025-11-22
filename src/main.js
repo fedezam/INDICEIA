@@ -4,7 +4,7 @@
 // ==========================
 import './styles.css';
 import { auth, db } from './firebase.js';
-import './auth.jsx';
+import './auth.js';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { runFlowController } from './controllers/flowController.js';

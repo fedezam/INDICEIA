@@ -1,4 +1,4 @@
-// src/pages/dashboard.jsx
+// src/pages/dashboard.js
 import '../styles/base.css'
 import '../styles/layout.css'
 import '../styles/components.css'
@@ -6,7 +6,7 @@ import './dashboard.css'
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
-import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
+import { showLoading, hideLoading, showToast } from '../shared/utils.js';
 import { PLANS } from '../shared/plans.js';
 
 // ==================== ESTADO GLOBAL ====================

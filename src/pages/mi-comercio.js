@@ -1,4 +1,4 @@
-// src/pages/mi-comercio.jsx
+// src/pages/mi-comercio.js
 import '../styles/base.css'
 import '../styles/layout.css'
 import '../styles/components.css'
@@ -10,7 +10,7 @@ import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import { initNavigation, updateProgress } from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
-import { showToast, showLoading, hideLoading } from '../shared/utils.jsx';
+import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
 
 // ==================== DATOS ESTÁTICOS ====================

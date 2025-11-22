@@ -1,4 +1,4 @@
-// src/pages/horarios.jsx
+// src/pages/horarios.js
 import '../styles/base.css'
 import '../styles/layout.css'
 import '../styles/components.css'
@@ -7,8 +7,8 @@ import './horarios.css'
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import Navigation from '../shared/navigation.jsx';
-import { showLoading, hideLoading, showToast } from '../shared/utils.jsx';
+import { initNavigation, updateProgress } from '../shared/navigation.js';
+import { showLoading, hideLoading, showToast } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
 
 // =========================

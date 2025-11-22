@@ -1,6 +1,6 @@
 
 // ================================
-// usuario.jsx — Onboarding Paso 1 (Simplificado)
+// usuario.js — Onboarding Paso 1 (Simplificado)
 // ================================
 
 // CSS
