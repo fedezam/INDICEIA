@@ -1,13 +1,7 @@
 // src/pages/mi-comercio.js
-import '../styles/base.css'
-import '../styles/layout.css'
-import '../styles/components.css'
-import '../styles/forms.css'
-import './mi-comercio.css'
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
-import { initNavigation, updateProgress } from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
@@ -22,12 +16,12 @@ const CATEGORIAS_COMUNES = [
 ];
 
 const METODOS_PAGO = [
-  { value: "efectivo",          label: "Efectivo",                                 icon: "fa-money-bill-wave" },
-  { value: "billetera",         label: "Billetera virtual (Mercado Pago, MODO, Ualá, etc.)", icon: "fa-mobile-alt", highlight: true },
-  { value: "tarjeta_credito",   label: "Tarjeta de crédito",                       icon: "fa-credit-card" },
-  { value: "tarjeta_debito",    label: "Tarjeta de débito (física)",               icon: "fa-credit-card" },
-  { value: "transferencia",     label: "Transferencia bancaria",                   icon: "fa-university" },
-  { value: "cripto",            label: "Criptomonedas",                            icon: "fa-bitcoin" }
+  { value: "efectivo", label: "Efectivo", icon: "fa-money-bill-wave" },
+  { value: "billetera", label: "Billetera virtual (Mercado Pago, MODO, Ualá, etc.)", icon: "fa-mobile-alt", highlight: true },
+  { value: "tarjeta_credito", label: "Tarjeta de crédito", icon: "fa-credit-card" },
+  { value: "tarjeta_debito", label: "Tarjeta de débito (física)", icon: "fa-credit-card" },
+  { value: "transferencia", label: "Transferencia bancaria", icon: "fa-university" },
+  { value: "cripto", label: "Criptomonedas", icon: "fa-bitcoin" }
 ];
 
 // ==================== VARIABLES GLOBALES ====================
@@ -38,6 +32,33 @@ let originalData = {};
 let selectedCategories = [];
 let hasUnsavedChanges = false;
 
+// ==================== FUNCIÓN AUXILIAR PARA VERIFICAR ELEMENTOS ====================
+function safeGetElement(id) {
+  const element = document.getElementById(id);
+  if (!element) {
+    console.warn(`⚠️ Elemento no encontrado: #${id}`);
+  }
+  return element;
+}
+
+function safeSetInnerHTML(id, content) {
+  const element = safeGetElement(id);
+  if (element) {
+    element.innerHTML = content;
+    return true;
+  }
+  return false;
+}
+
+function safeSetTextContent(id, content) {
+  const element = safeGetElement(id);
+  if (element) {
+    element.textContent = content;
+    return true;
+  }
+  return false;
+}
+
 // ==================== INICIALIZACIÓN ====================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -46,7 +67,9 @@ onAuthStateChanged(auth, async (user) => {
   }
   currentUser = user;
   await initializePage();
-  runFlowController(user.uid);
+  if (typeof runFlowController === 'function') {
+    runFlowController(user.uid);
+  }
 });
 
 async function initializePage() {
@@ -65,7 +88,13 @@ async function initializePage() {
         plan: 'trial',
         pais: 'Argentina',
         fechaInicioTrial: new Date(),
-        onboardingSteps: { usuario: true, 'mi-comercio': false, horarios: false, productos: false, 'ia-config': false }
+        onboardingSteps: { 
+          usuario: true, 
+          'mi-comercio': false, 
+          horarios: false, 
+          productos: false, 
+          'ia-config': false 
+        }
       });
       currentComercioId = nuevo.id;
       await updateDoc(userRef, { comercioId: currentComercioId });
@@ -84,7 +113,7 @@ async function initializePage() {
 
     hideLoading();
   } catch (err) {
-    console.error(err);
+    console.error('❌ Error en initializePage:', err);
     hideLoading();
     showToast('Error', 'No se pudo cargar la página: ' + err.message, 'error');
   }
@@ -105,9 +134,9 @@ async function loadComercioData() {
 
 // ==================== HEADER & BANNER ====================
 function updateHeader() {
-  const nameEl = document.getElementById('commerceName');
-  const badgeEl = document.getElementById('planBadge');
-  if (nameEl) nameEl.textContent = comercioData.nombreComercio || 'Mi Comercio';
+  safeSetTextContent('commerceName', comercioData.nombreComercio || 'Mi Comercio');
+  
+  const badgeEl = safeGetElement('planBadge');
   if (badgeEl) {
     const plan = PLANS[comercioData.plan || 'trial'];
     badgeEl.textContent = plan ? `${plan.emoji} ${plan.nombre}` : 'Trial';
@@ -115,8 +144,8 @@ function updateHeader() {
 }
 
 function updateSubscriptionBanner() {
-  const banner = document.getElementById('subscriptionBanner');
-  const msg = document.getElementById('subscriptionMessage');
+  const banner = safeGetElement('subscriptionBanner');
+  const msg = safeGetElement('subscriptionMessage');
   if (!banner || !msg) return;
 
   const estado = calcularEstadoPlan(comercioData);
@@ -143,9 +172,11 @@ function updateSubscriptionBanner() {
   }
 }
 
-// ==================== RENDERS ====================
+// ==================== RENDERS CON VALIDACIÓN ====================
 function renderPlans() {
-  const container = document.getElementById('planSelector');
+  const container = safeGetElement('planSelector');
+  if (!container) return;
+
   container.innerHTML = '';
 
   Object.entries(PLANS).forEach(([key, plan]) => {
@@ -181,10 +212,11 @@ function renderPlans() {
 }
 
 function renderCategoriesSection() {
-  const container = document.getElementById('categoriesGrid');
+  const container = safeGetElement('categoriesGrid');
+  if (!container) return;
+
   container.innerHTML = `
     <div class="categories-selector">
-
       <div class="category-dropdown">
         <select id="categorySelect" class="category-select">
           <option value="">Seleccionar categoría común...</option>
@@ -194,11 +226,10 @@ function renderCategoriesSection() {
 
       <div class="custom-category">
         <input type="text" id="customCatInput" placeholder="O agregá una personalizada...">
-        <button id="addCustomBtn" class="btn btn-primary">
+        <button type="button" id="addCustomBtn" class="btn btn-primary">
           <i class="fas fa-plus"></i> Añadir
         </button>
       </div>
-
     </div>
 
     <div class="selected-categories">
@@ -208,39 +239,46 @@ function renderCategoriesSection() {
     </div>
   `;
 
-  renderSelectedTags(); // ← Primero renderizamos
+  renderSelectedTags();
 
-  document.getElementById('categorySelect').addEventListener('change', (e) => {
-    const val = e.target.value.trim();
-    if (val && !selectedCategories.includes(val)) {
-      selectedCategories.push(val);
-      e.target.value = '';
-      renderSelectedTags();
-      markAsChanged();
-    }
-  });
+  const categorySelect = safeGetElement('categorySelect');
+  if (categorySelect) {
+    categorySelect.addEventListener('change', (e) => {
+      const val = e.target.value.trim();
+      if (val && !selectedCategories.includes(val)) {
+        selectedCategories.push(val);
+        e.target.value = '';
+        renderSelectedTags();
+        markAsChanged();
+      }
+    });
+  }
 
-  document.getElementById('addCustomBtn').addEventListener('click', () => {
-    const input = document.getElementById('customCatInput');
-    const val = input.value.trim();
-    if (val && !selectedCategories.includes(val)) {
-      selectedCategories.push(val);
-      input.value = '';
-      renderSelectedTags();
-      markAsChanged();
-    }
-  });
+  const addBtn = safeGetElement('addCustomBtn');
+  const customInput = safeGetElement('customCatInput');
+  
+  if (addBtn && customInput) {
+    addBtn.addEventListener('click', () => {
+      const val = customInput.value.trim();
+      if (val && !selectedCategories.includes(val)) {
+        selectedCategories.push(val);
+        customInput.value = '';
+        renderSelectedTags();
+        markAsChanged();
+      }
+    });
 
-  document.getElementById('customCatInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      document.getElementById('addCustomBtn').click();
-    }
-  });
+    customInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addBtn.click();
+      }
+    });
+  }
 }
 
 function renderSelectedTags() {
-  const grid = document.getElementById('selectedTags');
+  const grid = safeGetElement('selectedTags');
   if (!grid) return;
 
   grid.innerHTML = selectedCategories.map(cat => `
@@ -260,7 +298,9 @@ function renderSelectedTags() {
 }
 
 function renderPaymentMethods() {
-  const container = document.getElementById('paymentMethods');
+  const container = safeGetElement('paymentMethods');
+  if (!container) return;
+
   container.innerHTML = '';
 
   METODOS_PAGO.forEach(m => {
@@ -276,7 +316,6 @@ function renderPaymentMethods() {
       </label>
     `;
 
-    // Al hacer click en cualquier parte del tag → se activa/desactiva
     tag.addEventListener('click', (e) => {
       e.preventDefault();
       const checkbox = tag.querySelector('input');
@@ -288,9 +327,10 @@ function renderPaymentMethods() {
     container.appendChild(tag);
   });
 }
+
 // ==================== FORM & SAVE ====================
 function fillForm() {
-  const form = document.getElementById('miComercioForm');
+  const form = safeGetElement('miComercioForm');
   if (!form) return;
 
   Object.keys(comercioData).forEach(key => {
@@ -298,27 +338,38 @@ function fillForm() {
     if (field) field.value = comercioData[key] || '';
   });
 
-  document.getElementById('pais').value = 'Argentina';
-  document.getElementById('pais').disabled = true;
-  fillProvinciaSelector('Argentina', document.getElementById('provincia'));
+  const paisField = safeGetElement('pais');
+  if (paisField) {
+    paisField.value = 'Argentina';
+    paisField.disabled = true;
+  }
+
+  const provinciaSelect = safeGetElement('provincia');
+  if (provinciaSelect && typeof fillProvinciaSelector === 'function') {
+    fillProvinciaSelector('Argentina', provinciaSelect);
+  }
 }
 
 function createSaveButton() {
   const userInfo = document.querySelector('.header .user-info');
-  if (!userInfo || document.getElementById('saveChangesBtn')) return;
+  if (!userInfo || safeGetElement('saveChangesBtn')) return;
 
   const btn = document.createElement('button');
   btn.id = 'saveChangesBtn';
   btn.className = 'btn-save';
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-  userInfo.insertBefore(btn, document.getElementById('logoutBtn'));
-  btn.addEventListener('click', saveFormData);
+  
+  const logoutBtn = safeGetElement('logoutBtn');
+  if (logoutBtn) {
+    userInfo.insertBefore(btn, logoutBtn);
+    btn.addEventListener('click', saveFormData);
+  }
 }
 
 function markAsChanged() {
   hasUnsavedChanges = true;
-  const btn = document.getElementById('saveChangesBtn');
+  const btn = safeGetElement('saveChangesBtn');
   if (btn) {
     btn.disabled = false;
     btn.className = 'btn-save';
@@ -327,24 +378,39 @@ function markAsChanged() {
 }
 
 function setupEventListeners() {
-  document.getElementById('miComercioForm').addEventListener('input', markAsChanged);
-  document.getElementById('logoutBtn').addEventListener('click', () => {
-    if (confirm('¿Cerrar sesión?')) signOut(auth);
-  });
+  const form = safeGetElement('miComercioForm');
+  if (form) {
+    form.addEventListener('input', markAsChanged);
+  }
+
+  const logoutBtn = safeGetElement('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      if (confirm('¿Cerrar sesión?')) signOut(auth);
+    });
+  }
 }
 
 async function saveFormData() {
-  const btn = document.getElementById('saveChangesBtn');
-  const form = document.getElementById('miComercioForm');
+  const btn = safeGetElement('saveChangesBtn');
+  const form = safeGetElement('miComercioForm');
+  if (!form) return;
 
   const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
   let missing = [];
+  
   required.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el.value.trim()) missing.push(el.previousElementSibling?.textContent || id);
+    const el = safeGetElement(id);
+    if (el && !el.value.trim()) {
+      missing.push(el.previousElementSibling?.textContent || id);
+    }
   });
 
-  const hasSocial = ['website', 'instagram', 'facebook', 'tiktok'].some(id => document.getElementById(id).value.trim());
+  const hasSocial = ['website', 'instagram', 'facebook', 'tiktok'].some(id => {
+    const el = safeGetElement(id);
+    return el && el.value.trim();
+  });
+  
   if (!hasSocial) missing.push('al menos una red social o web');
   if (selectedCategories.length === 0) missing.push('categorías');
   if (!document.querySelector('.plan-card.selected')) missing.push('un plan');
@@ -355,8 +421,10 @@ async function saveFormData() {
   }
 
   try {
-    btn.classList.add('saving');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    if (btn) {
+      btn.classList.add('saving');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    }
 
     const formData = new FormData(form);
     const updates = {};
@@ -374,31 +442,35 @@ async function saveFormData() {
     originalData = JSON.parse(JSON.stringify(comercioData));
     hasUnsavedChanges = false;
 
-    btn.classList.remove('saving');
-    btn.classList.add('saved');
-    btn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+    if (btn) {
+      btn.classList.remove('saving');
+      btn.classList.add('saved');
+      btn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
 
-    setTimeout(() => {
-      btn.disabled = true;
-      btn.className = 'btn-save';
-      btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-    }, 2500);
+      setTimeout(() => {
+        btn.disabled = true;
+        btn.className = 'btn-save';
+        btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+      }, 2500);
+    }
 
     showToast('Éxito', 'Todo guardado correctamente', 'success');
     updateHeader();
     updateSubscriptionBanner();
 
   } catch (err) {
-    console.error(err);
-    btn.className = 'btn-save';
-    btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+    console.error('❌ Error al guardar:', err);
+    if (btn) {
+      btn.className = 'btn-save';
+      btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
+    }
     showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
   }
 }
 
 function insertAIHelperCard() {
   const container = document.querySelector('main .container');
-  if (document.querySelector('.ai-helper-card')) return;
+  if (!container || document.querySelector('.ai-helper-card')) return;
 
   const card = document.createElement('div');
   card.className = 'ai-helper-card';
@@ -413,6 +485,7 @@ function insertAIHelperCard() {
   container.insertBefore(card, container.firstChild);
 }
 
+// Validación para flowController
 window.validateCurrentPageData = async () => {
   if (hasUnsavedChanges) {
     showToast('Cambios sin guardar', 'Guardá antes de continuar', 'warning');
