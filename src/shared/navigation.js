@@ -48,10 +48,7 @@ export const updateProgress = () => {
 
 export const initNavigation = () => {
   const container = document.getElementById(CONTAINER_ID);
-  if (!container) {
-    console.warn('Progress container not found (#progressContainer)');
-    return;
-  }
+  if (!container) return;
   if (container.dataset.navInitialized === 'true') return;
 
   renderProgressBar(container);
@@ -59,10 +56,3 @@ export const initNavigation = () => {
 
   window.addEventListener('flowStateUpdated', updateProgress);
 };
-
-// Auto-init
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initNavigation);
-} else {
-  initNavigation();
-}
