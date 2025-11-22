@@ -4,11 +4,10 @@ import '../styles/layout.css'
 import '../styles/components.css'
 import '../styles/forms.css'
 import './mi-comercio.css'
-
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
-import { initNavigation, updateProgress } from '../shared/navigation.jsx';
+import { initNavigation, updateProgress } from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.jsx';
