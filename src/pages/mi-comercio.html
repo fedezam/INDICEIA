@@ -2,42 +2,50 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Comercio – ÍndiceIA</title>
-    <meta name="description" content="Configuración del comercio para generar la IA comercial personalizada.">
-    <meta name="robots" content="noindex, nofollow">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Mi Comercio – ÍndiceIA">
-    <meta property="og:description" content="Definí los datos de tu comercio para tu asistente inteligente.">
-    <meta property="og:image" content="/images/og-image.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles.css">
-    <script type="module" src="/src/controllers/flowController.js"></script>
+    <link rel="stylesheet" href="./mi-comercio.css">
 </head>
-
 <body>
     <header class="header">
         <div class="logo">
             <div class="logo-icon"><i class="fas fa-robot"></i></div>
             <h1>INDICEIA</h1>
         </div>
+        <div class="user-info">
+            <span id="commerceName">Mi Comercio</span>
+            <span id="planBadge" class="badge">Trial</span>
+            <button id="logoutBtn" class="btn">Salir</button>
+        </div>
     </header>
 
-    <main class="container">
+    <!-- IMPORTANTE: Este contenedor estaba faltando -->
+    <div id="progressContainer"></div>
 
+    <!-- IMPORTANTE: Este banner estaba faltando -->
+    <div id="subscriptionBanner" class="subscription-banner">
+        <p id="subscriptionMessage"></p>
+    </div>
+
+    <main class="container">
         <h2 class="section-title">Información del Comercio</h2>
 
         <form id="miComercioForm" class="form-fields">
-
-            <!-- NOMBRE COMERCIAL -->
+            
+            <!-- Nombre Comercial -->
             <label for="nombreComercio">Nombre Comercial *</label>
             <input type="text" id="nombreComercio" required>
 
-            <!-- RUBRO -->
+            <!-- Descripción -->
+            <label for="descripcion">Descripción *</label>
+            <textarea id="descripcion" required rows="3"></textarea>
+
+            <!-- Rubro -->
             <label for="rubro">Rubro *</label>
             <select id="rubro" required>
                 <option value="">Seleccionar…</option>
@@ -49,65 +57,86 @@
                 <option value="otro">Otro</option>
             </select>
 
-            <!-- PROVINCIA -->
+            <!-- País (fijo) -->
+            <label for="pais">País</label>
+            <input type="text" id="pais" value="Argentina" disabled>
+
+            <!-- Provincia -->
             <label for="provincia">Provincia *</label>
             <select id="provincia" required></select>
 
-            <!-- CIUDAD -->
+            <!-- Ciudad -->
             <label for="ciudad">Ciudad / Localidad *</label>
             <select id="ciudad" required></select>
 
-            <!-- BARRIO -->
+            <!-- Barrio -->
             <label for="barrio">Barrio (opcional)</label>
             <input type="text" id="barrio">
 
-            <!-- DIRECCIÓN -->
+            <!-- Dirección -->
             <label for="direccion">Dirección *</label>
             <input type="text" id="direccion" required>
 
-            <!-- TELÉFONO -->
+            <!-- Teléfono -->
             <label for="telefono">Teléfono *</label>
             <input type="tel" id="telefono" required>
 
-            <!-- HORARIOS -->
+            <!-- Email -->
+            <label for="email">Email *</label>
+            <input type="email" id="email" required>
+
+            <!-- PLANES: Este contenedor estaba faltando -->
+            <h3 class="subsection-title">Selecciona tu Plan</h3>
+            <div id="planSelector" class="plan-selector"></div>
+
+            <!-- CATEGORÍAS: Este contenedor estaba faltando -->
+            <h3 class="subsection-title">Categorías de tu Negocio</h3>
+            <div id="categoriesGrid" class="categories-section"></div>
+
+            <!-- Días de Atención -->
             <h3 class="subsection-title">Días de Atención</h3>
             <div id="daysContainer" class="days-grid"></div>
 
+            <!-- Horarios -->
             <h3 class="subsection-title">Horarios</h3>
             <div class="schedule">
                 <label for="horaApertura">Hora de apertura *</label>
                 <input type="time" id="horaApertura" required>
-
                 <label for="horaCierre">Hora de cierre *</label>
                 <input type="time" id="horaCierre" required>
             </div>
 
-            <!-- MÉTODOS DE PAGO -->
+            <!-- Métodos de Pago -->
             <h3 class="subsection-title">Métodos de Pago</h3>
             <div id="paymentMethods" class="checkbox-list"></div>
 
-            <!-- REDES / PRESENCIA WEB -->
+            <!-- Presencia Web -->
             <h3 class="subsection-title">Presencia Web</h3>
+            <label for="website">Sitio Web</label>
+            <input type="url" id="website" placeholder="https://">
 
             <label for="whatsapp">WhatsApp</label>
-            <input type="text" id="whatsapp" placeholder="Ej: +54 9 11 1234 5678">
+            <input type="text" id="whatsapp" placeholder="+54 9 11 1234 5678">
 
             <label for="instagram">Instagram</label>
-            <input type="text" id="instagram" placeholder="Ej: @micomercio">
+            <input type="text" id="instagram" placeholder="@micomercio">
 
-            <label for="sitioWeb">Sitio Web</label>
+            <label for="facebook">Facebook</label>
+            <input type="text" id="facebook" placeholder="@micomercio">
+
+            <label for="tiktok">TikTok</label>
+            <input type="text" id="tiktok" placeholder="@micomercio">
+
+            <label for="sitioWeb">Otro sitio</label>
             <input type="text" id="sitioWeb" placeholder="https://">
 
-            <!-- BOTÓN GUARDAR -->
+            <!-- Botón Guardar -->
             <button type="submit" id="guardarBtn" class="primary-btn">Guardar Datos</button>
 
-            <!-- ANIMACIÓN / LOADER -->
             <div id="saveAnimation" class="save-animation" style="display: none;">
                 Guardando…
             </div>
-
         </form>
-
     </main>
 
     <script type="module" src="./mi-comercio.js"></script>
