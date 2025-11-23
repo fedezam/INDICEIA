@@ -4,15 +4,13 @@ import { db } from "../firebase.js";
 
 // ---------------------------------------------------------
 // 🔹 Configuración de pasos del onboarding
-// Deben coincidir con los nombres de los archivos HTML
-// y las claves en Firestore onboardingSteps.[nombre]
 // ---------------------------------------------------------
 const FLOW_STEPS = [
-  "usuario",
-  "mi-comercio",
-  "horarios",
-  "productos",
-  "ia-config",
+  { id: "usuario", name: "Usuario" },
+  { id: "mi-comercio", name: "Mi Comercio" },
+  { id: "horarios", name: "Horarios" },
+  { id: "productos", name: "Productos" },
+  { id: "ia-config", name: "Configuración IA" },
 ];
 
 // ---------------------------------------------------------
@@ -21,7 +19,7 @@ const FLOW_STEPS = [
 function getCurrentPage() {
   if (typeof window === "undefined") return null;
   const path = window.location.pathname;
-  const fileName = path.split('/').pop(); // "usuario.html"
+  const fileName = path.split('/').pop();
   return fileName.replace('.html', '');
 }
 
@@ -37,26 +35,55 @@ if (typeof window !== "undefined") {
 }
 
 // ---------------------------------------------------------
+// 🔹 NUEVO: Setea window.flowState para navigation.js
+// ---------------------------------------------------------
+function updateFlowState(steps, currentPage) {
+  const pages = FLOW_STEPS.map(step => ({
+    id: step.id,
+    name: step.name,
+    completed: step.id === "usuario" ? true : (steps[step.id] === true)
+  }));
+
+  const completedCount = pages.filter(p => p.completed).length;
+
+  window.flowState = {
+    pages,
+    current: currentPage || 'usuario',
+    completed: completedCount
+  };
+
+  // Disparar evento para que navigation se actualice
+  window.dispatchEvent(new CustomEvent('flowStateUpdated'));
+  
+  console.log('✅ flowState actualizado:', window.flowState);
+}
+
+// ---------------------------------------------------------
 // 🔹 Ejecuta flujo y redirige al siguiente paso
-// Solo se basa en Firestore: usuario y comercio
 // ---------------------------------------------------------
 export async function runFlowController(uid) {
   if (typeof window === 'undefined' || !uid) return;
-
+  
   const currentPage = getCurrentPage();
 
   try {
     // 1️⃣ Obtener datos del usuario
     const userRef = doc(db, "usuarios", uid);
     const userSnap = await getDoc(userRef);
+    
     if (!userSnap.exists()) return;
-
+    
     const userData = userSnap.data();
     const comercioId = userData?.comercioId;
 
     // 2️⃣ Usuario incompleto o sin IA seleccionada
     const usuarioCompleto = userData?.onboardingSteps?.usuario === true;
-    if (currentPage === "usuario" && (!usuarioCompleto || !comercioId)) return;
+    
+    if (currentPage === "usuario" && (!usuarioCompleto || !comercioId)) {
+      // Estamos en usuario.html y aún no está completo
+      updateFlowState({}, 'usuario');
+      return;
+    }
 
     // 3️⃣ Si no hay comercioId y no estamos en usuario.html → redirigir
     if (!comercioId && currentPage !== "usuario") {
@@ -72,12 +99,15 @@ export async function runFlowController(uid) {
       steps = comercioSnap.exists() ? comercioSnap.data()?.onboardingSteps || {} : {};
     }
 
+    // 🆕 ACTUALIZAR window.flowState SIEMPRE
+    updateFlowState(steps, currentPage);
+
     // 5️⃣ Primer paso incompleto
     let firstIncompleteStep = null;
     for (const step of FLOW_STEPS) {
-      if (step === "usuario") continue; // ya validado
-      if (!steps[step]) {
-        firstIncompleteStep = step;
+      if (step.id === "usuario") continue; // ya validado
+      if (!steps[step.id]) {
+        firstIncompleteStep = step.id;
         break;
       }
     }
@@ -96,7 +126,6 @@ export async function runFlowController(uid) {
     }
 
   } catch (error) {
-    // Solo log mínimo en producción
     console.error("Error en flowController:", error);
   }
 }
