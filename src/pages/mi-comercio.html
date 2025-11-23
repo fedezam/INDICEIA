@@ -12,42 +12,26 @@
     <link rel="stylesheet" href="./mi-comercio.css">
 </head>
 <body>
-    <header class="header">
-        <div class="logo">
-            <div class="logo-icon"><i class="fas fa-robot"></i></div>
-            <h1>INDICEIA</h1>
-        </div>
-        <div class="user-info">
-            <span id="commerceName">Mi Comercio</span>
-            <span id="planBadge" class="badge">Trial</span>
-            <button id="logoutBtn" class="btn">Salir</button>
-        </div>
-    </header>
-
-    <!-- IMPORTANTE: Este contenedor estaba faltando -->
-    <div id="progressContainer"></div>
-
-    <!-- IMPORTANTE: Este banner estaba faltando -->
-    <div id="subscriptionBanner" class="subscription-banner">
-        <p id="subscriptionMessage"></p>
-    </div>
+    <!-- Header, Navigation y Banner se renderizan desde layout.js -->
 
     <main class="container">
         <h2 class="section-title">Información del Comercio</h2>
 
+        <!-- Selector de Plan -->
+        <h3 class="subsection-title">Selecciona tu Plan</h3>
+        <div id="planSelector" class="plan-selector"></div>
+
+        <!-- Formulario de datos del comercio -->
         <form id="miComercioForm" class="form-fields">
             
-            <!-- Nombre Comercial -->
             <label for="nombreComercio">Nombre Comercial *</label>
-            <input type="text" id="nombreComercio" required>
+            <input type="text" id="nombreComercio" name="nombreComercio" required>
 
-            <!-- Descripción -->
             <label for="descripcion">Descripción *</label>
-            <textarea id="descripcion" required rows="3"></textarea>
+            <textarea id="descripcion" name="descripcion" required rows="3"></textarea>
 
-            <!-- Rubro -->
             <label for="rubro">Rubro *</label>
-            <select id="rubro" required>
+            <select id="rubro" name="rubro" required>
                 <option value="">Seleccionar…</option>
                 <option value="almacen">Almacén</option>
                 <option value="restaurante">Restaurante</option>
@@ -57,86 +41,60 @@
                 <option value="otro">Otro</option>
             </select>
 
-            <!-- País (fijo) -->
             <label for="pais">País</label>
-            <input type="text" id="pais" value="Argentina" disabled>
+            <input type="text" id="pais" name="pais" value="Argentina" disabled>
 
-            <!-- Provincia -->
             <label for="provincia">Provincia *</label>
-            <select id="provincia" required></select>
+            <select id="provincia" name="provincia" required></select>
 
-            <!-- Ciudad -->
             <label for="ciudad">Ciudad / Localidad *</label>
-            <select id="ciudad" required></select>
+            <input type="text" id="ciudad" name="ciudad" required>
 
-            <!-- Barrio -->
             <label for="barrio">Barrio (opcional)</label>
-            <input type="text" id="barrio">
+            <input type="text" id="barrio" name="barrio">
 
-            <!-- Dirección -->
             <label for="direccion">Dirección *</label>
-            <input type="text" id="direccion" required>
+            <input type="text" id="direccion" name="direccion" required>
 
-            <!-- Teléfono -->
             <label for="telefono">Teléfono *</label>
-            <input type="tel" id="telefono" required>
+            <input type="tel" id="telefono" name="telefono" required>
 
-            <!-- Email -->
             <label for="email">Email *</label>
-            <input type="email" id="email" required>
-
-            <!-- PLANES: Este contenedor estaba faltando -->
-            <h3 class="subsection-title">Selecciona tu Plan</h3>
-            <div id="planSelector" class="plan-selector"></div>
-
-            <!-- CATEGORÍAS: Este contenedor estaba faltando -->
-            <h3 class="subsection-title">Categorías de tu Negocio</h3>
-            <div id="categoriesGrid" class="categories-section"></div>
-
-            <!-- Días de Atención -->
-            <h3 class="subsection-title">Días de Atención</h3>
-            <div id="daysContainer" class="days-grid"></div>
-
-            <!-- Horarios -->
-            <h3 class="subsection-title">Horarios</h3>
-            <div class="schedule">
-                <label for="horaApertura">Hora de apertura *</label>
-                <input type="time" id="horaApertura" required>
-                <label for="horaCierre">Hora de cierre *</label>
-                <input type="time" id="horaCierre" required>
-            </div>
-
-            <!-- Métodos de Pago -->
-            <h3 class="subsection-title">Métodos de Pago</h3>
-            <div id="paymentMethods" class="checkbox-list"></div>
+            <input type="email" id="email" name="email" required>
 
             <!-- Presencia Web -->
-            <h3 class="subsection-title">Presencia Web</h3>
+            <h3 class="subsection-title">Presencia Web (al menos una)</h3>
+            
             <label for="website">Sitio Web</label>
-            <input type="url" id="website" placeholder="https://">
+            <input type="url" id="website" name="website" placeholder="https://">
 
             <label for="whatsapp">WhatsApp</label>
-            <input type="text" id="whatsapp" placeholder="+54 9 11 1234 5678">
+            <input type="text" id="whatsapp" name="whatsapp" placeholder="+54 9 11 1234 5678">
 
             <label for="instagram">Instagram</label>
-            <input type="text" id="instagram" placeholder="@micomercio">
+            <input type="text" id="instagram" name="instagram" placeholder="@micomercio">
 
             <label for="facebook">Facebook</label>
-            <input type="text" id="facebook" placeholder="@micomercio">
+            <input type="text" id="facebook" name="facebook" placeholder="@micomercio">
 
             <label for="tiktok">TikTok</label>
-            <input type="text" id="tiktok" placeholder="@micomercio">
+            <input type="text" id="tiktok" name="tiktok" placeholder="@micomercio">
 
-            <label for="sitioWeb">Otro sitio</label>
-            <input type="text" id="sitioWeb" placeholder="https://">
-
-            <!-- Botón Guardar -->
             <button type="submit" id="guardarBtn" class="primary-btn">Guardar Datos</button>
 
             <div id="saveAnimation" class="save-animation" style="display: none;">
                 Guardando…
             </div>
         </form>
+
+        <!-- Categorías -->
+        <h3 class="subsection-title">Categorías de tu Negocio</h3>
+        <div id="categoriesGrid" class="categories-section"></div>
+
+        <!-- Métodos de Pago -->
+        <h3 class="subsection-title">Métodos de Pago</h3>
+        <div id="paymentMethods" class="checkbox-list"></div>
+
     </main>
 
     <script type="module" src="./mi-comercio.js"></script>
