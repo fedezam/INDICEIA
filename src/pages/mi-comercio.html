@@ -1,102 +1,108 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Comercio – ÍndiceIA</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/styles.css">
-    <link rel="stylesheet" href="./mi-comercio.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Configura tu comercio en INDICEIA - Asistente IA para negocios">
+  <title>Mi Comercio - INDICEIA</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- CSS GLOBALES (en orden de importancia) -->
+  <link rel="stylesheet" href="/src/styles/base.css">
+  <link rel="stylesheet" href="/src/styles/layout.css">
+  <link rel="stylesheet" href="/src/styles/components.css">
+  <link rel="stylesheet" href="/src/styles/forms.css">
+  
+  <!-- CSS ESPECÍFICO DE ESTA PÁGINA -->
+  <link rel="stylesheet" href="/src/pages/mi-comercio.css">
 </head>
+
 <body>
-    <!-- Header, Navigation y Banner se renderizan desde layout.js -->
+  <!-- 
+    ============================================
+    NOTA: El contenido del layout (header, banner, progress) 
+    será insertado dinámicamente por layout.js
+    ============================================
+  -->
 
-    <main class="container">
-        <h2 class="section-title">Información del Comercio</h2>
+  <!-- El main-content también será generado por mi-comercio.js -->
 
-        <!-- Selector de Plan -->
-        <h3 class="subsection-title">Selecciona tu Plan</h3>
-        <div id="planSelector" class="plan-selector"></div>
+  <!-- Toast Container (para notificaciones) -->
+  <div class="toast-container" id="toastContainer"></div>
 
-        <!-- Formulario de datos del comercio -->
-        <form id="miComercioForm" class="form-fields">
-            
-            <label for="nombreComercio">Nombre Comercial *</label>
-            <input type="text" id="nombreComercio" name="nombreComercio" required>
+  <!-- Loading Overlay (para estados de carga) -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <p class="loading-text">Cargando...</p>
+  </div>
 
-            <label for="descripcion">Descripción *</label>
-            <textarea id="descripcion" name="descripcion" required rows="3"></textarea>
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Configuración de Firebase (ajusta según tu proyecto)
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-            <label for="rubro">Rubro *</label>
-            <select id="rubro" name="rubro" required>
-                <option value="">Seleccionar…</option>
-                <option value="almacen">Almacén</option>
-                <option value="restaurante">Restaurante</option>
-                <option value="kiosco">Kiosco</option>
-                <option value="estetica">Estética</option>
-                <option value="servicios">Servicios</option>
-                <option value="otro">Otro</option>
-            </select>
+    // Tu configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_AUTH_DOMAIN",
+      projectId: "TU_PROJECT_ID",
+      storageBucket: "TU_STORAGE_BUCKET",
+      messagingSenderId: "TU_MESSAGING_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
 
-            <label for="pais">País</label>
-            <input type="text" id="pais" name="pais" value="Argentina" disabled>
+    // Inicializar Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-            <label for="provincia">Provincia *</label>
-            <select id="provincia" name="provincia" required></select>
+    // Hacer disponible globalmente (opcional)
+    window.firebaseApp = app;
+    window.firebaseAuth = auth;
+    window.firebaseDB = db;
+  </script>
 
-            <label for="ciudad">Ciudad / Localidad *</label>
-            <input type="text" id="ciudad" name="ciudad" required>
+  <!-- JavaScript Principal de la Página -->
+  <script type="module" src="/src/pages/mi-comercio.js"></script>
 
-            <label for="barrio">Barrio (opcional)</label>
-            <input type="text" id="barrio" name="barrio">
-
-            <label for="direccion">Dirección *</label>
-            <input type="text" id="direccion" name="direccion" required>
-
-            <label for="telefono">Teléfono *</label>
-            <input type="tel" id="telefono" name="telefono" required>
-
-            <label for="email">Email *</label>
-            <input type="email" id="email" name="email" required>
-
-            <!-- Presencia Web -->
-            <h3 class="subsection-title">Presencia Web (al menos una)</h3>
-            
-            <label for="website">Sitio Web</label>
-            <input type="url" id="website" name="website" placeholder="https://">
-
-            <label for="whatsapp">WhatsApp</label>
-            <input type="text" id="whatsapp" name="whatsapp" placeholder="+54 9 11 1234 5678">
-
-            <label for="instagram">Instagram</label>
-            <input type="text" id="instagram" name="instagram" placeholder="@micomercio">
-
-            <label for="facebook">Facebook</label>
-            <input type="text" id="facebook" name="facebook" placeholder="@micomercio">
-
-            <label for="tiktok">TikTok</label>
-            <input type="text" id="tiktok" name="tiktok" placeholder="@micomercio">
-
-            <button type="submit" id="guardarBtn" class="primary-btn">Guardar Datos</button>
-
-            <div id="saveAnimation" class="save-animation" style="display: none;">
-                Guardando…
-            </div>
-        </form>
-
-        <!-- Categorías -->
-        <h3 class="subsection-title">Categorías de tu Negocio</h3>
-        <div id="categoriesGrid" class="categories-section"></div>
-
-        <!-- Métodos de Pago -->
-        <h3 class="subsection-title">Métodos de Pago</h3>
-        <div id="paymentMethods" class="checkbox-list"></div>
-
+  <!-- 
+    ============================================
+    ESTRUCTURA ESPERADA DESPUÉS DE CARGAR:
+    ============================================
+    
+    <header class="header">
+      <div class="container">
+        <div class="logo">...</div>
+        <div class="user-info">...</div>
+      </div>
+    </header>
+    
+    <div class="subscription-banner">...</div>
+    
+    <div id="progressContainer">
+      <div class="onboarding-progress">...</div>
+    </div>
+    
+    <main class="main-content">
+      <div class="ai-helper-section">...</div>
+      <form id="commerceForm">...</form>
+      <div class="bottom-action-bar">...</div>
     </main>
+    
+    ============================================
+  -->
 
-    <script type="module" src="./mi-comercio.js"></script>
 </body>
 </html>
