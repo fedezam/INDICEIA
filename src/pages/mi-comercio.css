@@ -1,37 +1,82 @@
 /* ==================== MI COMERCIO PAGE ==================== */
+/* Estilos ÚNICOS y específicos para la página de configuración del comercio */
+/* Todo lo global (botones, forms, navigation) viene de base.css, components.css, forms.css, layout.css */
 
-/* Plan Selector */
+/* ==================== AI HELPER CARD ==================== */
+.ai-helper-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.ai-helper-icon {
+  background: rgba(255, 255, 255, 0.2);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ai-helper-content h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.ai-helper-content p {
+  margin: 0 0 0.5rem 0;
+  opacity: 0.95;
+}
+
+.ai-helper-content small {
+  opacity: 0.8;
+  font-size: 0.85rem;
+}
+
+/* ==================== PLAN SELECTOR ==================== */
 .plan-selector {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
-  margin-top: 1rem;
+  margin: 1.5rem 0;
 }
 
 .plan-card {
   border: 2px solid var(--gray-200);
-  border-radius: var(--border-radius);
+  border-radius: 12px;
   padding: 1.5rem;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.3s ease;
   background: white;
+  position: relative;
 }
 
 .plan-card:hover {
   border-color: var(--primary);
-  box-shadow: var(--shadow);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
   transform: translateY(-2px);
 }
 
 .plan-card.selected {
   border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(102, 126, 234, 0.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
 }
 
 .plan-header {
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: flex-start;
   margin-bottom: 1rem;
 }
 
@@ -39,18 +84,27 @@
   margin: 0;
   color: var(--gray-900);
   font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .plan-price {
   font-weight: 700;
   color: var(--primary);
   font-size: 1.5rem;
+  white-space: nowrap;
+}
+
+.plan-price small {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--gray-600);
 }
 
 .plan-description {
   color: var(--gray-600);
   margin-bottom: 1rem;
   line-height: 1.6;
+  font-size: 0.95rem;
 }
 
 .plan-features {
@@ -68,29 +122,26 @@
 }
 
 .feature i {
-  color: var(--success);
+  color: #10b981;
   flex-shrink: 0;
+  font-size: 1rem;
 }
 
-.plan-examples {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--gray-200);
-  font-size: 0.85rem;
-  color: var(--gray-600);
-}
-
-/* Categories Section */
+/* ==================== CATEGORIES SECTION ==================== */
 .categories-section {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  margin: 1.5rem 0;
 }
 
 .categories-selector {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding: 1.5rem;
+  background: var(--gray-50);
+  border-radius: 12px;
 }
 
 .category-dropdown {
@@ -107,6 +158,12 @@
   font-size: 1rem;
   background: white;
   cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.category-select:focus {
+  outline: none;
+  border-color: var(--primary);
 }
 
 .custom-category {
@@ -121,6 +178,16 @@
   border: 1px solid var(--gray-300);
   border-radius: 8px;
   font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.custom-category input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.selected-categories {
+  margin-top: 1rem;
 }
 
 .selected-categories h4 {
@@ -129,6 +196,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 
 .selected-categories-grid {
@@ -147,6 +216,7 @@
   border-radius: 20px;
   font-size: 0.9rem;
   font-weight: 500;
+  animation: fadeIn 0.2s ease;
 }
 
 .selected-category-tag .remove-btn {
@@ -155,14 +225,16 @@
   color: white;
   cursor: pointer;
   padding: 0;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  line-height: 1;
   opacity: 0.8;
-  transition: var(--transition);
+  transition: all 0.2s ease;
+  margin-left: 0.25rem;
 }
 
 .selected-category-tag .remove-btn:hover {
   opacity: 1;
-  transform: scale(1.1);
+  transform: scale(1.2);
 }
 
 .empty-categories {
@@ -170,54 +242,12 @@
   font-style: italic;
   padding: 2rem;
   text-align: center;
+  background: var(--gray-50);
+  border-radius: 8px;
+  border: 2px dashed var(--gray-300);
 }
 
-/* Categories Grid */
-.categories-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-/* ==================== RESPONSIVE ==================== */
-@media (max-width: 768px) {
-  .plan-selector {
-    grid-template-columns: 1fr;
-  }
-
-  .category-dropdown,
-  .custom-category {
-    flex-direction: column;
-  }
-
-  .category-dropdown .btn,
-  .custom-category .btn {
-    width: 100%;
-  }
-
-  .categories-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .plan-price {
-    font-size: 1.25rem;
-  }
-
-  .plan-header {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-}
-
-.checkbox-item.highlight {
-  border: 2px solid #10b981 !important;
-  background: #f0fdf4 !important;
-  border-radius: 12px;
-  padding: 0.75rem !important;
-}
-/* ==================== MÉTODOS DE PAGO COMO TAGS ==================== */
+/* ==================== PAYMENT METHODS ==================== */
 #paymentMethods {
   display: flex;
   flex-wrap: wrap;
@@ -237,13 +267,13 @@
   transition: all 0.2s ease;
   font-weight: 500;
   user-select: none;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .payment-tag:hover {
   border-color: var(--primary);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
 .payment-tag.selected {
@@ -264,4 +294,41 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.payment-tag i {
+  font-size: 1.1rem;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  .plan-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .category-dropdown,
+  .custom-category {
+    flex-direction: column;
+  }
+
+  .category-dropdown .btn,
+  .custom-category .btn {
+    width: 100%;
+  }
+
+  .ai-helper-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .plan-price {
+    font-size: 1.25rem;
+  }
+
+  .plan-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }
