@@ -1,8 +1,8 @@
-/* ==================== HEADER ==================== */
+/* ==================== HEADER - COMPACTO ==================== */
 .header {
   background: white;
   box-shadow: var(--shadow);
-  padding: 1rem 0;
+  padding: 0.75rem 0;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -24,26 +24,26 @@
 }
 
 .header .logo-icon {
-  width: 45px;
-  height: 45px;
+  width: 40px;
+  height: 40px;
   background: var(--gradient-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   margin: 0;
   flex-shrink: 0;
 }
 
 .header h1 {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   color: var(--gray-900);
   margin: 0;
 }
 
-/* User Info */
+/* User Info - Mejorado */
 .user-info {
   display: flex;
   align-items: center;
@@ -51,59 +51,75 @@
 }
 
 .user-details {
-  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
 }
 
 .user-name {
   font-weight: 600;
   color: var(--gray-900);
-  font-size: 0.95rem;
-}
-
-.user-email {
-  font-size: 0.85rem;
-  color: var(--gray-500);
+  font-size: 0.9rem;
 }
 
 .plan-badge {
   display: inline-block;
   background: var(--primary);
   color: white;
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.6rem;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
+  transition: var(--transition);
+}
+
+.plan-badge.active {
+  background: var(--success);
+}
+
+.plan-badge.expired {
+  background: var(--danger);
 }
 
 .btn-logout {
   background: var(--gray-100);
   border: none;
-  padding: 0.75rem;
+  padding: 0.65rem;
   border-radius: 8px;
   cursor: pointer;
   color: var(--gray-700);
   transition: var(--transition);
   font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-logout:hover {
   background: var(--danger);
   color: white;
+  transform: scale(1.05);
 }
 
-/* ==================== SUBSCRIPTION BANNER ==================== */
+/* ==================== SUBSCRIPTION BANNER - MÁS DISCRETO ==================== */
 .subscription-banner {
-  background: #dbeafe;
-  border-left: 4px solid #3b82f6;
-  padding: 1rem 2rem;
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+  padding: 0.5rem 1rem;
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
   color: #1e40af;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
+}
+
+.subscription-banner i {
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .subscription-banner.expired {
@@ -119,7 +135,7 @@
 }
 
 .subscription-banner.trial {
-  background: #dbeafe;
+  background: #eff6ff;
   border-left-color: #3b82f6;
   color: #1e40af;
 }
@@ -130,145 +146,125 @@
   color: #92400e;
 }
 
-/* ==================== PROGRESS INDICATOR ==================== */
-.progress-indicator {
+/* ==================== ONBOARDING PROGRESS BAR - COMPACTO ==================== */
+.onboarding-progress {
   background: white;
-  padding: 1.5rem 2rem;
+  border-radius: var(--border-radius);
+  padding: 1rem 2rem;
+  margin: 0.5rem 0;
   box-shadow: var(--shadow);
+  border: 1px solid var(--gray-200);
+  animation: slideUp 0.6s ease forwards;
 }
 
 .progress-header {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
-.progress-title {
-  font-size: 1.25rem;
-  font-weight: 700;
+.progress-header h3 {
+  margin: 0 0 0.25rem 0;
   color: var(--gray-900);
-  margin-bottom: 0.25rem;
+  font-size: 1.1rem;
+  font-weight: 700;
 }
 
 .progress-subtitle {
-  font-size: 0.9rem;
   color: var(--gray-600);
+  font-size: 0.85rem;
+  margin: 0;
+  font-weight: 500;
 }
 
-.completion-indicator {
-  margin-bottom: 2rem;
+.progress-bar-container {
+  margin: 1rem 0;
 }
 
-.completion-bar {
+.progress-bar {
   height: 8px;
   background: var(--gray-200);
-  border-radius: 999px;
+  border-radius: 50px;
   overflow: hidden;
-  margin-bottom: 0.5rem;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
 }
 
-.completion-fill {
+.progress-fill {
   height: 100%;
   background: var(--gradient-primary);
-  transition: width 0.5s ease;
-  border-radius: 999px;
+  border-radius: 50px;
+  transition: width 0.8s ease;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
 }
 
-.completion-text {
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.step-item {
   text-align: center;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--primary);
+  opacity: 0.6;
+  transition: all 0.3s ease;
 }
 
-.progress-steps {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+.step-item.completed,
+.step-item.current {
+  opacity: 1;
 }
 
-.step {
-  flex: 1;
-  min-width: 150px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: var(--transition);
-  position: relative;
-  background: var(--gray-50);
-  border: 2px solid transparent;
-}
-
-.step:hover {
-  background: var(--gray-100);
-}
-
-.step.current {
-  border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.05);
-}
-
-.step.active {
-  background: rgba(34, 197, 94, 0.1);
-}
-
-.step-icon {
-  width: 40px;
-  height: 40px;
+.step-circle {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
+  background: var(--gray-200);
+  color: var(--gray-600);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
-  border: 2px solid var(--gray-300);
-  color: var(--gray-500);
-  font-size: 1.2rem;
-  transition: var(--transition);
+  margin: 0 auto 0.5rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
 }
 
-.step.current .step-icon {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: rgba(99, 102, 241, 0.1);
-}
-
-.step.active .step-icon {
-  border-color: var(--success);
+.step-item.completed .step-circle {
   background: var(--success);
   color: white;
+  border-color: var(--success);
 }
 
-.step-name {
-  font-size: 0.85rem;
-  font-weight: 600;
+.step-item.current .step-circle {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+  animation: pulse 2s infinite;
+}
+
+.step-label {
+  font-size: 0.8rem;
   color: var(--gray-700);
-  text-align: center;
+  font-weight: 500;
+  display: block;
 }
 
-.step.current .step-name {
+.step-item.current .step-label {
   color: var(--primary);
+  font-weight: 700;
 }
 
-.step.active .step-name {
+.step-item.completed .step-label {
   color: var(--success);
-}
-
-.step-check {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  color: var(--success);
-  font-size: 1rem;
+  font-weight: 600;
 }
 
 /* ==================== MAIN CONTENT ==================== */
 .main-content {
   max-width: 1200px;
-  margin: 2rem auto 6rem;
+  margin: 1.5rem auto 6rem;
   padding: 0 2rem;
 }
 
@@ -332,17 +328,56 @@
     padding: 0 1rem;
   }
 
-  .header .user-info {
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  .header h1 {
+    font-size: 1.2rem;
+  }
+
+  .header .logo-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
   }
 
   .user-details {
     display: none;
   }
 
+  .subscription-banner {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .onboarding-progress {
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+  }
+
+  .progress-header h3 {
+    font-size: 1rem;
+  }
+
+  .progress-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .steps-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+  }
+
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  .step-label {
+    font-size: 0.7rem;
+  }
+
   .main-content {
     padding: 0 1rem 6rem;
+    margin: 1rem auto;
   }
 
   .navigation-controls {
@@ -353,162 +388,20 @@
   .nav-buttons {
     width: 100%;
   }
-
-  .progress-steps {
-    gap: 0.5rem;
-  }
-
-  .step {
-    min-width: calc(50% - 0.25rem);
-    padding: 0.75rem;
-  }
-
-  .step-name {
-    font-size: 0.75rem;
-  }
 }
 
 @media (max-width: 480px) {
   .header h1 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
 
-  .progress-title {
-    font-size: 1rem;
-  }
-
-  .step-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
-  }
-}
-
-/* ==================== ONBOARDING PROGRESS BAR - LAYOUT GLOBAL ==================== */
-.onboarding-progress {
-  background: white;
-  border-radius: var(--border-radius);
-  padding: 1.5rem 2rem;
-  margin: 1.5rem 0;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--gray-200);
-  animation: slideUp 0.6s ease forwards;
-}
-
-.progress-header h3 {
-  margin: 0 0 0.5rem 0;
-  color: var(--gray-900);
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.progress-subtitle {
-  color: var(--gray-600);
-  font-size: 0.95rem;
-  margin: 0;
-  font-weight: 500;
-}
-
-.progress-bar-container {
-  margin: 1.75rem 0;
-}
-
-.progress-bar {
-  height: 10px;
-  background: var(--gray-200);
-  border-radius: 50px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--gradient-primary);
-  border-radius: 50px;
-  transition: width 0.8s ease;
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
-}
-
-.steps-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.step-item {
-  text-align: center;
-  opacity: 0.65;
-  transition: all 0.3s ease;
-}
-
-.step-item.completed,
-.step-item.current {
-  opacity: 1;
-}
-
-.step-circle {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--gray-200);
-  color: var(--gray-600);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 0.75rem;
-  font-weight: 700;
-  font-size: 1.1rem;
-  transition: all 0.3s ease;
-  border: 3px solid transparent;
-}
-
-.step-item.completed .step-circle {
-  background: var(--success);
-  color: white;
-  border-color: var(--success);
-}
-
-.step-item.current .step-circle {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.2);
-  animation: pulse 2s infinite;
-}
-
-.step-label {
-  font-size: 0.875rem;
-  color: var(--gray-700);
-  font-weight: 500;
-}
-
-.step-item.current .step-label {
-  color: var(--primary);
-  font-weight: 700;
-}
-
-.step-item.completed .step-label {
-  color: var(--success);
-  font-weight: 600;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .onboarding-progress {
-    padding: 1.25rem 1.5rem;
-    margin: 1rem 0;
-  }
-  .steps-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-  }
-  .step-circle {
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
-  }
   .step-label {
-    font-size: 0.8rem;
+    font-size: 0.65rem;
+  }
+
+  .subscription-banner {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.25rem;
   }
 }
