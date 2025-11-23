@@ -9,6 +9,7 @@ import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 
+import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { initNavigation } from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
@@ -49,7 +50,6 @@ onAuthStateChanged(auth, async (user) => {
 
   currentUser = user;
 
-  // Revivimos el token por si está expirado
   try {
     await user.getIdToken();
   } catch (err) {
@@ -67,6 +67,9 @@ onAuthStateChanged(auth, async (user) => {
 async function initializePage() {
   try {
     showLoading('Cargando tu comercio...');
+
+    // 🆕 RENDERIZAR LAYOUT PRIMERO (header + barra + banner)
+    renderLayout();
 
     // Obtener o crear comercio
     const userRef = doc(db, 'usuarios', currentUser.uid);
@@ -98,8 +101,9 @@ async function initializePage() {
     // Inicializar navigation (barra de progreso)
     initNavigation();
     
-    updateHeader();
-    updateSubscriptionBanner();
+    // 🆕 ACTUALIZAR HEADER Y BANNER con helpers
+    updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan || 'trial']);
+    updateBanner();
 
     renderPlans();
     renderCategoriesSection();
@@ -140,48 +144,28 @@ async function loadComercioData() {
   originalData = structuredClone(comercioData);
 }
 
-// ==================== HEADER & BANNER ====================
-function updateHeader() {
-  const nameEl = document.getElementById('commerceName');
-  const badgeEl = document.getElementById('planBadge');
-  
-  if (nameEl) {
-    nameEl.textContent = comercioData.nombreComercio || 'Mi Comercio';
-  }
-  
-  if (badgeEl) {
-    const plan = PLANS[comercioData.plan || 'trial'];
-    badgeEl.textContent = plan ? `${plan.emoji} ${plan.nombre}` : 'Trial';
-  }
-}
-
-function updateSubscriptionBanner() {
-  const banner = document.getElementById('subscriptionBanner');
-  const msg = document.getElementById('subscriptionMessage');
-  if (!banner || !msg) return;
-
+// ==================== BANNER HELPER ====================
+function updateBanner() {
   const estado = calcularEstadoPlan(comercioData);
   const plan = PLANS[comercioData.plan || 'trial'];
+  let html = '';
 
-  banner.className = 'subscription-banner';
   switch (estado) {
     case 'trial':
       const dias = getDiasRestantesTrial(comercioData);
-      banner.classList.add('trial');
-      msg.innerHTML = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong> gratis`;
+      html = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong> gratis`;
       break;
     case 'activo':
-      banner.classList.add('active');
-      msg.innerHTML = `<strong>Plan ${plan.nombre} activo</strong> – Todo funcionando`;
+      html = `<strong>Plan ${plan.nombre} activo</strong> – Todo funcionando`;
       break;
     case 'expirado':
-      banner.classList.add('expired');
-      msg.innerHTML = `Trial expirado – Elegí un plan para continuar`;
+      html = `Trial expirado – Elegí un plan para continuar`;
       break;
     default:
-      banner.classList.add('trial');
-      msg.innerHTML = `Completá tu comercio para activar tu IA`;
+      html = `Completá tu comercio para activar tu IA`;
   }
+
+  updateSubscriptionBanner(html, estado);
 }
 
 // ==================== RENDERS ====================
@@ -218,7 +202,8 @@ function renderPlans() {
       card.classList.add('selected');
       comercioData.plan = key;
       markAsChanged();
-      updateSubscriptionBanner();
+      updateHeaderInfo(comercioData.nombreComercio, plan);
+      updateBanner();
       showToast('Plan seleccionado', `Ahora tenés el plan ${plan.nombre}`, 'info');
     };
     
@@ -368,7 +353,7 @@ function createSaveButton() {
   const logoutBtn = document.getElementById('logoutBtn');
   
   if (!userInfo || !logoutBtn) {
-    console.warn('⚠️ No se pudo crear botón de guardar: .user-info o #logoutBtn no existen');
+    console.warn('⚠️ No se pudo crear botón de guardar');
     return;
   }
   
@@ -405,7 +390,6 @@ function setupEventListeners() {
     });
   }
 
-  // Botón grande al final
   const btnBottom = document.getElementById('saveChangesBtnBottom');
   if (btnBottom) {
     btnBottom.addEventListener('click', saveFormData);
@@ -433,6 +417,14 @@ async function saveFormData() {
     }
   });
   
+  // Validar que haya al menos una red social
+  const socialFields = ['website', 'instagram', 'facebook', 'tiktok', 'whatsapp'];
+  const hasSocial = socialFields.some(id => {
+    const el = document.getElementById(id);
+    return el && el.value.trim();
+  });
+  
+  if (!hasSocial) missing.push('al menos una red social o web');
   if (selectedCategories.length === 0) missing.push('categorías');
   if (!document.querySelector('.plan-card.selected')) missing.push('un plan');
   
@@ -484,8 +476,8 @@ async function saveFormData() {
     }, 2500);
 
     showToast('Éxito', 'Todo guardado correctamente', 'success');
-    updateHeader();
-    updateSubscriptionBanner();
+    updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
+    updateBanner();
   } catch (err) {
     console.error(err);
     
@@ -517,7 +509,6 @@ function insertAIHelperCard() {
   container.insertBefore(card, container.firstChild);
 }
 
-// Validación para siguiente paso
 window.validateCurrentPageData = async () => {
   if (hasUnsavedChanges) {
     showToast('Cambios sin guardar', 'Guardá antes de continuar', 'warning');
