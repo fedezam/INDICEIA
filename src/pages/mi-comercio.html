@@ -121,28 +121,60 @@
         <div id="categoriesGrid"></div>
         <div id="selectedTags" class="selected-tags"></div>
 
-        <!-- 🔵 Métodos de pago -->
-        <h2 class="section-title">Métodos de Pago</h2>
+        <!-- MÉTODOS DE PAGO -->
+<div class="config-section">
+    <h3 class="section-title">Métodos de Pago</h3>
 
-        <section id="metodosPago">
+    <div id="metodosPagoContainer" class="payment-methods-grid">
 
-          <div class="metodo-pago-card">
-            <img src="/icons/mp.svg" alt="Mercado Pago" class="metodo-pago-icon" />
-            <h3>Mercado Pago</h3>
-            <p>Aceptá QR, débito, crédito y saldo de cuenta.</p>
-          </div>
+        <!-- Efectivo -->
+        <label class="payment-method-card">
+            <input type="checkbox" name="metodos_pago" value="efectivo" />
+            <div class="payment-method-content">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Efectivo</span>
+            </div>
+        </label>
 
-          <div class="metodo-pago-card">
-            <img src="/icons/card.svg" alt="Tarjetas" class="metodo-pago-icon" />
-            <h3>Tarjetas</h3>
-            <p>Visa, Mastercard, American Express.</p>
-          </div>
+        <!-- Billeteras digitales -->
+        <label class="payment-method-card">
+            <input type="checkbox" name="metodos_pago" value="billetera" />
+            <div class="payment-method-content">
+                <i class="fas fa-mobile-alt"></i>
+                <span>Billetera virtual (Mercado Pago, MODO, Ualá, etc.)</span>
+            </div>
+        </label>
 
-          <div class="metodo-pago-card">
-            <img src="/icons/bank.svg" alt="Transferencia" class="metodo-pago-icon" />
-            <h3>Transferencia bancaria</h3>
-            <p>Alias o CBU.</p>
-          </div>
+        <!-- Tarjeta crédito -->
+        <label class="payment-method-card">
+            <input type="checkbox" name="metodos_pago" value="tarjeta_credito" />
+            <div class="payment-method-content">
+                <i class="fas fa-credit-card"></i>
+                <span>Tarjeta de crédito</span>
+            </div>
+        </label>
+
+        <!-- Tarjeta débito -->
+        <label class="payment-method-card">
+            <input type="checkbox" name="metodos_pago" value="tarjeta_debito" />
+            <div class="payment-method-content">
+                <i class="fas fa-credit-card"></i>
+                <span>Tarjeta de débito</span>
+            </div>
+        </label>
+
+        <!-- Transferencia -->
+        <label class="payment-method-card">
+            <input type="checkbox" name="metodos_pago" value="transferencia" />
+            <div class="payment-method-content">
+                <i class="fas fa-university"></i>
+                <span>Transferencia bancaria</span>
+            </div>
+        </label>
+
+    </div>
+</div>
+
 
         </section>
 
