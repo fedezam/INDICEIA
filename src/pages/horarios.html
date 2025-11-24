@@ -1,61 +1,94 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Horarios – ÍndiceIA</title>
-
-    <!-- Estilos comunes -->
-    <link rel="stylesheet" href="../styles/base.css">
-    <link rel="stylesheet" href="../styles/header.css">
-    <link rel="stylesheet" href="../styles/navigator.css">
-    <link rel="stylesheet" href="../styles/buttons.css">
-
-    <!-- Estilos específicos de esta pantalla -->
-    <link rel="stylesheet" href="../styles/horarios.css">
-
-    <script type="module" src="./horarios.js"></script>
-    <script type="module" src="../flow-controller.js"></script>
+    <link rel="stylesheet" href="horarios.css">
 </head>
 
 <body>
 
-    <!-- ============================= -->
-    <!--        HEADER (PLANTILLA A)   -->
-    <!-- ============================= -->
-    <header class="page-header">
-        <h1>Horarios</h1>
-        <button id="saveHeaderBtn" class="save-btn disabled">Guardar</button>
+    <!-- HEADER -->
+    <header class="header">
+        <h1 class="header-title">Configurar Horarios</h1>
+        <button id="saveHeader" class="save-button">Guardar</button>
     </header>
 
-    <!-- ============================= -->
-    <!--   NAVEGADOR ONBOARDING A     -->
-    <!-- ============================= -->
-    <nav class="onboarding-nav">
-        <a href="mi-comercio.html" class="nav-item completed">Comercio</a>
-        <a href="horarios.html" class="nav-item active">Horarios</a>
-        <a class="nav-item disabled">Métodos de pago</a>
-        <a class="nav-item disabled">Productos</a>
-        <a class="nav-item disabled">Finalizar</a>
+    <!-- NAV -->
+    <nav class="navigator">
+        <a href="mi-comercio.html">Mi Comercio</a>
+        <a href="horarios.html" class="active">Horarios</a>
+        <a href="servicios.html">Servicios</a>
+        <a href="entrega.html">Entrega</a>
+        <a href="pagos.html">Pagos</a>
     </nav>
 
-    <!-- ============================= -->
-    <!--      CONTENIDO DE LA PAGE     -->
-    <!-- ============================= -->
-    <main>
-        <h2>Configura los horarios de atención</h2>
-        <p class="section-desc">Selecciona los días, horarios continuos o partidos, y activa las franjas de mañana y tarde.</p>
+    <!-- CONTENIDO -->
+    <main class="content">
 
-        <!-- ESTA ES LA GRID QUE RENDERIZA TU JS -->
-        <div id="scheduleGrid" class="schedule-grid"></div>
+        <section class="card">
+            <h2 class="section-title">Días y horarios de atención</h2>
+
+            <div class="horario-row">
+                <label>Lunes</label>
+                <input type="time" id="lunes-apertura">
+                <input type="time" id="lunes-cierre">
+                <input type="checkbox" id="lunes-cerrado"> Cerrado
+            </div>
+
+            <div class="horario-row">
+                <label>Martes</label>
+                <input type="time" id="martes-apertura">
+                <input type="time" id="martes-cierre">
+                <input type="checkbox" id="martes-cerrado"> Cerrado
+            </div>
+
+            <div class="horario-row">
+                <label>Miércoles</label>
+                <input type="time" id="miercoles-apertura">
+                <input type="time" id="miercoles-cierre">
+                <input type="checkbox" id="miercoles-cerrado"> Cerrado
+            </div>
+
+            <div class="horario-row">
+                <label>Jueves</label>
+                <input type="time" id="jueves-apertura">
+                <input type="time" id="jueves-cierre">
+                <input type="checkbox" id="jueves-cerrado"> Cerrado
+            </div>
+
+            <div class="horario-row">
+                <label>Viernes</label>
+                <input type="time" id="viernes-apertura">
+                <input type="time" id="viernes-cierre">
+                <input type="checkbox" id="viernes-cerrado"> Cerrado
+            </div>
+
+            <div class="horario-row">
+                <label>Sábado</label>
+                <input type="time" id="sabado-apertura">
+                <input type="time" id="sabado-cierre">
+                <input type="checkbox" id="sabado-cerrado"> Cerrado
+            </div>
+
+            <div class="horario-row">
+                <label>Domingo</label>
+                <input type="time" id="domingo-apertura">
+                <input type="time" id="domingo-cierre">
+                <input type="checkbox" id="domingo-cerrado"> Cerrado
+            </div>
+
+        </section>
+
     </main>
 
-    <!-- ============================= -->
-    <!--   BOTÓN FINAL (PLANTILLA A)   -->
-    <!-- ============================= -->
-    <footer class="save-footer">
-        <button id="saveFooterBtn" class="save-btn disabled">Guardar cambios</button>
+    <!-- BOTÓN AL FINAL -->
+    <footer class="footer">
+        <button id="saveFooter" class="save-button">Guardar</button>
     </footer>
 
+    <script src="horarios.js"></script>
 </body>
 </html>
