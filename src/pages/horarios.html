@@ -1,67 +1,61 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Horarios – ÍndiceIA</title>
 
-  <title>Horarios – ÍndiceIA</title>
+    <!-- Estilos comunes -->
+    <link rel="stylesheet" href="../styles/base.css">
+    <link rel="stylesheet" href="../styles/header.css">
+    <link rel="stylesheet" href="../styles/navigator.css">
+    <link rel="stylesheet" href="../styles/buttons.css">
 
-  <!-- CSS global -->
-  <link rel="stylesheet" href="/src/styles/base.css">
-  <link rel="stylesheet" href="/src/styles/layout.css">
-  <link rel="stylesheet" href="/src/styles/components.css">
-  <link rel="stylesheet" href="/src/styles/forms.css">
+    <!-- Estilos específicos de esta pantalla -->
+    <link rel="stylesheet" href="../styles/horarios.css">
 
-  <!-- CSS específico de horarios -->
-  <link rel="stylesheet" href="/src/pages/horarios.css">
-
-  <!-- JS de la página -->
-  <script type="module" src="/src/pages/horarios.js"></script>
-
-  <!-- Necesario para header / navegación / flujo -->
-  <script type="module" src="/src/shared/layout.js"></script>
-  <script type="module" src="/src/shared/navigation.js"></script>
-  <script type="module" src="/src/controllers/flowController.js"></script>
+    <script type="module" src="./horarios.js"></script>
+    <script type="module" src="../flow-controller.js"></script>
 </head>
 
-<body data-page="horarios">
+<body>
 
-  <!-- HEADER -->
-  <header id="layout-header"></header>
+    <!-- ============================= -->
+    <!--        HEADER (PLANTILLA A)   -->
+    <!-- ============================= -->
+    <header class="page-header">
+        <h1>Horarios</h1>
+        <button id="saveHeaderBtn" class="save-btn disabled">Guardar</button>
+    </header>
 
-  <!-- BANNER DE PLAN -->
-  <div id="subscriptionBanner"></div>
+    <!-- ============================= -->
+    <!--   NAVEGADOR ONBOARDING A     -->
+    <!-- ============================= -->
+    <nav class="onboarding-nav">
+        <a href="mi-comercio.html" class="nav-item completed">Comercio</a>
+        <a href="horarios.html" class="nav-item active">Horarios</a>
+        <a class="nav-item disabled">Métodos de pago</a>
+        <a class="nav-item disabled">Productos</a>
+        <a class="nav-item disabled">Finalizar</a>
+    </nav>
 
-  <!-- PROGRESO Y NAVEGACIÓN -->
-  <div id="navigationControls"></div>
+    <!-- ============================= -->
+    <!--      CONTENIDO DE LA PAGE     -->
+    <!-- ============================= -->
+    <main>
+        <h2>Configura los horarios de atención</h2>
+        <p class="section-desc">Selecciona los días, horarios continuos o partidos, y activa las franjas de mañana y tarde.</p>
 
-  <main>
-    <div class="container">
-
-      <div class="form-section">
-
-        <h2 class="section-title"><i class="fas fa-clock"></i> Horarios de Atención</h2>
-        <p>Definí los horarios en que tu comercio está disponible.</p>
-
+        <!-- ESTA ES LA GRID QUE RENDERIZA TU JS -->
         <div id="scheduleGrid" class="schedule-grid"></div>
+    </main>
 
-      </div>
-
-    </div>
-  </main>
-
-  <!-- BOTÓN FIJO ABAJO -->
-  <div class="bottom-action">
-    <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
-  </div>
-
-  <!-- LOADING -->
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">Cargando...</div>
-  </div>
-
-  <div class="toast-container" id="toastContainer"></div>
+    <!-- ============================= -->
+    <!--   BOTÓN FINAL (PLANTILLA A)   -->
+    <!-- ============================= -->
+    <footer class="save-footer">
+        <button id="saveFooterBtn" class="save-btn disabled">Guardar cambios</button>
+    </footer>
 
 </body>
 </html>
