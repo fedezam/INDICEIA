@@ -1,4 +1,62 @@
-/* mi-comercio.css – VERSIÓN DIOS PRO MAX ULTRA 2025 */
+/* ===============================
+   VARIABLES — MODO ESCALABLE PRO
+   =============================== */
+
+:root {
+  /* Core brand */
+  --primary: #6366f1;
+  --primary-light: rgba(99,102,241,0.35);
+
+  /* Card glass */
+  --card-bg: rgba(255,255,255,0.56);
+  --card-blur: 22px;
+  --card-saturate: 170%;
+  --card-border: rgba(255,255,255,0.45);
+
+  /* Hover + selected */
+  --hover-transform: translateY(-14px) scale(1.04);
+  --selected-transform: translateY(-16px) scale(1.07);
+
+  --hover-shadow: 
+    0 28px 70px rgba(99,102,241,0.35),
+    0 42px 110px rgba(0,0,0,0.15);
+
+  --selected-shadow:
+    0 34px 80px rgba(99,102,241,0.50),
+    0 40px 90px rgba(0,0,0,0.14);
+
+  --base-shadow:
+    0 12px 40px rgba(0,0,0,0.10),
+    0 26px 70px rgba(99,102,241,0.12);
+
+  /* Badges estilo iOS 17 */
+  --badge-bg: rgba(255,255,255,0.55);
+  --badge-blur: 14px;
+  --badge-text-color: #1f2937;
+
+  --selected-badge-bg: var(--primary);
+  --selected-badge-text: #fff;
+
+  --recommended-bg: #fbbf24;
+  --recommended-text: #1f2937;
+
+  --badge-radius: 16px;
+  --badge-font-size: 0.72rem;
+  --badge-padding: 0.55rem 1.25rem;
+
+  /* Animación glow */
+  --pulse-glow-1: rgba(99,102,241,0.45);
+  --pulse-glow-2: rgba(99,102,241,0.25);
+
+  --transition-fast: .25s ease;
+  --transition-smooth: .35s cubic-bezier(.21,1,.33,1);
+}
+
+
+/* ===============================
+   CONTENEDOR DEL GRID
+   =============================== */
+
 #planSelector {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -6,57 +64,116 @@
   padding: 5rem 2rem 4rem;
   max-width: 1700px;
   margin: 0 auto;
-  justify-content: center;
 }
 
 @media (max-width: 1200px) {
-  #planSelector { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 640px) {
-  #planSelector { grid-template-columns: 1fr; padding: 4rem 1rem 3rem; gap: 2.2rem; }
+  #planSelector {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-/* LA CARD ÉPICA DE VUELTA (con todo el poder que tenía antes) */
+@media (max-width: 640px) {
+  #planSelector {
+    grid-template-columns: 1fr;
+    padding: 4rem 1rem 3rem;
+    gap: 2.2rem;
+  }
+}
+
+
+/* ===============================
+   CARD BASE
+   =============================== */
+
 #planSelector .plan-card {
   max-width: 380px;
   margin: 0 auto;
   border-radius: 28px;
   padding: 2.8rem 2.4rem;
-  background: rgba(255,255,255,0.62);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1.5px solid rgba(255,255,255,0.4);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 30px 80px rgba(99,102,241,0.15);
-  transition: all .4s cubic-bezier(0.23,1,0.32,1);
+
+  background: var(--card-bg);
+  backdrop-filter: blur(var(--card-blur)) saturate(var(--card-saturate));
+
+  border: 1.5px solid var(--card-border);
+
+  box-shadow: var(--base-shadow);
+
+  transition:
+    transform var(--transition-smooth),
+    box-shadow var(--transition-smooth),
+    border-color var(--transition-fast);
+
   cursor: pointer;
   position: relative;
   overflow: hidden;
 }
 
 #planSelector .plan-card:hover {
-  transform: translateY(-16px) scale(1.04);
-  box-shadow: 0 30px 80px rgba(99,102,241,0.4), 0 50px 120px rgba(0,0,0,0.18);
+  transform: var(--hover-transform);
+  box-shadow: var(--hover-shadow);
   border-color: var(--primary);
 }
 
-#planSelector .plan-card.selected {
-  background: linear-gradient(145deg, rgba(99,102,241,0.28), rgba(118,75,162,0.38));
-  border: 2.5px solid var(--primary);
-  box-shadow: 0 30px 90px rgba(99,102,241,0.55);
-  transform: translateY(-18px) scale(1.06);
+
+/* ===============================
+   ANIMACIÓN SELECCIONADO (PULSE)
+   =============================== */
+
+@keyframes card-glow-pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--pulse-glow-1);
+  }
+  50% {
+    box-shadow: 0 0 32px 14px var(--pulse-glow-2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 var(--pulse-glow-1);
+  }
 }
 
+
+/* ===============================
+   ESTADO SELECCIONADO
+   =============================== */
+
+#planSelector .plan-card.selected {
+  background: linear-gradient(
+    145deg,
+    rgba(99,102,241,0.32),
+    rgba(118,75,162,0.40)
+  );
+  border: 2.5px solid var(--primary);
+
+  transform: var(--selected-transform);
+  box-shadow: var(--selected-shadow);
+
+  animation: card-glow-pulse 2.6s ease-in-out infinite;
+}
+
+
+/* BADGE del seleccionado — estilo iOS 17 */
 #planSelector .plan-card.selected::after {
   content: "Seleccionado";
   position: absolute;
   top: 20px;
   right: 20px;
-  background: var(--primary);
-  color: white;
-  padding: 0.6rem 1.2rem;
-  border-radius: 16px;
-  font-weight: 900;
-  font-size: 0.8rem;
+
+  background: var(--selected-badge-bg);
+  color: var(--selected-badge-text);
+
+  padding: var(--badge-padding);
+  font-size: var(--badge-font-size);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+
+  border-radius: var(--badge-radius);
+  backdrop-filter: blur(var(--badge-blur));
 }
+
+
+/* ===============================
+   BADGE RECOMENDADO — ESTILO iOS17
+   =============================== */
 
 #planSelector .plan-card.recommended::before {
   content: "Recomendado";
@@ -64,10 +181,15 @@
   top: -16px;
   left: 50%;
   transform: translateX(-50%);
-  background: #fbbf24;
-  color: #1f2937;
-  padding: 0.8rem 2rem;
+
+  background: var(--recommended-bg);
+  color: var(--recommended-text);
+
+  padding: 0.7rem 2rem;
+  font-weight: 800;
+  font-size: 0.75rem;
   border-radius: 20px;
-  font-weight: 900;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+
+  box-shadow: 0 8px 22px rgba(0,0,0,0.15);
+  backdrop-filter: blur(var(--badge-blur));
 }
