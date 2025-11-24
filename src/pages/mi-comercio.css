@@ -371,3 +371,244 @@
 .payment-tag.selected {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
 }
+/* ==========================================================================
+   INDICEIA – THE EPIC PLAN CARDS (FINAL MASTERPIECE VERSION)
+   Inspired by Linear, Vercel, Raycast, Notion, and Apple design systems.
+   ========================================================================== */
+
+#planSelector {
+  display: grid;
+  gap: 2.5rem;
+  padding: 2.8rem 0;
+  justify-content: center;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* --------------------------------------------------------------------------
+   EPIC CARD BASE – ultra clean, glass, soft, premium
+-------------------------------------------------------------------------- */
+.plan-card {
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-stroke: rgba(255, 255, 255, 0.25);
+
+  backdrop-filter: blur(16px) saturate(170%);
+  background: var(--glass-bg);
+
+  width: 100%;
+  max-width: 340px;
+  padding: 2.5rem 2.3rem;
+  border-radius: 24px;
+
+  border: 1px solid var(--glass-stroke);
+  box-shadow:
+    0 3px 5px rgba(0,0,0,0.08),
+    0 4px 20px rgba(0,0,0,0.08);
+
+  transition: all 0.35s cubic-bezier(0.23,1,0.32,1);
+  position: relative;
+  cursor: pointer;
+}
+
+.plan-card:hover {
+  transform: translateY(-8px) scale(1.015);
+  box-shadow:
+    0 12px 28px rgba(0,0,0,0.10),
+    0 20px 60px rgba(99,102,241,0.35);
+  border-color: var(--primary);
+}
+
+/* --------------------------------------------------------------------------
+   TITLE – modern typography
+-------------------------------------------------------------------------- */
+.plan-header h4 {
+  font-size: 1.65rem;
+  font-weight: 900;
+  letter-spacing: -0.6px;
+  color: var(--gray-900);
+  margin-bottom: 0.4rem;
+}
+
+.plan-header small {
+  font-size: 0.85rem;
+  color: var(--gray-600);
+}
+
+/* --------------------------------------------------------------------------
+   PRICE – bold, iconic, SaaS style
+-------------------------------------------------------------------------- */
+.plan-price {
+  margin: 1.3rem 0 2rem;
+}
+
+.plan-price strong {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--primary);
+  letter-spacing: -1.2px;
+}
+
+.plan-price span {
+  font-size: 1.1rem;
+  color: var(--gray-800);
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+.plan-price small {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
+  color: var(--gray-600);
+}
+
+/* --------------------------------------------------------------------------
+   DESCRIPTION
+-------------------------------------------------------------------------- */
+.plan-description {
+  font-size: 1rem;
+  color: var(--gray-700);
+  line-height: 1.65;
+  margin-bottom: 2rem;
+}
+
+/* --------------------------------------------------------------------------
+   FEATURES LIST – linear style
+-------------------------------------------------------------------------- */
+.plan-features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  margin-bottom: 2.2rem;
+}
+
+.plan-features .feature {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  color: var(--gray-900);
+}
+
+.plan-features .feature i {
+  color: var(--primary);
+  font-size: 1.1rem;
+}
+
+/* --------------------------------------------------------------------------
+   BUTTON – inline CTA
+-------------------------------------------------------------------------- */
+.plan-cta {
+  display: inline-block;
+  padding: 0.8rem 1.6rem;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  background: var(--primary);
+  color: #fff;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.plan-cta:hover {
+  filter: brightness(1.1);
+}
+
+/* --------------------------------------------------------------------------
+   SELECTED – glowing aura
+-------------------------------------------------------------------------- */
+.plan-card.selected {
+  background: linear-gradient(
+    145deg,
+    rgba(99,102,241,0.20),
+    rgba(118,75,162,0.30)
+  );
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow:
+    0 18px 50px rgba(99,102,241,0.50),
+    0 22px 65px rgba(118,75,162,0.45);
+  transform: translateY(-10px) scale(1.03);
+}
+
+.plan-card.selected::after {
+  content: "Seleccionado";
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--primary);
+  color: white;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.35px;
+}
+
+/* --------------------------------------------------------------------------
+   RECOMMENDED – golden aura + gradient ribbon
+-------------------------------------------------------------------------- */
+.plan-card.recommended {
+  background: linear-gradient(
+    140deg,
+    rgba(250,204,21,0.18),
+    rgba(255,255,255,0.40),
+    rgba(99,102,241,0.18)
+  );
+  border: 1px solid rgba(250,204,21,0.55);
+  box-shadow:
+    0 22px 60px rgba(250,204,21,0.35),
+    0 30px 80px rgba(99,102,241,0.30);
+  transform: translateY(-14px) scale(1.05);
+}
+
+.plan-card.recommended::before {
+  content: "⭐ Recomendado";
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.55rem 1.2rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  border-radius: 12px;
+  letter-spacing: 0.4px;
+  background: rgb(250,204,21);
+  color: #1e1e1e;
+  box-shadow: 0 4px 18px rgba(250,204,21,0.45);
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE PERFECTO
+-------------------------------------------------------------------------- */
+@media (min-width: 1400px) {
+  #planSelector {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (min-width: 1100px) and (max-width: 1399px) {
+  #planSelector {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 780px) and (max-width: 1099px) {
+  #planSelector {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .plan-card {
+    padding: 2rem;
+    border-radius: 20px;
+  }
+
+  .plan-header h4 {
+    font-size: 1.45rem;
+  }
+
+  .plan-price strong {
+    font-size: 2.5rem;
+  }
+}
+
