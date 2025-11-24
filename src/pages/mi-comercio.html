@@ -8,20 +8,15 @@
   <script type="module" src="/src/pages/mi-comercio.js"></script>
 </head>
 <body data-page="mi-comercio">
-  <!-- Layout global -->
   <header id="layout-header"></header>
 
   <main>
-    <!-- PLANES FUERA DEL CONTAINER → AHORA TIENEN TODO EL ANCHO -->
-    <section id="planSelector">
-      <!-- JS genera las cards aquí -->
-    </section>
+    <!-- PLANES FUERA DEL CONTAINER (esto arregla el 3+1) -->
+    <section id="planSelector"></section>
 
-    <!-- TODO LO DEMÁS DENTRO DEL CONTAINER (como siempre) -->
+    <!-- TODO LO DEMÁS DENTRO DEL CONTAINER COMO SIEMPRE -->
     <div class="container">
-      <!-- FORMULARIO PRINCIPAL -->
       <form id="miComercioForm" class="form-section">
-        <!-- Información Básica -->
         <h2 class="section-title">Información Básica</h2>
         <div class="form-fields">
           <div class="form-field">
@@ -53,7 +48,6 @@
           </div>
         </div>
 
-        <!-- Información de contacto -->
         <h2 class="section-title">Información de Contacto</h2>
         <div class="form-fields">
           <div class="form-field">
@@ -66,11 +60,10 @@
           </div>
           <div class="form-field">
             <label for="email">Email *</label>
-             <input id="email" name="email" type="email" required />
+            <input id="email" name="email" type="email" required />
           </div>
         </div>
 
-        <!-- Presencia Online -->
         <h2 class="section-title">Presencia Online</h2>
         <div class="form-fields">
           <div class="form-field">
@@ -91,19 +84,16 @@
           </div>
         </div>
 
-        <!-- Categorías -->
         <h2 class="section-title">Categorías</h2>
         <div id="categoriesGrid"></div>
         <div id="selectedTags" class="selected-tags"></div>
 
-        <!-- Métodos de pago -->
         <h2 class="section-title">Métodos de Pago</h2>
         <div id="paymentMethods"></div>
       </form>
     </div>
   </main>
 
-  <!-- Botón de guardar inferior -->
   <div class="bottom-action">
     <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
   </div>
