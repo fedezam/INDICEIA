@@ -1,40 +1,73 @@
-/* mi-comercio.css – VERSIÓN DIOS (4 en fila perfecta, mismo tamaño, hermoso) */
-
+/* mi-comercio.css – VERSIÓN DIOS PRO MAX ULTRA 2025 */
 #planSelector {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);           /* 4 columnas fijas en desktop */
-  gap: 2rem;
-  padding: 4rem 2rem 3rem;
-  max-width: 1600px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2.8rem;
+  padding: 5rem 2rem 4rem;
+  max-width: 1700px;
   margin: 0 auto;
   justify-content: center;
 }
 
-/* Tablet: 2 columnas */
-@media (max-width: 1100px) {
-  #planSelector {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2.5rem;
-    padding: 3.5rem 2rem 2rem;
-  }
+@media (max-width: 1200px) {
+  #planSelector { grid-template-columns: repeat(2, 1fr); }
 }
-
-/* Móvil: 1 columna */
 @media (max-width: 640px) {
-  #planSelector {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    padding: 3rem 1rem 2rem;
-  }
+  #planSelector { grid-template-columns: 1fr; padding: 4rem 1rem 3rem; gap: 2.2rem; }
 }
 
-/* Todas las cards exactamente mismo ancho */
+/* LA CARD ÉPICA DE VUELTA (con todo el poder que tenía antes) */
 #planSelector .plan-card {
-  width: 100%;
   max-width: 380px;
   margin: 0 auto;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  border-radius: 28px;
+  padding: 2.8rem 2.4rem;
+  background: rgba(255,255,255,0.62);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1.5px solid rgba(255,255,255,0.4);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 30px 80px rgba(99,102,241,0.15);
+  transition: all .4s cubic-bezier(0.23,1,0.32,1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+#planSelector .plan-card:hover {
+  transform: translateY(-16px) scale(1.04);
+  box-shadow: 0 30px 80px rgba(99,102,241,0.4), 0 50px 120px rgba(0,0,0,0.18);
+  border-color: var(--primary);
+}
+
+#planSelector .plan-card.selected {
+  background: linear-gradient(145deg, rgba(99,102,241,0.28), rgba(118,75,162,0.38));
+  border: 2.5px solid var(--primary);
+  box-shadow: 0 30px 90px rgba(99,102,241,0.55);
+  transform: translateY(-18px) scale(1.06);
+}
+
+#planSelector .plan-card.selected::after {
+  content: "Seleccionado";
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: var(--primary);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 16px;
+  font-weight: 900;
+  font-size: 0.8rem;
+}
+
+#planSelector .plan-card.recommended::before {
+  content: "Recomendado";
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fbbf24;
+  color: #1f2937;
+  padding: 0.8rem 2rem;
+  border-radius: 20px;
+  font-weight: 900;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
 }
