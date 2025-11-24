@@ -1,125 +1,94 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mi Comercio – ÍndiceIA</title>
+<form id="miComercioForm" class="form-section">
 
-  <link rel="stylesheet" href="/src/styles.css" />
-  <script type="module" src="/src/pages/mi-comercio.js"></script>
-</head>
+  <!-- 🌎 Información Básica -->
+  <h2 class="section-title">Información Básica</h2>
 
-<body data-page="mi-comercio">
-
-  <!-- 🔥 Layout se inserta aquí automáticamente por renderLayout() -->
-  <header id="layout-header"></header>
-
-  <main>
-    <div class="container">
-
-      <!-- 🔵 1) PLANS -->
-      <section id="planSelector" class="section-card">
-        <!-- JS inyecta las tarjetas -->
-      </section>
-
-      <!-- 🔵 2) FORMULARIO PRINCIPAL -->
-      <form id="miComercioForm" class="form-section">
-
-        <!-- 🌎 Información Básica -->
-        <h2 class="section-title">Información Básica</h2>
-
-        <div class="form-group">
-          <label for="nombreComercio">Nombre del comercio *</label>
-          <input id="nombreComercio" name="nombreComercio" type="text" required />
-        </div>
-
-        <div class="form-group">
-          <label for="pais">País *</label>
-          <select id="pais" name="pais">
-            <option value="Argentina" selected>Argentina</option>
-            <option value="Otro">Otro (Próximamente)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="provincia">Provincia *</label>
-          <select id="provincia" name="provincia"></select>
-        </div>
-
-        <div class="form-group">
-          <label for="ciudad">Ciudad *</label>
-          <input id="ciudad" name="ciudad" type="text" required />
-        </div>
-
-        <div class="form-group">
-          <label for="direccion">Dirección *</label>
-          <input id="direccion" name="direccion" type="text" required />
-        </div>
-
-        <div class="form-group">
-          <label for="descripcion">Descripción *</label>
-          <textarea id="descripcion" name="descripcion" required></textarea>
-        </div>
-
-        <!-- 🔵 Información de contacto -->
-        <h2 class="section-title">Información de Contacto</h2>
-
-        <div class="form-group">
-          <label for="telefono">Teléfono *</label>
-          <input id="telefono" name="telefono" type="text" required />
-        </div>
-
-        <div class="form-group">
-          <label for="whatsapp">WhatsApp</label>
-          <input id="whatsapp" name="whatsapp" type="text" />
-        </div>
-
-        <div class="form-group">
-          <label for="email">Email *</label>
-          <input id="email" name="email" type="email" required />
-        </div>
-
-        <!-- 🔵 Presencia Online -->
-        <h2 class="section-title">Presencia Online</h2>
-
-        <div class="form-group">
-          <label for="website">Sitio Web</label>
-          <input id="website" name="website" type="text" />
-        </div>
-
-        <div class="form-group">
-          <label for="instagram">Instagram</label>
-          <input id="instagram" name="instagram" type="text" />
-        </div>
-
-        <div class="form-group">
-          <label for="facebook">Facebook</label>
-          <input id="facebook" name="facebook" type="text" />
-        </div>
-
-        <div class="form-group">
-          <label for="tiktok">TikTok</label>
-          <input id="tiktok" name="tiktok" type="text" />
-        </div>
-
-        <!-- 🔵 Categorías (AI Helper lo usa) -->
-        <h2 class="section-title">Categorías</h2>
-
-        <div id="categoriesGrid"></div>
-        <div id="selectedTags" class="selected-tags"></div>
-
-        <!-- 🔵 Métodos de pago -->
-        <h2 class="section-title">Métodos de Pago</h2>
-        <div id="paymentMethods"></div>
-
-      </form>
-    </div>
-  </main>
-
-  <!-- 🔵 3) Botón de guardar (inferior) -->
-  <div class="bottom-action">
-    <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
+  <div class="form-field">
+    <label for="nombreComercio">Nombre del comercio *</label>
+    <input id="nombreComercio" name="nombreComercio" type="text" required />
   </div>
 
-</body>
-</html>
+  <div class="form-field">
+    <label for="pais">País *</label>
+    <select id="pais" name="pais">
+      <option value="Argentina" selected>Argentina</option>
+      <option value="Otro">Otro (Próximamente)</option>
+    </select>
+  </div>
+
+  <div class="form-field">
+    <label for="provincia">Provincia *</label>
+    <select id="provincia" name="provincia"></select>
+  </div>
+
+  <div class="form-field">
+    <label for="ciudad">Ciudad *</label>
+    <input id="ciudad" name="ciudad" type="text" required />
+  </div>
+
+  <div class="form-field">
+    <label for="direccion">Dirección *</label>
+    <input id="direccion" name="direccion" type="text" required />
+  </div>
+
+  <div class="form-field">
+    <label for="descripcion">Descripción *</label>
+    <textarea id="descripcion" name="descripcion" required></textarea>
+  </div>
+
+
+  <!-- 🔵 Información de contacto -->
+  <h2 class="section-title">Información de Contacto</h2>
+
+  <div class="form-field">
+    <label for="telefono">Teléfono *</label>
+    <input id="telefono" name="telefono" type="text" required />
+  </div>
+
+  <div class="form-field">
+    <label for="whatsapp">WhatsApp</label>
+    <input id="whatsapp" name="whatsapp" type="text" />
+  </div>
+
+  <div class="form-field">
+    <label for="email">Email *</label>
+    <input id="email" name="email" type="email" required />
+  </div>
+
+
+  <!-- 🔵 Presencia Online -->
+  <h2 class="section-title">Presencia Online</h2>
+
+  <div class="form-field">
+    <label for="website">Sitio Web</label>
+    <input id="website" name="website" type="text" />
+  </div>
+
+  <div class="form-field">
+    <label for="instagram">Instagram</label>
+    <input id="instagram" name="instagram" type="text" />
+  </div>
+
+  <div class="form-field">
+    <label for="facebook">Facebook</label>
+    <input id="facebook" name="facebook" type="text" />
+  </div>
+
+  <div class="form-field">
+    <label for="tiktok">TikTok</label>
+    <input id="tiktok" name="tiktok" type="text" />
+  </div>
+
+
+  <!-- 🔵 Categorías -->
+  <h2 class="section-title">Categorías</h2>
+
+  <div id="categoriesGrid"></div>
+  <div id="selectedTags" class="selected-tags"></div>
+
+
+  <!-- 🔵 Métodos de pago -->
+  <h2 class="section-title">Métodos de Pago</h2>
+  <div id="paymentMethods"></div>
+
+</form>
