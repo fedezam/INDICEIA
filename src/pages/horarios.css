@@ -1,6 +1,5 @@
 /* ==================== HORARIOS PAGE ==================== */
 
-/* Schedule Grid */
 .schedule-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -8,7 +7,6 @@
   margin-top: 1rem;
 }
 
-/* Schedule Day Card */
 .schedule-day {
   background: white;
   padding: 1.5rem;
@@ -24,10 +22,9 @@
 
 .schedule-day.active {
   border-color: var(--success);
-  background: rgba(34, 197, 94, 0.02);
+  background: rgba(34, 197, 94, 0.03);
 }
 
-/* Day Header */
 .day-header {
   margin-bottom: 1rem;
   padding-bottom: 1rem;
@@ -41,31 +38,17 @@
   cursor: pointer;
   font-weight: 600;
   color: var(--gray-900);
-  user-select: none;
 }
 
 .day-toggle:hover {
   color: var(--primary);
 }
 
-.day-toggle input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  accent-color: var(--success);
-}
-
-/* Day Hours */
-.day-hours {
-  transition: opacity 0.3s;
-}
-
 .day-hours.disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   pointer-events: none;
 }
 
-/* Schedule Mode */
 .schedule-mode {
   display: flex;
   flex-direction: column;
@@ -73,34 +56,7 @@
   margin-bottom: 1rem;
 }
 
-.schedule-option {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 8px;
-  transition: var(--transition);
-}
-
-.schedule-option:hover {
-  background: var(--gray-50);
-}
-
-.schedule-option input[type="radio"] {
-  cursor: pointer;
-  accent-color: var(--primary);
-}
-
-.schedule-option label {
-  cursor: pointer;
-  font-weight: 500;
-  color: var(--gray-700);
-}
-
-/* Time Blocks */
 .time-blocks {
-  margin-top: 1rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -113,25 +69,6 @@
   border: 1px solid var(--gray-200);
 }
 
-.time-block.hidden {
-  display: none;
-}
-
-.time-block label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-  font-weight: 600;
-  color: var(--gray-700);
-  font-size: 0.9rem;
-}
-
-.time-block label i {
-  color: var(--primary);
-}
-
-/* Time Range */
 .time-range {
   display: flex;
   align-items: center;
@@ -141,108 +78,18 @@
 .time-range input[type="time"] {
   flex: 1;
   padding: 0.75rem;
+  border-radius: 8px;
   border: 1px solid var(--gray-300);
-  border-radius: 8px;
-  font-size: 1rem;
-  background: white;
-  cursor: pointer;
 }
 
-.time-range input[type="time"]:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-}
-
-.time-range input[type="time"]:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: var(--gray-100);
-}
-
-.time-range span {
-  color: var(--gray-600);
-  font-weight: 500;
-}
-
-/* Morning & Afternoon Hours */
-.morning-hours,
-.afternoon-hours {
-  margin-bottom: 1rem;
-}
-
-.morning-hours:last-child,
-.afternoon-hours:last-child {
-  margin-bottom: 0;
-}
-
-/* Closed State */
-.schedule-day.closed {
-  opacity: 0.6;
-}
-
-.closed-label {
-  display: inline-block;
-  background: var(--danger);
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin-left: 0.5rem;
-}
-
-/* 24h Mode */
-.mode-24h .time-blocks {
-  display: none;
-}
-
-.mode-24h-label {
-  display: inline-block;
-  background: var(--success);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 600;
-  text-align: center;
-  margin-top: 0.5rem;
-}
-
-/* ==================== RESPONSIVE ==================== */
+/* Responsive */
 @media (max-width: 768px) {
   .schedule-grid {
     grid-template-columns: 1fr;
   }
 
-  .schedule-mode {
-    flex-direction: column;
-  }
-
   .time-range {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .time-range span {
-    text-align: center;
-  }
-
-  .time-range input[type="time"] {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .schedule-day {
-    padding: 1rem;
-  }
-
-  .day-toggle {
-    font-size: 0.9rem;
-  }
-
-  .time-block {
-    padding: 0.75rem;
   }
 }
