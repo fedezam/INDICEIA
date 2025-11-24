@@ -170,3 +170,49 @@
   height: 44px;
   margin-bottom: 1rem;
 }
+/* MÉTODOS DE PAGO */
+.payment-methods-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.payment-method-card {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 14px 16px;
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    transition: 0.25s ease;
+    position: relative;
+}
+
+.payment-method-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
+}
+
+.payment-method-card input {
+    margin-right: 12px;
+    accent-color: #3b82f6;
+    width: 18px;
+    height: 18px;
+}
+
+.payment-method-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    color: #222;
+}
+
+.payment-method-content i {
+    font-size: 20px;
+    color: #3b82f6;
+}
+
+
