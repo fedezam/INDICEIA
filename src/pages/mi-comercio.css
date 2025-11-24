@@ -1,99 +1,98 @@
-/* ==================== MI COMERCIO - ESTILOS ESPECÍFICOS ==================== */
+/* ==================== MI COMERCIO - ESTILOS ESPECÍFICOS (FINAL) ==================== */
 
-/* ==================== PLAN CARDS ==================== */
-#planSelector {
+/* ---------------------------
+   FORM FIELDS / GENERALES
+   (formularios reutilizables para todas las páginas)
+   --------------------------- */
+.form-fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
-  margin-top: 1.5rem;
 }
 
-.plan-card {
-  background: white;
-  border: 2px solid var(--gray-200);
-  border-radius: 12px;
-  padding: 1.75rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.plan-card:hover {
-  border-color: var(--primary);
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(99, 102, 241, 0.15);
-}
-
-.plan-card.selected {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
-}
-
-.plan-card.selected::before {
-  content: "✓ Seleccionado";
-  position: absolute;
-  top: 0;
-  right: 0;
-  background: var(--primary);
-  color: white;
-  padding: 0.35rem 0.85rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border-bottom-left-radius: 8px;
-}
-
-.plan-header {
-  margin-bottom: 1rem;
-}
-
-.plan-header h4 {
-  font-size: 1.35rem;
-  color: var(--gray-900);
-  margin-bottom: 0.5rem;
-}
-
-.plan-price {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--primary);
-  margin-bottom: 0.5rem;
-}
-
-.plan-price small {
-  font-size: 0.95rem;
-  color: var(--gray-600);
-  font-weight: 500;
-}
-
-.plan-description {
-  color: var(--gray-600);
-  margin-bottom: 1.25rem;
-  line-height: 1.5;
-  font-size: 0.95rem;
-}
-
-.plan-features {
+.form-field {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
 }
 
-.plan-features .feature {
+.form-field.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Labels y ayudas */
+.form-field label {
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--gray-700);
-  font-size: 0.9rem;
+  gap: 0.25rem;
 }
 
-.plan-features .feature i {
-  color: var(--success);
+.form-field small {
   font-size: 0.85rem;
+  color: var(--gray-500);
+  margin-top: 0.25rem;
+  font-weight: 400;
 }
 
-/* ==================== CATEGORIES SECTION ==================== */
+/* Inputs básicos (heredan paleta global) */
+.form-field input[type="text"],
+.form-field input[type="email"],
+.form-field input[type="tel"],
+.form-field input[type="url"],
+.form-field input[type="number"],
+.form-field input[type="date"],
+.form-field input[type="time"],
+.form-field input[type="password"],
+.form-field select,
+.form-field textarea {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: var(--transition);
+  background: white;
+  font-family: inherit;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.10);
+}
+
+/* Textarea */
+.form-field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Estados de validación */
+.form-field.error input,
+.form-field.error select,
+.form-field.error textarea {
+  border-color: var(--danger);
+  background-color: #fff5f5;
+}
+
+.error-message {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  display: none;
+}
+
+.form-field.error .error-message {
+  display: block;
+}
+
+/* ---------------------------
+   CATEGORIES SECTION (reutilizable)
+   --------------------------- */
 .categories-selector {
   background: var(--gray-50);
   padding: 1.5rem;
@@ -110,7 +109,7 @@
   width: 100%;
   padding: 0.85rem 1rem;
   border: 1px solid var(--gray-300);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.95rem;
   background: white;
   cursor: pointer;
@@ -120,7 +119,7 @@
 .category-select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.10);
 }
 
 .custom-category {
@@ -133,7 +132,7 @@
   flex: 1;
   padding: 0.85rem 1rem;
   border: 1px solid var(--gray-300);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 0.95rem;
   transition: var(--transition);
 }
@@ -141,14 +140,16 @@
 .custom-category input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.10);
 }
 
 .custom-category button {
   white-space: nowrap;
-  padding: 0.85rem 1.5rem;
+  padding: 0.85rem 1.2rem;
+  border-radius: 10px;
 }
 
+/* Selected tags */
 .selected-categories {
   margin-top: 1.5rem;
 }
@@ -188,7 +189,7 @@
 }
 
 .selected-category-tag .remove-btn {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.22);
   border: none;
   color: white;
   width: 20px;
@@ -205,8 +206,8 @@
 }
 
 .selected-category-tag .remove-btn:hover {
-  background: rgba(255, 255, 255, 0.4);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.38);
+  transform: scale(1.08);
 }
 
 .empty-categories {
@@ -219,21 +220,23 @@
   border: 2px dashed var(--gray-300);
 }
 
-/* ==================== PAYMENT METHODS ==================== */
+/* ---------------------------
+   PAYMENT METHODS
+   --------------------------- */
 #paymentMethods {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 1rem;
   margin-top: 1rem;
 }
 
 .payment-tag {
   background: var(--gray-50);
-  border: 2px solid var(--gray-200);
+  border: 1px solid var(--gray-200);
   border-radius: 12px;
   padding: 1rem 1.25rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -241,14 +244,14 @@
 
 .payment-tag:hover {
   border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.05);
-  transform: translateY(-2px);
+  background: rgba(99, 102, 241, 0.06);
+  transform: translateY(-3px);
 }
 
 .payment-tag.selected {
   border-color: var(--primary);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(118, 75, 162, 0.06));
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.14);
 }
 
 .payment-tag input[type="checkbox"] {
@@ -280,101 +283,36 @@
   font-weight: 600;
 }
 
-/* ==================== FORM FIELDS ESPECÍFICOS ==================== */
-.form-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+/* ---------------------------
+   UTILS / SMALL COMPONENTS
+   --------------------------- */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--gray-400);
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
 }
 
-.form-field.full-width {
-  grid-column: 1 / -1;
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--gray-200);
 }
 
-/* ==================== RESPONSIVE ==================== */
-@media (max-width: 768px) {
-  #planSelector {
-    grid-template-columns: 1fr;
-  }
-
-  .custom-category {
-    flex-direction: column;
-  }
-
-  .custom-category button {
-    width: 100%;
-  }
-
-  #paymentMethods {
-    grid-template-columns: 1fr;
-  }
-
-  .form-fields {
-    grid-template-columns: 1fr;
-  }
+.divider:not(:empty)::before {
+  margin-right: 0.75em;
 }
 
-@media (max-width: 480px) {
-  .plan-header h4 {
-    font-size: 1.2rem;
-  }
-
-  .plan-price {
-    font-size: 1.6rem;
-  }
-
-  .categories-selector {
-    padding: 1rem;
-  }
-
-  .selected-category-tag {
-    font-size: 0.85rem;
-    padding: 0.4rem 0.7rem;
-  }
+.divider:not(:empty)::after {
+  margin-left: 0.75em;
 }
 
-/* ============================================================
-   PREMIUM OVERRIDE — UNIFICA TODO AL ESTILO NUEVO
-   ============================================================ */
-
-.categories-selector,
-#paymentMethods .payment-tag,
-.plan-card {
-  border-radius: 14px !important;
-  border: 1px solid var(--gray-200) !important;
-  background: white !important;
-}
-
-.categories-selector {
-  padding: 1.35rem !important;
-}
-
-.category-select,
-.custom-category input {
-  border-radius: 10px !important;
-  border: 1px solid var(--gray-300) !important;
-  padding: 0.85rem 1rem !important;
-  font-size: 0.95rem !important;
-}
-
-.category-select:focus,
-.custom-category input:focus {
-  border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
-}
-
-.payment-tag {
-  padding: 1.25rem 1.5rem !important;
-  border-radius: 12px !important;
-}
-
-.payment-tag.selected {
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
-}
-/* ==========================================================================
-   INDICEIA – THE EPIC PLAN CARDS (FINAL MASTERPIECE VERSION)
-   Inspired by Linear, Vercel, Raycast, Notion, and Apple design systems.
-   ========================================================================== */
+/* =========================
+   EPIC PLAN CARDS (SINGLE CLEAN BLOCK)
+   ========================= */
 
 #planSelector {
   display: grid;
@@ -382,50 +320,53 @@
   padding: 2.8rem 0;
   justify-content: center;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
-/* --------------------------------------------------------------------------
-   EPIC CARD BASE – ultra clean, glass, soft, premium
--------------------------------------------------------------------------- */
+/* EPIC CARD BASE – glassy, soft, premium */
 .plan-card {
   --glass-bg: rgba(255, 255, 255, 0.55);
   --glass-stroke: rgba(255, 255, 255, 0.25);
 
-  backdrop-filter: blur(16px) saturate(170%);
+  backdrop-filter: blur(12px) saturate(140%);
   background: var(--glass-bg);
 
   width: 100%;
   max-width: 340px;
-  padding: 2.5rem 2.3rem;
-  border-radius: 24px;
+  padding: 2.4rem 2rem;
+  border-radius: 20px;
 
   border: 1px solid var(--glass-stroke);
   box-shadow:
-    0 3px 5px rgba(0,0,0,0.08),
-    0 4px 20px rgba(0,0,0,0.08);
+    0 4px 10px rgba(0,0,0,0.06),
+    0 8px 28px rgba(0,0,0,0.06);
 
-  transition: all 0.35s cubic-bezier(0.23,1,0.32,1);
+  transition: all 0.30s cubic-bezier(0.22,1,0.36,1);
   position: relative;
   cursor: pointer;
+  margin: 0 auto;
 }
 
 .plan-card:hover {
-  transform: translateY(-8px) scale(1.015);
+  transform: translateY(-8px) scale(1.01);
   box-shadow:
-    0 12px 28px rgba(0,0,0,0.10),
-    0 20px 60px rgba(99,102,241,0.35);
+    0 14px 32px rgba(0,0,0,0.10),
+    0 22px 60px rgba(99,102,241,0.28);
   border-color: var(--primary);
 }
 
-/* --------------------------------------------------------------------------
-   TITLE – modern typography
--------------------------------------------------------------------------- */
+/* Header/titles */
+.plan-header {
+  margin-bottom: 0.25rem;
+}
+
 .plan-header h4 {
-  font-size: 1.65rem;
-  font-weight: 900;
-  letter-spacing: -0.6px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.4px;
   color: var(--gray-900);
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.15rem;
 }
 
 .plan-header small {
@@ -433,130 +374,100 @@
   color: var(--gray-600);
 }
 
-/* --------------------------------------------------------------------------
-   PRICE – bold, iconic, SaaS style
--------------------------------------------------------------------------- */
+/* Price */
 .plan-price {
-  margin: 1.3rem 0 2rem;
+  margin: 1rem 0 1.25rem;
+  line-height: 1;
 }
 
 .plan-price strong {
-  font-size: 3rem;
+  font-size: 2.4rem;
   font-weight: 900;
   color: var(--primary);
-  letter-spacing: -1.2px;
-}
-
-.plan-price span {
-  font-size: 1.1rem;
-  color: var(--gray-800);
-  margin-left: 4px;
-  font-weight: 500;
+  letter-spacing: -1px;
 }
 
 .plan-price small {
   display: block;
-  margin-top: 0.4rem;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--gray-600);
+  margin-top: 0.25rem;
 }
 
-/* --------------------------------------------------------------------------
-   DESCRIPTION
--------------------------------------------------------------------------- */
+/* Description & features */
 .plan-description {
-  font-size: 1rem;
+  font-size: 0.96rem;
   color: var(--gray-700);
-  line-height: 1.65;
-  margin-bottom: 2rem;
+  line-height: 1.55;
+  margin-bottom: 1.6rem;
 }
 
-/* --------------------------------------------------------------------------
-   FEATURES LIST – linear style
--------------------------------------------------------------------------- */
 .plan-features {
   display: flex;
   flex-direction: column;
-  gap: 0.95rem;
-  margin-bottom: 2.2rem;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
 }
 
 .plan-features .feature {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1rem;
+  gap: 0.65rem;
+  font-size: 0.95rem;
   color: var(--gray-900);
 }
 
 .plan-features .feature i {
   color: var(--primary);
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
-/* --------------------------------------------------------------------------
-   BUTTON – inline CTA
--------------------------------------------------------------------------- */
+/* CTA */
 .plan-cta {
   display: inline-block;
   padding: 0.8rem 1.6rem;
-  border-radius: 14px;
+  border-radius: 12px;
   font-weight: 700;
   font-size: 0.95rem;
   background: var(--primary);
   color: #fff;
   text-align: center;
-  transition: all 0.2s ease;
+  transition: transform 0.18s ease, filter 0.18s ease;
 }
 
-.plan-cta:hover {
-  filter: brightness(1.1);
-}
+.plan-cta:hover { transform: translateY(-2px); filter: brightness(1.06); }
 
-/* --------------------------------------------------------------------------
-   SELECTED – glowing aura
--------------------------------------------------------------------------- */
+/* Selected */
 .plan-card.selected {
-  background: linear-gradient(
-    145deg,
-    rgba(99,102,241,0.20),
-    rgba(118,75,162,0.30)
-  );
-  border: 1px solid rgba(255,255,255,0.35);
+  background: linear-gradient(145deg, rgba(99,102,241,0.18), rgba(118,75,162,0.26));
+  border-color: rgba(255,255,255,0.30);
   box-shadow:
-    0 18px 50px rgba(99,102,241,0.50),
-    0 22px 65px rgba(118,75,162,0.45);
+    0 18px 48px rgba(99,102,241,0.36),
+    0 22px 62px rgba(118,75,162,0.30);
   transform: translateY(-10px) scale(1.03);
 }
 
 .plan-card.selected::after {
   content: "Seleccionado";
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 12px;
+  right: 12px;
   background: var(--primary);
   color: white;
-  padding: 0.45rem 0.85rem;
+  padding: 0.38rem 0.75rem;
   border-radius: 8px;
   font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.35px;
+  z-index: 10;
 }
 
-/* --------------------------------------------------------------------------
-   RECOMMENDED – golden aura + gradient ribbon
--------------------------------------------------------------------------- */
+/* Recommended badge */
 .plan-card.recommended {
-  background: linear-gradient(
-    140deg,
-    rgba(250,204,21,0.18),
-    rgba(255,255,255,0.40),
-    rgba(99,102,241,0.18)
-  );
-  border: 1px solid rgba(250,204,21,0.55);
+  background: linear-gradient(140deg, rgba(250,204,21,0.16), rgba(255,255,255,0.36), rgba(99,102,241,0.14));
+  border-color: rgba(250,204,21,0.5);
   box-shadow:
-    0 22px 60px rgba(250,204,21,0.35),
-    0 30px 80px rgba(99,102,241,0.30);
+    0 20px 58px rgba(250,204,21,0.28),
+    0 28px 80px rgba(99,102,241,0.24);
   transform: translateY(-14px) scale(1.05);
 }
 
@@ -566,49 +477,36 @@
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 0.55rem 1.2rem;
-  font-size: 0.78rem;
-  font-weight: 900;
-  border-radius: 12px;
-  letter-spacing: 0.4px;
   background: rgb(250,204,21);
   color: #1e1e1e;
-  box-shadow: 0 4px 18px rgba(250,204,21,0.45);
+  padding: 0.5rem 1.2rem;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  z-index: 20;
+  box-shadow: 0 6px 20px rgba(250,204,21,0.28);
 }
 
-/* --------------------------------------------------------------------------
-   RESPONSIVE PERFECTO
--------------------------------------------------------------------------- */
+/* Responsive grid tuning */
 @media (min-width: 1400px) {
-  #planSelector {
-    grid-template-columns: repeat(4, 1fr);
-  }
+  #planSelector { grid-template-columns: repeat(4, 1fr); }
 }
 
 @media (min-width: 1100px) and (max-width: 1399px) {
-  #planSelector {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  #planSelector { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (min-width: 780px) and (max-width: 1099px) {
-  #planSelector {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  #planSelector { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 480px) {
-  .plan-card {
-    padding: 2rem;
-    border-radius: 20px;
-  }
-
-  .plan-header h4 {
-    font-size: 1.45rem;
-  }
-
-  .plan-price strong {
-    font-size: 2.5rem;
-  }
+  .plan-card { padding: 1.8rem; border-radius: 16px; }
+  .plan-header h4 { font-size: 1.35rem; }
+  .plan-price strong { font-size: 2rem; }
+  #planSelector { gap: 1.5rem; padding: 1.5rem 0; }
 }
 
+/* =========================
+   End MI COMERCIO - FINAL
+   ========================= */
