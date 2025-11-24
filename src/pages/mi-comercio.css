@@ -326,27 +326,23 @@
 
 /* EPIC CARD BASE – glassy, soft, premium */
 .plan-card {
-  --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-stroke: rgba(255, 255, 255, 0.25);
-
-  backdrop-filter: blur(12px) saturate(140%);
-  background: var(--glass-bg);
-
   width: 100%;
-  max-width: 340px;
-  padding: 2.4rem 2rem;
-  border-radius: 20px;
+  max-width: 300px; /* tamaño ideal premium */
+  padding: 2.3rem;
+  border-radius: 24px;
 
-  border: 1px solid var(--glass-stroke);
+  backdrop-filter: blur(16px) saturate(170%);
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.25);
+
   box-shadow:
-    0 4px 10px rgba(0,0,0,0.06),
-    0 8px 28px rgba(0,0,0,0.06);
+      0 3px 5px rgba(0,0,0,0.08),
+      0 4px 20px rgba(0,0,0,0.08);
 
-  transition: all 0.30s cubic-bezier(0.22,1,0.36,1);
-  position: relative;
+  transition: all 0.35s cubic-bezier(0.23,1,0.32,1);
   cursor: pointer;
-  margin: 0 auto;
 }
+
 
 .plan-card:hover {
   transform: translateY(-8px) scale(1.01);
