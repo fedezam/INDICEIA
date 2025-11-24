@@ -45,13 +45,8 @@ export function renderLayout() {
     <div id="progressContainer"></div>
   `;
 
-  // Insertar al inicio del body
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = layoutHTML;
-  
-  while (tempDiv.firstChild) {
-    body.insertBefore(tempDiv.firstChild, body.firstChild);
-  }
+  // ✅ CORREGIDO: Usar insertAdjacentHTML para mantener el orden correcto
+  body.insertAdjacentHTML('afterbegin', layoutHTML);
   
   console.log('✅ Layout renderizado');
   
@@ -109,7 +104,7 @@ export function updateHeaderInfo(nombreComercio, planData) {
 
 /**
  * Actualiza el banner de suscripción con mensaje y estado
- * @param {string} mensaje - Mensaje a mostrar en el banner
+ * @param {string} mensaje - Mensaje a mostrar en el banner (puede incluir HTML)
  * @param {string} estado - Estado: 'trial', 'active', 'warning', 'expired'
  */
 export function updateSubscriptionBanner(mensaje, estado = 'trial') {
@@ -122,8 +117,8 @@ export function updateSubscriptionBanner(mensaje, estado = 'trial') {
   banner.className = 'subscription-banner';
   banner.classList.add(estado);
   
-  // Actualizar mensaje
-  msg.textContent = mensaje;
+  // ✅ CORREGIDO: Usar innerHTML para que renderice las etiquetas HTML
+  msg.innerHTML = mensaje;
   
   // Cambiar icono según estado
   const icon = banner.querySelector('i');
