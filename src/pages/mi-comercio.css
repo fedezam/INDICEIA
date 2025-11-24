@@ -1,368 +1,75 @@
-/* ==================== MI COMERCIO - ESTILOS ESPECÍFICOS (FINAL) ==================== */
+/* ==========================================================================
+   MI COMERCIO — ESTILOS ESPECÍFICOS (VERSIÓN FINAL Y ESTABLE)
+   Diseño premium consistente con todos los estilos globales
+   ========================================================================== */
 
-/* ---------------------------
-   FORM FIELDS / GENERALES
-   (formularios reutilizables para todas las páginas)
-   --------------------------- */
-.form-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
+/* ----------------------------------------------------------
+   CONTENEDOR PRINCIPAL
+---------------------------------------------------------- */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-bottom: 4rem;
 }
 
-.form-field {
-  display: flex;
-  flex-direction: column;
+/* ----------------------------------------------------------
+   TITULOS DE SECCIÓN
+---------------------------------------------------------- */
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin: 2.5rem 0 1.2rem;
 }
 
-.form-field.full-width {
-  grid-column: 1 / -1;
-}
-
-/* Labels y ayudas */
-.form-field label {
-  font-weight: 600;
-  color: var(--gray-700);
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.form-field small {
-  font-size: 0.85rem;
-  color: var(--gray-500);
-  margin-top: 0.25rem;
-  font-weight: 400;
-}
-
-/* Inputs básicos (heredan paleta global) */
-.form-field input[type="text"],
-.form-field input[type="email"],
-.form-field input[type="tel"],
-.form-field input[type="url"],
-.form-field input[type="number"],
-.form-field input[type="date"],
-.form-field input[type="time"],
-.form-field input[type="password"],
-.form-field select,
-.form-field textarea {
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--gray-300);
-  border-radius: 10px;
-  font-size: 1rem;
-  transition: var(--transition);
-  background: white;
-  font-family: inherit;
-}
-
-.form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.10);
-}
-
-/* Textarea */
-.form-field textarea {
-  min-height: 120px;
-  resize: vertical;
-}
-
-/* Estados de validación */
-.form-field.error input,
-.form-field.error select,
-.form-field.error textarea {
-  border-color: var(--danger);
-  background-color: #fff5f5;
-}
-
-.error-message {
-  color: var(--danger);
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
-  display: none;
-}
-
-.form-field.error .error-message {
-  display: block;
-}
-
-/* ---------------------------
-   CATEGORIES SECTION (reutilizable)
-   --------------------------- */
-.categories-selector {
-  background: var(--gray-50);
-  padding: 1.5rem;
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--gray-200);
-}
-
-.category-dropdown {
-  margin-bottom: 1rem;
-}
-
-.category-select {
-  width: 100%;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--gray-300);
-  border-radius: 10px;
-  font-size: 0.95rem;
-  background: white;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.category-select:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.10);
-}
-
-.custom-category {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.custom-category input {
-  flex: 1;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--gray-300);
-  border-radius: 10px;
-  font-size: 0.95rem;
-  transition: var(--transition);
-}
-
-.custom-category input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.10);
-}
-
-.custom-category button {
-  white-space: nowrap;
-  padding: 0.85rem 1.2rem;
-  border-radius: 10px;
-}
-
-/* Selected tags */
-.selected-categories {
-  margin-top: 1.5rem;
-}
-
-.selected-categories h4 {
-  font-size: 1.05rem;
-  color: var(--gray-800);
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.selected-categories-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  min-height: 50px;
-}
-
-.selected-category-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--primary);
-  color: white;
-  padding: 0.5rem 0.85rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: var(--transition);
-}
-
-.selected-category-tag:hover {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-}
-
-.selected-category-tag .remove-btn {
-  background: rgba(255, 255, 255, 0.22);
-  border: none;
-  color: white;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition);
-}
-
-.selected-category-tag .remove-btn:hover {
-  background: rgba(255, 255, 255, 0.38);
-  transform: scale(1.08);
-}
-
-.empty-categories {
-  color: var(--gray-500);
-  font-style: italic;
-  padding: 1rem;
-  text-align: center;
-  background: white;
-  border-radius: 8px;
-  border: 2px dashed var(--gray-300);
-}
-
-/* ---------------------------
-   PAYMENT METHODS
-   --------------------------- */
-#paymentMethods {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.payment-tag {
-  background: var(--gray-50);
-  border: 1px solid var(--gray-200);
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.payment-tag:hover {
-  border-color: var(--primary);
-  background: rgba(99, 102, 241, 0.06);
-  transform: translateY(-3px);
-}
-
-.payment-tag.selected {
-  border-color: var(--primary);
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(118, 75, 162, 0.06));
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.14);
-}
-
-.payment-tag input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  accent-color: var(--primary);
-}
-
-.payment-tag label {
-  flex: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.95rem;
-  color: var(--gray-800);
-  font-weight: 500;
-  margin: 0;
-}
-
-.payment-tag label i {
-  font-size: 1.2rem;
-  color: var(--primary);
-}
-
-.payment-tag.selected label {
-  color: var(--primary);
-  font-weight: 600;
-}
-
-/* ---------------------------
-   UTILS / SMALL COMPONENTS
-   --------------------------- */
-.divider {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  color: var(--gray-400);
-  margin: 1.5rem 0;
-  font-size: 0.9rem;
-}
-
-.divider::before,
-.divider::after {
-  content: "";
-  flex: 1;
-  border-bottom: 1px solid var(--gray-200);
-}
-
-.divider:not(:empty)::before {
-  margin-right: 0.75em;
-}
-
-.divider:not(:empty)::after {
-  margin-left: 0.75em;
-}
-
-/* =========================
-   EPIC PLAN CARDS (SINGLE CLEAN BLOCK)
-   ========================= */
-
+/* ==========================================================================
+   PLANES — GRID RESPONSIVE PERFECTO
+   ========================================================================== */
 #planSelector {
   display: grid;
-  gap: 2.5rem;
-  padding: 2.8rem 0;
-  justify-content: center;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  max-width: 1400px;
-  margin: 0 auto;
+  gap: 2rem;
+  padding: 2.6rem 0;
+  justify-items: center;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 }
 
-/* EPIC CARD BASE – glassy, soft, premium */
+/* ----------------------------------------------------------
+   TARJETA DE PLAN
+---------------------------------------------------------- */
 .plan-card {
   width: 100%;
-  max-width: 300px; /* tamaño ideal premium */
+  max-width: 330px;
+
   padding: 2.3rem;
-  border-radius: 24px;
+  border-radius: 22px;
 
-  backdrop-filter: blur(16px) saturate(170%);
-  background: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.6);
   border: 1px solid rgba(255,255,255,0.25);
+  backdrop-filter: blur(14px) saturate(160%);
 
   box-shadow:
-      0 3px 5px rgba(0,0,0,0.08),
-      0 4px 20px rgba(0,0,0,0.08);
+    0 3px 6px rgba(0,0,0,0.08),
+    0 10px 22px rgba(0,0,0,0.08);
 
-  transition: all 0.35s cubic-bezier(0.23,1,0.32,1);
   cursor: pointer;
+  transition: all .35s cubic-bezier(.23,1,.32,1);
 }
 
-
+/* Hover */
 .plan-card:hover {
-  transform: translateY(-8px) scale(1.01);
-  box-shadow:
-    0 14px 32px rgba(0,0,0,0.10),
-    0 22px 60px rgba(99,102,241,0.28);
+  transform: translateY(-8px) scale(1.015);
   border-color: var(--primary);
+  box-shadow:
+    0 15px 30px rgba(0,0,0,0.12),
+    0 25px 60px rgba(99,102,241,0.35);
 }
 
-/* Header/titles */
-.plan-header {
-  margin-bottom: 0.25rem;
-}
-
+/* Header */
 .plan-header h4 {
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: -0.4px;
+  font-size: 1.6rem;
+  font-weight: 900;
   color: var(--gray-900);
-  margin-bottom: 0.15rem;
+  margin-bottom: .35rem;
 }
 
 .plan-header small {
@@ -370,101 +77,108 @@
   color: var(--gray-600);
 }
 
-/* Price */
+/* Precio */
 .plan-price {
-  margin: 1rem 0 1.25rem;
-  line-height: 1;
+  margin: 1.3rem 0 2rem;
 }
 
 .plan-price strong {
-  font-size: 2.4rem;
+  font-size: 3rem;
   font-weight: 900;
   color: var(--primary);
-  letter-spacing: -1px;
 }
 
-.plan-price small {
-  display: block;
-  font-size: 0.9rem;
-  color: var(--gray-600);
-  margin-top: 0.25rem;
+.plan-price span {
+  margin-left: 6px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--gray-800);
 }
 
-/* Description & features */
+/* Descripción */
 .plan-description {
-  font-size: 0.96rem;
+  font-size: 1rem;
+  line-height: 1.65;
   color: var(--gray-700);
-  line-height: 1.55;
-  margin-bottom: 1.6rem;
+  margin-bottom: 2rem;
 }
 
+/* Lista */
 .plan-features {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
-  margin-bottom: 1.5rem;
+  gap: .85rem;
+  margin-bottom: 2rem;
 }
 
 .plan-features .feature {
   display: flex;
+  gap: .7rem;
   align-items: center;
-  gap: 0.65rem;
-  font-size: 0.95rem;
+  font-size: .95rem;
   color: var(--gray-900);
 }
 
 .plan-features .feature i {
+  font-size: 1.1rem;
   color: var(--primary);
-  font-size: 1rem;
 }
 
 /* CTA */
 .plan-cta {
   display: inline-block;
-  padding: 0.8rem 1.6rem;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 0.95rem;
+  padding: .85rem 1.6rem;
+  border-radius: 14px;
   background: var(--primary);
   color: #fff;
+  font-weight: 700;
+  font-size: .95rem;
   text-align: center;
-  transition: transform 0.18s ease, filter 0.18s ease;
+  transition: all .2s ease;
 }
 
-.plan-cta:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.plan-cta:hover {
+  filter: brightness(1.1);
+}
 
-/* Selected */
+/* Seleccionado */
 .plan-card.selected {
-  background: linear-gradient(145deg, rgba(99,102,241,0.18), rgba(118,75,162,0.26));
-  border-color: rgba(255,255,255,0.30);
-  box-shadow:
-    0 18px 48px rgba(99,102,241,0.36),
-    0 22px 62px rgba(118,75,162,0.30);
+  background: linear-gradient(
+    145deg,
+    rgba(99,102,241,0.25),
+    rgba(118,75,162,0.27)
+  );
   transform: translateY(-10px) scale(1.03);
+  border-color: rgba(255,255,255,0.35);
+
+  box-shadow:
+    0 20px 50px rgba(99,102,241,.45),
+    0 30px 70px rgba(118,75,162,.35);
 }
 
 .plan-card.selected::after {
   content: "Seleccionado";
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  right: 16px;
   background: var(--primary);
-  color: white;
-  padding: 0.38rem 0.75rem;
+  color: #fff;
+  padding: 0.45rem .85rem;
   border-radius: 8px;
-  font-size: 0.72rem;
+  font-size: .72rem;
   font-weight: 800;
-  z-index: 10;
 }
 
-/* Recommended badge */
+/* Recomendado */
 .plan-card.recommended {
-  background: linear-gradient(140deg, rgba(250,204,21,0.16), rgba(255,255,255,0.36), rgba(99,102,241,0.14));
-  border-color: rgba(250,204,21,0.5);
-  box-shadow:
-    0 20px 58px rgba(250,204,21,0.28),
-    0 28px 80px rgba(99,102,241,0.24);
-  transform: translateY(-14px) scale(1.05);
+  border: 1px solid rgba(250,204,21,.55);
+  background: linear-gradient(
+    140deg,
+    rgba(250,204,21,0.18),
+    rgba(255,255,255,0.40),
+    rgba(99,102,241,0.15)
+  );
+  transform: translateY(-15px) scale(1.05);
 }
 
 .plan-card.recommended::before {
@@ -473,36 +187,101 @@
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
+  padding: 0.55rem 1.3rem;
   background: rgb(250,204,21);
+  border-radius: 12px;
   color: #1e1e1e;
-  padding: 0.5rem 1.2rem;
-  border-radius: 10px;
-  font-size: 0.78rem;
+  font-size: .78rem;
   font-weight: 900;
-  z-index: 20;
-  box-shadow: 0 6px 20px rgba(250,204,21,0.28);
+  box-shadow: 0 4px 18px rgba(250,204,21,.45);
 }
 
-/* Responsive grid tuning */
-@media (min-width: 1400px) {
-  #planSelector { grid-template-columns: repeat(4, 1fr); }
+/* ==========================================================================
+   CATEGORÍAS
+   ========================================================================== */
+#categoriesGrid,
+.selected-tags {
+  margin-top: 1rem;
 }
 
-@media (min-width: 1100px) and (max-width: 1399px) {
-  #planSelector { grid-template-columns: repeat(3, 1fr); }
+/* Tag */
+.selected-tag {
+  padding: .5rem .85rem;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 18px;
+  display: inline-flex;
+  gap: .5rem;
+  margin: .3rem;
+  align-items: center;
 }
 
-@media (min-width: 780px) and (max-width: 1099px) {
-  #planSelector { grid-template-columns: repeat(2, 1fr); }
+.selected-tag button {
+  background: rgba(255,255,255,0.25);
+  border: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
 }
 
+/* ==========================================================================
+   MÉTODOS DE PAGO
+   ========================================================================== */
+#paymentMethods {
+  display: grid;
+  gap: 1.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  margin-top: 1rem;
+}
+
+.payment-tag {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: 1rem 1.3rem;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: .25s ease;
+}
+
+.payment-tag:hover {
+  border-color: var(--primary);
+  background: rgba(99,102,241,0.07);
+}
+
+.payment-tag.selected {
+  border-color: var(--primary);
+  background: rgba(99,102,241,0.10);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+}
+
+.payment-tag label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  color: var(--gray-800);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   RESPONSIVE GLOBAL
+   ========================================================================== */
 @media (max-width: 480px) {
-  .plan-card { padding: 1.8rem; border-radius: 16px; }
-  .plan-header h4 { font-size: 1.35rem; }
-  .plan-price strong { font-size: 2rem; }
-  #planSelector { gap: 1.5rem; padding: 1.5rem 0; }
-}
+  .plan-card {
+    padding: 2rem;
+    border-radius: 18px;
+  }
 
-/* =========================
-   End MI COMERCIO - FINAL
-   ========================= */
+  .plan-header h4 {
+    font-size: 1.35rem;
+  }
+
+  .plan-price strong {
+    font-size: 2.4rem;
+  }
+}
