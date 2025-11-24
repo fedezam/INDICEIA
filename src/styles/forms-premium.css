@@ -1,123 +1,50 @@
 /* ============================================================
-   FORMS PREMIUM – Estilo moderno global para todo ÍndiceIA
+   FORMS PREMIUM — ESTILO UNIVERSAL 2025
    ============================================================ */
 
-/* ---------- SECCIONES (Información Básica, Contacto, etc.) ---------- */
+/* -------------------- FORM SECTIONS -------------------- */
 .form-section {
-  background: var(--gray-50);
-  border: 1px solid var(--gray-200);
-  border-radius: 16px;
-  padding: 2rem 2rem;
-  margin: 2rem 0;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.04);
-}
-
-.form-section .section-title {
-  margin-bottom: 1.5rem;
-  font-size: 1.35rem;
-  font-weight: 600;
-  color: var(--gray-900);
-}
-
-/* ---------- CONTENEDORES DE CAMPOS ---------- */
-.form-group,
-.form-field {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1.25rem;
-}
-
-.form-group:last-child,
-.form-field:last-child {
-  margin-bottom: 0;
-}
-
-/* ---------- LABELS ---------- */
-.form-group label,
-.form-field label {
-  font-size: 0.9rem;
-  color: var(--gray-700);
-  margin-bottom: 0.45rem;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-
-/* ---------- INPUTS GENERALES ---------- */
-.form-group input,
-.form-field input,
-.form-group select,
-.form-field select,
-.form-group textarea,
-.form-field textarea {
-  width: 100%;
-  padding: 0.9rem 1.1rem;
-  border: 1px solid var(--gray-300);
-  border-radius: 10px;
   background: white;
-  font-size: 0.95rem;
+  padding: 2rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  border: 1px solid var(--gray-200);
+  margin-bottom: 2.5rem;
+  transition: 0.25s ease;
+}
+
+.form-section:hover {
+  box-shadow: 0 8px 20px rgba(99,102,241,0.12);
+}
+
+.form-section h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
   color: var(--gray-900);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
-/* ---------- FOCUS ---------- */
-.form-group input:focus,
-.form-field input:focus,
-.form-group select:focus,
-.form-field select:focus,
-.form-group textarea:focus,
-.form-field textarea:focus {
-  border-color: var(--primary);
-  outline: none;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+.form-section h3 i {
+  color: var(--primary);
 }
 
-/* ---------- SELECTS ---------- */
-.form-group select,
-.form-field select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23999' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  background-size: 16px;
+.section-description {
+  background: #eef2ff;
+  border-left: 4px solid var(--primary);
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  color: #374151;
+  line-height: 1.55;
 }
 
-/* ---------- TEXTAREA ---------- */
-.form-group textarea,
-.form-field textarea {
-  resize: vertical;
-  min-height: 110px;
-}
-
-/* ---------- ESTADO DE ERROR / REQUERIDO ---------- */
-.form-group input:invalid,
-.form-field input:invalid,
-.form-group textarea:invalid,
-.form-field textarea:invalid,
-.form-group select:invalid,
-.form-field select:invalid {
-  border-color: var(--danger);
-}
-
-.form-group input:invalid:focus,
-.form-field input:invalid:focus {
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
-}
-
-/* ---------- CALIDAD VISUAL EXTRAS ---------- */
-.form-group input:hover,
-.form-field input:hover,
-.form-group select:hover,
-.form-field select:hover,
-.form-group textarea:hover,
-.form-field textarea:hover {
-  border-color: var(--gray-400);
-}
-
-/* ---------- GRID EN FORMS QUE USEN VARIOS CAMPOS ---------- */
+/* -------------------- GRID UNIVERSAL -------------------- */
 .form-fields {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.5rem;
 }
 
@@ -125,8 +52,162 @@
   grid-column: 1 / -1;
 }
 
-/* ---------- RESPONSIVE ---------- */
-@media (max-width: 768px) {
+/* -------------------- LABELS -------------------- */
+.form-field label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* -------------------- INPUTS PREMIUM -------------------- */
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--gray-300);
+  background: var(--gray-50);
+  transition: 0.25s ease;
+  font-family: inherit;
+}
+
+.form-field input:hover,
+.form-field select:hover,
+.form-field textarea:hover {
+  border-color: var(--gray-400);
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.13);
+  outline: none;
+}
+
+/* -------------------- TEXTAREA -------------------- */
+.form-field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* -------------------- DISABLED / READONLY -------------------- */
+.form-field input:disabled,
+.form-field select:disabled,
+.form-field textarea:disabled {
+  background: var(--gray-100);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.form-field input[readonly] {
+  background: var(--gray-100);
+}
+
+/* -------------------- ERROR STATES -------------------- */
+.form-field.error input,
+.form-field.error select,
+.form-field.error textarea {
+  border-color: var(--danger);
+  background: #fef2f2;
+  box-shadow: 0 0 0 3px rgba(220,38,38,0.15);
+}
+
+.error-message {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 0.35rem;
+  display: none;
+}
+
+.form-field.error .error-message {
+  display: block;
+}
+
+/* -------------------- CHECKBOXES PREMIUM -------------------- */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.checkbox-item:hover {
+  background: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 10px rgba(99,102,241,0.15);
+}
+
+.checkbox-item input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary);
+}
+
+/* -------------------- INPUT WRAPPER (buscadores / addons) -------------------- */
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper input {
+  padding-left: 2.75rem;
+}
+
+.input-wrapper i {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-400);
+  font-size: 1.1rem;
+}
+
+/* -------------------- DIVIDER -------------------- */
+.divider {
+  text-align: center;
+  color: var(--gray-400);
+  margin: 2rem 0;
+  position: relative;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: var(--gray-300);
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+/* -------------------- RESPONSIVE -------------------- */
+@media (max-width: 600px) {
   .form-section {
     padding: 1.5rem;
   }
