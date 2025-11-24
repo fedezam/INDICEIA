@@ -28,8 +28,7 @@ const METODOS_PAGO = [
   { value: "billetera", label: "Billetera virtual (Mercado Pago, MODO, Ualá, etc.)", icon: "fa-mobile-alt" },
   { value: "tarjeta_credito", label: "Tarjeta de crédito", icon: "fa-credit-card" },
   { value: "tarjeta_debito", label: "Tarjeta de débito", icon: "fa-credit-card" },
-  { value: "transferencia", label: "Transferencia bancaria", icon: "fa-university" },
-  { value: "cripto", label: "Criptomonedas", icon: "fa-bitcoin" }
+  { value: "transferencia", label: "Transferencia bancaria", icon: "fa-university" }
 ];
 
 // ==================== VARIABLES GLOBALES ====================
