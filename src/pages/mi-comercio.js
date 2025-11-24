@@ -515,3 +515,20 @@ window.validateCurrentPageData = async () => {
   }
   return true;
 };
+/* PLANES FULL WIDTH – RESPONSIVE PERFECTO */
+#planSelector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2.5rem;
+  padding: 3rem 2rem 1rem;
+  max-width: 1800px;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  #planSelector {
+    grid-template-columns: 1fr;
+    padding: 3rem 1rem 1rem;
+  }
+}
