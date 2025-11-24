@@ -1,195 +1,117 @@
-/* ===============================
-   VARIABLES — MODO ESCALABLE PRO
-   =============================== */
+/* ==========================================================
+   MÉTODOS DE PAGO — UI PREMIUM 2025 (Glass + iOS 17 Style)
+   ========================================================== */
 
 :root {
-  /* Core brand */
-  --primary: #6366f1;
-  --primary-light: rgba(99,102,241,0.35);
+  --pay-bg: rgba(255, 255, 255, 0.55);
+  --pay-bg-hover: rgba(255, 255, 255, 0.75);
+  --pay-bg-selected: rgba(99, 102, 241, 0.25);
+  --pay-blur: 14px;
+  --pay-border: rgba(255, 255, 255, 0.45);
+  --pay-border-selected: var(--primary);
+  --pay-radius: 18px;
 
-  /* Card glass */
-  --card-bg: rgba(255,255,255,0.56);
-  --card-blur: 22px;
-  --card-saturate: 170%;
-  --card-border: rgba(255,255,255,0.45);
+  --pay-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  --pay-shadow-hover: 0 14px 35px rgba(0,0,0,0.10);
+  --pay-shadow-selected: 0 16px 48px rgba(99,102,241,0.35);
 
-  /* Hover + selected */
-  --hover-transform: translateY(-14px) scale(1.04);
-  --selected-transform: translateY(-16px) scale(1.07);
-
-  --hover-shadow: 
-    0 28px 70px rgba(99,102,241,0.35),
-    0 42px 110px rgba(0,0,0,0.15);
-
-  --selected-shadow:
-    0 34px 80px rgba(99,102,241,0.50),
-    0 40px 90px rgba(0,0,0,0.14);
-
-  --base-shadow:
-    0 12px 40px rgba(0,0,0,0.10),
-    0 26px 70px rgba(99,102,241,0.12);
-
-  /* Badges estilo iOS 17 */
-  --badge-bg: rgba(255,255,255,0.55);
-  --badge-blur: 14px;
-  --badge-text-color: #1f2937;
-
-  --selected-badge-bg: var(--primary);
-  --selected-badge-text: #fff;
-
-  --recommended-bg: #fbbf24;
-  --recommended-text: #1f2937;
-
-  --badge-radius: 16px;
-  --badge-font-size: 0.72rem;
-  --badge-padding: 0.55rem 1.25rem;
-
-  /* Animación glow */
-  --pulse-glow-1: rgba(99,102,241,0.45);
-  --pulse-glow-2: rgba(99,102,241,0.25);
-
-  --transition-fast: .25s ease;
-  --transition-smooth: .35s cubic-bezier(.21,1,.33,1);
+  --pay-transition: 0.28s cubic-bezier(.21,1,.33,1);
 }
 
-
-/* ===============================
-   CONTENEDOR DEL GRID
-   =============================== */
-
-#planSelector {
+/* Contenedor grilla */
+#paymentMethods {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2.8rem;
-  padding: 5rem 2rem 4rem;
-  max-width: 1700px;
-  margin: 0 auto;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.3rem;
+  margin-top: 1rem;
 }
 
-@media (max-width: 1200px) {
-  #planSelector {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+/* Tarjeta base */
+.payment-tag {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: 1.1rem 1.4rem;
 
-@media (max-width: 640px) {
-  #planSelector {
-    grid-template-columns: 1fr;
-    padding: 4rem 1rem 3rem;
-    gap: 2.2rem;
-  }
-}
-
-
-/* ===============================
-   CARD BASE
-   =============================== */
-
-#planSelector .plan-card {
-  max-width: 380px;
-  margin: 0 auto;
-  border-radius: 28px;
-  padding: 2.8rem 2.4rem;
-
-  background: var(--card-bg);
-  backdrop-filter: blur(var(--card-blur)) saturate(var(--card-saturate));
-
-  border: 1.5px solid var(--card-border);
-
-  box-shadow: var(--base-shadow);
-
-  transition:
-    transform var(--transition-smooth),
-    box-shadow var(--transition-smooth),
-    border-color var(--transition-fast);
+  background: var(--pay-bg);
+  backdrop-filter: blur(var(--pay-blur)) saturate(180%);
+  border: 1.5px solid var(--pay-border);
+  border-radius: var(--pay-radius);
 
   cursor: pointer;
-  position: relative;
-  overflow: hidden;
+  box-shadow: var(--pay-shadow);
+  transition:
+    background var(--pay-transition),
+    transform var(--pay-transition),
+    border-color var(--pay-transition),
+    box-shadow var(--pay-transition);
 }
 
-#planSelector .plan-card:hover {
-  transform: var(--hover-transform);
-  box-shadow: var(--hover-shadow);
-  border-color: var(--primary);
+.payment-tag input {
+  display: none;
 }
 
+/* Icono */
+.payment-tag i {
+  font-size: 1.3rem;
+  opacity: .75;
+  transition: opacity .25s, transform .25s;
+}
 
-/* ===============================
-   ANIMACIÓN SELECCIONADO (PULSE)
-   =============================== */
+/* Hover */
+.payment-tag:hover {
+  background: var(--pay-bg-hover);
+  transform: translateY(-4px);
+  box-shadow: var(--pay-shadow-hover);
+}
 
-@keyframes card-glow-pulse {
+.payment-tag:hover i {
+  opacity: 1;
+  transform: scale(1.08);
+}
+
+/* ESTADO SELECCIONADO */
+.payment-tag.selected {
+  background: var(--pay-bg-selected);
+  border-color: var(--pay-border-selected);
+  box-shadow: var(--pay-shadow-selected);
+  transform: translateY(-6px) scale(1.03);
+}
+
+/* Glow ring animado */
+.payment-tag.selected::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid rgba(99,102,241,0.45);
+  opacity: .8;
+  animation: payPulse 2.8s ease-in-out infinite;
+}
+
+/* Texto */
+.payment-tag label {
+  flex: 1;
+  cursor: pointer;
+  font-size: .95rem;
+  font-weight: 600;
+  color: #1f2937;
+  user-select: none;
+}
+
+/* Animación pulso */
+@keyframes payPulse {
   0% {
-    box-shadow: 0 0 0 0 var(--pulse-glow-1);
+    opacity: .8;
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 32px 14px var(--pulse-glow-2);
+    opacity: .25;
+    transform: scale(1.05);
   }
   100% {
-    box-shadow: 0 0 0 0 var(--pulse-glow-1);
+    opacity: .8;
+    transform: scale(1);
   }
-}
-
-
-/* ===============================
-   ESTADO SELECCIONADO
-   =============================== */
-
-#planSelector .plan-card.selected {
-  background: linear-gradient(
-    145deg,
-    rgba(99,102,241,0.32),
-    rgba(118,75,162,0.40)
-  );
-  border: 2.5px solid var(--primary);
-
-  transform: var(--selected-transform);
-  box-shadow: var(--selected-shadow);
-
-  animation: card-glow-pulse 2.6s ease-in-out infinite;
-}
-
-
-/* BADGE del seleccionado — estilo iOS 17 */
-#planSelector .plan-card.selected::after {
-  content: "Seleccionado";
-  position: absolute;
-  top: 20px;
-  right: 20px;
-
-  background: var(--selected-badge-bg);
-  color: var(--selected-badge-text);
-
-  padding: var(--badge-padding);
-  font-size: var(--badge-font-size);
-  font-weight: 700;
-  letter-spacing: 0.4px;
-
-  border-radius: var(--badge-radius);
-  backdrop-filter: blur(var(--badge-blur));
-}
-
-
-/* ===============================
-   BADGE RECOMENDADO — ESTILO iOS17
-   =============================== */
-
-#planSelector .plan-card.recommended::before {
-  content: "Recomendado";
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  transform: translateX(-50%);
-
-  background: var(--recommended-bg);
-  color: var(--recommended-text);
-
-  padding: 0.7rem 2rem;
-  font-weight: 800;
-  font-size: 0.75rem;
-  border-radius: 20px;
-
-  box-shadow: 0 8px 22px rgba(0,0,0,0.15);
-  backdrop-filter: blur(var(--badge-blur));
 }
