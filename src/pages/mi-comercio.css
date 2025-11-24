@@ -1,18 +1,11 @@
-/* mi-comercio.css – LA ÚNICA VERSIÓN QUE FUNCIONA 100% CON TU PROYECTO TAL CUAL ESTÁ */
-
 #planSelector {
-  all: unset !important;
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)) !important;
-  gap: 2.8rem !important;
-  padding: 4rem calc((100vw - 1200px) / -2) 2rem !important; /* ← MAGIA PURA */
-  width: 100vw !important;
-  max-width: 100vw !important;
-  margin-left: calc((1200px - 100vw) / 2) !important;
-  justify-content: center !important;
-  position: relative !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 2.8rem;
+  padding: 4rem 2rem 3rem;
+  max-width: 1800px;
+  margin: 0 auto;
+  justify-content: center;
 }
 
 #planSelector .plan-card {
@@ -20,21 +13,10 @@
   margin: 0 auto;
 }
 
-/* Tablet y móvil */
-@media (max-width: 1200px) {
-  #planSelector {
-    padding: 4rem 2rem 2rem !important;
-    margin-left: 0 !important;
-    left: auto !important;
-    transform: none !important;
-    width: 100% !important;
-  }
-}
-
 @media (max-width: 640px) {
   #planSelector {
-    grid-template-columns: 1fr !important;
-    padding: 3rem 1rem 2rem !important;
-    gap: 2rem !important;
+    grid-template-columns: 1fr;
+    padding: 3rem 1rem 2rem;
+    gap: 2rem;
   }
 }
