@@ -1,23 +1,102 @@
 /* mi-comercio.css FINAL – ÍndiceIA */
-
 /* RESET */
 * { margin:0; padding:0; box-sizing:border-box; font-family:Inter, sans-serif; }
 
-/* SECTION WRAPPER */
-.form-section { background:#fff; padding:2rem; border-radius:14px; box-shadow:0 4px 12px #0002; border:1px solid var(--gray-200); margin-bottom:2.5rem; }
+/* SECTION WRAPPER – solo para los formularios, NO para planes */
+.form-section {
+  background:#fff;
+  padding:2rem;
+  border-radius:14px;
+  box-shadow:0 4px 12px #0002;
+  border:1px solid var(--gray-200);
+  margin-bottom:2.5rem;
+}
 
-/* FULL WIDTH FIX FOR PLAN SELECTOR */
-#planSelector { width:100%; max-width:100% !important; padding:0; margin:0 auto 2.5rem auto; display:grid; gap:2.5rem; justify-items:center; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); }
+/* === FIX DEFINITIVO: EL PROBLEMA ERA QUE #planSelector TAMBIÉN TENÍA .form-section === */
+#planSelector.form-section {
+  all: unset;                 /* ← Quita TODO lo que hereda de .form-section */
+  display: block;             /* ← Vuelve a ser un bloque normal */
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 2.5rem;
+}
+
+/* GRILLA DE PLANES – AHORA SÍ GANA SIEMPRE */
+#planSelector {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto 2.5rem auto;
+  padding: 0 1rem;                         /* un poquito de respiro en móviles */
+  display: grid;
+  gap: 2.5rem;
+  justify-content: center;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
 
 /* PLAN CARD */
-.plan-card { width:100%; max-width:360px; border-radius:24px; padding:2.4rem; backdrop-filter:blur(16px) saturate(160%); background:rgba(255,255,255,0.55); border:1px solid rgba(255,255,255,0.25); transition:.35s cubic-bezier(0.23,1,0.32,1); cursor:pointer; }
-.plan-card:hover { transform:translateY(-8px) scale(1.015); box-shadow:0 12px 28px rgba(0,0,0,0.10),0 20px 60px rgba(99,102,241,0.35); border-color:var(--primary); }
-.plan-card.selected { background:linear-gradient(145deg,rgba(99,102,241,0.20),rgba(118,75,162,0.30)); border:1px solid rgba(255,255,255,0.35); box-shadow:0 18px 50px rgba(99,102,241,0.50),0 22px 65px rgba(118,75,162,0.45); transform:translateY(-10px) scale(1.03); }
-.plan-card.selected::after { content:"Seleccionado"; position:absolute; top:16px; right:16px; background:var(--primary); color:#fff; padding:0.45rem .85rem; border-radius:8px; font-size:.72rem; font-weight:800; }
+.plan-card {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;                          /* ← Centra la card dentro de su celda */
+  border-radius: 24px;
+  padding: 2.4rem;
+  backdrop-filter: blur(16px) saturate(160%);
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.25);
+  transition: .35s cubic-bezier(0.23,1,0.32,1);
+  cursor: pointer;
+  position: relative;
+}
+
+.plan-card:hover {
+  transform: translateY(-8px) scale(1.015);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.10), 0 20px 60px rgba(99,102,241,0.35);
+  border-color: var(--primary);
+}
+
+.plan-card.selected {
+  background: linear-gradient(145deg,rgba(99,102,241,0.20),rgba(118,75,162,0.30));
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 18px 50px rgba(99,102,241,0.50), 0 22px 65px rgba(118,75,162,0.45);
+  transform: translateY(-10px) scale(1.03);
+}
+
+.plan-card.selected::after {
+  content: "Seleccionado";
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--primary);
+  color: #fff;
+  padding: 0.45rem .85rem;
+  border-radius: 8px;
+  font-size: .72rem;
+  font-weight: 800;
+}
 
 /* RECOMMENDED */
-.plan-card.recommended { background:linear-gradient(140deg,rgba(250,204,21,0.18),rgba(255,255,255,0.40),rgba(99,102,241,0.18)); border:1px solid rgba(250,204,21,0.55); box-shadow:0 22px 60px rgba(250,204,21,0.35),0 30px 80px rgba(99,102,241,0.30); transform:translateY(-14px) scale(1.05); }
-.plan-card.recommended::before { content:"⭐ Recomendado"; position:absolute; top:-14px; left:50%; transform:translateX(-50%); padding:.55rem 1.2rem; font-size:.78rem; font-weight:900; border-radius:12px; background:#facc15; color:#1e1e1e; }
+.plan-card.recommended {
+  background: linear-gradient(140deg,rgba(250,204,21,0.18),rgba(255,255,255,0.40),rgba(99,102,241,0.18));
+  border: 1px solid rgba(250,204,21,0.55);
+  box-shadow: 0 22px 60px rgba(250,204,21,0.35), 0 30px 80px rgba(99,102,241,0.30);
+  transform: translateY(-14px) scale(1.05);
+}
+
+.plan-card.recommended::before {
+  content: "Recomendado";
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: .55rem 1.2rem;
+  font-size: .78rem;
+  font-weight: 900;
+  border-radius: 12px;
+  background: #facc15;
+  color: #1e1e1e;
+}
 
 /* TITLES */
 .plan-header h4 { font-size:1.65rem; font-weight:900; letter-spacing:-0.6px; color:var(--gray-900); margin-bottom:.4rem; }
@@ -37,13 +116,29 @@
 .plan-features .feature i { color:var(--primary); font-size:1.1rem; }
 
 /* CTA */
-.plan-cta { display:inline-block; padding:.8rem 1.6rem; border-radius:14px; font-weight:700; background:var(--primary); color:#fff; transition:.25s; }
-.plan-cta:hover { filter:brightness(1.1); }
+.plan-cta {
+  display: inline-block;
+  padding: .8rem 1.6rem;
+  border-radius: 14px;
+  font-weight: 700;
+  background: var(--primary);
+  color: #fff;
+  transition: .25s;
+  text-align: center;
+}
+.plan-cta:hover { filter: brightness(1.1); }
 
 /* RESPONSIVE */
-@media (max-width:480px) {
-  #planSelector { grid-template-columns:1fr; }
-  .plan-card { padding:2rem; max-width:100%; }
+@media (max-width: 480px) {
+  #planSelector {
+    padding: 0 0.5rem;
+    gap: 2rem;
+    grid-template-columns: 1fr;
+  }
+  .plan-card {
+    padding: 2rem;
+    max-width: 100%;
+  }
   .plan-header h4 { font-size:1.45rem; }
   .plan-price strong { font-size:2.5rem; }
 }
