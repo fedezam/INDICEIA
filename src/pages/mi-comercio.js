@@ -4,7 +4,7 @@ import '../styles/layout.css';
 import '../styles/components.css';
 import '../styles/forms.css';
 import './mi-comercio.css';
-
+import "../styles/forms-premium.css";
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
