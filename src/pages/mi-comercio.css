@@ -1,117 +1,113 @@
-/* ==========================================================
-   MÉTODOS DE PAGO — UI PREMIUM 2025 (Glass + iOS 17 Style)
-   ========================================================== */
-
-:root {
-  --pay-bg: rgba(255, 255, 255, 0.55);
-  --pay-bg-hover: rgba(255, 255, 255, 0.75);
-  --pay-bg-selected: rgba(99, 102, 241, 0.25);
-  --pay-blur: 14px;
-  --pay-border: rgba(255, 255, 255, 0.45);
-  --pay-border-selected: var(--primary);
-  --pay-radius: 18px;
-
-  --pay-shadow: 0 10px 25px rgba(0,0,0,0.08);
-  --pay-shadow-hover: 0 14px 35px rgba(0,0,0,0.10);
-  --pay-shadow-selected: 0 16px 48px rgba(99,102,241,0.35);
-
-  --pay-transition: 0.28s cubic-bezier(.21,1,.33,1);
-}
-
-/* Contenedor grilla */
-#paymentMethods {
+/* mi-comercio.css – Versión PRO PULIDA 2025 */
+#planSelector {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.3rem;
-  margin-top: 1rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2.8rem;
+  padding: 5rem 2rem 4rem;
+  max-width: 1700px;
+  margin: 0 auto;
+  justify-content: center;
 }
 
-/* Tarjeta base */
-.payment-tag {
+@media (max-width: 1200px) {
+  #planSelector {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  #planSelector {
+    grid-template-columns: 1fr;
+    padding: 4rem 1rem 3rem;
+    gap: 2.2rem;
+  }
+}
+
+/* ------------------------------
+   PLAN CARD — versión profesional
+   ------------------------------ */
+#planSelector .plan-card {
+  max-width: 380px;
+  margin: 0 auto;
+  border-radius: 28px;
+  padding: 2.8rem 2.4rem;
+  
+  background: rgba(255,255,255,0.58);
+  backdrop-filter: blur(22px) saturate(170%);
+  
+  border: 1.5px solid rgba(255,255,255,0.45);
+  
+  --shadow-base: 0 12px 40px rgba(0,0,0,0.10), 
+                 0 26px 70px rgba(99,102,241,0.12);
+  box-shadow: var(--shadow-base);
+
+  transition: transform .35s cubic-bezier(.21,1,.33,1),
+              box-shadow .35s cubic-bezier(.21,1,.33,1),
+              border-color .25s ease;
+
+  cursor: pointer;
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  padding: 1.1rem 1.4rem;
-
-  background: var(--pay-bg);
-  backdrop-filter: blur(var(--pay-blur)) saturate(180%);
-  border: 1.5px solid var(--pay-border);
-  border-radius: var(--pay-radius);
-
-  cursor: pointer;
-  box-shadow: var(--pay-shadow);
-  transition:
-    background var(--pay-transition),
-    transform var(--pay-transition),
-    border-color var(--pay-transition),
-    box-shadow var(--pay-transition);
+  overflow: hidden;
 }
 
-.payment-tag input {
-  display: none;
+#planSelector .plan-card:hover {
+  transform: translateY(-14px) scale(1.04);
+  box-shadow: 
+      0 28px 70px rgba(99,102,241,0.35),
+      0 42px 110px rgba(0,0,0,0.15);
+  border-color: var(--primary);
 }
 
-/* Icono */
-.payment-tag i {
-  font-size: 1.3rem;
-  opacity: .75;
-  transition: opacity .25s, transform .25s;
+/* Estado seleccionado */
+#planSelector .plan-card.selected {
+  background: linear-gradient(
+    145deg,
+    rgba(99,102,241,0.32),
+    rgba(118,75,162,0.40)
+  );
+  
+  border: 2.5px solid var(--primary);
+
+  box-shadow:
+    0 34px 80px rgba(99,102,241,0.50),
+    0 40px 90px rgba(0,0,0,0.14);
+
+  transform: translateY(-16px) scale(1.07);
 }
 
-/* Hover */
-.payment-tag:hover {
-  background: var(--pay-bg-hover);
-  transform: translateY(-4px);
-  box-shadow: var(--pay-shadow-hover);
-}
-
-.payment-tag:hover i {
-  opacity: 1;
-  transform: scale(1.08);
-}
-
-/* ESTADO SELECCIONADO */
-.payment-tag.selected {
-  background: var(--pay-bg-selected);
-  border-color: var(--pay-border-selected);
-  box-shadow: var(--pay-shadow-selected);
-  transform: translateY(-6px) scale(1.03);
-}
-
-/* Glow ring animado */
-.payment-tag.selected::after {
-  content: "";
+#planSelector .plan-card.selected::after {
+  content: "Seleccionado";
   position: absolute;
-  inset: -4px;
-  border-radius: inherit;
-  border: 2px solid rgba(99,102,241,0.45);
-  opacity: .8;
-  animation: payPulse 2.8s ease-in-out infinite;
+  top: 20px;
+  right: 20px;
+
+  background: var(--primary);
+  color: white;
+
+  padding: 0.6rem 1.2rem;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 0.75rem;
+
+  letter-spacing: 0.4px;
 }
 
-/* Texto */
-.payment-tag label {
-  flex: 1;
-  cursor: pointer;
-  font-size: .95rem;
-  font-weight: 600;
+/* Recomendado */
+#planSelector .plan-card.recommended::before {
+  content: "Recomendado";
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  background: #fbbf24;
   color: #1f2937;
-  user-select: none;
-}
 
-/* Animación pulso */
-@keyframes payPulse {
-  0% {
-    opacity: .8;
-    transform: scale(1);
-  }
-  50% {
-    opacity: .25;
-    transform: scale(1.05);
-  }
-  100% {
-    opacity: .8;
-    transform: scale(1);
-  }
+  padding: 0.75rem 1.9rem;
+  border-radius: 18px;
+  font-weight: 800;
+  font-size: 0.78rem;
+
+  box-shadow: 0 8px 22px rgba(0,0,0,0.15);
+  letter-spacing: 0.3px;
 }
