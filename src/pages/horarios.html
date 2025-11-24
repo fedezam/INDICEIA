@@ -5,51 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>Horarios – ÍndiceIA</title>
-  <meta name="description" content="Configurá los horarios de atención de tu comercio.">
-  <meta name="robots" content="noindex, nofollow">
 
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <!-- CSS global -->
+  <link rel="stylesheet" href="/src/styles/base.css">
+  <link rel="stylesheet" href="/src/styles/layout.css">
+  <link rel="stylesheet" href="/src/styles/components.css">
+  <link rel="stylesheet" href="/src/styles/forms.css">
 
-  <!-- Tipografías -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- CSS específico de horarios -->
+  <link rel="stylesheet" href="/src/pages/horarios.css">
 
-  <!-- Estilos globales -->
-  <link rel="stylesheet" href="/src/styles.css" />
-
-  <!-- Estilos de plantilla A -->
-  <link rel="stylesheet" href="/src/pages/mi-comercio.css" />
-
-  <!-- JS Globales -->
-  <script type="module" src="/src/controllers/flowController.js"></script>
-  <script type="module" src="/src/layout/layout.js"></script>
-
-  <!-- JS de navegación -->
-  <script type="module" src="/src/navigation/navigation.js"></script>
-
-  <!-- JS de esta página -->
+  <!-- JS de la página -->
   <script type="module" src="/src/pages/horarios.js"></script>
+
+  <!-- Necesario para header / navegación / flujo -->
+  <script type="module" src="/src/shared/layout.js"></script>
+  <script type="module" src="/src/shared/navigation.js"></script>
+  <script type="module" src="/src/controllers/flowController.js"></script>
 </head>
 
 <body data-page="horarios">
 
-  <!-- HEADER DINÁMICO (Plantilla A) -->
+  <!-- HEADER -->
   <header id="layout-header"></header>
 
-  <!-- BANNER DE SUSCRIPCIÓN -->
+  <!-- BANNER DE PLAN -->
   <div id="subscriptionBanner"></div>
 
-  <!-- NAVIGATOR (PROGRESO / SIGUIENTE / ANTERIOR) -->
+  <!-- PROGRESO Y NAVEGACIÓN -->
   <div id="navigationControls"></div>
 
-  <!-- CONTENIDO PRINCIPAL -->
   <main>
     <div class="container">
 
       <div class="form-section">
+
         <h2 class="section-title"><i class="fas fa-clock"></i> Horarios de Atención</h2>
-        <p>Configura los horarios en los que tu comercio atiende consultas.</p>
+        <p>Definí los horarios en que tu comercio está disponible.</p>
 
         <div id="scheduleGrid" class="schedule-grid"></div>
 
@@ -58,7 +50,7 @@
     </div>
   </main>
 
-  <!-- BOTÓN FIJO ABAJO (Plantilla A) -->
+  <!-- BOTÓN FIJO ABAJO -->
   <div class="bottom-action">
     <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
   </div>
@@ -69,7 +61,6 @@
     <div class="loading-text" id="loadingText">Cargando...</div>
   </div>
 
-  <!-- TOASTS -->
   <div class="toast-container" id="toastContainer"></div>
 
 </body>
