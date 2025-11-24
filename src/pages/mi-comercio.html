@@ -1,155 +1,125 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Comercio - INDICEIA</title>
-  
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi Comercio – ÍndiceIA</title>
+
+  <link rel="stylesheet" href="/src/styles.css" />
+  <script type="module" src="/src/pages/mi-comercio.js"></script>
 </head>
-<body>
-  <!-- El layout (header + banner + progress) se renderiza desde JS -->
-  
-  <main class="main-content">
+
+<body data-page="mi-comercio">
+
+  <!-- 🔥 Layout se inserta aquí automáticamente por renderLayout() -->
+  <header id="layout-header"></header>
+
+  <main>
     <div class="container">
-      
-      <!-- FORMULARIO PRINCIPAL -->
-      <form id="miComercioForm">
-        
-        <!-- SECCIÓN: INFORMACIÓN BÁSICA -->
-        <section class="form-section">
-          <h3><i class="fas fa-store"></i> Información Básica</h3>
-          <p>Contanos sobre tu negocio para que tu IA lo conozca mejor</p>
-          
-          <div class="form-fields">
-            <div class="form-field">
-              <label for="nombreComercio" class="required">Nombre del Comercio</label>
-              <input type="text" id="nombreComercio" name="nombreComercio" placeholder="Ej: Pizzería Don Juan" required>
-            </div>
-            
-            <div class="form-field">
-              <label for="provincia" class="required">Provincia</label>
-              <select id="provincia" name="provincia" required>
-                <option value="">Seleccionar provincia...</option>
-              </select>
-            </div>
-            
-            <div class="form-field">
-              <label for="ciudad" class="required">Ciudad</label>
-              <input type="text" id="ciudad" name="ciudad" placeholder="Ej: Rosario" required>
-            </div>
-            
-            <div class="form-field">
-              <label for="direccion" class="required">Dirección</label>
-              <input type="text" id="direccion" name="direccion" placeholder="Ej: Av. Pellegrini 1234" required>
-            </div>
-            
-            <div class="form-field full-width">
-              <label for="descripcion" class="required">Descripción del Negocio</label>
-              <textarea id="descripcion" name="descripcion" placeholder="Contá sobre tu negocio, qué lo hace especial, qué vendés..." rows="4" required></textarea>
-              <small>Una buena descripción ayuda a tu IA a entender mejor tu negocio</small>
-            </div>
-          </div>
-        </section>
 
-        <!-- SECCIÓN: CATEGORÍAS -->
-        <section class="form-section">
-          <h3><i class="fas fa-tags"></i> Categorías del Negocio</h3>
-          <p>Seleccioná las categorías que mejor describen tu comercio</p>
-          
-          <div id="categoriesGrid"></div>
-        </section>
+      <!-- 🔵 1) PLANS -->
+      <section id="planSelector" class="section-card">
+        <!-- JS inyecta las tarjetas -->
+      </section>
 
-        <!-- SECCIÓN: CONTACTO -->
-        <section class="form-section">
-          <h3><i class="fas fa-address-book"></i> Información de Contacto</h3>
-          <p>¿Cómo pueden contactarte tus clientes?</p>
-          
-          <div class="form-fields">
-            <div class="form-field">
-              <label for="telefono" class="required">Teléfono</label>
-              <input type="tel" id="telefono" name="telefono" placeholder="Ej: +54 9 341 123-4567" required>
-            </div>
-            
-            <div class="form-field">
-              <label for="email" class="required">Email</label>
-              <input type="email" id="email" name="email" placeholder="Ej: contacto@micomercio.com" required>
-            </div>
-            
-            <div class="form-field">
-              <label for="whatsapp">WhatsApp Business</label>
-              <input type="tel" id="whatsapp" name="whatsapp" placeholder="Ej: +54 9 341 123-4567">
-              <small>Número de WhatsApp para consultas</small>
-            </div>
-          </div>
-        </section>
+      <!-- 🔵 2) FORMULARIO PRINCIPAL -->
+      <form id="miComercioForm" class="form-section">
 
-        <!-- SECCIÓN: REDES SOCIALES -->
-        <section class="form-section">
-          <h3><i class="fas fa-globe"></i> Presencia Online</h3>
-          <p class="section-description">
-            <i class="fas fa-info-circle"></i> 
-            <strong>Importante:</strong> Completá al menos una red social o sitio web para que tu IA pueda direccionar clientes
-          </p>
-          
-          <div class="form-fields">
-            <div class="form-field">
-              <label for="website"><i class="fas fa-globe"></i> Sitio Web</label>
-              <input type="url" id="website" name="website" placeholder="https://www.micomercio.com">
-            </div>
-            
-            <div class="form-field">
-              <label for="instagram"><i class="fab fa-instagram"></i> Instagram</label>
-              <input type="text" id="instagram" name="instagram" placeholder="@micomercio">
-            </div>
-            
-            <div class="form-field">
-              <label for="facebook"><i class="fab fa-facebook"></i> Facebook</label>
-              <input type="text" id="facebook" name="facebook" placeholder="facebook.com/micomercio">
-            </div>
-            
-            <div class="form-field">
-              <label for="tiktok"><i class="fab fa-tiktok"></i> TikTok</label>
-              <input type="text" id="tiktok" name="tiktok" placeholder="@micomercio">
-            </div>
-          </div>
-        </section>
+        <!-- 🌎 Información Básica -->
+        <h2 class="section-title">Información Básica</h2>
 
-        <!-- SECCIÓN: MÉTODOS DE PAGO -->
-        <section class="form-section">
-          <h3><i class="fas fa-credit-card"></i> Métodos de Pago</h3>
-          <p>¿Qué formas de pago aceptás?</p>
-          
-          <div id="paymentMethods"></div>
-        </section>
+        <div class="form-group">
+          <label for="nombreComercio">Nombre del comercio *</label>
+          <input id="nombreComercio" name="nombreComercio" type="text" required />
+        </div>
 
-        <!-- SECCIÓN: PLANES -->
-        <section class="form-section">
-          <h3><i class="fas fa-rocket"></i> Elegí tu Plan</h3>
-          <p>Seleccioná el plan que mejor se adapte a tu negocio</p>
-          
-          <div id="planSelector"></div>
-        </section>
+        <div class="form-group">
+          <label for="pais">País *</label>
+          <select id="pais" name="pais">
+            <option value="Argentina" selected>Argentina</option>
+            <option value="Otro">Otro (Próximamente)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="provincia">Provincia *</label>
+          <select id="provincia" name="provincia"></select>
+        </div>
+
+        <div class="form-group">
+          <label for="ciudad">Ciudad *</label>
+          <input id="ciudad" name="ciudad" type="text" required />
+        </div>
+
+        <div class="form-group">
+          <label for="direccion">Dirección *</label>
+          <input id="direccion" name="direccion" type="text" required />
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion">Descripción *</label>
+          <textarea id="descripcion" name="descripcion" required></textarea>
+        </div>
+
+        <!-- 🔵 Información de contacto -->
+        <h2 class="section-title">Información de Contacto</h2>
+
+        <div class="form-group">
+          <label for="telefono">Teléfono *</label>
+          <input id="telefono" name="telefono" type="text" required />
+        </div>
+
+        <div class="form-group">
+          <label for="whatsapp">WhatsApp</label>
+          <input id="whatsapp" name="whatsapp" type="text" />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email *</label>
+          <input id="email" name="email" type="email" required />
+        </div>
+
+        <!-- 🔵 Presencia Online -->
+        <h2 class="section-title">Presencia Online</h2>
+
+        <div class="form-group">
+          <label for="website">Sitio Web</label>
+          <input id="website" name="website" type="text" />
+        </div>
+
+        <div class="form-group">
+          <label for="instagram">Instagram</label>
+          <input id="instagram" name="instagram" type="text" />
+        </div>
+
+        <div class="form-group">
+          <label for="facebook">Facebook</label>
+          <input id="facebook" name="facebook" type="text" />
+        </div>
+
+        <div class="form-group">
+          <label for="tiktok">TikTok</label>
+          <input id="tiktok" name="tiktok" type="text" />
+        </div>
+
+        <!-- 🔵 Categorías (AI Helper lo usa) -->
+        <h2 class="section-title">Categorías</h2>
+
+        <div id="categoriesGrid"></div>
+        <div id="selectedTags" class="selected-tags"></div>
+
+        <!-- 🔵 Métodos de pago -->
+        <h2 class="section-title">Métodos de Pago</h2>
+        <div id="paymentMethods"></div>
 
       </form>
-
-      <!-- BARRA DE ACCIÓN INFERIOR -->
-      <div class="bottom-action-bar">
-        <button type="button" id="saveChangesBtnBottom" class="btn btn-primary btn-lg" disabled>
-          <i class="fas fa-save"></i> Guardar Cambios
-        </button>
-      </div>
-
     </div>
   </main>
 
-  <!-- Scripts -->
-  <script type="module" src="./mi-comercio.js"></script>
+  <!-- 🔵 3) Botón de guardar (inferior) -->
+  <div class="bottom-action">
+    <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
+  </div>
+
 </body>
 </html>
