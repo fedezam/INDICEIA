@@ -121,6 +121,9 @@ async function initializePage() {
     setupEventListeners();
     insertAIHelperCard();
 
+    // inicializamos el estado de botones según formulario actual
+    checkFormValidity();
+
     hideLoading();
   } catch (err) {
     console.error(err);
@@ -200,6 +203,8 @@ function renderPlans() {
       card.classList.add('selected');
       comercioData.plan = key;
       markAsChanged();
+      // validar si ahora el formulario quedó completo
+      checkFormValidity();
       updateHeaderInfo(comercioData.nombreComercio, plan);
       updateBanner();
       showToast('Plan seleccionado', `Ahora tenés el plan ${plan.nombre}`, 'info');
@@ -247,6 +252,7 @@ function renderCategoriesSection() {
         e.target.value = '';
         renderSelectedTags();
         markAsChanged();
+        checkFormValidity();
       }
     });
   }
@@ -263,6 +269,7 @@ function renderCategoriesSection() {
           customInput.value = '';
           renderSelectedTags();
           markAsChanged();
+          checkFormValidity();
         }
       }
     };
@@ -294,8 +301,12 @@ function renderSelectedTags() {
       selectedCategories = selectedCategories.filter(c => c !== btn.dataset.cat);
       renderSelectedTags();
       markAsChanged();
+      checkFormValidity();
     };
   });
+
+  // validar estado luego de renderizar
+  checkFormValidity();
 }
 
 function renderPaymentMethods() {
@@ -324,10 +335,76 @@ function renderPaymentMethods() {
       checkbox.checked = !checkbox.checked;
       tag.classList.toggle('selected', checkbox.checked);
       markAsChanged();
+      checkFormValidity();
     });
 
     container.appendChild(tag);
   });
+
+  // validar estado luego de pintar métodos
+  checkFormValidity();
+}
+
+// ==================== VALIDACIÓN GLOBAL Y HABILITAR BOTONES ====================
+
+function markAsChanged() {
+  hasUnsavedChanges = true;
+  // marcamos cambio y dejamos que checkFormValidity decida si habilita botones
+  checkFormValidity();
+}
+
+function checkFormValidity() {
+  const form = document.getElementById('miComercioForm');
+  if (!form) return;
+
+  const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
+  let missing = false;
+
+  required.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || !el.value.trim()) missing = true;
+  });
+
+  // Validación redes sociales (al menos una)
+  const socialFields = ['website', 'instagram', 'facebook', 'tiktok', 'whatsapp'];
+  const hasSocial = socialFields.some(id => {
+    const el = document.getElementById(id);
+    return el && el.value.trim();
+  });
+  if (!hasSocial) missing = true;
+
+  // Categorías
+  if (selectedCategories.length === 0) missing = true;
+
+  // Plan seleccionado
+  if (!document.querySelector('.plan-card.selected')) missing = true;
+
+  const btnTop = document.getElementById('saveChangesBtn');
+  const btnBottom = document.getElementById('saveChangesBtnBottom');
+  const buttons = [btnTop, btnBottom].filter(Boolean);
+
+  if (missing || !hasUnsavedChanges) {
+    // Si falta algo o no hay cambios, deshabilitamos
+    buttons.forEach(b => {
+      b.disabled = true;
+      b.classList.remove('ready', 'saving', 'saved');
+      b.classList.add('btn-save');
+      // aseguramos el texto por si estaba en otro estado
+      if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+      if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
+    });
+  } else {
+    // Todo ok y hay cambios -> habilitamos ambos botones
+    buttons.forEach(b => {
+      b.disabled = false;
+      b.classList.add('ready');
+      // reset text (si estaba en saving/saved lo mantendrá en la lógica de saveFormData)
+      if (!b.classList.contains('saving') && !b.classList.contains('saved')) {
+        if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+        if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
+      }
+    });
+  }
 }
 
 // ==================== FORM & SAVE ====================
@@ -342,6 +419,9 @@ function fillForm() {
     const field = form.elements[key];
     if (field && value) field.value = value;
   });
+
+  // después de llenar el form, validar estado inicial
+  checkFormValidity();
 }
 
 function createSaveButton() {
@@ -365,20 +445,11 @@ function createSaveButton() {
   btn.addEventListener('click', saveFormData);
 }
 
-function markAsChanged() {
-  hasUnsavedChanges = true;
-  const btn = document.getElementById('saveChangesBtn');
-  if (btn) {
-    btn.disabled = false;
-    btn.className = 'btn-save';
-    btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-  }
-}
-
 function setupEventListeners() {
   const form = document.getElementById('miComercioForm');
   if (form) {
     form.addEventListener('input', markAsChanged);
+    form.addEventListener('input', checkFormValidity);
   }
 
   const logoutBtn = document.getElementById('logoutBtn');
@@ -392,6 +463,16 @@ function setupEventListeners() {
   if (btnBottom) {
     btnBottom.addEventListener('click', saveFormData);
   }
+
+  // También observar cambios en paymentMethods si el contenedor existe (listeners se agregan en renderPaymentMethods)
+  // Observamos cambios de DOM por si renderPaymentMethods se ejecuta después
+  const paymentContainer = document.getElementById('paymentMethods');
+  if (paymentContainer) {
+    paymentContainer.addEventListener('change', () => {
+      markAsChanged();
+      checkFormValidity();
+    });
+  }
 }
 
 async function saveFormData() {
@@ -404,7 +485,7 @@ async function saveFormData() {
     return;
   }
 
-  // Validación
+  // Validación (igual que checkFormValidity para seguridad)
   const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
   let missing = [];
 
@@ -428,6 +509,7 @@ async function saveFormData() {
 
   if (missing.length > 0) {
     showToast('Faltan datos', 'Completá: ' + missing.join(', '), 'warning');
+    checkFormValidity();
     return;
   }
 
@@ -435,7 +517,9 @@ async function saveFormData() {
     [btn, btnBottom].forEach(b => {
       if (b) {
         b.classList.add('saving');
-        b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        b.classList.remove('saved', 'ready');
+        if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardando...';
       }
     });
 
@@ -459,7 +543,8 @@ async function saveFormData() {
       if (b) {
         b.classList.remove('saving');
         b.classList.add('saved');
-        b.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+        if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+        if (b.id === 'saveChangesBtnBottom') b.innerHTML = '¡Guardado!';
       }
     });
 
@@ -468,14 +553,25 @@ async function saveFormData() {
         if (b) {
           b.disabled = true;
           b.className = 'btn-save';
-          b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+          if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+          if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
         }
       });
     }, 2500);
 
     showToast('Éxito', 'Todo guardado correctamente', 'success');
     updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
+
+    // actualizar banner
     updateBanner();
+
+    // después de guardar, ejecutamos el flow controller para que decida el siguiente paso
+    try {
+      runFlowController(currentUser.uid);
+    } catch (e) {
+      console.warn('runFlowController falló tras guardar:', e);
+    }
+
   } catch (err) {
     console.error(err);
 
@@ -487,6 +583,9 @@ async function saveFormData() {
     });
 
     showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
+  } finally {
+    // asegurar estado coherente
+    checkFormValidity();
   }
 }
 
