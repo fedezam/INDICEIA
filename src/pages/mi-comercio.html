@@ -3,106 +3,153 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Configura tu comercio en INDICEIA - Asistente IA para negocios">
   <title>Mi Comercio - INDICEIA</title>
   
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="/assets/favicon.png">
-  
   <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Google Fonts - Inter -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
-  <!-- CSS GLOBALES (en orden de importancia) -->
-  <link rel="stylesheet" href="/src/styles/base.css">
-  <link rel="stylesheet" href="/src/styles/layout.css">
-  <link rel="stylesheet" href="/src/styles/components.css">
-  <link rel="stylesheet" href="/src/styles/forms.css">
-  
-  <!-- CSS ESPECÍFICO DE ESTA PÁGINA -->
-  <link rel="stylesheet" href="/src/pages/mi-comercio.css">
 </head>
-
 <body>
-  <!-- 
-    ============================================
-    NOTA: El contenido del layout (header, banner, progress) 
-    será insertado dinámicamente por layout.js
-    ============================================
-  -->
+  <!-- El layout (header + banner + progress) se renderiza desde JS -->
+  
+  <main class="main-content">
+    <div class="container">
+      
+      <!-- FORMULARIO PRINCIPAL -->
+      <form id="miComercioForm">
+        
+        <!-- SECCIÓN: INFORMACIÓN BÁSICA -->
+        <section class="form-section">
+          <h3><i class="fas fa-store"></i> Información Básica</h3>
+          <p>Contanos sobre tu negocio para que tu IA lo conozca mejor</p>
+          
+          <div class="form-fields">
+            <div class="form-field">
+              <label for="nombreComercio" class="required">Nombre del Comercio</label>
+              <input type="text" id="nombreComercio" name="nombreComercio" placeholder="Ej: Pizzería Don Juan" required>
+            </div>
+            
+            <div class="form-field">
+              <label for="provincia" class="required">Provincia</label>
+              <select id="provincia" name="provincia" required>
+                <option value="">Seleccionar provincia...</option>
+              </select>
+            </div>
+            
+            <div class="form-field">
+              <label for="ciudad" class="required">Ciudad</label>
+              <input type="text" id="ciudad" name="ciudad" placeholder="Ej: Rosario" required>
+            </div>
+            
+            <div class="form-field">
+              <label for="direccion" class="required">Dirección</label>
+              <input type="text" id="direccion" name="direccion" placeholder="Ej: Av. Pellegrini 1234" required>
+            </div>
+            
+            <div class="form-field full-width">
+              <label for="descripcion" class="required">Descripción del Negocio</label>
+              <textarea id="descripcion" name="descripcion" placeholder="Contá sobre tu negocio, qué lo hace especial, qué vendés..." rows="4" required></textarea>
+              <small>Una buena descripción ayuda a tu IA a entender mejor tu negocio</small>
+            </div>
+          </div>
+        </section>
 
-  <!-- El main-content también será generado por mi-comercio.js -->
+        <!-- SECCIÓN: CATEGORÍAS -->
+        <section class="form-section">
+          <h3><i class="fas fa-tags"></i> Categorías del Negocio</h3>
+          <p>Seleccioná las categorías que mejor describen tu comercio</p>
+          
+          <div id="categoriesGrid"></div>
+        </section>
 
-  <!-- Toast Container (para notificaciones) -->
-  <div class="toast-container" id="toastContainer"></div>
+        <!-- SECCIÓN: CONTACTO -->
+        <section class="form-section">
+          <h3><i class="fas fa-address-book"></i> Información de Contacto</h3>
+          <p>¿Cómo pueden contactarte tus clientes?</p>
+          
+          <div class="form-fields">
+            <div class="form-field">
+              <label for="telefono" class="required">Teléfono</label>
+              <input type="tel" id="telefono" name="telefono" placeholder="Ej: +54 9 341 123-4567" required>
+            </div>
+            
+            <div class="form-field">
+              <label for="email" class="required">Email</label>
+              <input type="email" id="email" name="email" placeholder="Ej: contacto@micomercio.com" required>
+            </div>
+            
+            <div class="form-field">
+              <label for="whatsapp">WhatsApp Business</label>
+              <input type="tel" id="whatsapp" name="whatsapp" placeholder="Ej: +54 9 341 123-4567">
+              <small>Número de WhatsApp para consultas</small>
+            </div>
+          </div>
+        </section>
 
-  <!-- Loading Overlay (para estados de carga) -->
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <p class="loading-text">Cargando...</p>
-  </div>
+        <!-- SECCIÓN: REDES SOCIALES -->
+        <section class="form-section">
+          <h3><i class="fas fa-globe"></i> Presencia Online</h3>
+          <p class="section-description">
+            <i class="fas fa-info-circle"></i> 
+            <strong>Importante:</strong> Completá al menos una red social o sitio web para que tu IA pueda direccionar clientes
+          </p>
+          
+          <div class="form-fields">
+            <div class="form-field">
+              <label for="website"><i class="fas fa-globe"></i> Sitio Web</label>
+              <input type="url" id="website" name="website" placeholder="https://www.micomercio.com">
+            </div>
+            
+            <div class="form-field">
+              <label for="instagram"><i class="fab fa-instagram"></i> Instagram</label>
+              <input type="text" id="instagram" name="instagram" placeholder="@micomercio">
+            </div>
+            
+            <div class="form-field">
+              <label for="facebook"><i class="fab fa-facebook"></i> Facebook</label>
+              <input type="text" id="facebook" name="facebook" placeholder="facebook.com/micomercio">
+            </div>
+            
+            <div class="form-field">
+              <label for="tiktok"><i class="fab fa-tiktok"></i> TikTok</label>
+              <input type="text" id="tiktok" name="tiktok" placeholder="@micomercio">
+            </div>
+          </div>
+        </section>
 
-  <!-- Firebase SDK -->
-  <script type="module">
-    // Configuración de Firebase (ajusta según tu proyecto)
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getAuth } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        <!-- SECCIÓN: MÉTODOS DE PAGO -->
+        <section class="form-section">
+          <h3><i class="fas fa-credit-card"></i> Métodos de Pago</h3>
+          <p>¿Qué formas de pago aceptás?</p>
+          
+          <div id="paymentMethods"></div>
+        </section>
 
-    // Tu configuración de Firebase
-    const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_AUTH_DOMAIN",
-      projectId: "TU_PROJECT_ID",
-      storageBucket: "TU_STORAGE_BUCKET",
-      messagingSenderId: "TU_MESSAGING_SENDER_ID",
-      appId: "TU_APP_ID"
-    };
+        <!-- SECCIÓN: PLANES -->
+        <section class="form-section">
+          <h3><i class="fas fa-rocket"></i> Elegí tu Plan</h3>
+          <p>Seleccioná el plan que mejor se adapte a tu negocio</p>
+          
+          <div id="planSelector"></div>
+        </section>
 
-    // Inicializar Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+      </form>
 
-    // Hacer disponible globalmente (opcional)
-    window.firebaseApp = app;
-    window.firebaseAuth = auth;
-    window.firebaseDB = db;
-  </script>
-
-  <!-- JavaScript Principal de la Página -->
-  <script type="module" src="/src/pages/mi-comercio.js"></script>
-
-  <!-- 
-    ============================================
-    ESTRUCTURA ESPERADA DESPUÉS DE CARGAR:
-    ============================================
-    
-    <header class="header">
-      <div class="container">
-        <div class="logo">...</div>
-        <div class="user-info">...</div>
+      <!-- BARRA DE ACCIÓN INFERIOR -->
+      <div class="bottom-action-bar">
+        <button type="button" id="saveChangesBtnBottom" class="btn btn-primary btn-lg" disabled>
+          <i class="fas fa-save"></i> Guardar Cambios
+        </button>
       </div>
-    </header>
-    
-    <div class="subscription-banner">...</div>
-    
-    <div id="progressContainer">
-      <div class="onboarding-progress">...</div>
-    </div>
-    
-    <main class="main-content">
-      <div class="ai-helper-section">...</div>
-      <form id="commerceForm">...</form>
-      <div class="bottom-action-bar">...</div>
-    </main>
-    
-    ============================================
-  -->
 
+    </div>
+  </main>
+
+  <!-- Scripts -->
+  <script type="module" src="./mi-comercio.js"></script>
 </body>
 </html>
