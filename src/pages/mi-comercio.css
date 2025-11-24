@@ -1,22 +1,40 @@
+/* mi-comercio.css – VERSIÓN DIOS (4 en fila perfecta, mismo tamaño, hermoso) */
+
 #planSelector {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 2.8rem;
+  grid-template-columns: repeat(4, 1fr);           /* 4 columnas fijas en desktop */
+  gap: 2rem;
   padding: 4rem 2rem 3rem;
-  max-width: 1800px;
+  max-width: 1600px;
   margin: 0 auto;
   justify-content: center;
 }
 
-#planSelector .plan-card {
-  max-width: 380px;
-  margin: 0 auto;
+/* Tablet: 2 columnas */
+@media (max-width: 1100px) {
+  #planSelector {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2.5rem;
+    padding: 3.5rem 2rem 2rem;
+  }
 }
 
+/* Móvil: 1 columna */
 @media (max-width: 640px) {
   #planSelector {
     grid-template-columns: 1fr;
-    padding: 3rem 1rem 2rem;
     gap: 2rem;
+    padding: 3rem 1rem 2rem;
   }
+}
+
+/* Todas las cards exactamente mismo ancho */
+#planSelector .plan-card {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
