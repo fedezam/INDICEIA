@@ -1,127 +1,67 @@
-/* -------------------------
-   ESTILOS EXCLUSIVOS DE HORARIOS
-   ------------------------- */
+/* ============================================================
+   HORARIOS.CSS — SOLO ESTILOS ESPECÍFICOS DE LA PÁGINA HORARIOS
+   NO DUPLICA NADA DE MI-COMERCIO NI DE LOS SHARED
+   ============================================================ */
 
-/* Grid general */
-.horarios-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    margin-top: 20px;
+/* Contenedor de cada día */
+.horario-dia {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  margin-bottom: 12px;
 }
 
-/* Cada fila del día */
-.day-row {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+/* Primera fila (checkbox + nombre del día) */
+.horario-dia-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-/* Checkbox + nombre del día */
-.day-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 600;
-    font-size: 1rem;
+.horario-dia-head label {
+  font-weight: 600;
+  font-size: 16px;
 }
 
-/* Card de horarios (MISMA ESTÉTICA QUE LAS CARDS DE MI-COMERCIO) */
-.day-card {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 18px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-    border: 1px solid #e6e6e6;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+/* Contenedor de los dos rangos horarios */
+.horario-rangos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  opacity: 0.45;
+  pointer-events: none;
+  transition: 0.25s ease;
 }
 
-/* Cada bloque de horario */
-.time-block {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.horario-dia.enabled .horario-rangos {
+  opacity: 1;
+  pointer-events: auto;
 }
 
-/* Inputs de tiempo */
-.time-block input[type="time"] {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #dcdcdc;
-    border-radius: 8px;
-    font-size: 0.95rem;
+/* Cada rango */
+.rango {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-/* Los inputs deshabilitados se ven apagados */
-.time-block input[disabled] {
-    background: #f2f2f2;
-    color: #999;
+.rango label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
 }
 
-/* Ocultar completamente la card si el día está cerrado */
-.day-card.disabled {
-    display: none;
+.rango input[type="time"] {
+  width: 100%;
 }
 
-/* Navegación inferior (idéntica a mi-comercio) */
-.form-navigation {
-    margin-top: 30px;
-    display: flex;
-    justify-content: space-between;
-    padding-bottom: 40px;
-}
-
-/* Overlay de guardado (misma animación y estilo heredado) */
-.saving-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(255,255,255,0.75);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.saving-overlay.hidden {
-    display: none;
-}
-
-.saving-box {
-    background: white;
-    padding: 25px 35px;
-    border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    text-align: center;
-}
-
-.loader {
-    width: 28px;
-    height: 28px;
-    border: 3px solid #ccc;
-    border-top-color: #007bff;
-    border-radius: 50%;
-    margin: 0 auto 10px;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* Responsive */
-@media (max-width: 500px) {
-    .day-card {
-        padding: 15px;
-    }
-
-    .time-block {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .time-block input[type="time"] {
-        width: 100%;
-    }
+/* Versión responsive */
+@media (max-width: 600px) {
+  .horario-rangos {
+    grid-template-columns: 1fr;
+  }
 }
