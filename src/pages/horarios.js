@@ -1,7 +1,8 @@
-// ========================================
-// 📅 HORARIOS.JS - Página completa
-// Reutiliza toda la lógica de mi-comercio.js
-// ========================================
+```javascript
+/* ========================================
+  HORARIOS.JS - Página completa
+  Integración de funciones de horarios dentro del mismo archivo
+======================================== */
 
 import '../styles/base.css';
 import '../styles/layout.css';
@@ -18,7 +19,6 @@ import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
-import { initScheduleModule, getScheduleData, validateSchedule, saveSchedule } from '../modules/scheduleModule.js';
 
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
@@ -26,6 +26,74 @@ let currentComercioId = null;
 let comercioData = {};
 let originalData = {};
 let hasUnsavedChanges = false;
+
+// ==================== MÓDULO DE HORARIOS INTEGRADO ====================
+
+// Inicializa la tabla/grid de horarios
+async function initScheduleModule(comercioId) {
+  const grid = document.getElementById('scheduleGrid');
+  if (!grid) return;
+
+  const horarios = comercioData.horarios || {
+    lunes: { start: '', end: '' },
+    martes: { start: '', end: '' },
+    miercoles: { start: '', end: '' },
+    jueves: { start: '', end: '' },
+    viernes: { start: '', end: '' },
+    sabado: { start: '', end: '' },
+    domingo: { start: '', end: '' }
+  };
+
+  grid.innerHTML = '';
+
+  Object.entries(horarios).forEach(([dia, horas]) => {
+    const row = document.createElement('div');
+    row.className = 'grid-row';
+    row.dataset.dia = dia;
+
+    row.innerHTML = `
+      <label>${dia.charAt(0).toUpperCase() + dia.slice(1)}</label>
+      <input type="time" class="start-time" value="${horas.start || ''}">
+      <input type="time" class="end-time" value="${horas.end || ''}">
+    `;
+    grid.appendChild(row);
+  });
+}
+
+// Lee los datos actuales del grid y devuelve un objeto con horarios
+function getScheduleData() {
+  const grid = document.getElementById('scheduleGrid');
+  if (!grid) return {};
+
+  const data = {};
+  grid.querySelectorAll('.grid-row').forEach(row => {
+    const dia = row.dataset.dia;
+    const start = row.querySelector('.start-time')?.value || '';
+    const end = row.querySelector('.end-time')?.value || '';
+    data[dia] = { start, end };
+  });
+  return data;
+}
+
+// Valida que todos los días tengan horarios completos
+function validateSchedule(horarios) {
+  return Object.values(horarios).every(h => h.start && h.end);
+}
+
+// Guarda los horarios en Firestore
+async function saveSchedule(comercioId) {
+  if (!comercioId) return false;
+
+  const horarios = getScheduleData();
+  try {
+    const ref = doc(db, 'comercios', comercioId);
+    await updateDoc(ref, { horarios });
+    return true;
+  } catch (err) {
+    console.error('Error guardando horarios:', err);
+    return false;
+  }
+}
 
 // ==================== INICIALIZACIÓN ====================
 onAuthStateChanged(auth, async (user) => {
@@ -54,10 +122,8 @@ async function initializePage() {
   try {
     showLoading('Cargando horarios...');
 
-    // 🆕 Renderizar layout primero
     renderLayout();
 
-    // Obtener comercioId del usuario
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userSnap = await getDoc(userRef);
 
@@ -70,23 +136,17 @@ async function initializePage() {
     currentComercioId = userSnap.data().comercioId;
     await loadComercioData();
 
-    // Inicializar navigation (barra de progreso)
     initNavigation();
-
-    // Actualizar header y banner
     updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan || 'trial']);
     updateBanner();
 
-    // 📅 Inicializar módulo de horarios
     await initScheduleModule(currentComercioId);
 
     createSaveButton();
     setupEventListeners();
     insertAIHelperCard();
 
-    // Estado inicial de botones
     checkFormValidity();
-
     hideLoading();
   } catch (err) {
     console.error(err);
@@ -306,3 +366,4 @@ window.validateCurrentPageData = async () => {
   }
   return true;
 };
+```
