@@ -14,7 +14,6 @@ import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
-
 // ==================== DATOS ESTÁTICOS ====================
 const CATEGORIAS_COMUNES = [
   "Panadería", "Carnicería", "Verdulería", "Kiosco", "Supermercado", "Restaurante",
@@ -22,7 +21,6 @@ const CATEGORIAS_COMUNES = [
   "Peluquería", "Gimnasio", "Farmacia", "Ferretería", "Librería", "Juguetería",
   "Electrónica", "Mascotas", "Óptica", "Limpieza", "Regalería", "Tienda de deportes"
 ];
-
 const METODOS_PAGO = [
   { value: "efectivo", label: "Efectivo", icon: "fa-money-bill-wave" },
   { value: "billetera", label: "Billetera virtual (Mercado Pago, MODO, Ualá, etc.)", icon: "fa-mobile-alt" },
@@ -30,7 +28,6 @@ const METODOS_PAGO = [
   { value: "tarjeta_debito", label: "Tarjeta de débito", icon: "fa-credit-card" },
   { value: "transferencia", label: "Transferencia bancaria", icon: "fa-university" }
 ];
-
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
 let currentComercioId = null;
@@ -38,16 +35,13 @@ let comercioData = {};
 let originalData = {};
 let selectedCategories = [];
 let hasUnsavedChanges = false;
-
 // ==================== INICIALIZACIÓN ====================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "/login.html";
     return;
   }
-
   currentUser = user;
-
   try {
     await user.getIdToken();
   } catch (err) {
@@ -56,23 +50,16 @@ onAuthStateChanged(auth, async (user) => {
     window.location.href = "/login.html";
     return;
   }
-
   await initializePage();
   runFlowController(user.uid);
 });
-
 // ==================== CARGA INICIAL ====================
 async function initializePage() {
   try {
     showLoading('Cargando tu comercio...');
-
-    // 🆕 RENDERIZAR LAYOUT PRIMERO (header + barra + banner)
     renderLayout();
-
-    // Obtener o crear comercio
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userSnap = await getDoc(userRef);
-
     if (userSnap.exists() && userSnap.data().comercioId) {
       currentComercioId = userSnap.data().comercioId;
     } else {
@@ -93,37 +80,23 @@ async function initializePage() {
       currentComercioId = nuevo.id;
       await updateDoc(userRef, { comercioId: currentComercioId });
     }
-
     await loadComercioData();
-
-    // Inicializar navigation (barra de progreso)
     initNavigation();
-
-    // 🆕 ACTUALIZAR HEADER Y BANNER con helpers
     updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan || 'trial']);
     updateBanner();
-
     renderPlans();
     renderCategoriesSection();
     renderPaymentMethods();
-
-    // DOM listo → llenamos formulario
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
     fillForm();
-
     const provinciaEl = document.getElementById('provincia');
     if (provinciaEl) {
       fillProvinciaSelector('Argentina', provinciaEl);
     }
-
     createSaveButton();
     setupEventListeners();
     insertAIHelperCard();
-
-    // inicializamos el estado de botones según formulario actual
     checkFormValidity();
-
     hideLoading();
   } catch (err) {
     console.error(err);
@@ -131,7 +104,6 @@ async function initializePage() {
     showToast('Error', 'No se pudo cargar: ' + err.message, 'error');
   }
 }
-
 async function loadComercioData() {
   const ref = doc(db, 'comercios', currentComercioId);
   const snap = await getDoc(ref);
@@ -144,13 +116,11 @@ async function loadComercioData() {
   }
   originalData = structuredClone(comercioData);
 }
-
 // ==================== BANNER HELPER ====================
 function updateBanner() {
   const estado = calcularEstadoPlan(comercioData);
   const plan = PLANS[comercioData.plan || 'trial'];
   let html = '';
-
   switch (estado) {
     case 'trial':
       const dias = getDiasRestantesTrial(comercioData);
@@ -165,10 +135,8 @@ function updateBanner() {
     default:
       html = `Completá tu comercio para activar tu IA`;
   }
-
   updateSubscriptionBanner(html, estado);
 }
-
 // ==================== RENDERS ====================
 function renderPlans() {
   const container = document.getElementById('planSelector');
@@ -176,12 +144,9 @@ function renderPlans() {
     console.warn('⚠️ #planSelector no encontrado');
     return;
   }
-
   container.innerHTML = '';
-
   Object.entries(PLANS).forEach(([key, plan]) => {
     if (key === 'trial') return;
-
     const selected = comercioData.plan === key;
     const card = document.createElement('div');
     card.className = `plan-card ${selected ? 'selected' : ''}`;
@@ -197,30 +162,25 @@ function renderPlans() {
       </div>
       ${plan.masVendido ? '<div style="background:#10b981;color:white;padding:0.25rem 0.75rem;border-radius:8px;font-size:0.8rem;margin-top:1rem;">MÁS VENDIDO</div>' : ''}
     `;
-
     card.onclick = () => {
       document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
       comercioData.plan = key;
       markAsChanged();
-      // validar si ahora el formulario quedó completo
       checkFormValidity();
       updateHeaderInfo(comercioData.nombreComercio, plan);
       updateBanner();
       showToast('Plan seleccionado', `Ahora tenés el plan ${plan.nombre}`, 'info');
     };
-
     container.appendChild(card);
   });
 }
-
 function renderCategoriesSection() {
   const container = document.getElementById('categoriesGrid');
   if (!container) {
     console.warn('⚠️ #categoriesGrid no encontrado');
     return;
   }
-
   container.innerHTML = `
     <div class="categories-selector">
       <div class="category-dropdown">
@@ -240,9 +200,7 @@ function renderCategoriesSection() {
       ${selectedCategories.length === 0 ? '<p class="empty-categories">Aún no seleccionaste ninguna categoría</p>' : ''}
     </div>
   `;
-
   renderSelectedTags();
-
   const selectEl = document.getElementById('categorySelect');
   if (selectEl) {
     selectEl.addEventListener('change', (e) => {
@@ -256,10 +214,8 @@ function renderCategoriesSection() {
       }
     });
   }
-
   const addBtn = document.getElementById('addCustomBtn');
   const customInput = document.getElementById('customCatInput');
-
   if (addBtn) {
     addBtn.onclick = () => {
       if (customInput) {
@@ -274,7 +230,6 @@ function renderCategoriesSection() {
       }
     };
   }
-
   if (customInput) {
     customInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -284,18 +239,15 @@ function renderCategoriesSection() {
     });
   }
 }
-
 function renderSelectedTags() {
   const grid = document.getElementById('selectedTags');
   if (!grid) return;
-
   grid.innerHTML = selectedCategories.map(cat => `
     <div class="selected-category-tag">
       ${cat}
       <button type="button" class="remove-btn" data-cat="${cat}">×</button>
     </div>
   `).join('');
-
   grid.querySelectorAll('.remove-btn').forEach(btn => {
     btn.onclick = () => {
       selectedCategories = selectedCategories.filter(c => c !== btn.dataset.cat);
@@ -304,20 +256,15 @@ function renderSelectedTags() {
       checkFormValidity();
     };
   });
-
-  // validar estado luego de renderizar
   checkFormValidity();
 }
-
 function renderPaymentMethods() {
   const container = document.getElementById('paymentMethods');
   if (!container) {
     console.warn('⚠️ #paymentMethods no encontrado');
     return;
   }
-
   container.innerHTML = '';
-
   METODOS_PAGO.forEach(m => {
     const checked = comercioData.paymentMethods?.includes(m.value) || false;
     const tag = document.createElement('div');
@@ -328,7 +275,6 @@ function renderPaymentMethods() {
         <i class="fas ${m.icon}"></i> ${m.label}
       </label>
     `;
-
     tag.addEventListener('click', (e) => {
       e.preventDefault();
       const checkbox = tag.querySelector('input');
@@ -337,68 +283,47 @@ function renderPaymentMethods() {
       markAsChanged();
       checkFormValidity();
     });
-
     container.appendChild(tag);
   });
-
-  // validar estado luego de pintar métodos
   checkFormValidity();
 }
-
 // ==================== VALIDACIÓN GLOBAL Y HABILITAR BOTONES ====================
-
 function markAsChanged() {
   hasUnsavedChanges = true;
-  // marcamos cambio y dejamos que checkFormValidity decida si habilita botones
   checkFormValidity();
 }
-
 function checkFormValidity() {
   const form = document.getElementById('miComercioForm');
   if (!form) return;
-
   const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
   let missing = false;
-
   required.forEach(id => {
     const el = document.getElementById(id);
     if (!el || !el.value.trim()) missing = true;
   });
-
-  // Validación redes sociales (al menos una)
   const socialFields = ['website', 'instagram', 'facebook', 'tiktok', 'whatsapp'];
   const hasSocial = socialFields.some(id => {
     const el = document.getElementById(id);
     return el && el.value.trim();
   });
   if (!hasSocial) missing = true;
-
-  // Categorías
   if (selectedCategories.length === 0) missing = true;
-
-  // Plan seleccionado
   if (!document.querySelector('.plan-card.selected')) missing = true;
-
   const btnTop = document.getElementById('saveChangesBtn');
   const btnBottom = document.getElementById('saveChangesBtnBottom');
   const buttons = [btnTop, btnBottom].filter(Boolean);
-
   if (missing || !hasUnsavedChanges) {
-    // Si falta algo o no hay cambios, deshabilitamos
     buttons.forEach(b => {
       b.disabled = true;
       b.classList.remove('ready', 'saving', 'saved');
       b.classList.add('btn-save');
-      // aseguramos el texto por si estaba en otro estado
       if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
       if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
     });
   } else {
-    // Todo ok y hay cambios -> habilitamos ambos botones
     buttons.forEach(b => {
       b.disabled = false;
       b.classList.add('ready');
-      // reset text (si estaba en saving/saved lo mantendrá en la lógica de saveFormData)
       if (!b.classList.contains('saving') && !b.classList.contains('saved')) {
         if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
         if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
@@ -406,7 +331,6 @@ function checkFormValidity() {
     });
   }
 }
-
 // ==================== FORM & SAVE ====================
 function fillForm() {
   const form = document.getElementById('miComercioForm');
@@ -414,68 +338,44 @@ function fillForm() {
     console.warn('⚠️ #miComercioForm no encontrado');
     return;
   }
-
   Object.entries(comercioData).forEach(([key, value]) => {
     const field = form.elements[key];
     if (field && value) field.value = value;
   });
-
-  // después de llenar el form, validar estado inicial
   checkFormValidity();
 }
-
 function createSaveButton() {
   if (document.getElementById('saveChangesBtn')) return;
-
   const userInfo = document.querySelector('.header .user-info');
   const logoutBtn = document.getElementById('logoutBtn');
-
   if (!userInfo || !logoutBtn) {
     console.warn('⚠️ No se pudo crear botón de guardar');
     return;
   }
-
   const btn = document.createElement('button');
   btn.id = 'saveChangesBtn';
   btn.className = 'btn-save';
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-
   userInfo.insertBefore(btn, logoutBtn);
   btn.addEventListener('click', saveFormData);
 }
-
-function markAsChanged() {
-  hasUnsavedChanges = true;
-  const btn = document.getElementById('saveChangesBtn');
-  if (btn) {
-    btn.disabled = false;
-    btn.className = 'btn-save';
-    btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-  }
-}
-
 function setupEventListeners() {
   const form = document.getElementById('miComercioForm');
   if (form) {
     form.addEventListener('input', markAsChanged);
     form.addEventListener('input', checkFormValidity);
   }
-
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
       if (confirm('¿Cerrar sesión?')) signOut(auth);
     });
   }
-
   const btnBottom = document.getElementById('saveChangesBtnBottom');
   if (btnBottom) {
     btnBottom.addEventListener('click', saveFormData);
   }
-
-  // También observar cambios en paymentMethods si el contenedor existe (listeners se agregan en renderPaymentMethods)
-  // Observamos cambios de DOM por si renderPaymentMethods se ejecuta después
   const paymentContainer = document.getElementById('paymentMethods');
   if (paymentContainer) {
     paymentContainer.addEventListener('change', () => {
@@ -484,46 +384,35 @@ function setupEventListeners() {
     });
   }
 }
-
 async function saveFormData() {
   const btn = document.getElementById('saveChangesBtn');
   const btnBottom = document.getElementById('saveChangesBtnBottom');
   const form = document.getElementById('miComercioForm');
-
   if (!form) {
     showToast('Error', 'Formulario no encontrado', 'error');
     return;
   }
-
-  // Validación
-  // Validación (igual que checkFormValidity para seguridad)
   const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
   let missing = [];
-
   required.forEach(id => {
     const el = document.getElementById(id);
     if (!el || !el.value.trim()) {
       missing.push(id);
     }
   });
-
-  // Validar que haya al menos una red social
   const socialFields = ['website', 'instagram', 'facebook', 'tiktok', 'whatsapp'];
   const hasSocial = socialFields.some(id => {
     const el = document.getElementById(id);
     return el && el.value.trim();
   });
-
   if (!hasSocial) missing.push('al menos una red social o web');
   if (selectedCategories.length === 0) missing.push('categorías');
   if (!document.querySelector('.plan-card.selected')) missing.push('un plan');
-
   if (missing.length > 0) {
     showToast('Faltan datos', 'Completá: ' + missing.join(', '), 'warning');
     checkFormValidity();
     return;
   }
-
   try {
     [btn, btnBottom].forEach(b => {
       if (b) {
@@ -534,23 +423,18 @@ async function saveFormData() {
         if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardando...';
       }
     });
-
     const formData = new FormData(form);
     const updates = {};
     for (let [k, v] of formData) updates[k] = v.trim();
-
     updates.categories = selectedCategories;
     updates.paymentMethods = Array.from(document.querySelectorAll('input[name="paymentMethods"]:checked')).map(i => i.value);
     updates.plan = document.querySelector('.plan-card.selected')?.dataset.plan || 'trial';
     updates['onboardingSteps.mi-comercio'] = true;
     updates.fechaActualizacion = new Date();
-
     await updateDoc(doc(db, 'comercios', currentComercioId), updates);
-
     comercioData = { ...comercioData, ...updates };
     originalData = structuredClone(comercioData);
     hasUnsavedChanges = false;
-
     [btn, btnBottom].forEach(b => {
       if (b) {
         b.classList.remove('saving');
@@ -560,7 +444,6 @@ async function saveFormData() {
         if (b.id === 'saveChangesBtnBottom') b.innerHTML = '¡Guardado!';
       }
     });
-
     setTimeout(() => {
       [btn, btnBottom].forEach(b => {
         if (b) {
@@ -572,41 +455,30 @@ async function saveFormData() {
         }
       });
     }, 2500);
-
     showToast('Éxito', 'Todo guardado correctamente', 'success');
     updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
-
-    // actualizar banner
     updateBanner();
-
-    // después de guardar, ejecutamos el flow controller para que decida el siguiente paso
     try {
       runFlowController(currentUser.uid);
     } catch (e) {
       console.warn('runFlowController falló tras guardar:', e);
     }
-
   } catch (err) {
     console.error(err);
-
     [btn, btnBottom].forEach(b => {
       if (b) {
         b.className = 'btn-save';
         b.innerHTML = '<i class="fas fa-save"></i> Error';
       }
     });
-
     showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
   } finally {
-    // asegurar estado coherente
     checkFormValidity();
   }
 }
-
 function insertAIHelperCard() {
   const container = document.querySelector('main .container');
   if (!container || document.querySelector('.ai-helper-card')) return;
-
   const card = document.createElement('div');
   card.className = 'ai-helper-card';
   card.innerHTML = `
@@ -619,7 +491,6 @@ function insertAIHelperCard() {
   `;
   container.insertBefore(card, container.firstChild);
 }
-
 window.validateCurrentPageData = async () => {
   if (hasUnsavedChanges) {
     showToast('Cambios sin guardar', 'Guardá antes de continuar', 'warning');
