@@ -6,39 +6,59 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Horarios – ÍndiceIA</title>
 
-  <link rel="stylesheet" href="/src/styles/base.css" />
-  <link rel="stylesheet" href="/src/styles/layout.css" />
-  <link rel="stylesheet" href="/src/styles/components.css" />
-  <link rel="stylesheet" href="/src/styles/forms.css" />
-  <link rel="stylesheet" href="/src/styles/forms-premium.css" />
-  <link rel="stylesheet" href="/src/pages/horarios/horarios.css" />
-
-  <script type="module" src="./horarios.js"></script>
+  <link rel="stylesheet" href="/src/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script type="module" src="/src/pages/horarios.js"></script>
 </head>
 
 <body data-page="horarios">
 
+  <!-- 🔥 Layout global -->
   <header id="layout-header"></header>
 
   <main>
     <div class="container">
 
-      <form id="horariosForm" class="form-section">
-
-        <h2 class="section-title">Horarios de Atención</h2>
-        <p class="section-subtitle">Configurá los días y horarios en que tu negocio atiende al público</p>
-
-        <div id="scheduleGrid" class="schedule-grid">
-          <!-- Los días se renderizan aquí -->
+      <!-- 📅 FORMULARIO DE HORARIOS -->
+      <section class="form-section">
+        
+        <div class="section-header">
+          <h2 class="section-title">
+            <i class="fas fa-clock"></i> 
+            Horarios de Atención
+          </h2>
+          <p class="section-description">
+            Configurá los días y horarios en que tu comercio está abierto. 
+            Tu IA usará esta información para gestionar consultas.
+          </p>
         </div>
 
-      </form>
+        <!-- Grid de horarios (generado por scheduleModule.js) -->
+        <div id="scheduleGrid" class="schedule-grid"></div>
+
+        <!-- Consejos -->
+        <div class="info-box">
+          <i class="fas fa-lightbulb"></i>
+          <div>
+            <strong>Consejos:</strong>
+            <ul>
+              <li>Usá <strong>Horario Continuo</strong> si abrís sin corte (ej: 9:00 a 18:00)</li>
+              <li>Usá <strong>Horario Cortado</strong> si cerrás al mediodía (ej: 8:00-12:00 y 16:00-20:00)</li>
+              <li>Podés dejar días sin marcar si cerrás (ej: domingos)</li>
+            </ul>
+          </div>
+        </div>
+
+      </section>
+
     </div>
   </main>
 
+  <!-- 🔵 Botón de guardar inferior -->
   <div class="bottom-action">
     <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
   </div>
 
 </body>
+
 </html>
