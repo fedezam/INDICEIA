@@ -2,54 +2,46 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Horarios – ÍndiceIA</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Horarios – ÍndiceIA</title>
 
-    <!-- Estilos exclusivos del módulo horarios -->
-    <link rel="stylesheet" href="horarios.css" />
+  <!-- 🎯 Estilos específicos SOLO para horarios -->
+  <link rel="stylesheet" href="/src/pages/horarios.css" />
 
-    <!-- Firebase -->
-    <script type="module" src="firebase-init.js"></script>
-
-    <!-- Flow Controller -->
-    <script type="module" src="src/controllers/flowController.js"></script>
-
-    <!-- Script principal de esta página -->
-    <script type="module" src="horarios.js"></script>
+  <!-- ⚙️ Script de la página -->
+  <script type="module" src="/src/pages/horarios.js"></script>
 </head>
 
-<body>
+<body data-page="horarios">
 
-    <!-- HEADER igual a mi-comercio -->
-    <header class="top-header">
-        <div class="header-content">
-            <h1 class="page-title">Horarios Comerciales</h1>
-            <p class="page-subtitle">Configura los días y rangos horarios de atención.</p>
-        </div>
-    </header>
+  <!-- 🔥 Layout global -->
+  <header id="layout-header"></header>
 
-    <!-- CONTENEDOR GENERAL -->
-    <main class="page-container">
+  <main>
+    <div class="container">
 
-        <!-- GRID DE HORARIOS (dinámico por JS) -->
-        <section id="horarios-grid" class="horarios-grid"></section>
+      <!-- 🔵 FORMULARIO DE HORARIOS -->
+      <form id="horariosForm" class="form-section">
 
-        <!-- BOTONES (idénticos a mi-comercio) -->
-        <div class="form-navigation">
-            <button id="btnBack" class="btn btn-secondary">← Volver</button>
-            <button id="btnSave" class="btn btn-primary">Guardar y continuar →</button>
-        </div>
+        <h2 class="section-title">Horarios del Comercio</h2>
 
-        <!-- ANIMACIÓN DE GUARDADO -->
-        <div id="savingOverlay" class="saving-overlay hidden">
-            <div class="saving-box">
-                <div class="loader"></div>
-                <p>Guardando…</p>
-            </div>
-        </div>
+        <p class="section-description">
+          Configurá los días y horarios en los que tu comercio está abierto.
+        </p>
 
-    </main>
+        <!-- 🕒 LISTA GENERADA POR JS -->
+        <div id="horariosContainer"></div>
+
+      </form>
+
+    </div>
+  </main>
+
+  <!-- 🔵 Botón de guardar inferior -->
+  <div class="bottom-action">
+    <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
+  </div>
 
 </body>
 
