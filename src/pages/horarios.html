@@ -2,62 +2,54 @@
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Horarios – ÍndiceIA</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Horarios – ÍndiceIA</title>
 
-  <link rel="stylesheet" href="/src/styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <script type="module" src="/src/pages/horarios.js"></script>
+    <!-- Estilos exclusivos del módulo horarios -->
+    <link rel="stylesheet" href="horarios.css" />
+
+    <!-- Firebase -->
+    <script type="module" src="firebase-init.js"></script>
+
+    <!-- Flow Controller -->
+    <script type="module" src="src/controllers/flowController.js"></script>
+
+    <!-- Script principal de esta página -->
+    <script type="module" src="horarios.js"></script>
 </head>
 
-<body data-page="horarios">
+<body>
 
-  <!-- 🔥 Layout global -->
-  <header id="layout-header"></header>
+    <!-- HEADER igual a mi-comercio -->
+    <header class="top-header">
+        <div class="header-content">
+            <h1 class="page-title">Horarios Comerciales</h1>
+            <p class="page-subtitle">Configura los días y rangos horarios de atención.</p>
+        </div>
+    </header>
 
-  <main>
-    <div class="container">
+    <!-- CONTENEDOR GENERAL -->
+    <main class="page-container">
 
-      <!-- 📅 FORMULARIO DE HORARIOS -->
-      <section class="form-section">
-        
-        <div class="section-header">
-          <h2 class="section-title">
-            <i class="fas fa-clock"></i> 
-            Horarios de Atención
-          </h2>
-          <p class="section-description">
-            Configurá los días y horarios en que tu comercio está abierto. 
-            Tu IA usará esta información para gestionar consultas.
-          </p>
+        <!-- GRID DE HORARIOS (dinámico por JS) -->
+        <section id="horarios-grid" class="horarios-grid"></section>
+
+        <!-- BOTONES (idénticos a mi-comercio) -->
+        <div class="form-navigation">
+            <button id="btnBack" class="btn btn-secondary">← Volver</button>
+            <button id="btnSave" class="btn btn-primary">Guardar y continuar →</button>
         </div>
 
-        <!-- Grid de horarios (generado por scheduleModule.js) -->
-        <div id="scheduleGrid" class="schedule-grid"></div>
-
-        <!-- Consejos -->
-        <div class="info-box">
-          <i class="fas fa-lightbulb"></i>
-          <div>
-            <strong>Consejos:</strong>
-            <ul>
-              <li>Usá <strong>Horario Continuo</strong> si abrís sin corte (ej: 9:00 a 18:00)</li>
-              <li>Usá <strong>Horario Cortado</strong> si cerrás al mediodía (ej: 8:00-12:00 y 16:00-20:00)</li>
-              <li>Podés dejar días sin marcar si cerrás (ej: domingos)</li>
-            </ul>
-          </div>
+        <!-- ANIMACIÓN DE GUARDADO -->
+        <div id="savingOverlay" class="saving-overlay hidden">
+            <div class="saving-box">
+                <div class="loader"></div>
+                <p>Guardando…</p>
+            </div>
         </div>
 
-      </section>
-
-    </div>
-  </main>
-
-  <!-- 🔵 Botón de guardar inferior -->
-  <div class="bottom-action">
-    <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
-  </div>
+    </main>
 
 </body>
 
