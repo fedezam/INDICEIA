@@ -1,36 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Horarios – ÍndiceIA</title>
-  <script type="module" src="/src/pages/horarios.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horarios - Tu Comercio</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-
-<body data-page="horarios">
-
-  <!-- Layout global -->
-  <header id="layout-header"></header>
-
+<body>
+  <!-- El layout se renderiza dinámicamente desde shared/layout.js -->
   <main>
     <div class="container">
-
-      <form id="horariosForm" class="form-section">
-        <h2 class="section-title">Horarios de Atención</h2>
-
-        <!-- Contenedor dinámico generado por horarios.js -->
-        <div id="horariosContainer"></div>
-
-      </form>
-
+      <!-- El contenido se renderiza dinámicamente desde horarios.js -->
     </div>
   </main>
-
-  <div class="bottom-action">
-    <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
-  </div>
-
+  <script type="module" src="./horarios.js"></script>
 </body>
-
 </html>
