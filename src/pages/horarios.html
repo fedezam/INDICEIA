@@ -1,94 +1,35 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horarios – ÍndiceIA</title>
-    <link rel="stylesheet" href="horarios.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horarios - Mi Comercio IA</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-
 <body>
+  <!-- El header, banner y barra de progreso se renderizan desde layout.js -->
+  
+  <main>
+    <div class="container">
+      <!-- Card de ayuda IA se inserta aquí desde JS -->
+      
+      <div class="page-header">
+        <h2>⏰ Horarios de Atención</h2>
+        <p>Configurá los días y horarios en que tu negocio atiende</p>
+      </div>
 
-    <!-- HEADER -->
-    <header class="header">
-        <h1 class="header-title">Configurar Horarios</h1>
-        <button id="saveHeader" class="save-button">Guardar</button>
-    </header>
+      <!-- Grid de horarios -->
+      <div id="scheduleGrid" class="schedule-grid">
+        <!-- Los días se renderizan desde renderScheduleForm() -->
+      </div>
 
-    <!-- NAV -->
-    <nav class="navigator">
-        <a href="mi-comercio.html">Mi Comercio</a>
-        <a href="horarios.html" class="active">Horarios</a>
-        <a href="servicios.html">Servicios</a>
-        <a href="entrega.html">Entrega</a>
-        <a href="pagos.html">Pagos</a>
-    </nav>
+      <!-- Botón de guardar inferior -->
+      <button type="button" id="saveChangesBtnBottom" class="btn-primary btn-save-bottom" disabled>
+        Guardar Cambios
+      </button>
+    </div>
+  </main>
 
-    <!-- CONTENIDO -->
-    <main class="content">
-
-        <section class="card">
-            <h2 class="section-title">Días y horarios de atención</h2>
-
-            <div class="horario-row">
-                <label>Lunes</label>
-                <input type="time" id="lunes-apertura">
-                <input type="time" id="lunes-cierre">
-                <input type="checkbox" id="lunes-cerrado"> Cerrado
-            </div>
-
-            <div class="horario-row">
-                <label>Martes</label>
-                <input type="time" id="martes-apertura">
-                <input type="time" id="martes-cierre">
-                <input type="checkbox" id="martes-cerrado"> Cerrado
-            </div>
-
-            <div class="horario-row">
-                <label>Miércoles</label>
-                <input type="time" id="miercoles-apertura">
-                <input type="time" id="miercoles-cierre">
-                <input type="checkbox" id="miercoles-cerrado"> Cerrado
-            </div>
-
-            <div class="horario-row">
-                <label>Jueves</label>
-                <input type="time" id="jueves-apertura">
-                <input type="time" id="jueves-cierre">
-                <input type="checkbox" id="jueves-cerrado"> Cerrado
-            </div>
-
-            <div class="horario-row">
-                <label>Viernes</label>
-                <input type="time" id="viernes-apertura">
-                <input type="time" id="viernes-cierre">
-                <input type="checkbox" id="viernes-cerrado"> Cerrado
-            </div>
-
-            <div class="horario-row">
-                <label>Sábado</label>
-                <input type="time" id="sabado-apertura">
-                <input type="time" id="sabado-cierre">
-                <input type="checkbox" id="sabado-cerrado"> Cerrado
-            </div>
-
-            <div class="horario-row">
-                <label>Domingo</label>
-                <input type="time" id="domingo-apertura">
-                <input type="time" id="domingo-cierre">
-                <input type="checkbox" id="domingo-cerrado"> Cerrado
-            </div>
-
-        </section>
-
-    </main>
-
-    <!-- BOTÓN AL FINAL -->
-    <footer class="footer">
-        <button id="saveFooter" class="save-button">Guardar</button>
-    </footer>
-
-    <script src="horarios.js"></script>
+  <script type="module" src="./horarios.js"></script>
 </body>
 </html>
