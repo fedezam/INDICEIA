@@ -1,39 +1,42 @@
-// ========================================
-// 📅 PÁGINA DE HORARIOS
-// ========================================
-// Misma estructura que mi-comercio.js pero para horarios
-
+// src/pages/mi-comercio.js
 import '../styles/base.css';
 import '../styles/layout.css';
 import '../styles/components.css';
 import '../styles/forms.css';
 import '../styles/forms-premium.css';
-import './horarios.css';
+import './mi-comercio.css';
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { initNavigation } from '../shared/navigation.js';
+import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
 
 // ==================== DATOS ESTÁTICOS ====================
-const DAYS = [
-  { key: "lunes", label: "Lunes" },
-  { key: "martes", label: "Martes" },
-  { key: "miercoles", label: "Miércoles" },
-  { key: "jueves", label: "Jueves" },
-  { key: "viernes", label: "Viernes" },
-  { key: "sabado", label: "Sábado" },
-  { key: "domingo", label: "Domingo" }
+const CATEGORIAS_COMUNES = [
+  "Panadería", "Carnicería", "Verdulería", "Kiosco", "Supermercado", "Restaurante",
+  "Cafetería", "Pizzería", "Heladería", "Bar", "Ropa", "Zapatería", "Belleza",
+  "Peluquería", "Gimnasio", "Farmacia", "Ferretería", "Librería", "Juguetería",
+  "Electrónica", "Mascotas", "Óptica", "Limpieza", "Regalería", "Tienda de deportes"
+];
+
+const METODOS_PAGO = [
+  { value: "efectivo", label: "Efectivo", icon: "fa-money-bill-wave" },
+  { value: "billetera", label: "Billetera virtual (Mercado Pago, MODO, Ualá, etc.)", icon: "fa-mobile-alt" },
+  { value: "tarjeta_credito", label: "Tarjeta de crédito", icon: "fa-credit-card" },
+  { value: "tarjeta_debito", label: "Tarjeta de débito", icon: "fa-credit-card" },
+  { value: "transferencia", label: "Transferencia bancaria", icon: "fa-university" }
 ];
 
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
-let originalHorarios = {};
+let originalData = {};
+let selectedCategories = [];
 let hasUnsavedChanges = false;
 
 // ==================== INICIALIZACIÓN ====================
@@ -61,37 +64,64 @@ onAuthStateChanged(auth, async (user) => {
 // ==================== CARGA INICIAL ====================
 async function initializePage() {
   try {
-    showLoading('Cargando horarios...');
+    showLoading('Cargando tu comercio...');
 
-    // 🎨 Renderizar layout (header + barra + banner)
+    // 🆕 RENDERIZAR LAYOUT PRIMERO (header + barra + banner)
     renderLayout();
 
-    // 📦 Cargar datos del comercio
+    // Obtener o crear comercio
+    const userRef = doc(db, 'usuarios', currentUser.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists() && userSnap.data().comercioId) {
+      currentComercioId = userSnap.data().comercioId;
+    } else {
+      const nuevo = await addDoc(collection(db, 'comercios'), {
+        dueñoId: currentUser.uid,
+        fechaCreacion: new Date(),
+        plan: 'trial',
+        pais: 'Argentina',
+        fechaInicioTrial: new Date(),
+        onboardingSteps: {
+          usuario: true,
+          'mi-comercio': false,
+          horarios: false,
+          productos: false,
+          'ia-config': false
+        }
+      });
+      currentComercioId = nuevo.id;
+      await updateDoc(userRef, { comercioId: currentComercioId });
+    }
+
     await loadComercioData();
 
-    // 🧭 Inicializar navegación
+    // Inicializar navigation (barra de progreso)
     initNavigation();
 
-    // 🔄 Actualizar header y banner
-    updateHeaderInfo(
-      comercioData.nombreComercio || 'Mi Comercio',
-      PLANS[comercioData.plan || 'trial']
-    );
+    // 🆕 ACTUALIZAR HEADER Y BANNER con helpers
+    updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan || 'trial']);
     updateBanner();
 
-    // 🎨 Renderizar horarios
-    renderScheduleForm();
+    renderPlans();
+    renderCategoriesSection();
+    renderPaymentMethods();
 
-    // 💾 Crear botón de guardar
+    // DOM listo → llenamos formulario
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    fillForm();
+
+    const provinciaEl = document.getElementById('provincia');
+    if (provinciaEl) {
+      fillProvinciaSelector('Argentina', provinciaEl);
+    }
+
     createSaveButton();
-
-    // 🎯 Setup event listeners
     setupEventListeners();
-
-    // 📌 Card de ayuda IA
     insertAIHelperCard();
 
-    // ✅ Validar estado inicial
+    // inicializamos el estado de botones según formulario actual
     checkFormValidity();
 
     hideLoading();
@@ -102,31 +132,20 @@ async function initializePage() {
   }
 }
 
-// ==================== CARGAR DATOS ====================
 async function loadComercioData() {
-  const userRef = doc(db, 'usuarios', currentUser.uid);
-  const userSnap = await getDoc(userRef);
-
-  if (!userSnap.exists() || !userSnap.data().comercioId) {
-    window.location.href = './mi-comercio.html';
-    return;
-  }
-
-  currentComercioId = userSnap.data().comercioId;
-
-  const comercioRef = doc(db, 'comercios', currentComercioId);
-  const comercioSnap = await getDoc(comercioRef);
-
-  if (comercioSnap.exists()) {
-    comercioData = { id: currentComercioId, ...comercioSnap.data() };
+  const ref = doc(db, 'comercios', currentComercioId);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    comercioData = { id: currentComercioId, ...snap.data() };
+    selectedCategories = comercioData.categories || [];
   } else {
-    comercioData = {};
+    comercioData = { plan: 'trial', pais: 'Argentina' };
+    selectedCategories = [];
   }
-
-  originalHorarios = structuredClone(comercioData.horarios || {});
+  originalData = structuredClone(comercioData);
 }
 
-// ==================== ACTUALIZAR BANNER ====================
+// ==================== BANNER HELPER ====================
 function updateBanner() {
   const estado = calcularEstadoPlan(comercioData);
   const plan = PLANS[comercioData.plan || 'trial'];
@@ -144,217 +163,267 @@ function updateBanner() {
       html = `Trial expirado – Elegí un plan para continuar`;
       break;
     default:
-      html = `Completá tus horarios para activar tu IA`;
+      html = `Completá tu comercio para activar tu IA`;
   }
 
   updateSubscriptionBanner(html, estado);
 }
 
-// ==================== RENDERIZAR HORARIOS ====================
-function renderScheduleForm() {
-  const container = document.getElementById('scheduleGrid');
+// ==================== RENDERS ====================
+function renderPlans() {
+  const container = document.getElementById('planSelector');
   if (!container) {
-    console.warn('⚠️ #scheduleGrid no encontrado');
+    console.warn('⚠️ #planSelector no encontrado');
     return;
   }
 
-  const horarios = comercioData.horarios || {};
+  container.innerHTML = '';
 
-  container.innerHTML = DAYS.map(day => {
-    const dayData = horarios[day.key] || {
-      closed: true,
-      continuous: false,
-      morning: { enabled: false, open: "08:00", close: "12:00" },
-      afternoon: { enabled: false, open: "16:00", close: "20:00" }
+  Object.entries(PLANS).forEach(([key, plan]) => {
+    if (key === 'trial') return;
+
+    const selected = comercioData.plan === key;
+    const card = document.createElement('div');
+    card.className = `plan-card ${selected ? 'selected' : ''}`;
+    card.dataset.plan = key;
+    card.innerHTML = `
+      <div class="plan-header">
+        <h4>${plan.emoji} ${plan.nombre}</h4>
+        <div class="plan-price">$${plan.precio || 0}<small>/mes</small></div>
+      </div>
+      <p class="plan-description">${plan.descripcion}</p>
+      <div class="plan-features">
+        ${plan.features.map(f => `<div class="feature"><i class="fas fa-check"></i> ${f}</div>`).join('')}
+      </div>
+      ${plan.masVendido ? '<div style="background:#10b981;color:white;padding:0.25rem 0.75rem;border-radius:8px;font-size:0.8rem;margin-top:1rem;">MÁS VENDIDO</div>' : ''}
+    `;
+
+    card.onclick = () => {
+      document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      comercioData.plan = key;
+      markAsChanged();
+      // validar si ahora el formulario quedó completo
+      checkFormValidity();
+      updateHeaderInfo(comercioData.nombreComercio, plan);
+      updateBanner();
+      showToast('Plan seleccionado', `Ahora tenés el plan ${plan.nombre}`, 'info');
     };
 
-    // Asegurar que morning y afternoon existan
-    if (!dayData.morning) dayData.morning = { enabled: false, open: "08:00", close: "12:00" };
-    if (!dayData.afternoon) dayData.afternoon = { enabled: false, open: "16:00", close: "20:00" };
+    container.appendChild(card);
+  });
+}
 
-    return `
-      <div class="schedule-day" data-day="${day.key}">
-        <div class="day-header">
-          <label class="day-toggle">
-            <input type="checkbox" ${!dayData.closed ? "checked" : ""}>
-            <span>${day.label}</span>
-          </label>
-        </div>
+function renderCategoriesSection() {
+  const container = document.getElementById('categoriesGrid');
+  if (!container) {
+    console.warn('⚠️ #categoriesGrid no encontrado');
+    return;
+  }
 
-        <div class="day-hours ${dayData.closed ? "disabled" : ""}">
-          <!-- Modo: Continuo o Cortado -->
-          <div class="schedule-mode">
-            <label class="schedule-option">
-              <input type="radio" name="${day.key}_mode" value="continuous" ${dayData.continuous ? "checked" : ""}>
-              <span>Horario Continuo</span>
-            </label>
-            <label class="schedule-option">
-              <input type="radio" name="${day.key}_mode" value="split" ${!dayData.continuous ? "checked" : ""}>
-              <span>Horario Cortado</span>
-            </label>
-          </div>
-
-          <!-- Horario Continuo -->
-          <div class="time-blocks">
-            <div class="time-block continuous-schedule ${dayData.continuous ? "" : "hidden"}">
-              <label>Horario:</label>
-              <div class="time-range">
-                <input type="time" value="${dayData.open || "09:00"}">
-                <span>a</span>
-                <input type="time" value="${dayData.close || "18:00"}">
-              </div>
-            </div>
-
-            <!-- Horario Cortado (Mañana y Tarde) -->
-            <div class="time-block split-schedule ${!dayData.continuous ? "" : "hidden"}">
-              <div class="morning-hours">
-                <label>
-                  <input type="checkbox" ${dayData.morning.enabled ? "checked" : ""}>
-                  <span>Mañana:</span>
-                </label>
-                <div class="time-range">
-                  <input type="time" value="${dayData.morning.open}" ${dayData.morning.enabled ? "" : "disabled"}>
-                  <span>a</span>
-                  <input type="time" value="${dayData.morning.close}" ${dayData.morning.enabled ? "" : "disabled"}>
-                </div>
-              </div>
-
-              <div class="afternoon-hours">
-                <label>
-                  <input type="checkbox" ${dayData.afternoon.enabled ? "checked" : ""}>
-                  <span>Tarde:</span>
-                </label>
-                <div class="time-range">
-                  <input type="time" value="${dayData.afternoon.open}" ${dayData.afternoon.enabled ? "" : "disabled"}>
-                  <span>a</span>
-                  <input type="time" value="${dayData.afternoon.close}" ${dayData.afternoon.enabled ? "" : "disabled"}>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+  container.innerHTML = `
+    <div class="categories-selector">
+      <div class="category-dropdown">
+        <select id="categorySelect" class="category-select">
+          <option value="">Seleccionar categoría común...</option>
+          ${CATEGORIAS_COMUNES.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
       </div>
-    `;
-  }).join('');
+      <div class="custom-category">
+        <input type="text" id="customCatInput" placeholder="O agregá una personalizada...">
+        <button type="button" id="addCustomBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir</button>
+      </div>
+    </div>
+    <div class="selected-categories">
+      <h4><i class="fas fa-tags"></i> Categorías seleccionadas (${selectedCategories.length})</h4>
+      <div class="selected-categories-grid" id="selectedTags"></div>
+      ${selectedCategories.length === 0 ? '<p class="empty-categories">Aún no seleccionaste ninguna categoría</p>' : ''}
+    </div>
+  `;
 
-  // Después de renderizar, validar
+  renderSelectedTags();
+
+  const selectEl = document.getElementById('categorySelect');
+  if (selectEl) {
+    selectEl.addEventListener('change', (e) => {
+      const val = e.target.value.trim();
+      if (val && !selectedCategories.includes(val)) {
+        selectedCategories.push(val);
+        e.target.value = '';
+        renderSelectedTags();
+        markAsChanged();
+        checkFormValidity();
+      }
+    });
+  }
+
+  const addBtn = document.getElementById('addCustomBtn');
+  const customInput = document.getElementById('customCatInput');
+
+  if (addBtn) {
+    addBtn.onclick = () => {
+      if (customInput) {
+        const val = customInput.value.trim();
+        if (val && !selectedCategories.includes(val)) {
+          selectedCategories.push(val);
+          customInput.value = '';
+          renderSelectedTags();
+          markAsChanged();
+          checkFormValidity();
+        }
+      }
+    };
+  }
+
+  if (customInput) {
+    customInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (addBtn) addBtn.click();
+      }
+    });
+  }
+}
+
+function renderSelectedTags() {
+  const grid = document.getElementById('selectedTags');
+  if (!grid) return;
+
+  grid.innerHTML = selectedCategories.map(cat => `
+    <div class="selected-category-tag">
+      ${cat}
+      <button type="button" class="remove-btn" data-cat="${cat}">×</button>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.onclick = () => {
+      selectedCategories = selectedCategories.filter(c => c !== btn.dataset.cat);
+      renderSelectedTags();
+      markAsChanged();
+      checkFormValidity();
+    };
+  });
+
+  // validar estado luego de renderizar
   checkFormValidity();
 }
 
-// ==================== OBTENER DATOS DE HORARIOS ====================
-function getScheduleData() {
-  const grid = document.getElementById('scheduleGrid');
-  if (!grid) return {};
+function renderPaymentMethods() {
+  const container = document.getElementById('paymentMethods');
+  if (!container) {
+    console.warn('⚠️ #paymentMethods no encontrado');
+    return;
+  }
 
-  const days = Array.from(grid.querySelectorAll('.schedule-day'));
-  const horarios = {};
+  container.innerHTML = '';
 
-  days.forEach(dayEl => {
-    const day = dayEl.dataset.day;
-    const enabled = dayEl.querySelector('.day-toggle input[type="checkbox"]')?.checked ?? false;
+  METODOS_PAGO.forEach(m => {
+    const checked = comercioData.paymentMethods?.includes(m.value) || false;
+    const tag = document.createElement('div');
+    tag.className = `payment-tag ${checked ? 'selected' : ''}`;
+    tag.innerHTML = `
+      <input type="checkbox" id="pay_${m.value}" name="paymentMethods" value="${m.value}" ${checked ? 'checked' : ''}>
+      <label for="pay_${m.value}">
+        <i class="fas ${m.icon}"></i> ${m.label}
+      </label>
+    `;
 
-    // Si el día está deshabilitado
-    if (!enabled) {
-      horarios[day] = { closed: true };
-      return;
-    }
+    tag.addEventListener('click', (e) => {
+      e.preventDefault();
+      const checkbox = tag.querySelector('input');
+      checkbox.checked = !checkbox.checked;
+      tag.classList.toggle('selected', checkbox.checked);
+      markAsChanged();
+      checkFormValidity();
+    });
 
-    const continuous = dayEl.querySelector(`input[name="${day}_mode"][value="continuous"]`)?.checked ?? false;
-
-    // Horario continuo
-    if (continuous) {
-      const inputs = dayEl.querySelectorAll('.continuous-schedule input[type="time"]');
-      horarios[day] = {
-        closed: false,
-        continuous: true,
-        open: inputs[0]?.value || "09:00",
-        close: inputs[1]?.value || "18:00"
-      };
-    }
-    // Horario cortado
-    else {
-      const morningEnabled = dayEl.querySelector('.morning-hours input[type="checkbox"]')?.checked ?? false;
-      const afternoonEnabled = dayEl.querySelector('.afternoon-hours input[type="checkbox"]')?.checked ?? false;
-
-      const morningInputs = dayEl.querySelectorAll('.morning-hours input[type="time"]');
-      const afternoonInputs = dayEl.querySelectorAll('.afternoon-hours input[type="time"]');
-
-      horarios[day] = {
-        closed: false,
-        continuous: false,
-        morning: {
-          enabled: morningEnabled,
-          open: morningEnabled ? (morningInputs[0]?.value || "08:00") : "00:00",
-          close: morningEnabled ? (morningInputs[1]?.value || "12:00") : "00:00"
-        },
-        afternoon: {
-          enabled: afternoonEnabled,
-          open: afternoonEnabled ? (afternoonInputs[0]?.value || "16:00") : "00:00",
-          close: afternoonEnabled ? (afternoonInputs[1]?.value || "20:00") : "00:00"
-        }
-      };
-    }
+    container.appendChild(tag);
   });
 
-  return horarios;
+  // validar estado luego de pintar métodos
+  checkFormValidity();
 }
 
-// ==================== VALIDACIÓN ====================
+// ==================== VALIDACIÓN GLOBAL Y HABILITAR BOTONES ====================
+
+function markAsChanged() {
+  hasUnsavedChanges = true;
+  // marcamos cambio y dejamos que checkFormValidity decida si habilita botones
+  checkFormValidity();
+}
+
 function checkFormValidity() {
-  const horarios = getScheduleData();
+  const form = document.getElementById('miComercioForm');
+  if (!form) return;
 
-  // Validar que haya al menos un horario válido
-  const hasValidSchedule = Object.values(horarios).some(day => {
-    if (day.closed) return false;
+  const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
+  let missing = false;
 
-    if (day.continuous) {
-      return day.open && day.close && day.open !== "00:00" && day.close !== "00:00";
-    } else {
-      const hasMorning = day.morning?.enabled &&
-                        day.morning?.open &&
-                        day.morning?.close &&
-                        day.morning.open !== "00:00";
-      const hasAfternoon = day.afternoon?.enabled &&
-                          day.afternoon?.open &&
-                          day.afternoon?.close &&
-                          day.afternoon.open !== "00:00";
-      return hasMorning || hasAfternoon;
-    }
+  required.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || !el.value.trim()) missing = true;
   });
 
-  // Habilitar/deshabilitar botones
-  updateSaveButtons(hasValidSchedule && hasUnsavedChanges);
-}
+  // Validación redes sociales (al menos una)
+  const socialFields = ['website', 'instagram', 'facebook', 'tiktok', 'whatsapp'];
+  const hasSocial = socialFields.some(id => {
+    const el = document.getElementById(id);
+    return el && el.value.trim();
+  });
+  if (!hasSocial) missing = true;
 
-// ==================== ACTUALIZAR BOTONES ====================
-function updateSaveButtons(enabled) {
+  // Categorías
+  if (selectedCategories.length === 0) missing = true;
+
+  // Plan seleccionado
+  if (!document.querySelector('.plan-card.selected')) missing = true;
+
   const btnTop = document.getElementById('saveChangesBtn');
   const btnBottom = document.getElementById('saveChangesBtnBottom');
   const buttons = [btnTop, btnBottom].filter(Boolean);
 
-  buttons.forEach(btn => {
-    btn.disabled = !enabled;
-
-    if (!enabled) {
-      btn.classList.remove('ready', 'saving', 'saved');
-      if (btn.id === 'saveChangesBtn') {
-        btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-      } else {
-        btn.textContent = 'Guardar Cambios';
+  if (missing || !hasUnsavedChanges) {
+    // Si falta algo o no hay cambios, deshabilitamos
+    buttons.forEach(b => {
+      b.disabled = true;
+      b.classList.remove('ready', 'saving', 'saved');
+      b.classList.add('btn-save');
+      // aseguramos el texto por si estaba en otro estado
+      if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+      if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
+    });
+  } else {
+    // Todo ok y hay cambios -> habilitamos ambos botones
+    buttons.forEach(b => {
+      b.disabled = false;
+      b.classList.add('ready');
+      // reset text (si estaba en saving/saved lo mantendrá en la lógica de saveFormData)
+      if (!b.classList.contains('saving') && !b.classList.contains('saved')) {
+        if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+        if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
       }
-    } else {
-      btn.classList.add('ready');
-    }
-  });
+    });
+  }
 }
 
-// ==================== MARCAR COMO CAMBIADO ====================
-function markAsChanged() {
-  hasUnsavedChanges = true;
+// ==================== FORM & SAVE ====================
+function fillForm() {
+  const form = document.getElementById('miComercioForm');
+  if (!form) {
+    console.warn('⚠️ #miComercioForm no encontrado');
+    return;
+  }
+
+  Object.entries(comercioData).forEach(([key, value]) => {
+    const field = form.elements[key];
+    if (field && value) field.value = value;
+  });
+
+  // después de llenar el form, validar estado inicial
   checkFormValidity();
 }
 
-// ==================== CREAR BOTÓN SUPERIOR ====================
 function createSaveButton() {
   if (document.getElementById('saveChangesBtn')) return;
 
@@ -373,182 +442,167 @@ function createSaveButton() {
   btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
 
   userInfo.insertBefore(btn, logoutBtn);
-  btn.addEventListener('click', saveScheduleData);
+  btn.addEventListener('click', saveFormData);
 }
 
-// ==================== EVENT LISTENERS ====================
+function markAsChanged() {
+  hasUnsavedChanges = true;
+  const btn = document.getElementById('saveChangesBtn');
+  if (btn) {
+    btn.disabled = false;
+    btn.className = 'btn-save';
+    btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+  }
+}
+
 function setupEventListeners() {
-  const grid = document.getElementById('scheduleGrid');
-
-  if (grid) {
-    // Habilitar/Deshabilitar día completo
-    grid.addEventListener('change', (e) => {
-      if (e.target.type === 'checkbox' && e.target.closest('.day-toggle')) {
-        const dayEl = e.target.closest('.schedule-day');
-        const dayHours = dayEl.querySelector('.day-hours');
-        dayHours.classList.toggle('disabled', !e.target.checked);
-        markAsChanged();
-      }
-
-      // Cambiar entre continuo y cortado
-      if (e.target.type === 'radio' && e.target.name.includes('_mode')) {
-        const dayEl = e.target.closest('.schedule-day');
-        const isContinuous = e.target.value === 'continuous';
-        const continuousBlock = dayEl.querySelector('.continuous-schedule');
-        const splitBlock = dayEl.querySelector('.split-schedule');
-
-        continuousBlock.classList.toggle('hidden', !isContinuous);
-        splitBlock.classList.toggle('hidden', isContinuous);
-        markAsChanged();
-      }
-
-      // Habilitar/Deshabilitar mañana o tarde
-      if (e.target.type === 'checkbox' && (e.target.closest('.morning-hours') || e.target.closest('.afternoon-hours'))) {
-        const timeRange = e.target.closest('.morning-hours, .afternoon-hours').querySelector('.time-range');
-        const inputs = timeRange.querySelectorAll('input[type="time"]');
-        inputs.forEach(input => input.disabled = !e.target.checked);
-        markAsChanged();
-      }
-    });
-
-    // Detectar cambios en inputs de tiempo
-    grid.addEventListener('input', (e) => {
-      if (e.target.type === 'time') {
-        markAsChanged();
-      }
-    });
+  const form = document.getElementById('miComercioForm');
+  if (form) {
+    form.addEventListener('input', markAsChanged);
+    form.addEventListener('input', checkFormValidity);
   }
 
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      if (confirm('¿Cerrar sesión?')) {
-        await signOut(auth);
-        window.location.href = '/index.html';
-      }
+    logoutBtn.addEventListener('click', () => {
+      if (confirm('¿Cerrar sesión?')) signOut(auth);
     });
   }
 
   const btnBottom = document.getElementById('saveChangesBtnBottom');
   if (btnBottom) {
-    btnBottom.addEventListener('click', saveScheduleData);
+    btnBottom.addEventListener('click', saveFormData);
   }
 
-  // Prevenir salida con cambios sin guardar
-  window.addEventListener('beforeunload', (e) => {
-    if (hasUnsavedChanges) {
-      e.preventDefault();
-      e.returnValue = '¿Seguro que quieres salir? Tienes cambios sin guardar.';
-    }
-  });
+  // También observar cambios en paymentMethods si el contenedor existe (listeners se agregan en renderPaymentMethods)
+  // Observamos cambios de DOM por si renderPaymentMethods se ejecuta después
+  const paymentContainer = document.getElementById('paymentMethods');
+  if (paymentContainer) {
+    paymentContainer.addEventListener('change', () => {
+      markAsChanged();
+      checkFormValidity();
+    });
+  }
 }
 
-// ==================== GUARDAR ====================
-async function saveScheduleData() {
-  const btnTop = document.getElementById('saveChangesBtn');
+async function saveFormData() {
+  const btn = document.getElementById('saveChangesBtn');
   const btnBottom = document.getElementById('saveChangesBtnBottom');
-  const buttons = [btnTop, btnBottom].filter(Boolean);
+  const form = document.getElementById('miComercioForm');
 
-  const horarios = getScheduleData();
+  if (!form) {
+    showToast('Error', 'Formulario no encontrado', 'error');
+    return;
+  }
 
-  // Validar que haya al menos un horario válido
-  const hasValidSchedule = Object.values(horarios).some(day => {
-    if (day.closed) return false;
+  // Validación
+  // Validación (igual que checkFormValidity para seguridad)
+  const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
+  let missing = [];
 
-    if (day.continuous) {
-      return day.open && day.close && day.open !== "00:00" && day.close !== "00:00";
-    } else {
-      const hasMorning = day.morning?.enabled &&
-                        day.morning?.open &&
-                        day.morning?.close &&
-                        day.morning.open !== "00:00";
-      const hasAfternoon = day.afternoon?.enabled &&
-                          day.afternoon?.open &&
-                          day.afternoon?.close &&
-                          day.afternoon.open !== "00:00";
-      return hasMorning || hasAfternoon;
+  required.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || !el.value.trim()) {
+      missing.push(id);
     }
   });
 
-  if (!hasValidSchedule) {
-    showToast('Horarios', 'Debes configurar al menos un horario válido', 'warning');
+  // Validar que haya al menos una red social
+  const socialFields = ['website', 'instagram', 'facebook', 'tiktok', 'whatsapp'];
+  const hasSocial = socialFields.some(id => {
+    const el = document.getElementById(id);
+    return el && el.value.trim();
+  });
+
+  if (!hasSocial) missing.push('al menos una red social o web');
+  if (selectedCategories.length === 0) missing.push('categorías');
+  if (!document.querySelector('.plan-card.selected')) missing.push('un plan');
+
+  if (missing.length > 0) {
+    showToast('Faltan datos', 'Completá: ' + missing.join(', '), 'warning');
+    checkFormValidity();
     return;
   }
 
   try {
-    // Estado: guardando
-    buttons.forEach(btn => {
-      btn.classList.add('saving');
-      btn.classList.remove('saved', 'ready');
-      btn.disabled = true;
-      if (btn.id === 'saveChangesBtn') {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-      } else {
-        btn.textContent = 'Guardando...';
+    [btn, btnBottom].forEach(b => {
+      if (b) {
+        b.classList.add('saving');
+        b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        b.classList.remove('saved', 'ready');
+        if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+        if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardando...';
       }
     });
 
-    // 💾 Guardar en Firestore
-    const comercioRef = doc(db, 'comercios', currentComercioId);
-    await updateDoc(comercioRef, {
-      horarios,
-      'onboardingSteps.horarios': true,
-      fechaActualizacion: new Date()
-    });
+    const formData = new FormData(form);
+    const updates = {};
+    for (let [k, v] of formData) updates[k] = v.trim();
 
-    console.log('✅ Horarios guardados y paso "horarios" marcado como completado');
+    updates.categories = selectedCategories;
+    updates.paymentMethods = Array.from(document.querySelectorAll('input[name="paymentMethods"]:checked')).map(i => i.value);
+    updates.plan = document.querySelector('.plan-card.selected')?.dataset.plan || 'trial';
+    updates['onboardingSteps.mi-comercio'] = true;
+    updates.fechaActualizacion = new Date();
 
-    // ✅ Actualizar estado local
-    comercioData.horarios = horarios;
-    originalHorarios = structuredClone(horarios);
+    await updateDoc(doc(db, 'comercios', currentComercioId), updates);
+
+    comercioData = { ...comercioData, ...updates };
+    originalData = structuredClone(comercioData);
     hasUnsavedChanges = false;
 
-    // Estado: guardado
-    buttons.forEach(btn => {
-      btn.classList.remove('saving');
-      btn.classList.add('saved');
-      if (btn.id === 'saveChangesBtn') {
-        btn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
-      } else {
-        btn.textContent = '¡Guardado!';
+    [btn, btnBottom].forEach(b => {
+      if (b) {
+        b.classList.remove('saving');
+        b.classList.add('saved');
+        b.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+        if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+        if (b.id === 'saveChangesBtnBottom') b.innerHTML = '¡Guardado!';
       }
     });
 
-    // Reset después de 2.5s
     setTimeout(() => {
-      updateSaveButtons(false);
+      [btn, btnBottom].forEach(b => {
+        if (b) {
+          b.disabled = true;
+          b.className = 'btn-save';
+          b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+          if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+          if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
+        }
+      });
     }, 2500);
 
-    showToast('Éxito', 'Horarios guardados correctamente', 'success');
+    showToast('Éxito', 'Todo guardado correctamente', 'success');
+    updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
 
-    // Actualizar banner
+    // actualizar banner
     updateBanner();
 
-    // 🔄 Ejecutar flow controller
-    setTimeout(() => {
+    // después de guardar, ejecutamos el flow controller para que decida el siguiente paso
+    try {
       runFlowController(currentUser.uid);
-    }, 1000);
+    } catch (e) {
+      console.warn('runFlowController falló tras guardar:', e);
+    }
 
   } catch (err) {
-    console.error('❌ Error al guardar horarios:', err);
+    console.error(err);
 
-    buttons.forEach(btn => {
-      btn.classList.remove('saving', 'saved');
-      btn.disabled = false;
-      if (btn.id === 'saveChangesBtn') {
-        btn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error';
-      } else {
-        btn.textContent = 'Error al guardar';
+    [btn, btnBottom].forEach(b => {
+      if (b) {
+        b.className = 'btn-save';
+        b.innerHTML = '<i class="fas fa-save"></i> Error';
       }
     });
 
-    showToast('Error', 'No se pudieron guardar los horarios: ' + err.message, 'error');
+    showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
   } finally {
+    // asegurar estado coherente
     checkFormValidity();
   }
 }
 
-// ==================== CARD DE AYUDA IA ====================
 function insertAIHelperCard() {
   const container = document.querySelector('main .container');
   if (!container || document.querySelector('.ai-helper-card')) return;
@@ -556,39 +610,20 @@ function insertAIHelperCard() {
   const card = document.createElement('div');
   card.className = 'ai-helper-card';
   card.innerHTML = `
-    <div class="ai-helper-icon">🕐</div>
+    <div class="ai-helper-icon">AI</div>
     <div class="ai-helper-content">
-      <h4>¡Horarios inteligentes!</h4>
-      <p>Tu IA usará estos horarios para informar a tus clientes cuándo está abierto tu negocio y gestionar consultas fuera de horario.</p>
-      <small>Mantén tus horarios actualizados para mejor servicio</small>
+      <h4>¡Tu IA está tomando forma!</h4>
+      <p>Con esta información crearé un asistente inteligente que conozca tu negocio al detalle y convierta más ventas.</p>
+      <small>Cuanto más completes, mejor será tu IA</small>
     </div>
   `;
   container.insertBefore(card, container.firstChild);
 }
 
-// ==================== VALIDACIÓN GLOBAL ====================
-window.validateCurrentPageData = () => {
+window.validateCurrentPageData = async () => {
   if (hasUnsavedChanges) {
     showToast('Cambios sin guardar', 'Guardá antes de continuar', 'warning');
     return false;
   }
-
-  const horarios = getScheduleData();
-  const hasValidSchedule = Object.values(horarios).some(day => {
-    if (day.closed) return false;
-    if (day.continuous) {
-      return day.open && day.close && day.open !== "00:00" && day.close !== "00:00";
-    } else {
-      const hasMorning = day.morning?.enabled && day.morning?.open && day.morning?.close && day.morning.open !== "00:00";
-      const hasAfternoon = day.afternoon?.enabled && day.afternoon?.open && day.afternoon?.close && day.afternoon.open !== "00:00";
-      return hasMorning || hasAfternoon;
-    }
-  });
-
-  if (!hasValidSchedule) {
-    showToast('Horarios', 'Debes configurar al menos un horario válido', 'warning');
-    return false;
-  }
-
   return true;
 };
