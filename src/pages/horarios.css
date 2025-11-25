@@ -1,319 +1,127 @@
-/* ========================================
-   📅 HORARIOS.CSS - Estilos específicos
-   ======================================== */
+/* -------------------------
+   ESTILOS EXCLUSIVOS DE HORARIOS
+   ------------------------- */
 
-.section-header {
-  text-align: center;
-  margin-bottom: 3rem;
+/* Grid general */
+.horarios-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 20px;
 }
 
-.section-header .section-title {
-  font-size: 2rem;
-  margin-bottom: 0.75rem;
-  color: #111827;
+/* Cada fila del día */
+.day-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.section-description {
-  font-size: 1rem;
-  color: #6b7280;
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.6;
-}
-
-/* ========================================
-   GRID DE HORARIOS
-   ======================================== */
-.schedule-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-/* ========================================
-   TARJETA DE DÍA
-   ======================================== */
-.schedule-day {
-  background: #ffffff;
-  border: 2px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
-}
-
-.schedule-day:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-}
-
-/* Header del día */
+/* Checkbox + nombre del día */
 .day-header {
-  margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 1rem;
 }
 
-.day-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #111827;
+/* Card de horarios (MISMA ESTÉTICA QUE LAS CARDS DE MI-COMERCIO) */
+.day-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    border: 1px solid #e6e6e6;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
-.day-toggle input[type="checkbox"] {
-  width: 22px;
-  height: 22px;
-  cursor: pointer;
-  accent-color: #3b82f6;
-}
-
-.day-toggle span {
-  user-select: none;
-}
-
-/* ========================================
-   CONTENEDOR DE HORAS
-   ======================================== */
-.day-hours {
-  padding-left: 2rem;
-  transition: opacity 0.3s ease;
-}
-
-.day-hours.disabled {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-/* ========================================
-   MODO DE HORARIO (Continuo / Cortado)
-   ======================================== */
-.schedule-mode {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-  padding: 0.75rem;
-  background: #f9fafb;
-  border-radius: 10px;
-}
-
-.schedule-option {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-size: 0.95rem;
-  color: #374151;
-  transition: color 0.2s ease;
-}
-
-.schedule-option:hover {
-  color: #3b82f6;
-}
-
-.schedule-option input[type="radio"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #3b82f6;
-}
-
-/* ========================================
-   BLOQUES DE TIEMPO
-   ======================================== */
-.time-blocks {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
+/* Cada bloque de horario */
 .time-block {
-  transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.time-block.hidden {
-  display: none;
-}
-
-/* Horario continuo */
-.continuous-schedule {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: #f0f9ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 10px;
-}
-
-.continuous-schedule label {
-  font-weight: 600;
-  color: #1e40af;
-  min-width: 80px;
-}
-
-/* Horario cortado */
-.split-schedule {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.morning-hours,
-.afternoon-hours {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: #fef3c7;
-  border: 1px solid #fde68a;
-  border-radius: 10px;
-}
-
-.afternoon-hours {
-  background: #fee2e2;
-  border-color: #fecaca;
-}
-
-.morning-hours label,
-.afternoon-hours label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  color: #92400e;
-  min-width: 100px;
-  cursor: pointer;
-}
-
-.afternoon-hours label {
-  color: #991b1b;
-}
-
-.morning-hours input[type="checkbox"],
-.afternoon-hours input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #f59e0b;
-}
-
-.afternoon-hours input[type="checkbox"] {
-  accent-color: #ef4444;
-}
-
-/* ========================================
-   RANGOS DE TIEMPO
-   ======================================== */
-.time-range {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-}
-
-.time-range input[type="time"] {
-  padding: 0.6rem 0.9rem;
-  border: 2px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #111827;
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-width: 120px;
-}
-
-.time-range input[type="time"]:hover {
-  border-color: #3b82f6;
-}
-
-.time-range input[type="time"]:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.time-range input[type="time"]:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #f3f4f6;
-}
-
-.time-range span {
-  font-weight: 700;
-  color: #6b7280;
-}
-
-/* ========================================
-   INFO BOX
-   ======================================== */
-.info-box {
-  display: flex;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 12px;
-  margin-top: 2rem;
-}
-
-.info-box i {
-  font-size: 1.5rem;
-  color: #3b82f6;
-  flex-shrink: 0;
-}
-
-.info-box strong {
-  color: #1e40af;
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-.info-box ul {
-  margin: 0;
-  padding-left: 1.25rem;
-  color: #374151;
-}
-
-.info-box li {
-  margin-bottom: 0.4rem;
-  line-height: 1.5;
-}
-
-/* ========================================
-   RESPONSIVE
-   ======================================== */
-@media (max-width: 768px) {
-  .schedule-mode {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .continuous-schedule,
-  .morning-hours,
-  .afternoon-hours {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .time-range {
-    width: 100%;
-  }
-
-  .time-range input[type="time"] {
+/* Inputs de tiempo */
+.time-block input[type="time"] {
     flex: 1;
-    min-width: 0;
-  }
+    padding: 10px;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
 
-  .section-header .section-title {
-    font-size: 1.5rem;
-  }
+/* Los inputs deshabilitados se ven apagados */
+.time-block input[disabled] {
+    background: #f2f2f2;
+    color: #999;
+}
 
-  .info-box {
-    flex-direction: column;
-  }
+/* Ocultar completamente la card si el día está cerrado */
+.day-card.disabled {
+    display: none;
+}
+
+/* Navegación inferior (idéntica a mi-comercio) */
+.form-navigation {
+    margin-top: 30px;
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 40px;
+}
+
+/* Overlay de guardado (misma animación y estilo heredado) */
+.saving-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.saving-overlay.hidden {
+    display: none;
+}
+
+.saving-box {
+    background: white;
+    padding: 25px 35px;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    text-align: center;
+}
+
+.loader {
+    width: 28px;
+    height: 28px;
+    border: 3px solid #ccc;
+    border-top-color: #007bff;
+    border-radius: 50%;
+    margin: 0 auto 10px;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+    .day-card {
+        padding: 15px;
+    }
+
+    .time-block {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .time-block input[type="time"] {
+        width: 100%;
+    }
 }
