@@ -5,32 +5,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Horarios – ÍndiceIA</title>
-
-  <!-- 🎯 Estilos específicos SOLO para horarios -->
-  <link rel="stylesheet" href="/src/pages/horarios.css" />
-
-  <!-- ⚙️ Script de la página -->
   <script type="module" src="/src/pages/horarios.js"></script>
 </head>
 
 <body data-page="horarios">
 
-  <!-- 🔥 Layout global -->
+  <!-- Layout global -->
   <header id="layout-header"></header>
 
   <main>
     <div class="container">
 
-      <!-- 🔵 FORMULARIO DE HORARIOS -->
       <form id="horariosForm" class="form-section">
+        <h2 class="section-title">Horarios de Atención</h2>
 
-        <h2 class="section-title">Horarios del Comercio</h2>
-
-        <p class="section-description">
-          Configurá los días y horarios en los que tu comercio está abierto.
-        </p>
-
-        <!-- 🕒 LISTA GENERADA POR JS -->
+        <!-- Contenedor dinámico generado por horarios.js -->
         <div id="horariosContainer"></div>
 
       </form>
@@ -38,7 +27,6 @@
     </div>
   </main>
 
-  <!-- 🔵 Botón de guardar inferior -->
   <div class="bottom-action">
     <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
   </div>
