@@ -1,68 +1,43 @@
-// src/pages/mi-comercio.js
+// src/pages/horarios/horarios.js
 
 import '../styles/base.css';
 import '../styles/layout.css';
 import '../styles/components.css';
 import '../styles/forms.css';
 import '../styles/forms-premium.css';
-import './mi-comercio.css';
+import './horarios.css';
 
 import { auth, db } from '../firebase.js';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { renderLayout, updateHeaderInfo } from '../shared/layout.js';
 import { initNavigation } from '../shared/navigation.js';
-import { fillProvinciaSelector } from '../shared/provincias.js';
-import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
+import { PLANS } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
+
+const DAYS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
 
 let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
-let originalData = {};
-let selectedCategories = [];
+let originalHorarios = {};
 let hasUnsavedChanges = false;
 
-// ==================== INICIALIZACIÓN ====================
 onAuthStateChanged(auth, async (user) => {
-  if (!user) return location.href = "/login.html";
+  if (!user) return location.href = '/login.html';
   currentUser = user;
   await initializePage();
   runFlowController(user.uid);
 });
 
-// ==================== CARGA INICIAL ====================
 async function initializePage() {
-  showLoading('Cargando tu comercio...');
+  showLoading('Cargando horarios...');
   renderLayout();
-
-  const userRef = doc(db, 'usuarios', currentUser.uid);
-  const userSnap = await getDoc(userRef);
-
-  if (!userSnap.exists() || !userSnap.data().comercioId) {
-    const nuevo = await addDoc(collection(db, 'comercios'), {
-      dueñoId: currentUser.uid,
-      fechaCreacion: new Date(),
-      plan: 'trial',
-      pais: 'Argentina',
-      fechaInicioTrial: new Date(),
-      onboardingSteps: { usuario: true }
-    });
-    currentComercioId = nuevo.id;
-    await updateDoc(userRef, { comercioId: currentComercioId });
-  } else {
-    currentComercioId = userSnap.data().comercioId;
-  }
-
   await loadComercioData();
   initNavigation();
   updateHeaderInfo(comercioData.nombreComercio || 'Mi Comercio', PLANS[comercioData.plan || 'trial']);
-  renderPlans();
-  renderCategoriesSection();
-  renderPaymentMethods();
-  fillForm();
-  fillProvinciaSelector(document.getElementById('provincia'), comercioData.provincia);
+  renderScheduleForm();
   createTopSaveButton();
   setupEventListeners();
   insertAIHelperCard();
@@ -70,23 +45,76 @@ async function initializePage() {
   hideLoading();
 }
 
-// ==================== CARGAR DATOS ====================
 async function loadComercioData() {
-  const snap = await getDoc(doc(db, 'comercios', currentComercioId));
-  if (snap.exists()) {
-    comercioData = { id: currentComercioId, ...snap.data() };
-    originalData = structuredClone(comercioData);
-    selectedCategories = comercioData.categories || [];
-  }
+  const userSnap = await getDoc(doc(db, 'usuarios', currentUser.uid));
+  if (!userSnap.exists() || !userSnap.data().comercioId) return location.href = '/mi-comercio.html';
+  currentComercioId = userSnap.data().comercioId;
+  const comercioSnap = await getDoc(doc(db, 'comercios', currentComercioId));
+  comercioData = comercioSnap.exists() ? { id: currentComercioId, ...comercioSnap.data() } : {};
+  originalHorarios = structuredClone(comercioData.horarios || {});
 }
 
-// ==================== MARCAR CAMBIOS (ÚNICA FUNCIÓN) ====================
-function markAsChanged() {
-  hasUnsavedChanges = true;
-  checkFormValidity();
+function renderScheduleForm() {
+  const grid = document.getElementById('scheduleGrid');
+  grid.innerHTML = DAYS.map(dayKey => {
+    const day = comercioData.horarios?.[dayKey] || { closed: false, continuous: true };
+    const name = dayKey.charAt(0).toUpperCase() + dayKey.slice(1);
+
+    return `
+      <div class="schedule-day">
+        <div class="day-header">
+          <h3 class="day-name">${name}</h3>
+          <label class="day-toggle">
+            <input type="checkbox" ${!day.closed ? 'checked' : ''} data-day="${dayKey}" class="toggle-day">
+            <span>${day.closed ? 'Cerrado' : 'Abierto'}</span>
+          </label>
+        </div>
+
+        <div class="day-hours ${day.closed ? 'disabled' : ''}">
+          <div class="schedule-mode">
+            <label class="schedule-option">
+              <input type="radio" name="mode-${dayKey}" value="continuous" ${day.continuous ? 'checked' : ''} data-day="${dayKey}">
+              <span>Horario continuo</span>
+            </label>
+            <label class="schedule-option">
+              <input type="radio" name="mode-${dayKey}" value="split" ${!day.continuous ? 'checked' : ''} data-day="${dayKey}">
+              <span>Horario cortado</span>
+            </label>
+          </div>
+
+          <div class="time-blocks">
+            <div class="continuous-schedule" style="display:${day.continuous ? 'block' : 'none'}">
+              <div class="time-range">
+                <input type="time" value="${day.open || '09:00'}" data-day="${dayKey}" data-field="open">
+                <span>→</span>
+                <input type="time" value="${day.close || '18:00'}" data-day="${dayKey}" data-field="close">
+              </div>
+            </div>
+
+            <div class="split-schedule" style="display:${!day.continuous ? 'flex' : 'none'}">
+              <div class="morning-hours">
+                <label><input type="checkbox" ${day.morning?.enabled ? 'checked' : ''} data-day="${dayKey}" data-period="morning"> Mañana</label>
+                <div class="time-range">
+                  <input type="time" value="${day.morning?.open || '09:00'}" data-day="${dayKey}" data-period="morning" data-field="open">
+                  <span>→</span>
+                  <input type="time" value="${day.morning?.close || '13:00'}" data-day="${dayKey}" data-period="morning" data-field="close">
+                </div>
+              </div>
+              <div class="afternoon-hours">
+                <label><input type="checkbox" ${day.afternoon?.enabled ? 'checked' : ''} data-day="${dayKey}" data-period="afternoon"> Tarde</label>
+                <div class="time-range">
+                  <input type="time" value="${day.afternoon?.open || '15:00'}" data-day="${dayKey}" data-period="afternoon" data-field="open">
+                  <span>→</span>
+                  <input type="time" value="${day.afternoon?.close || '20:00'}" data-day="${dayKey}" data-period="afternoon" data-field="close">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
-// ==================== BOTÓN SUPERIOR ====================
 function createTopSaveButton() {
   if (document.getElementById('saveChangesBtn')) return;
   const btn = document.createElement('button');
@@ -99,11 +127,15 @@ function createTopSaveButton() {
   document.querySelector('.section-title').after(btn);
 }
 
-// ==================== VALIDACIÓN EN TIEMPO REAL ====================
+function markAsChanged() {
+  hasUnsavedChanges = true;
+  checkFormValidity();
+}
+
 function checkFormValidity() {
   const top = document.getElementById('saveChangesBtn');
   const bottom = document.getElementById('saveChangesBtnBottom');
-  const valid = validateForm();
+  const valid = validateSchedule();
   [top, bottom].forEach(b => {
     if (b) {
       b.disabled = !(hasUnsavedChanges && valid);
@@ -112,22 +144,63 @@ function checkFormValidity() {
   });
 }
 
-// ==================== EVENT LISTENERS ====================
-function setupEventListeners() {
-  document.getElementById('miComercioForm').addEventListener('input', markAsChanged);
-  document.getElementById('miComercioForm').addEventListener('change', markAsChanged);
-  document.querySelectorAll('#planSelector .plan-card').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      markAsChanged();
-    });
+function validateSchedule() {
+  const data = getScheduleData();
+  return Object.values(data).some(day => {
+    if (day.closed) return true;
+    if (day.continuous) return day.open && day.close && day.open !== '00:00';
+    const m = day.morning?.enabled && day.morning?.open && day.morning?.close && day.morning.open !== '00:00';
+    const a = day.afternoon?.enabled && day.afternoon?.open && day.afternoon?.close && day.afternoon.open !== '00:00';
+    return m || a;
   });
 }
 
-// ==================== GUARDAR ====================
+function getScheduleData() {
+  const data = {};
+  document.querySelectorAll('.schedule-day').forEach(el => {
+    const dayKey = el.querySelector('.toggle-day')?.dataset.day || el.querySelector('input[type="time"]')?.dataset.day;
+    if (!dayKey) return;
+
+    const closed = !el.querySelector('.toggle-day')?.checked;
+    const continuous = el.querySelector('input[value="continuous"]')?.checked;
+
+    if (closed) {
+      data[dayKey] = { closed: true };
+      return;
+    }
+
+    if (continuous) {
+      data[dayKey] = {
+        closed: false,
+        continuous: true,
+        open: el.querySelector('input[data-field="open"]')?.value || '09:00',
+        close: el.querySelector('input[data-field="close"]')?.value || '18:00'
+      };
+    } else {
+      data[dayKey] = {
+        closed: false,
+        continuous: false,
+        morning: {
+          enabled: !!el.querySelector('input[data-period="morning"]')?.checked,
+          open: el.querySelector('input[data-period="morning"][data-field="open"]')?.value || '09:00',
+          close: el.querySelector('input[data-period="morning"][data-field="close"]')?.value || '13:00'
+        },
+        afternoon: {
+          enabled: !!el.querySelector('input[data-period="afternoon"]')?.checked,
+          open: el.querySelector('input[data-period="afternoon"][data-field="open"]')?.value || '15:00',
+          close: el.querySelector('input[data-period="afternoon"][data-field="close"]')?.value || '20:00'
+        }
+      };
+    }
+  });
+  return data;
+}
+
 async function saveFormData() {
-  if (!validateForm()) return;
+  if (!validateSchedule()) {
+    showToast('Horarios', 'Configurá al menos un día abierto con horario válido', 'warning');
+    return;
+  }
 
   const buttons = [document.getElementById('saveChangesBtn'), document.getElementById('saveChangesBtnBottom')].filter(Boolean);
   buttons.forEach(b => {
@@ -137,20 +210,14 @@ async function saveFormData() {
   });
 
   try {
-    const formData = new FormData(document.getElementById('miComercioForm'));
-    const updates = {};
-    for (let [k, v] of formData) updates[k] = v.trim();
+    const horarios = getScheduleData();
+    await updateDoc(doc(db, 'comercios', currentComercioId), {
+      horarios,
+      'onboardingSteps.horarios': true,
+      fechaActualizacion: new Date()
+    });
 
-    updates.categories = selectedCategories;
-    updates.paymentMethods = Array.from(document.querySelectorAll('input[name="metodos_pago"]:checked')).map(i => i.value);
-    updates.plan = document.querySelector('.plan-card.selected')?.dataset.plan || 'trial';
-    updates['onboardingSteps.mi-comercio'] = true;
-    updates.fechaActualizacion = new Date();
-
-    await updateDoc(doc(db, 'comercios', currentComercioId), updates);
-
-    comercioData = { ...comercioData, ...updates };
-    originalData = structuredClone(comercioData);
+    originalHorarios = structuredClone(horarios);
     hasUnsavedChanges = false;
 
     buttons.forEach(b => {
@@ -159,14 +226,15 @@ async function saveFormData() {
       b.innerHTML = b.id === 'saveChangesBtn' ? '<i class="fas fa-check"></i> ¡Guardado!' : '¡Guardado!';
     });
 
-    setTimeout(() => buttons.forEach(b => {
-      b.disabled = true;
-      b.className = b.id === 'saveChangesBtn' ? 'btn-save' : '';
-      b.innerHTML = b.id === 'saveChangesBtn' ? '<i class="fas fa-save"></i> <span>Guardar Cambios</span>' : 'Guardar Cambios';
-    }), 2500);
+    setTimeout(() => {
+      buttons.forEach(b => {
+        b.disabled = true;
+        b.className = b.id === 'saveChangesBtn' ? 'btn-save' : '';
+        b.innerHTML = b.id === 'saveChangesBtn' ? '<i class="fas fa-save"></i> <span>Guardar Cambios</span>' : 'Guardar Cambios';
+      });
+    }, 2500);
 
-    showToast('Éxito', 'Datos guardados', 'success');
-    updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
+    showToast('Éxito', 'Horarios guardados correctamente', 'success');
     setTimeout(() => runFlowController(currentUser.uid), 1000);
 
   } catch (err) {
@@ -176,41 +244,25 @@ async function saveFormData() {
       b.disabled = false;
       b.textContent = 'Error';
     });
-    showToast('Error', 'No se pudo guardar', 'error');
+    showToast('Error', 'No se pudieron guardar los horarios', 'error');
   }
   checkFormValidity();
 }
 
-// ==================== VALIDACIÓN ====================
-function validateForm() {
-  const required = ['nombreComercio', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
-  for (const f of required) {
-    if (!document.getElementById(f)?.value.trim()) {
-      showToast('Faltan datos', 'Completa todos los campos obligatorios', 'warning');
-      return false;
-    }
-  }
-  if (selectedCategories.length === 0) {
-    showToast('Categoría', 'Selecciona al menos una categoría', 'warning');
-    return false;
-  }
-  if (!document.querySelector('.plan-card.selected')) {
-    showToast('Plan', 'Selecciona un plan', 'warning');
-    return false;
-  }
-  return true;
+function setupEventListeners() {
+  document.getElementById('scheduleGrid').addEventListener('change', markAsChanged);
+  document.getElementById('scheduleGrid').addEventListener('input', markAsChanged);
 }
 
-// ==================== CARD AYUDA IA ====================
 function insertAIHelperCard() {
   if (document.querySelector('.ai-helper-card')) return;
   const card = document.createElement('div');
   card.className = 'ai-helper-card';
   card.innerHTML = `
-    <div class="ai-helper-icon">AI</div>
+    <div class="ai-helper-icon">Horario</div>
     <div class="ai-helper-content">
-      <h4>¡Tu comercio cobra vida!</h4>
-      <p>Con esta información tu IA podrá atender a tus clientes 24/7 como si fueras vos.</p>
+      <h4>¡Horarios inteligentes!</h4>
+      <p>Tu IA usará estos horarios para informar automáticamente cuándo estás abierto o cerrado.</p>
     </div>`;
   document.querySelector('.container').insertBefore(card, document.querySelector('.form-section'));
 }
