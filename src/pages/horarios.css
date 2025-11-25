@@ -1,67 +1,80 @@
-/* ============================================================
-   HORARIOS.CSS — SOLO ESTILOS ESPECÍFICOS DE LA PÁGINA HORARIOS
-   NO DUPLICA NADA DE MI-COMERCIO NI DE LOS SHARED
-   ============================================================ */
+/* -------------------------------------------------------
+   Estilos específicos para HORARIOS
+   (No afecta otros módulos)
+--------------------------------------------------------- */
 
-/* Contenedor de cada día */
+/* Contenedor de todos los días */
+#horariosContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 20px;
+}
+
+/* Card de cada día */
 .horario-dia {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px;
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  margin-bottom: 12px;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    padding: 18px 20px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0px 1px 2px rgba(0,0,0,0.06);
 }
 
-/* Primera fila (checkbox + nombre del día) */
-.horario-dia-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Encabezado del día + switch */
+.horario-dia-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.horario-dia-head label {
-  font-weight: 600;
-  font-size: 16px;
+/* Nombre del día */
+.horario-dia-title {
+    font-size: 1rem;
+    font-weight: 600;
 }
 
-/* Contenedor de los dos rangos horarios */
-.horario-rangos {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  opacity: 0.45;
-  pointer-events: none;
-  transition: 0.25s ease;
+/* Switch de abierto/cerrado */
+.horario-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
 }
 
-.horario-dia.enabled .horario-rangos {
-  opacity: 1;
-  pointer-events: auto;
+.horario-switch input {
+    transform: scale(1.2);
 }
 
-/* Cada rango */
-.rango {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* Contenedor de horarios cuando el día está activo */
+.horario-rango {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
 }
 
-.rango label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #555;
+.horario-rango label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #444;
 }
 
-.rango input[type="time"] {
-  width: 100%;
+.horario-rango input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #fafafa;
 }
 
-/* Versión responsive */
-@media (max-width: 600px) {
-  .horario-rangos {
-    grid-template-columns: 1fr;
-  }
+/* Estado desactivado */
+.horario-dia.closed {
+    opacity: 0.55;
+}
+
+.horario-dia.closed .horario-rango {
+    display: none;
 }
