@@ -1,35 +1,44 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Horarios - Mi Comercio IA</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Horarios – ÍndiceIA</title>
+
+  <link rel="stylesheet" href="/src/styles/base.css" />
+  <link rel="stylesheet" href="/src/styles/layout.css" />
+  <link rel="stylesheet" href="/src/styles/components.css" />
+  <link rel="stylesheet" href="/src/styles/forms.css" />
+  <link rel="stylesheet" href="/src/styles/forms-premium.css" />
+  <link rel="stylesheet" href="/src/pages/horarios/horarios.css" />
+
+  <script type="module" src="/src/pages/horarios/horarios.js"></script>
 </head>
-<body>
-  <!-- El header, banner y barra de progreso se renderizan desde layout.js -->
-  
+
+<body data-page="horarios">
+
+  <header id="layout-header"></header>
+
   <main>
     <div class="container">
-      <!-- Card de ayuda IA se inserta aquí desde JS -->
-      
-      <div class="page-header">
-        <h2>⏰ Horarios de Atención</h2>
-        <p>Configurá los días y horarios en que tu negocio atiende</p>
-      </div>
 
-      <!-- Grid de horarios -->
-      <div id="scheduleGrid" class="schedule-grid">
-        <!-- Los días se renderizan desde renderScheduleForm() -->
-      </div>
+      <form id="horariosForm" class="form-section">
 
-      <!-- Botón de guardar inferior -->
-      <button type="button" id="saveChangesBtnBottom" class="btn-primary btn-save-bottom" disabled>
-        Guardar Cambios
-      </button>
+        <h2 class="section-title">Horarios de Atención</h2>
+        <p class="section-subtitle">Configurá los días y horarios en que tu negocio atiende al público</p>
+
+        <div id="scheduleGrid" class="schedule-grid">
+          <!-- Los días se renderizan aquí -->
+        </div>
+
+      </form>
     </div>
   </main>
 
-  <script type="module" src="./horarios.js"></script>
+  <div class="bottom-action">
+    <button id="saveChangesBtnBottom" disabled>Guardar Cambios</button>
+  </div>
+
 </body>
 </html>
