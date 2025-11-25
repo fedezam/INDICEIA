@@ -1,8 +1,7 @@
-```javascript
-/* ========================================
-  HORARIOS.JS - Página completa
-  Integración de funciones de horarios dentro del mismo archivo
-======================================== */
+// ========================================
+// 📅 HORARIOS.JS - Página completa
+// Reutiliza toda la lógica de mi-comercio.js
+// ========================================
 
 import '../styles/base.css';
 import '../styles/layout.css';
@@ -13,12 +12,13 @@ import './horarios.css';
 
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
+import { initScheduleModule, getScheduleData, validateSchedule, saveSchedule } from '../modules/scheduleModule.js';
 
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
@@ -26,74 +26,6 @@ let currentComercioId = null;
 let comercioData = {};
 let originalData = {};
 let hasUnsavedChanges = false;
-
-// ==================== MÓDULO DE HORARIOS INTEGRADO ====================
-
-// Inicializa la tabla/grid de horarios
-async function initScheduleModule(comercioId) {
-  const grid = document.getElementById('scheduleGrid');
-  if (!grid) return;
-
-  const horarios = comercioData.horarios || {
-    lunes: { start: '', end: '' },
-    martes: { start: '', end: '' },
-    miercoles: { start: '', end: '' },
-    jueves: { start: '', end: '' },
-    viernes: { start: '', end: '' },
-    sabado: { start: '', end: '' },
-    domingo: { start: '', end: '' }
-  };
-
-  grid.innerHTML = '';
-
-  Object.entries(horarios).forEach(([dia, horas]) => {
-    const row = document.createElement('div');
-    row.className = 'grid-row';
-    row.dataset.dia = dia;
-
-    row.innerHTML = `
-      <label>${dia.charAt(0).toUpperCase() + dia.slice(1)}</label>
-      <input type="time" class="start-time" value="${horas.start || ''}">
-      <input type="time" class="end-time" value="${horas.end || ''}">
-    `;
-    grid.appendChild(row);
-  });
-}
-
-// Lee los datos actuales del grid y devuelve un objeto con horarios
-function getScheduleData() {
-  const grid = document.getElementById('scheduleGrid');
-  if (!grid) return {};
-
-  const data = {};
-  grid.querySelectorAll('.grid-row').forEach(row => {
-    const dia = row.dataset.dia;
-    const start = row.querySelector('.start-time')?.value || '';
-    const end = row.querySelector('.end-time')?.value || '';
-    data[dia] = { start, end };
-  });
-  return data;
-}
-
-// Valida que todos los días tengan horarios completos
-function validateSchedule(horarios) {
-  return Object.values(horarios).every(h => h.start && h.end);
-}
-
-// Guarda los horarios en Firestore
-async function saveSchedule(comercioId) {
-  if (!comercioId) return false;
-
-  const horarios = getScheduleData();
-  try {
-    const ref = doc(db, 'comercios', comercioId);
-    await updateDoc(ref, { horarios });
-    return true;
-  } catch (err) {
-    console.error('Error guardando horarios:', err);
-    return false;
-  }
-}
 
 // ==================== INICIALIZACIÓN ====================
 onAuthStateChanged(auth, async (user) => {
@@ -137,6 +69,7 @@ async function initializePage() {
     await loadComercioData();
 
     initNavigation();
+
     updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan || 'trial']);
     updateBanner();
 
@@ -147,6 +80,7 @@ async function initializePage() {
     insertAIHelperCard();
 
     checkFormValidity();
+
     hideLoading();
   } catch (err) {
     console.error(err);
@@ -209,16 +143,24 @@ function checkFormValidity() {
       b.disabled = true;
       b.classList.remove('ready', 'saving', 'saved');
       b.classList.add('btn-save');
-      if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-      if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
+      const saveIcon = '<i class="fas fa-save"></i>';
+      if (b.id === 'saveChangesBtn') {
+        b.innerHTML = saveIcon + ' <span>Guardar Cambios</span>';
+      } else {
+        b.innerHTML = 'Guardar Cambios';
+      }
     });
   } else {
     buttons.forEach(b => {
       b.disabled = false;
       b.classList.add('ready');
       if (!b.classList.contains('saving') && !b.classList.contains('saved')) {
-        if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-        if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
+        const saveIcon = '<i class="fas fa-save"></i>';
+        if (b.id === 'saveChangesBtn') {
+          b.innerHTML = saveIcon + ' <span>Guardar Cambios</span>';
+        } else {
+          b.innerHTML = 'Guardar Cambios';
+        }
       }
     });
   }
@@ -232,7 +174,7 @@ function createSaveButton() {
   const logoutBtn = document.getElementById('logoutBtn');
 
   if (!userInfo || !logoutBtn) {
-    console.warn('⚠️ No se pudo crear botón de guardar');
+    console.warn('No se pudo crear botón de guardar');
     return;
   }
 
@@ -278,12 +220,16 @@ async function saveFormData() {
   }
 
   try {
+    const spinnerIcon = '<i class="fas fa-spinner fa-spin"></i>';
     [btn, btnBottom].forEach(b => {
       if (b) {
         b.classList.add('saving');
         b.classList.remove('saved', 'ready');
-        if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-        if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardando...';
+        if (b.id === 'saveChangesBtn') {
+          b.innerHTML = spinnerIcon + ' Guardando...';
+        } else {
+          b.innerHTML = 'Guardando...';
+        }
       }
     });
 
@@ -295,22 +241,30 @@ async function saveFormData() {
       originalData = structuredClone(comercioData);
       hasUnsavedChanges = false;
 
+      const checkIcon = '<i class="fas fa-check"></i>';
       [btn, btnBottom].forEach(b => {
         if (b) {
           b.classList.remove('saving');
           b.classList.add('saved');
-          if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
-          if (b.id === 'saveChangesBtnBottom') b.innerHTML = '¡Guardado!';
+          if (b.id === 'saveChangesBtn') {
+            b.innerHTML = checkIcon + ' ¡Guardado!';
+          } else {
+            b.innerHTML = '¡Guardado!';
+          }
         }
       });
 
       setTimeout(() => {
+        const saveIcon = '<i class="fas fa-save"></i>';
         [btn, btnBottom].forEach(b => {
           if (b) {
             b.disabled = true;
             b.className = 'btn-save';
-            if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-            if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Guardar Cambios';
+            if (b.id === 'saveChangesBtn') {
+              b.innerHTML = saveIcon + ' <span>Guardar Cambios</span>';
+            } else {
+              b.innerHTML = 'Guardar Cambios';
+            }
           }
         });
       }, 2500);
@@ -328,11 +282,15 @@ async function saveFormData() {
   } catch (err) {
     console.error(err);
 
+    const saveIcon = '<i class="fas fa-save"></i>';
     [btn, btnBottom].forEach(b => {
       if (b) {
         b.className = 'btn-save';
-        if (b.id === 'saveChangesBtn') b.innerHTML = '<i class="fas fa-save"></i> Error';
-        if (b.id === 'saveChangesBtnBottom') b.innerHTML = 'Error';
+        if (b.id === 'saveChangesBtn') {
+          b.innerHTML = saveIcon + ' Error';
+        } else {
+          b.innerHTML = 'Error';
+        }
       }
     });
 
@@ -366,4 +324,3 @@ window.validateCurrentPageData = async () => {
   }
   return true;
 };
-```
