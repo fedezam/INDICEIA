@@ -589,7 +589,6 @@ function attachDayCardListeners() {
       showToast('Cerrado', 'Todos los días marcados como cerrado', 'info');
     });
   }
-}
 
 function updateInputStates(day) {
   const data = comercioData.horarios[day];
