@@ -399,7 +399,6 @@ function attachDayCardListeners() {
         card.classList.add('active');
         body.classList.remove('disabled');
         badge.textContent = 'Abierto';
-        // Re-enable inputs según estado
         updateInputStates(day);
       } else {
         card.classList.remove('active');
@@ -412,6 +411,99 @@ function attachDayCardListeners() {
       checkFormValidity();
     });
   });
+  
+  // Toggle horario corrido/cortado
+  document.querySelectorAll('input[id^="continuous_"]').forEach(toggle => {
+    toggle.addEventListener('change', (e) => {
+      const day = e.target.dataset.day;
+      comercioData.horarios[day].continuous = e.target.checked;
+      
+      const continuousBlock = document.getElementById(`continuous_block_${day}`);
+      const splitBlock = document.getElementById(`split_block_${day}`);
+      
+      if (e.target.checked) {
+        continuousBlock.classList.remove('hidden');
+        splitBlock.classList.add('hidden');
+      } else {
+        continuousBlock.classList.add('hidden');
+        splitBlock.classList.remove('hidden');
+      }
+      
+      updateInputStates(day);
+      markAsChanged();
+      checkFormValidity();
+    });
+  });
+  
+  // Toggle mañana/tarde enabled
+  document.querySelectorAll('input[id^="morning_enabled_"], input[id^="afternoon_enabled_"]').forEach(toggle => {
+    toggle.addEventListener('change', (e) => {
+      const day = e.target.dataset.day;
+      const period = e.target.dataset.period;
+      comercioData.horarios[day][period].enabled = e.target.checked;
+      updateInputStates(day);
+      markAsChanged();
+      checkFormValidity();
+    });
+  });
+  
+  // Time inputs
+  document.querySelectorAll('input[type="time"][data-field]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const day = e.target.dataset.day;
+      const field = e.target.dataset.field;
+      const period = e.target.dataset.period;
+      
+      if (period) {
+        comercioData.horarios[day][period][field] = e.target.value;
+      } else {
+        comercioData.horarios[day][field] = e.target.value;
+      }
+      markAsChanged();
+      checkFormValidity();
+    });
+  });
+  
+  // Copiar a todos
+  const copiarBtn = document.getElementById('copiarATodos');
+  if (copiarBtn) {
+    copiarBtn.addEventListener('click', () => {
+      const lunes = structuredClone(comercioData.horarios.lunes);
+      DAYS.forEach(day => {
+        if (day !== 'lunes') {
+          comercioData.horarios[day] = structuredClone(lunes);
+        }
+      });
+      renderHorariosModule();
+      attachDayCardListeners();
+      markAsChanged();
+      checkFormValidity();
+      showToast('Copiado', 'Horarios de lunes copiados a todos los días', 'success');
+    });
+  }
+  
+  // Cerrar todos
+  const cerrarBtn = document.getElementById('cerrarTodos');
+  if (cerrarBtn) {
+    cerrarBtn.addEventListener('click', () => {
+      DAYS.forEach(day => {
+        comercioData.horarios[day].closed = true;
+      });
+      renderHorariosModule();
+      attachDayCardListeners();
+      markAsChanged();
+      checkFormValidity();
+      showToast('Cerrado', 'Todos los días marcados como cerrado', 'info');
+    });
+  }
+  
+  // Asegurar que el botón inferior funcione
+  const btnBottom = document.getElementById('saveChangesBtnBottom');
+  if (btnBottom) {
+    btnBottom.removeEventListener('click', saveFormData);
+    btnBottom.addEventListener('click', saveFormData);
+  }
+}
   
   // Toggle horario corrido/cortado
   document.querySelectorAll('input[id^="continuous_"]').forEach(toggle => {
