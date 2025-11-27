@@ -3,19 +3,238 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Productos - Índice IA</title>
+  <title>Productos - Tu Comercio</title>
   
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- SheetJS para Excel -->
+  <!-- SheetJS para importar Excel/CSV -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  
-  <!-- Módulo principal -->
-  <script type="module" src="./productos.js"></script>
 </head>
 <body>
-  <!-- El layout se renderiza dinámicamente desde productos.js -->
-  <div id="app"></div>
+  <!-- El layout se renderiza dinámicamente desde shared/layout.js -->
+  
+  <main>
+    <div class="container">
+      <!-- Header de página -->
+      <div class="page-header">
+        <h1><i class="fas fa-box"></i> Catálogo de Productos</h1>
+        <p>Cargá tus productos manualmente o importá desde Excel/CSV</p>
+        <div class="product-stats">
+          <span class="stat-badge">
+            <i class="fas fa-boxes"></i> 
+            <strong id="productCount">0</strong> productos
+          </span>
+        </div>
+      </div>
+
+      <!-- Formulario Manual -->
+      <div class="form-section">
+        <h3><i class="fas fa-edit"></i> Agregar Producto Manualmente</h3>
+        <p>Completá los campos básicos. Podés agregar más detalles si lo necesitás.</p>
+        
+        <form id="manualForm" class="product-form">
+          <!-- Campos Básicos -->
+          <div class="form-fields">
+            <div class="form-field">
+              <label>Código (opcional)</label>
+              <input type="text" name="codigo" placeholder="Se genera automático si no lo completás">
+            </div>
+            
+            <div class="form-field">
+              <label class="required">Nombre</label>
+              <input type="text" name="nombre" placeholder="Ej: Pizza Margherita" required>
+            </div>
+            
+            <div class="form-field full-width">
+              <label class="required">Descripción</label>
+              <textarea name="descripcion" placeholder="Ej: Pizza con mozzarella, tomate y albahaca" required></textarea>
+            </div>
+            
+            <div class="form-field">
+              <label class="required">Precio (ARS)</label>
+              <input type="number" name="precio_final" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+            
+            <div class="form-field">
+              <label>Stock</label>
+              <input type="number" name="stock" min="0" placeholder="0">
+            </div>
+            
+            <div class="form-field">
+              <label>Categoría</label>
+              <input type="text" name="categoria" placeholder="Ej: Comida">
+            </div>
+          </div>
+
+          <!-- Toggle Campos Avanzados -->
+          <button type="button" id="toggleMode" class="btn btn-secondary btn-sm" style="margin: 1rem 0;">
+            <i class="fas fa-chevron-down"></i> Agregar más detalles
+          </button>
+
+          <!-- Campos Avanzados (ocultos por defecto) -->
+          <div id="advancedFields" style="display: none;">
+            <div class="form-fields">
+              <div class="form-field">
+                <label>Subcategoría</label>
+                <input type="text" name="subcategoria" placeholder="Ej: Pizzas">
+              </div>
+              
+              <div class="form-field">
+                <label>Marca</label>
+                <input type="text" name="marca" placeholder="Ej: La Casa de Pizza">
+              </div>
+              
+              <div class="form-field full-width">
+                <label>Imagen URL</label>
+                <input type="url" name="imagen" placeholder="https://ejemplo.com/imagen.jpg">
+              </div>
+              
+              <div class="form-field">
+                <label>Disponibilidad</label>
+                <select name="disponibilidad">
+                  <option value="inmediata">Inmediata</option>
+                  <option value="bajo_pedido">Bajo pedido</option>
+                  <option value="agotado">Agotado</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Etiquetas -->
+            <div class="etiquetas-section">
+              <h4><i class="fas fa-tags"></i> Etiquetas</h4>
+              <div class="etiquetas-input">
+                <input type="text" id="etiquetaInput" placeholder="Ej: nuevo, promoción, destacado">
+                <button type="button" id="addEtiqueta" class="btn btn-primary btn-sm">
+                  <i class="fas fa-plus"></i> Agregar
+                </button>
+              </div>
+              <div id="etiquetasList" class="etiquetas-list"></div>
+            </div>
+
+            <!-- Atributos Personalizados -->
+            <div class="atributos-section">
+              <h4><i class="fas fa-list"></i> Atributos Personalizados</h4>
+              <p class="help-text">Agregá campos extras según tu negocio (ej: talle, color, sabor, etc.)</p>
+              <div id="atributosList"></div>
+              <button type="button" id="addAtributo" class="btn btn-secondary btn-sm">
+                <i class="fas fa-plus"></i> Agregar atributo
+              </button>
+            </div>
+          </div>
+
+          <!-- Botón Submit -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-plus-circle"></i> Agregar Producto
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider">o</div>
+
+      <!-- Import Excel/CSV -->
+      <div class="form-section">
+        <h3><i class="fas fa-file-excel"></i> Importar desde Excel o CSV</h3>
+        <p>Arrastrá tu archivo o hacé click para seleccionarlo</p>
+        
+        <div id="fileUploadZone" class="file-upload-zone">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <h4>Arrastrá tu archivo aquí</h4>
+          <p>o hacé click para seleccionar</p>
+          <small>Formatos soportados: .xlsx, .xls, .csv</small>
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+        </div>
+      </div>
+
+      <!-- Preview y Mapeo CSV -->
+      <div id="csvPreviewSection" class="form-section" style="display: none;">
+        <h3><i class="fas fa-eye"></i> Vista Previa y Mapeo</h3>
+        <p>Revisá cómo se mapean las columnas de tu archivo</p>
+        
+        <div class="preview-info">
+          <span><strong id="importCount">0</strong> productos detectados</span>
+        </div>
+
+        <div class="table-container">
+          <h4>Preview (primeras 5 filas):</h4>
+          <table class="preview-table">
+            <thead id="previewHeader"></thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+
+        <div class="mapping-section">
+          <h4>Mapeo de Columnas:</h4>
+          <div id="mappingFields" class="mapping-grid"></div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="applyMapping" class="btn btn-primary">
+            <i class="fas fa-check"></i> Importar Productos
+          </button>
+          <button type="button" id="cancelImport" class="btn btn-secondary">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider"></div>
+
+      <!-- Tabla de Productos -->
+      <div id="productsTable" class="form-section">
+        <div class="table-header">
+          <h3><i class="fas fa-table"></i> Productos Cargados</h3>
+          <div class="table-actions">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input 
+                type="text" 
+                id="searchProducts" 
+                placeholder="Buscar productos..."
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="products-table">
+            <thead>
+              <tr>
+                <th style="width: 50px; text-align: center;">
+                  <input type="checkbox" id="checkAll">
+                </th>
+                <th style="width: 120px;">Código</th>
+                <th style="width: 250px;">Nombre</th>
+                <th style="width: 120px;">Precio</th>
+                <th style="width: 80px;">Stock</th>
+                <th style="width: 150px;">Categoría</th>
+                <th style="width: 100px; text-align: center;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          
+          <div id="emptyMessage" class="empty-state" style="display: none;">
+            <i class="fas fa-box-open"></i>
+            <p>Aún no tenés productos cargados</p>
+            <small>Agregá productos manualmente o importá desde Excel</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botón Guardar Inferior -->
+      <div class="bottom-action-bar">
+        <button type="button" id="saveChangesBtnBottom" class="btn btn-primary btn-save" disabled>
+          Guardar Cambios
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./productos.js"></script>
 </body>
 </html>
