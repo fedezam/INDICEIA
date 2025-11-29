@@ -377,12 +377,10 @@ function updateBanner() {
       break;
     default:
       html = `Configurá tu asistente IA para activarlo`;
-      break;
   }
 
   updateSubscriptionBanner(html, estado);
 }
-
 
 
 // ==================== AI CONFIG ====================
