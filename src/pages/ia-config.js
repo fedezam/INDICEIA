@@ -357,17 +357,6 @@ function renderPageContent() {
 }
 ```
 
----
-
-## 📂 **Verificá la ubicación del CSS:**
-```
-/src/pages/ia-config.css  ← Debe estar ACA
-
-// ========================================
-// ARCHIVO: src/pages/ia-config.js - PARTE 2/3
-// Renders + Lógica de productos destacados
-// ========================================
-
 // ==================== BANNER HELPER ====================
 function updateBanner() {
   const estado = calcularEstadoPlan(comercioData);
