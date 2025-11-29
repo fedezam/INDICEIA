@@ -145,7 +145,6 @@ async function loadProducts() {
   }
 }
 
-// ==================== RENDER CONTENIDO ====================
 function renderPageContent() {
   const main = document.querySelector('main .container');
   if (!main) return;
@@ -158,7 +157,7 @@ function renderPageContent() {
 
     <form id="iaConfigForm" class="ia-config-form">
       
-      <!-- SECCIÓN 1: PERSONALIDAD -->
+      <!-- SECCIÓN 1: PERSONALIDAD DEL ASISTENTE -->
       <section class="config-section">
         <div class="section-header">
           <h3><i class="fas fa-user-robot"></i> Personalidad del asistente</h3>
@@ -214,30 +213,7 @@ function renderPageContent() {
         </div>
       </section>
 
-      <!-- SECCIÓN 2: PRODUCTOS DESTACADOS -->
-      <section class="config-section">
-        <div class="section-header">
-          <h3><i class="fas fa-star"></i> Productos destacados <span id="destacadosCounter" class="counter">0/10</span></h3>
-          <p>Seleccioná hasta 10 productos que tu IA recomendará proactivamente</p>
-        </div>
-        
-        <div class="destacados-search">
-          <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchProductos" placeholder="Buscar productos por nombre o código...">
-          </div>
-          <div id="searchResults" class="search-results" style="display: none;"></div>
-        </div>
-
-        <div id="destacadosList" class="destacados-list">
-          <div class="empty-state">
-            <p>Aún no seleccionaste productos destacados</p>
-            <small>Usá el buscador para agregar hasta 10</small>
-          </div>
-        </div>
-      </section>
-
-      <!-- SECCIÓN 3: COMPORTAMIENTOS -->
+      <!-- SECCIÓN 2: COMPORTAMIENTOS ESPECIALES -->
       <section class="config-section">
         <div class="section-header">
           <h3><i class="fas fa-cog"></i> Comportamientos especiales</h3>
@@ -303,7 +279,7 @@ function renderPageContent() {
         </div>
       </section>
 
-      <!-- SECCIÓN 4: MENSAJES PERSONALIZADOS -->
+      <!-- SECCIÓN 3: MENSAJES PERSONALIZADOS POR CANAL -->
       <section class="config-section">
         <div class="section-header">
           <h3><i class="fas fa-comment-dots"></i> Mensajes personalizados por canal</h3>
@@ -335,6 +311,29 @@ function renderPageContent() {
         </div>
       </section>
 
+      <!-- SECCIÓN 4: PRODUCTOS DESTACADOS -->
+      <section class="config-section">
+        <div class="section-header">
+          <h3><i class="fas fa-star"></i> Productos destacados <span id="destacadosCounter" class="counter">0/10</span></h3>
+          <p>Seleccioná hasta 10 productos que tu IA recomendará proactivamente</p>
+        </div>
+        
+        <div class="destacados-search">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchProductos" placeholder="Buscar productos por nombre o código...">
+          </div>
+          <div id="searchResults" class="search-results" style="display: none;"></div>
+        </div>
+
+        <div id="destacadosList" class="destacados-list">
+          <div class="empty-state">
+            <p>Aún no seleccionaste productos destacados</p>
+            <small>Usá el buscador para agregar hasta 10</small>
+          </div>
+        </div>
+      </section>
+
       <!-- SECCIÓN 5: CONTACTOS CONFIGURADOS -->
       <section class="config-section">
         <div class="section-header">
@@ -356,6 +355,13 @@ function renderPageContent() {
   
   main.innerHTML = html;
 }
+```
+
+---
+
+## 📂 **Verificá la ubicación del CSS:**
+```
+/src/pages/ia-config.css  ← Debe estar ACA
 
 // ========================================
 // ARCHIVO: src/pages/ia-config.js - PARTE 2/3
