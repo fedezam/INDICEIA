@@ -1,0 +1,511 @@
+/* ============================================================
+   FORMS PREMIUM FINAL — UNIFICADO COMPLETO 2025
+   Combina funcionalidad completa + estilos premium
+   ============================================================ */
+
+/* ==================== 1. FORM SECTIONS ==================== */
+.form-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--gray-200);
+  margin-bottom: 2.5rem;
+  transition: 0.25s ease;
+}
+
+.form-section:hover {
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.12);
+}
+
+.form-section h3 {
+  color: var(--gray-900);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.form-section h3 i {
+  color: var(--primary);
+}
+
+.form-section p,
+.section-description {
+  color: var(--gray-600);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.section-description {
+  background: #eef2ff;
+  border-left: 4px solid var(--primary);
+  padding: 1rem;
+  border-radius: 6px;
+  color: #374151;
+  line-height: 1.55;
+}
+
+/* ==================== 2. FORM FIELDS GRID ==================== */
+.form-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-field.full-width {
+  grid-column: 1 / -1;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+/* ==================== 3. LABELS ==================== */
+.form-field label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 0.45rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.form-field small {
+  font-size: 0.85rem;
+  color: var(--gray-500);
+  margin-top: 0.35rem;
+  font-weight: 400;
+}
+
+/* ==================== 4. INPUTS PREMIUM ==================== */
+.form-field input[type="text"],
+.form-field input[type="email"],
+.form-field input[type="tel"],
+.form-field input[type="url"],
+.form-field input[type="number"],
+.form-field input[type="date"],
+.form-field input[type="time"],
+.form-field input[type="password"],
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--gray-300);
+  background: var(--gray-50);
+  transition: 0.25s ease;
+  font-family: inherit;
+}
+
+.form-field input:hover,
+.form-field select:hover,
+.form-field textarea:hover {
+  border-color: var(--gray-400);
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.13);
+}
+
+.form-field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* ==================== 5. DISABLED / READONLY STATES ==================== */
+.form-field input:disabled,
+.form-field select:disabled,
+.form-field textarea:disabled {
+  background: var(--gray-100);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.form-field input[readonly] {
+  background: var(--gray-100);
+  cursor: not-allowed;
+}
+
+/* ==================== 6. VALIDATION STATES ==================== */
+.form-field.error input,
+.form-field.error select,
+.form-field.error textarea {
+  border-color: var(--danger);
+  background: #fef2f2;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.error-message {
+  color: var(--danger);
+  font-size: 0.85rem;
+  margin-top: 0.35rem;
+  display: none;
+}
+
+.form-field.error .error-message {
+  display: block;
+}
+
+/* ==================== 7. CHECKBOXES & RADIOS PREMIUM ==================== */
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.checkbox-item:hover {
+  background: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.15);
+}
+
+.checkbox-item input[type="checkbox"],
+.checkbox-item input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.checkbox-text {
+  color: var(--gray-700);
+  font-size: 0.95rem;
+}
+
+/* ==================== 8. INPUT WRAPPERS ==================== */
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.75rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  transition: 0.25s ease;
+  background: var(--gray-50);
+}
+
+.input-wrapper input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.13);
+  background: white;
+}
+
+.input-wrapper i {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-400);
+  font-size: 1.1rem;
+}
+
+.input-group {
+  margin-bottom: 1.2rem;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--gray-700);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* ==================== 9. SEARCH BOX ==================== */
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box i {
+  position: absolute;
+  left: 1rem;
+  color: var(--gray-400);
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  transition: 0.25s ease;
+  background: var(--gray-50);
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.13);
+  background: white;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid var(--gray-300);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+/* ==================== 10. ATRIBUTOS Y ETIQUETAS ==================== */
+.atributo-field {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.atributo-field input {
+  flex: 1;
+}
+
+#atributosList,
+#etiquetasList {
+  margin-bottom: 0.75rem;
+}
+
+.etiqueta-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--primary);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  margin: 0.25rem;
+}
+
+.etiqueta-tag button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.8;
+}
+
+.etiqueta-tag button:hover {
+  opacity: 1;
+}
+
+/* ==================== 11. FILE UPLOAD ZONE ==================== */
+.file-upload-zone {
+  border: 2px dashed var(--gray-300);
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.25s ease;
+  background: var(--gray-50);
+}
+
+.file-upload-zone:hover {
+  border-color: var(--primary);
+  background: #eff6ff;
+}
+
+.file-upload-zone.dragover {
+  border-color: var(--primary);
+  background: #dbeafe;
+  transform: scale(1.02);
+}
+
+.file-upload-zone i {
+  font-size: 3rem;
+  color: var(--primary);
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.file-upload-zone h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--gray-900);
+}
+
+.file-upload-zone p {
+  margin: 0 0 1rem 0;
+  color: var(--gray-600);
+}
+
+.file-upload-zone small {
+  color: var(--gray-500);
+}
+
+/* ==================== 12. MAPPING FIELDS ==================== */
+.mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.mapping-field {
+  background: var(--gray-50);
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--gray-200);
+}
+
+.mapping-field label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--gray-700);
+  font-weight: 600;
+}
+
+.mapping-field select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 10px;
+  font-size: 0.875rem;
+}
+
+/* ==================== 13. FILTERS BAR ==================== */
+.filters-bar {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 0.9rem;
+}
+
+.filter-group input,
+.filter-group select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+/* ==================== 14. DIVIDER ==================== */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--gray-400);
+  margin: 2rem 0;
+  font-size: 0.9rem;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.divider:not(:empty)::before {
+  margin-right: 0.75em;
+}
+
+.divider:not(:empty)::after {
+  margin-left: 0.75em;
+}
+
+/* ==================== 15. FORM MODE TOGGLE ==================== */
+.form-mode-toggle {
+  margin-bottom: 1.5rem;
+}
+
+.form-basic-fields,
+.form-advanced-fields {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* ==================== 16. RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  .form-section {
+    padding: 1.5rem;
+  }
+
+  .form-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .checkbox-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mapping-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filters-bar {
+    flex-direction: column;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-group input,
+  .filter-group select {
+    width: 100%;
+  }
+
+  .atributo-field {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 600px) {
+  .form-section {
+    padding: 1.5rem;
+  }
+
+  .form-fields {
+    grid-template-columns: 1fr;
+  }
+}
