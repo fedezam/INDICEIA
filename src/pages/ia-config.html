@@ -23,9 +23,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
-  
-  <!-- ✅ SOLO el script modular (el JS importa todo el CSS) -->
-  <script type="module" src="/src/pages/ia-config.js"></script>
 </head>
 
 <body data-page="ia-config">
@@ -49,6 +46,10 @@
   
   <!-- 4. FOOTER (placeholder) -->
   <footer id="layout-footer"></footer>
+
+  <!-- ✅ Scripts al final del body -->
+  <script type="module" src="../controllers/flowController.js"></script>
+  <script type="module" src="./ia-config.js"></script>
 
 </body>
 </html>
