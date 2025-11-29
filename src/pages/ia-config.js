@@ -366,13 +366,13 @@ function updateBanner() {
   switch (estado) {
     case 'trial':
       const dias = getDiasRestantesTrial(comercioData);
-      html = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong> gratis`;
+      html = `<strong>Trial activo</strong> - Te quedan <strong>${dias} días</strong> gratis`;
       break;
     case 'activo':
-      html = `<strong>Plan ${plan.nombre} activo</strong> – Todo funcionando`;
+      html = `<strong>Plan ${plan.nombre} activo</strong> - Todo funcionando`;
       break;
     case 'expirado':
-      html = `Trial expirado – Elegí un plan para continuar`;
+      html = `Trial expirado - Elegí un plan para continuar`;
       break;
     default:
       html = `Configurá tu asistente IA para activarlo`;
