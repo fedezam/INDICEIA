@@ -5,7 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
  
-  <title>Configuración de IA - ÍndiceIA</title>
+  <title>Configuración de IA — ÍndiceIA</title>
  
   <meta name="description" content="Configurá el comportamiento, personalidad y capacidades de tu IA comercial.">
   <meta name="robots" content="noindex, nofollow">
@@ -23,14 +23,32 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- ✅ SOLO el script modular (el JS importa todo el CSS) -->
+  <script type="module" src="/src/pages/ia-config.js"></script>
 </head>
-<body>
+
+<body data-page="ia-config">
+  
+  <!-- 1. LAYOUT GLOBAL (inyectado por renderLayout()) -->
+  <header id="layout-header"></header>
+  
+  <!-- 2. CONTENIDO PRINCIPAL -->
   <main>
     <div class="container">
-      <!-- LÍNEA AGREGADA (fuerza a Vite a mantener ia-config.css) -->
-      <div class="config-section" style="display:none"></div>
+      <!-- El contenido se renderiza desde ia-config.js -->
     </div>
   </main>
-  <script type="module" src="./ia-config.js"></script>
+  
+  <!-- 3. BOTÓN INFERIOR FIJO -->
+  <div class="bottom-action-bar">
+    <button id="saveChangesBtnBottom" class="btn-save" disabled>
+      Guardar Cambios
+    </button>
+  </div>
+  
+  <!-- 4. FOOTER (placeholder) -->
+  <footer id="layout-footer"></footer>
+
 </body>
 </html>
