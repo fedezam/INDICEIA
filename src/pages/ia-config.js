@@ -355,7 +355,7 @@ function renderPageContent() {
   
   main.innerHTML = html;
 }
-```
+
 
 // ==================== BANNER HELPER ====================
 function updateBanner() {
