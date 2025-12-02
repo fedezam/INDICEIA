@@ -17,6 +17,23 @@ import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plan
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
 
+// ==================== FORZAR SCROLL ARRIBA ====================
+// Al cargar la página, forzar scroll arriba
+window.addEventListener('load', function() {
+  window.scrollTo(0, 0);
+});
+
+// También al recargar
+window.addEventListener('beforeunload', function() {
+  window.scrollTo(0, 0);
+});
+
+// Por si acaso, inmediatamente
+if (history.scrollRestoration) {
+  history.scrollRestoration = 'manual';
+}
+window.scrollTo(0, 0);
+
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
 let currentComercioId = null;
