@@ -542,6 +542,7 @@
   min-width: 280px;
   box-shadow: 0 10px 30px rgba(99, 102, 241, 0.35);
   transition: all 0.3s ease;
+  margin: 0 auto;
 }
 
 #saveChangesBtnBottom:hover:not(:disabled) {
