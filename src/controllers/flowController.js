@@ -35,6 +35,14 @@ if (typeof window !== "undefined") {
 }
 
 // ---------------------------------------------------------
+// 🔹 NUEVO: Detectar si estamos en modo edición
+// ---------------------------------------------------------
+function isEditMode() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("edit") === "true";
+}
+
+// ---------------------------------------------------------
 // 🔹 NUEVO: Setea window.flowState para navigation.js
 // ---------------------------------------------------------
 function updateFlowState(steps, currentPage) {
@@ -52,9 +60,7 @@ function updateFlowState(steps, currentPage) {
     completed: completedCount
   };
 
-  // Disparar evento para que navigation se actualice
   window.dispatchEvent(new CustomEvent('flowStateUpdated'));
-  
   console.log('✅ flowState actualizado:', window.flowState);
 }
 
@@ -70,7 +76,6 @@ export async function runFlowController(uid) {
     // 1️⃣ Obtener datos del usuario
     const userRef = doc(db, "usuarios", uid);
     const userSnap = await getDoc(userRef);
-    
     if (!userSnap.exists()) return;
     
     const userData = userSnap.data();
@@ -78,9 +83,7 @@ export async function runFlowController(uid) {
 
     // 2️⃣ Usuario incompleto o sin IA seleccionada
     const usuarioCompleto = userData?.onboardingSteps?.usuario === true;
-    
     if (currentPage === "usuario" && (!usuarioCompleto || !comercioId)) {
-      // Estamos en usuario.html y aún no está completo
       updateFlowState({}, 'usuario');
       return;
     }
@@ -99,30 +102,31 @@ export async function runFlowController(uid) {
       steps = comercioSnap.exists() ? comercioSnap.data()?.onboardingSteps || {} : {};
     }
 
-    // 🆕 ACTUALIZAR window.flowState SIEMPRE
     updateFlowState(steps, currentPage);
 
     // 5️⃣ Primer paso incompleto
     let firstIncompleteStep = null;
     for (const step of FLOW_STEPS) {
-      if (step.id === "usuario") continue; // ya validado
+      if (step.id === "usuario") continue;
       if (!steps[step.id]) {
         firstIncompleteStep = step.id;
         break;
       }
     }
 
-    // 6️⃣ Redirigir al primer paso incompleto
-    if (firstIncompleteStep) {
+    // 6️⃣ Redirigir al primer paso incompleto (solo si NO estamos editando)
+    if (firstIncompleteStep && !isEditMode()) {
       if (currentPage !== firstIncompleteStep) {
         window.location.href = `/${firstIncompleteStep}.html`;
       }
       return;
     }
 
-    // 7️⃣ Todos completos → dashboard
-    if (currentPage !== "dashboard") {
-      window.location.href = "/dashboard.html";
+    // 7️⃣ Todos completos → dashboard (solo si NO está en edición)
+    if (!isEditMode()) {
+      if (currentPage !== "dashboard") {
+        window.location.href = "/dashboard.html";
+      }
     }
 
   } catch (error) {
