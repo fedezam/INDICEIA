@@ -523,7 +523,6 @@
 }
 /* ==================== BOTTOM ACTION BAR - COMPONENTE REUTILIZABLE ==================== */
 .bottom-action-bar {
-  position: sticky;
   bottom: 0;
   background: white;
   padding: 1.5rem 2rem;
