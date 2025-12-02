@@ -40,6 +40,55 @@ function safeGet(id) {
   return el ? el.value?.trim() || '' : '';
 }
 
+function getCurrentConfig() {
+  return {
+    aiName: safeGet('aiName'),
+    aiLanguage: safeGet('aiLanguage'),
+    aiPersonality: safeGet('aiPersonality'),
+    aiTone: safeGet('aiTone'),
+    aiGreeting: safeGet('aiGreeting'),
+    sinPrecio: safeGet('sinPrecio'),
+    sinStock: safeGet('sinStock'),
+    localCerrado: safeGet('localCerrado'),
+    proactividad: safeGet('proactividad'),
+    formatoRespuestas: safeGet('formatoRespuestas'),
+    mensajeWhatsapp: safeGet('mensajeWhatsapp'),
+    mensajeInstagram: safeGet('mensajeInstagram'),
+    mensajeWeb: safeGet('mensajeWeb'),
+    mensajeDefault: safeGet('mensajeDefault'),
+    productosDestacados: productosDestacados.map(p => ({
+      id: p.id,
+      codigo: p.codigo,
+      nombre: p.nombre,
+      precio_final: p.precio_final
+    }))
+  };
+}
+
+// ==================== BANNER HELPER ====================
+function updateBanner() {
+  const estado = calcularEstadoPlan(comercioData);
+  const plan = PLANS[comercioData.plan || 'trial'];
+  let html = '';
+  
+  switch (estado) {
+    case 'trial':
+      const dias = getDiasRestantesTrial(comercioData);
+      html = `<strong>Trial activo</strong> - Te quedan <strong>${dias} días</strong> gratis`;
+      break;
+    case 'activo':
+      html = `<strong>Plan ${plan.nombre} activo</strong> - Todo funcionando`;
+      break;
+    case 'expirado':
+      html = `Trial expirado - Elegí un plan para continuar`;
+      break;
+    default:
+      html = `Configurá tu asistente IA para activarlo`;
+  }
+  
+  updateSubscriptionBanner(html, estado);
+}
+
 // ==================== INICIALIZACIÓN ====================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -145,6 +194,7 @@ async function loadProducts() {
   }
 }
 
+// ==================== RENDER CONTENIDO ====================
 function renderPageContent() {
   const main = document.querySelector('main .container');
   if (!main) return;
@@ -356,6 +406,12 @@ function renderPageContent() {
   
   main.innerHTML = html;
 }
+
+
+// ========================================
+// ARCHIVO: src/pages/ia-config.js - PARTE 2/3
+// Renders + Lógica de productos destacados
+// ========================================
 
 // ==================== AI CONFIG ====================
 function loadAIConfig() {
@@ -664,47 +720,36 @@ function checkFormValidity() {
   if (!form) return;
 
   const required = [
-    'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
+    'aiName', 'aiLanguage', 'aiPersonality', 'aiTone', 'aiGreeting',
     'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
   ];
 
-  let missing = false;
-  required.forEach(id => {
+  // Verificar que todos los campos estén llenos
+  const allFilled = required.every(id => {
     const el = $(id);
-    if (!el || !el.value.trim()) {
-      missing = true;
-    }
+    return el && el.value.trim();
   });
 
-  const btnTop = $('saveChangesBtn');
-  const btnBottom = $('saveChangesBtnBottom');
-  const buttons = [btnTop, btnBottom].filter(Boolean);
+  // Detectar cambios reales comparando con original
+  const currentConfig = getCurrentConfig();
+  const hasRealChanges = JSON.stringify(currentConfig) !== JSON.stringify(originalAIConfig);
 
-  if (missing || !hasUnsavedChanges) {
-    buttons.forEach(b => {
-      b.disabled = true;
-      b.classList.remove('ready', 'saving', 'saved');
-      b.classList.add('btn-save');
-      if (b.id === 'saveChangesBtn') {
-        b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-      }
-      if (b.id === 'saveChangesBtnBottom') {
-        b.innerHTML = 'Guardar Cambios';
-      }
-    });
+  const btn = $('saveChangesBtn');
+  if (!btn) return;
+
+  // Habilitar botón solo si está todo lleno Y hay cambios reales
+  if (!allFilled || !hasRealChanges) {
+    btn.disabled = true;
+    btn.classList.remove('ready', 'saving', 'saved');
+    btn.classList.add('btn-save');
+    btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
   } else {
-    buttons.forEach(b => {
-      b.disabled = false;
-      b.classList.add('ready');
-      if (!b.classList.contains('saving') && !b.classList.contains('saved')) {
-        if (b.id === 'saveChangesBtn') {
-          b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-        }
-        if (b.id === 'saveChangesBtnBottom') {
-          b.innerHTML = 'Guardar Cambios';
-        }
-      }
-    });
+    btn.disabled = false;
+    btn.classList.add('ready');
+    btn.classList.remove('saving', 'saved');
+    if (!btn.classList.contains('saving') && !btn.classList.contains('saved')) {
+      btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+    }
   }
 }
 
@@ -733,7 +778,6 @@ function createSaveButton() {
 // ==================== GUARDAR CONFIGURACIÓN ====================
 async function saveAIConfig() {
   const btn = $('saveChangesBtn');
-  const btnBottom = $('saveChangesBtnBottom');
   const form = $('iaConfigForm');
   
   if (!form) {
@@ -743,7 +787,7 @@ async function saveAIConfig() {
 
   // Validar campos requeridos
   const required = [
-    'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
+    'aiName', 'aiLanguage', 'aiPersonality', 'aiTone', 'aiGreeting',
     'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
   ];
 
@@ -797,19 +841,12 @@ async function saveAIConfig() {
 
   try {
     // Estados de botones: saving
-    [btn, btnBottom].forEach(b => {
-      if (b) {
-        b.classList.add('saving');
-        b.classList.remove('saved', 'ready');
-        b.disabled = true;
-        if (b.id === 'saveChangesBtn') {
-          b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Guardando...</span>';
-        }
-        if (b.id === 'saveChangesBtnBottom') {
-          b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-        }
-      }
-    });
+    if (btn) {
+      btn.classList.add('saving');
+      btn.classList.remove('saved', 'ready');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Guardando...</span>';
+    }
 
     // Construir objeto de configuración
     const config = {
@@ -851,39 +888,25 @@ async function saveAIConfig() {
     originalAIConfig = JSON.parse(JSON.stringify(config));
 
     // Estados de botones: saved
-    [btn, btnBottom].forEach(b => {
-      if (b) {
-        b.classList.remove('saving');
-        b.classList.add('saved');
-        if (b.id === 'saveChangesBtn') {
-          b.innerHTML = '<i class="fas fa-check"></i> <span>¡Guardado!</span>';
-        }
-        if (b.id === 'saveChangesBtnBottom') {
-          b.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
-        }
-      }
-    });
+    if (btn) {
+      btn.classList.remove('saving');
+      btn.classList.add('saved');
+      btn.innerHTML = '<i class="fas fa-check"></i> <span>¡Guardado!</span>';
+    }
 
     showToast('Éxito', 'Configuración de IA guardada correctamente', 'success');
     
-    // Actualizar header y banner
+    // Actualizar header
     updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
-    updateBanner();
 
     // Volver a estado idle después de 2.5s
     setTimeout(() => {
-      [btn, btnBottom].forEach(b => {
-        if (b) {
-          b.disabled = true;
-          b.className = 'btn-save';
-          if (b.id === 'saveChangesBtn') {
-            b.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-          }
-          if (b.id === 'saveChangesBtnBottom') {
-            b.innerHTML = 'Guardar Cambios';
-          }
-        }
-      });
+      if (btn) {
+        btn.classList.remove('saved', 'saving', 'ready');
+        btn.classList.add('btn-save');
+        btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+        checkFormValidity(); // Reevaluar estado sin forzar disabled
+      }
     }, 2500);
 
     // Ejecutar flow controller
@@ -897,18 +920,11 @@ async function saveAIConfig() {
     console.error('Error guardando configuración IA:', err);
     
     // Estados de botones: error
-    [btn, btnBottom].forEach(b => {
-      if (b) {
-        b.className = 'btn-save';
-        b.disabled = false;
-        if (b.id === 'saveChangesBtn') {
-          b.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <span>Error</span>';
-        }
-        if (b.id === 'saveChangesBtnBottom') {
-          b.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error';
-        }
-      }
-    });
+    if (btn) {
+      btn.className = 'btn-save';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <span>Error</span>';
+    }
     
     showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
   } finally {
@@ -955,11 +971,13 @@ function setupEventListeners() {
     });
   }
 
-  // Botón guardar inferior
-  const btnBottom = $('saveChangesBtnBottom');
-  if (btnBottom) {
-    btnBottom.addEventListener('click', saveAIConfig);
-  }
+  // Cerrar búsqueda al hacer scroll
+  window.addEventListener('scroll', () => {
+    const results = $('searchResults');
+    if (results) {
+      results.style.display = 'none';
+    }
+  }, { passive: true });
 
   // Logout
   const logoutBtn = $('logoutBtn');
@@ -977,7 +995,7 @@ function setupEventListeners() {
 
   // Validar campos en tiempo real (quitar borde rojo al corregir)
   const requiredFields = [
-    'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
+    'aiName', 'aiLanguage', 'aiPersonality', 'aiTone', 'aiGreeting',
     'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
   ];
 
@@ -1020,7 +1038,7 @@ window.validateCurrentPageData = async function () {
   }
 
   const required = [
-    'aiName', 'aiPersonality', 'aiTone', 'aiLanguage', 'aiGreeting',
+    'aiName', 'aiLanguage', 'aiPersonality', 'aiTone', 'aiGreeting',
     'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
   ];
 
@@ -1037,4 +1055,3 @@ window.validateCurrentPageData = async function () {
 
   return true;
 };
-
