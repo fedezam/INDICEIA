@@ -35,7 +35,7 @@ if (typeof window !== "undefined") {
 }
 
 // ---------------------------------------------------------
-// 🔹 NUEVO: Detectar si estamos en modo edición
+// 🔹 Detectar si estamos en modo edición (dashboard → páginas)
 // ---------------------------------------------------------
 function isEditMode() {
   const params = new URLSearchParams(window.location.search);
@@ -43,7 +43,7 @@ function isEditMode() {
 }
 
 // ---------------------------------------------------------
-// 🔹 NUEVO: Setea window.flowState para navigation.js
+// 🔹 Setea window.flowState para navigation.js
 // ---------------------------------------------------------
 function updateFlowState(steps, currentPage) {
   const pages = FLOW_STEPS.map(step => ({
@@ -65,36 +65,38 @@ function updateFlowState(steps, currentPage) {
 }
 
 // ---------------------------------------------------------
-// 🔹 Ejecuta flujo y redirige al siguiente paso
+// 🔹 Controlador principal de flujo
 // ---------------------------------------------------------
 export async function runFlowController(uid) {
-  if (typeof window === 'undefined' || !uid) return;
-  
+  if (typeof window === "undefined" || !uid) return;
+
   const currentPage = getCurrentPage();
+  const editMode = isEditMode(); // 👈 clave
 
   try {
     // 1️⃣ Obtener datos del usuario
     const userRef = doc(db, "usuarios", uid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) return;
-    
+
     const userData = userSnap.data();
     const comercioId = userData?.comercioId;
 
-    // 2️⃣ Usuario incompleto o sin IA seleccionada
     const usuarioCompleto = userData?.onboardingSteps?.usuario === true;
+
+    // 2️⃣ Página usuario: la única que siempre puede cargar libremente
     if (currentPage === "usuario" && (!usuarioCompleto || !comercioId)) {
-      updateFlowState({}, 'usuario');
+      updateFlowState({}, "usuario");
       return;
     }
 
-    // 3️⃣ Si no hay comercioId y no estamos en usuario.html → redirigir
-    if (!comercioId && currentPage !== "usuario") {
+    // 3️⃣ Si no hay comercioId no puede acceder a otras páginas
+    if (!comercioId && currentPage !== "usuario" && !editMode) {
       window.location.href = "/usuario.html";
       return;
     }
 
-    // 4️⃣ Leer pasos completados del comercio
+    // 4️⃣ Obtener steps del comercio
     let steps = {};
     if (comercioId) {
       const comercioRef = doc(db, "comercios", comercioId);
@@ -104,7 +106,7 @@ export async function runFlowController(uid) {
 
     updateFlowState(steps, currentPage);
 
-    // 5️⃣ Primer paso incompleto
+    // 5️⃣ Primer paso incompleto (solo aplica en onboarding)
     let firstIncompleteStep = null;
     for (const step of FLOW_STEPS) {
       if (step.id === "usuario") continue;
@@ -114,22 +116,25 @@ export async function runFlowController(uid) {
       }
     }
 
-    // 6️⃣ Redirigir al primer paso incompleto (solo si NO estamos editando)
-    if (firstIncompleteStep && !isEditMode()) {
+    // 6️⃣ ONBOARDING: Redirigir al primer paso incompleto
+    if (!editMode && firstIncompleteStep) {
       if (currentPage !== firstIncompleteStep) {
         window.location.href = `/${firstIncompleteStep}.html`;
       }
       return;
     }
 
-    // 7️⃣ Todos completos → dashboard (solo si NO está en edición)
-    if (!isEditMode()) {
-      if (currentPage !== "dashboard") {
-        window.location.href = "/dashboard.html";
-      }
+    // 7️⃣ ONBOARDING completo → ir al dashboard
+    if (!editMode && currentPage !== "dashboard") {
+      window.location.href = "/dashboard.html";
     }
 
+    // 8️⃣ MODO EDICIÓN:
+    // No redirige, no interfiere. Simplemente permite usar la página.
+    // ✔ Si editMode = true → no hacemos nada más.
+    return;
+
   } catch (error) {
-    console.error("Error en flowController:", error);
+    console.error("❌ Error en flowController:", error);
   }
 }
