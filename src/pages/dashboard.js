@@ -1,19 +1,17 @@
 // ========================================
-// DASHBOARD – ESQUELETO 100% HORARIOS.JS
+// DASHBOARD – CENTRO DE CONTROL
 // ========================================
 
 import '../styles/base.css';
 import '../styles/layout.css';
 import '../styles/components.css';
-import '../styles/forms.css';
-import '../styles/forms-premium.css';
-import './dashboard.css';
+import '../styles/forms-premium-final.css';
+import '../styles/dashboard.css';
 
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
-import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
@@ -63,7 +61,6 @@ async function initializePage() {
 
         await loadComercioData();
 
-        initNavigation();
         updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan || 'trial']);
         updateBanner();
 
@@ -71,7 +68,6 @@ async function initializePage() {
 
         await renderDashboard();
         setupEvents();
-        insertAIHelperCard();
 
         hideLoading();
 
@@ -141,39 +137,88 @@ async function renderDashboard() {
     cont.innerHTML = `
         <div class="page-header">
             <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
-            <p>Resumen general y accesos rápidos</p>
+            <p>Resumen general y accesos rápidos a todas las secciones</p>
         </div>
 
         <section class="dashboard-grid">
 
             <div class="dash-card">
-                <h3>👤 Usuario</h3>
-                <p>${currentUser.email}</p>
-                <button onclick="window.location.href='usuario.html'" class="btn btn-secondary">Ver</button>
+                <div class="dash-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="dash-content">
+                    <h3>Usuario</h3>
+                    <p>${currentUser.email}</p>
+                </div>
+                <a href="usuario.html?edit=true" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
             </div>
 
             <div class="dash-card">
-                <h3>🏪 Comercio</h3>
-                <p>${comercioData.nombreComercio || "Sin nombre"}</p>
-                <button onclick="window.location.href='mi-comercio.html'" class="btn btn-secondary">Ver</button>
+                <div class="dash-icon">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div class="dash-content">
+                    <h3>Mi Comercio</h3>
+                    <p>${comercioData.nombreComercio || "Sin nombre"}</p>
+                </div>
+                <a href="mi-comercio.html?edit=true" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
             </div>
 
             <div class="dash-card">
-                <h3>⏰ Horarios</h3>
-                <p>${horarios ? "Cargados ✔" : "No configurados"}</p>
-                <button onclick="window.location.href='horarios.html'" class="btn btn-secondary">Ver</button>
+                <div class="dash-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="dash-content">
+                    <h3>Horarios</h3>
+                    <p>${horarios ? "Configurados ✓" : "No configurados"}</p>
+                </div>
+                <a href="horarios.html?edit=true" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
             </div>
 
             <div class="dash-card">
-                <h3>📦 Productos</h3>
-                <p>${productCount} productos</p>
-                <button onclick="window.location.href='productos.html'" class="btn btn-secondary">Ver</button>
+                <div class="dash-icon">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="dash-content">
+                    <h3>Productos</h3>
+                    <p>${productCount} producto${productCount !== 1 ? 's' : ''}</p>
+                </div>
+                <a href="productos.html?edit=true" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
             </div>
 
             <div class="dash-card">
-                <h3>🎨 Configuración IA</h3>
-                <p>Personalización visual del bot</p>
-                <button onclick="window.location.href='ia-config.html'" class="btn btn-secondary">Ver</button>
+                <div class="dash-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="dash-content">
+                    <h3>Configuración IA</h3>
+                    <p>Estado mental y capacidades</p>
+                </div>
+                <a href="ia-config.html?edit=true" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
+            </div>
+
+            <!-- VISUAL BUILDER - OPCIONAL -->
+            <div class="dash-card highlight">
+                <div class="dash-icon">
+                    <i class="fas fa-palette"></i>
+                </div>
+                <div class="dash-content">
+                    <h3>Visual Builder <span class="badge-optional">Opcional</span></h3>
+                    <p>Personaliza la apariencia de tu IA</p>
+                </div>
+                <a href="visual.html" class="btn btn-primary btn-sm">
+                    <i class="fas fa-arrow-right"></i> Acceder
+                </a>
             </div>
 
         </section>
@@ -188,24 +233,6 @@ function setupEvents() {
             if (confirm("¿Cerrar sesión?")) signOut(auth);
         });
     }
-}
-
-// ==================== AI HELPER ====================
-function insertAIHelperCard() {
-    const container = document.getElementById("dashboardContainer");
-    if (!container) return;
-
-    const card = document.createElement("div");
-    card.className = "ai-helper-card";
-    card.innerHTML = `
-        <div class="ai-helper-icon">AI</div>
-        <div class="ai-helper-content">
-            <h4>Tu asistente IA usa estos datos</h4>
-            <p>La IA se sincroniza automáticamente cada vez que editás Usuario, Comercio, Horarios, Productos o Config IA.</p>
-        </div>
-    `;
-
-    container.prepend(card);
 }
 
 // ==================== FLOW CONTROLLER ====================
