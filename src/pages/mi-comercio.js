@@ -13,7 +13,7 @@ import { initNavigation } from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { runFlowController } from '../controllers/flowController.js';
+import { runFlowController, redirectAfterSave } from '../controllers/flowController.js';
 // ==================== DATOS ESTÁTICOS ====================
 const CATEGORIAS_COMUNES = [
   "Panadería", "Carnicería", "Verdulería", "Kiosco", "Supermercado", "Restaurante",
@@ -455,22 +455,23 @@ async function saveFormData() {
         }
       });
     }, 2500);
-    showToast('Éxito', 'Todo guardado correctamente', 'success');
-    updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
-    updateBanner();
-    try {
-      runFlowController(currentUser.uid);
-    } catch (e) {
-      console.warn('runFlowController falló tras guardar:', e);
+showToast('Éxito', 'Todo guardado correctamente', 'success');
+updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
+updateBanner();
+
+// 👇 reemplazo definitivo y correcto
+setTimeout(() => {
+  redirectAfterSave();
+}, 1000);
+
+} catch (err) {
+  console.error(err);
+  [btn, btnBottom].forEach(b => {
+    if (b) {
+      b.className = 'btn-save';
+      b.innerHTML = '<i class="fas fa-save"></i> Error';
     }
-  } catch (err) {
-    console.error(err);
-    [btn, btnBottom].forEach(b => {
-      if (b) {
-        b.className = 'btn-save';
-        b.innerHTML = '<i class="fas fa-save"></i> Error';
-      }
-    });
+  });
     showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
   } finally {
     checkFormValidity();
