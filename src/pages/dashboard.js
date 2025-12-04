@@ -1,12 +1,11 @@
 // ========================================
 // DASHBOARD – CENTRO DE CONTROL
 // ========================================
-
 import '../styles/base.css';
 import '../styles/layout.css';
 import '../styles/components.css';
 import '../styles/forms-premium-final.css';
-import '.dashboard.css';
+import './dashboard.css';
 
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
