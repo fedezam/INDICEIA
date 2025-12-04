@@ -791,13 +791,11 @@ setTimeout(() => {
       b.innerHTML = '<i class="fas fa-save"></i> Error';
     }
   });
+  showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
+} finally {
+  checkFormValidity();
 }
 
-    showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
-  } finally {
-    checkFormValidity();
-  }
-}
 
 function insertAIHelperCard() {
   const container = document.querySelector('main .container');
