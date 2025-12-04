@@ -1,33 +1,39 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard – ÍndiceIA</title>
-    <meta name="description" content="Panel general del asistente comercial" />
-    <meta name="robots" content="noindex, nofollow" />
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/favicon.png" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - INDICEIA</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-
 <body>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando...</div>
+  </div>
 
-    <!-- Layout (header + banner + navegación se insertan por JS) -->
-    <header id="main-header"></header>
-    <div id="subscription-banner"></div>
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
 
-    <nav id="main-navigation"></nav>
+  <!-- Layout se renderiza por layout.js -->
+  <div id="layoutRoot"></div>
 
-    <main>
-        <div class="container" id="dashboardContainer">
-            <!-- Aquí el JS inserta el contenido del dashboard -->
-        </div>
-    </main>
+  <!-- Main Content -->
+  <main class="main-content">
+    <div id="dashboardContainer">
+      <!-- Se renderiza desde dashboard.js -->
+    </div>
+  </main>
 
-    <footer id="main-footer"></footer>
-
-    <!-- Scripts -->
-    <script type="module" src="./dashboard.js"></script>
+  <!-- Script carga el módulo JS -->
+  <script type="module" src="/src/pages/dashboard.js"></script>
 </body>
 </html>
