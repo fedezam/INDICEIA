@@ -1,3 +1,4 @@
+
 // src/controllers/flowController.js
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
@@ -71,7 +72,10 @@ export async function runFlowController(uid) {
   if (typeof window === "undefined" || !uid) return;
 
   const currentPage = getCurrentPage();
-  const editMode = isEditMode(); // 👈 clave
+  const editMode = isEditMode();
+
+  // 🆕 EXPONER MODO EDICIÓN GLOBALMENTE
+  window.isEditMode = editMode;
 
   try {
     // 1️⃣ Obtener datos del usuario
@@ -106,6 +110,13 @@ export async function runFlowController(uid) {
 
     updateFlowState(steps, currentPage);
 
+    // 🆕 SI ESTÁ EN MODO EDICIÓN → NO REDIRIGIR, SOLO ACTUALIZAR ESTADO
+    if (editMode) {
+      console.log('✅ Modo edición activado - flowController no redirige');
+      setupEditMode(); // 👈 Nueva función
+      return;
+    }
+
     // 5️⃣ Primer paso incompleto (solo aplica en onboarding)
     let firstIncompleteStep = null;
     for (const step of FLOW_STEPS) {
@@ -117,7 +128,7 @@ export async function runFlowController(uid) {
     }
 
     // 6️⃣ ONBOARDING: Redirigir al primer paso incompleto
-    if (!editMode && firstIncompleteStep) {
+    if (firstIncompleteStep) {
       if (currentPage !== firstIncompleteStep) {
         window.location.href = `/${firstIncompleteStep}.html`;
       }
@@ -125,16 +136,69 @@ export async function runFlowController(uid) {
     }
 
     // 7️⃣ ONBOARDING completo → ir al dashboard
-    if (!editMode && currentPage !== "dashboard") {
+    if (currentPage !== "dashboard") {
       window.location.href = "/dashboard.html";
     }
-
-    // 8️⃣ MODO EDICIÓN:
-    // No redirige, no interfiere. Simplemente permite usar la página.
-    // ✔ Si editMode = true → no hacemos nada más.
-    return;
 
   } catch (error) {
     console.error("❌ Error en flowController:", error);
   }
+}
+
+// ---------------------------------------------------------
+// 🆕 Configurar interfaz para modo edición
+// ---------------------------------------------------------
+function setupEditMode() {
+  // Agregar botón "Volver al Dashboard" si no existe
+  if (!document.getElementById('btnVolverDashboard')) {
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+      const btnVolver = document.createElement('button');
+      btnVolver.id = 'btnVolverDashboard';
+      btnVolver.type = 'button';
+      btnVolver.className = 'btn btn-secondary';
+      btnVolver.innerHTML = '<i class="fas fa-arrow-left"></i> Volver al Dashboard';
+      btnVolver.style.marginBottom = '1rem';
+      
+      btnVolver.addEventListener('click', () => {
+        window.location.href = '/dashboard.html';
+      });
+      
+      // Insertar al principio del main-content
+      mainContent.insertBefore(btnVolver, mainContent.firstChild);
+    }
+  }
+
+  // 🆕 Habilitar siempre el botón guardar en modo edición
+  // Esperar a que el DOM esté listo
+  setTimeout(() => {
+    const btnGuardar = document.querySelector('.btn-save, #saveChangesBtn, [type="submit"]');
+    if (btnGuardar) {
+      btnGuardar.disabled = false;
+      console.log('✅ Botón guardar habilitado en modo edición');
+    }
+  }, 500);
+}
+
+// ---------------------------------------------------------
+// 🆕 Función para redirigir después de guardar
+// ---------------------------------------------------------
+export function redirectAfterSave() {
+  if (window.isEditMode) {
+    console.log('✅ Modo edición: redirigiendo al dashboard');
+    window.location.href = '/dashboard.html';
+  } else {
+    console.log('✅ Modo onboarding: continuando con flowController');
+    // Recargar flowController para que decida el siguiente paso
+    if (window.auth?.currentUser) {
+      runFlowController(window.auth.currentUser.uid);
+    }
+  }
+}
+
+// ---------------------------------------------------------
+// 🆕 Exportar función para verificar modo edición
+// ---------------------------------------------------------
+export function checkEditMode() {
+  return window.isEditMode || false;
 }
