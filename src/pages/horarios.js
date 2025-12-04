@@ -690,27 +690,27 @@ async function saveFormData() {
       });
     }, 2500);
 
-showToast('Éxito', 'Horarios guardados correctamente', 'success');
-updateBanner();
+    showToast('Éxito', 'Horarios guardados correctamente', 'success');
+    updateBanner();
 
-// 👇 Nueva forma centralizada
-setTimeout(() => {
-  redirectAfterSave(); 
-}, 1000);
+    // Nueva forma centralizada
+    setTimeout(() => {
+      redirectAfterSave(); 
+    }, 1000);
 
-} catch (err) {
-  console.error(err);
-  [btn, btnBottom].forEach(b => {
-    if (b) {
-      b.className = 'btn-save';
-      b.innerHTML = '<i class="fas fa-save"></i> Error';
-    }
-  });
-  showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
-} finally {
-  checkFormValidity();
+  } catch (err) {
+    console.error(err);
+    [btn, btnBottom].forEach(b => {
+      if (b) {
+        b.className = 'btn-save';
+        b.innerHTML = '<i class="fas fa-save"></i> Error';
+      }
+    });
+    showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
+  } finally {
+    checkFormValidity();
+  }
 }
-
 
 function insertAIHelperCard() {
   const container = document.querySelector('main .container');
