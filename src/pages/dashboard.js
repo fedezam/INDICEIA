@@ -6,7 +6,7 @@ import '../styles/base.css';
 import '../styles/layout.css';
 import '../styles/components.css';
 import '../styles/forms-premium-final.css';
-import '../styles/dashboard.css';
+import '.dashboard.css';
 
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
