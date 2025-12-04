@@ -15,7 +15,8 @@ import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../sha
 import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { runFlowController } from '../controllers/flowController.js';
+import { runFlowController, redirectAfterSave } from '../controllers/flowController.js';
+
 
 // ==================== FORZAR SCROLL ARRIBA ====================
 // Al cargar la página, forzar scroll arriba
@@ -926,12 +927,9 @@ async function saveAIConfig() {
       }
     }, 2500);
 
-    // Ejecutar flow controller
-    try {
-      runFlowController(currentUser.uid);
-    } catch (e) {
-      console.warn('runFlowController falló tras guardar:', e);
-    }
+    setTimeout(() => {
+      redirectAfterSave();
+   }, 500);
 
   } catch (err) {
     console.error('Error guardando configuración IA:', err);
