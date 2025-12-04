@@ -14,7 +14,8 @@ import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../sha
 import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { runFlowController } from '../controllers/flowController.js';
+import { runFlowController, redirectAfterSave } from '../controllers/flowController.js';
+
 
 // ==================== CONSTANTES ====================
 const DAYS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
@@ -773,24 +774,25 @@ async function saveFormData() {
         }
       });
     }, 2500);
-    
-    showToast('Éxito', 'Horarios guardados correctamente', 'success');
-    updateBanner();
-    
-    try {
-      runFlowController(currentUser.uid);
-    } catch (e) {
-      console.warn('runFlowController falló tras guardar:', e);
+
+showToast('Éxito', 'Horarios guardados correctamente', 'success');
+updateBanner();
+
+// 👇 Nueva forma centralizada
+setTimeout(() => {
+  redirectAfterSave(); 
+}, 1000);
+
+} catch (err) {
+  console.error(err);
+  [btn, btnBottom].forEach(b => {
+    if (b) {
+      b.className = 'btn-save';
+      b.innerHTML = '<i class="fas fa-save"></i> Error';
     }
-    
-  } catch (err) {
-    console.error(err);
-    [btn, btnBottom].forEach(b => {
-      if (b) {
-        b.className = 'btn-save';
-        b.innerHTML = '<i class="fas fa-save"></i> Error';
-      }
-    });
+  });
+}
+
     showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
   } finally {
     checkFormValidity();
