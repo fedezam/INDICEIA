@@ -14,7 +14,7 @@ import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../sha
 import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { runFlowController } from '../controllers/flowController.js';
+import { runFlowController, redirectAfterSave } from '../controllers/flowController.js';
 
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
@@ -1006,12 +1006,9 @@ async function saveAllProducts() {
     showToast('Éxito', 'Productos guardados correctamente', 'success');
     updateBanner();
     
-    // Ejecutar flowController
-    try {
-      runFlowController(currentUser.uid);
-    } catch (e) {
-      console.warn('runFlowController falló tras guardar:', e);
-    }
+    setTimeout(() => {
+      redirectAfterSave();
+    }, 500);
     
     return true;
   } catch (error) {
