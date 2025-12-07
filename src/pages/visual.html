@@ -3,27 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visual Builder</title>
-  <link rel="stylesheet" href="../styles/base.css">
-  <link rel="stylesheet" href="../styles/components.css">
-  <link rel="stylesheet" href="visual.css">
+  <title>Visual Builder - INDICEIA</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <main class="container">
-    <header class="page-header">
-      <h1><i class="fas fa-palette"></i> Visual Builder</h1>
-      <p>Elige un skin o template para personalizar tu IA</p>
-    </header>
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Cargando...</div>
+  </div>
 
-    <section id="skinsContainer" class="skins-grid">
-      <!-- Los skins se cargarán dinámicamente con JS -->
-    </section>
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
 
-    <footer>
-      <button id="saveSkinBtn" class="btn btn-primary">Guardar selección</button>
-    </footer>
+  <!-- Layout se renderiza por layout.js -->
+  <div id="layoutRoot"></div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+      <div class="page-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h1><i class="fas fa-palette"></i> Visual Builder</h1>
+            <p>Selecciona el template visual para tu catálogo de productos</p>
+          </div>
+          <a href="/dashboard.html" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+          </a>
+        </div>
+      </div>
+
+      <!-- Grid de Templates -->
+      <section id="skinsContainer" class="skins-grid">
+        <!-- Los templates se cargan dinámicamente desde visual.js -->
+      </section>
+
+      <!-- Botón Guardar -->
+      <div style="text-align: center;">
+        <button id="saveSkinBtn" class="btn btn-primary">
+          <i class="fas fa-save"></i> Guardar Template Seleccionado
+        </button>
+      </div>
+    </div>
   </main>
 
-  <script type="module" src="visual.js"></script>
+  <!-- Script carga el módulo JS -->
+  <script type="module" src="/src/pages/visual.js"></script>
 </body>
 </html>
