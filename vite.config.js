@@ -14,6 +14,7 @@ export default defineConfig({
         productos: resolve(__dirname, "src/pages/productos.html"),
         "ia-config": resolve(__dirname, "src/pages/ia-config.html"),
         dashboard: resolve(__dirname, "src/pages/dashboard.html"),
+        visual: resolve(__dirname, "src/pages/visual.html"),
       },
     },
   },
