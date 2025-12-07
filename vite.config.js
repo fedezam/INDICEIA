@@ -15,7 +15,7 @@ export default defineConfig({
         "ia-config": resolve(__dirname, "src/pages/ia-config.html"),
         dashboard: resolve(__dirname, "src/pages/dashboard.html"),
         visual: resolve(__dirname, "src/pages/visual.html"),
-        'demo-c1': resolve(__dirname, 'src/pages/demo/c1-napolitana.html'),
+        "demo-c1": resolve(__dirname, 'src/pages/demo/c1-napolitana.html'),
       },
     },
   },
