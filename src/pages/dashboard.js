@@ -215,7 +215,7 @@ async function renderDashboard() {
                     <h3>Visual Builder <span class="badge-optional">Opcional</span></h3>
                     <p>Personaliza la apariencia de tu IA</p>
                 </div>
-                <a href="visual.html" class="btn btn-primary btn-sm">
+                <a href="/pages/visual.html" class="btn btn-primary btn-sm">
                     <i class="fas fa-arrow-right"></i> Acceder
                 </a>
             </div>
