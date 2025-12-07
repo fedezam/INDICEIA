@@ -12,21 +12,21 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { renderLayout, updateHeaderInfo } from '../shared/layout.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 
-// ==================== TEMPLATES HARDCODEADOS ====================
+// ==================== TEMPLATES DISPONIBLES ====================
 const TEMPLATES = [
   {
     id: 'C1_Napolitana',
     name: 'Menú Simple - Napolitana Style',
     version: '1.0.0',
     status: 'stable',
-    thumbnail: 'https://via.placeholder.com/400x300/1e293b/f59e0b?text=C1+Napolitana',
-    description: '1 imagen por producto. Ideal para menús simples y claros.',
+    demoUrl: '/demo/c1-napolitana.html',
+    description: 'Una imagen por producto. Categorías con tabs, carrito funcional y checkout por WhatsApp.',
     recommended_for: ['Restaurantes', 'Pizzerías', 'Cafeterías', 'Bares'],
     features: [
-      'Categorías dinámicas',
+      'Tabs por categoría',
       'Carrito funcional',
-      'WhatsApp checkout',
-      'Múltiples tamaños'
+      'Envío por WhatsApp',
+      'Múltiples tamaños (mediana/grande)'
     ],
     use_cases: [
       'pizzería',
@@ -42,14 +42,14 @@ const TEMPLATES = [
     name: 'Catálogo Visual - Multi Imagen',
     version: '1.0.0',
     status: 'stable',
-    thumbnail: 'https://via.placeholder.com/400x300/0f172a/3b82f6?text=C2+Catalogo',
-    description: 'Múltiples imágenes por producto. Perfecto para productos que necesitan mostrar detalles.',
+    demoUrl: '/demo/c2-catalogo.html',
+    description: 'Múltiples fotos por producto con galería. Modal ampliado, favoritos y compartir.',
     recommended_for: ['Automotrices', 'Inmobiliarias', 'Mueblerías', 'Electrónica'],
     features: [
       'Galería de imágenes',
-      'Modal de detalle',
+      'Modal de detalle ampliado',
       'Sistema de favoritos',
-      'Compartir productos'
+      'Compartir por redes sociales'
     ],
     use_cases: [
       'automotriz',
@@ -58,30 +58,6 @@ const TEMPLATES = [
       'electrónica',
       'joyería'
     ]
-  },
-  {
-    id: 'C3_Marketplace',
-    name: 'Marketplace Multi-vendedor',
-    version: 'Coming Soon',
-    status: 'coming_soon',
-    eta: '2025-Q1',
-    thumbnail: 'https://via.placeholder.com/400x300/374151/9ca3af?text=Proximamente',
-    description: 'Múltiples vendedores en una sola plataforma.',
-    recommended_for: ['Marketplaces', 'Centros comerciales'],
-    features: ['Multi-vendedor', 'Gestión de comisiones', 'Panel admin'],
-    locked: true
-  },
-  {
-    id: 'C5_Minimal',
-    name: 'Lista Minimalista',
-    version: 'Coming Soon',
-    status: 'coming_soon',
-    eta: '2025-Q1',
-    thumbnail: 'https://via.placeholder.com/400x300/374151/9ca3af?text=Proximamente',
-    description: 'Diseño ultra simple sin imágenes. Solo texto y precios.',
-    recommended_for: ['Servicios', 'Listas simples'],
-    features: ['Ultra rápido', 'Sin imágenes', 'Minimalista'],
-    locked: true
   }
 ];
 
@@ -158,19 +134,27 @@ function renderTemplates() {
     container.innerHTML = TEMPLATES.map(template => {
         const isActive = selectedTemplateId === template.id;
         const isRecommended = recommendedTemplate === template.id;
-        const isLocked = template.locked || false;
 
         return `
-            <div class="skin-card ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}" 
-                 data-id="${template.id}"
-                 ${isLocked ? 'style="cursor: not-allowed; opacity: 0.6;"' : ''}>
+            <div class="skin-card ${isActive ? 'active' : ''}" 
+                 data-id="${template.id}">
                 
-                ${isLocked ? '<div class="lock-badge"><i class="fas fa-lock"></i> Próximamente</div>' : ''}
                 ${isRecommended && !isActive ? '<div class="recommended-badge"><i class="fas fa-star"></i> Recomendado</div>' : ''}
                 ${isActive ? '<div class="active-badge"><i class="fas fa-check-circle"></i> Activo</div>' : ''}
                 
                 <div class="skin-thumbnail">
-                    <img src="${template.thumbnail}" alt="${template.name}">
+                    <iframe 
+                        src="${template.demoUrl}" 
+                        class="template-preview-iframe"
+                        loading="lazy"
+                        sandbox="allow-scripts allow-same-origin"
+                        title="Preview ${template.name}">
+                    </iframe>
+                    <div class="thumbnail-overlay">
+                        <button class="demo-btn" data-demo-url="${template.demoUrl}">
+                            <i class="fas fa-expand"></i> Ver a pantalla completa
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="skin-content">
@@ -179,7 +163,7 @@ function renderTemplates() {
                     <p class="skin-description">${template.description}</p>
                     
                     <div class="skin-features">
-                        <strong>Features:</strong>
+                        <strong>Características:</strong>
                         <ul>
                             ${template.features.map(f => `<li><i class="fas fa-check"></i> ${f}</li>`).join('')}
                         </ul>
@@ -191,8 +175,6 @@ function renderTemplates() {
                             ${template.recommended_for.map(r => `<span class="tag">${r}</span>`).join('')}
                         </div>
                     </div>
-
-                    ${template.eta ? `<p class="skin-eta"><i class="fas fa-clock"></i> Disponible: ${template.eta}</p>` : ''}
                 </div>
             </div>
         `;
@@ -201,11 +183,20 @@ function renderTemplates() {
     // Agregar event listeners
     document.querySelectorAll('.skin-card').forEach(card => {
         const templateId = card.dataset.id;
-        const template = TEMPLATES.find(t => t.id === templateId);
-        
-        if (!template.locked) {
-            card.addEventListener('click', () => selectTemplate(templateId));
-        }
+        card.addEventListener('click', (e) => {
+            // No seleccionar si hicieron click en el iframe o botón demo
+            if (e.target.closest('.template-preview-iframe') || e.target.closest('.demo-btn')) return;
+            selectTemplate(templateId);
+        });
+    });
+
+    // Event listeners para botones de demo
+    document.querySelectorAll('.demo-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const demoUrl = btn.dataset.demoUrl;
+            window.open(demoUrl, '_blank');
+        });
     });
 }
 
