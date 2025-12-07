@@ -85,20 +85,62 @@
 .skin-thumbnail {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 280px;
   overflow: hidden;
   background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.skin-thumbnail img {
+.template-preview-iframe {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
+  border: none;
+  pointer-events: none; /* No se puede interactuar con el iframe desde la card */
+  transform: scale(0.5);
+  transform-origin: top left;
+  width: 200%;
+  height: 200%;
 }
 
-.skin-card:hover:not(.locked) .skin-thumbnail img {
-  transform: scale(1.05);
+/* Overlay con botón Demo */
+.thumbnail-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.skin-card:hover .thumbnail-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.demo-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  pointer-events: auto;
+}
+
+.demo-btn:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6);
 }
 
 /* ==================== CONTENT ==================== */
