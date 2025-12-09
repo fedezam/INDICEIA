@@ -19,7 +19,7 @@ const TEMPLATES = [
     name: 'Menú Simple - Napolitana Style',
     version: '1.0.0',
     status: 'stable',
-    demoUrl: '/demo/c1-napolitana.html',
+    previewImage: '/images/templates/c1-napolitana-preview.png',
     description: 'Una imagen por producto. Categorías con tabs, carrito funcional y checkout por WhatsApp.',
     recommended_for: ['Restaurantes', 'Pizzerías', 'Cafeterías', 'Bares'],
     features: [
@@ -42,7 +42,7 @@ const TEMPLATES = [
     name: 'Catálogo Visual - Multi Imagen',
     version: '1.0.0',
     status: 'stable',
-    demoUrl: '/demo/c2-catalogo.html',
+    previewImage: '/images/templates/c2-catalogo-preview.png',
     description: 'Múltiples fotos por producto con galería. Modal ampliado, favoritos y compartir.',
     recommended_for: ['Automotrices', 'Inmobiliarias', 'Mueblerías', 'Electrónica'],
     features: [
@@ -143,17 +143,16 @@ function renderTemplates() {
                 ${isActive ? '<div class="active-badge"><i class="fas fa-check-circle"></i> Activo</div>' : ''}
                 
                 <div class="skin-thumbnail">
-                    <iframe 
-                        src="${template.demoUrl}" 
-                        class="template-preview-iframe"
-                        loading="lazy"
-                        sandbox="allow-scripts allow-same-origin"
-                        title="Preview ${template.name}">
-                    </iframe>
+                    <img 
+                        src="${template.previewImage}" 
+                        alt="Preview ${template.name}"
+                        class="template-preview-image"
+                        onerror="this.src='/images/templates/placeholder.png'">
                     <div class="thumbnail-overlay">
-                        <button class="demo-btn" data-demo-url="${template.demoUrl}">
-                            <i class="fas fa-expand"></i> Ver a pantalla completa
-                        </button>
+                        <div class="overlay-content">
+                            <i class="fas fa-eye"></i>
+                            <span>Click para seleccionar</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -183,19 +182,8 @@ function renderTemplates() {
     // Agregar event listeners
     document.querySelectorAll('.skin-card').forEach(card => {
         const templateId = card.dataset.id;
-        card.addEventListener('click', (e) => {
-            // No seleccionar si hicieron click en el iframe o botón demo
-            if (e.target.closest('.template-preview-iframe') || e.target.closest('.demo-btn')) return;
+        card.addEventListener('click', () => {
             selectTemplate(templateId);
-        });
-    });
-
-    // Event listeners para botones de demo
-    document.querySelectorAll('.demo-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const demoUrl = btn.dataset.demoUrl;
-            window.open(demoUrl, '_blank');
         });
     });
 }
