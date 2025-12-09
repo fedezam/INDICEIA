@@ -138,6 +138,14 @@ app.post('/api/entity-factory/build', async (req, res) => {
     const entity = await buildEntity(comercio_id);
     const uploadResult = await uploadToVercel(entity);
 
+    // Guardar URL en Firestore para que luego la use link-builder
+await db.collection("comercios").doc(comercio_id).update({
+  entityURL: uploadResult.url,
+  entityUpdatedAt: Date.now(),
+  entityBuildId: entity.meta.buildId
+});
+
+
     // Logging
     console.log(`[BUILD SUCCESS] ${comercio_id} | buildId: ${entity.meta.buildId} | time: ${Date.now() - startTs}ms | size: ${Buffer.byteLength(JSON.stringify(entity), 'utf8')} bytes`);
 
