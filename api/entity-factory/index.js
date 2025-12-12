@@ -1,83 +1,61 @@
 // /api/entity-factory/index.js
-// ÍndiceIA — Entity Factory v1.0 (A+B+C → JSON → Vercel Blob)
+// Entity Factory oficial — Ensamblador A + B + C (ÍndiceIA v1.0)
 
-import { put } from '@vercel/blob';
+import blockA from './base/blockA.json' assert { type: 'json' };
+import { loadVisualTemplate } from './utils/tags-generator.js';
 
-export const config = {
-  runtime: 'edge',
-};
+/**
+ * buildEntity()
+ * Ensambla una entidad comercial completa: A (fijo) + B (dinámico Firestore) + C (visual opcional)
+ */
+export async function buildEntity({ comercioId, comercioData }) {
+  if (!comercioId) throw new Error("Falta comercioId");
+  if (!comercioData) throw new Error("Falta comercioData");
 
-export default async function handler(req) {
-  try {
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Only POST allowed' }), {
-        status: 405,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
+  // -------------------------------------------------
+  // BLOQUE A — BASE LER (fijo)
+  // -------------------------------------------------
+  const A = JSON.parse(JSON.stringify(blockA));
 
-    // -----------------------------------------------------
-    // 1. Leer body A+B+C
-    // -----------------------------------------------------
-    const body = await req.json();
-    const { A, B, C } = body;
+  // -------------------------------------------------
+  // BLOQUE B — DATOS DEL COMERCIO (dinámicos)
+  // -------------------------------------------------
+  const B = {
+    id: comercioId,
+    nombre: comercioData.nombre || "",
+    descripcion: comercioData.descripcion || "",
+    direccion: comercioData.direccion || "",
+    telefono: comercioData.telefono || "",
+    horarios: comercioData.horarios || {},
+    productos: comercioData.productos || [],
+    imagenes: comercioData.imagenes || [],
+    categoria: comercioData.categoria || "",
+    plan: comercioData.plan || "",
+    updatedAt: new Date().toISOString()
+  };
 
-    if (!A || !B) {
-      return new Response(JSON.stringify({
-        error: 'Missing required blocks A or B'
-      }), { status: 400 });
-    }
+  // -------------------------------------------------
+  // BLOQUE C — VISUAL (opcional)
+  // -------------------------------------------------
+  let C = null;
 
-    // -----------------------------------------------------
-    // 2. Ensamblar JSON final
-    // -----------------------------------------------------
-    const entity = {
-      meta: {
-        version: "1.0.0",
-        ensamblado: new Date().toISOString()
-      },
-      A,
-      B,
-      C: C || null
-    };
-
-    const jsonString = JSON.stringify(entity, null, 2);
-
-    // -----------------------------------------------------
-    // 3. Subir a Vercel Blob
-    // -----------------------------------------------------
-    const fileName =
-      `entity-${A?.meta?.nombre || 'comercio'}-${Date.now()}.json`;
-
-    const { url } = await put(fileName, jsonString, {
-      access: 'public',
-      addRandomSuffix: false
-    });
-
-    // -----------------------------------------------------
-    // 4. Devolver URL final
-    // -----------------------------------------------------
-    return new Response(
-      JSON.stringify({
-        success: true,
-        entityUrl: url,
-        fileName,
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
-
-  } catch (err) {
-    console.error("Entity Factory error:", err);
-
-    return new Response(JSON.stringify({
-      error: true,
-      message: err.message || 'Unknown error in Entity Factory'
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+  if (comercioData.visualTemplate) {
+    C = await loadVisualTemplate(comercioData.visualTemplate);
   }
+
+  // -------------------------------------------------
+  // ENSAMBLE FINAL
+  // -------------------------------------------------
+  const entidadFinal = {
+    meta: {
+      version: "1.0.0",
+      tipo: "entidad_comercial_indiceIA",
+      comercioId
+    },
+    A,
+    B,
+    ...(C ? { C } : {})
+  };
+
+  return entidadFinal;
 }

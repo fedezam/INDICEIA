@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "motor": "IndiceIA-EntitySystem",
+    "version": "1.0.0",
+    "tipo": "bloque_visual",
+    "bloque": "C",
+    "descripcion": "Bloque C opcional. Configuración visual, estética y de branding para render o front-end."
+  },
+
+  "visual": {
+    "tema": "default",
+    "colores": {
+      "primario": "#000000",
+      "secundario": "#FFFFFF",
+      "acento": "#4f46e5"
+    },
+    "tipografia": {
+      "familia": "Inter",
+      "peso": "400"
+    },
+    "logo": {
+      "url": "",
+      "estilo": "normal"
+    },
+    "presentacion": {
+      "mostrar_banner": true,
+      "mensaje_bienvenida": "Hola, soy la IA del comercio.",
+      "modo": "neutro"
+    }
+  }
+}
