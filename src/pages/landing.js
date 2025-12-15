@@ -1,80 +1,93 @@
-import { db } from '../firebase.js';
-import { doc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+/* ========================================
+   LANDING IA COMERCIAL — ÍndiceIA
+   Lógica pública, sin auth
+   ======================================== */
 
-// ==================== UTIL ====================
-function getLandingIdFromURL() {
-  const parts = window.location.pathname.split('/');
-  return parts[parts.length - 1] || null;
+// ================= CONFIG =================
+
+const FIREBASE_CONFIG = window.firebaseConfig; // inyectado globalmente
+
+const db = firebase.firestore();
+
+// ================= HELPERS =================
+
+function getQueryParam(param) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(param);
 }
 
-function getReferrerType() {
-  if (document.referrer.includes('qr')) return 'qr';
-  if (document.referrer) return 'link';
-  return 'unknown';
-}
-
-// ==================== ANALYTICS ====================
-async function trackEvent(landing, type) {
-  try {
-    await addDoc(collection(db, 'landing_events'), {
-      landingId: landing.landingId,
-      comercioId: landing.comercioId,
-      type,
-      ref: getReferrerType(),
-      ua: navigator.userAgent,
-      timestamp: serverTimestamp()
-    });
-  } catch (err) {
-    // silencioso: analytics nunca debe romper la UX
-    console.warn('Analytics error', err);
-  }
-}
-
-// ==================== MAIN ====================
-async function initLanding() {
-  const landingId = getLandingIdFromURL();
-
-  if (!landingId) {
-    document.body.innerHTML = '<h2>Landing no válida</h2>';
-    return;
-  }
-
-  const ref = doc(db, 'landings', landingId);
-  const snap = await getDoc(ref);
-
-  if (!snap.exists()) {
-    document.body.innerHTML = '<h2>Landing no encontrada</h2>';
-    return;
-  }
-
-  const landing = { landingId, ...snap.data() };
-
-  if (!landing.active) {
-    document.body.innerHTML = '<h2>Este asistente no está activo</h2>';
-    return;
-  }
-
-  // Render
-  document.getElementById('nombreComercio').textContent = landing.nombreComercio;
-  document.getElementById('descripcion').textContent = landing.descripcion || '';
-  
-  if (landing.logoUrl) {
-    const logo = document.getElementById('logo');
-    logo.src = landing.logoUrl;
-    logo.style.display = 'block';
-  }
-
-  // Analytics: view
-  trackEvent(landing, 'view');
-
-  // CTA
-  const btn = document.getElementById('ctaBtn');
-  btn.addEventListener('click', async () => {
-    btn.disabled = true;
-    await trackEvent(landing, 'cta_click');
-    window.location.href = landing.linkFinal;
+function uuidv4() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0,
+      v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
   });
 }
 
-// ==================== START ====================
-initLanding();
+// ================= CONTEXT =================
+
+const entityId = getQueryParam('entity');
+const sessionId = uuidv4();
+const startedAt = Date.now();
+
+if (!entityId) {
+  document.body.innerHTML = '<p style="padding:2rem;text-align:center">Entidad no válida</p>';
+  throw new Error('Missing entityId');
+}
+
+// ================= TRACKING =================
+
+async function trackEvent(type, extra = {}) {
+  try {
+    await db.collection('landing_events').add({
+      entityId,
+      sessionId,
+      type,
+      timestamp: Date.now(),
+      userAgent: navigator.userAgent,
+      referrer: document.referrer || null,
+      ...extra,
+    });
+  } catch (e) {
+    console.warn('Tracking error', e);
+  }
+}
+
+// ================= LOAD ENTITY =================
+
+async function loadEntity() {
+  try {
+    const snap = await db.collection('entities').doc(entityId).get();
+
+    if (!snap.exists) throw new Error('Entity not found');
+
+    const data = snap.data();
+
+    document.getElementById('commerceLogo').src = data.logoUrl || '';
+    document.getElementById('commerceName').innerText = data.commerceName || 'Asistente Virtual';
+    document.getElementById('commerceDescription').innerText =
+      data.description || 'Un asistente virtual para ayudarte.';
+
+    await trackEvent('view');
+
+    document.getElementById('ctaButton').onclick = () => openAssistant(data);
+  } catch (e) {
+    document.body.innerHTML = '<p style="padding:2rem;text-align:center">Entidad no encontrada</p>';
+  }
+}
+
+// ================= CTA =================
+
+async function openAssistant(entityData) {
+  await trackEvent('cta_click');
+
+  const claudeBase = entityData.claudeUrl; // ya viene armado desde backend
+
+  const url = `${claudeBase}&session=${sessionId}`;
+
+  window.location.href = url;
+}
+
+// ================= INIT =================
+
+loadEntity();
