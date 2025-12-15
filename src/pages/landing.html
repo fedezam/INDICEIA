@@ -2,55 +2,59 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Asistente Virtual</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asistente IA del Comercio</title>
 
-  <!-- Estilos base reutilizables -->
-  <link rel="stylesheet" href="../styles/base.css" />
-  <link rel="stylesheet" href="../styles/layout.css" />
-  <link rel="stylesheet" href="../styles/components.css" />
+  <!-- Estilos base del proyecto -->
+  <link rel="stylesheet" href="/assets/main.css" />
+  <link rel="stylesheet" href="/assets/components.css" />
 
-  <!-- Estilos propios -->
+  <!-- Estilos propios de la landing -->
   <link rel="stylesheet" href="./landing.css" />
-
-  <!-- Iconos -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
-
-<body class="landing-body">
+<body>
 
   <main class="landing-container">
 
-    <div class="landing-card">
-
-      <div class="landing-header">
-        <img id="logo" class="landing-logo" alt="Logo comercio" />
-        <h1 id="nombreComercio">Cargando…</h1>
-        <p id="descripcion" class="landing-description"></p>
-      </div>
-
-      <div class="landing-disclaimer">
-        <p>
-          Este es el <strong>asistente virtual oficial</strong> del comercio.
-          La información provista es automática y se basa únicamente en los datos del negocio.
-        </p>
-      </div>
-
-      <button id="ctaBtn" class="btn btn-primary btn-lg">
-        <i class="fas fa-robot"></i>
-        Hablar con el asistente
-      </button>
-
-      <div class="landing-footer">
-        <small>
-          Al continuar aceptás interactuar con una inteligencia artificial.
-        </small>
-      </div>
-
+    <!-- LOGO / IDENTIDAD -->
+    <div class="landing-header">
+      <img
+        id="landingLogo"
+        class="landing-logo"
+        src=""
+        alt="Logo del comercio"
+      />
     </div>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <section class="landing-content">
+      <h1 id="landingTitle">Cargando…</h1>
+      <p id="landingDescription" class="landing-description"></p>
+
+      <button id="ctaButton" class="btn btn-primary btn-lg" disabled>
+        Hablar con la IA
+      </button>
+    </section>
+
+    <!-- DISCLAIMER -->
+    <section class="landing-disclaimer">
+      <p>
+        Estás por interactuar con una inteligencia artificial configurada
+        exclusivamente por este comercio.
+      </p>
+      <p>
+        ÍndiceIA no controla ni supervisa las respuestas generadas.
+      </p>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="landing-footer">
+      <span>Powered by <strong>ÍndiceIA</strong></span>
+    </footer>
 
   </main>
 
+  <!-- SCRIPT -->
   <script type="module" src="./landing.js"></script>
 </body>
 </html>
