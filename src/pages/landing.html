@@ -2,59 +2,62 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <title>Asistente IA del comercio</title>
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Asistente IA del Comercio</title>
+  <meta name="robots" content="noindex, nofollow" />
 
-  <!-- Estilos base del proyecto -->
-  <link rel="stylesheet" href="/assets/main.css" />
-  <link rel="stylesheet" href="/assets/components.css" />
-
-  <!-- Estilos propios de la landing -->
+  <!-- CSS -->
+  <link rel="stylesheet" href="../styles/base.css" />
+  <link rel="stylesheet" href="../styles/layout.css" />
+  <link rel="stylesheet" href="../styles/components.css" />
   <link rel="stylesheet" href="./landing.css" />
+
+  <!-- JS -->
+  <script type="module" src="./landing.js"></script>
 </head>
-<body>
+
+<body class="landing-body">
 
   <main class="landing-container">
 
-    <!-- LOGO / IDENTIDAD -->
-    <div class="landing-header">
-      <img
-        id="landingLogo"
-        class="landing-logo"
-        src=""
-        alt="Logo del comercio"
-      />
-    </div>
+    <!-- HEADER -->
+    <header class="landing-header">
+      <img id="logo" class="landing-logo" alt="Logo del comercio" />
+      <h1 id="nombreComercio" class="landing-commerce-name"></h1>
+    </header>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <section class="landing-content">
-      <h1 id="landingTitle">Cargando…</h1>
-      <p id="landingDescription" class="landing-description"></p>
-
-      <button id="ctaButton" class="btn btn-primary btn-lg" disabled>
-        Hablar con la IA
-      </button>
+    <!-- HERO -->
+    <section class="landing-hero">
+      <img id="hero" class="landing-hero-image" alt="Imagen principal" />
     </section>
 
-    <!-- DISCLAIMER -->
-    <section class="landing-disclaimer">
-      <p>
-        Estás por interactuar con una inteligencia artificial configurada
-        exclusivamente por este comercio.
-      </p>
-      <p>
-        ÍndiceIA no controla ni supervisa las respuestas generadas.
-      </p>
+    <!-- CONTENT -->
+    <section class="landing-content">
+      <h2 id="titulo" class="landing-title"></h2>
+      <p id="descripcion" class="landing-description"></p>
+    </section>
+
+    <!-- CTA -->
+    <section class="landing-cta">
+      <button id="ctaButton" class="btn btn-primary btn-lg">
+        <span id="ctaText">Hablar con la IA</span>
+      </button>
+      <p id="disclaimer" class="landing-disclaimer"></p>
     </section>
 
     <!-- FOOTER -->
     <footer class="landing-footer">
-      <span>Powered by <strong>ÍndiceIA</strong></span>
+      <p>
+        Esta IA fue generada por el comercio.
+        <br />
+        <span class="powered">
+          Tecnología de asistentes inteligentes — ÍndiceIA
+        </span>
+      </p>
     </footer>
 
   </main>
 
-  <!-- SCRIPT -->
-  <script type="module" src="./landing.js"></script>
 </body>
 </html>
