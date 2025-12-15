@@ -1,118 +1,473 @@
-// ========================================
-// LANDING PAGE – RUNTIME PUBLICO
-// ========================================
+/* ========================================
+   ia-config.css - Estilos exclusivos de Configuración IA
+   ======================================== */
 
-import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, increment, updateDoc } from "firebase/firestore";
-
-// ==================== FIREBASE INIT (PUBLIC) ====================
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// ==================== UTILS ====================
-function getLandingId() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("id");
+/* ==================== SECCIONES ==================== */
+.config-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
 }
 
-function safeText(el, text) {
-  if (el && typeof text === "string") el.textContent = text;
+.section-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
 }
 
-function safeImage(el, url) {
-  if (el && url) el.src = url;
+.section-header h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-// ==================== TRACKING ====================
-async function trackEvent(landingId, type) {
-  try {
-    await addDoc(collection(db, "landing_events"), {
-      landingId,
-      type, // view | click
-      userAgent: navigator.userAgent,
-      referrer: document.referrer || null,
-      createdAt: serverTimestamp()
-    });
+.section-header h3 i {
+  color: #667eea;
+  font-size: 1.1rem;
+}
 
-    const ref = doc(db, "landings", landingId);
-    const patch = {
-      [`stats.${type === "view" ? "views" : "clicks"}`]: increment(1),
-      [`stats.${type === "view" ? "lastViewAt" : "lastClickAt"}`]: serverTimestamp()
-    };
+.section-header p {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin: 0;
+}
 
-    await updateDoc(ref, patch);
-  } catch (err) {
-    // silencio absoluto (por diseño)
-    console.warn("Tracking skipped");
+/* ==================== PRODUCTOS DESTACADOS ==================== */
+.destacados-search {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box i {
+  position: absolute;
+  left: 1rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.search-box input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Resultados de búsqueda */
+.search-results {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s;
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item:hover {
+  background: #f8fafc;
+}
+
+.search-result-item.already-added {
+  opacity: 0.6;
+  background: #f1f5f9;
+}
+
+.producto-info-search {
+  flex: 1;
+}
+
+.producto-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.producto-codigo {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.producto-categoria {
+  font-size: 0.75rem;
+  color: #667eea;
+  background: #eef2ff;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.producto-nombre {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.producto-precio {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #10b981;
+}
+
+.search-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.search-empty i {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  display: block;
+  color: #cbd5e0;
+}
+
+/* Counter de destacados */
+.counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef2ff;
+  color: #667eea;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-left: 0.5rem;
+}
+
+/* Lista de productos destacados */
+.destacados-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.destacado-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.destacado-item:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.destacado-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  color: white;
+  font-size: 1.25rem;
+}
+
+.producto-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.btn-quitar {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-quitar:hover {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #ef4444;
+}
+
+/* ==================== EMPTY STATE ==================== */
+.empty-state {
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.empty-state i {
+  font-size: 4rem;
+  color: #cbd5e0;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.empty-state p {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0.5rem 0;
+}
+
+.empty-state small {
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+/* ==================== CONTACTOS VALIDACIÓN ==================== */
+.contactos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.contacto-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.contacto-item.valid {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.contacto-item.invalid {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.contacto-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 1.5rem;
+}
+
+.contacto-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.contacto-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.contacto-value {
+  font-size: 0.875rem;
+  color: #64748b;
+  word-break: break-word;
+}
+
+.contacto-value.missing {
+  color: #ef4444;
+  font-style: italic;
+}
+
+.contacto-status {
+  display: flex;
+  align-items: center;
+  font-size: 1.25rem;
+}
+
+/* ==================== ALERTS ==================== */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid;
+}
+
+.alert i {
+  font-size: 1.25rem;
+  margin-top: 0.125rem;
+}
+
+.alert strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 700;
+}
+
+.alert p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.alert a {
+  color: inherit;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.alert-warning {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+}
+
+.alert-warning i {
+  color: #f59e0b;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  .config-section {
+    padding: 1.5rem;
+  }
+
+  .section-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .contactos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .destacado-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-quitar {
+    width: 100%;
+  }
+
+  .search-result-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-result-item button {
+    width: 100%;
   }
 }
-
-// ==================== REDIRECT ====================
-function buildClaudeUrl(prompt, entityUrl, modelo) {
-  const base = "https://claude.ai/new";
-  const payload = `${prompt}\n\n${entityUrl}`;
-  return `${base}?model=${encodeURIComponent(modelo)}&prompt=${encodeURIComponent(payload)}`;
+/* ==================== COMPORTAMIENTOS ESPECIALES ==================== */
+.comportamientos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
 }
 
-// ==================== MAIN ====================
-async function initLanding() {
-  const landingId = getLandingId();
-
-  if (!landingId) {
-    document.body.innerHTML = "<h2>Landing no válida</h2>";
-    return;
-  }
-
-  const ref = doc(db, "landings", landingId);
-  const snap = await getDoc(ref);
-
-  if (!snap.exists()) {
-    document.body.innerHTML = "<h2>Contenido no disponible</h2>";
-    return;
-  }
-
-  const data = snap.data();
-
-  if (data.status !== "active") {
-    document.body.innerHTML = "<h2>Esta experiencia no está disponible</h2>";
-    return;
-  }
-
-  // ==================== RENDER ====================
-  safeText(document.getElementById("nombreComercio"), data.public.nombreComercio);
-  safeText(document.getElementById("titulo"), data.public.titulo);
-  safeText(document.getElementById("descripcion"), data.public.descripcion);
-  safeText(document.getElementById("ctaText"), data.public.ctaText);
-  safeText(document.getElementById("disclaimer"), data.public.disclaimer || "");
-
-  safeImage(document.getElementById("logo"), data.public.logoUrl);
-  safeImage(document.getElementById("hero"), data.public.imagenHero);
-
-  // ==================== TRACK VIEW ====================
-  trackEvent(landingId, "view");
-
-  // ==================== CTA ====================
-  const btn = document.getElementById("ctaButton");
-
-  btn.addEventListener("click", async () => {
-    btn.disabled = true;
-    await trackEvent(landingId, "click");
-
-    const url = buildClaudeUrl(
-      data.cognitive.promptMinimo,
-      data.entityUrl,
-      data.cognitive.modeloRecomendado || "claude-3.5"
-    );
-
-    window.location.href = url;
-  });
+.comportamientos-grid label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: block;
 }
 
-// ==================== BOOT ====================
-document.addEventListener("DOMContentLoaded", initLanding);
+.comportamientos-grid select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.comportamientos-grid select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  outline: none;
+}
+.comportamientos-grid {
+  outline: 3px solid red !important;
+
+
+/* ==================== PAGE HEADER ==================== */
+.page-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.page-header p {
+  font-size: 1rem;
+  color: var(--gray-600);
+}
+
+/* ==================== FORM ACTIONS (eliminado, ya está en HTML) ==================== */
+/* NO DEFINIR .form-actions aquí, el botón está en .bottom-action-bar del HTML */
+
