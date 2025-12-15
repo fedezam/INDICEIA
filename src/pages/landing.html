@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IA Comercial</title>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --bg: #f8fafc;
+      --text: #020617;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      max-width: 420px;
+      width: 100%;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.08);
+      padding: 2rem;
+      text-align: center;
+    }
+    .logo {
+      max-height: 80px;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin: .5rem 0;
+    }
+    p {
+      opacity: .85;
+      margin-bottom: 1.5rem;
+    }
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover { opacity: .9; }
+    .disclaimer {
+      font-size: .75rem;
+      opacity: .6;
+      margin-top: 1rem;
+    }
+    .error {
+      color: #991b1b;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="app">
+    <p>Cargando IA comercial…</p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "VITE_FIREBASE_API_KEY",
+      authDomain: "VITE_FIREBASE_AUTH_DOMAIN",
+      projectId: "VITE_FIREBASE_PROJECT_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const landingId = location.pathname.split('/').pop();
+    const appDiv = document.getElementById('app');
+
+    const logEvent = async (tipo) => {
+      try {
+        await addDoc(collection(db, 'landing_events'), {
+          landingId,
+          tipo,
+          referrer: document.referrer || null,
+          userAgent: navigator.userAgent,
+          timestamp: serverTimestamp()
+        });
+      } catch (e) {}
+    };
+
+    const renderError = (msg) => {
+      appDiv.innerHTML = `<p class='error'>${msg}</p>`;
+    };
+
+    const init = async () => {
+      await logEvent('view');
+
+      const ref = doc(db, 'landings', landingId);
+      const snap = await getDoc(ref);
+
+      if (!snap.exists()) {
+        renderError('IA no disponible');
+        return;
+      }
+
+      const data = snap.data();
+
+      if (data.estado !== 'activo') {
+        renderError('IA temporalmente pausada');
+        return;
+      }
+
+      document.documentElement.style.setProperty('--primary', data.branding?.colorPrimario || '#0f172a');
+
+      appDiv.innerHTML = `
+        ${data.branding?.logoUrl ? `<img src='${data.branding.logoUrl}' class='logo' />` : ''}
+        <h1>${data.branding?.nombreComercio || 'IA Comercial'}</h1>
+        <p>${data.branding?.mensajeBienvenida || 'Asistente inteligente del comercio'}</p>
+        <button id='go'>Hablar con la IA</button>
+        ${data.disclaimer?.visible ? `<div class='disclaimer'>${data.disclaimer.texto}</div>` : ''}
+      `;
+
+      document.getElementById('go').onclick = async () => {
+        await logEvent('click_ia');
+        window.location.href = data.claudeLink;
+      };
+    };
+
+    init();
+  </script>
+</body>
+</html>
