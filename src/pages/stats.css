@@ -1,0 +1,169 @@
+/* ================================
+   STATS – Landing Analytics
+   ================================ */
+
+/* Page header */
+.page-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.page-header h1 {
+  font-size: 2.2rem;
+  color: var(--gray-900);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.page-header h1 i {
+  color: var(--primary);
+}
+
+.page-header p {
+  margin-top: 0.5rem;
+  color: var(--gray-600);
+  font-size: 1.05rem;
+}
+
+/* ================================
+   KPI GRID
+   ================================ */
+.stats-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.kpi-card {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: center;
+  transition: var(--transition);
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.kpi-label {
+  font-size: 0.85rem;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.kpi-value {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* ================================
+   STATS SECTIONS
+   ================================ */
+.stats-section {
+  margin-bottom: 3rem;
+}
+
+.stats-section h2 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: var(--gray-900);
+}
+
+/* Placeholder for charts */
+.chart-placeholder {
+  background: linear-gradient(
+    135deg,
+    #f8faff 0%,
+    #eef3ff 100%
+  );
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--border-radius);
+  padding: 2.5rem;
+  text-align: center;
+  color: var(--gray-500);
+  font-size: 0.95rem;
+}
+
+/* ================================
+   EVENTS TABLE
+   ================================ */
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.stats-table thead {
+  background: var(--gray-100);
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 0.9rem 1rem;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.stats-table th {
+  font-weight: 700;
+  color: var(--gray-700);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.stats-table tbody tr {
+  border-top: 1px solid var(--gray-200);
+}
+
+.stats-table tbody tr:hover {
+  background: var(--gray-50);
+}
+
+.stats-table td {
+  color: var(--gray-700);
+}
+
+.stats-table .muted {
+  text-align: center;
+  color: var(--gray-500);
+  font-style: italic;
+}
+
+/* ================================
+   RESPONSIVE
+   ================================ */
+@media (max-width: 768px) {
+  .page-header h1 {
+    font-size: 1.8rem;
+    flex-direction: column;
+  }
+
+  .stats-kpi-grid {
+    gap: 1rem;
+  }
+
+  .kpi-value {
+    font-size: 1.9rem;
+  }
+
+  .stats-table th,
+  .stats-table td {
+    padding: 0.75rem;
+  }
+}
