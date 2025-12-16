@@ -9,7 +9,7 @@ import './dashboard.css';
 
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
@@ -89,11 +89,6 @@ async function loadComercioData() {
     }
 }
 
-async function loadProductCount() {
-    const ref = collection(db, 'comercios', currentComercioId, 'productos');
-    const snap = await getDocs(ref);
-    return snap.size;
-}
 
 async function loadHorarios() {
     const ref = doc(db, 'comercios', currentComercioId, 'config', 'horarios');
@@ -130,8 +125,8 @@ async function renderDashboard() {
     const cont = document.getElementById("dashboardContainer");
     if (!cont) return;
 
-    const productCount = await loadProductCount();
-    const horarios = await loadHorarios();
+    const productCount = comercioData.stats?.productosCount ?? 0;
+    const horarios = comercioData.stats?.horariosConfigurados === true;
 
     cont.innerHTML = `
         <div class="page-header">
@@ -156,7 +151,7 @@ async function renderDashboard() {
 
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-clock"></i></div>
-                <div class="dash-content"><h3>Horarios</h3><p>${horarios ? "Configurados ✓" : "No configurados"}</p></div>
+                <div class="dash-content"><h3>Horarios</h3><p>${horarios ? "Configurados ✓" : "No configurados"}</p>
                 <a href="horarios.html?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i> Editar</a>
             </div>
 
