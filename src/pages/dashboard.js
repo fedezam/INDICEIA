@@ -141,88 +141,67 @@ async function renderDashboard() {
 
         <section class="dashboard-grid">
 
+            <!-- EXISTENTES -->
             <div class="dash-card">
-                <div class="dash-icon">
-                    <i class="fas fa-user"></i>
-                </div>
-                <div class="dash-content">
-                    <h3>Usuario</h3>
-                    <p>${currentUser.email}</p>
-                </div>
-                <a href="usuario.html?edit=true" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-edit"></i> Editar
-                </a>
+                <div class="dash-icon"><i class="fas fa-user"></i></div>
+                <div class="dash-content"><h3>Usuario</h3><p>${currentUser.email}</p></div>
+                <a href="usuario.html?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i> Editar</a>
             </div>
 
             <div class="dash-card">
-                <div class="dash-icon">
-                    <i class="fas fa-store"></i>
-                </div>
-                <div class="dash-content">
-                    <h3>Mi Comercio</h3>
-                    <p>${comercioData.nombreComercio || "Sin nombre"}</p>
-                </div>
-                <a href="mi-comercio.html?edit=true" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-edit"></i> Editar
-                </a>
+                <div class="dash-icon"><i class="fas fa-store"></i></div>
+                <div class="dash-content"><h3>Mi Comercio</h3><p>${comercioData.nombreComercio || "Sin nombre"}</p></div>
+                <a href="mi-comercio.html?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i> Editar</a>
             </div>
 
             <div class="dash-card">
-                <div class="dash-icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="dash-content">
-                    <h3>Horarios</h3>
-                    <p>${horarios ? "Configurados ✓" : "No configurados"}</p>
-                </div>
-                <a href="horarios.html?edit=true" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-edit"></i> Editar
-                </a>
+                <div class="dash-icon"><i class="fas fa-clock"></i></div>
+                <div class="dash-content"><h3>Horarios</h3><p>${horarios ? "Configurados ✓" : "No configurados"}</p></div>
+                <a href="horarios.html?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i> Editar</a>
             </div>
 
             <div class="dash-card">
-                <div class="dash-icon">
-                    <i class="fas fa-box"></i>
-                </div>
-                <div class="dash-content">
-                    <h3>Productos</h3>
-                    <p>${productCount} producto${productCount !== 1 ? 's' : ''}</p>
-                </div>
-                <a href="productos.html?edit=true" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-edit"></i> Editar
-                </a>
+                <div class="dash-icon"><i class="fas fa-box"></i></div>
+                <div class="dash-content"><h3>Productos</h3><p>${productCount} producto${productCount !== 1 ? 's' : ''}</p></div>
+                <a href="productos.html?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i> Editar</a>
             </div>
 
             <div class="dash-card">
-                <div class="dash-icon">
-                    <i class="fas fa-robot"></i>
-                </div>
-                <div class="dash-content">
-                    <h3>Configuración IA</h3>
-                    <p>Estado mental y capacidades</p>
-                </div>
-                <a href="ia-config.html?edit=true" class="btn btn-secondary btn-sm">
-                    <i class="fas fa-edit"></i> Editar
-                </a>
+                <div class="dash-icon"><i class="fas fa-robot"></i></div>
+                <div class="dash-content"><h3>Configuración IA</h3><p>Estado mental y capacidades</p></div>
+                <a href="ia-config.html?edit=true" class="btn btn-secondary btn-sm"><i class="fas fa-edit"></i> Editar</a>
             </div>
 
-            <!-- VISUAL BUILDER - OPCIONAL -->
+            <!-- NUEVAS CARDS -->
             <div class="dash-card highlight">
-                <div class="dash-icon">
-                    <i class="fas fa-palette"></i>
-                </div>
-                <div class="dash-content">
-                    <h3>Visual Builder <span class="badge-optional">Opcional</span></h3>
-                    <p>Personaliza la apariencia de tu IA</p>
-                </div>
-                <a href="visual.html" class="btn btn-primary btn-sm">
-                    <i class="fas fa-arrow-right"></i> Acceder
-                </a>
+                <div class="dash-icon"><i class="fas fa-chart-bar"></i></div>
+                <div class="dash-content"><h3>Estadísticas</h3><p>Visitas y conversiones de tu landing</p></div>
+                <a href="stats.html" class="btn btn-primary btn-sm"><i class="fas fa-arrow-right"></i> Ver</a>
+            </div>
+
+            <div class="dash-card highlight">
+                <div class="dash-icon"><i class="fas fa-cogs"></i></div>
+                <div class="dash-content"><h3>Generar Entidad</h3><p>Ejecuta Entity Factory para tu comercio</p></div>
+                <a href="/api/entity-factory" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-arrow-right"></i> Ejecutar</a>
+            </div>
+
+            <div class="dash-card highlight">
+                <div class="dash-icon"><i class="fas fa-link"></i></div>
+                <div class="dash-content"><h3>Generar Link de la Entidad</h3><p>Obtén URL o QR para compartir</p></div>
+                <a href="/api/link-builder?action=generate&comercio_id=${currentComercioId}" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-arrow-right"></i> Generar</a>
+            </div>
+
+            <!-- VISUAL BUILDER OPCIONAL -->
+            <div class="dash-card highlight">
+                <div class="dash-icon"><i class="fas fa-palette"></i></div>
+                <div class="dash-content"><h3>Visual Builder <span class="badge-optional">Opcional</span></h3><p>Personaliza la apariencia de tu IA</p></div>
+                <a href="visual.html" class="btn btn-primary btn-sm"><i class="fas fa-arrow-right"></i> Acceder</a>
             </div>
 
         </section>
     `;
 }
+
 
 // ==================== EVENTOS ====================
 function setupEvents() {
