@@ -64,7 +64,7 @@ async function initializePage() {
       currentComercioId = userSnap.data().comercioId;
     } else {
       const nuevo = await addDoc(collection(db, 'comercios'), {
-        dueñoId: currentUser.uid,
+        duenoId: currentUser.uid,
         fechaCreacion: new Date(),
         plan: 'trial',
         pais: 'Argentina',
