@@ -1,5 +1,5 @@
 // ========================================
-// DASHBOARD – CON DEBUG
+// DASHBOARD – VERSIÓN SIMPLIFICADA
 // ========================================
 import '../styles/base.css';
 import '../styles/layout.css';
@@ -15,126 +15,83 @@ import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plan
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
 
-// ==================== VARIABLES ====================
 let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
 
-// ==================== AUTH ====================
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = "/login.html";
         return;
     }
-
     currentUser = user;
-
-    try {
-        await user.getIdToken();
-    } catch (error) {
-        console.error('Error obteniendo token:', error);
-        signOut(auth);
-        window.location.href = "/login.html";
-        return;
-    }
-
     await initializePage();
     runFlowController(user.uid);
 });
 
-// ==================== INICIALIZACIÓN ====================
 async function initializePage() {
+    console.log('🚀 INICIANDO initializePage');
+    
     try {
         showLoading('Cargando dashboard...');
         renderLayout();
 
-        // Paso 1: Cargar usuario
         const userRef = doc(db, 'usuarios', currentUser.uid);
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
+            console.error('❌ Usuario no existe');
             hideLoading();
-            showToast("Error", "No se encontró información del usuario.", "error");
-            console.error('Usuario no existe en Firestore');
             return;
         }
 
         const userData = userSnap.data();
-        console.log('✅ Datos de usuario cargados:', userData);
-
-        // Verificar que tenga comercioId
-        if (!userData.comercioId) {
-            hideLoading();
-            showToast("Error", "Tu usuario no tiene un comercio asignado. Contacta a soporte.", "error");
-            console.error('Usuario sin comercioId:', userData);
-            return;
-        }
-
         currentComercioId = userData.comercioId;
-        console.log('🔑 ComercioId obtenido:', currentComercioId);
+        console.log('✅ ComercioId:', currentComercioId);
 
-        // Paso 2: Cargar comercio con manejo de errores
         await loadComercioData();
 
-        // Paso 3: Actualizar UI con datos disponibles
         updateHeaderInfo(
             comercioData.nombreComercio || 'Mi Comercio', 
             PLANS[comercioData.plan || 'trial']
         );
         updateBanner();
 
-        // Paso 4: Renderizar dashboard
+        console.log('⏳ Esperando frame de animación...');
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
         
-        console.log('🎨 Iniciando renderizado del dashboard...');
-        await renderDashboard();
+        console.log('🎨 LLAMANDO A renderDashboard()');
+        renderDashboard(); // SIN await - ejecutar inmediatamente
         
-        console.log('🔧 Configurando eventos...');
+        console.log('🔧 Configurando eventos');
         setupEvents();
 
         hideLoading();
-        console.log('✅ Dashboard cargado exitosamente');
+        console.log('✅ InitializePage COMPLETO');
 
     } catch (err) {
-        console.error('❌ Error en initializePage:', err);
+        console.error('❌ ERROR en initializePage:', err);
         hideLoading();
         
-        // Intentar renderizar el dashboard de todas formas
-        try {
-            await renderDashboard();
-            setupEvents();
-            showToast('Advertencia', 'Algunos datos no se pudieron cargar. Verifica tus permisos.', 'warning');
-        } catch (renderErr) {
-            console.error('❌ Error al renderizar:', renderErr);
-            showToast('Error', 'No se pudo cargar el dashboard: ' + err.message, 'error');
-        }
+        // FORZAR renderizado de emergencia
+        console.log('🚨 Intentando renderizado de emergencia');
+        renderDashboard();
+        setupEvents();
     }
 }
 
-// ==================== DATA ====================
 async function loadComercioData() {
     try {
-        console.log('🔍 Intentando cargar comercio:', currentComercioId);
-        
         const ref = doc(db, 'comercios', currentComercioId);
         const snap = await getDoc(ref);
-
         if (snap.exists()) {
-            comercioData = { 
-                id: currentComercioId, 
-                ...snap.data() 
-            };
-            console.log('✅ Datos de comercio cargados:', comercioData);
+            comercioData = { id: currentComercioId, ...snap.data() };
         } else {
-            console.warn('⚠️ Documento de comercio no existe, usando datos por defecto');
             comercioData = { 
                 id: currentComercioId,
                 plan: 'trial',
                 nombreComercio: 'Mi Comercio',
-                stats: {
-                    productosCount: 0,
-                    horariosConfigurados: false
-                }
+                stats: { productosCount: 0, horariosConfigurados: false }
             };
         }
     } catch (error) {
@@ -143,21 +100,16 @@ async function loadComercioData() {
             id: currentComercioId,
             plan: 'trial',
             nombreComercio: 'Mi Comercio',
-            stats: {
-                productosCount: 0,
-                horariosConfigurados: false
-            }
+            stats: { productosCount: 0, horariosConfigurados: false }
         };
     }
 }
 
-// ==================== BANNER ====================
 function updateBanner() {
     try {
         const estado = calcularEstadoPlan(comercioData);
         const plan = PLANS[comercioData.plan || 'trial'];
         let html = "";
-
         switch (estado) {
             case "trial":
                 const dias = getDiasRestantesTrial(comercioData);
@@ -172,46 +124,41 @@ function updateBanner() {
             default:
                 html = `Bienvenido`;
         }
-
         updateSubscriptionBanner(html, estado);
     } catch (error) {
         console.error('Error actualizando banner:', error);
-        updateSubscriptionBanner('Bienvenido', 'trial');
     }
 }
 
-// ==================== RENDER ====================
-async function renderDashboard() {
-    console.log('🎨 Buscando contenedor #dashboardContainer...');
+function renderDashboard() {
+    console.log('═══════════════════════════════════════════');
+    console.log('🎨 RENDER DASHBOARD - INICIO');
+    console.log('═══════════════════════════════════════════');
+    
     const cont = document.getElementById("dashboardContainer");
+    console.log('📦 Contenedor dashboardContainer:', cont ? '✅ ENCONTRADO' : '❌ NO ENCONTRADO');
     
     if (!cont) {
-        console.error('❌ No se encontró #dashboardContainer');
-        console.log('📋 Elementos disponibles:', document.body.innerHTML.substring(0, 500));
+        console.error('❌ CRÍTICO: No existe #dashboardContainer en el DOM');
+        console.log('📋 Contenido del body:', document.body.innerHTML.substring(0, 300));
         return;
     }
-
-    console.log('✅ Contenedor encontrado:', cont);
 
     const productCount = comercioData.stats?.productosCount ?? 0;
     const horarios = comercioData.stats?.horariosConfigurados === true;
 
-    console.log('📊 Datos para renderizar:');
-    console.log('  - Usuario:', currentUser?.email);
-    console.log('  - Comercio:', comercioData.nombreComercio);
-    console.log('  - ComercioId:', currentComercioId);
-    console.log('  - Productos:', productCount);
-    console.log('  - Horarios:', horarios);
+    console.log('📊 Datos disponibles:');
+    console.log('   - Email:', currentUser?.email);
+    console.log('   - Comercio:', comercioData.nombreComercio);
+    console.log('   - ComercioId:', currentComercioId);
 
-    const htmlContent = `
+    cont.innerHTML = `
         <div class="page-header">
             <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
             <p>Resumen general y accesos rápidos a todas las secciones</p>
         </div>
 
         <section class="dashboard-grid">
-
-            <!-- Card 1: Usuario -->
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-user"></i></div>
                 <div class="dash-content">
@@ -223,7 +170,6 @@ async function renderDashboard() {
                 </a>
             </div>
 
-            <!-- Card 2: Mi Comercio -->
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-store"></i></div>
                 <div class="dash-content">
@@ -235,7 +181,6 @@ async function renderDashboard() {
                 </a>
             </div>
 
-            <!-- Card 3: Horarios -->
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-clock"></i></div>
                 <div class="dash-content">
@@ -247,7 +192,6 @@ async function renderDashboard() {
                 </a>
             </div>
 
-            <!-- Card 4: Productos -->
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-box"></i></div>
                 <div class="dash-content">
@@ -259,7 +203,6 @@ async function renderDashboard() {
                 </a>
             </div>
 
-            <!-- Card 5: Configuración IA -->
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-robot"></i></div>
                 <div class="dash-content">
@@ -271,7 +214,6 @@ async function renderDashboard() {
                 </a>
             </div>
 
-            <!-- Card 6: Visual Builder -->
             <div class="dash-card highlight">
                 <div class="dash-icon"><i class="fas fa-palette"></i></div>
                 <div class="dash-content">
@@ -283,7 +225,6 @@ async function renderDashboard() {
                 </a>
             </div>
 
-            <!-- Card 7: Estadísticas -->
             <div class="dash-card highlight">
                 <div class="dash-icon"><i class="fas fa-chart-bar"></i></div>
                 <div class="dash-content">
@@ -295,7 +236,6 @@ async function renderDashboard() {
                 </a>
             </div>
 
-            <!-- Card 8: Generar Entidad -->
             <div class="dash-card highlight">
                 <div class="dash-icon"><i class="fas fa-cogs"></i></div>
                 <div class="dash-content">
@@ -307,37 +247,41 @@ async function renderDashboard() {
                 </a>
             </div>
 
-            <!-- Card 9: Generar Link -->
             <div class="dash-card highlight">
                 <div class="dash-icon"><i class="fas fa-link"></i></div>
                 <div class="dash-content">
                     <h3>Generar Link de la Entidad</h3>
                     <p>Obtén URL o QR para compartir</p>
                 </div>
-                <a href="/api/link-builder?action=generate&comercio_id=${currentComercioId || 'NO_ID'}" target="_blank" class="btn btn-primary btn-sm">
+                <a href="/api/link-builder?action=generate&comercio_id=${currentComercioId || 'SIN_ID'}" target="_blank" class="btn btn-primary btn-sm">
                     <i class="fas fa-arrow-right"></i> Generar
                 </a>
             </div>
-
         </section>
     `;
 
-    console.log('📝 HTML generado, longitud:', htmlContent.length);
-    cont.innerHTML = htmlContent;
-    
-    console.log('✅ Dashboard renderizado completamente');
-    console.log('🔢 Total de cards en el HTML:', cont.querySelectorAll('.dash-card').length);
-    
-    // Verificar que todas las cards están en el DOM
+    // Verificación exhaustiva
     const cards = cont.querySelectorAll('.dash-card');
-    console.log('📦 Cards encontradas:', cards.length);
+    console.log('✅ innerHTML establecido');
+    console.log('🔢 Total de cards renderizadas:', cards.length);
+    
+    if (cards.length === 9) {
+        console.log('✅✅✅ TODAS LAS 9 CARDS ESTÁN EN EL DOM');
+    } else {
+        console.error('❌ FALTAN CARDS! Solo hay', cards.length);
+    }
+    
     cards.forEach((card, i) => {
-        const title = card.querySelector('h3')?.textContent;
-        console.log(`  Card ${i + 1}: ${title}`);
+        const title = card.querySelector('h3')?.textContent || 'Sin título';
+        const visible = card.offsetHeight > 0;
+        console.log(`   ${i + 1}. ${title} - ${visible ? '👁️ VISIBLE' : '🚫 OCULTA'}`);
     });
+    
+    console.log('═══════════════════════════════════════════');
+    console.log('🎨 RENDER DASHBOARD - FIN');
+    console.log('═══════════════════════════════════════════');
 }
 
-// ==================== EVENTOS ====================
 function setupEvents() {
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
@@ -349,5 +293,4 @@ function setupEvents() {
     }
 }
 
-// ==================== FLOW CONTROLLER ====================
 window.validateCurrentPageData = async () => true;
