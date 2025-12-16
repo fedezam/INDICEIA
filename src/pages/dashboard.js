@@ -1,5 +1,5 @@
 // ========================================
-// DASHBOARD – CENTRO DE CONTROL
+// DASHBOARD – CON DEBUG
 // ========================================
 import '../styles/base.css';
 import '../styles/layout.css';
@@ -71,7 +71,7 @@ async function initializePage() {
         }
 
         currentComercioId = userData.comercioId;
-        console.log('📍 ComercioId obtenido:', currentComercioId);
+        console.log('🔑 ComercioId obtenido:', currentComercioId);
 
         // Paso 2: Cargar comercio con manejo de errores
         await loadComercioData();
@@ -85,7 +85,11 @@ async function initializePage() {
 
         // Paso 4: Renderizar dashboard
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        
+        console.log('🎨 Iniciando renderizado del dashboard...');
         await renderDashboard();
+        
+        console.log('🔧 Configurando eventos...');
         setupEvents();
 
         hideLoading();
@@ -135,24 +139,6 @@ async function loadComercioData() {
         }
     } catch (error) {
         console.error('❌ Error cargando comercio:', error);
-        console.error('❌ Código de error:', error.code);
-        console.error('❌ Mensaje:', error.message);
-        
-        // Si el error es de permisos, mostrar mensaje específico
-        if (error.code === 'permission-denied') {
-            console.error('❌ PERMISOS DENEGADOS - Posibles causas:');
-            console.error('1. El documento usuarios/' + currentUser.uid + ' no tiene el campo comercioId correcto');
-            console.error('2. Las reglas de Firestore no permiten acceso');
-            console.error('3. El usuario no está autenticado correctamente');
-            
-            showToast(
-                'Error de permisos', 
-                'No tienes permisos para acceder a este comercio. Verifica que tu usuario esté configurado correctamente.', 
-                'error'
-            );
-        }
-        
-        // Usar datos por defecto para que el dashboard se renderice
         comercioData = { 
             id: currentComercioId,
             plan: 'trial',
@@ -162,17 +148,6 @@ async function loadComercioData() {
                 horariosConfigurados: false
             }
         };
-    }
-}
-
-async function loadHorarios() {
-    try {
-        const ref = doc(db, 'comercios', currentComercioId, 'config', 'horarios');
-        const snap = await getDoc(ref);
-        return snap.exists() ? snap.data() : null;
-    } catch (error) {
-        console.error('Error cargando horarios:', error);
-        return null;
     }
 }
 
@@ -207,16 +182,28 @@ function updateBanner() {
 
 // ==================== RENDER ====================
 async function renderDashboard() {
+    console.log('🎨 Buscando contenedor #dashboardContainer...');
     const cont = document.getElementById("dashboardContainer");
+    
     if (!cont) {
         console.error('❌ No se encontró #dashboardContainer');
+        console.log('📋 Elementos disponibles:', document.body.innerHTML.substring(0, 500));
         return;
     }
+
+    console.log('✅ Contenedor encontrado:', cont);
 
     const productCount = comercioData.stats?.productosCount ?? 0;
     const horarios = comercioData.stats?.horariosConfigurados === true;
 
-    cont.innerHTML = `
+    console.log('📊 Datos para renderizar:');
+    console.log('  - Usuario:', currentUser?.email);
+    console.log('  - Comercio:', comercioData.nombreComercio);
+    console.log('  - ComercioId:', currentComercioId);
+    console.log('  - Productos:', productCount);
+    console.log('  - Horarios:', horarios);
+
+    const htmlContent = `
         <div class="page-header">
             <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
             <p>Resumen general y accesos rápidos a todas las secciones</p>
@@ -224,7 +211,7 @@ async function renderDashboard() {
 
         <section class="dashboard-grid">
 
-            <!-- EXISTENTES -->
+            <!-- Card 1: Usuario -->
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-user"></i></div>
                 <div class="dash-content">
@@ -236,6 +223,7 @@ async function renderDashboard() {
                 </a>
             </div>
 
+            <!-- Card 2: Mi Comercio -->
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-store"></i></div>
                 <div class="dash-content">
@@ -247,6 +235,7 @@ async function renderDashboard() {
                 </a>
             </div>
 
+            <!-- Card 3: Horarios -->
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-clock"></i></div>
                 <div class="dash-content">
@@ -258,6 +247,7 @@ async function renderDashboard() {
                 </a>
             </div>
 
+            <!-- Card 4: Productos -->
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-box"></i></div>
                 <div class="dash-content">
@@ -269,6 +259,7 @@ async function renderDashboard() {
                 </a>
             </div>
 
+            <!-- Card 5: Configuración IA -->
             <div class="dash-card">
                 <div class="dash-icon"><i class="fas fa-robot"></i></div>
                 <div class="dash-content">
@@ -280,41 +271,7 @@ async function renderDashboard() {
                 </a>
             </div>
 
-            <!-- NUEVAS CARDS -->
-            <div class="dash-card highlight">
-                <div class="dash-icon"><i class="fas fa-chart-bar"></i></div>
-                <div class="dash-content">
-                    <h3>Estadísticas</h3>
-                    <p>Visitas y conversiones de tu landing</p>
-                </div>
-                <a href="stats.html" class="btn btn-primary btn-sm">
-                    <i class="fas fa-arrow-right"></i> Ver
-                </a>
-            </div>
-
-            <div class="dash-card highlight">
-                <div class="dash-icon"><i class="fas fa-cogs"></i></div>
-                <div class="dash-content">
-                    <h3>Generar Entidad</h3>
-                    <p>Ejecuta Entity Factory para tu comercio</p>
-                </div>
-                <a href="/api/entity-factory" target="_blank" class="btn btn-primary btn-sm">
-                    <i class="fas fa-arrow-right"></i> Ejecutar
-                </a>
-            </div>
-
-            <div class="dash-card highlight">
-                <div class="dash-icon"><i class="fas fa-link"></i></div>
-                <div class="dash-content">
-                    <h3>Generar Link de la Entidad</h3>
-                    <p>Obtén URL o QR para compartir</p>
-                </div>
-                <a href="/api/link-builder?action=generate&comercio_id=${currentComercioId || ''}" target="_blank" class="btn btn-primary btn-sm">
-                    <i class="fas fa-arrow-right"></i> Generar
-                </a>
-            </div>
-
-            <!-- VISUAL BUILDER OPCIONAL -->
+            <!-- Card 6: Visual Builder -->
             <div class="dash-card highlight">
                 <div class="dash-icon"><i class="fas fa-palette"></i></div>
                 <div class="dash-content">
@@ -326,10 +283,58 @@ async function renderDashboard() {
                 </a>
             </div>
 
+            <!-- Card 7: Estadísticas -->
+            <div class="dash-card highlight">
+                <div class="dash-icon"><i class="fas fa-chart-bar"></i></div>
+                <div class="dash-content">
+                    <h3>Estadísticas</h3>
+                    <p>Visitas y conversiones de tu landing</p>
+                </div>
+                <a href="stats.html" class="btn btn-primary btn-sm">
+                    <i class="fas fa-arrow-right"></i> Ver
+                </a>
+            </div>
+
+            <!-- Card 8: Generar Entidad -->
+            <div class="dash-card highlight">
+                <div class="dash-icon"><i class="fas fa-cogs"></i></div>
+                <div class="dash-content">
+                    <h3>Generar Entidad</h3>
+                    <p>Ejecuta Entity Factory para tu comercio</p>
+                </div>
+                <a href="/api/entity-factory" target="_blank" class="btn btn-primary btn-sm">
+                    <i class="fas fa-arrow-right"></i> Ejecutar
+                </a>
+            </div>
+
+            <!-- Card 9: Generar Link -->
+            <div class="dash-card highlight">
+                <div class="dash-icon"><i class="fas fa-link"></i></div>
+                <div class="dash-content">
+                    <h3>Generar Link de la Entidad</h3>
+                    <p>Obtén URL o QR para compartir</p>
+                </div>
+                <a href="/api/link-builder?action=generate&comercio_id=${currentComercioId || 'NO_ID'}" target="_blank" class="btn btn-primary btn-sm">
+                    <i class="fas fa-arrow-right"></i> Generar
+                </a>
+            </div>
+
         </section>
     `;
+
+    console.log('📝 HTML generado, longitud:', htmlContent.length);
+    cont.innerHTML = htmlContent;
     
-    console.log('✅ Dashboard renderizado');
+    console.log('✅ Dashboard renderizado completamente');
+    console.log('🔢 Total de cards en el HTML:', cont.querySelectorAll('.dash-card').length);
+    
+    // Verificar que todas las cards están en el DOM
+    const cards = cont.querySelectorAll('.dash-card');
+    console.log('📦 Cards encontradas:', cards.length);
+    cards.forEach((card, i) => {
+        const title = card.querySelector('h3')?.textContent;
+        console.log(`  Card ${i + 1}: ${title}`);
+    });
 }
 
 // ==================== EVENTOS ====================
