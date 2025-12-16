@@ -8,19 +8,10 @@
       "memory": 1024,
       "maxDuration": 30
     },
-    "api/comercio.js": {
-      "memory": 1024,
-      "maxDuration": 10
-    },
     "api/export-json.js": {
       "memory": 1024,
       "maxDuration": 30
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/comercio/:id",
-      "destination": "/api/comercio?comercioId=:id"
-    }
-  ]
+  }
 }
+
