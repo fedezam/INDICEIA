@@ -246,7 +246,7 @@ if (btnGuardar) {
       // 🔹 Si NO tiene comercioId → CREAR comercio
       if (!existingComercioId) {
         const newComercioRef = await addDoc(collection(db, 'comercios'), {
-          dueñoId: userId,
+          duenoId: userId,
           fechaCreacion: new Date(),
           tipo: tipoSeleccionado,
           plan: 'trial',
