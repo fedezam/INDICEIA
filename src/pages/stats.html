@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Estadísticas – ÍndiceIA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Base styles del sistema -->
+  <link rel="stylesheet" href="../styles/base.css" />
+  <link rel="stylesheet" href="../styles/layout.css" />
+  <link rel="stylesheet" href="../styles/components.css" />
+
+  <!-- Stats styles -->
+  <link rel="stylesheet" href="./stats.css" />
+</head>
+<body>
+
+  <!-- Layout global (header/sidebar) -->
+  <div id="appLayout">
+
+    <main class="page-container">
+
+      <!-- ================= HEADER ================= -->
+      <header class="page-header">
+        <h1>
+          <i class="fas fa-chart-bar"></i>
+          Estadísticas de la IA
+        </h1>
+        <p>Actividad real de usuarios antes de interactuar con la IA comercial</p>
+      </header>
+
+      <!-- ================= KPIs ================= -->
+      <section class="stats-kpi-grid">
+
+        <div class="kpi-card">
+          <span class="kpi-label">Vistas de Landing</span>
+          <span class="kpi-value" id="kpiViews">—</span>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-label">Clicks a la IA</span>
+          <span class="kpi-value" id="kpiClicks">—</span>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-label">QR Escaneados</span>
+          <span class="kpi-value" id="kpiQr">—</span>
+        </div>
+
+        <div class="kpi-card">
+          <span class="kpi-label">Dispositivos únicos</span>
+          <span class="kpi-value" id="kpiDevices">—</span>
+        </div>
+
+      </section>
+
+      <!-- ================= GRÁFICOS (PLACEHOLDER) ================= -->
+      <section class="stats-section">
+        <h2>Actividad en el tiempo</h2>
+        <div class="chart-placeholder">
+          <p>Gráfico temporal (views / clicks)</p>
+        </div>
+      </section>
+
+      <section class="stats-section">
+        <h2>Distribución por dispositivo</h2>
+        <div class="chart-placeholder">
+          <p>Mobile / Desktop / Tablet</p>
+        </div>
+      </section>
+
+      <!-- ================= EVENTOS ================= -->
+      <section class="stats-section">
+        <h2>Eventos recientes</h2>
+
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Evento</th>
+              <th>Origen</th>
+              <th>Dispositivo</th>
+            </tr>
+          </thead>
+          <tbody id="eventsTable">
+            <tr>
+              <td colspan="4" class="muted">Sin datos aún</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- FontAwesome (ya usado en el dashboard) -->
+  <script src="https://kit.fontawesome.com/a2e0e6ad65.js" crossorigin="anonymous"></script>
+
+  <!-- JS se conecta en fase 4.2+ -->
+  <!-- <script type="module" src="./stats.js"></script> -->
+
+</body>
+</html>
