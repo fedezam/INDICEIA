@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://indiceia.com/schemas/bloqueB.schema.json",
+  "title": "Bloque B – Configuración Comercial de Entidad IA",
+  "type": "object",
+  "additionalProperties": false,
+
+  "required": [
+    "comercio",
+    "ubicacion",
+    "contacto",
+    "horarios",
+    "catalogo",
+    "ia",
+    "mensajes",
+    "reglasNegocio",
+    "plan",
+    "metadata"
+  ],
+
+  "properties": {
+    "comercio": {
+      "type": "object",
+      "required": ["id", "nombre", "descripcion", "tipoActividad", "categorias"],
+      "properties": {
+        "id": { "type": "string" },
+        "nombre": { "type": "string" },
+        "descripcion": { "type": "string" },
+        "tipoActividad": { "type": "string" },
+        "categorias": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "ubicacion": {
+      "type": "object",
+      "required": ["direccion", "ciudad", "provincia", "pais"],
+      "properties": {
+        "direccion": { "type": "string" },
+        "ciudad": { "type": "string" },
+        "provincia": { "type": "string" },
+        "pais": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "contacto": {
+      "type": "object",
+      "required": ["telefono", "whatsapp"],
+      "properties": {
+        "telefono": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "instagram": { "type": "string" },
+        "facebook": { "type": "string" },
+        "tiktok": { "type": "string" },
+        "website": { "type": "string", "format": "uri" }
+      },
+      "additionalProperties": false
+    },
+
+    "horarios": {
+      "type": "object",
+      "required": [
+        "lunes", "martes", "miercoles",
+        "jueves", "viernes", "sabado", "domingo"
+      ],
+      "additionalProperties": {
+        "$ref": "#/$defs/diaHorario"
+      }
+    },
+
+    "catalogo": {
+      "type": "object",
+      "required": ["moneda", "cantidadProductos", "productos"],
+      "properties": {
+        "moneda": {
+          "type": "string",
+          "enum": ["ARS", "USD", "EUR"]
+        },
+        "cantidadProductos": {
+          "type": "number",
+          "minimum": 0
+        },
+        "productos": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/producto" }
+        },
+        "productosDestacados": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "codigo", "nombre", "precio_final"],
+            "properties": {
+              "id": { "type": "string" },
+              "codigo": { "type": "string" },
+              "nombre": { "type": "string" },
+              "precio_final": { "type": "number" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "pagos": {
+      "type": "object",
+      "properties": {
+        "metodosDisponibles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "efectivo",
+              "transferencia",
+              "mercadopago",
+              "debito",
+              "credito",
+              "tarjeta_debito",
+              "tarjeta_credito"
+            ]
+          }
+        },
+        "descuentos": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "aceptaTarjeta": { "type": "boolean" },
+        "aceptaDigital": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+
+    "envios": {
+      "type": "object",
+      "required": ["disponible"],
+      "properties": {
+        "disponible": { "type": "boolean" },
+        "zonasGratis": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "zonasCosto": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "costoMinimo": { "type": "number" },
+        "deliveryPropio": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+
+    "ia": {
+      "type": "object",
+      "required": [
+        "nombre",
+        "idioma",
+        "personalidad",
+        "tono",
+        "formatoRespuestas",
+        "proactividad",
+        "saludo"
+      ],
+      "properties": {
+        "nombre": { "type": "string" },
+        "idioma": { "type": "string" },
+        "personalidad": { "type": "string" },
+        "tono": { "type": "string" },
+        "formatoRespuestas": { "type": "string" },
+        "proactividad": {
+          "type": "string",
+          "enum": ["bajo", "medio", "alto"]
+        },
+        "saludo": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "mensajes": {
+      "type": "object",
+      "properties": {
+        "saludo": { "type": "string" },
+        "mensajeDefault": { "type": "string" },
+        "mensajeWhatsapp": { "type": "string" },
+        "mensajeInstagram": { "type": "string" },
+        "mensajeWeb": { "type": "string" },
+        "mensajeSinStock": { "type": "string" },
+        "mensajeSinPrecio": { "type": "string" },
+        "mensajeLocalCerrado": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+
+    "reglasNegocio": {
+      "type": "object",
+      "required": [
+        "accionSinStock",
+        "accionSinPrecio",
+        "accionLocalCerrado"
+      ],
+      "properties": {
+        "accionSinStock": {
+          "type": "string",
+          "enum": ["informar", "ocultar", "alternativa"]
+        },
+        "accionSinPrecio": {
+          "type": "string",
+          "enum": ["whatsapp", "ocultar", "contactar"]
+        },
+        "accionLocalCerrado": {
+          "type": "string",
+          "enum": ["informar", "horarios", "whatsapp"]
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "plan": {
+      "type": "object",
+      "required": ["tipo", "templateId"],
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "enum": ["basico", "profesional", "premium"]
+        },
+        "templateId": { "type": "string" },
+        "templateVersion": { "type": "string" },
+        "templateUpdatedAt": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+
+    "metadata": {
+      "type": "object",
+      "required": ["version"],
+      "properties": {
+        "fechaCreacion": { "type": "string", "format": "date-time" },
+        "fechaActualizacion": { "type": "string", "format": "date-time" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+
+  "$defs": {
+    "diaHorario": {
+      "type": "object",
+      "required": ["closed", "continuous"],
+      "properties": {
+        "closed": { "type": "boolean" },
+        "continuous": { "type": "boolean" },
+        "morning": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "open": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+            "close": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" }
+          },
+          "additionalProperties": false
+        },
+        "afternoon": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "open": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+            "close": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "producto": {
+      "type": "object",
+      "required": [
+        "id",
+        "codigo",
+        "nombre",
+        "precio_final",
+        "paused"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "codigo": { "type": "string" },
+        "nombre": { "type": "string" },
+        "descripcion": { "type": "string" },
+        "categoria": { "type": "string" },
+        "subcategoria": { "type": "string" },
+        "marca": { "type": "string" },
+        "precio_final": { "type": "number" },
+        "precio_mediana": { "type": "number" },
+        "precio_grande": { "type": "number" },
+        "imagen": { "type": "string", "format": "uri" },
+        "disponibilidad": { "type": "string" },
+        "stock": { "type": "number" },
+        "paused": { "type": "boolean" },
+        "etiquetas": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "atributos": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

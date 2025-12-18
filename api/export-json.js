@@ -1,64 +1,53 @@
-// /api/export-json.js
-// Exportador oficial: usa Entity Factory (A+B+C) y actualiza URL única del comercio.
+// /api/entity-factory/index.js
+// Entity Factory oficial — Ensamblador A + B + C (ÍndiceIA v1.0)
 
-import { getFirestore } from '../src/firebase.js';
-import { buildEntity } from './entity-factory/index.js';
-import { put } from '@vercel/blob';
+import blockA from './base/blockA.json' assert { type: 'json' };
+import { loadVisualTemplate } from './utils/template-loader.js';
 
-export default async function handler(req, res) {
-  try {
-    const { comercioId } = req.query;
+/**
+ * Ensambla entidad comercial:
+ * A = núcleo LER
+ * B = datos dinámicos del comercio
+ * C = visual opcional
+ */
+export async function buildEntity({ comercioId, comercioData }) {
+  if (!comercioId) throw new Error('Falta comercioId');
+  if (!comercioData) throw new Error('Falta comercioData');
 
-    if (!comercioId) {
-      return res.status(400).json({ error: "Falta comercioId" });
-    }
+  // ---------- BLOQUE A ----------
+  const A = structuredClone(blockA);
 
-    const db = getFirestore();
+  // ---------- BLOQUE B ----------
+  const B = {
+    id: comercioId,
+    nombre: comercioData.nombre ?? '',
+    descripcion: comercioData.descripcion ?? '',
+    direccion: comercioData.direccion ?? '',
+    telefono: comercioData.telefono ?? '',
+    horarios: comercioData.horarios ?? {},
+    productos: comercioData.productos ?? [],
+    imagenes: comercioData.imagenes ?? [],
+    categoria: comercioData.categoria ?? '',
+    plan: comercioData.plan ?? '',
+    updatedAt: new Date().toISOString()
+  };
 
-    // 1) Obtener datos del comercio
-    const comercioRef = db.collection('comercios').doc(comercioId);
-    const comercioSnap = await comercioRef.get();
-
-    if (!comercioSnap.exists) {
-      return res.status(404).json({ error: "Comercio no encontrado" });
-    }
-
-    const comercioData = comercioSnap.data();
-
-    // 2) Generar entidad final A+B+C con Entity Factory
-    const entityJSON = await buildEntity({
-      comercioId,
-      comercioData
-    });
-
-    const jsonString = JSON.stringify(entityJSON, null, 2);
-
-    // 3) SUBIR JSON AL BLOB (siempre MISMA URL → overwrite)
-    const fileName = `comercios/${comercioId}/entity.json`;
-
-    const blob = await put(fileName, jsonString, {
-      access: "public",
-      addRandomSuffix: false,  // <<< clave para mantener URL fija
-    });
-
-    // 4) Guardar URL en Firestore
-    await comercioRef.update({
-      entityUrl: blob.url,
-      entityUpdatedAt: new Date().toISOString()
-    });
-
-    // 5) Responder
-    return res.status(200).json({
-      status: "ok",
-      url: blob.url
-    });
-
-  } catch (err) {
-    console.error("export-json ERROR:", err);
-    return res.status(500).json({
-      error: "Error interno",
-      details: err.message
-    });
+  // ---------- BLOQUE C ----------
+  let C;
+  if (comercioData.visualTemplate) {
+    C = await loadVisualTemplate(comercioData.visualTemplate);
   }
+
+  // ---------- ENSAMBLE ----------
+  return {
+    meta: {
+      version: '1.0.0',
+      tipo: 'entidad_comercial_indiceIA',
+      comercioId
+    },
+    A,
+    B,
+    ...(C ? { C } : {})
+  };
 }
 

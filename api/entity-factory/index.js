@@ -1,61 +1,50 @@
 // /api/entity-factory/index.js
-// Entity Factory oficial — Ensamblador A + B + C (ÍndiceIA v1.0)
+// Entity Factory oficial — A + B + C (ÍndiceIA v1.0)
 
 import blockA from './base/blockA.json' assert { type: 'json' };
-import { loadVisualTemplate } from './utils/tags-generator.js';
+import blockC from './base/blockC.json' assert { type: 'json' };
+import { loadVisualTemplate } from './utils/template-loader.js';
 
-/**
- * buildEntity()
- * Ensambla una entidad comercial completa: A (fijo) + B (dinámico Firestore) + C (visual opcional)
- */
 export async function buildEntity({ comercioId, comercioData }) {
-  if (!comercioId) throw new Error("Falta comercioId");
-  if (!comercioData) throw new Error("Falta comercioData");
+  if (!comercioId) throw new Error('Falta comercioId');
+  if (!comercioData) throw new Error('Falta comercioData');
 
-  // -------------------------------------------------
-  // BLOQUE A — BASE LER (fijo)
-  // -------------------------------------------------
-  const A = JSON.parse(JSON.stringify(blockA));
+  // ----- A: Núcleo LER -----
+  const A = structuredClone(blockA);
 
-  // -------------------------------------------------
-  // BLOQUE B — DATOS DEL COMERCIO (dinámicos)
-  // -------------------------------------------------
+  // ----- B: Comercio -----
   const B = {
     id: comercioId,
-    nombre: comercioData.nombre || "",
-    descripcion: comercioData.descripcion || "",
-    direccion: comercioData.direccion || "",
-    telefono: comercioData.telefono || "",
-    horarios: comercioData.horarios || {},
-    productos: comercioData.productos || [],
-    imagenes: comercioData.imagenes || [],
-    categoria: comercioData.categoria || "",
-    plan: comercioData.plan || "",
+    nombre: comercioData.nombre ?? '',
+    descripcion: comercioData.descripcion ?? '',
+    direccion: comercioData.direccion ?? '',
+    telefono: comercioData.telefono ?? '',
+    horarios: comercioData.horarios ?? {},
+    productos: comercioData.productos ?? [],
+    imagenes: comercioData.imagenes ?? [],
+    categoria: comercioData.categoria ?? '',
+    plan: comercioData.plan ?? '',
     updatedAt: new Date().toISOString()
   };
 
-  // -------------------------------------------------
-  // BLOQUE C — VISUAL (opcional)
-  // -------------------------------------------------
-  let C = null;
+  // ----- C: Visual -----
+  let C = structuredClone(blockC);
 
   if (comercioData.visualTemplate) {
-    C = await loadVisualTemplate(comercioData.visualTemplate);
+    const template = await loadVisualTemplate(comercioData.visualTemplate);
+    if (template) {
+      C.template = template;
+    }
   }
 
-  // -------------------------------------------------
-  // ENSAMBLE FINAL
-  // -------------------------------------------------
-  const entidadFinal = {
+  return {
     meta: {
-      version: "1.0.0",
-      tipo: "entidad_comercial_indiceIA",
+      version: '1.0.0',
+      tipo: 'entidad_comercial_indiceIA',
       comercioId
     },
     A,
     B,
-    ...(C ? { C } : {})
+    C
   };
-
-  return entidadFinal;
 }

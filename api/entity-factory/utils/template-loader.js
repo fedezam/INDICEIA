@@ -1,32 +1,46 @@
-// /api/entity-factory/utils/template-loader.js
-// Loader de templates visuales C — ÍndiceIA v1.0
+// /api/entity-factory/index.js
+// Entity Factory oficial — Ensamblador A + B + C (ÍndiceIA v1.0)
 
-import fs from 'fs';
-import path from 'path';
+import blockA from './base/blockA.json' assert { type: 'json' };
+import { loadVisualTemplate } from './utils/template-loader.js';
 
-export async function loadVisualTemplate(templateId) {
-  try {
-    const basePath = path.join(
-      process.cwd(),
-      'api',
-      'entity-factory',
-      'templates',
-      templateId
-    );
+export async function buildEntity({ comercioId, comercioData }) {
+  if (!comercioId) throw new Error('Falta comercioId');
+  if (!comercioData) throw new Error('Falta comercioData');
 
-    const metadataPath = path.join(basePath, 'metadata.json');
-    const componentPath = path.join(basePath, 'component.jsx');
+  // BLOQUE A — BASE LER (fijo)
+  const A = structuredClone(blockA);
 
-    if (!fs.existsSync(metadataPath)) return null;
-    if (!fs.existsSync(componentPath)) return null;
+  // BLOQUE B — DATOS DEL COMERCIO
+  const B = {
+    id: comercioId,
+    nombre: comercioData.nombre ?? '',
+    descripcion: comercioData.descripcion ?? '',
+    direccion: comercioData.direccion ?? '',
+    telefono: comercioData.telefono ?? '',
+    horarios: comercioData.horarios ?? {},
+    productos: comercioData.productos ?? [],
+    imagenes: comercioData.imagenes ?? [],
+    categoria: comercioData.categoria ?? '',
+    plan: comercioData.plan ?? '',
+    updatedAt: new Date().toISOString()
+  };
 
-    return {
-      id: templateId,
-      metadata: JSON.parse(fs.readFileSync(metadataPath, 'utf8')),
-      component: fs.readFileSync(componentPath, 'utf8')
-    };
-  } catch (e) {
-    console.error(`[loadVisualTemplate] Error:`, e);
-    return null;
+  // BLOQUE C — VISUAL (opcional)
+  let C = null;
+  if (comercioData.visualTemplate) {
+    C = await loadVisualTemplate(comercioData.visualTemplate);
   }
+
+  // ENSAMBLE FINAL
+  return {
+    meta: {
+      version: '1.0.0',
+      tipo: 'entidad_comercial_indiceIA',
+      comercioId
+    },
+    A,
+    B,
+    ...(C ? { C } : {})
+  };
 }
