@@ -1,46 +1,58 @@
-// /api/entity-factory/index.js
-// Entity Factory oficial — Ensamblador A + B + C (ÍndiceIA v1.0)
+// /api/entity-factory/utils/template-loader.js
+// Visual Template Loader — passive, safe, renderer-oriented
 
-import blockA from './base/blockA.json' assert { type: 'json' };
-import { loadVisualTemplate } from './utils/template-loader.js';
+import fs from 'fs/promises';
+import path from 'path';
 
-export async function buildEntity({ comercioId, comercioData }) {
-  if (!comercioId) throw new Error('Falta comercioId');
-  if (!comercioData) throw new Error('Falta comercioData');
+const TEMPLATES_BASE_PATH = path.resolve(
+  process.cwd(),
+  'api/entity-factory/templates'
+);
 
-  // BLOQUE A — BASE LER (fijo)
-  const A = structuredClone(blockA);
-
-  // BLOQUE B — DATOS DEL COMERCIO
-  const B = {
-    id: comercioId,
-    nombre: comercioData.nombre ?? '',
-    descripcion: comercioData.descripcion ?? '',
-    direccion: comercioData.direccion ?? '',
-    telefono: comercioData.telefono ?? '',
-    horarios: comercioData.horarios ?? {},
-    productos: comercioData.productos ?? [],
-    imagenes: comercioData.imagenes ?? [],
-    categoria: comercioData.categoria ?? '',
-    plan: comercioData.plan ?? '',
-    updatedAt: new Date().toISOString()
-  };
-
-  // BLOQUE C — VISUAL (opcional)
-  let C = null;
-  if (comercioData.visualTemplate) {
-    C = await loadVisualTemplate(comercioData.visualTemplate);
+/**
+ * Load a visual template by name.
+ * This function NEVER transforms data.
+ * It only retrieves static visual configuration.
+ *
+ * @param {string} templateName
+ * @returns {object|null}
+ */
+export async function loadVisualTemplate(templateName) {
+  if (!templateName || typeof templateName !== 'string') {
+    return null;
   }
 
-  // ENSAMBLE FINAL
-  return {
-    meta: {
-      version: '1.0.0',
-      tipo: 'entidad_comercial_indiceIA',
-      comercioId
-    },
-    A,
-    B,
-    ...(C ? { C } : {})
-  };
+  try {
+    const safeName = sanitizeTemplateName(templateName);
+    const templatePath = path.join(
+      TEMPLATES_BASE_PATH,
+      `${safeName}.json`
+    );
+
+    const raw = await fs.readFile(templatePath, 'utf-8');
+    const parsed = JSON.parse(raw);
+
+    return {
+      name: safeName,
+      type: 'visual_template',
+      version: parsed.version ?? '1.0.0',
+      layout: parsed.layout ?? {},
+      styles: parsed.styles ?? {},
+      slots: parsed.slots ?? {},
+      meta: parsed.meta ?? {}
+    };
+  } catch (error) {
+    // Silent fail by design (template is optional)
+    return null;
+  }
+}
+
+/**
+ * Prevent path traversal or invalid names
+ */
+function sanitizeTemplateName(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9-_]/g, '')
+    .slice(0, 50);
 }
