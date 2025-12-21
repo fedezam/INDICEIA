@@ -75,7 +75,7 @@
 
     "catalogo": {
       "type": "object",
-      "required": ["moneda", "cantidadProductos", "productos"],
+      "required": ["moneda", "cantidadProductos", "secciones"],
       "properties": {
         "moneda": {
           "type": "string",
@@ -85,22 +85,10 @@
           "type": "number",
           "minimum": 0
         },
-        "productos": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/producto" }
-        },
-        "productosDestacados": {
+        "secciones": {
           "type": "array",
           "items": {
-            "type": "object",
-            "required": ["id", "codigo", "nombre", "precio_final"],
-            "properties": {
-              "id": { "type": "string" },
-              "codigo": { "type": "string" },
-              "nombre": { "type": "string" },
-              "precio_final": { "type": "number" }
-            },
-            "additionalProperties": false
+            "$ref": "#/$defs/seccionCatalogo"
           }
         }
       },
@@ -251,6 +239,28 @@
   },
 
   "$defs": {
+    "seccionCatalogo": {
+      "type": "object",
+      "required": ["id", "titulo", "tipo", "prioridad", "items"],
+      "properties": {
+        "id": { "type": "string" },
+        "titulo": { "type": "string" },
+        "tipo": {
+          "type": "string",
+          "enum": ["grid", "lista", "carousel"]
+        },
+        "prioridad": {
+          "type": "number",
+          "minimum": 1
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/producto" }
+        }
+      },
+      "additionalProperties": false
+    },
+
     "diaHorario": {
       "type": "object",
       "required": ["closed", "continuous"],
@@ -316,3 +326,4 @@
     }
   }
 }
+
