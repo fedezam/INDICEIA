@@ -6,7 +6,6 @@
     "bloque": "C",
     "descripcion": "Bloque C opcional. Configuración visual, estética y de branding para render o front-end."
   },
-
   "visual": {
     "tema": "default",
     "colores": {
@@ -26,6 +25,21 @@
       "mostrar_banner": true,
       "mensaje_bienvenida": "Hola, soy la IA del comercio.",
       "modo": "neutro"
+    }
+  },
+  "consumption_rules": {
+    "role": "visual_only",
+    "priority": "lowest",
+    "rules": [
+      "This block must never override Block B data",
+      "This block must never influence reasoning or business logic",
+      "If absent, system must fall back to default visual behavior",
+      "All fields are optional and decorative"
+    ],
+    "interaction_with_entity": {
+      "entity_reads": false,
+      "entity_ignores_for_reasoning": true,
+      "external_renderers_only": true
     }
   }
 }
