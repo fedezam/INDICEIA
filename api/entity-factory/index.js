@@ -12,7 +12,7 @@ export async function buildEntity({ comercioId, comercioData }) {
   // ----- A: Núcleo LER -----
   const A = structuredClone(blockA);
 
-  // ----- B: Comercio -----
+  // ----- B: Comercio (render-ready, immutable) -----
   const B = {
     id: comercioId,
     nombre: comercioData.nombre ?? '',
@@ -27,13 +27,17 @@ export async function buildEntity({ comercioId, comercioData }) {
     updatedAt: new Date().toISOString()
   };
 
-  // ----- C: Visual -----
+  // Blindaje: B es fuente única de verdad
+  Object.freeze(B);
+
+  // ----- C: Visual (opcional, solo renderer) -----
   let C = structuredClone(blockC);
 
   if (comercioData.visualTemplate) {
     const template = await loadVisualTemplate(comercioData.visualTemplate);
     if (template) {
       C.template = template;
+      C.source = 'external_template';
     }
   }
 
@@ -43,6 +47,23 @@ export async function buildEntity({ comercioId, comercioData }) {
       tipo: 'entidad_comercial_indiceIA',
       comercioId
     },
+
+    // Contratos explícitos entre bloques
+    contracts: {
+      blockB: {
+        role: 'single_source_of_truth',
+        mutable: false,
+        renderReady: true,
+        allowedConsumers: ['renderer']
+      },
+      blockC: {
+        role: 'visual_only',
+        optional: true,
+        consumedBy: ['renderer'],
+        ignoredByEntity: true
+      }
+    },
+
     A,
     B,
     C
