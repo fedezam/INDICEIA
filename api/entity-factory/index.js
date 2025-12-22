@@ -1,16 +1,12 @@
 // /api/entity-factory/index.js
 // Entity Factory oficial — A + B + C (ÍndiceIA v1.0)
 
-import blockA from './base/blockA.json' assert { type: 'json' };
-import blockC from './base/blockC.json' assert { type: 'json' };
+import blockA from './base/blockA.json' with { type: 'json' };
+import blockC from './base/blockC.json' with { type: 'json' };
 import { loadVisualTemplate } from './utils/template-loader.js';
 
 /**
  * Determina si un valor tiene datos reales.
- * - true / false → válidos
- * - strings vacíos → inválidos
- * - arrays vacíos → inválidos
- * - objetos vacíos → inválidos
  */
 function hasData(value) {
   if (typeof value === 'boolean') return true;
@@ -31,20 +27,17 @@ export async function buildEntity({ comercioId, comercioData }) {
 
   // ----- B: Comercio (single source of truth) -----
   const B = { id: comercioId };
-
   if (hasData(comercioData.nombre)) B.nombre = comercioData.nombre;
   if (hasData(comercioData.descripcion)) B.descripcion = comercioData.descripcion;
   if (hasData(comercioData.direccion)) B.direccion = comercioData.direccion;
   if (hasData(comercioData.telefono)) B.telefono = comercioData.telefono;
   if (hasData(comercioData.categoria)) B.categoria = comercioData.categoria;
   if (hasData(comercioData.plan)) B.plan = comercioData.plan;
-
   if (hasData(comercioData.horarios)) B.horarios = comercioData.horarios;
   if (hasData(comercioData.productos)) B.productos = comercioData.productos;
   if (hasData(comercioData.imagenes)) B.imagenes = comercioData.imagenes;
   if (hasData(comercioData.pagos)) B.pagos = comercioData.pagos;
   if (hasData(comercioData.envios)) B.envios = comercioData.envios;
-
   B.updatedAt = new Date().toISOString();
 
   // Blindaje: B es fuente única de verdad
@@ -52,7 +45,6 @@ export async function buildEntity({ comercioId, comercioData }) {
 
   // ----- C: Visual (opcional, solo renderer) -----
   let C = structuredClone(blockC);
-
   if (hasData(comercioData.visualTemplate)) {
     const template = await loadVisualTemplate(comercioData.visualTemplate);
     if (template) {
@@ -67,7 +59,6 @@ export async function buildEntity({ comercioId, comercioData }) {
       tipo: 'entidad_comercial_indiceIA',
       comercioId
     },
-
     contracts: {
       blockB: {
         role: 'single_source_of_truth',
@@ -82,10 +73,8 @@ export async function buildEntity({ comercioId, comercioData }) {
         ignoredByEntity: true
       }
     },
-
     A,
     B,
     C
   };
 }
-
