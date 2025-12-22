@@ -1,17 +1,8 @@
 {
   "functions": {
-    "api/entity-factory.js": {
-      "memory": 1024,
-      "maxDuration": 60
-    },
-    "api/link-builder.js": {
-      "memory": 1024,
-      "maxDuration": 30
-    },
     "api/export-json.js": {
       "memory": 1024,
       "maxDuration": 30
     }
   }
 }
-
