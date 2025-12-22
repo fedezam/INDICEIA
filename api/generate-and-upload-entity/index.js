@@ -3,20 +3,27 @@
 import { buildEntity } from '../entity-factory/index.js';
 import { put } from '@vercel/blob';
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
+    return res.status(405).send('Method Not Allowed');
   }
 
   try {
-    const { comercioId } = await req.json();
+    const { comercioId } = req.body || {};
+
     if (!comercioId) {
-      return new Response('Falta comercioId', { status: 400 });
+      return res.status(400).json({ error: 'Falta comercioId' });
     }
 
+    console.log('🔹 Generando entidad para:', comercioId);
+
+    // 1. Construir entidad (A-only)
     const entity = await buildEntity({ comercioId });
+
+    // 2. Serializar
     const json = JSON.stringify(entity, null, 2);
 
+    // 3. Subir a Vercel Blob
     const { url } = await put(
       `test/${comercioId}-A.json`,
       json,
@@ -26,14 +33,17 @@ export default async function handler(req) {
       }
     );
 
-    return new Response(
-      JSON.stringify({ ok: true, url }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.log('✅ Subido OK:', url);
+
+    return res.status(200).json({
+      ok: true,
+      url
+    });
 
   } catch (err) {
-    console.error('CRASH:', err);
-    return new Response(err.message, { status: 500 });
+    console.error('❌ CRASH:', err);
+    return res.status(500).json({
+      error: err.message
+    });
   }
 }
-
