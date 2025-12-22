@@ -1,9 +1,6 @@
 // /api/entity-factory/index.js
 // Versión SEGURA para Vercel – sin fs ni imports problemáticos
-
-// Block A y C hardcodeados o como fallback (copia el contenido de tus JSON acá temporalmente)
-// Si tenés blockA.json y blockC.json pequeños, pegalos aquí como objetos literales.
-// Si no, pon objetos vacíos por ahora.
+// Block A y C hardcodeados o como fallback
 
 const blockA = {
   // PEGÁ ACÁ EL CONTENIDO DE base/blockA.json (todo el objeto)
@@ -33,15 +30,25 @@ function hasData(value) {
   return value !== undefined && value !== null;
 }
 
-export async function buildEntity({ comercioId, comercioData }) {
+/**
+ * buildEntity - Factory autónoma que construye la entidad
+ * 
+ * @param {Object} params
+ * @param {string} params.comercioId - ID del comercio (OBLIGATORIO)
+ * @param {Object} params.comercioData - Datos del comercio (OPCIONAL)
+ * @returns {Object} Entidad completa con bloques A, B, C
+ */
+export async function buildEntity({ comercioId, comercioData = {} }) {
+  // ✅ ÚNICA validación obligatoria: comercioId
   if (!comercioId) throw new Error('Falta comercioId');
-  if (!comercioData) throw new Error('Falta comercioData');
 
-  // ----- A: Núcleo LER -----
+  // ----- A: Núcleo LER (hardcodeado) -----
   const A = structuredClone(blockA || {});
 
   // ----- B: Comercio (single source of truth) -----
   const B = { id: comercioId };
+
+  // Solo agregar datos si existen
   if (hasData(comercioData.nombre)) B.nombre = comercioData.nombre;
   if (hasData(comercioData.descripcion)) B.descripcion = comercioData.descripcion;
   if (hasData(comercioData.direccion)) B.direccion = comercioData.direccion;
@@ -53,12 +60,13 @@ export async function buildEntity({ comercioId, comercioData }) {
   if (hasData(comercioData.imagenes)) B.imagenes = comercioData.imagenes;
   if (hasData(comercioData.pagos)) B.pagos = comercioData.pagos;
   if (hasData(comercioData.envios)) B.envios = comercioData.envios;
-  B.updatedAt = new Date().toISOString();
 
+  B.updatedAt = new Date().toISOString();
   Object.freeze(B);
 
   // ----- C: Visual (temporal sin carga dinámica) -----
   let C = structuredClone(blockC || {});
+  
   // Comentamos la carga dinámica para evitar fs
   // if (hasData(comercioData.visualTemplate)) {
   //   const template = await loadVisualTemplate(comercioData.visualTemplate);
@@ -67,13 +75,16 @@ export async function buildEntity({ comercioId, comercioData }) {
   //     C.source = 'external_template';
   //   }
   // }
+  
   C.source = 'default_hardcoded'; // para saber que es temporal
 
+  // ----- Retornar entidad completa -----
   return {
     meta: {
       version: '1.0.0',
       tipo: 'entidad_comercial_indiceIA',
-      comercioId
+      comercioId,
+      generatedAt: new Date().toISOString()
     },
     contracts: {
       blockB: {
