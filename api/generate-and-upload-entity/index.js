@@ -57,7 +57,4 @@ export default async function handler(req) {
     }
 }
 
-// Opcional: usar Edge para más velocidad
-export const config = {
-    runtime: 'edge',
 };
