@@ -1,20 +1,24 @@
 // /api/entity-factory/index.js
-// Entity Factory oficial — A + B + C (ÍndiceIA v1.0)
+// Versión SEGURA para Vercel – sin fs ni imports problemáticos
 
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-import { fileURLToPath } from 'url';
-import { loadVisualTemplate } from './utils/template-loader.js';
+// Block A y C hardcodeados o como fallback (copia el contenido de tus JSON acá temporalmente)
+// Si tenés blockA.json y blockC.json pequeños, pegalos aquí como objetos literales.
+// Si no, pon objetos vacíos por ahora.
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const blockA = {
+  // PEGÁ ACÁ EL CONTENIDO DE base/blockA.json (todo el objeto)
+  // Ejemplo si es pequeño:
+  // "version": "1.0",
+  // "ler": { ... }
+  // Si es grande, dejalo como {} por ahora
+};
 
-// Cargar blockA y blockC de forma segura (compatible con Vercel)
-const blockA = JSON.parse(
-  readFileSync(resolve(__dirname, 'base/blockA.json'), 'utf-8')
-);
-const blockC = JSON.parse(
-  readFileSync(resolve(__dirname, 'base/blockC.json'), 'utf-8')
-);
+const blockC = {
+  // PEGÁ ACÁ EL CONTENIDO DE base/blockC.json
+  // Ejemplo:
+  // "defaultColors": { ... }
+  // Si es grande, dejalo como {} por ahora
+};
 
 /**
  * Determina si un valor tiene datos reales.
@@ -34,7 +38,7 @@ export async function buildEntity({ comercioId, comercioData }) {
   if (!comercioData) throw new Error('Falta comercioData');
 
   // ----- A: Núcleo LER -----
-  const A = structuredClone(blockA);
+  const A = structuredClone(blockA || {});
 
   // ----- B: Comercio (single source of truth) -----
   const B = { id: comercioId };
@@ -51,18 +55,19 @@ export async function buildEntity({ comercioId, comercioData }) {
   if (hasData(comercioData.envios)) B.envios = comercioData.envios;
   B.updatedAt = new Date().toISOString();
 
-  // Blindaje: B es fuente única de verdad
   Object.freeze(B);
 
-  // ----- C: Visual (opcional, solo renderer) -----
-  let C = structuredClone(blockC);
-  if (hasData(comercioData.visualTemplate)) {
-    const template = await loadVisualTemplate(comercioData.visualTemplate);
-    if (template) {
-      C.template = template;
-      C.source = 'external_template';
-    }
-  }
+  // ----- C: Visual (temporal sin carga dinámica) -----
+  let C = structuredClone(blockC || {});
+  // Comentamos la carga dinámica para evitar fs
+  // if (hasData(comercioData.visualTemplate)) {
+  //   const template = await loadVisualTemplate(comercioData.visualTemplate);
+  //   if (template) {
+  //     C.template = template;
+  //     C.source = 'external_template';
+  //   }
+  // }
+  C.source = 'default_hardcoded'; // para saber que es temporal
 
   return {
     meta: {
