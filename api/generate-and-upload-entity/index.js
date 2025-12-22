@@ -1,20 +1,19 @@
 // /api/generate-and-upload-entity/index.js
-// Update real – sobrescribe blob existente
+// Node Serverless – body correcto + overwrite blob
 
 import { buildEntity } from '../entity-factory/index.js';
 import { put } from '@vercel/blob';
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
+    return res.status(405).send('Method Not Allowed');
   }
 
   try {
-    const body = await req.json();
-    const { comercioId } = body;
+    const { comercioId } = req.body; // ⬅️ ESTA ES LA CLAVE
 
     if (!comercioId) {
-      return new Response('Falta comercioId', { status: 400 });
+      return res.status(400).json({ error: 'Falta comercioId' });
     }
 
     console.log('🔁 Actualizando entidad del comercio:', comercioId);
@@ -25,28 +24,26 @@ export default async function handler(req) {
     // 2. Serializar
     const json = JSON.stringify(entity, null, 2);
 
-    // 3. MISMO PATH SIEMPRE → overwrite
+    // 3. Path fijo → overwrite
     const blobPath = `entidades/${comercioId}/entity.json`;
 
     const { url } = await put(blobPath, json, {
       access: 'public',
-      addRandomSuffix: false, // ⬅️ CLAVE: sobrescribe
+      addRandomSuffix: false, // ⬅️ overwrite real
       token: process.env.BLOB_READ_WRITE_TOKEN
     });
 
-    console.log('✅ Entidad actualizada en:', url);
+    console.log('✅ Entidad escrita en:', url);
 
-    return new Response(
-      JSON.stringify({ ok: true, url }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return res.status(200).json({
+      ok: true,
+      url
+    });
 
   } catch (err) {
     console.error('❌ CRASH:', err);
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500 }
-    );
+    return res.status(500).json({
+      error: err.message
+    });
   }
 }
-
