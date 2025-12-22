@@ -1,9 +1,20 @@
 // /api/entity-factory/index.js
 // Entity Factory oficial — A + B + C (ÍndiceIA v1.0)
 
-import blockA from './base/blockA.json' with { type: 'json' };
-import blockC from './base/blockC.json' with { type: 'json' };
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { loadVisualTemplate } from './utils/template-loader.js';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+
+// Cargar blockA y blockC de forma segura (compatible con Vercel)
+const blockA = JSON.parse(
+  readFileSync(resolve(__dirname, 'base/blockA.json'), 'utf-8')
+);
+const blockC = JSON.parse(
+  readFileSync(resolve(__dirname, 'base/blockC.json'), 'utf-8')
+);
 
 /**
  * Determina si un valor tiene datos reales.
