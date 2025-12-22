@@ -4,42 +4,22 @@
     "version": "1.0.0",
     "tipo": "bloque_visual",
     "bloque": "C",
-    "descripcion": "Bloque C opcional. Configuración visual, estética y de branding para render o front-end."
+    "descripcion": "Bloque C opcional. Declaración pasiva de visualización externa."
   },
+
   "visual": {
-    "tema": "default",
-    "colores": {
-      "primario": "#000000",
-      "secundario": "#FFFFFF",
-      "acento": "#4f46e5"
-    },
-    "tipografia": {
-      "familia": "Inter",
-      "peso": "400"
-    },
-    "logo": {
+    "available": false,
+
+    "template": {
       "url": "",
-      "estilo": "normal"
+      "version": "1.0",
+      "protocol": "indiceia-renderer"
     },
-    "presentacion": {
-      "mostrar_banner": true,
-      "mensaje_bienvenida": "Hola, soy la IA del comercio.",
-      "modo": "neutro"
-    }
-  },
-  "consumption_rules": {
-    "role": "visual_only",
-    "priority": "lowest",
-    "rules": [
-      "This block must never override Block B data",
-      "This block must never influence reasoning or business logic",
-      "If absent, system must fall back to default visual behavior",
-      "All fields are optional and decorative"
-    ],
-    "interaction_with_entity": {
-      "entity_reads": false,
-      "entity_ignores_for_reasoning": true,
-      "external_renderers_only": true
-    }
+
+    "modes": ["iframe", "link", "embed"],
+
+    "consumes": ["B"],
+
+    "notes": "Este bloque es pasivo. No renderiza ni ejecuta lógica. Solo declara disponibilidad visual."
   }
 }
