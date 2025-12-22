@@ -5,6 +5,23 @@ import blockA from './base/blockA.json' assert { type: 'json' };
 import blockC from './base/blockC.json' assert { type: 'json' };
 import { loadVisualTemplate } from './utils/template-loader.js';
 
+/**
+ * Determina si un valor tiene datos reales.
+ * - true / false → válidos
+ * - strings vacíos → inválidos
+ * - arrays vacíos → inválidos
+ * - objetos vacíos → inválidos
+ */
+function hasData(value) {
+  if (typeof value === 'boolean') return true;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object' && value !== null) {
+    return Object.keys(value).length > 0;
+  }
+  return value !== undefined && value !== null;
+}
+
 export async function buildEntity({ comercioId, comercioData }) {
   if (!comercioId) throw new Error('Falta comercioId');
   if (!comercioData) throw new Error('Falta comercioData');
@@ -12,20 +29,23 @@ export async function buildEntity({ comercioId, comercioData }) {
   // ----- A: Núcleo LER -----
   const A = structuredClone(blockA);
 
-  // ----- B: Comercio (render-ready, immutable) -----
-  const B = {
-    id: comercioId,
-    nombre: comercioData.nombre ?? '',
-    descripcion: comercioData.descripcion ?? '',
-    direccion: comercioData.direccion ?? '',
-    telefono: comercioData.telefono ?? '',
-    horarios: comercioData.horarios ?? {},
-    productos: comercioData.productos ?? [],
-    imagenes: comercioData.imagenes ?? [],
-    categoria: comercioData.categoria ?? '',
-    plan: comercioData.plan ?? '',
-    updatedAt: new Date().toISOString()
-  };
+  // ----- B: Comercio (single source of truth) -----
+  const B = { id: comercioId };
+
+  if (hasData(comercioData.nombre)) B.nombre = comercioData.nombre;
+  if (hasData(comercioData.descripcion)) B.descripcion = comercioData.descripcion;
+  if (hasData(comercioData.direccion)) B.direccion = comercioData.direccion;
+  if (hasData(comercioData.telefono)) B.telefono = comercioData.telefono;
+  if (hasData(comercioData.categoria)) B.categoria = comercioData.categoria;
+  if (hasData(comercioData.plan)) B.plan = comercioData.plan;
+
+  if (hasData(comercioData.horarios)) B.horarios = comercioData.horarios;
+  if (hasData(comercioData.productos)) B.productos = comercioData.productos;
+  if (hasData(comercioData.imagenes)) B.imagenes = comercioData.imagenes;
+  if (hasData(comercioData.pagos)) B.pagos = comercioData.pagos;
+  if (hasData(comercioData.envios)) B.envios = comercioData.envios;
+
+  B.updatedAt = new Date().toISOString();
 
   // Blindaje: B es fuente única de verdad
   Object.freeze(B);
@@ -33,7 +53,7 @@ export async function buildEntity({ comercioId, comercioData }) {
   // ----- C: Visual (opcional, solo renderer) -----
   let C = structuredClone(blockC);
 
-  if (comercioData.visualTemplate) {
+  if (hasData(comercioData.visualTemplate)) {
     const template = await loadVisualTemplate(comercioData.visualTemplate);
     if (template) {
       C.template = template;
@@ -48,7 +68,6 @@ export async function buildEntity({ comercioId, comercioData }) {
       comercioId
     },
 
-    // Contratos explícitos entre bloques
     contracts: {
       blockB: {
         role: 'single_source_of_truth',
@@ -69,3 +88,4 @@ export async function buildEntity({ comercioId, comercioData }) {
     C
   };
 }
+
