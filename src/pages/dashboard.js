@@ -216,7 +216,7 @@ function renderDashboard() {
                     <i class="fas fa-arrow-right"></i> Ver
                 </a>
             </div>
-            <!-- CARD MODIFICADA: Generar Entidad -->
+            <!-- CARD MODIFICADA: Generar Entidad (Llamada Mínima) -->
             <div class="dash-card highlight">
                 <div class="dash-icon"><i class="fas fa-cogs"></i></div>
                 <div class="dash-content">
@@ -272,7 +272,7 @@ function setupEvents() {
     }
 
     // ===============================
-    // GENERAR ENTIDAD + SUBIR A BLOB
+    // GENERAR ENTIDAD (LLAMADA MÍNIMA)
     // ===============================
     const btnGenerate = document.getElementById('btnGenerateEntity');
     if (btnGenerate) {
@@ -283,14 +283,13 @@ function setupEvents() {
             btnGenerate.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
 
             try {
-                showToast('Generando entidad oficial...', 'info');
-
+                console.log('🚀 Generando entidad para:', currentComercioId);
+                
                 const response = await fetch('/api/generate-and-upload-entity', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        comercioId: currentComercioId,
-                        comercioData
+                        comercioId: currentComercioId
                     })
                 });
 
@@ -299,17 +298,18 @@ function setupEvents() {
                     throw new Error(text || 'Error del servidor');
                 }
 
-                const { blobUrl } = await response.json();
-                console.log('✅ Entidad generada y subida a:', blobUrl);
+                const data = await response.json();
+                console.log('✅ RESULTADO:', data);
 
-                showToast('¡Entidad generada y guardada con éxito!', 'success');
-
-                // Opcional: recargar datos del comercio por si querés mostrar algo nuevo
-                await loadComercioData();
+                if (data.ok && data.url) {
+                    showToast('¡Entidad generada y guardada con éxito!', 'success');
+                } else {
+                    throw new Error('Respuesta incompleta del servidor');
+                }
 
             } catch (err) {
                 console.error('❌ Error generando entidad:', err);
-                showToast('Error al generar la entidad: ' + (err.message || 'Inténtalo más tarde'), 'error');
+                showToast('Error: ' + (err.message || 'Inténtalo más tarde'), 'error');
             } finally {
                 btnGenerate.disabled = false;
                 btnGenerate.innerHTML = originalHTML;
