@@ -1,48 +1,63 @@
-import { buildEntity } from '../entity-factory/index.js';
+// /api/generate-and-upload-entity/index.js
+// VERSIÓN MÍNIMA PARA DEBUG – Solo factory + Vercel Blob
+
+import { buildEntity } from '../entity-factory/index.js';  // Ajustá la ruta si es necesario
 import { put } from '@vercel/blob';
-import { db } from '../../firebase-server.js';
-import { doc, updateDoc } from 'firebase/firestore';
 
 export default async function handler(req) {
-  if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
-  }
+    if (req.method !== 'POST') {
+        return new Response('Method Not Allowed', { status: 405 });
+    }
 
-  const { comercioId, comercioData } = await req.json();
+    try {
+        const { comercioId, comercioData } = await req.json();
 
-  if (!comercioId || !comercioData) {
-    return new Response('Datos incompletos', { status: 400 });
-  }
+        if (!comercioId || !comercioData) {
+            return new Response('Faltan comercioId o comercioData', { status: 400 });
+        }
 
-  try {
-    // 1. Armar entidad oficial
-    const entity = await buildEntity({ comercioId, comercioData });
+        console.log('🔹 Generando entidad para comercio:', comercioId);
 
-    // 2. Serializar
-    const json = JSON.stringify(entity, null, 2);
+        // 1. Generar entidad con tu factory
+        const entidad = await buildEntity({ comercioId, comercioData });
 
-    // 3. Subir a Vercel Blob
-    const filename = `entidades/${comercioId}/entity-v1.json`;
-    const { url } = await put(filename, json, {
-      access: 'public',
-      token: process.env.BLOB_READ_WRITE_TOKEN
-    });
+        // 2. Convertir a JSON
+        const jsonString = JSON.stringify(entidad, null, 2);
 
-    // 4. Guardar URL en Firestore
-    const ref = doc(db, 'comercios', comercioId);
-    await updateDoc(ref, {
-      entidadBlobUrl: url,
-      entidadVersion: '1.0.0',
-      entidadGeneradaAt: new Date().toISOString()
-    });
+        // 3. Subir a Vercel Blob
+        const filename = `entidades/${comercioId}-entidad-${Date.now()}.json`;
+        const { url } = await put(filename, jsonString, {
+            access: 'public',
+            addRandomSuffix: true,
+            token: process.env.BLOB_READ_WRITE_TOKEN, // Vercel lo inyecta auto
+        });
 
-    return new Response(JSON.stringify({ blobUrl: url }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+        console.log('✅ Entidad subida a:', url);
 
-  } catch (err) {
-    console.error(err);
-    return new Response('Error interno', { status: 500 });
-  }
+        // Responder con la URL (útil para debug)
+        return new Response(JSON.stringify({ 
+            success: true,
+            blobUrl: url,
+            message: 'Entidad generada y subida correctamente'
+        }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+    } catch (error) {
+        console.error('❌ ERROR CRÍTICO en generate-and-upload-entity:', error);
+        return new Response(
+            JSON.stringify({ 
+                error: 'Error interno',
+                details: error.message,
+                stack: error.stack 
+            }), 
+            { status: 500 }
+        );
+    }
 }
+
+// Opcional: usar Edge para más velocidad
+export const config = {
+    runtime: 'edge',
+};
