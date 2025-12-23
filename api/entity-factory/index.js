@@ -1,5 +1,5 @@
 // /api/entity-factory/index.js
-// Entity Factory oficial — ÍndiceIA v1 (Production Ready – Mapeo completo IA + mensajes + reglas)
+// Entity Factory oficial — ÍndiceIA v1 (Production Ready – Mapeo completo con nombres reales de Firestore)
 
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -28,7 +28,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Regla de oro: solo lo que existe y tiene datos reales entra
+// Regla de oro: solo entra lo que existe y tiene datos reales
 function hasData(value) {
   if (typeof value === 'boolean') return true;
   if (typeof value === 'string') return value.trim().length > 0;
@@ -72,16 +72,14 @@ export async function buildEntity({ comercioId }) {
     console.warn('⚠️ Subcolección productos no encontrada o vacía');
   }
 
-  // ----- Block B: Proyección completa y limpia
+  // ----- Block B: Proyección completa con nombres reales de tu DB
   const B = { id: comercioId };
 
-  // Básicos del comercio
+  // Nombre del comercio
   if (hasData(comercioData.nombreComercio)) B.nombre = comercioData.nombreComercio;
+
+  // Descripción
   if (hasData(comercioData.descripcion)) B.descripcion = comercioData.descripcion;
-  if (hasData(comercioData.direccion)) B.direccion = comercioData.direccion;
-  if (hasData(comercioData.telefono)) B.telefono = comercioData.telefono;
-  if (hasData(comercioData.whatsapp)) B.whatsapp = comercioData.whatsapp;
-  if (hasData(comercioData.email)) B.email = comercioData.email;
 
   // Ubicación estructurada
   const ubicacion = {};
@@ -91,7 +89,7 @@ export async function buildEntity({ comercioId }) {
   if (hasData(comercioData.pais)) ubicacion.pais = comercioData.pais;
   if (Object.keys(ubicacion).length > 0) B.ubicacion = ubicacion;
 
-  // Contacto estructurado (redes)
+  // Contacto estructurado
   const contacto = {};
   if (hasData(comercioData.telefono)) contacto.telefono = comercioData.telefono;
   if (hasData(comercioData.whatsapp)) contacto.whatsapp = comercioData.whatsapp;
@@ -109,6 +107,9 @@ export async function buildEntity({ comercioId }) {
   if (hasData(comercioData.plan)) B.plan = comercioData.plan;
   if (hasData(comercioData.templateId)) B.templateId = comercioData.templateId;
 
+  // Categorías
+  if (hasData(comercioData.categories)) B.categorias = comercioData.categories;
+
   // ----- IA Config → Block B.ia
   if (hasData(comercioData.aiConfig)) {
     const ai = comercioData.aiConfig;
@@ -125,31 +126,37 @@ export async function buildEntity({ comercioId }) {
     if (Object.keys(iaBlock).length > 0) B.ia = iaBlock;
   }
 
-  // ----- Mensajes predefinidos
-  const mensajesBlock = {};
-  if (hasData(comercioData.aiConfig?.aiGreeting)) mensajesBlock.saludo = comercioData.aiConfig.aiGreeting;
-  if (hasData(comercioData.aiConfig?.mensajeDefault)) mensajesBlock.mensajeDefault = comercioData.aiConfig.mensajeDefault;
-  if (hasData(comercioData.aiConfig?.mensajeWhatsapp)) mensajesBlock.mensajeWhatsapp = comercioData.aiConfig.mensajeWhatsapp;
-  if (hasData(comercioData.aiConfig?.mensajeInstagram)) mensajesBlock.mensajeInstagram = comercioData.aiConfig.mensajeInstagram;
-  if (hasData(comercioData.aiConfig?.mensajeWeb)) mensajesBlock.mensajeWeb = comercioData.aiConfig.mensajeWeb;
-  if (hasData(comercioData.aiConfig?.sinStock)) mensajesBlock.mensajeSinStock = "Lo siento, ese producto no tiene stock";
-  if (hasData(comercioData.aiConfig?.sinPrecio)) mensajesBlock.mensajeSinPrecio = "Te paso el precio por privado";
+  // ----- Mensajes predefinidos (desde aiConfig)
+  if (hasData(comercioData.aiConfig)) {
+    const ai = comercioData.aiConfig;
+    const mensajes = {};
 
-  if (Object.keys(mensajesBlock).length > 0) B.mensajes = mensajesBlock;
+    if (hasData(ai.aiGreeting)) mensajes.saludo = ai.aiGreeting;
+    if (hasData(ai.mensajeDefault)) mensajes.mensajeDefault = ai.mensajeDefault;
+    if (hasData(ai.mensajeWhatsapp)) mensajes.mensajeWhatsapp = ai.mensajeWhatsapp;
+    if (hasData(ai.mensajeInstagram)) mensajes.mensajeInstagram = ai.mensajeInstagram;
+    if (hasData(ai.mensajeWeb)) mensajes.mensajeWeb = ai.mensajeWeb;
 
-  // ----- Reglas de negocio
-  const reglasBlock = {};
-  if (hasData(comercioData.aiConfig?.sinStock)) reglasBlock.accionSinStock = comercioData.aiConfig.sinStock;
-  if (hasData(comercioData.aiConfig?.sinPrecio)) reglasBlock.accionSinPrecio = comercioData.aiConfig.sinPrecio;
-  if (hasData(comercioData.aiConfig?.localCerrado)) reglasBlock.accionLocalCerrado = comercioData.aiConfig.localCerrado;
+    if (Object.keys(mensajes).length > 0) B.mensajes = mensajes;
+  }
 
-  if (Object.keys(reglasBlock).length > 0) B.reglasNegocio = reglasBlock;
+  // ----- Reglas de negocio (desde aiConfig)
+  if (hasData(comercioData.aiConfig)) {
+    const ai = comercioData.aiConfig;
+    const reglas = {};
 
-  // ----- Pagos (si existe)
-  if (hasData(comercioData.paymentMethods) || hasData(comercioData.metodos_pago)) {
-    B.pagos = {};
-    if (hasData(comercioData.paymentMethods)) B.pagos.metodosDisponibles = comercioData.paymentMethods;
-    if (hasData(comercioData.metodos_pago)) B.pagos.metodosDisponibles = [comercioData.metodos_pago];
+    if (hasData(ai.sinStock)) reglas.accionSinStock = ai.sinStock;
+    if (hasData(ai.sinPrecio)) reglas.accionSinPrecio = ai.sinPrecio;
+    if (hasData(ai.localCerrado)) reglas.accionLocalCerrado = ai.localCerrado;
+
+    if (Object.keys(reglas).length > 0) B.reglasNegocio = reglas;
+  }
+
+  // ----- Pagos
+  if (hasData(comercioData.paymentMethods)) {
+    B.pagos = { metodosDisponibles: comercioData.paymentMethods };
+  } else if (hasData(comercioData.metodos_pago)) {
+    B.pagos = { metodosDisponibles: [comercioData.metodos_pago] };
   }
 
   // ----- Catálogo completo
@@ -165,6 +172,8 @@ export async function buildEntity({ comercioId }) {
       if (hasData(p.codigo)) item.codigo = p.codigo;
       if (hasData(p.descripcion)) item.descripcion = p.descripcion;
       if (hasData(p.categoria)) item.categoria = p.categoria;
+      if (hasData(p.subcategoria)) item.subcategoria = p.subcategoria;
+      if (hasData(p.marca)) item.marca = p.marca;
       if (hasData(p.imagen)) item.imagen = p.imagen;
       if (hasData(p.stock)) item.stock = p.stock;
       if (hasData(p.etiquetas)) item.etiquetas = p.etiquetas;
@@ -187,9 +196,9 @@ export async function buildEntity({ comercioId }) {
       ],
     };
 
-    // Productos destacados (si el comercio los definió explícitamente)
+    // Productos destacados explícitos del comercio
     if (hasData(comercioData.productosDestacados)) {
-      B.catalogo.destacados = comercioData.productosDestacados.map(d => d.id || d);
+      B.catalogo.destacados = comercioData.productosDestacados.map(d => typeof d === 'string' ? d : d.id);
     }
   }
 
