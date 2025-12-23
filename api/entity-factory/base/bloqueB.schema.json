@@ -1,122 +1,198 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://indiceia.com/schemas/bloqueB.schema.json",
-  "title": "Bloque B – Entidad Comercial Runtime (ÍndiceIA)",
-  "description": "Contrato runtime del Bloque B. Solo valida datos existentes. No fuerza campos ni estructura.",
+  "title": "Bloque B – Template-Friendly Runtime",
+  "description": "Estructura optimizada para consumo directo por templates visuales",
   "type": "object",
   "additionalProperties": false,
+  
+  "required": ["identity", "contacto", "catalogo"],
+  
   "properties": {
-    "id": { "type": "string", "minLength": 1 },
-    "nombre": { "type": "string", "minLength": 1 },
-    "descripcion": { "type": "string", "minLength": 1 },
-    "direccion": { "type": "string", "minLength": 1 },
-    "telefono": { "type": "string", "minLength": 1 },
-    "categoria": { "type": "string", "minLength": 1 },
-    "plan": { "type": "string", "minLength": 1 },
-    "horarios": {
+    "identity": {
       "type": "object",
-      "additionalProperties": {
-        "$ref": "#/$defs/diaHorario"
+      "required": ["nombre_comercio"],
+      "properties": {
+        "nombre_comercio": { 
+          "type": "string",
+          "minLength": 1,
+          "description": "Mapea desde: nombreComercio"
+        },
+        "descripcion": { 
+          "type": "string",
+          "description": "Mapea desde: descripcion"
+        },
+        "tipo": { 
+          "type": "string",
+          "description": "Mapea desde: tipo o tipoActividad"
+        },
+        "categorias": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Mapea desde: categories"
+        }
       }
     },
+    
+    "ubicacion": {
+      "type": "object",
+      "properties": {
+        "direccion": { "type": "string" },
+        "ciudad": { "type": "string" },
+        "provincia": { "type": "string" },
+        "pais": { "type": "string" }
+      }
+    },
+    
+    "contacto": {
+      "type": "object",
+      "required": ["whatsapp_number"],
+      "properties": {
+        "whatsapp_number": { 
+          "type": "string",
+          "pattern": "^549[0-9]{10}$",
+          "description": "Mapea desde: whatsapp (agregando prefijo 549 si falta)"
+        },
+        "telefono": { 
+          "type": "string",
+          "description": "Mapea desde: telefono"
+        },
+        "email": { 
+          "type": "string",
+          "format": "email"
+        },
+        "instagram": { "type": "string" },
+        "facebook": { "type": "string" },
+        "tiktok": { "type": "string" },
+        "website": { "type": "string" }
+      }
+    },
+    
+    "horarios": {
+      "type": "object",
+      "description": "Mapea desde: horarios (estructura idéntica)",
+      "additionalProperties": { "$ref": "#/$defs/diaHorario" }
+    },
+    
     "catalogo": {
       "type": "object",
-      "additionalProperties": false,
+      "required": ["secciones"],
       "properties": {
         "moneda": {
           "type": "string",
-          "enum": ["ARS", "USD", "EUR"]
+          "enum": ["ARS", "USD", "EUR"],
+          "default": "ARS"
         },
         "secciones": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/$defs/seccionCatalogo" }
+          "items": { "$ref": "#/$defs/seccionCatalogo" },
+          "description": "GENERADAS desde: productosDestacados + categories + subcollection productos"
         }
       }
     },
+    
     "pagos": {
       "type": "object",
-      "additionalProperties": false,
       "properties": {
         "metodosDisponibles": {
           "type": "array",
-          "minItems": 1,
-          "items": { "type": "string" }
+          "items": { "type": "string" },
+          "description": "Parsear desde: metodos_pago + paymentMethods"
         },
         "descuentos": {
           "type": "object",
-          "additionalProperties": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          }
-        },
-        "aceptaTarjeta": { "type": "boolean" },
-        "aceptaDigital": { "type": "boolean" }
-      }
-    },
-    "envios": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "disponible": { "type": "boolean" },
-        "zonasGratis": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "type": "string" }
-        },
-        "zonasCosto": {
-          "type": "object",
           "additionalProperties": { "type": "number" }
-        },
-        "costoMinimo": { "type": "number" },
-        "deliveryPropio": { "type": "boolean" }
+        }
       }
     },
-    "imagenes": {
-      "type": "array",
-      "minItems": 1,
-      "items": { "type": "string", "format": "uri" }
+    
+    "ia": {
+      "type": "object",
+      "description": "Mapea desde: aiConfig",
+      "properties": {
+        "nombre": { 
+          "type": "string",
+          "description": "Mapea desde: aiConfig.aiName"
+        },
+        "saludo": { 
+          "type": "string",
+          "description": "Mapea desde: aiConfig.aiGreeting"
+        },
+        "idioma": { 
+          "type": "string",
+          "description": "Mapea desde: aiConfig.aiLanguage"
+        },
+        "personalidad": { 
+          "type": "string",
+          "description": "Mapea desde: aiConfig.aiPersonality"
+        },
+        "tono": { 
+          "type": "string",
+          "description": "Mapea desde: aiConfig.aiTone"
+        }
+      }
     },
-    "updatedAt": {
-      "type": "string",
-      "format": "date-time"
+    
+    "plan": {
+      "type": "object",
+      "properties": {
+        "tipo": { 
+          "type": "string",
+          "description": "Mapea desde: plan"
+        },
+        "templateId": { 
+          "type": "string",
+          "description": "Mapea desde: templateId"
+        },
+        "templateUpdatedAt": { 
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fechaCreacion": { "type": "string", "format": "date-time" },
+        "fechaActualizacion": { "type": "string", "format": "date-time" }
+      }
     }
   },
+  
   "$defs": {
     "seccionCatalogo": {
       "type": "object",
-      "additionalProperties": false,
       "required": ["id", "titulo", "tipo", "prioridad", "items"],
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "titulo": { "type": "string", "minLength": 1 },
+        "id": { "type": "string" },
+        "titulo": { "type": "string" },
         "tipo": {
           "type": "string",
           "enum": ["grid", "lista", "carousel"]
         },
-        "prioridad": {
-          "type": "number",
-          "minimum": 1
-        },
+        "prioridad": { "type": "number", "minimum": 1 },
         "items": {
           "type": "array",
-          "minItems": 1,
           "items": { "$ref": "#/$defs/producto" }
         }
       }
     },
+    
     "producto": {
       "type": "object",
-      "additionalProperties": false,
-      "required": ["id", "nombre", "precio_final", "paused"],
+      "required": ["id", "nombre", "precio_final"],
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
+        "id": { "type": "string" },
         "codigo": { "type": "string" },
-        "nombre": { "type": "string", "minLength": 1 },
+        "nombre": { "type": "string" },
         "descripcion": { "type": "string" },
         "categoria": { "type": "string" },
         "precio_final": { "type": "number", "minimum": 0 },
+        "precio_mediana": { "type": "number" },
+        "precio_grande": { "type": "number" },
         "imagen": { "type": "string", "format": "uri" },
         "stock": { "type": "number" },
         "paused": { "type": "boolean" },
@@ -126,50 +202,31 @@
         },
         "atributos": {
           "type": "object",
-          "description": "Campos libres definidos por el comercio (marca, talle, color, material, etc.)",
           "additionalProperties": true
-        },
-        "destacado": {
-          "type": ["boolean", "string"],
-          "description": "Si existe, indica que el producto es destacado. Puede ser true (genérico) o un string con motivo (ej. 'Oferta 20%', 'Nuevo', 'Recomendado')."
         }
       }
     },
+    
     "diaHorario": {
       "type": "object",
-      "additionalProperties": false,
       "required": ["closed"],
       "properties": {
         "closed": { "type": "boolean" },
         "continuous": { "type": "boolean" },
         "morning": {
           "type": "object",
-          "additionalProperties": false,
           "properties": {
             "enabled": { "type": "boolean" },
-            "open": {
-              "type": "string",
-              "pattern": "^\\d{2}:\\d{2}$"
-            },
-            "close": {
-              "type": "string",
-              "pattern": "^\\d{2}:\\d{2}$"
-            }
+            "open": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+            "close": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" }
           }
         },
         "afternoon": {
           "type": "object",
-          "additionalProperties": false,
           "properties": {
             "enabled": { "type": "boolean" },
-            "open": {
-              "type": "string",
-              "pattern": "^\\d{2}:\\d{2}$"
-            },
-            "close": {
-              "type": "string",
-              "pattern": "^\\d{2}:\\d{2}$"
-            }
+            "open": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+            "close": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" }
           }
         }
       }
