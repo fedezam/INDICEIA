@@ -1,6 +1,5 @@
 // /api/generate-and-upload-entity/index.js
 // Node Serverless – body correcto + overwrite blob
-
 import { buildEntity } from '../entity-factory/index.js';
 import { put } from '@vercel/blob';
 
@@ -10,10 +9,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { comercioId } = req.body; // ⬅️ ESTA ES LA CLAVE
+    const { comercioId } = req.body;
 
-    if (!comercioId) {
-      return res.status(400).json({ error: 'Falta comercioId' });
+    // Validación estricta
+    if (!comercioId || typeof comercioId !== 'string' || comercioId.trim() === '') {
+      return res.status(400).json({ error: 'Falta comercioId válido' });
     }
 
     console.log('🔁 Actualizando entidad del comercio:', comercioId);
@@ -24,12 +24,13 @@ export default async function handler(req, res) {
     // 2. Serializar
     const json = JSON.stringify(entity, null, 2);
 
-    // 3. Path fijo → overwrite
+    // 3. Path fijo → overwrite siempre
     const blobPath = `entidades/${comercioId}/entity.json`;
 
     const { url } = await put(blobPath, json, {
       access: 'public',
       addRandomSuffix: false, // ⬅️ overwrite real
+      contentType: 'application/json',
       token: process.env.BLOB_READ_WRITE_TOKEN
     });
 
@@ -43,7 +44,7 @@ export default async function handler(req, res) {
   } catch (err) {
     console.error('❌ CRASH:', err);
     return res.status(500).json({
-      error: err.message
+      error: err.message || 'Error interno del servidor'
     });
   }
 }
