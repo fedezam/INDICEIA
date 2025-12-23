@@ -5,24 +5,20 @@
   "description": "Contrato runtime del Bloque B. Solo valida datos existentes. No fuerza campos ni estructura.",
   "type": "object",
   "additionalProperties": false,
-
   "properties": {
     "id": { "type": "string", "minLength": 1 },
-
     "nombre": { "type": "string", "minLength": 1 },
     "descripcion": { "type": "string", "minLength": 1 },
     "direccion": { "type": "string", "minLength": 1 },
     "telefono": { "type": "string", "minLength": 1 },
     "categoria": { "type": "string", "minLength": 1 },
     "plan": { "type": "string", "minLength": 1 },
-
     "horarios": {
       "type": "object",
       "additionalProperties": {
         "$ref": "#/$defs/diaHorario"
       }
     },
-
     "catalogo": {
       "type": "object",
       "additionalProperties": false,
@@ -38,7 +34,6 @@
         }
       }
     },
-
     "pagos": {
       "type": "object",
       "additionalProperties": false,
@@ -60,7 +55,6 @@
         "aceptaDigital": { "type": "boolean" }
       }
     },
-
     "envios": {
       "type": "object",
       "additionalProperties": false,
@@ -79,19 +73,16 @@
         "deliveryPropio": { "type": "boolean" }
       }
     },
-
     "imagenes": {
       "type": "array",
       "minItems": 1,
       "items": { "type": "string", "format": "uri" }
     },
-
     "updatedAt": {
       "type": "string",
       "format": "date-time"
     }
   },
-
   "$defs": {
     "seccionCatalogo": {
       "type": "object",
@@ -115,7 +106,6 @@
         }
       }
     },
-
     "producto": {
       "type": "object",
       "additionalProperties": false,
@@ -136,11 +126,15 @@
         },
         "atributos": {
           "type": "object",
+          "description": "Campos libres definidos por el comercio (marca, talle, color, material, etc.)",
           "additionalProperties": true
+        },
+        "destacado": {
+          "type": ["boolean", "string"],
+          "description": "Si existe, indica que el producto es destacado. Puede ser true (genérico) o un string con motivo (ej. 'Oferta 20%', 'Nuevo', 'Recomendado')."
         }
       }
     },
-
     "diaHorario": {
       "type": "object",
       "additionalProperties": false,
