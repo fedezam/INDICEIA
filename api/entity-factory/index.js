@@ -1,50 +1,55 @@
-// /api/entity-factory/index.js
-// Factory real – SOLO Block A desde archivo (modo update)
+import { put } from '@vercel/blob';
+import blockA from './base/blockA.json' assert { type: 'json' };
 
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-import { fileURLToPath } from 'url';
+function hasData(value) {
+  if (typeof value === 'boolean') return true;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
+  return false;
+}
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+export async function buildEntity({ comercioId, comercioData }) {
+  if (!comercioId) throw new Error('falta comercioId');
+  if (!comercioData) throw new Error('falta comercioData');
 
-export async function buildEntity({ comercioId }) {
-  if (!comercioId) throw new Error('Falta comercioId');
+  // ----- BLOQUE A (igual que antes)
+  const A = structuredClone(blockA);
 
-  // ---- Leer Block A REAL desde archivo ----
-  const blockAPath = resolve(__dirname, 'base/blockA.json');
+  // ----- BLOQUE B (nuevo)
+  const B = { id: comercioId };
 
-  let blockA;
-  try {
-    blockA = JSON.parse(readFileSync(blockAPath, 'utf-8'));
-  } catch (err) {
-    console.error('❌ No se pudo leer blockA.json', err);
-    throw new Error('Error leyendo Block A');
-  }
+  if (hasData(comercioData.nombre)) B.nombre = comercioData.nombre;
+  if (hasData(comercioData.descripcion)) B.descripcion = comercioData.descripcion;
+  if (hasData(comercioData.direccion)) B.direccion = comercioData.direccion;
+  if (hasData(comercioData.telefono)) B.telefono = comercioData.telefono;
+  if (hasData(comercioData.categoria)) B.categoria = comercioData.categoria;
+  if (hasData(comercioData.plan)) B.plan = comercioData.plan;
 
-  return {
-    meta: {
-      version: blockA?.meta?.version ?? 'unknown',
-      tipo: 'entidad_comercial_indiceIA',
-      comercioId,
-      generatedAt: new Date().toISOString(),
-      mode: 'update'
-    },
-    contracts: {
-      blockB: {
-        role: 'single_source_of_truth',
-        mutable: false,
-        renderReady: true
-      },
-      blockC: {
-        role: 'visual_only',
-        optional: true,
-        ignoredByEntity: true
-      }
-    },
-    A: blockA,
-    B: {
-      id: comercioId
-    },
-    C: {}
+  if (hasData(comercioData.horarios)) B.horarios = comercioData.horarios;
+  if (hasData(comercioData.catalogo)) B.catalogo = comercioData.catalogo;
+  if (hasData(comercioData.pagos)) B.pagos = comercioData.pagos;
+  if (hasData(comercioData.envios)) B.envios = comercioData.envios;
+  if (hasData(comercioData.imagenes)) B.imagenes = comercioData.imagenes;
+
+  B.updatedAt = new Date().toISOString();
+
+  // ----- ENTIDAD FINAL (A + B)
+  const entity = {
+    A,
+    B
   };
+
+  // ----- OVERWRITE DEL MISMO BLOB
+  await put(
+    `entidades/${comercioId}.json`,
+    JSON.stringify(entity, null, 2),
+    {
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false // CLAVE: pisa el blob existente
+    }
+  );
+
+  return { ok: true };
 }
