@@ -1,25 +1,14 @@
 {
-  "meta": {
-    "motor": "IndiceIA-EntitySystem",
-    "version": "1.0.0",
-    "tipo": "bloque_visual",
-    "bloque": "C",
-    "descripcion": "Bloque C opcional. Declaración pasiva de visualización externa."
-  },
-
-  "visual": {
-    "available": false,
-
-    "template": {
-      "url": "",
-      "version": "1.0",
-      "protocol": "indiceia-renderer"
-    },
-
-    "modes": ["iframe", "link", "embed"],
-
-    "consumes": ["B"],
-
-    "notes": "Este bloque es pasivo. No renderiza ni ejecuta lógica. Solo declara disponibilidad visual."
+  "C": {
+    "visual": {
+      "available": true,
+      "mode": "iframe",
+      "template": {
+        "id": "C1_SimpleCatalog",
+        "iframe_url": "https://templates.indiceia.com/C1_SimpleCatalog",
+        "version": "1.0.0"
+      },
+      "consumes": ["B"]
+    }
   }
 }
