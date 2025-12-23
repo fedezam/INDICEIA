@@ -206,8 +206,31 @@ export async function buildEntity({ comercioId }) {
 
   Object.freeze(B);
 
-  // ----- Block C (vacío por ahora)
-  const C = {};
+  // ----- Block C 
+  // ----- Block C dinámico (solo si hay template válido)
+let C = {};
+
+if (hasData(B.templateId)) {
+  const template = templateRegistry.templates.find(
+    t => t.id === B.templateId
+  );
+
+  if (template) {
+    C = {
+      visual: {
+        available: true,
+        template: {
+          id: template.id,
+          iframe_url: template.iframe_url,
+          version: template.version,
+        },
+        mode: 'iframe',
+        consumes: ['B'],
+      },
+    };
+  }
+}
+
 
   // ----- Entidad final
   return {
