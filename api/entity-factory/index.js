@@ -1,5 +1,5 @@
 // /api/entity-factory/index.js
-// Entity Factory oficial — ÍndiceIA (A + B + C) – Modo update
+// Entity Factory oficial — ÍndiceIA v1 (Production Ready)
 
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -8,15 +8,27 @@ import admin from 'firebase-admin';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-// Inicializar Firebase solo una vez (serverless safe)
+// Inicialización segura de Firebase Admin (producción Vercel)
 if (!admin.apps.length) {
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+    throw new Error('Falta variable de entorno FIREBASE_SERVICE_ACCOUNT');
+  }
+
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } catch (err) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT inválido (no es JSON válido)');
+  }
+
   admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
+    credential: admin.credential.cert(serviceAccount),
   });
 }
+
 const db = admin.firestore();
 
-// Función hasData – La regla de oro: solo entra lo que realmente existe
+// Regla de oro: solo entra lo que realmente existe y tiene datos
 function hasData(value) {
   if (typeof value === 'boolean') return true; // false semántico SÍ entra
   if (typeof value === 'string') return value.trim().length > 0;
@@ -28,7 +40,7 @@ function hasData(value) {
 export async function buildEntity({ comercioId }) {
   if (!comercioId) throw new Error('Falta comercioId');
 
-  // ----- Block A: Copiado literal desde archivo (inmutable global)
+  // ----- Block A: Copiado literal (inmutable global)
   const blockAPath = resolve(__dirname, 'base/blockA.json');
   let blockA;
   try {
@@ -38,30 +50,29 @@ export async function buildEntity({ comercioId }) {
     throw new Error('No se pudo cargar Block A');
   }
 
-  // ----- Datos crudos desde Firestore
-  const comercioDoc = await db.collection('comercios').doc(comercioId).get();
-  if (!comercioDoc.exists) {
-    throw new Error(`Comercio ${comercioId} no encontrado en Firestore`);
-  }
-  const comercioData = comercioDoc.data();
+  // ----- Lectura de datos crudos desde Firestore
+  const comercioRef = db.collection('comercios').doc(comercioId);
+  const comercioSnap = await comercioRef.get();
 
-  // Opcional: cargar productos si existen como subcolección
+  if (!comercioSnap.exists) {
+    throw new Error(`Comercio con ID ${comercioId} no encontrado`);
+  }
+
+  const comercioData = comercioSnap.data();
+
+  // Productos (subcolección opcional)
   let productos = [];
   try {
-    const productosSnap = await db
-      .collection('comercios')
-      .doc(comercioId)
-      .collection('productos')
-      .get();
+    const productosSnap = await comercioRef.collection('productos').get();
     productos = productosSnap.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
   } catch (err) {
-    console.warn('No se encontraron productos o subcolección inexistente');
+    console.warn(`⚠️ No se pudo leer subcolección productos: ${err.message}`);
   }
 
-  // ----- Block B: Proyección controlada – SOLO lo que existe
+  // ----- Block B: Proyección limpia y mínima
   const B = { id: comercioId };
 
   if (hasData(comercioData.nombre)) B.nombre = comercioData.nombre;
@@ -76,8 +87,31 @@ export async function buildEntity({ comercioId }) {
   if (hasData(comercioData.envios)) B.envios = comercioData.envios;
   if (hasData(comercioData.imagenes)) B.imagenes = comercioData.imagenes;
 
-  // Catálogo: solo si tiene secciones o productos
-  if (hasData(productos) || hasData(comercioData.catalogo)) {
+  // Catálogo: solo si hay productos o configuración explícita
+  const tieneProductos = productos.length > 0;
+  const tieneConfigCatalogo = hasData(comercioData.catalogo);
+
+  if (tieneProductos || tieneConfigCatalogo) {
+    const itemsFiltrados = productos.map(p => {
+      const item = {
+        id: p.id,
+        nombre: p.nombre,
+        precio_final: p.precio_final,
+        paused: p.paused ?? false,
+      };
+
+      if (hasData(p.codigo)) item.codigo = p.codigo;
+      if (hasData(p.descripcion)) item.descripcion = p.descripcion;
+      if (hasData(p.categoria)) item.categoria = p.categoria;
+      if (hasData(p.imagen)) item.imagen = p.imagen;
+      if (hasData(p.stock)) item.stock = p.stock;
+      if (hasData(p.etiquetas)) item.etiquetas = p.etiquetas;
+      if (hasData(p.atributos)) item.atributos = p.atributos;
+      if (hasData(p.destacado)) item.destacado = p.destacado; // ← Entra solo si existe
+
+      return item;
+    });
+
     B.catalogo = {
       moneda: comercioData.moneda || 'ARS',
       secciones: comercioData.catalogo?.secciones || [
@@ -86,35 +120,18 @@ export async function buildEntity({ comercioId }) {
           titulo: 'Productos',
           tipo: 'grid',
           prioridad: 1,
-          items: productos.map(p => {
-            const item = {
-              id: p.id,
-              nombre: p.nombre,
-              precio_final: p.precio_final,
-              paused: p.paused || false
-            };
-            // Aplicar hasData a cada campo del producto
-            if (hasData(p.codigo)) item.codigo = p.codigo;
-            if (hasData(p.descripcion)) item.descripcion = p.descripcion;
-            if (hasData(p.categoria)) item.categoria = p.categoria;
-            if (hasData(p.imagen)) item.imagen = p.imagen;
-            if (hasData(p.stock)) item.stock = p.stock;
-            if (hasData(p.etiquetas)) item.etiquetas = p.etiquetas;
-            if (hasData(p.atributos)) item.atributos = p.atributos;
-            if (hasData(p.destacado)) item.destacado = p.destacado; // ← Aquí entra solo si existe
-            return item;
-          }).filter(item => hasData(item.nombre)) // seguridad extra
-        }
-      ]
+          items: itemsFiltrados,
+        },
+      ],
     };
   }
 
   B.updatedAt = new Date().toISOString();
 
-  // Blindaje
+  // Blindaje: B es inmutable
   Object.freeze(B);
 
-  // ----- Block C: por ahora vacío (se puede expandir después)
+  // ----- Block C: por ahora vacío (preparado para futuro)
   const C = {};
 
   // ----- Entidad final
@@ -124,24 +141,24 @@ export async function buildEntity({ comercioId }) {
       tipo: 'entidad_comercial_indiceIA',
       comercioId,
       generatedAt: new Date().toISOString(),
-      mode: 'update'
+      mode: 'production',
     },
     contracts: {
       blockB: {
         role: 'single_source_of_truth',
         mutable: false,
         renderReady: true,
-        allowedConsumers: ['renderer', 'llm']
+        allowedConsumers: ['renderer', 'llm'],
       },
       blockC: {
         role: 'visual_only',
         optional: true,
         consumedBy: ['renderer'],
-        ignoredByEntity: true
-      }
+        ignoredByEntity: true,
+      },
     },
     A: blockA,
     B,
-    C
+    C,
   };
 }
