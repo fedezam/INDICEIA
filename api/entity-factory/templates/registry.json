@@ -2,35 +2,17 @@
   "registry_version": "1.0.0",
   "last_updated": "2025-12-23",
 
-  "base_url": "https://templates.indiceia.com",
-
   "templates": {
-    "C1_SimpleCatalog": {
-      "id": "C1_SimpleCatalog",
-      "name": "Catálogo Simple",
-      "version": "1.0.0",
-      "status": "stable",
-      "iframe_url": "https://templates.indiceia.com/C1_SimpleCatalog",
-      "consumes": ["B"]
-    },
-
     "C1_Napolitana": {
       "id": "C1_Napolitana",
-      "name": "Menú Napolitana",
+      "name": "Menú Simple - Napolitana",
       "version": "1.0.0",
       "status": "stable",
-      "iframe_url": "https://templates.indiceia.com/C1_Napolitana",
-      "consumes": ["B"]
-    },
 
-    "C2_CatalogoVisual": {
-      "id": "C2_CatalogoVisual",
-      "name": "Catálogo Visual",
-      "version": "1.0.0",
-      "status": "stable",
-      "iframe_url": "https://templates.indiceia.com/C2_CatalogoVisual",
-      "consumes": ["B"]
+      "visual": {
+        "mode": "iframe",
+        "iframe_url": "https://templates.indiceia.com/C1_Napolitana"
+      }
     }
   }
 }
-
