@@ -14,7 +14,7 @@ try {
   templateRegistry = JSON.parse(readFileSync(templateRegistryPath, 'utf-8'));
 } catch (err) {
   console.error('❌ Error leyendo templates/registry.json', err);
-  templateRegistry = { templates: [] };
+  templateRegistry = { templates: {} }; // Cambiado a objeto vacío por defecto
 }
 
 // Inicialización segura de Firebase Admin (Vercel production)
@@ -202,23 +202,22 @@ export async function buildEntity({ comercioId }) {
   // ----- Block C (visual, automático desde registry)
   let C = {};
   if (hasData(B.templateId)) {
-    const template = templateRegistry.templates.find(
-      t => t.id === B.templateId
-    );
-    if (template) {
-      C = {
-        visual: {
-          available: true,
-          template: {
-            id: template.id,
-            iframe_url: template.iframe_url,
-            version: template.version,
-          },
-          mode: 'iframe',
-          consumes: ['B'],
-        },
-      };
+    const templateConfig = templateRegistry.templates[B.templateId];
+    if (!templateConfig) {
+      throw new Error(`Template ${B.templateId} no encontrado en registry`);
     }
+    C = {
+      visual: {
+        available: true,
+        template: {
+          id: B.templateId,
+          iframe_url: templateConfig.iframe_url,
+          version: templateConfig.version,
+        },
+        mode: 'iframe',
+        consumes: ['B'],
+      },
+    };
   }
 
   // ----- Entidad final
