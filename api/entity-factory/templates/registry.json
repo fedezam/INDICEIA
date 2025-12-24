@@ -7,9 +7,37 @@
       "name": "Menú Simple - C1_SimpleCatalog",
       "version": "1.0.0",
       "status": "stable",
-      "visual": {
+
+      "runtime": {
         "mode": "iframe",
-        "iframe_url": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/component.jsx"
+        "iframe_url": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/component.jsx",
+        "consumes": ["B"]
+      },
+
+      "visual": {
+        "previews": {
+          "iframe": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/component.preview.jsx",
+          "html": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/C1_SimpleCatalog_full.html"
+        },
+
+        "description": "Catálogo visual simple con categorías, carrito y checkout por WhatsApp.",
+
+        "features": [
+          "Categorías con tabs",
+          "Carrito de compras",
+          "Checkout vía WhatsApp",
+          "Una imagen por producto",
+          "Precios simples o por tamaño"
+        ],
+
+        "ideal_for": [
+          "pizzerías",
+          "restaurantes",
+          "cafeterías",
+          "panaderías",
+          "bares",
+          "heladerías"
+        ]
       }
     }
   }
