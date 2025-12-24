@@ -1,9 +1,17 @@
 // /api/entity-factory/index.js
 // Entity Factory oficial — ÍndiceIA v1 (Production Ready – Mapeo completo con nombres reales de Firestore)
-
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
+// ----- Template Registry (Bloque C)
+const templateRegistryPath = resolve(__dirname, 'templates/registry.json');
+let templateRegistry;
+try {
+  templateRegistry = JSON.parse(readFileSync(templateRegistryPath, 'utf-8'));
+} catch (err) {
+  console.error('❌ Error leyendo templates/registry.json', err);
+  templateRegistry = { templates: [] };
+}
 import admin from 'firebase-admin';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -13,19 +21,16 @@ if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
     throw new Error('Falta variable de entorno FIREBASE_SERVICE_ACCOUNT');
   }
-
   let serviceAccount;
   try {
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   } catch (err) {
     throw new Error('FIREBASE_SERVICE_ACCOUNT inválido (JSON mal formado)');
   }
-
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
 }
-
 const db = admin.firestore();
 
 // Regla de oro: solo entra lo que existe y tiene datos reales
@@ -53,11 +58,9 @@ export async function buildEntity({ comercioId }) {
   // ----- Lectura Firestore
   const comercioRef = db.collection('comercios').doc(comercioId);
   const comercioSnap = await comercioRef.get();
-
   if (!comercioSnap.exists) {
     throw new Error(`Comercio ${comercioId} no encontrado`);
   }
-
   const comercioData = comercioSnap.data();
 
   // Productos subcolección
@@ -114,7 +117,6 @@ export async function buildEntity({ comercioId }) {
   if (hasData(comercioData.aiConfig)) {
     const ai = comercioData.aiConfig;
     const iaBlock = {};
-
     if (hasData(ai.aiName)) iaBlock.nombre = ai.aiName;
     if (hasData(ai.aiGreeting)) iaBlock.saludo = ai.aiGreeting;
     if (hasData(ai.aiLanguage)) iaBlock.idioma = ai.aiLanguage;
@@ -122,7 +124,6 @@ export async function buildEntity({ comercioId }) {
     if (hasData(ai.aiTone)) iaBlock.tono = ai.aiTone;
     if (hasData(ai.formatoRespuestas)) iaBlock.formatoRespuestas = ai.formatoRespuestas;
     if (hasData(ai.proactividad)) iaBlock.proactividad = ai.proactividad;
-
     if (Object.keys(iaBlock).length > 0) B.ia = iaBlock;
   }
 
@@ -130,13 +131,11 @@ export async function buildEntity({ comercioId }) {
   if (hasData(comercioData.aiConfig)) {
     const ai = comercioData.aiConfig;
     const mensajes = {};
-
     if (hasData(ai.aiGreeting)) mensajes.saludo = ai.aiGreeting;
     if (hasData(ai.mensajeDefault)) mensajes.mensajeDefault = ai.mensajeDefault;
     if (hasData(ai.mensajeWhatsapp)) mensajes.mensajeWhatsapp = ai.mensajeWhatsapp;
     if (hasData(ai.mensajeInstagram)) mensajes.mensajeInstagram = ai.mensajeInstagram;
     if (hasData(ai.mensajeWeb)) mensajes.mensajeWeb = ai.mensajeWeb;
-
     if (Object.keys(mensajes).length > 0) B.mensajes = mensajes;
   }
 
@@ -144,11 +143,9 @@ export async function buildEntity({ comercioId }) {
   if (hasData(comercioData.aiConfig)) {
     const ai = comercioData.aiConfig;
     const reglas = {};
-
     if (hasData(ai.sinStock)) reglas.accionSinStock = ai.sinStock;
     if (hasData(ai.sinPrecio)) reglas.accionSinPrecio = ai.sinPrecio;
     if (hasData(ai.localCerrado)) reglas.accionLocalCerrado = ai.localCerrado;
-
     if (Object.keys(reglas).length > 0) B.reglasNegocio = reglas;
   }
 
@@ -168,7 +165,6 @@ export async function buildEntity({ comercioId }) {
         precio_final: p.precio_final,
         paused: p.paused ?? false,
       };
-
       if (hasData(p.codigo)) item.codigo = p.codigo;
       if (hasData(p.descripcion)) item.descripcion = p.descripcion;
       if (hasData(p.categoria)) item.categoria = p.categoria;
@@ -179,10 +175,8 @@ export async function buildEntity({ comercioId }) {
       if (hasData(p.etiquetas)) item.etiquetas = p.etiquetas;
       if (hasData(p.atributos)) item.atributos = p.atributos;
       if (hasData(p.destacado)) item.destacado = p.destacado;
-
       return item;
     });
-
     B.catalogo = {
       moneda: comercioData.moneda || 'ARS',
       secciones: [
@@ -195,7 +189,6 @@ export async function buildEntity({ comercioId }) {
         },
       ],
     };
-
     // Productos destacados explícitos del comercio
     if (hasData(comercioData.productosDestacados)) {
       B.catalogo.destacados = comercioData.productosDestacados.map(d => typeof d === 'string' ? d : d.id);
@@ -203,34 +196,29 @@ export async function buildEntity({ comercioId }) {
   }
 
   B.updatedAt = new Date().toISOString();
-
   Object.freeze(B);
 
-  // ----- Block C 
-  // ----- Block C dinámico (solo si hay template válido)
-let C = {};
-
-if (hasData(B.templateId)) {
-  const template = templateRegistry.templates.find(
-    t => t.id === B.templateId
-  );
-
-  if (template) {
-    C = {
-      visual: {
-        available: true,
-        template: {
-          id: template.id,
-          iframe_url: template.iframe_url,
-          version: template.version,
+  // ----- Block C (visual, automático desde registry)
+  let C = {};
+  if (hasData(B.templateId)) {
+    const template = templateRegistry.templates.find(
+      t => t.id === B.templateId
+    );
+    if (template) {
+      C = {
+        visual: {
+          available: true,
+          template: {
+            id: template.id,
+            iframe_url: template.iframe_url,
+            version: template.version,
+          },
+          mode: 'iframe',
+          consumes: ['B'],
         },
-        mode: 'iframe',
-        consumes: ['B'],
-      },
-    };
+      };
+    }
   }
-}
-
 
   // ----- Entidad final
   return {
