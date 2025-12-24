@@ -3,6 +3,10 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
+import admin from 'firebase-admin';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+
 // ----- Template Registry (Bloque C)
 const templateRegistryPath = resolve(__dirname, 'templates/registry.json');
 let templateRegistry;
@@ -12,9 +16,6 @@ try {
   console.error('❌ Error leyendo templates/registry.json', err);
   templateRegistry = { templates: [] };
 }
-import admin from 'firebase-admin';
-
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 // Inicialización segura de Firebase Admin (Vercel production)
 if (!admin.apps.length) {
