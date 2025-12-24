@@ -1,17 +1,15 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2025-12-23",
-
+  "last_updated": "2025-12-24",
   "templates": {
-    "C1_Napolitana": {
-      "id": "C1_Napolitana",
-      "name": "Menú Simple - Napolitana",
+    "C1_SimpleCatalog": {
+      "id": "C1_SimpleCatalog",
+      "name": "Menú Simple - C1_SimpleCatalog",
       "version": "1.0.0",
       "status": "stable",
-
       "visual": {
         "mode": "iframe",
-        "iframe_url": "https://templates.indiceia.com/C1_Napolitana"
+        "iframe_url": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/component.jsx"
       }
     }
   }
