@@ -24,10 +24,10 @@ function readJSON(filePath) {
 
 // ================= MAIN =================
 function cloneTemplatesRepo() {
-  const token = process.env.GITHUB_TOKEN;
+  const token = process.env.TEMPLATE_REPO_TOKEN;
 
   if (!token) {
-    throw new Error('❌ GITHUB_TOKEN no definido (CI roto)');
+    throw new Error('❌ TEMPLATE_REPO_TOKEN no definido');
   }
 
   if (fs.existsSync(TMP_DIR)) {
@@ -41,11 +41,7 @@ function cloneTemplatesRepo() {
 }
 
 function buildRegistry() {
-  const templatesRoot = path.join(
-    TMP_DIR,
-    'public',
-    'templates'
-  );
+  const templatesRoot = path.join(TMP_DIR, 'public', 'templates');
 
   const registry = {
     registry_version: '1.0.0',
@@ -54,7 +50,15 @@ function buildRegistry() {
     templates: {}
   };
 
-  const templateDirs = fs.readdirSync(templatesRoot);
+  if (!fs.existsSync(templatesRoot)) {
+    throw new Error('❌ No se encontró public/templates en el repo de templates');
+  }
+
+  const templateDirs = fs
+    .readdirSync(templatesRoot)
+    .filter(d =>
+      fs.statSync(path.join(templatesRoot, d)).isDirectory()
+    );
 
   for (const dir of templateDirs) {
     const templatePath = path.join(templatesRoot, dir);
@@ -67,11 +71,16 @@ function buildRegistry() {
 
     const metadata = readJSON(metadataPath);
 
+    if (!metadata.template_id) {
+      console.warn(`⚠️  ${dir} metadata sin template_id (omitido)`);
+      continue;
+    }
+
     registry.templates[metadata.template_id] = {
       id: metadata.template_id,
       name: metadata.name || metadata.template_id,
-      version: metadata.version,
-      tier: metadata.tier,
+      version: metadata.version || '1.0.0',
+      tier: metadata.tier || null,
       status: metadata.status || 'stable',
 
       description: metadata.description || '',
@@ -111,7 +120,9 @@ function writeRegistry(registry) {
 }
 
 function cleanup() {
-  fs.rmSync(TMP_DIR, { recursive: true, force: true });
+  if (fs.existsSync(TMP_DIR)) {
+    fs.rmSync(TMP_DIR, { recursive: true, force: true });
+  }
 }
 
 // ================= RUN =================
