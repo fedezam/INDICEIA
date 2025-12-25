@@ -89,6 +89,8 @@ function renderTemplates() {
 
   container.innerHTML = TEMPLATE_REGISTRY.map(template => {
     const isActive = selectedTemplateId === template.id;
+    const visual = template.visual || {};
+    const previews = visual.previews || {};
 
     return `
       <div class="skin-card ${isActive ? 'active' : ''}" data-id="${template.id}">
@@ -96,11 +98,15 @@ function renderTemplates() {
         ${isActive ? '<div class="active-badge"><i class="fas fa-check-circle"></i> Activo</div>' : ''}
 
         <div class="skin-thumbnail">
-          <iframe
-            src="${template.previews?.iframe || ''}"
-            class="template-preview-iframe"
-            loading="lazy">
-          </iframe>
+          ${
+            previews.iframe
+              ? `<iframe
+                    src="${previews.iframe}"
+                    class="template-preview-iframe"
+                    loading="lazy">
+                 </iframe>`
+              : `<div class="no-preview">Sin vista previa</div>`
+          }
           <div class="thumbnail-overlay">
             <div class="overlay-content">
               <i class="fas fa-eye"></i>
@@ -112,7 +118,38 @@ function renderTemplates() {
         <div class="skin-content">
           <h3>${template.name}</h3>
           <p class="skin-version">v${template.version}</p>
-          <p class="skin-description">Template visual disponible</p>
+
+          ${
+            visual.description
+              ? `<p class="skin-description">${visual.description}</p>`
+              : ''
+          }
+
+          ${
+            visual.features?.length
+              ? `
+                <div class="skin-features">
+                  <strong>Incluye:</strong>
+                  <ul>
+                    ${visual.features.map(f => `<li>✔ ${f}</li>`).join('')}
+                  </ul>
+                </div>
+              `
+              : ''
+          }
+
+          ${
+            visual.ideal_for?.length
+              ? `
+                <div class="skin-ideal">
+                  <strong>Ideal para:</strong>
+                  <div class="tags">
+                    ${visual.ideal_for.map(t => `<span class="tag">${t}</span>`).join('')}
+                  </div>
+                </div>
+              `
+              : ''
+          }
         </div>
       </div>
     `;
