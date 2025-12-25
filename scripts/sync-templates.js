@@ -1,89 +1,125 @@
-/**
- * Sync Templates Registry
- * Fuente: indiceia-templates
- * Destino: api/entity-factory/templates/registry.json
- */
-
+#!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
-const TMP_DIR = './.tmp-templates';
-const OUTPUT_PATH = 'api/entity-factory/templates/registry.json';
-const TEMPLATES_REPO = 'https://github.com/fedezam/indiceia-templates.git';
+// ================= CONFIG =================
+const TEMPLATE_REPO = 'fedezam/indiceia-templates';
+const TMP_DIR = '.tmp-templates';
 
+const OUTPUT_REGISTRY = path.resolve(
+  'api/entity-factory/templates/registry.json'
+);
+
+const TEMPLATE_BASE_URL = 'https://indiceia-templates.vercel.app/templates';
+
+// ================= UTILS =================
 function run(cmd) {
   execSync(cmd, { stdio: 'inherit' });
 }
 
-function readJSON(file) {
-  return JSON.parse(fs.readFileSync(file, 'utf-8'));
+function readJSON(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 }
 
-function main() {
-  // Limpieza
-  if (fs.existsSync(TMP_DIR)) {
-    run(`rm -rf ${TMP_DIR}`);
+// ================= MAIN =================
+function cloneTemplatesRepo() {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error('❌ GITHUB_TOKEN no definido (CI roto)');
   }
 
-  // Clonar repo templates
-  run(`git clone --depth=1 ${TEMPLATES_REPO} ${TMP_DIR}`);
+  if (fs.existsSync(TMP_DIR)) {
+    fs.rmSync(TMP_DIR, { recursive: true, force: true });
+  }
 
-  const templatesRoot = path.join(TMP_DIR, 'public/templates');
-  const templates = {};
+  console.log('📥 Clonando repo de templates...');
+  run(
+    `git clone --depth=1 https://${token}@github.com/${TEMPLATE_REPO}.git ${TMP_DIR}`
+  );
+}
 
-  const dirs = fs.readdirSync(templatesRoot);
+function buildRegistry() {
+  const templatesRoot = path.join(
+    TMP_DIR,
+    'public',
+    'templates'
+  );
 
-  for (const dir of dirs) {
-    const base = path.join(templatesRoot, dir);
-    const metadataPath = path.join(base, 'metadata.json');
+  const registry = {
+    registry_version: '1.0.0',
+    last_updated: new Date().toISOString(),
+    source_repo: TEMPLATE_REPO,
+    templates: {}
+  };
 
-    if (!fs.existsSync(metadataPath)) continue;
+  const templateDirs = fs.readdirSync(templatesRoot);
 
-    const meta = readJSON(metadataPath);
+  for (const dir of templateDirs) {
+    const templatePath = path.join(templatesRoot, dir);
+    const metadataPath = path.join(templatePath, 'metadata.json');
 
-    templates[meta.template_id] = {
-      id: meta.template_id,
-      name: meta.template_id.replace(/_/g, ' '),
-      version: meta.version,
-      tier: meta.tier,
-      status: 'stable',
+    if (!fs.existsSync(metadataPath)) {
+      console.warn(`⚠️  ${dir} sin metadata.json (omitido)`);
+      continue;
+    }
 
-      // 👉 CONSUME ENTITY FACTORY
+    const metadata = readJSON(metadataPath);
+
+    registry.templates[metadata.template_id] = {
+      id: metadata.template_id,
+      name: metadata.name || metadata.template_id,
+      version: metadata.version,
+      tier: metadata.tier,
+      status: metadata.status || 'stable',
+
+      description: metadata.description || '',
+      ideal_for: metadata.ideal_for || [],
+      supports: metadata.supports || {},
+      limitations: metadata.limitations || [],
+      requirements: metadata.requirements || {},
+
       visual: {
-        mode: 'iframe',
-        iframe_url: `https://indiceia-templates.vercel.app/templates/${meta.template_id}/component.jsx`
+        iframe_url: `${TEMPLATE_BASE_URL}/${dir}/component.jsx`
       },
 
-      // 👉 CONSUME VISUAL BUILDER
       previews: {
-        iframe: `https://indiceia-templates.vercel.app/templates/${meta.template_id}/previews/C1_SimpleCatalog_full.html`,
-        image: `https://indiceia-templates.vercel.app/templates/${meta.template_id}/previews/preview.png`
+        html: `${TEMPLATE_BASE_URL}/${dir}/previews/${dir}_full.html`,
+        component: `${TEMPLATE_BASE_URL}/${dir}/previews/component.preview.jsx`
       },
-
-      description: meta.ideal_for?.join(', ') || '',
-      supports: meta.supports || {},
-      checkout: meta.checkout,
-      data_source: meta.data_source,
-      limitations: meta.limitations || [],
-      license: meta.license || null,
 
       links: {
-        readme: `https://github.com/fedezam/indiceia-templates/tree/main/public/templates/${meta.template_id}`
+        readme: `${TEMPLATE_BASE_URL}/${dir}/README.md`
       }
     };
   }
 
-  const registry = {
-    registry_version: '1.0.0',
-    last_updated: new Date().toISOString().slice(0, 10),
-    templates
-  };
+  return registry;
+}
 
-  fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
-  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(registry, null, 2));
+function writeRegistry(registry) {
+  fs.mkdirSync(path.dirname(OUTPUT_REGISTRY), { recursive: true });
 
-  console.log('✅ registry.json actualizado');
+  fs.writeFileSync(
+    OUTPUT_REGISTRY,
+    JSON.stringify(registry, null, 2),
+    'utf-8'
+  );
+
+  console.log(`✅ Registry generado en ${OUTPUT_REGISTRY}`);
+}
+
+function cleanup() {
+  fs.rmSync(TMP_DIR, { recursive: true, force: true });
+}
+
+// ================= RUN =================
+function main() {
+  cloneTemplatesRepo();
+  const registry = buildRegistry();
+  writeRegistry(registry);
+  cleanup();
 }
 
 main();
