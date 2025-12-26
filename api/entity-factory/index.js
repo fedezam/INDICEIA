@@ -1,5 +1,5 @@
 // /api/entity-factory/index.js
-// Entity Factory oficial — ÍndiceIA v1 (Production Ready – Mapeo completo con nombres reales de Firestore)
+// Entity Factory oficial — ÍndiceIA v1 (Production Ready)
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -14,37 +14,30 @@ let templateRegistry = { templates: {} };
 try {
   const raw = readFileSync(templateRegistryPath, 'utf-8');
   const parsed = JSON.parse(raw);
-  // El archivo generado tiene { registry_version, last_updated, templates: { ... } }
   if (parsed && parsed.templates && typeof parsed.templates === 'object') {
     templateRegistry.templates = parsed.templates;
-    console.log(`✅ Registry entity cargado correctamente: ${Object.keys(templateRegistry.templates).length} template(s) disponibles`);
+    console.log(`✅ Registry entity cargado: ${Object.keys(templateRegistry.templates).length} template(s)`);
   } else {
-    console.warn('⚠️ registry.entity.json no contiene un objeto "templates" válido. Usando registry vacío.');
+    console.warn('⚠️ registry.entity.json sin "templates" válido → Block C vacío');
   }
 } catch (err) {
-  console.error('❌ Error crítico leyendo api/entity-factory/templates/registry.entity.json', err);
-  console.warn('⚠️ Block C (visual) estará deshabilitado hasta que el registry se genere correctamente.');
-  templateRegistry = { templates: {} };
+  console.error('❌ Error leyendo registry.entity.json', err);
+  console.warn('⚠️ Block C deshabilitado hasta que se genere el registry');
 }
 
-// Inicialización segura de Firebase Admin (Vercel production)
+// Inicialización segura de Firebase Admin
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
-    throw new Error('Falta variable de entorno FIREBASE_SERVICE_ACCOUNT');
+    throw new Error('Falta FIREBASE_SERVICE_ACCOUNT');
   }
-  let serviceAccount;
-  try {
-    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-  } catch (err) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT inválido (JSON mal formado)');
-  }
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });
 }
 const db = admin.firestore();
 
-// Regla de oro: solo entra lo que existe y tiene datos reales
+// Solo incluir campos con datos reales
 function hasData(value) {
   if (typeof value === 'boolean') return true;
   if (typeof value === 'string') return value.trim().length > 0;
@@ -56,7 +49,7 @@ function hasData(value) {
 export async function buildEntity({ comercioId }) {
   if (!comercioId) throw new Error('Falta comercioId');
 
-  // ----- Block A: Copiado literal
+  // ----- Block A
   const blockAPath = resolve(__dirname, 'base/blockA.json');
   let blockA;
   try {
@@ -69,32 +62,25 @@ export async function buildEntity({ comercioId }) {
   // ----- Lectura Firestore
   const comercioRef = db.collection('comercios').doc(comercioId);
   const comercioSnap = await comercioRef.get();
-  if (!comercioSnap.exists) {
-    throw new Error(`Comercio ${comercioId} no encontrado`);
-  }
+  if (!comercioSnap.exists) throw new Error(`Comercio ${comercioId} no encontrado`);
+
   const comercioData = comercioSnap.data();
 
-  // Productos subcolección
+  // Productos
   let productos = [];
   try {
     const productosSnap = await comercioRef.collection('productos').get();
-    productos = productosSnap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    productos = productosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (err) {
-    console.warn('⚠️ Subcolección productos no encontrada o vacía');
+    console.warn('⚠️ Subcolección productos vacía o no encontrada');
   }
 
-  // ----- Block B: Proyección completa con nombres reales de tu DB
+  // ----- Block B
   const B = { id: comercioId };
 
-  // Nombre del comercio
   if (hasData(comercioData.nombreComercio)) B.nombre = comercioData.nombreComercio;
-  // Descripción
   if (hasData(comercioData.descripcion)) B.descripcion = comercioData.descripcion;
 
-  // Ubicación estructurada
   const ubicacion = {};
   if (hasData(comercioData.direccion)) ubicacion.direccion = comercioData.direccion;
   if (hasData(comercioData.ciudad)) ubicacion.ciudad = comercioData.ciudad;
@@ -102,7 +88,6 @@ export async function buildEntity({ comercioId }) {
   if (hasData(comercioData.pais)) ubicacion.pais = comercioData.pais;
   if (Object.keys(ubicacion).length > 0) B.ubicacion = ubicacion;
 
-  // Contacto estructurado
   const contacto = {};
   if (hasData(comercioData.telefono)) contacto.telefono = comercioData.telefono;
   if (hasData(comercioData.whatsapp)) contacto.whatsapp = comercioData.whatsapp;
@@ -113,17 +98,12 @@ export async function buildEntity({ comercioId }) {
   if (hasData(comercioData.tiktok)) contacto.tiktok = comercioData.tiktok;
   if (Object.keys(contacto).length > 0) B.contacto = contacto;
 
-  // Horarios
   if (hasData(comercioData.horarios)) B.horarios = comercioData.horarios;
-
-  // Plan y template
   if (hasData(comercioData.plan)) B.plan = comercioData.plan;
   if (hasData(comercioData.templateId)) B.templateId = comercioData.templateId;
-
-  // Categorías
   if (hasData(comercioData.categories)) B.categorias = comercioData.categories;
 
-  // ----- IA Config → Block B.ia
+  // IA Config
   if (hasData(comercioData.aiConfig)) {
     const ai = comercioData.aiConfig;
     const iaBlock = {};
@@ -137,7 +117,7 @@ export async function buildEntity({ comercioId }) {
     if (Object.keys(iaBlock).length > 0) B.ia = iaBlock;
   }
 
-  // ----- Mensajes predefinidos (desde aiConfig)
+  // Mensajes y reglas (mismo patrón)
   if (hasData(comercioData.aiConfig)) {
     const ai = comercioData.aiConfig;
     const mensajes = {};
@@ -147,11 +127,7 @@ export async function buildEntity({ comercioId }) {
     if (hasData(ai.mensajeInstagram)) mensajes.mensajeInstagram = ai.mensajeInstagram;
     if (hasData(ai.mensajeWeb)) mensajes.mensajeWeb = ai.mensajeWeb;
     if (Object.keys(mensajes).length > 0) B.mensajes = mensajes;
-  }
 
-  // ----- Reglas de negocio (desde aiConfig)
-  if (hasData(comercioData.aiConfig)) {
-    const ai = comercioData.aiConfig;
     const reglas = {};
     if (hasData(ai.sinStock)) reglas.accionSinStock = ai.sinStock;
     if (hasData(ai.sinPrecio)) reglas.accionSinPrecio = ai.sinPrecio;
@@ -159,14 +135,14 @@ export async function buildEntity({ comercioId }) {
     if (Object.keys(reglas).length > 0) B.reglasNegocio = reglas;
   }
 
-  // ----- Pagos
+  // Pagos
   if (hasData(comercioData.paymentMethods)) {
     B.pagos = { metodosDisponibles: comercioData.paymentMethods };
   } else if (hasData(comercioData.metodos_pago)) {
     B.pagos = { metodosDisponibles: [comercioData.metodos_pago] };
   }
 
-  // ----- Catálogo completo
+  // Catálogo
   if (productos.length > 0) {
     const items = productos.map(p => {
       const item = {
@@ -187,19 +163,18 @@ export async function buildEntity({ comercioId }) {
       if (hasData(p.destacado)) item.destacado = p.destacado;
       return item;
     });
+
     B.catalogo = {
       moneda: comercioData.moneda || 'ARS',
-      secciones: [
-        {
-          id: 'principal',
-          titulo: comercioData.nombreComercio || 'Catálogo',
-          tipo: 'grid',
-          prioridad: 1,
-          items,
-        },
-      ],
+      secciones: [{
+        id: 'principal',
+        titulo: comercioData.nombreComercio || 'Catálogo',
+        tipo: 'grid',
+        prioridad: 1,
+        items,
+      }],
     };
-    // Productos destacados explícitos del comercio
+
     if (hasData(comercioData.productosDestacados)) {
       B.catalogo.destacados = comercioData.productosDestacados.map(d => typeof d === 'string' ? d : d.id);
     }
@@ -208,57 +183,40 @@ export async function buildEntity({ comercioId }) {
   B.updatedAt = new Date().toISOString();
   Object.freeze(B);
 
-  // ----- Block C - Esqueleto configurable + datos dinámicos del registry
-let C = {};
+  // ----- Block C - Dinámico con URL absoluta al component.jsx
+  let C = {};
 
-if (hasData(B.templateId)) {
-  const templateConfig = templateRegistry.templates[B.templateId];
+  if (hasData(B.templateId)) {
+    const templateConfig = templateRegistry.templates[B.templateId];
 
-  if (!templateConfig) {
-    console.warn(`⚠️ Template "${B.templateId}" no encontrado en registry.entity.json → Block C vacío`);
-  } else {
-    // 1. Cargar el esqueleto configurable desde blockC.json
-    const blockCPath = resolve(__dirname, 'base/blockC.json');
-    let blockCSkeleton = {};
-    try {
-      blockCSkeleton = JSON.parse(readFileSync(blockCPath, 'utf-8'));
-      console.log('✅ Esqueleto Block C cargado desde base/blockC.json');
-    } catch (err) {
-      console.error('❌ Error leyendo base/blockC.json - usando esqueleto por defecto', err);
-      blockCSkeleton = {
-        C: {
-          visual: {
-            available: true,
-            mode: "iframe",
-            template: {},
-            consumes: ["B"]
-          }
+    if (!templateConfig) {
+      console.warn(`⚠️ Template "${B.templateId}" no encontrado → Block C vacío`);
+    } else {
+      const TEMPLATES_BASE_URL = 'https://indiceia-templates.vercel.app/templates';
+
+      const componentUrl = `${TEMPLATES_BASE_URL}/${templateConfig.entrypoint}/component.jsx`;
+      const baseUrl = `${TEMPLATES_BASE_URL}/${templateConfig.entrypoint}/`;
+
+      C = {
+        visual: {
+          available: true,
+          template: {
+            id: templateConfig.id,
+            version: templateConfig.version,
+            entrypoint: componentUrl,     // ← URL directa al JSX
+            baseUrl: baseUrl,             // ← Para thumbnail, previews, etc.
+            supports: templateConfig.supports || {},
+            requirements: templateConfig.requirements || {}
+          },
+          mode: 'dynamic-client',
+          consumes: ['B']
         }
       };
+
+      console.log(`✅ Block C listo con entrypoint: ${componentUrl}`);
     }
-
-    // 2. Merge inteligente: datos dinámicos sobrescriben el esqueleto
-    C = {
-      visual: {
-        ...blockCSkeleton.C.visual,
-        available: true,
-        template: {
-          // Campos dinámicos del registry (siempre frescos)
-          id: templateConfig.id,
-          version: templateConfig.version,
-          entrypoint: templateConfig.entrypoint,
-          supports: templateConfig.supports || {},
-          requirements: templateConfig.requirements || {},
-          // Si en blockC.json tenés campos estáticos (ej: iframe_url hardcodeada temporal), los mantiene
-          // pero los dinámicos ganan
-          ...(blockCSkeleton.C.visual.template || {})
-        }
-      }
-    };
-
-    console.log(`✅ Block C armado con esqueleto + datos dinámicos para ${B.templateId}`);
   }
-}
+
   // ----- Entidad final
   return {
     meta: {
