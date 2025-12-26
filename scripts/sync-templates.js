@@ -11,15 +11,18 @@ const TMP_DIR = '.tmp-templates';
 const VISUAL_OUTPUT = 'public/templates/registry.visual.json';
 const ENTITY_OUTPUT = 'api/entity-factory/templates/registry.entity.json';
 
-const TEMPLATE_BASE_URL = 'https://indiceia-templates.vercel.app/templates';
-
 // ================= UTILS =================
 function run(cmd) {
   execSync(cmd, { stdio: 'inherit' });
 }
 
-function readJSON(p) {
-  return JSON.parse(fs.readFileSync(p, 'utf-8'));
+function safeReadJSON(p) {
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf-8'));
+  } catch (err) {
+    console.error(`❌ JSON inválido: ${p}`);
+    throw err;
+  }
 }
 
 function writeJSON(p, data) {
@@ -27,50 +30,53 @@ function writeJSON(p, data) {
   fs.writeFileSync(p, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-// ================= MAIN =================
+// ================= MAIN STEPS =================
 function cloneRepo() {
   const token = process.env.TEMPLATE_REPO_TOKEN;
   if (!token) {
-    throw new Error('❌ TEMPLATE_REPO_TOKEN no definido en el entorno');
+    throw new Error('❌ TEMPLATE_REPO_TOKEN no definido');
   }
 
-  if (fs.existsSync(TMP_DIR)) {
-    fs.rmSync(TMP_DIR, { recursive: true, force: true });
-  }
+  fs.rmSync(TMP_DIR, { recursive: true, force: true });
 
-  console.log('📥 Clonando repo de templates con HTTPS + Token...');
+  console.log('📥 Clonando templates…');
   run(`git clone --depth=1 https://${token}@github.com/${TEMPLATE_REPO}.git ${TMP_DIR}`);
 }
 
-function loadTemplates() {
+function loadTemplateDirs() {
   const root = path.join(TMP_DIR, 'public', 'templates');
 
   if (!fs.existsSync(root)) {
-    throw new Error('❌ No existe public/templates en el repo de templates');
+    throw new Error('❌ public/templates no existe en el repo');
   }
 
-  return fs.readdirSync(root).filter(dir =>
-    fs.statSync(path.join(root, dir)).isDirectory()
-  );
+  return fs.readdirSync(root)
+    .filter(d => fs.statSync(path.join(root, d)).isDirectory())
+    .sort(); // determinismo
 }
 
 function buildRegistries(dirs) {
-  // Cargar schema DESPUÉS de clonar
   const ajv = new Ajv({ allErrors: true, strict: false });
-  const metadataSchema = readJSON(
-    path.join(TMP_DIR, 'schemas', 'template.metadata.schema.json')
+  const schemaPath = path.join(
+    TMP_DIR,
+    'schemas',
+    'template.metadata.schema.json'
   );
-  const validateMetadata = ajv.compile(metadataSchema);
+
+  const schema = safeReadJSON(schemaPath);
+  const validate = ajv.compile(schema);
+
+  const timestamp = new Date().toISOString();
 
   const visualRegistry = {
     registry_version: '1.0.0',
-    last_updated: new Date().toISOString(),
+    last_updated: timestamp,
     templates: []
   };
 
   const entityRegistry = {
     registry_version: '1.0.0',
-    last_updated: visualRegistry.last_updated,
+    last_updated: timestamp,
     templates: {}
   };
 
@@ -79,19 +85,24 @@ function buildRegistries(dirs) {
     const metaPath = path.join(base, 'metadata.json');
 
     if (!fs.existsSync(metaPath)) {
-      console.warn(`⚠️ ${dir} sin metadata.json (omitido)`);
+      console.warn(`⚠️ ${dir}: metadata.json ausente`);
       continue;
     }
 
-    const meta = readJSON(metaPath);
-
-    if (!validateMetadata(meta)) {
-      console.error(`❌ Metadata inválida en ${dir}`);
-      console.error(validateMetadata.errors);
-      continue; // Omitir template inválido
+    let meta;
+    try {
+      meta = safeReadJSON(metaPath);
+    } catch {
+      continue;
     }
 
-    // ================= VISUAL =================
+    if (!validate(meta)) {
+      console.warn(`⚠️ ${dir}: metadata inválida`);
+      console.warn(validate.errors);
+      continue;
+    }
+
+    // -------- VISUAL REGISTRY --------
     visualRegistry.templates.push({
       id: meta.id,
       name: meta.name,
@@ -103,19 +114,22 @@ function buildRegistries(dirs) {
         iframe_url: meta.visual.iframe_url
       },
       previews: {
-        html: meta.previews?.html || null
+        html: meta.previews?.html ?? null
       }
     });
 
-    // ================= ENTITY =================
+    // -------- ENTITY REGISTRY --------
     entityRegistry.templates[meta.id] = {
       id: meta.id,
       version: meta.version,
       entrypoint: `templates/${dir}`,
-      supports: meta.supports,
-      requirements: meta.requirements
+      supports: meta.supports ?? [],
+      requirements: meta.requirements ?? {}
     };
   }
+
+  // orden final visual (extra hardening)
+  visualRegistry.templates.sort((a, b) => a.id.localeCompare(b.id));
 
   return { visualRegistry, entityRegistry };
 }
@@ -126,18 +140,24 @@ function cleanup() {
 
 // ================= RUN =================
 function main() {
-  cloneRepo();
-  const dirs = loadTemplates();
-  const { visualRegistry, entityRegistry } = buildRegistries(dirs);
+  try {
+    cloneRepo();
+    const dirs = loadTemplateDirs();
+    const { visualRegistry, entityRegistry } = buildRegistries(dirs);
 
-  writeJSON(VISUAL_OUTPUT, visualRegistry);
-  writeJSON(ENTITY_OUTPUT, entityRegistry);
+    writeJSON(VISUAL_OUTPUT, visualRegistry);
+    writeJSON(ENTITY_OUTPUT, entityRegistry);
 
-  cleanup();
-
-  console.log('✅ Registries generados correctamente');
-  console.log(`→ ${VISUAL_OUTPUT}`);
-  console.log(`→ ${ENTITY_OUTPUT}`);
+    console.log('✅ Registries sincronizados');
+    console.log(`→ ${VISUAL_OUTPUT}`);
+    console.log(`→ ${ENTITY_OUTPUT}`);
+  } catch (err) {
+    console.error('💥 Sync falló');
+    console.error(err);
+    process.exitCode = 1;
+  } finally {
+    cleanup();
+  }
 }
 
 main();
