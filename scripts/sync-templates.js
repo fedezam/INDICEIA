@@ -32,15 +32,10 @@ function writeJSON(p, data) {
 
 // ================= MAIN STEPS =================
 function cloneRepo() {
-  const token = process.env.TEMPLATE_REPO_TOKEN;
-  if (!token) {
-    throw new Error('❌ TEMPLATE_REPO_TOKEN no definido');
-  }
-
   fs.rmSync(TMP_DIR, { recursive: true, force: true });
 
-  console.log('📥 Clonando templates…');
-  run(`git clone --depth=1 https://${token}@github.com/${TEMPLATE_REPO}.git ${TMP_DIR}`);
+  console.log('📥 Clonando templates via SSH...');
+  run(`git clone --depth=1 git@github.com:${TEMPLATE_REPO}.git ${TMP_DIR}`);
 }
 
 function loadTemplateDirs() {
@@ -123,7 +118,7 @@ function buildRegistries(dirs) {
       id: meta.id,
       version: meta.version,
       entrypoint: `templates/${dir}`,
-      supports: meta.supports ?? [],
+      supports: meta.supports ?? {},
       requirements: meta.requirements ?? {}
     };
   }
