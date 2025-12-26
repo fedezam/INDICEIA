@@ -27,15 +27,6 @@ function writeJSON(p, data) {
   fs.writeFileSync(p, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-// ================= VALIDATION =================
-const ajv = new Ajv({ allErrors: true, strict: false });
-
-const metadataSchema = readJSON(
-  path.resolve('schemas/template.metadata.schema.json')
-);
-
-const validateMetadata = ajv.compile(metadataSchema);
-
 // ================= MAIN =================
 function cloneRepo() {
   if (fs.existsSync(TMP_DIR)) {
@@ -59,6 +50,13 @@ function loadTemplates() {
 }
 
 function buildRegistries(dirs) {
+  // Cargar schema DESPUÉS de clonar
+  const ajv = new Ajv({ allErrors: true, strict: false });
+  const metadataSchema = readJSON(
+    path.join(TMP_DIR, 'schemas', 'template.metadata.schema.json')
+  );
+  const validateMetadata = ajv.compile(metadataSchema);
+
   const visualRegistry = {
     registry_version: '1.0.0',
     last_updated: new Date().toISOString(),
@@ -85,7 +83,7 @@ function buildRegistries(dirs) {
     if (!validateMetadata(meta)) {
       console.error(`❌ Metadata inválida en ${dir}`);
       console.error(validateMetadata.errors);
-      process.exit(1);
+      continue; // Omitir template inválido, no abortar todo
     }
 
     // ================= VISUAL =================
