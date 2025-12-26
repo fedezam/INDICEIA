@@ -208,33 +208,57 @@ export async function buildEntity({ comercioId }) {
   B.updatedAt = new Date().toISOString();
   Object.freeze(B);
 
-  // ----- Block C (visual) - INYECTADO AUTOMÁTICAMENTE DESDE registry.entity.json
-  let C = {};
-  if (hasData(B.templateId)) {
-    const templateConfig = templateRegistry.templates[B.templateId];
-    if (!templateConfig) {
-      console.warn(`⚠️ Template "${B.templateId}" no encontrado en registry.entity.json → Block C vacío`);
-    } else {
-      C = {
-        visual: {
-          available: true,
-          template: {
-            id: templateConfig.id,
-            version: templateConfig.version,
-            entrypoint: templateConfig.entrypoint,
-            supports: templateConfig.supports || {},
-            requirements: templateConfig.requirements || {}
-          },
-          mode: 'iframe', // futuro: 'ssr' o 'client'
-          consumes: ['B'],
-        },
-      };
-      console.log(`✅ Block C inyectado para template ${B.templateId}`);
-    }
-  } else {
-    console.log('ℹ️ No hay templateId seleccionado → Block C desactivado');
-  }
+  // ----- Block C - Esqueleto configurable + datos dinámicos del registry
+let C = {};
 
+if (hasData(B.templateId)) {
+  const templateConfig = templateRegistry.templates[B.templateId];
+
+  if (!templateConfig) {
+    console.warn(`⚠️ Template "${B.templateId}" no encontrado en registry.entity.json → Block C vacío`);
+  } else {
+    // 1. Cargar el esqueleto configurable desde blockC.json
+    const blockCPath = resolve(__dirname, 'base/blockC.json');
+    let blockCSkeleton = {};
+    try {
+      blockCSkeleton = JSON.parse(readFileSync(blockCPath, 'utf-8'));
+      console.log('✅ Esqueleto Block C cargado desde base/blockC.json');
+    } catch (err) {
+      console.error('❌ Error leyendo base/blockC.json - usando esqueleto por defecto', err);
+      blockCSkeleton = {
+        C: {
+          visual: {
+            available: true,
+            mode: "iframe",
+            template: {},
+            consumes: ["B"]
+          }
+        }
+      };
+    }
+
+    // 2. Merge inteligente: datos dinámicos sobrescriben el esqueleto
+    C = {
+      visual: {
+        ...blockCSkeleton.C.visual,
+        available: true,
+        template: {
+          // Campos dinámicos del registry (siempre frescos)
+          id: templateConfig.id,
+          version: templateConfig.version,
+          entrypoint: templateConfig.entrypoint,
+          supports: templateConfig.supports || {},
+          requirements: templateConfig.requirements || {},
+          // Si en blockC.json tenés campos estáticos (ej: iframe_url hardcodeada temporal), los mantiene
+          // pero los dinámicos ganan
+          ...(blockCSkeleton.C.visual.template || {})
+        }
+      }
+    };
+
+    console.log(`✅ Block C armado con esqueleto + datos dinámicos para ${B.templateId}`);
+  }
+}
   // ----- Entidad final
   return {
     meta: {
