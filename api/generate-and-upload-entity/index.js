@@ -1,54 +1,50 @@
 // /api/generate-and-upload-entity/index.js
-// Handler serverless: genera entidad + sube/sobreescribe blob
-
 import { buildEntity } from '../entity-factory/index.js';
 import { put } from '@vercel/blob';
+import admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+  });
+}
+const db = admin.firestore();
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).end();
 
   try {
     const { comercioId } = req.body;
-
-    // Validación
-    if (!comercioId || typeof comercioId !== 'string' || comercioId.trim() === '') {
-      return res.status(400).json({ error: 'Falta comercioId válido' });
+    if (!comercioId || typeof comercioId !== 'string') {
+      return res.status(400).json({ error: 'comercioId inválido' });
     }
 
-    console.log('🔁 Generando y actualizando entidad para:', comercioId);
+    console.log('Generando entidad para:', comercioId);
 
-    // 1. Construir la entidad completa (A + B proyectado desde Firestore + C)
     const entity = await buildEntity({ comercioId });
-
-    // 2. Serializar con formato legible
     const jsonString = JSON.stringify(entity, null, 2);
 
-    // 3. Path fijo por comercio → siempre sobreescribe el mismo archivo
     const blobPath = `entidades/${comercioId}/entity.json`;
-
-    // 4. Subir a Vercel Blob (overwrite garantizado)
     const { url } = await put(blobPath, jsonString, {
       access: 'public',
-      addRandomSuffix: false,                  // ← clave para overwrite
+      addRandomSuffix: false,
       contentType: 'application/json',
-      token: process.env.BLOB_READ_WRITE_TOKEN // recomendado en Vercel
+      token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    console.log('✅ Entidad actualizada en:', url);
-
-    // Respuesta al dashboard
-    return res.status(200).json({
-      ok: true,
-      url,
-      message: 'Entidad generada y guardada con éxito'
+    // Guardar URL en Firestore (atómico con el upload)
+    await db.collection('comercios').doc(comercioId).update({
+      entityPublicUrl: url,
+      entityGeneratedAt: new Date().toISOString(),
     });
+
+    console.log('Entidad completa para', comercioId, '→', url);
+
+    // Frontend solo necesita saber que todo salió bien
+    return res.status(200).json({ ok: true });
 
   } catch (err) {
-    console.error('❌ Error generando/subiendo entidad:', err);
-    return res.status(500).json({
-      error: err.message || 'Error interno al generar la entidad'
-    });
+    console.error('Error en generate-and-upload-entity:', err);
+    return res.status(500).json({ error: 'Falló la generación pública' });
   }
 }
