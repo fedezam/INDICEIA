@@ -24,24 +24,20 @@ function readJSON(filePath) {
 
 // ================= MAIN =================
 function cloneTemplatesRepo() {
-  const token = process.env.TEMPLATE_REPO_TOKEN;
-
-  if (!token) {
-    throw new Error('❌ TEMPLATE_REPO_TOKEN no definido');
-  }
-
   if (fs.existsSync(TMP_DIR)) {
     fs.rmSync(TMP_DIR, { recursive: true, force: true });
   }
 
   console.log('📥 Clonando repo de templates...');
-  run(
-    `git clone --depth=1 https://${token}@github.com/${TEMPLATE_REPO}.git ${TMP_DIR}`
-  );
+  run(`git clone --depth=1 git@github.com:${TEMPLATE_REPO}.git ${TMP_DIR}`);
 }
 
 function buildRegistry() {
   const templatesRoot = path.join(TMP_DIR, 'public', 'templates');
+
+  if (!fs.existsSync(templatesRoot)) {
+    throw new Error('❌ No se encontró public/templates en el repo de templates');
+  }
 
   const registry = {
     registry_version: '1.0.0',
@@ -49,10 +45,6 @@ function buildRegistry() {
     source_repo: TEMPLATE_REPO,
     templates: {}
   };
-
-  if (!fs.existsSync(templatesRoot)) {
-    throw new Error('❌ No se encontró public/templates en el repo de templates');
-  }
 
   const templateDirs = fs
     .readdirSync(templatesRoot)
@@ -134,3 +126,4 @@ function main() {
 }
 
 main();
+
