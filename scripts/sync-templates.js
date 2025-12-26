@@ -29,12 +29,17 @@ function writeJSON(p, data) {
 
 // ================= MAIN =================
 function cloneRepo() {
+  const token = process.env.TEMPLATE_REPO_TOKEN;
+  if (!token) {
+    throw new Error('❌ TEMPLATE_REPO_TOKEN no definido en el entorno');
+  }
+
   if (fs.existsSync(TMP_DIR)) {
     fs.rmSync(TMP_DIR, { recursive: true, force: true });
   }
 
-  console.log('📥 Clonando repo de templates...');
-  run(`git clone --depth=1 git@github.com:${TEMPLATE_REPO}.git ${TMP_DIR}`);
+  console.log('📥 Clonando repo de templates con HTTPS + Token...');
+  run(`git clone --depth=1 https://${token}@github.com/${TEMPLATE_REPO}.git ${TMP_DIR}`);
 }
 
 function loadTemplates() {
@@ -83,7 +88,7 @@ function buildRegistries(dirs) {
     if (!validateMetadata(meta)) {
       console.error(`❌ Metadata inválida en ${dir}`);
       console.error(validateMetadata.errors);
-      continue; // Omitir template inválido, no abortar todo
+      continue; // Omitir template inválido
     }
 
     // ================= VISUAL =================
