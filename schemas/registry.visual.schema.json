@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://indiceia.com/schemas/registry.visual.schema.json",
+  "title": "IndiceIA Visual Templates Registry",
+  "type": "object",
+  "required": ["registry_version", "last_updated", "templates"],
+  "properties": {
+    "registry_version": { "type": "string" },
+    "last_updated": { "type": "string", "format": "date-time" },
+    "templates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "version",
+          "tier",
+          "description",
+          "ideal_for",
+          "visual",
+          "previews"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "tier": { "type": "string" },
+          "description": { "type": "string" },
+          "ideal_for": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "visual": {
+            "type": "object",
+            "properties": {
+              "iframe_url": { "type": "string", "format": "uri" }
+            }
+          },
+          "previews": {
+            "type": "object",
+            "properties": {
+              "html": { "type": "string", "format": "uri" }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
