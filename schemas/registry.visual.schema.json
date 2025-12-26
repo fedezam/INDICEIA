@@ -5,10 +5,17 @@
   "type": "object",
   "required": ["registry_version", "last_updated", "templates"],
   "properties": {
-    "registry_version": { "type": "string" },
-    "last_updated": { "type": "string", "format": "date-time" },
+    "registry_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time"
+    },
     "templates": {
       "type": "array",
+      "minItems": 1,
       "items": {
         "type": "object",
         "required": [
@@ -22,26 +29,51 @@
           "previews"
         ],
         "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "version": { "type": "string" },
-          "tier": { "type": "string" },
-          "description": { "type": "string" },
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z0-9_]+$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 3
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "tier": {
+            "type": "string",
+            "enum": ["C1", "C2", "C3"]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 20
+          },
           "ideal_for": {
             "type": "array",
+            "minItems": 1,
             "items": { "type": "string" }
           },
           "visual": {
             "type": "object",
+            "required": ["iframe_url"],
             "properties": {
-              "iframe_url": { "type": "string", "format": "uri" }
-            }
+              "iframe_url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "additionalProperties": false
           },
           "previews": {
             "type": "object",
             "properties": {
-              "html": { "type": "string", "format": "uri" }
-            }
+              "html": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false
