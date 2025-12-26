@@ -5,6 +5,7 @@ import Ajv from 'ajv';
 
 // ================= CONFIG =================
 const TEMPLATES_DIR = process.env.TEMPLATES_PATH || path.join(process.cwd(), '..');
+const TEMPLATES_BASE_URL = 'https://indiceia-templates.vercel.app/templates';
 const VISUAL_OUTPUT = 'public/templates/registry.visual.json';
 const ENTITY_OUTPUT = 'api/entity-factory/templates/registry.entity.json';
 
@@ -85,34 +86,41 @@ function buildRegistries(dirs) {
     
     if (!validate(meta)) {
       console.warn(`⚠️  ${dir}: metadata inválida`);
-      console.warn('Errores de validación:');
-      console.warn(JSON.stringify(validate.errors, null, 2));
-      console.warn('Metadata recibida:');
-      console.warn(JSON.stringify(meta, null, 2));
+      console.warn(validate.errors);
       continue;
     }
     
-    console.log(`✓ ${dir} (${meta.id})`);
+    const templateId = meta.template_id || meta.id;
+    console.log(`✓ ${dir} (${templateId})`);
+    
+    // Construir URLs completas
+    const baseUrl = `${TEMPLATES_BASE_URL}/${dir}`;
+    const iframeUrl = meta.visual?.preview_html 
+      ? `${baseUrl}/${meta.visual.preview_html}`
+      : null;
+    const thumbnailUrl = meta.visual?.thumbnail
+      ? `${baseUrl}/${meta.visual.thumbnail}`
+      : null;
     
     // -------- VISUAL REGISTRY --------
     visualRegistry.templates.push({
-      id: meta.id,
+      id: templateId,
       name: meta.name,
       version: meta.version,
       tier: meta.tier,
       description: meta.description,
       ideal_for: meta.ideal_for,
       visual: {
-        iframe_url: meta.visual.iframe_url
+        iframe_url: iframeUrl
       },
       previews: {
-        html: meta.previews?.html ?? null
+        thumbnail: thumbnailUrl
       }
     });
     
     // -------- ENTITY REGISTRY --------
-    entityRegistry.templates[meta.id] = {
-      id: meta.id,
+    entityRegistry.templates[templateId] = {
+      id: templateId,
       version: meta.version,
       entrypoint: `templates/${dir}`,
       supports: meta.supports ?? {},
