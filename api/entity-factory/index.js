@@ -7,14 +7,24 @@ import admin from 'firebase-admin';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-// ----- Template Registry (Bloque C)
-const templateRegistryPath = resolve(__dirname, 'templates/registry.json');
-let templateRegistry;
+// ----- Template Registry (Bloque C) - Cargado desde el archivo generado por sync-templates.js
+const templateRegistryPath = resolve(__dirname, 'templates/registry.entity.json');
+let templateRegistry = { templates: {} };
+
 try {
-  templateRegistry = JSON.parse(readFileSync(templateRegistryPath, 'utf-8'));
+  const raw = readFileSync(templateRegistryPath, 'utf-8');
+  const parsed = JSON.parse(raw);
+  // El archivo generado tiene { registry_version, last_updated, templates: { ... } }
+  if (parsed && parsed.templates && typeof parsed.templates === 'object') {
+    templateRegistry.templates = parsed.templates;
+    console.log(`✅ Registry entity cargado correctamente: ${Object.keys(templateRegistry.templates).length} template(s) disponibles`);
+  } else {
+    console.warn('⚠️ registry.entity.json no contiene un objeto "templates" válido. Usando registry vacío.');
+  }
 } catch (err) {
-  console.error('❌ Error leyendo templates/registry.json', err);
-  templateRegistry = { templates: {} }; // Cambiado a objeto vacío por defecto
+  console.error('❌ Error crítico leyendo api/entity-factory/templates/registry.entity.json', err);
+  console.warn('⚠️ Block C (visual) estará deshabilitado hasta que el registry se genere correctamente.');
+  templateRegistry = { templates: {} };
 }
 
 // Inicialización segura de Firebase Admin (Vercel production)
@@ -81,7 +91,6 @@ export async function buildEntity({ comercioId }) {
 
   // Nombre del comercio
   if (hasData(comercioData.nombreComercio)) B.nombre = comercioData.nombreComercio;
-
   // Descripción
   if (hasData(comercioData.descripcion)) B.descripcion = comercioData.descripcion;
 
@@ -199,25 +208,31 @@ export async function buildEntity({ comercioId }) {
   B.updatedAt = new Date().toISOString();
   Object.freeze(B);
 
-  // ----- Block C (visual, automático desde registry)
+  // ----- Block C (visual) - INYECTADO AUTOMÁTICAMENTE DESDE registry.entity.json
   let C = {};
   if (hasData(B.templateId)) {
     const templateConfig = templateRegistry.templates[B.templateId];
     if (!templateConfig) {
-      throw new Error(`Template ${B.templateId} no encontrado en registry`);
-    }
-    C = {
-      visual: {
-        available: true,
-        template: {
-          id: B.templateId,
-          iframe_url: templateConfig.iframe_url,
-          version: templateConfig.version,
+      console.warn(`⚠️ Template "${B.templateId}" no encontrado en registry.entity.json → Block C vacío`);
+    } else {
+      C = {
+        visual: {
+          available: true,
+          template: {
+            id: templateConfig.id,
+            version: templateConfig.version,
+            entrypoint: templateConfig.entrypoint,
+            supports: templateConfig.supports || {},
+            requirements: templateConfig.requirements || {}
+          },
+          mode: 'iframe', // futuro: 'ssr' o 'client'
+          consumes: ['B'],
         },
-        mode: 'iframe',
-        consumes: ['B'],
-      },
-    };
+      };
+      console.log(`✅ Block C inyectado para template ${B.templateId}`);
+    }
+  } else {
+    console.log('ℹ️ No hay templateId seleccionado → Block C desactivado');
   }
 
   // ----- Entidad final
