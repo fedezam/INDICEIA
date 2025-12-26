@@ -29,7 +29,7 @@ onAuthStateChanged(auth, async (user) => {
   await initializePage();
 });
 
-// ==================== INICIALIZACIÓN ====================
+// ==================== INIT ====================
 async function initializePage() {
   try {
     showLoading('Cargando Visual Builder...');
@@ -70,8 +70,6 @@ async function loadComercioData() {
   if (snap.exists()) {
     comercioData = { id: currentComercioId, ...snap.data() };
     selectedTemplateId = comercioData.templateId || null;
-  } else {
-    comercioData = { id: currentComercioId };
   }
 }
 
@@ -79,142 +77,123 @@ async function loadComercioData() {
 async function loadTemplateRegistry() {
   const res = await fetch('/api/entity-factory/templates/registry.json');
   const json = await res.json();
-  TEMPLATE_REGISTRY = Object.values(json.templates || {});
+
+  // 👉 por ahora mostramos SOLO EL PRIMERO
+  TEMPLATE_REGISTRY = Object.values(json.templates || {}).slice(0, 1);
 }
 
-// ==================== RENDER TEMPLATES ====================
+// ==================== RENDER ====================
 function renderTemplates() {
   const container = document.getElementById('skinsContainer');
   if (!container) return;
 
   container.innerHTML = TEMPLATE_REGISTRY.map(template => {
     const isActive = selectedTemplateId === template.id;
-    const visual = template.visual || {};
-    const previews = visual.previews || {};
 
     return `
       <div class="skin-card ${isActive ? 'active' : ''}" data-id="${template.id}">
-        
-        ${isActive ? '<div class="active-badge"><i class="fas fa-check-circle"></i> Activo</div>' : ''}
 
-        <div class="skin-thumbnail">
-          ${
-            previews.iframe
-              ? `<iframe
-                    src="${previews.iframe}"
-                    class="template-preview-iframe"
-                    loading="lazy">
-                 </iframe>`
-              : `<div class="no-preview">Sin vista previa</div>`
-          }
-          <div class="thumbnail-overlay">
-            <div class="overlay-content">
-              <i class="fas fa-eye"></i>
-              <span>Click para seleccionar</span>
-            </div>
-          </div>
-        </div>
+        ${isActive ? `<div class="active-badge">✔ Activo</div>` : ''}
 
         <div class="skin-content">
           <h3>${template.name}</h3>
-          <p class="skin-version">v${template.version}</p>
+          <p class="skin-version">v${template.version} · ${template.tier}</p>
 
-          ${
-            visual.description
-              ? `<p class="skin-description">${visual.description}</p>`
-              : ''
-          }
+          <p class="skin-description">
+            ${template.description}
+          </p>
 
-          ${
-            visual.features?.length
-              ? `
-                <div class="skin-features">
-                  <strong>Incluye:</strong>
-                  <ul>
-                    ${visual.features.map(f => `<li>✔ ${f}</li>`).join('')}
-                  </ul>
-                </div>
-              `
-              : ''
-          }
+          <div class="skin-section">
+            <strong>Ideal para:</strong>
+            <div class="tags">
+              ${template.ideal_for.map(t => `<span class="tag">${t}</span>`).join('')}
+            </div>
+          </div>
 
-          ${
-            visual.ideal_for?.length
-              ? `
-                <div class="skin-ideal">
-                  <strong>Ideal para:</strong>
-                  <div class="tags">
-                    ${visual.ideal_for.map(t => `<span class="tag">${t}</span>`).join('')}
-                  </div>
-                </div>
-              `
-              : ''
-          }
+          <div class="skin-section">
+            <strong>Incluye:</strong>
+            <ul>
+              ${Object.entries(template.supports || {})
+                .filter(([, v]) => v === true)
+                .map(([k]) => `<li>✔ ${k}</li>`)
+                .join('')}
+            </ul>
+          </div>
+
+          <div class="skin-section limitations">
+            <strong>Limitaciones:</strong>
+            <ul>
+              ${template.limitations.map(l => `<li>✖ ${l}</li>`).join('')}
+            </ul>
+          </div>
+
+          <div class="skin-actions">
+            <a
+              href="${template.previews.html}"
+              target="_blank"
+              class="btn-secondary"
+            >
+              Ver demo
+            </a>
+          </div>
         </div>
       </div>
     `;
   }).join('');
 
   document.querySelectorAll('.skin-card').forEach(card => {
-    const templateId = card.dataset.id;
-    card.addEventListener('click', () => selectTemplate(templateId));
+    card.addEventListener('click', () => {
+      selectTemplate(card.dataset.id);
+    });
   });
 }
 
-// ==================== SELECCIONAR TEMPLATE ====================
+// ==================== SELECT ====================
 function selectTemplate(templateId) {
-  document.querySelectorAll('.skin-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.skin-card')
+    .forEach(c => c.classList.remove('active'));
 
-  const selectedCard = document.querySelector(`.skin-card[data-id="${templateId}"]`);
-  if (selectedCard) selectedCard.classList.add('active');
+  const card = document.querySelector(`.skin-card[data-id="${templateId}"]`);
+  if (card) card.classList.add('active');
 
   selectedTemplateId = templateId;
 
-  const template = TEMPLATE_REGISTRY.find(t => t.id === templateId);
-  showToast('Seleccionado', `${template.name} seleccionado. No olvides guardar.`, 'info');
+  const t = TEMPLATE_REGISTRY.find(t => t.id === templateId);
+  showToast('Seleccionado', `${t.name} seleccionado`, 'info');
 }
 
-// ==================== GUARDAR SELECCIÓN ====================
+// ==================== SAVE ====================
 async function saveTemplate() {
   if (!selectedTemplateId) {
-    showToast('Error', 'Debes seleccionar un template primero', 'error');
+    showToast('Error', 'Seleccioná un template primero', 'error');
     return;
   }
 
   try {
     showLoading('Guardando template...');
 
-    const comercioRef = doc(db, 'comercios', currentComercioId);
-    await updateDoc(comercioRef, {
+    await updateDoc(doc(db, 'comercios', currentComercioId), {
       templateId: selectedTemplateId,
       templateUpdatedAt: new Date().toISOString()
     });
 
     hideLoading();
-
-    const template = TEMPLATE_REGISTRY.find(t => t.id === selectedTemplateId);
-    showToast('¡Listo!', `Template "${template.name}" guardado correctamente`, 'success');
-
-    comercioData.templateId = selectedTemplateId;
-    renderTemplates();
+    showToast('Listo', 'Template guardado', 'success');
 
     setTimeout(() => {
       window.location.href = '/dashboard.html';
-    }, 1500);
+    }, 1200);
 
   } catch (err) {
-    console.error(err);
     hideLoading();
     showToast('Error', err.message, 'error');
   }
 }
 
-// ==================== EVENTOS ====================
+// ==================== EVENTS ====================
 function setupEvents() {
   const saveBtn = document.getElementById('saveSkinBtn');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', saveTemplate);
-  }
+  if (saveBtn) saveBtn.addEventListener('click', saveTemplate);
 
   const logoutBtn = document.getElementById("logoutBtn");
   if (logoutBtn) {
