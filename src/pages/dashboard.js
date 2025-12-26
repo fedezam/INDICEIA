@@ -1,5 +1,5 @@
 // ========================================
-// DASHBOARD – VERSIÓN SIMPLIFICADA
+// DASHBOARD – VERSIÓN SIMPLIFICADA (Frontend TONTO)
 // ========================================
 import '../styles/base.css';
 import '../styles/layout.css';
@@ -30,10 +30,11 @@ onAuthStateChanged(auth, async (user) => {
 
 async function initializePage() {
     console.log('🚀 INICIANDO initializePage');
-   
+  
     try {
         showLoading('Cargando dashboard...');
         renderLayout();
+
         const userRef = doc(db, 'usuarios', currentUser.uid);
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
@@ -41,31 +42,30 @@ async function initializePage() {
             hideLoading();
             return;
         }
+
         const userData = userSnap.data();
         currentComercioId = userData.comercioId;
         console.log('✅ ComercioId:', currentComercioId);
+
         await loadComercioData();
+
         updateHeaderInfo(
             comercioData.nombreComercio || 'Mi Comercio',
             PLANS[comercioData.plan || 'trial']
         );
+
         updateBanner();
-        console.log('⏳ Esperando frame de animación...');
+
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-       
-        console.log('🎨 LLAMANDO A renderDashboard()');
-        renderDashboard(); // SIN await - ejecutar inmediatamente
-       
-        console.log('🔧 Configurando eventos');
+
+        renderDashboard();
         setupEvents();
+
         hideLoading();
         console.log('✅ InitializePage COMPLETO');
     } catch (err) {
         console.error('❌ ERROR en initializePage:', err);
         hideLoading();
-       
-        // FORZAR renderizado de emergencia
-        console.log('🚨 Intentando renderizado de emergencia');
         renderDashboard();
         setupEvents();
     }
@@ -125,21 +125,16 @@ function renderDashboard() {
     console.log('═══════════════════════════════════════════');
     console.log('🎨 RENDER DASHBOARD - INICIO');
     console.log('═══════════════════════════════════════════');
-   
+  
     const cont = document.getElementById("dashboardContainer");
-    console.log('📦 Contenedor dashboardContainer:', cont ? '✅ ENCONTRADO' : '❌ NO ENCONTRADO');
-   
     if (!cont) {
-        console.error('❌ CRÍTICO: No existe #dashboardContainer en el DOM');
-        console.log('📋 Contenido del body:', document.body.innerHTML.substring(0, 300));
+        console.error('❌ CRÍTICO: No existe #dashboardContainer');
         return;
     }
+
     const productCount = comercioData.stats?.productosCount ?? 0;
     const horarios = comercioData.stats?.horariosConfigurados === true;
-    console.log('📊 Datos disponibles:');
-    console.log(' - Email:', currentUser?.email);
-    console.log(' - Comercio:', comercioData.nombreComercio);
-    console.log(' - ComercioId:', currentComercioId);
+
     cont.innerHTML = `
         <div class="page-header">
             <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
@@ -216,22 +211,23 @@ function renderDashboard() {
                     <i class="fas fa-arrow-right"></i> Ver
                 </a>
             </div>
-            <!-- CARD MODIFICADA: Generar Entidad (Llamada Mínima) -->
+            <!-- Generar Entidad -->
             <div class="dash-card highlight">
                 <div class="dash-icon"><i class="fas fa-cogs"></i></div>
                 <div class="dash-content">
                     <h3>Generar Entidad</h3>
-                    <p>Crea y guarda la entidad oficial del comercio</p>
+                    <p>Publica tu menú, horarios y configuración IA al instante</p>
                 </div>
                 <button id="btnGenerateEntity" class="btn btn-primary btn-sm">
                     <i class="fas fa-magic"></i> Generar
                 </button>
             </div>
+            <!-- Generar Link -->
             <div class="dash-card highlight">
                 <div class="dash-icon"><i class="fas fa-link"></i></div>
                 <div class="dash-content">
-                    <h3>Generar Link de la Entidad</h3>
-                    <p>Obtén URL o QR para compartir</p>
+                    <h3>Obtener Link Público</h3>
+                    <p>URL y QR para compartir con tus clientes</p>
                 </div>
                 <a href="/api/link-builder?action=generate&comercio_id=${currentComercioId || 'SIN_ID'}" target="_blank" class="btn btn-primary btn-sm">
                     <i class="fas fa-arrow-right"></i> Generar
@@ -239,29 +235,12 @@ function renderDashboard() {
             </div>
         </section>
     `;
-    // Verificación exhaustiva
-    const cards = cont.querySelectorAll('.dash-card');
-    console.log('✅ innerHTML establecido');
-    console.log('🔢 Total de cards renderizadas:', cards.length);
-   
-    if (cards.length === 9) {
-        console.log('✅✅✅ TODAS LAS 9 CARDS ESTÁN EN EL DOM');
-    } else {
-        console.error('❌ FALTAN CARDS! Solo hay', cards.length);
-    }
-   
-    cards.forEach((card, i) => {
-        const title = card.querySelector('h3')?.textContent || 'Sin título';
-        const visible = card.offsetHeight > 0;
-        console.log(` ${i + 1}. ${title} - ${visible ? '👁️ VISIBLE' : '🚫 OCULTA'}`);
-    });
-   
-    console.log('═══════════════════════════════════════════');
-    console.log('🎨 RENDER DASHBOARD - FIN');
-    console.log('═══════════════════════════════════════════');
+
+    console.log('✅ Dashboard renderizado correctamente');
 }
 
 function setupEvents() {
+    // Logout
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
         logoutBtn.addEventListener("click", () => {
@@ -272,47 +251,37 @@ function setupEvents() {
     }
 
     // ===============================
-    // GENERAR ENTIDAD (LLAMADA MÍNIMA)
+    // GENERAR ENTIDAD - Frontend TONTO
     // ===============================
     const btnGenerate = document.getElementById('btnGenerateEntity');
     if (btnGenerate) {
         btnGenerate.addEventListener('click', async () => {
             if (btnGenerate.disabled) return;
+
             btnGenerate.disabled = true;
-            const originalHTML = btnGenerate.innerHTML;
+            const originalText = btnGenerate.innerHTML;
             btnGenerate.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
 
             try {
-                console.log('🚀 Generando entidad para:', currentComercioId);
-                
                 const response = await fetch('/api/generate-and-upload-entity', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        comercioId: currentComercioId
-                    })
+                    body: JSON.stringify({ comercioId: currentComercioId })
                 });
 
-                if (!response.ok) {
-                    const text = await response.text();
-                    throw new Error(text || 'Error del servidor');
-                }
-
                 const data = await response.json();
-                console.log('✅ RESULTADO:', data);
 
-                if (data.ok && data.url) {
-                    showToast('¡Entidad generada y guardada con éxito!', 'success');
+                if (data.ok) {
+                    showToast('¡Entidad generada y publicada con éxito!', 'success');
                 } else {
-                    throw new Error('Respuesta incompleta del servidor');
+                    throw new Error(data.error || 'Error desconocido del servidor');
                 }
-
             } catch (err) {
-                console.error('❌ Error generando entidad:', err);
-                showToast('Error: ' + (err.message || 'Inténtalo más tarde'), 'error');
+                console.error('Error al generar entidad:', err);
+                showToast('Error: ' + (err.message || 'No se pudo completar la operación'), 'error');
             } finally {
                 btnGenerate.disabled = false;
-                btnGenerate.innerHTML = originalHTML;
+                btnGenerate.innerHTML = originalText;
             }
         });
     }
