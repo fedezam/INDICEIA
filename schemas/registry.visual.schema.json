@@ -3,7 +3,11 @@
   "$id": "https://indiceia.com/schemas/registry.visual.schema.json",
   "title": "IndiceIA Visual Templates Registry",
   "type": "object",
-  "required": ["registry_version", "last_updated", "templates"],
+  "required": [
+    "registry_version",
+    "last_updated",
+    "templates"
+  ],
   "properties": {
     "registry_version": {
       "type": "string",
@@ -43,7 +47,11 @@
           },
           "tier": {
             "type": "string",
-            "enum": ["C1", "C2", "C3"]
+            "enum": [
+              "C1",
+              "C2",
+              "C3"
+            ]
           },
           "description": {
             "type": "string",
@@ -52,15 +60,21 @@
           "ideal_for": {
             "type": "array",
             "minItems": 1,
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "visual": {
             "type": "object",
-            "required": ["iframe_url"],
+            "required": [
+              "iframe_url"
+            ],
             "properties": {
               "iframe_url": {
-                "type": "string",
-                "format": "uri"
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "additionalProperties": false
@@ -68,9 +82,11 @@
           "previews": {
             "type": "object",
             "properties": {
-              "html": {
-                "type": "string",
-                "format": "uri"
+              "thumbnail": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "additionalProperties": false
