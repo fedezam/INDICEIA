@@ -85,7 +85,10 @@ function buildRegistries(dirs) {
     
     if (!validate(meta)) {
       console.warn(`⚠️  ${dir}: metadata inválida`);
-      console.warn(validate.errors);
+      console.warn('Errores de validación:');
+      console.warn(JSON.stringify(validate.errors, null, 2));
+      console.warn('Metadata recibida:');
+      console.warn(JSON.stringify(meta, null, 2));
       continue;
     }
     
