@@ -1,110 +1,140 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
+import Ajv from 'ajv';
 
-// ================= PATHS =================
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ================= CONFIG =================
+const TEMPLATE_REPO = 'fedezam/indiceia-templates';
+const TMP_DIR = '.tmp-templates';
 
-// El repo de templates YA está chequeado por GitHub Actions
-const TEMPLATES_ROOT = path.resolve(__dirname, '../../public/templates');
-
-// Archivo de salida (dentro del repo indiceia clonado)
-const OUTPUT_REGISTRY = path.resolve(
-  __dirname,
-  '../api/entity-factory/templates/registry.json'
-);
+const VISUAL_OUTPUT = 'public/templates/registry.visual.json';
+const ENTITY_OUTPUT = 'api/entity-factory/templates/registry.entity.json';
 
 const TEMPLATE_BASE_URL = 'https://indiceia-templates.vercel.app/templates';
 
 // ================= UTILS =================
-function readJSON(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+function run(cmd) {
+  execSync(cmd, { stdio: 'inherit' });
 }
 
+function readJSON(p) {
+  return JSON.parse(fs.readFileSync(p, 'utf-8'));
+}
+
+function writeJSON(p, data) {
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+// ================= VALIDATION =================
+const ajv = new Ajv({ allErrors: true, strict: false });
+
+const metadataSchema = readJSON(
+  path.resolve('schemas/template.metadata.schema.json')
+);
+
+const validateMetadata = ajv.compile(metadataSchema);
+
 // ================= MAIN =================
-function buildRegistry() {
-  if (!fs.existsSync(TEMPLATES_ROOT)) {
-    throw new Error('❌ No se encontró public/templates en indiceia-templates');
+function cloneRepo() {
+  if (fs.existsSync(TMP_DIR)) {
+    fs.rmSync(TMP_DIR, { recursive: true, force: true });
   }
 
-  const registry = {
+  console.log('📥 Clonando repo de templates...');
+  run(`git clone --depth=1 git@github.com:${TEMPLATE_REPO}.git ${TMP_DIR}`);
+}
+
+function loadTemplates() {
+  const root = path.join(TMP_DIR, 'public', 'templates');
+
+  if (!fs.existsSync(root)) {
+    throw new Error('❌ No existe public/templates en el repo de templates');
+  }
+
+  return fs.readdirSync(root).filter(dir =>
+    fs.statSync(path.join(root, dir)).isDirectory()
+  );
+}
+
+function buildRegistries(dirs) {
+  const visualRegistry = {
     registry_version: '1.0.0',
     last_updated: new Date().toISOString(),
-    source_repo: 'fedezam/indiceia-templates',
+    templates: []
+  };
+
+  const entityRegistry = {
+    registry_version: '1.0.0',
+    last_updated: visualRegistry.last_updated,
     templates: {}
   };
 
-  const templateDirs = fs
-    .readdirSync(TEMPLATES_ROOT)
-    .filter(d =>
-      fs.statSync(path.join(TEMPLATES_ROOT, d)).isDirectory()
-    );
+  for (const dir of dirs) {
+    const base = path.join(TMP_DIR, 'public', 'templates', dir);
+    const metaPath = path.join(base, 'metadata.json');
 
-  for (const dir of templateDirs) {
-    const templatePath = path.join(TEMPLATES_ROOT, dir);
-    const metadataPath = path.join(templatePath, 'metadata.json');
-
-    if (!fs.existsSync(metadataPath)) {
-      console.warn(`⚠️  ${dir} sin metadata.json (omitido)`);
+    if (!fs.existsSync(metaPath)) {
+      console.warn(`⚠️ ${dir} sin metadata.json (omitido)`);
       continue;
     }
 
-    const metadata = readJSON(metadataPath);
+    const meta = readJSON(metaPath);
 
-    if (!metadata.template_id) {
-      console.warn(`⚠️  ${dir} metadata sin template_id (omitido)`);
-      continue;
+    if (!validateMetadata(meta)) {
+      console.error(`❌ Metadata inválida en ${dir}`);
+      console.error(validateMetadata.errors);
+      process.exit(1);
     }
 
-    registry.templates[metadata.template_id] = {
-      id: metadata.template_id,
-      name: metadata.name || metadata.template_id,
-      version: metadata.version || '1.0.0',
-      tier: metadata.tier || null,
-      status: metadata.status || 'stable',
-
-      description: metadata.description || '',
-      ideal_for: metadata.ideal_for || [],
-      supports: metadata.supports || {},
-      limitations: metadata.limitations || [],
-      requirements: metadata.requirements || {},
-
+    // ================= VISUAL =================
+    visualRegistry.templates.push({
+      id: meta.id,
+      name: meta.name,
+      version: meta.version,
+      tier: meta.tier,
+      description: meta.description,
+      ideal_for: meta.ideal_for,
       visual: {
-        iframe_url: `${TEMPLATE_BASE_URL}/${dir}/component.jsx`
+        iframe_url: meta.visual.iframe_url
       },
-
       previews: {
-        html: `${TEMPLATE_BASE_URL}/${dir}/previews/${dir}_full.html`,
-        component: `${TEMPLATE_BASE_URL}/${dir}/previews/component.preview.jsx`
-      },
-
-      links: {
-        readme: `${TEMPLATE_BASE_URL}/${dir}/README.md`
+        html: meta.previews?.html || null
       }
+    });
+
+    // ================= ENTITY =================
+    entityRegistry.templates[meta.id] = {
+      id: meta.id,
+      version: meta.version,
+      entrypoint: `templates/${dir}`,
+      supports: meta.supports,
+      requirements: meta.requirements
     };
   }
 
-  return registry;
+  return { visualRegistry, entityRegistry };
 }
 
-function writeRegistry(registry) {
-  fs.mkdirSync(path.dirname(OUTPUT_REGISTRY), { recursive: true });
-
-  fs.writeFileSync(
-    OUTPUT_REGISTRY,
-    JSON.stringify(registry, null, 2),
-    'utf-8'
-  );
-
-  console.log(`✅ Registry generado en ${OUTPUT_REGISTRY}`);
+function cleanup() {
+  fs.rmSync(TMP_DIR, { recursive: true, force: true });
 }
 
 // ================= RUN =================
 function main() {
-  const registry = buildRegistry();
-  writeRegistry(registry);
+  cloneRepo();
+  const dirs = loadTemplates();
+  const { visualRegistry, entityRegistry } = buildRegistries(dirs);
+
+  writeJSON(VISUAL_OUTPUT, visualRegistry);
+  writeJSON(ENTITY_OUTPUT, entityRegistry);
+
+  cleanup();
+
+  console.log('✅ Registries generados correctamente');
+  console.log(`→ ${VISUAL_OUTPUT}`);
+  console.log(`→ ${ENTITY_OUTPUT}`);
 }
 
 main();
