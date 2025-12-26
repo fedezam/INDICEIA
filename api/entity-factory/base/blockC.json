@@ -4,9 +4,9 @@
       "available": true,
       "mode": "iframe",
       "template": {
-        "id": "C1_SimpleCatalog",
-        "iframe_url": "https://templates.indiceia.com/C1_SimpleCatalog",
-        "version": "1.0.0"
+        // Campos que querés controlar centralizadamente
+        // Ej: si mañana querés cambiar mode a 'ssr' para todos, solo acá
+        // O agregar un campo nuevo como "theme": "dark"
       },
       "consumes": ["B"]
     }
