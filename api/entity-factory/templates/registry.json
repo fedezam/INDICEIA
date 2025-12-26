@@ -1,43 +1,50 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2025-12-24",
+  "last_updated": "2025-12-26T03:37:24.804Z",
+  "source_repo": "fedezam/indiceia-templates",
   "templates": {
     "C1_SimpleCatalog": {
       "id": "C1_SimpleCatalog",
-      "name": "Menú Simple - C1_SimpleCatalog",
+      "name": "Menú Simple",
       "version": "1.0.0",
+      "tier": "C1",
       "status": "stable",
-
-      "runtime": {
-        "mode": "iframe",
-        "iframe_url": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/component.jsx",
-        "consumes": ["B"]
+      "description": "Catálogo visual simple con categorías y carrito, ideal para comercios gastronómicos que venden por WhatsApp. Rápido de cargar, fácil de usar y optimizado para móviles.",
+      "ideal_for": [
+        "pizzerías",
+        "restaurantes",
+        "cafeterías",
+        "panaderías",
+        "bares",
+        "heladerías",
+        "comercios con catálogo simple"
+      ],
+      "supports": {
+        "categories": true,
+        "cart": true,
+        "single_image_per_item": true,
+        "multiple_prices": true
       },
-
+      "limitations": [
+        "no variantes complejas",
+        "no búsqueda",
+        "no filtros avanzados",
+        "una imagen por producto"
+      ],
+      "requirements": {
+        "whatsapp_number": "obligatorio",
+        "catalogo.categorias": "obligatorio",
+        "catalogo.items": "obligatorio"
+      },
       "visual": {
-        "previews": {
-          "iframe": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/component.preview.jsx",
-          "html": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/C1_SimpleCatalog_full.html"
-        },
-
-        "description": "Catálogo visual simple con categorías, carrito y checkout por WhatsApp.",
-
-        "features": [
-          "Categorías con tabs",
-          "Carrito de compras",
-          "Checkout vía WhatsApp",
-          "Una imagen por producto",
-          "Precios simples o por tamaño"
-        ],
-
-        "ideal_for": [
-          "pizzerías",
-          "restaurantes",
-          "cafeterías",
-          "panaderías",
-          "bares",
-          "heladerías"
-        ]
+        "iframe_url": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/component.jsx"
+      },
+      "previews": {
+        "html": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/C1_SimpleCatalog_full.html",
+        "component": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/component.preview.jsx"
+      },
+      "links": {
+        "readme": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/README.md"
       }
     }
   }
