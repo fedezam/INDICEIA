@@ -1,59 +1,49 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
-// ================= CONFIG =================
-const TEMPLATE_REPO = 'fedezam/indiceia-templates';
-const TMP_DIR = '.tmp-templates';
+// ================= PATHS =================
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
+// El repo de templates YA está chequeado por GitHub Actions
+const TEMPLATES_ROOT = path.resolve(__dirname, '../../public/templates');
+
+// Archivo de salida (dentro del repo indiceia clonado)
 const OUTPUT_REGISTRY = path.resolve(
-  'api/entity-factory/templates/registry.json'
+  __dirname,
+  '../api/entity-factory/templates/registry.json'
 );
 
 const TEMPLATE_BASE_URL = 'https://indiceia-templates.vercel.app/templates';
 
 // ================= UTILS =================
-function run(cmd) {
-  execSync(cmd, { stdio: 'inherit' });
-}
-
 function readJSON(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 }
 
 // ================= MAIN =================
-function cloneTemplatesRepo() {
-  if (fs.existsSync(TMP_DIR)) {
-    fs.rmSync(TMP_DIR, { recursive: true, force: true });
-  }
-
-  console.log('📥 Clonando repo de templates...');
-  run(`git clone --depth=1 git@github.com:${TEMPLATE_REPO}.git ${TMP_DIR}`);
-}
-
 function buildRegistry() {
-  const templatesRoot = path.join(TMP_DIR, 'public', 'templates');
-
-  if (!fs.existsSync(templatesRoot)) {
-    throw new Error('❌ No se encontró public/templates en el repo de templates');
+  if (!fs.existsSync(TEMPLATES_ROOT)) {
+    throw new Error('❌ No se encontró public/templates en indiceia-templates');
   }
 
   const registry = {
     registry_version: '1.0.0',
     last_updated: new Date().toISOString(),
-    source_repo: TEMPLATE_REPO,
+    source_repo: 'fedezam/indiceia-templates',
     templates: {}
   };
 
   const templateDirs = fs
-    .readdirSync(templatesRoot)
+    .readdirSync(TEMPLATES_ROOT)
     .filter(d =>
-      fs.statSync(path.join(templatesRoot, d)).isDirectory()
+      fs.statSync(path.join(TEMPLATES_ROOT, d)).isDirectory()
     );
 
   for (const dir of templateDirs) {
-    const templatePath = path.join(templatesRoot, dir);
+    const templatePath = path.join(TEMPLATES_ROOT, dir);
     const metadataPath = path.join(templatePath, 'metadata.json');
 
     if (!fs.existsSync(metadataPath)) {
@@ -111,19 +101,10 @@ function writeRegistry(registry) {
   console.log(`✅ Registry generado en ${OUTPUT_REGISTRY}`);
 }
 
-function cleanup() {
-  if (fs.existsSync(TMP_DIR)) {
-    fs.rmSync(TMP_DIR, { recursive: true, force: true });
-  }
-}
-
 // ================= RUN =================
 function main() {
-  cloneTemplatesRepo();
   const registry = buildRegistry();
   writeRegistry(registry);
-  cleanup();
 }
 
 main();
-
