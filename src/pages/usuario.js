@@ -1,6 +1,5 @@
-
 // ================================
-// usuario.js — Onboarding Paso 1 (Simplificado)
+// usuario.js — Onboarding Paso 1 (Normalizado y limpio)
 // ================================
 
 // CSS
@@ -15,7 +14,9 @@ import { auth, db } from "../firebase.js";
 import { doc, getDoc, setDoc, addDoc, collection, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
-// Lógica interna
+// Compartidos
+import { renderLayout, updateHeaderInfo } from "../shared/layout.js";
+import { showToast, showLoading, hideLoading } from "../shared/utils.js";
 import { runFlowController } from "../controllers/flowController.js";
 import { fillProvinciaSelector } from "../shared/provincias.js";
 
@@ -53,9 +54,7 @@ function aplicarMascaraFecha(input) {
   });
 }
 
-if (fechaNacimiento) {
-  aplicarMascaraFecha(fechaNacimiento);
-}
+if (fechaNacimiento) aplicarMascaraFecha(fechaNacimiento);
 
 function fechaToISO(fechaDDMMYYYY) {
   if (!fechaDDMMYYYY || !fechaDDMMYYYY.includes("/")) return null;
@@ -90,16 +89,12 @@ function validarFormulario() {
   }
 }
 
-// Listeners para validación
+// Listeners de validación
 [nombre, apellido, mail, fechaNacimiento, telefono, pais, provincia, localidad, direccion]
   .filter(el => el)
   .forEach(el => el.addEventListener("input", validarFormulario));
 
-if (provincia) {
-  provincia.addEventListener("change", validarFormulario);
-}
-
-// ==================== HANDLERS ACTIVIDAD ====================
+// ==================== HANDLERS TIPO ACTIVIDAD ====================
 if (checkComercio) {
   checkComercio.addEventListener("change", () => {
     if (checkComercio.checked) {
@@ -128,40 +123,30 @@ if (checkServicio) {
 async function cargarDatosUsuario(uid) {
   try {
     console.log("🔄 Cargando datos del usuario:", uid);
-    
-    // Llenar select de provincias
-    fillProvinciaSelector(pais.value, provincia);
 
-    // Cargar datos de Firestore
+    // Llenar provincias
+    fillProvinciaSelector(pais.value || "Argentina", provincia);
+
     const ref = doc(db, "usuarios", uid);
     const snap = await getDoc(ref);
-    
+
     if (!snap.exists()) {
-      console.log("ℹ️ Usuario nuevo, sin datos previos");
-      
-      if (mail && auth.currentUser?.email) {
-        mail.value = auth.currentUser.email;
-      }
-      
+      console.log("ℹ️ Usuario nuevo");
+      if (mail && auth.currentUser?.email) mail.value = auth.currentUser.email;
       validarFormulario();
       return;
     }
 
     const data = snap.data();
-    console.log("✅ Datos cargados:", data);
 
-    // Llenar formulario
     if (nombre) nombre.value = data.nombre || "";
     if (apellido) apellido.value = data.apellido || "";
     if (mail) mail.value = data.mail || auth.currentUser?.email || "";
     if (telefono) telefono.value = data.telefono || "";
     if (pais) pais.value = data.pais || "Argentina";
 
-    // RE-LLENAR provincias tras asignar país
     fillProvinciaSelector(pais.value, provincia);
-    if (provincia && data.provincia) {
-      provincia.value = data.provincia;
-    }
+    if (provincia && data.provincia) provincia.value = data.provincia;
 
     if (localidad) localidad.value = data.localidad || "";
     if (barrio) barrio.value = data.barrio || "";
@@ -183,14 +168,13 @@ async function cargarDatosUsuario(uid) {
     }
 
     validarFormulario();
-
   } catch (error) {
-    console.error("❌ Error al cargar datos:", error);
-    alert("Error al cargar tus datos. Por favor, recarga la página.");
+    console.error("❌ Error cargando datos:", error);
+    showToast('Error al cargar datos', 'error');
   }
 }
 
-// Actualizar provincias si se cambia el país
+// Cambio de país → recargar provincias
 if (pais && provincia) {
   pais.addEventListener("change", () => {
     fillProvinciaSelector(pais.value, provincia);
@@ -198,31 +182,29 @@ if (pais && provincia) {
   });
 }
 
-// ==================== GUARDAR DATOS Y CREAR IA ====================
+// ==================== GUARDAR DATOS ====================
 if (btnGuardar) {
   btnGuardar.addEventListener("click", async () => {
     if (!userId) {
-      alert("Error: usuario no identificado. Por favor, inicia sesión nuevamente.");
+      showToast('Error: usuario no identificado', 'error');
       return;
     }
 
-    // Validar fecha
     const fechaISO = fechaToISO(fechaNacimiento.value);
     if (!fechaISO) {
-      alert("La fecha de nacimiento debe tener el formato DD/MM/AAAA");
+      showToast('Fecha inválida (usa DD/MM/AAAA)', 'error');
       return;
     }
 
-    try {
-      // Activar animación de guardado
-      btnGuardar.classList.add("saving");
-      btnGuardar.disabled = true;
+    showLoading('Guardando datos...');
+    btnGuardar.disabled = true;
+    btnGuardar.classList.add('saving');
 
+    try {
       const ref = doc(db, "usuarios", userId);
       const snapAnterior = await getDoc(ref);
       const prevSteps = snapAnterior.exists() ? (snapAnterior.data().onboardingSteps || {}) : {};
 
-      // Guardar datos en Firestore
       await setDoc(ref, {
         nombre: nombre.value.trim(),
         apellido: apellido.value.trim(),
@@ -239,11 +221,10 @@ if (btnGuardar) {
         onboardingSteps: { ...prevSteps, usuario: true }
       }, { merge: true });
 
-      // 🔹 Verificar si ya tiene comercioId (usuario editando)
+      // Crear comercio si no existe
       const userDoc = await getDoc(ref);
       const existingComercioId = userDoc.data()?.comercioId;
 
-      // 🔹 Si NO tiene comercioId → CREAR comercio
       if (!existingComercioId) {
         const newComercioRef = await addDoc(collection(db, 'comercios'), {
           duenoId: userId,
@@ -258,74 +239,44 @@ if (btnGuardar) {
             "ia-config": false
           }
         });
-        
-        // Guardar comercioId en usuario
-        await updateDoc(ref, {
-          comercioId: newComercioRef.id
-        });
-        
+
+        await updateDoc(ref, { comercioId: newComercioRef.id });
         console.log("✅ Nuevo comercio creado:", newComercioRef.id);
-      } else {
-        console.log("✅ Comercio existente:", existingComercioId);
       }
 
-      // Cambiar botón a estado guardado
-      btnGuardar.classList.remove("saving");
-      btnGuardar.classList.add("saved");
+      hideLoading();
+      showToast('¡Datos guardados con éxito!', 'success');
 
-      // Mostrar toast de éxito
-      const toastContainer = document.querySelector(".toast-container");
-      if (toastContainer) {
-        const toast = document.createElement("div");
-        toast.className = "toast success show";
-        toast.innerHTML = `
-          <i class="fas fa-check-circle"></i>
-          <div class="toast-content">
-            <div class="toast-title">¡Datos guardados!</div>
-            <div class="toast-message">Creando tu IA comercial...</div>
-          </div>
-        `;
-        toastContainer.appendChild(toast);
-        setTimeout(() => {
-          toast.remove();
-        }, 3500);
-      }
-
-      // Restaurar botón después de 2s
-      setTimeout(() => {
-        btnGuardar.classList.remove("saved");
-        btnGuardar.disabled = false;
-      }, 2000);
-
-      // Ejecutar flow controller
+      // Dejar que flowController decida a dónde ir
       await runFlowController(userId);
 
     } catch (error) {
-      console.error("❌ Error al guardar:", error);
-      alert("Error al guardar los datos. Por favor, intenta nuevamente.");
-      btnGuardar.classList.remove("saving");
+      console.error("Error guardando:", error);
+      hideLoading();
+      showToast('Error al guardar. Intentá de nuevo.', 'error');
       btnGuardar.disabled = false;
+      btnGuardar.classList.remove('saving');
     }
   });
 }
 
 // ==================== AUTENTICACIÓN ====================
-console.log("🔐 Esperando autenticación...");
-
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    console.warn("⚠️ No hay usuario autenticado");
-    alert("Debes iniciar sesión para acceder a esta página");
-    window.location.href = "/login.html";
+    // NO redirigir aquí → dejar que el sistema global/flowController lo maneje
+    console.warn("No hay usuario autenticado");
     return;
   }
 
   console.log("✅ Usuario autenticado:", user.uid);
   userId = user.uid;
-  
-  // Guardar en localStorage para compatibilidad
-  localStorage.setItem("userId", user.uid);
 
-  // Cargar datos del usuario
+  // Renderizar layout compartido (incluye header con logout global)
+  renderLayout();
+
+  // Opcional: actualizar header con nombre del usuario
+  updateHeaderInfo(user.displayName || 'Usuario', { nombre: 'Trial' });
+
+  // Cargar datos y continuar
   await cargarDatosUsuario(user.uid);
 });

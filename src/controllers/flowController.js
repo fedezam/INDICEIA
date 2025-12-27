@@ -1,4 +1,3 @@
-
 // src/controllers/flowController.js
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
@@ -69,7 +68,25 @@ function updateFlowState(steps, currentPage) {
 // 🔹 Controlador principal de flujo
 // ---------------------------------------------------------
 export async function runFlowController(uid) {
-  if (typeof window === "undefined" || !uid) return;
+  if (typeof window === "undefined") return;
+
+  // 🆕 MANEJO DE AUTH: Si no hay uid, redirigir al login
+  if (!uid) {
+    const currentPage = getCurrentPage();
+    
+    // Permitir acceso a login y páginas públicas sin auth
+    const publicPages = ['login', 'registro', 'index', ''];
+    
+    if (!publicPages.includes(currentPage)) {
+      console.warn("❌ No hay UID, redirigiendo al login");
+      window.location.href = "/login.html";
+      return;
+    }
+    
+    // Si ya está en una página pública, no hacer nada
+    console.log("✅ Página pública, sin auth requerida");
+    return;
+  }
 
   const currentPage = getCurrentPage();
   const editMode = isEditMode();
@@ -81,7 +98,13 @@ export async function runFlowController(uid) {
     // 1️⃣ Obtener datos del usuario
     const userRef = doc(db, "usuarios", uid);
     const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) return;
+    
+    // 🆕 Si el usuario no existe en Firestore, redirigir al login
+    if (!userSnap.exists()) {
+      console.warn("❌ Usuario no existe en Firestore");
+      window.location.href = "/login.html";
+      return;
+    }
 
     const userData = userSnap.data();
     const comercioId = userData?.comercioId;
@@ -96,6 +119,7 @@ export async function runFlowController(uid) {
 
     // 3️⃣ Si no hay comercioId no puede acceder a otras páginas
     if (!comercioId && currentPage !== "usuario" && !editMode) {
+      console.warn("⚠️ Sin comercioId, redirigiendo a usuario.html");
       window.location.href = "/usuario.html";
       return;
     }
@@ -113,7 +137,7 @@ export async function runFlowController(uid) {
     // 🆕 SI ESTÁ EN MODO EDICIÓN → NO REDIRIGIR, SOLO ACTUALIZAR ESTADO
     if (editMode) {
       console.log('✅ Modo edición activado - flowController no redirige');
-      setupEditMode(); // 👈 Nueva función
+      setupEditMode();
       return;
     }
 
@@ -130,6 +154,7 @@ export async function runFlowController(uid) {
     // 6️⃣ ONBOARDING: Redirigir al primer paso incompleto
     if (firstIncompleteStep) {
       if (currentPage !== firstIncompleteStep) {
+        console.log(`🔄 ONBOARDING: Redirigiendo a paso incompleto: ${firstIncompleteStep}`);
         window.location.href = `/${firstIncompleteStep}.html`;
       }
       return;
@@ -137,11 +162,14 @@ export async function runFlowController(uid) {
 
     // 7️⃣ ONBOARDING completo → ir al dashboard
     if (currentPage !== "dashboard") {
+      console.log('✅ Onboarding completo, redirigiendo al dashboard');
       window.location.href = "/dashboard.html";
     }
 
   } catch (error) {
     console.error("❌ Error en flowController:", error);
+    // 🆕 En caso de error crítico, redirigir al login (failsafe)
+    window.location.href = "/login.html";
   }
 }
 
@@ -161,7 +189,14 @@ function setupEditMode() {
       btnVolver.style.marginBottom = '1rem';
       
       btnVolver.addEventListener('click', () => {
-        window.location.href = '/dashboard.html';
+        // 🆕 Advertir si hay cambios sin guardar
+        if (window.hasUnsavedChanges) {
+          if (confirm('¿Seguro que querés volver? Tenés cambios sin guardar.')) {
+            window.location.href = '/dashboard.html';
+          }
+        } else {
+          window.location.href = '/dashboard.html';
+        }
       });
       
       // Insertar al principio del main-content

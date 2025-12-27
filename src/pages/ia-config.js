@@ -1,39 +1,25 @@
-// ========================================
-// ARCHIVO: src/pages/ia-config.js - PARTE 1/3
-// Imports + Variables + Init + Auth
-// ========================================
+// src/pages/ia-config.js
+// Onboarding Paso 5 – Configuración de IA (Normalizado y limpio)
 
 import '../styles/base.css';
 import '../styles/layout.css';
 import '../styles/components.css';
 import '../styles/forms-premium-final.css';
 import './ia-config.css';
+
 import { auth, db } from '../firebase.js';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController, redirectAfterSave } from '../controllers/flowController.js';
 
-
 // ==================== FORZAR SCROLL ARRIBA ====================
-// Al cargar la página, forzar scroll arriba
-window.addEventListener('load', function() {
-  window.scrollTo(0, 0);
-});
-
-// También al recargar
-window.addEventListener('beforeunload', function() {
-  window.scrollTo(0, 0);
-});
-
-// Por si acaso, inmediatamente
-if (history.scrollRestoration) {
-  history.scrollRestoration = 'manual';
-}
-window.scrollTo(0, 0);
+window.addEventListener('load', () => window.scrollTo(0, 0));
+if (history.scrollRestoration) history.scrollRestoration = 'manual';
 
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
@@ -83,47 +69,38 @@ function getCurrentConfig() {
   };
 }
 
-// ==================== BANNER HELPER ====================
+// ==================== BANNER ====================
 function updateBanner() {
   const estado = calcularEstadoPlan(comercioData);
   const plan = PLANS[comercioData.plan || 'trial'];
   let html = '';
-  
+
   switch (estado) {
     case 'trial':
       const dias = getDiasRestantesTrial(comercioData);
-      html = `<strong>Trial activo</strong> - Te quedan <strong>${dias} días</strong> gratis`;
+      html = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong> gratis`;
       break;
     case 'activo':
-      html = `<strong>Plan ${plan.nombre} activo</strong> - Todo funcionando`;
+      html = `<strong>Plan ${plan.nombre} activo</strong> – Todo funcionando`;
       break;
     case 'expirado':
-      html = `Trial expirado - Elegí un plan para continuar`;
+      html = `Trial expirado – Elegí un plan para continuar`;
       break;
     default:
       html = `Configurá tu asistente IA para activarlo`;
   }
-  
+
   updateSubscriptionBanner(html, estado);
 }
 
 // ==================== INICIALIZACIÓN ====================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = "/login.html";
+    console.warn("No hay usuario autenticado");
     return;
   }
+
   currentUser = user;
-  
-  try {
-    await user.getIdToken();
-  } catch (err) {
-    console.warn("Sesión expirada, cerrando...");
-    signOut(auth);
-    window.location.href = "/login.html";
-    return;
-  }
-  
   await initializePage();
   runFlowController(user.uid);
 });
@@ -132,57 +109,39 @@ onAuthStateChanged(auth, async (user) => {
 async function initializePage() {
   try {
     showLoading('Cargando configuración de IA...');
-    
-    // Renderizar layout base
-    renderLayout();
-    
-    // Obtener comercioId del usuario
+
+    renderLayout();  // ← Header con logout global
+
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userSnap = await getDoc(userRef);
-    
+
     if (!userSnap.exists() || !userSnap.data().comercioId) {
       showToast('Error', 'No se encontró comercio. Completá primero "Mi comercio".', 'warning');
       hideLoading();
       return;
     }
-    
+
     currentComercioId = userSnap.data().comercioId;
-    
-    // Cargar datos del comercio
+
     await loadComercioData();
-    
-    // Cargar productos
     await loadProducts();
-    
-    // Inicializar navegación
+
     initNavigation();
-    
-    // Actualizar header y banner
-    updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan || 'trial']);
+
+    updateHeaderInfo(comercioData.nombreComercio || 'Mi Comercio', PLANS[comercioData.plan || 'trial']);
     updateBanner();
-    
-    // Esperar un frame antes de manipular DOM
+
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-    
-    // Renderizar contenido de la página
+
     renderPageContent();
-    
-    // Cargar configuración de IA
     loadAIConfig();
-    
-    // Renderizar secciones específicas
     renderContactosValidacion();
-    
-    // Crear botones y eventos
+
     createSaveButton();
     setupEventListeners();
-    
-    // Insertar AI Helper Card
     insertAIHelperCard();
-    
-    // Validar formulario inicial
     checkFormValidity();
-    
+
     hideLoading();
   } catch (err) {
     console.error(err);
@@ -194,7 +153,7 @@ async function initializePage() {
 async function loadComercioData() {
   const ref = doc(db, 'comercios', currentComercioId);
   const snap = await getDoc(ref);
-  
+
   if (snap.exists()) {
     comercioData = { id: currentComercioId, ...snap.data() };
   } else {
@@ -216,7 +175,7 @@ async function loadProducts() {
 function renderPageContent() {
   const main = document.querySelector('main .container');
   if (!main) return;
-  
+
   const html = `
     <div class="page-header">
       <h1><i class="fas fa-robot"></i> Configuración de IA</h1>
@@ -224,8 +183,7 @@ function renderPageContent() {
     </div>
 
     <form id="iaConfigForm" class="ia-config-form">
-      
-      <!-- SECCIÓN 1: PERSONALIDAD DEL ASISTENTE -->
+      <!-- SECCIÓN 1: PERSONALIDAD -->
       <section class="config-section">
         <div class="section-header">
           <h3><i class="fas fa-user-robot"></i> Personalidad del asistente</h3>
@@ -262,7 +220,6 @@ function renderPageContent() {
               <option value="entusiasta">Entusiasta y energético</option>
               <option value="servicial">Servicial y atento</option>
             </select>
-            <small>Define el estilo de comunicación general</small>
           </div>
         </div>
 
@@ -287,7 +244,7 @@ function renderPageContent() {
         </div>
       </section>
 
-      <!-- SECCIÓN 2: COMPORTAMIENTOS ESPECIALES -->
+      <!-- SECCIÓN 2: COMPORTAMIENTOS -->
       <section class="config-section">
         <div class="section-header">
           <h3><i class="fas fa-cog"></i> Comportamientos especiales</h3>
@@ -353,36 +310,32 @@ function renderPageContent() {
         </div>
       </section>
 
-      <!-- SECCIÓN 3: MENSAJES PERSONALIZADOS POR CANAL -->
+      <!-- SECCIÓN 3: MENSAJES PERSONALIZADOS -->
       <section class="config-section">
         <div class="section-header">
           <h3><i class="fas fa-comment-dots"></i> Mensajes personalizados por canal</h3>
-          <p>Personalizá mensajes específicos para cada canal de comunicación (opcional)</p>
+          <p>Personalizá mensajes específicos para cada canal (opcional)</p>
         </div>
 
         <div class="form-fields">
           <div class="form-field full-width">
             <label for="mensajeWhatsapp">Mensaje para WhatsApp</label>
             <textarea id="mensajeWhatsapp" rows="3" placeholder="Ej: ¡Hola! Te hablo desde [comercio]. ¿En qué te puedo ayudar?"></textarea>
-            <small>Mensaje inicial cuando te contactan por WhatsApp</small>
           </div>
 
           <div class="form-field full-width">
             <label for="mensajeInstagram">Mensaje para Instagram</label>
             <textarea id="mensajeInstagram" rows="3" placeholder="Ej: ¡Gracias por escribirnos! ¿Qué producto te interesa?"></textarea>
-            <small>Mensaje inicial para mensajes directos de Instagram</small>
           </div>
 
           <div class="form-field full-width">
             <label for="mensajeWeb">Mensaje para sitio web</label>
             <textarea id="mensajeWeb" rows="3" placeholder="Ej: Hola! Estoy aquí para ayudarte a encontrar lo que buscás."></textarea>
-            <small>Mensaje inicial para chat del sitio web</small>
           </div>
 
           <div class="form-field full-width">
             <label for="mensajeDefault">Mensaje por defecto</label>
             <textarea id="mensajeDefault" rows="3" placeholder="Ej: ¡Hola! ¿Cómo puedo asistirte hoy?"></textarea>
-            <small>Mensaje para canales no especificados</small>
           </div>
         </div>
       </section>
@@ -410,7 +363,7 @@ function renderPageContent() {
         </div>
       </section>
 
-      <!-- SECCIÓN 5: CONTACTOS CONFIGURADOS -->
+      <!-- SECCIÓN 5: CONTACTOS -->
       <section class="config-section">
         <div class="section-header">
           <h3><i class="fas fa-address-book"></i> Contactos configurados</h3>
@@ -421,22 +374,15 @@ function renderPageContent() {
       </section>
     </form>
   `;
-  
+
   main.innerHTML = html;
 }
 
-
-// ========================================
-// ARCHIVO: src/pages/ia-config.js - PARTE 2/3
-// Renders + Lógica de productos destacados
-// ========================================
-
-// ==================== AI CONFIG ====================
+// ==================== CARGA CONFIG IA ====================
 function loadAIConfig() {
   const config = comercioData.aiConfig || {};
   originalAIConfig = JSON.parse(JSON.stringify(config));
 
-  // Cargar campos del formulario
   [
     'aiName', 'aiPersonality', 'aiTone', 'aiGreeting', 'sinPrecio', 'sinStock',
     'localCerrado', 'proactividad', 'formatoRespuestas', 'mensajeWhatsapp',
@@ -445,7 +391,6 @@ function loadAIConfig() {
 
   safeSet('aiLanguage', config.aiLanguage || 'es-AR');
 
-  // Cargar productos destacados
   const saved = Array.isArray(config.productosDestacados) ? config.productosDestacados : [];
   productosDestacados = saved
     .map(dest => {
@@ -458,13 +403,12 @@ function loadAIConfig() {
         precio_final: Number(p.precio_final || 0)
       };
     })
-    .filter(Boolean)
-    .filter(p => p.nombre);
+    .filter(Boolean);
 
   renderDestacados();
 }
 
-// ==================== RENDER DESTACADOS ====================
+// ==================== DESTACADOS ====================
 function renderDestacados() {
   const counter = $('destacadosCounter');
   const list = $('destacadosList');
@@ -486,12 +430,10 @@ function renderDestacados() {
     const precio = p.precio_final > 0 
       ? `$${p.precio_final.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
       : 'Sin precio';
-    
+
     return `
       <div class="destacado-item">
-        <div class="destacado-icon">
-          <i class="fas fa-star"></i>
-        </div>
+        <div class="destacado-icon"><i class="fas fa-star"></i></div>
         <div class="producto-info">
           <div class="producto-codigo">${p.codigo || 'SIN CÓDIGO'}</div>
           <div class="producto-nombre">${p.nombre}</div>
@@ -503,35 +445,24 @@ function renderDestacados() {
       </div>`;
   }).join('');
 
-  // Event listeners para quitar
   list.querySelectorAll('.btn-quitar').forEach(btn => {
     btn.onclick = () => {
-      const id = btn.dataset.id;
-      const producto = productosDestacados.find(p => p.id === id);
-      productosDestacados = productosDestacados.filter(x => x.id !== id);
+      productosDestacados = productosDestacados.filter(x => x.id !== btn.dataset.id);
       renderDestacados();
       markAsChanged();
-      
-      if (producto) {
-        showToast('Producto quitado', `${producto.nombre} fue removido de destacados`, 'info');
-      }
-      
-      // Actualizar resultados de búsqueda si hay
-      const searchInput = $('searchProductos');
-      if (searchInput?.value) {
-        buscarProductos(searchInput.value);
-      }
+
+      const input = $('searchProductos');
+      if (input?.value) buscarProductos(input.value);
     };
   });
 }
 
-// ==================== BÚSQUEDA DE PRODUCTOS ====================
 function buscarProductos(query) {
   const container = $('searchResults');
   if (!container) return;
 
   const term = query.trim().toLowerCase();
-  
+
   if (term.length < 2) {
     container.style.display = 'none';
     return;
@@ -539,23 +470,13 @@ function buscarProductos(query) {
 
   const results = productos
     .filter(p => {
-      const searchText = [
-        p.nombre || '',
-        p.codigo || '',
-        p.descripcion || '',
-        p.categoria || ''
-      ].join(' ').toLowerCase();
-      
-      return searchText.includes(term);
+      const text = [p.nombre, p.codigo, p.descripcion, p.categoria].join(' ').toLowerCase();
+      return text.includes(term);
     })
     .slice(0, 20);
 
   if (!results.length) {
-    container.innerHTML = `
-      <div class="search-empty">
-        <i class="fas fa-search"></i>
-        <p>No hay resultados para "${query}"</p>
-      </div>`;
+    container.innerHTML = `<div class="search-empty"><p>No hay resultados para "${query}"</p></div>`;
     container.style.display = 'block';
     return;
   }
@@ -564,29 +485,17 @@ function buscarProductos(query) {
     const yaAgregado = productosDestacados.some(d => d.id === p.id);
     const limiteAlcanzado = productosDestacados.length >= 10;
     const disabled = yaAgregado || limiteAlcanzado;
-    
+
     const precio = p.precio_final > 0 
-      ? `$${Number(p.precio_final).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+      ? `$${Number(p.precio_final).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` 
       : 'Sin precio';
-    
-    let buttonHtml;
-    if (yaAgregado) {
-      buttonHtml = `
-        <button type="button" class="btn btn-secondary btn-sm" disabled>
-          <i class="fas fa-check"></i> Agregado
-        </button>`;
-    } else if (limiteAlcanzado) {
-      buttonHtml = `
-        <button type="button" class="btn btn-secondary btn-sm" disabled>
-          <i class="fas fa-lock"></i> Límite
-        </button>`;
-    } else {
-      buttonHtml = `
-        <button type="button" class="btn btn-primary btn-sm btn-destacar" data-id="${p.id}">
-          <i class="fas fa-plus"></i> Agregar
-        </button>`;
-    }
-    
+
+    let buttonHtml = yaAgregado
+      ? `<button class="btn btn-secondary btn-sm" disabled><i class="fas fa-check"></i> Agregado</button>`
+      : limiteAlcanzado
+      ? `<button class="btn btn-secondary btn-sm" disabled><i class="fas fa-lock"></i> Límite</button>`
+      : `<button class="btn btn-primary btn-sm btn-destacar" data-id="${p.id}"><i class="fas fa-plus"></i> Agregar</button>`;
+
     return `
       <div class="search-result-item ${yaAgregado ? 'already-added' : ''}">
         <div class="producto-info-search">
@@ -602,8 +511,7 @@ function buscarProductos(query) {
   }).join('');
 
   container.style.display = 'block';
-  
-  // Event listeners para agregar
+
   container.querySelectorAll('.btn-destacar').forEach(btn => {
     btn.onclick = () => agregarDestacado(btn.dataset.id);
   });
@@ -614,18 +522,11 @@ function agregarDestacado(id) {
     showToast('Límite alcanzado', 'Solo podés tener hasta 10 productos destacados', 'warning');
     return;
   }
-  
+
   const p = productos.find(x => x.id === id);
-  
-  if (!p) {
-    showToast('Error', 'Producto no encontrado', 'error');
-    return;
-  }
-  
-  if (productosDestacados.some(x => x.id === id)) {
-    showToast('Ya agregado', 'Este producto ya está en destacados', 'info');
-    return;
-  }
+  if (!p) return;
+
+  if (productosDestacados.some(x => x.id === id)) return;
 
   productosDestacados.push({
     id: p.id,
@@ -636,16 +537,12 @@ function agregarDestacado(id) {
 
   renderDestacados();
   markAsChanged();
-  showToast('Producto agregado', p.nombre, 'success');
-  
-  // Actualizar resultados de búsqueda
+
   const input = $('searchProductos');
-  if (input?.value) {
-    buscarProductos(input.value);
-  }
+  if (input?.value) buscarProductos(input.value);
 }
 
-// ==================== VALIDACIÓN DE CONTACTOS ====================
+// ==================== CONTACTOS ====================
 function renderContactosValidacion() {
   const container = $('contactosValidacion');
   if (!container) return;
@@ -659,26 +556,24 @@ function renderContactosValidacion() {
   ];
 
   const missing = contactos.filter(c => !comercioData[c.key]?.trim());
-  
+
   let html = '';
-  
   if (missing.length > 0) {
     html += `
       <div class="alert alert-warning">
         <i class="fas fa-exclamation-triangle"></i>
         <div>
           <strong>Faltan ${missing.length} contacto${missing.length > 1 ? 's' : ''}</strong>
-          <p>Completá esta información en <a href="./mi-comercio.html">Mi Comercio</a> para que tu IA pueda redirigir clientes correctamente</p>
+          <p>Completá esta información en <a href="/mi-comercio.html">Mi Comercio</a></p>
         </div>
       </div>`;
   }
 
   html += '<div class="contactos-grid">';
-  
   contactos.forEach(c => {
     const valid = !!comercioData[c.key]?.trim();
     const value = comercioData[c.key] || 'No configurado';
-    
+
     html += `
       <div class="contacto-item ${valid ? 'valid' : 'invalid'}">
         <div class="contacto-icon" style="background: ${valid ? c.color : '#e2e8f0'};">
@@ -689,99 +584,49 @@ function renderContactosValidacion() {
           <div class="contacto-value ${valid ? '' : 'missing'}">${value}</div>
         </div>
         <div class="contacto-status">
-          ${valid 
-            ? '<i class="fas fa-check-circle" style="color: #10b981;"></i>' 
-            : '<i class="fas fa-times-circle" style="color: #ef4444;"></i>'}
+          ${valid ? '<i class="fas fa-check-circle" style="color: #10b981;"></i>' : '<i class="fas fa-times-circle" style="color: #ef4444;"></i>'}
         </div>
       </div>`;
   });
-  
   html += '</div>';
-  
+
   container.innerHTML = html;
 }
 
-// ==================== AI HELPER CARD ====================
-function insertAIHelperCard() {
-  const container = document.querySelector('main .container');
-  if (!container || document.querySelector('.ai-helper-card')) return;
-  
-  const card = document.createElement('div');
-  card.className = 'ai-helper-card';
-  card.innerHTML = `
-    <div class="ai-helper-icon">
-      <i class="fas fa-robot"></i>
-    </div>
-    <div class="ai-helper-content">
-      <h4>¡Estás a punto de activar tu IA!</h4>
-      <p>Con esta configuración, tu asistente sabrá cómo hablar con tus clientes, qué productos ofrecer y cuándo actuar proactivamente.</p>
-      <small>Cuanto más detallada sea tu configuración, mejor será la experiencia de tus clientes</small>
-    </div>
-  `;
-  
-  container.insertBefore(card, container.firstChild);
-}
-
-// ========================================
-// ARCHIVO: src/pages/ia-config.js - PARTE 3/3
-// Validación + Guardado + Event Listeners
-// ========================================
-
-// ==================== VALIDACIÓN GLOBAL Y HABILITAR BOTONES ====================
+// ==================== VALIDACIÓN ====================
 function markAsChanged() {
   hasUnsavedChanges = true;
   checkFormValidity();
 }
 
 function checkFormValidity() {
-  const form = $('iaConfigForm');
-  if (!form) return;
-
   const required = [
     'aiName', 'aiLanguage', 'aiPersonality', 'aiTone', 'aiGreeting',
     'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
   ];
 
-  // Verificar que todos los campos estén llenos
-  const allFilled = required.every(id => {
-    const el = $(id);
-    return el && el.value.trim();
-  });
-
-  // Detectar cambios reales comparando con original
-  const currentConfig = getCurrentConfig();
-  const hasRealChanges = JSON.stringify(currentConfig) !== JSON.stringify(originalAIConfig);
+  const allFilled = required.every(id => safeGet(id));
+  const hasRealChanges = JSON.stringify(getCurrentConfig()) !== JSON.stringify(originalAIConfig);
 
   const btn = $('saveChangesBtn');
   if (!btn) return;
 
-  // Habilitar botón solo si está todo lleno Y hay cambios reales
   if (!allFilled || !hasRealChanges) {
     btn.disabled = true;
-    btn.classList.remove('ready', 'saving', 'saved');
-    btn.classList.add('btn-save');
-    btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+    btn.classList.remove('ready');
   } else {
     btn.disabled = false;
     btn.classList.add('ready');
-    btn.classList.remove('saving', 'saved');
-    if (!btn.classList.contains('saving') && !btn.classList.contains('saved')) {
-      btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-    }
   }
 }
 
-// ==================== BOTÓN GUARDAR SUPERIOR ====================
+// ==================== BOTÓN GUARDAR ====================
 function createSaveButton() {
   if ($('saveChangesBtn')) return;
 
   const userInfo = document.querySelector('.header .user-info');
   const logoutBtn = $('logoutBtn');
-  
-  if (!userInfo || !logoutBtn) {
-    console.warn('⚠️ No se pudo crear botón de guardar');
-    return;
-  }
+  if (!userInfo || !logoutBtn) return;
 
   const btn = document.createElement('button');
   btn.id = 'saveChangesBtn';
@@ -793,260 +638,138 @@ function createSaveButton() {
   btn.addEventListener('click', saveAIConfig);
 }
 
-// ==================== GUARDAR CONFIGURACIÓN ====================
-async function saveAIConfig() {
-  const btn = $('saveChangesBtn');
-  const form = $('iaConfigForm');
-  
-  if (!form) {
-    showToast('Error', 'Formulario no encontrado', 'error');
-    return;
-  }
-
-  // Validar campos requeridos
-  const required = [
-    'aiName', 'aiLanguage', 'aiPersonality', 'aiTone', 'aiGreeting',
-    'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
-  ];
-
-  let missing = [];
-  required.forEach(id => {
-    const el = $(id);
-    if (!el || !el.value.trim()) {
-      missing.push(id);
-    }
-  });
-
-  if (missing.length > 0) {
-    showToast('Faltan datos', 'Completá todos los campos obligatorios (*)', 'warning');
-    
-    // Resaltar campos faltantes
-    missing.forEach(id => {
-      const el = $(id);
-      if (el) {
-        el.style.borderColor = '#ef4444';
-        el.addEventListener('input', function resetBorder() {
-          el.style.borderColor = '';
-          el.removeEventListener('input', resetBorder);
-        });
-      }
-    });
-    
-    checkFormValidity();
-    return;
-  }
-
-  // Validación cruzada: si sinPrecio requiere un canal, verificar que exista
-  const sinPrecio = safeGet('sinPrecio');
-  const canalMap = {
-    whatsapp: 'whatsapp',
-    instagram: 'instagram',
-    email: 'email',
-    web: 'website',
-    telefono: 'telefono'
-  };
-  
-  const canalRequerido = canalMap[sinPrecio];
-  if (canalRequerido && !comercioData[canalRequerido]?.trim()) {
-    showToast(
-      'Falta contacto',
-      `Configuraste "Si no hay precio" como "${sinPrecio}", pero falta configurar ese contacto en "Mi Comercio"`,
-      'warning'
-    );
-    checkFormValidity();
-    return;
-  }
-
-  try {
-    // Estados de botones: saving
-    if (btn) {
-      btn.classList.add('saving');
-      btn.classList.remove('saved', 'ready');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Guardando...</span>';
-    }
-
-    // Construir objeto de configuración
-    const config = {
-      aiName: safeGet('aiName'),
-      aiPersonality: safeGet('aiPersonality'),
-      aiTone: safeGet('aiTone'),
-      aiLanguage: safeGet('aiLanguage'),
-      aiGreeting: safeGet('aiGreeting'),
-      sinPrecio: safeGet('sinPrecio'),
-      sinStock: safeGet('sinStock'),
-      localCerrado: safeGet('localCerrado'),
-      proactividad: safeGet('proactividad'),
-      formatoRespuestas: safeGet('formatoRespuestas'),
-      mensajeWhatsapp: safeGet('mensajeWhatsapp'),
-      mensajeInstagram: safeGet('mensajeInstagram'),
-      mensajeWeb: safeGet('mensajeWeb'),
-      mensajeDefault: safeGet('mensajeDefault'),
-      productosDestacados: productosDestacados.map(p => ({
-        id: p.id,
-        codigo: p.codigo,
-        nombre: p.nombre,
-        precio_final: p.precio_final
-      }))
-    };
-
-    // Guardar en Firestore
-    const comercioRef = doc(db, 'comercios', currentComercioId);
-    await updateDoc(comercioRef, {
-      aiConfig: config,
-      'onboardingSteps.ia-config': true,
-      fechaActualizacion: new Date()
-    });
-
-    console.log('✅ Configuración IA guardada correctamente');
-
-    // Actualizar estado local
-    hasUnsavedChanges = false;
-    comercioData.aiConfig = config;
-    originalAIConfig = JSON.parse(JSON.stringify(config));
-
-    // Estados de botones: saved
-    if (btn) {
-      btn.classList.remove('saving');
-      btn.classList.add('saved');
-      btn.innerHTML = '<i class="fas fa-check"></i> <span>¡Guardado!</span>';
-    }
-
-    showToast('Éxito', 'Configuración de IA guardada correctamente', 'success');
-    
-    // Actualizar header
-    updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
-
-    // Volver a estado idle después de 2.5s
-    setTimeout(() => {
-      if (btn) {
-        btn.classList.remove('saved', 'saving', 'ready');
-        btn.classList.add('btn-save');
-        btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
-        checkFormValidity(); // Reevaluar estado sin forzar disabled
-      }
-    }, 2500);
-
-    setTimeout(() => {
-      redirectAfterSave();
-   }, 500);
-
-  } catch (err) {
-    console.error('Error guardando configuración IA:', err);
-    
-    // Estados de botones: error
-    if (btn) {
-      btn.className = 'btn-save';
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> <span>Error</span>';
-    }
-    
-    showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
-  } finally {
-    checkFormValidity();
-  }
-}
-
-// ==================== EVENT LISTENERS ====================
+// ==================== EVENTOS (sin logout local) ====================
 function setupEventListeners() {
   const form = $('iaConfigForm');
   if (form) {
     form.addEventListener('input', (e) => {
-      // No marcar como cambiado si es el buscador de productos
-      if (e.target.id !== 'searchProductos') {
-        markAsChanged();
-      }
+      if (e.target.id !== 'searchProductos') markAsChanged();
     });
-    
     form.addEventListener('change', (e) => {
-      if (e.target.id !== 'searchProductos') {
-        markAsChanged();
-      }
+      if (e.target.id !== 'searchProductos') markAsChanged();
     });
   }
 
-  // Búsqueda de productos con debounce
   const searchInput = $('searchProductos');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
       clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        buscarProductos(e.target.value);
-      }, 300);
+      searchTimeout = setTimeout(() => buscarProductos(e.target.value), 300);
     });
 
-    // Cerrar resultados al hacer clic fuera
     document.addEventListener('click', (e) => {
-      const searchResults = $('searchResults');
-      if (searchResults && 
-          !searchInput.contains(e.target) && 
-          !searchResults.contains(e.target)) {
-        searchResults.style.display = 'none';
+      const results = $('searchResults');
+      if (results && !searchInput.contains(e.target) && !results.contains(e.target)) {
+        results.style.display = 'none';
       }
     });
   }
 
-  // Cerrar búsqueda al hacer scroll
   window.addEventListener('scroll', () => {
     const results = $('searchResults');
-    if (results) {
-      results.style.display = 'none';
-    }
+    if (results) results.style.display = 'none';
   }, { passive: true });
 
-  // Logout
-  const logoutBtn = $('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', handleLogout);
-  }
-
-  // Advertencia al salir con cambios sin guardar
   window.addEventListener('beforeunload', (e) => {
     if (hasUnsavedChanges) {
       e.preventDefault();
       e.returnValue = 'Tenés cambios sin guardar. ¿Estás seguro de salir?';
     }
   });
+}
 
-  // Validar campos en tiempo real (quitar borde rojo al corregir)
-  const requiredFields = [
+// ==================== GUARDAR ====================
+async function saveAIConfig() {
+  const btn = $('saveChangesBtn');
+
+  const required = [
     'aiName', 'aiLanguage', 'aiPersonality', 'aiTone', 'aiGreeting',
     'sinPrecio', 'sinStock', 'localCerrado', 'proactividad', 'formatoRespuestas'
   ];
 
-  requiredFields.forEach(id => {
-    const el = $(id);
-    if (el) {
-      el.addEventListener('blur', () => {
-        if (!el.value.trim()) {
-          el.style.borderColor = '#ef4444';
-        } else {
-          el.style.borderColor = '';
-        }
-      });
-    }
-  });
-}
-
-// ==================== LOGOUT ====================
-async function handleLogout() {
-  if (hasUnsavedChanges && !confirm('Tenés cambios sin guardar. ¿Salir de todas formas?')) {
+  const missing = required.filter(id => !safeGet(id));
+  if (missing.length > 0) {
+    showToast('Faltan datos', 'Completá todos los campos obligatorios (*)', 'warning');
     return;
   }
 
+  const sinPrecio = safeGet('sinPrecio');
+  const canalMap = { whatsapp: 'whatsapp', instagram: 'instagram', email: 'email', web: 'website', telefono: 'telefono' };
+  const canalRequerido = canalMap[sinPrecio];
+  if (canalRequerido && !comercioData[canalRequerido]?.trim()) {
+    showToast('Falta contacto', `Configuraste redirección a ${sinPrecio}, pero falta ese contacto en "Mi Comercio"`, 'warning');
+    return;
+  }
+
+  showLoading('Guardando configuración...');
+
   try {
-    showLoading('Cerrando sesión...');
-    await signOut(auth);
-    window.location.href = '/login.html';
-  } catch (error) {
+    if (btn) {
+      btn.classList.add('saving');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    }
+
+    const config = getCurrentConfig();
+
+    await updateDoc(doc(db, 'comercios', currentComercioId), {
+      aiConfig: config,
+      'onboardingSteps.ia-config': true,
+      fechaActualizacion: new Date()
+    });
+
+    hasUnsavedChanges = false;
+    comercioData.aiConfig = config;
+    originalAIConfig = JSON.parse(JSON.stringify(config));
+
     hideLoading();
-    console.error('Error al cerrar sesión:', error);
-    showToast('Error', 'No se pudo cerrar sesión: ' + error.message, 'error');
+    showToast('¡Configuración guardada!', 'success');
+
+    if (btn) {
+      btn.classList.remove('saving');
+      btn.classList.add('saved');
+      btn.innerHTML = '<i class="fas fa-check"></i> ¡Guardado!';
+      setTimeout(() => {
+        btn.disabled = true;
+        btn.className = 'btn-save';
+        btn.innerHTML = '<i class="fas fa-save"></i> <span>Guardar Cambios</span>';
+        checkFormValidity();
+      }, 2500);
+    }
+
+    setTimeout(() => redirectAfterSave(), 500);
+  } catch (err) {
+    console.error(err);
+    hideLoading();
+    showToast('Error', 'No se pudo guardar: ' + err.message, 'error');
+    if (btn) {
+      btn.className = 'btn-save';
+      btn.disabled = false;
+    }
   }
 }
 
-// ==================== VALIDACIÓN PARA NAVEGACIÓN ====================
-window.validateCurrentPageData = async function () {
+// ==================== AI HELPER CARD ====================
+function insertAIHelperCard() {
+  const container = document.querySelector('main .container');
+  if (!container || document.querySelector('.ai-helper-card')) return;
+
+  const card = document.createElement('div');
+  card.className = 'ai-helper-card';
+  card.innerHTML = `
+    <div class="ai-helper-icon"><i class="fas fa-robot"></i></div>
+    <div class="ai-helper-content">
+      <h4>¡Estás a punto de activar tu IA!</h4>
+      <p>Con esta configuración, tu asistente sabrá cómo hablar con tus clientes, qué productos ofrecer y cuándo actuar proactivamente.</p>
+      <small>Cuanto más detallada sea tu configuración, mejor será la experiencia de tus clientes</small>
+    </div>
+  `;
+
+  container.insertBefore(card, container.firstChild);
+}
+
+// ==================== VALIDACIÓN NAVEGACIÓN ====================
+window.validateCurrentPageData = async () => {
   if (hasUnsavedChanges) {
     showToast('Cambios sin guardar', 'Guardá antes de continuar', 'warning');
     return false;
@@ -1058,13 +781,8 @@ window.validateCurrentPageData = async function () {
   ];
 
   const missing = required.filter(id => !safeGet(id));
-  
   if (missing.length > 0) {
-    showToast(
-      'Configuración incompleta',
-      'Completá todos los campos obligatorios antes de continuar',
-      'warning'
-    );
+    showToast('Configuración incompleta', 'Completá todos los campos obligatorios', 'warning');
     return false;
   }
 
