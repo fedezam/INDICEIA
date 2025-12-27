@@ -1,70 +1,62 @@
 // /api/bot/[comercio_id].js
 /**
- * BOT ENTRYPOINT — ÍndiceIA v1.0
- * Punto único de entrada para QR, landing y links.
+ * BOT PUBLIC DATA ENDPOINT — ÍndiceIA v2
+ * Devuelve información pública mínima para la landing.
  */
+
+import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+  });
+}
+
+const db = getFirestore();
 
 export default async function handler(req, res) {
   const { comercio_id } = req.query;
 
   if (!comercio_id) {
-    return res.status(400).send('Missing comercio_id');
+    return res.status(400).json({ error: 'Missing comercio_id' });
   }
 
   try {
-    const baseUrl = process.env.BASE_URL;
+    // ========================================
+    // 1. Obtener comercio
+    // ========================================
+    const comercioRef = db.collection('comercios').doc(comercio_id);
+    const comercioSnap = await comercioRef.get();
 
-    // ========================================
-    // 1. Log de entrada (fire-and-forget)
-    // ========================================
-    fetch(`${baseUrl}/api/link-builder?action=log_interaction`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        comercio_id,
-        interaction_type: 'bot_entry',
-        user_agent: req.headers['user-agent'],
-        referrer: req.headers['referer'] || 'direct',
-      }),
-    }).catch(() => {});
-
-    // ========================================
-    // 2. Resolver link final
-    // ========================================
-    const linkResponse = await fetch(
-      `${baseUrl}/api/link-builder?action=generate&comercio_id=${comercio_id}`
-    );
-
-    if (!linkResponse.ok) {
-      throw new Error('Link builder failed');
+    if (!comercioSnap.exists) {
+      return res.status(404).json({ error: 'Comercio not found' });
     }
 
-    // link-builder redirige por defecto,
-    // pero por seguridad pedimos JSON
-    const jsonResponse = await fetch(
-      `${baseUrl}/api/link-builder?action=generate&comercio_id=${comercio_id}&format=json`
-    );
-
-    const data = await jsonResponse.json();
-
-    if (!data?.claude_url) {
-      throw new Error('Invalid link-builder response');
-    }
+    const comercio = comercioSnap.data();
 
     // ========================================
-    // 3. Redirect final
+    // 2. Respuesta pública (whitelist)
     // ========================================
-    return res.redirect(302, data.claude_url);
+    return res.status(200).json({
+      comercio_id,
+      active: comercio.active ?? true,
 
+      nombre: comercio.nombre || '',
+      descripcion: comercio.descripcion || '',
+      logo_url: comercio.logo_url || null,
+
+      // flags útiles para la landing
+      has_ia: Boolean(comercio.entity_url),
+      entity_url: comercio.entity_url || null,
+
+      landing_version: comercio.landing_version || 'v1',
+
+      // metadata no sensible
+      updated_at: comercio.updated_at || null,
+    });
   } catch (err) {
-    console.error('[BOT ENTRY ERROR]', err.message);
-
-    // ========================================
-    // 4. Fallback seguro
-    // ========================================
-    return res.redirect(
-      302,
-      'https://claude.ai'
-    );
+    console.error('[BOT DATA ERROR]', err);
+    return res.status(500).json({ error: 'Internal error' });
   }
 }
