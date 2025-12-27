@@ -1,5 +1,7 @@
 // src/shared/layout.js
-// Renderiza el header + banner + barra de progreso (común a todas las páginas del onboarding)
+// Renderiza el header + banner + barra de progreso (común a todas las páginas)
+
+import { setupLogout } from './logout.js';  // ← NUEVO: Import global del logout
 
 /**
  * Renderiza la estructura base del layout (header + banner + progress container)
@@ -8,7 +10,7 @@
  */
 export function renderLayout() {
   const body = document.querySelector('body');
-  
+
   // Verificar que no esté ya renderizado
   if (document.querySelector('.header')) {
     console.warn('⚠️ Layout ya renderizado');
@@ -45,35 +47,13 @@ export function renderLayout() {
     <div id="progressContainer"></div>
   `;
 
-  // ✅ CORREGIDO: Usar insertAdjacentHTML para mantener el orden correcto
+  // Insertar al inicio del body
   body.insertAdjacentHTML('afterbegin', layoutHTML);
-  
-  console.log('✅ Layout renderizado');
-  
-  // Configurar evento de logout
-  setupLogoutButton();
-}
 
-/**
- * Configura el botón de cerrar sesión
- */
-function setupLogoutButton() {
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (!logoutBtn) return;
-  
-  logoutBtn.addEventListener('click', async () => {
-    if (confirm('¿Seguro que deseas cerrar sesión?')) {
-      try {
-        // Aquí iría la lógica de logout con Firebase
-        // await firebase.auth().signOut();
-        localStorage.removeItem('userId');
-        window.location.href = '/login.html';
-      } catch (error) {
-        console.error('Error al cerrar sesión:', error);
-        alert('Error al cerrar sesión');
-      }
-    }
-  });
+  console.log('✅ Layout renderizado');
+
+  // ← NUEVO: Configurar logout global UNA SOLA VEZ por página
+  setupLogout();
 }
 
 /**
@@ -84,14 +64,14 @@ function setupLogoutButton() {
 export function updateHeaderInfo(nombreComercio, planData) {
   const nameEl = document.getElementById('commerceName');
   const badgeEl = document.getElementById('planBadge');
-  
+
   if (nameEl) {
     nameEl.textContent = nombreComercio || 'Mi Comercio';
   }
-  
+
   if (badgeEl && planData) {
     badgeEl.textContent = `${planData.emoji || '🔵'} ${planData.nombre || 'Trial'}`;
-    
+
     // Cambiar color del badge según el plan
     badgeEl.className = 'plan-badge';
     if (planData.estado === 'activo') {
@@ -110,16 +90,16 @@ export function updateHeaderInfo(nombreComercio, planData) {
 export function updateSubscriptionBanner(mensaje, estado = 'trial') {
   const banner = document.getElementById('subscriptionBanner');
   const msg = document.getElementById('subscriptionMessage');
-  
+
   if (!banner || !msg) return;
-  
+
   // Cambiar clases según estado
   banner.className = 'subscription-banner';
   banner.classList.add(estado);
-  
-  // ✅ CORREGIDO: Usar innerHTML para que renderice las etiquetas HTML
+
+  // Usar innerHTML para permitir HTML en el mensaje
   msg.innerHTML = mensaje;
-  
+
   // Cambiar icono según estado
   const icon = banner.querySelector('i');
   if (icon) {
@@ -134,7 +114,7 @@ export function updateSubscriptionBanner(mensaje, estado = 'trial') {
 }
 
 /**
- * Oculta el banner de suscripción (útil para planes que no lo necesiten)
+ * Oculta el banner de suscripción
  */
 export function hideSubscriptionBanner() {
   const banner = document.getElementById('subscriptionBanner');
@@ -177,7 +157,6 @@ export function renderProgressBar(currentStep, steps = []) {
     const isCompleted = steps.includes(step.num);
     const isCurrent = step.num === currentStep;
     const statusClass = isCompleted ? 'completed' : (isCurrent ? 'current' : '');
-
     return `
       <div class="step-item ${statusClass}">
         <div class="step-circle">
@@ -194,13 +173,13 @@ export function renderProgressBar(currentStep, steps = []) {
         <h3>Configuración de tu comercio</h3>
         <p class="progress-subtitle">Paso ${currentStep} de ${totalSteps} • ${percentage}% completado</p>
       </div>
-      
+     
       <div class="progress-bar-container">
         <div class="progress-bar">
           <div class="progress-fill" style="width: ${percentage}%"></div>
         </div>
       </div>
-      
+     
       <div class="steps-grid">
         ${stepsHTML}
       </div>
