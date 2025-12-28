@@ -9,11 +9,11 @@ onAuthStateChanged(auth, async (user) => {
 
   comercioId = localStorage.getItem('currentComercioId');
   if (!comercioId) {
-    console.error('[STATS] comercioId no encontrado');
+    console.warn('[STATS] comercioId no disponible');
     return;
   }
 
-  await loadStats();
+  loadStats();
 });
 
 async function loadStats() {
@@ -35,14 +35,14 @@ async function loadStats() {
 function renderKPIs({ views, clicks }) {
   const viewsEl = document.getElementById('kpiViews');
   const clicksEl = document.getElementById('kpiClicks');
+  const qrEl = document.getElementById('kpiQr');
+  const devicesEl = document.getElementById('kpiDevices');
 
   if (viewsEl) viewsEl.textContent = views;
   if (clicksEl) clicksEl.textContent = clicks;
 
-  // KPIs futuros — dejamos claro que no están activos aún
-  const qrEl = document.getElementById('kpiQr');
-  const devicesEl = document.getElementById('kpiDevices');
-
+  // Placeholders conscientes (v2)
   if (qrEl) qrEl.textContent = '—';
   if (devicesEl) devicesEl.textContent = '—';
 }
+
