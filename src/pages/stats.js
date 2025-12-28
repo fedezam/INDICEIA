@@ -1,11 +1,4 @@
-// ========================================
-// STATS – Landing Analytics (READ ONLY)
-// ========================================
-
-import '../styles/base.css';
-import '../styles/layout.css';
-import '../styles/components.css';
-import './stats.css';
+// /src/pages/stats.js
 
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -14,137 +7,94 @@ import {
   query,
   where,
   getDocs,
-  Timestamp
+  orderBy,
+  limit
 } from 'firebase/firestore';
 
-import { renderLayout, updateHeaderInfo } from '../shared/layout.js';
-import { showLoading, hideLoading, showToast } from '../shared/utils.js';
-
-// ========================================
-// STATE
-// ========================================
-let currentUser = null;
 let comercioId = null;
 
-// ========================================
-// AUTH
-// ========================================
 onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = '/login.html';
+  if (!user) return;
+
+  // comercioId viene guardado localmente (ya lo usás en dashboard)
+  comercioId = localStorage.getItem('currentComercioId');
+  if (!comercioId) {
+    console.error('No comercioId');
     return;
   }
 
-  currentUser = user;
-  await init();
+  await loadStats();
 });
 
-// ========================================
-// INIT
-// ========================================
-async function init() {
-  try {
-    showLoading('Cargando estadísticas...');
-    renderLayout();
-
-    await resolveComercioId();
-    await loadStats();
-
-    hideLoading();
-  } catch (err) {
-    console.error(err);
-    hideLoading();
-    showToast('Error', err.message, 'error');
-  }
-}
-
-// ========================================
-// RESOLVE COMERCIO
-// ========================================
-async function resolveComercioId() {
-  const snap = await getDocs(
-    query(
-      collection(db, 'usuarios'),
-      where('__name__', '==', currentUser.uid)
-    )
-  );
-
-  if (snap.empty) {
-    throw new Error('Usuario sin comercio asociado');
-  }
-
-  comercioId = snap.docs[0].data().comercioId;
-}
-
-// ========================================
-// LOAD STATS
-// ========================================
 async function loadStats() {
-  const eventsRef = collection(db, 'landing_events');
+  const eventsRef = collection(db, 'stats', comercioId, 'events');
 
-  const now = Timestamp.now();
-  const last30Days = Timestamp.fromDate(
-    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-  );
-
-  const q = query(
-    eventsRef,
-    where('comercioId', '==', comercioId),
-    where('timestamp', '>=', last30Days)
-  );
-
+  const q = query(eventsRef);
   const snap = await getDocs(q);
 
-  const stats = {
-    total: 0,
-    views: 0,
-    clicks: 0,
-    redirects: 0,
-    byDay: {}
-  };
+  let visits = 0;
+  let clicks = 0;
+  let lastTs = null;
+  const hours = Array(24).fill(0);
 
   snap.forEach(doc => {
     const e = doc.data();
-    stats.total++;
 
-    if (e.type === 'view') stats.views++;
-    if (e.type === 'click') stats.clicks++;
-    if (e.type === 'redirect') stats.redirects++;
+    if (e.type === 'landing_view') visits++;
+    if (e.type === 'talk_click') clicks++;
 
-    const day = e.timestamp
-      .toDate()
-      .toISOString()
-      .slice(0, 10);
+    if (typeof e.hour === 'number') {
+      hours[e.hour]++;
+    }
 
-    stats.byDay[day] = (stats.byDay[day] || 0) + 1;
+    if (!lastTs || e.ts?.toMillis() > lastTs.toMillis()) {
+      lastTs = e.ts;
+    }
   });
 
-  renderStats(stats);
+  renderStats({
+    visits,
+    clicks,
+    conversion: visits > 0 ? Math.round((clicks / visits) * 100) : 0,
+    lastActivity: lastTs,
+    hours
+  });
 }
 
-// ========================================
-// RENDER
-// ========================================
-function renderStats(stats) {
-  // KPIs
-  document.getElementById('kpi-total').innerText = stats.total;
-  document.getElementById('kpi-views').innerText = stats.views;
-  document.getElementById('kpi-clicks').innerText = stats.clicks;
-  document.getElementById('kpi-redirects').innerText = stats.redirects;
+function renderStats(data) {
+  document.getElementById('stat-visits').textContent = data.visits;
+  document.getElementById('stat-clicks').textContent = data.clicks;
+  document.getElementById('stat-conversion').textContent =
+    `${data.conversion}%`;
 
-  // Tabla simple por día
-  const tbody = document.getElementById('stats-table-body');
-  tbody.innerHTML = '';
+  document.getElementById('stat-last').textContent =
+    data.lastActivity
+      ? new Date(data.lastActivity.toMillis()).toLocaleString()
+      : '—';
 
-  Object.keys(stats.byDay)
-    .sort()
-    .reverse()
-    .forEach(day => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${day}</td>
-        <td>${stats.byDay[day]}</td>
-      `;
-      tbody.appendChild(tr);
-    });
+  renderHourChart(data.hours);
+}
+
+function renderHourChart(hours) {
+  const container = document.getElementById('hour-chart');
+  container.innerHTML = '';
+
+  const max = Math.max(...hours, 1);
+
+  hours.forEach((count, hour) => {
+    const bar = document.createElement('div');
+    bar.className = 'hour-bar';
+    bar.style.height = `${(count / max) * 100}%`;
+    bar.title = `${hour}:00 — ${count}`;
+
+    const label = document.createElement('span');
+    label.textContent = hour;
+
+    const col = document.createElement('div');
+    col.className = 'hour-col';
+    col.appendChild(bar);
+    col.appendChild(label);
+
+    container.appendChild(col);
+  });
 }
