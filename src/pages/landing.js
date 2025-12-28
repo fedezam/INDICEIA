@@ -1,95 +1,104 @@
-// src/pages/landing.js
+// /api/link-builder.js
 
-import { db } from '../firebase.js';
-import { doc, getDoc } from 'firebase/firestore';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
-const comercioId = resolveComercioId();
-
-if (!comercioId) {
-  renderError('Comercio no válido');
-} else {
-  initLanding(comercioId);
+if (!global._firebaseAdmin) {
+  global._firebaseAdmin = initializeApp({
+    credential: cert(JSON.parse(process.env.FIREBASE_ADMIN))
+  });
 }
 
-// ==============================
-// INIT
-// ==============================
-async function initLanding(comercioId) {
-  logEvent(comercioId, 'landing_view');
-
-  await hydrateLanding(comercioId);
-  bindActions(comercioId);
-}
+const db = getFirestore();
 
 // ==============================
-// DATA
+// HANDLER
 // ==============================
-async function hydrateLanding(comercioId) {
+export default async function handler(req, res) {
   try {
-    const ref = doc(db, 'comercios', comercioId);
-    const snap = await getDoc(ref);
+    const { action } = req.method === 'GET' ? req.query : req.body;
 
-    if (!snap.exists()) return;
+    switch (action) {
+      case 'log_interaction':
+        return logInteraction(req, res);
 
-    const data = snap.data();
+      case 'resolve_link':
+        return resolveLink(req, res);
 
-    setText('comercioNombre', data.nombreComercio);
-    setText('comercioDescripcion', data.descripcion || '');
+      case 'get_stats':
+        return getStats(req, res);
+
+      default:
+        return res.status(400).json({ error: 'Invalid action' });
+    }
   } catch (err) {
-    console.warn('[LANDING] No se pudo hidratar comercio');
+    console.error('[LINK-BUILDER]', err);
+    res.status(500).json({ error: 'internal_error' });
   }
 }
 
 // ==============================
-// EVENTS
+// ACTIONS
 // ==============================
-function bindActions(comercioId) {
-  const btn = document.getElementById('btnTalkIA');
+async function logInteraction(req, res) {
+  const { comercio_id, type, ts, user_agent } = req.body;
 
-  if (!btn) return;
+  if (!comercio_id || !type) {
+    return res.status(400).json({ error: 'missing_fields' });
+  }
 
-  btn.addEventListener('click', () => {
-    logEvent(comercioId, 'talk_click');
+  await db
+    .collection('stats')
+    .add({
+      comercio_id,
+      type,
+      user_agent: user_agent || null,
+      created_at: Timestamp.fromMillis(ts || Date.now())
+    });
 
-    // Punto único de salida
-    window.location.href = `/api/bot/${comercioId}`;
+  res.json({ ok: true });
+}
+
+// ------------------------------
+
+async function resolveLink(req, res) {
+  const { comercio_id } = req.query;
+
+  if (!comercio_id) {
+    return res.status(400).json({ error: 'missing_comercio_id' });
+  }
+
+  res.json({
+    comercio_id,
+    landing_url: `/bot/${comercio_id}`,
+    api_bot_url: `/api/bot/${comercio_id}`
   });
 }
 
-// ==============================
-// LOGGING
-// ==============================
-function logEvent(comercioId, type) {
-  fetch('/api/link-builder?action=log_interaction', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      comercio_id: comercioId,
-      type,
-      ts: Date.now(),
-      user_agent: navigator.userAgent
-    })
-  }).catch(() => {});
-}
+// ------------------------------
 
-// ==============================
-// HELPERS
-// ==============================
-function resolveComercioId() {
-  const parts = window.location.pathname.split('/');
-  const idx = parts.indexOf('bot');
-  return idx !== -1 ? parts[idx + 1] : null;
-}
+async function getStats(req, res) {
+  const { comercio_id } = req.query;
 
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el && value) el.textContent = value;
-}
+  if (!comercio_id) {
+    return res.status(400).json({ error: 'missing_comercio_id' });
+  }
 
-function renderError(msg) {
-  document.body.innerHTML = `
-    <main style="padding:40px;text-align:center">
-      <h2>${msg}</h2>
-    </main>
-  `;
+  const snap = await db
+    .collection('stats')
+    .where('comercio_id', '==', comercio_id)
+    .get();
+
+  const stats = {
+    landing_view: 0,
+    talk_click: 0,
+    chat_open: 0
+  };
+
+  snap.forEach(doc => {
+    const { type } = doc.data();
+    if (stats[type] !== undefined) stats[type]++;
+  });
+
+  res.json(stats);
 }
