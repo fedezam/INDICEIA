@@ -94,3 +94,42 @@ export function hasLiveAccess(planId, liveEnabled = false) {
   if (planId === 'medium') return liveEnabled;
   return false;
 }
+
+// Al final del archivo, después de los helpers
+
+export function calcularEstadoPlan(comercioData) {
+  if (!comercioData.fechaCreacion) return 'trial';
+
+  const fechaCreacion = comercioData.fechaCreacion.toDate ? comercioData.fechaCreacion.toDate() : new Date(comercioData.fechaCreacion);
+  const ahora = new Date();
+  const diasTranscurridos = Math.floor((ahora - fechaCreacion) / (1000 * 60 * 60 * 24));
+
+  const planActual = comercioData.plan || 'trial';
+
+  if (planActual === 'trial' && diasTranscurridos > 7) {
+    return 'expirado';
+  }
+
+  // Aquí podés agregar lógica futura de pago, etc.
+  return 'activo';
+}
+
+export function getDiasRestantesTrial(comercioData) {
+  if (!comercioData.fechaCreacion) return 7;
+
+  const fechaCreacion = comercioData.fechaCreacion.toDate ? comercioData.fechaCreacion.toDate() : new Date(comercioData.fechaCreacion);
+  const ahora = new Date();
+  const diasTranscurridos = Math.floor((ahora - fechaCreacion) / (1000 * 60 * 60 * 24));
+  const diasRestantes = 7 - diasTranscurridos;
+
+  return diasRestantes > 0 ? diasRestantes : 0;
+}
+
+// Export final de todo
+export {
+  PLANS,
+  calcularEstadoPlan,
+  getDiasRestantesTrial,
+  isHighValuePlan,
+  hasLiveAccess
+};
