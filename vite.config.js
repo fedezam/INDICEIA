@@ -15,6 +15,8 @@ export default defineConfig({
         "ia-config": resolve(__dirname, "src/pages/ia-config.html"),
         dashboard: resolve(__dirname, "src/pages/dashboard.html"),
         visual: resolve(__dirname, "src/pages/visual.html"),
+        stats: resolve(__dirname, "src/pages/stats.html"),           
+        "link-publico": resolve(__dirname, "src/pages/link-publico.html"), 
       },
     },
   },
