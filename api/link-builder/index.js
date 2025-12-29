@@ -1,62 +1,55 @@
-// /api/link-builder/index.js
-import { buildPrompt } from './config/prompt-template.js';
+// api/link-builder/index.js
 
-export default async function handler(req, res) {
-  const { action, comercio_id, format } = req.query;
+import { getDoc, doc } from 'firebase-admin/firestore';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
 
-  if (!action) return res.status(400).json({ error: 'missing_action' });
-
-  // ===============================
-  // LOG INTERACTION
-  // ===============================
-  if (action === 'log_interaction') {
-    return res.status(204).end();
-  }
-
-  // ===============================
-  // GENERATE LINK
-  // ===============================
-  if (action === 'generate') {
-    if (!comercio_id) {
-      return res.status(400).json({ error: 'missing_comercio_id' });
-    }
-
-    // 🔹 Resolver entity.json
-    const entityUrl = await resolveEntityUrl(comercio_id);
-    if (!entityUrl) {
-      return res.status(404).json({ error: 'entity_not_found' });
-    }
-
-    const prompt = buildPrompt(entityUrl);
-
-    const claudeUrl =
-      `https://claude.ai/new?prompt=` +
-      encodeURIComponent(prompt);
-
-    const publicLandingUrl = `https://indiceia.com/c/${comercio_id}`;
-
-    // JSON MODE (API / bot / debug)
-    if (format === 'json') {
-      return res.status(200).json({
-        comercio_id,
-        landing_url: publicLandingUrl,
-        claude_url: claudeUrl,
-        entity_url: entityUrl,
-      });
-    }
-
-    // DEFAULT: redirect to landing
-    return res.redirect(302, publicLandingUrl);
-  }
-
-  return res.status(400).json({ error: 'invalid_action' });
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(JSON.parse(process.env.FIREBASE_ADMIN))
+  });
 }
 
-// ===============================
-// INTERNAL
-// ===============================
-async function resolveEntityUrl(comercio_id) {
-  // acá ya sabés hacerlo: firestore / blob / cache
-  // placeholder funcional
-  return `https://oigwwzzmvibflie8.public.blob.vercel-storage.com/entidades/${comercio_id}/entity.json`;
+const db = getFirestore();
+
+import { generateClaudeUrl } from '../../lib/link-builder/claude.js';
+import { generateLandingHTML } from '../../lib/link-builder/landing.js';
+
+const ENTITY_BLOB_BASE = 'https://oigwwzzmvibflie8.public.blob.vercel-storage.com/entidades';
+
+export default async function handler(req, res) {
+  const { comercio_id } = req.query;
+
+  if (!comercio_id) {
+    return res.status(400).send('Missing comercio_id');
+  }
+
+  try {
+    // 1. Obtener datos del comercio desde Firestore
+    const comercioRef = doc(db, 'comercios', comercio_id);
+    const comercioSnap = await getDoc(comercioRef);
+
+    if (!comercioSnap.exists()) {
+      return res.status(404).send('Comercio no encontrado');
+    }
+
+    const { nombreComercio = 'tu comercio' } = comercioSnap.data();
+
+    // 2. URL pública fija del entity.json
+    const entityUrl = `${ENTITY_BLOB_BASE}/${comercio_id}/entity.json`;
+
+    // 3. Generar URL de Claude con tu prompt mágico
+    const claudeUrl = generateClaudeUrl(entityUrl);
+
+    // 4. Generar landing mínima con todo lo acordado
+    const html = generateLandingHTML(nombreComercio, claudeUrl);
+
+    // 5. Servir
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).send(html);
+
+  } catch (error) {
+    console.error('[LINK-BUILDER ERROR]', error);
+    return res.status(500).send('Error interno');
+  }
 }

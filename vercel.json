@@ -3,6 +3,28 @@
     "api/export-json.js": {
       "memory": 1024,
       "maxDuration": 30
+    },
+    "api/link-builder/index.js": {
+      "memory": 1024,
+      "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/c/:comercio_id",
+      "destination": "/api/link-builder?comercio_id=:comercio_id"
+    },
+    {
+      "source": "/bot/:comercio_id",
+      "destination": "/api/link-builder?comercio_id=:comercio_id"
+    },
+    {
+      "source": "/c/:comercio_id/",
+      "destination": "/api/link-builder?comercio_id=:comercio_id"
+    },
+    {
+      "source": "/bot/:comercio_id/",
+      "destination": "/api/link-builder?comercio_id=:comercio_id"
+    }
+  ]
 }

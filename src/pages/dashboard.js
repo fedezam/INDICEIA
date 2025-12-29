@@ -1,5 +1,5 @@
 // ========================================
-// DASHBOARD – VERSIÓN NORMALIZADA Y LIMPIA
+// DASHBOARD – VERSIÓN FINAL CON PLANES, .LIVE Y HIGH VALUE
 // ========================================
 import '../styles/base.css';
 import '../styles/layout.css';
@@ -9,10 +9,10 @@ import './dashboard.css';
 
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
-import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
+import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, hasLiveAccess, isHighValuePlan } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController } from '../controllers/flowController.js';
 
@@ -23,8 +23,8 @@ let comercioData = {};
 // ==================== AUTENTICACIÓN ====================
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    console.warn("No hay usuario autenticado");
-    return;  // ← NO redirigir aquí → flowController o guard global lo maneja
+    console.warn('No hay usuario autenticado');
+    return;
   }
 
   currentUser = user;
@@ -38,7 +38,7 @@ async function initializePage() {
 
   try {
     showLoading('Cargando dashboard...');
-    renderLayout();  // ← Header con logout global automático
+    renderLayout();
 
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userSnap = await getDoc(userRef);
@@ -62,10 +62,8 @@ async function initializePage() {
 
     updateBanner();
 
-    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
     renderDashboard();
-    setupEvents();  // ← Solo botón generar entidad
+    setupEvents();
 
     hideLoading();
     console.log('✅ InitializePage COMPLETO');
@@ -88,7 +86,10 @@ async function loadComercioData() {
         id: currentComercioId,
         plan: 'trial',
         nombreComercio: 'Mi Comercio',
-        stats: { productosCount: 0, horariosConfigurados: false }
+        stats: { productosCount: 0, horariosConfigurados: false },
+        liveEnabled: true,
+        commissionEnabled: false,
+        terms: { highValueAccepted: false }
       };
     }
   } catch (error) {
@@ -97,7 +98,10 @@ async function loadComercioData() {
       id: currentComercioId,
       plan: 'trial',
       nombreComercio: 'Mi Comercio',
-      stats: { productosCount: 0, horariosConfigurados: false }
+      stats: { productosCount: 0, horariosConfigurados: false },
+      liveEnabled: true,
+      commissionEnabled: false,
+      terms: { highValueAccepted: false }
     };
   }
 }
@@ -105,22 +109,24 @@ async function loadComercioData() {
 function updateBanner() {
   try {
     const estado = calcularEstadoPlan(comercioData);
-    const plan = PLANS[comercioData.plan || 'trial'];
-    let html = "";
-    switch (estado) {
-      case "trial":
-        const dias = getDiasRestantesTrial(comercioData);
-        html = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong>`;
-        break;
-      case "activo":
-        html = `<strong>Plan ${plan.nombre} activo</strong> – Todo funcionando`;
-        break;
-      case "expirado":
-        html = `Trial expirado – Elegí un plan para continuar`;
-        break;
-      default:
-        html = `Bienvenido`;
+    let html = '';
+    const planActual = PLANS[comercioData.plan || 'trial'];
+
+    if (estado === 'trial') {
+      const dias = getDiasRestantesTrial(comercioData);
+      html = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong> de acceso completo`;
+    } else if (estado === 'activo') {
+      if (isHighValuePlan(comercioData.plan)) {
+        html = `<strong>Plan High Value activo</strong> – Gratis con comisión por ventas`;
+      } else {
+        html = `<strong>Plan ${planActual.nombre} activo</strong> – Todo funcionando`;
+      }
+    } else if (estado === 'expirado') {
+      html = `Trial expirado – Elegí un plan para continuar`;
+    } else {
+      html = `Bienvenido`;
     }
+
     updateSubscriptionBanner(html, estado);
   } catch (error) {
     console.error('Error actualizando banner:', error);
@@ -132,7 +138,7 @@ function renderDashboard() {
   console.log('🎨 RENDER DASHBOARD - INICIO');
   console.log('═══════════════════════════════════════════');
 
-  const cont = document.getElementById("dashboardContainer");
+  const cont = document.getElementById('dashboardContainer');
   if (!cont) {
     console.error('❌ CRÍTICO: No existe #dashboardContainer');
     return;
@@ -140,12 +146,32 @@ function renderDashboard() {
 
   const productCount = comercioData.stats?.productosCount ?? 0;
   const horarios = comercioData.stats?.horariosConfigurados === true;
+  const plan = comercioData.plan || 'trial';
 
   cont.innerHTML = `
     <div class="page-header">
       <h1><i class="fas fa-chart-line"></i> Dashboard</h1>
       <p>Resumen general y accesos rápidos a todas las secciones</p>
     </div>
+
+    <!-- PLAN ACTUAL -->
+    <section class="dashboard-grid">
+      <div class="dash-card highlight">
+        <div class="dash-icon"><i class="fas fa-crown"></i></div>
+        <div class="dash-content">
+          <h3>Tu Plan Actual</h3>
+          <p><strong>${planActual.nombre}</strong></p>
+          <p>${planActual.descripcion}</p>
+          ${getLiveStatus(plan, comercioData.liveEnabled)}
+          ${getHighValueSection(plan, comercioData.terms?.highValueAccepted || false)}
+        </div>
+        <a href="planes.html" class="btn btn-primary btn-sm">
+          <i class="fas fa-arrow-right"></i> Ver planes
+        </a>
+      </div>
+    </section>
+
+    <!-- RESTO DE CARDS -->
     <section class="dashboard-grid">
       <div class="dash-card">
         <div class="dash-icon"><i class="fas fa-user"></i></div>
@@ -157,26 +183,29 @@ function renderDashboard() {
           <i class="fas fa-edit"></i> Editar
         </a>
       </div>
+
       <div class="dash-card">
         <div class="dash-icon"><i class="fas fa-store"></i></div>
         <div class="dash-content">
           <h3>Mi Comercio</h3>
-          <p>${comercioData.nombreComercio || "Sin nombre"}</p>
+          <p>${comercioData.nombreComercio || 'Sin nombre'}</p>
         </div>
         <a href="mi-comercio.html?edit=true" class="btn btn-secondary btn-sm">
           <i class="fas fa-edit"></i> Editar
         </a>
       </div>
+
       <div class="dash-card">
         <div class="dash-icon"><i class="fas fa-clock"></i></div>
         <div class="dash-content">
           <h3>Horarios</h3>
-          <p>${horarios ? "Configurados ✓" : "No configurados"}</p>
+          <p>${horarios ? 'Configurados ✓' : 'No configurados'}</p>
         </div>
         <a href="horarios.html?edit=true" class="btn btn-secondary btn-sm">
           <i class="fas fa-edit"></i> Editar
         </a>
       </div>
+
       <div class="dash-card">
         <div class="dash-icon"><i class="fas fa-box"></i></div>
         <div class="dash-content">
@@ -187,6 +216,7 @@ function renderDashboard() {
           <i class="fas fa-edit"></i> Editar
         </a>
       </div>
+
       <div class="dash-card">
         <div class="dash-icon"><i class="fas fa-robot"></i></div>
         <div class="dash-content">
@@ -197,6 +227,7 @@ function renderDashboard() {
           <i class="fas fa-edit"></i> Editar
         </a>
       </div>
+
       <div class="dash-card highlight">
         <div class="dash-icon"><i class="fas fa-palette"></i></div>
         <div class="dash-content">
@@ -207,6 +238,7 @@ function renderDashboard() {
           <i class="fas fa-arrow-right"></i> Acceder
         </a>
       </div>
+
       <div class="dash-card highlight">
         <div class="dash-icon"><i class="fas fa-chart-bar"></i></div>
         <div class="dash-content">
@@ -217,7 +249,7 @@ function renderDashboard() {
           <i class="fas fa-arrow-right"></i> Ver
         </a>
       </div>
-      <!-- Generar Entidad -->
+
       <div class="dash-card highlight">
         <div class="dash-icon"><i class="fas fa-cogs"></i></div>
         <div class="dash-content">
@@ -228,15 +260,15 @@ function renderDashboard() {
           <i class="fas fa-magic"></i> Generar
         </button>
       </div>
-      <!-- Generar Link -->
+
       <div class="dash-card highlight">
         <div class="dash-icon"><i class="fas fa-link"></i></div>
         <div class="dash-content">
-          <h3>Obtener Link Público</h3>
-          <p>URL y QR para compartir con tus clientes</p>
+          <h3>Mi Link Público</h3>
+          <p>URL permanente y QR personalizado para compartir con clientes</p>
         </div>
-        <a href="/api/link-builder?action=generate&comercio_id=${currentComercioId || 'SIN_ID'}" target="_blank" class="btn btn-primary btn-sm">
-          <i class="fas fa-arrow-right"></i> Generar
+        <a href="link-publico.html" class="btn btn-primary btn-sm">
+          <i class="fas fa-qrcode"></i> Ver link y QR
         </a>
       </div>
     </section>
@@ -245,10 +277,36 @@ function renderDashboard() {
   console.log('✅ Dashboard renderizado correctamente');
 }
 
+// ====================== HELPERS PLANES ======================
+function getLiveStatus(plan, liveEnabled) {
+  if (hasLiveAccess(plan, liveEnabled)) {
+    return '<p><strong>Interacción continua:</strong> Activada ✓</p>';
+  }
+  return '<p><strong>Interacción continua:</strong> No disponible</p>';
+}
+
+function getHighValueSection(plan, accepted) {
+  if (isHighValuePlan(plan)) {
+    return '<p style="color:#28a745;font-weight:bold;">Plan High Value activo · Comisión por ventas comprobadas</p>';
+  }
+
+  return `
+    <div style="margin-top:24px;padding:16px;background:#f0f8ff;border-left:4px solid #0070f3;border-radius:8px;">
+      <h4 style="margin:0 0 8px;">💼 Plan High Value (Gratis)</h4>
+      <p style="font-size:14px;margin:0 0 12px;">
+        Para autos, inmuebles, maquinaria, industria.<br>
+        Productos ilimitados · Interacción continua incluida · Comisión 5% solo por ventas comprobadas
+      </p>
+      <button id="activateHighValue" class="btn btn-outline-primary btn-sm">
+        Activar High Value
+      </button>
+    </div>
+  `;
+}
+
+// ====================== EVENTOS ======================
 function setupEvents() {
-  // ===============================
-  // GENERAR ENTIDAD - Frontend TONTO
-  // ===============================
+  // Generar entidad (existente)
   const btnGenerate = document.getElementById('btnGenerateEntity');
   if (btnGenerate) {
     btnGenerate.addEventListener('click', async () => {
@@ -262,7 +320,7 @@ function setupEvents() {
         const response = await fetch('/api/generate-and-upload-entity', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comercioId: currentComercioId })
+          body: JSON.stringify({ comercioId: currentComercioId }),
         });
 
         const data = await response.json();
@@ -282,7 +340,71 @@ function setupEvents() {
     });
   }
 
-  // ← NO hay código de logout aquí → lo maneja shared/logout.js + renderLayout()
+  // Activación High Value
+  const activateBtn = document.getElementById('activateHighValue');
+  if (activateBtn) {
+    activateBtn.addEventListener('click', () => openHighValueModal());
+  }
+}
+
+function openHighValueModal() {
+  const modal = document.createElement('div');
+  modal.innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;">
+      <div style="background:white;border-radius:12px;padding:32px;max-width:500px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
+        <h3 style="margin-top:0;">Activar Plan High Value (Gratis)</h3>
+        <p>Ideal para ventas de alto valor: autos, inmuebles, maquinaria, industria.</p>
+        <ul style="text-align:left;font-size:14px;line-height:1.5;">
+          <li>Productos ilimitados</li>
+          <li>Interacción continua incluida</li>
+          <li>Sin costo mensual</li>
+          <li>Comisión del 5% solo sobre ventas comprobadas mediante el sistema</li>
+        </ul>
+        <p style="font-size:14px;"><strong>Importante:</strong> El ocultamiento deliberado de ventas comprobadas resultará en la desactivación permanente del servicio.</p>
+        <label style="display:block;margin:24px 0 16px;">
+          <input type="checkbox" id="acceptHVTerms">
+          Acepto los términos del plan High Value
+        </label>
+        <div style="text-align:right;">
+          <button id="cancelHV" class="btn btn-secondary btn-sm" style="margin-right:8px;">Cancelar</button>
+          <button id="confirmHV" class="btn btn-primary btn-sm" disabled>Activar</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const checkbox = modal.querySelector('#acceptHVTerms');
+  const confirmBtn = modal.querySelector('#confirmHV');
+  const cancelBtn = modal.querySelector('#cancelHV');
+
+  checkbox.addEventListener('change', () => {
+    confirmBtn.disabled = !checkbox.checked;
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    try {
+      await updateDoc(doc(db, 'comercios', currentComercioId), {
+        plan: 'highvalue',
+        liveEnabled: true,
+        commissionEnabled: true,
+        terms: {
+          highValueAccepted: true,
+          acceptedAt: new Date()
+        }
+      });
+      showToast('Plan High Value activado con éxito', 'success');
+      modal.remove();
+      location.reload();
+    } catch (err) {
+      showToast('Error al activar el plan', 'error');
+    }
+  });
+
+  cancelBtn.addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal.firstElementChild.parentElement) modal.remove();
+  });
 }
 
 window.validateCurrentPageData = async () => true;

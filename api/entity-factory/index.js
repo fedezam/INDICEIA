@@ -49,7 +49,7 @@ function hasData(value) {
 export async function buildEntity({ comercioId }) {
   if (!comercioId) throw new Error('Falta comercioId');
 
-  // ----- Block A
+  // ----- Block A (archivo base hardcodeado)
   const blockAPath = resolve(__dirname, 'base/blockA.json');
   let blockA;
   try {
@@ -66,7 +66,33 @@ export async function buildEntity({ comercioId }) {
 
   const comercioData = comercioSnap.data();
 
-  // Productos
+  // ===== DETERMINAR .LIVE SEGÚN PLAN =====
+  const plan = comercioData.plan || 'trial';
+  const PLANS_WITH_LIVE = ['trial', 'pro', 'highvalue', 'premium'];
+  const liveEnabled = PLANS_WITH_LIVE.includes(plan);
+  console.log(`🔧 Plan "${plan}" → .live ${liveEnabled ? 'HABILITADO' : 'DESHABILITADO'}`);
+  // ===== FIN .LIVE =====
+
+  // ===== OBTENER REFERRAL DEL DUEÑO =====
+  let referralCode = comercioId.substring(0, 8).toUpperCase(); // fallback seguro
+
+  if (comercioData.duenoId) {
+    try {
+      const ownerSnap = await db.collection('usuarios').doc(comercioData.duenoId).get();
+      if (ownerSnap.exists) {
+        const ownerData = ownerSnap.data();
+        if (ownerData.referralId) {
+          referralCode = ownerData.referralId;
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ No se pudo obtener referralId del dueño, usando fallback');
+    }
+  }
+  console.log(`🔗 Referral code: ${referralCode}`);
+  // ===== FIN REFERRAL =====
+
+  // ----- Productos
   let productos = [];
   try {
     const productosSnap = await comercioRef.collection('productos').get();
@@ -117,7 +143,7 @@ export async function buildEntity({ comercioId }) {
     if (Object.keys(iaBlock).length > 0) B.ia = iaBlock;
   }
 
-  // Mensajes y reglas (mismo patrón)
+  // Mensajes y reglas
   if (hasData(comercioData.aiConfig)) {
     const ai = comercioData.aiConfig;
     const mensajes = {};
@@ -180,8 +206,25 @@ export async function buildEntity({ comercioId }) {
     }
   }
 
+  // ===== INYECCIÓN VIRALIDAD ORGÁNICA EN BLOCK B =====
+  B.referral = {
+    code: referralCode,
+    shareMessage: `¿Te gustaría tener una IA como yo para tu negocio? Visitá https://indiceia.app/r/${referralCode} y empezá gratis.`
+  };
+  // ===== FIN INYECCIÓN =====
+
   B.updatedAt = new Date().toISOString();
   Object.freeze(B);
+
+  // ===== RESOLVER PLACEHOLDERS EN BLOCK A =====
+  const blockAString = JSON.stringify(blockA);
+  const blockAResolved = blockAString
+    .replace(/\{\{LIVE_ENABLED\}\}/g, liveEnabled.toString())
+    .replace(/\{\{REFERRAL_URL\}\}/g, `https://indiceia.app/guia?ref=${referralCode}`);
+
+  const A = JSON.parse(blockAResolved);
+  console.log(`✅ Block A con placeholders resueltos: .live=${liveEnabled}, referralUrl con código ${referralCode}`);
+  // ===== FIN RESOLUCIÓN PLACEHOLDERS =====
 
   // ----- Block C - Dinámico con URL absoluta al component.jsx
   let C = {};
@@ -203,8 +246,8 @@ export async function buildEntity({ comercioId }) {
           template: {
             id: templateConfig.id,
             version: templateConfig.version,
-            entrypoint: componentUrl,     // ← URL directa al JSX
-            baseUrl: baseUrl,             // ← Para thumbnail, previews, etc.
+            entrypoint: componentUrl,
+            baseUrl: baseUrl,
             supports: templateConfig.supports || {},
             requirements: templateConfig.requirements || {}
           },
@@ -220,7 +263,7 @@ export async function buildEntity({ comercioId }) {
   // ----- Entidad final
   return {
     meta: {
-      version: blockA?.meta?.version || '1.0.0',
+      version: A?.meta?.version || '1.0.0',
       tipo: 'entidad_comercial_indiceIA',
       comercioId,
       generatedAt: new Date().toISOString(),
@@ -240,8 +283,8 @@ export async function buildEntity({ comercioId }) {
         ignoredByEntity: true,
       },
     },
-    A: blockA,
-    B,
-    C,
+    A,  // ← Block A con placeholders resueltos
+    B,  // ← Block B con datos del comercio + referral
+    C,  // ← Block C con template visual
   };
 }
