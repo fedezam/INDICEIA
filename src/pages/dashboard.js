@@ -1,5 +1,5 @@
 // ========================================
-// DASHBOARD – VERSIÓN FINAL CON PLANES, .LIVE Y HIGH VALUE
+// DASHBOARD – VERSIÓN FINAL Y CORREGIDA
 // ========================================
 import '../styles/base.css';
 import '../styles/layout.css';
@@ -146,7 +146,8 @@ function renderDashboard() {
 
   const productCount = comercioData.stats?.productosCount ?? 0;
   const horarios = comercioData.stats?.horariosConfigurados === true;
-  const plan = comercioData.plan || 'trial';
+  const planId = comercioData.plan || 'trial';
+  const planActual = PLANS[planId];
 
   cont.innerHTML = `
     <div class="page-header">
@@ -162,8 +163,8 @@ function renderDashboard() {
           <h3>Tu Plan Actual</h3>
           <p><strong>${planActual.nombre}</strong></p>
           <p>${planActual.descripcion}</p>
-          ${getLiveStatus(plan, comercioData.liveEnabled)}
-          ${getHighValueSection(plan, comercioData.terms?.highValueAccepted || false)}
+          ${getLiveStatus(planId, comercioData.liveEnabled ?? false)}
+          ${getHighValueSection(planId, comercioData.terms?.highValueAccepted || false)}
         </div>
         <a href="planes.html" class="btn btn-primary btn-sm">
           <i class="fas fa-arrow-right"></i> Ver planes
@@ -278,15 +279,15 @@ function renderDashboard() {
 }
 
 // ====================== HELPERS PLANES ======================
-function getLiveStatus(plan, liveEnabled) {
-  if (hasLiveAccess(plan, liveEnabled)) {
+function getLiveStatus(planId, liveEnabled) {
+  if (hasLiveAccess(planId, liveEnabled)) {
     return '<p><strong>Interacción continua:</strong> Activada ✓</p>';
   }
   return '<p><strong>Interacción continua:</strong> No disponible</p>';
 }
 
-function getHighValueSection(plan, accepted) {
-  if (isHighValuePlan(plan)) {
+function getHighValueSection(planId, accepted) {
+  if (isHighValuePlan(planId)) {
     return '<p style="color:#28a745;font-weight:bold;">Plan High Value activo · Comisión por ventas comprobadas</p>';
   }
 
@@ -306,7 +307,7 @@ function getHighValueSection(plan, accepted) {
 
 // ====================== EVENTOS ======================
 function setupEvents() {
-  // Generar entidad (existente)
+  // Generar entidad
   const btnGenerate = document.getElementById('btnGenerateEntity');
   if (btnGenerate) {
     btnGenerate.addEventListener('click', async () => {
@@ -340,10 +341,10 @@ function setupEvents() {
     });
   }
 
-  // Activación High Value
+  // High Value activation
   const activateBtn = document.getElementById('activateHighValue');
   if (activateBtn) {
-    activateBtn.addEventListener('click', () => openHighValueModal());
+    activateBtn.addEventListener('click', openHighValueModal);
   }
 }
 
@@ -372,6 +373,7 @@ function openHighValueModal() {
       </div>
     </div>
   `;
+
   document.body.appendChild(modal);
 
   const checkbox = modal.querySelector('#acceptHVTerms');
