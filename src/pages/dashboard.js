@@ -267,7 +267,7 @@ function renderDashboard() {
           <h3>Mi Link Público</h3>
           <p>URL permanente y QR personalizado para compartir con clientes</p>
         </div>
-        <a href="link-publico.html" class="btn btn-primary btn-sm">
+        <a href="/link-publico.html" class="btn btn-primary btn-sm">
           <i class="fas fa-qrcode"></i> Ver link y QR
         </a>
       </div>
