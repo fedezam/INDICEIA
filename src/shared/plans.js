@@ -1,13 +1,13 @@
-// shared/plans.js – v1.0 final
+// shared/plans.js – v1.0 final (corregido, sin duplicate exports)
 
 export const PLANS = {
   trial: {
     id: "trial",
     nombre: "Trial",
     emoji: "🎉",
-    duracion: 7, // días
-    productos: null, // ilimitado durante trial
-    live: true, // .live incluido
+    duracion: 7,
+    productos: null,
+    live: true,
     precio: 0,
     descripcion: "Prueba completa por 7 días",
     features: [
@@ -16,7 +16,6 @@ export const PLANS = {
       "Todas las funciones activas"
     ]
   },
-
   basic: {
     id: "basic",
     nombre: "Basic",
@@ -31,13 +30,12 @@ export const PLANS = {
       "Actualizaciones manuales"
     ]
   },
-
   medium: {
     id: "medium",
     nombre: "Medium",
     emoji: "🏪",
     productos: 100,
-    live: "optional", // +$10 para activar
+    live: "optional",
     precio: 25,
     precioLive: 35,
     descripcion: "Para comercios en crecimiento",
@@ -47,7 +45,6 @@ export const PLANS = {
       "Actualizaciones automáticas"
     ]
   },
-
   pro: {
     id: "pro",
     nombre: "Pro",
@@ -63,12 +60,11 @@ export const PLANS = {
       "Soporte prioritario"
     ]
   },
-
   highvalue: {
     id: "highvalue",
     nombre: "High Value",
     emoji: "🏭",
-    productos: null, // ilimitado
+    productos: null,
     live: true,
     precio: 0,
     commission: true,
@@ -81,8 +77,7 @@ export const PLANS = {
   }
 };
 
-// Mantengo tus funciones existentes (calcularEstadoPlan, getDiasRestantesTrial, etc.)
-// Solo agrego helper para High Value
+// Helpers
 export function isHighValuePlan(planId) {
   return planId === 'highvalue';
 }
@@ -95,8 +90,7 @@ export function hasLiveAccess(planId, liveEnabled = false) {
   return false;
 }
 
-// Al final del archivo, después de los helpers
-
+// Tus funciones originales (calcularEstadoPlan y getDiasRestantesTrial)
 export function calcularEstadoPlan(comercioData) {
   if (!comercioData.fechaCreacion) return 'trial';
 
@@ -110,7 +104,6 @@ export function calcularEstadoPlan(comercioData) {
     return 'expirado';
   }
 
-  // Aquí podés agregar lógica futura de pago, etc.
   return 'activo';
 }
 
@@ -124,12 +117,3 @@ export function getDiasRestantesTrial(comercioData) {
 
   return diasRestantes > 0 ? diasRestantes : 0;
 }
-
-// Export final de todo
-export {
-  PLANS,
-  calcularEstadoPlan,
-  getDiasRestantesTrial,
-  isHighValuePlan,
-  hasLiveAccess
-};
