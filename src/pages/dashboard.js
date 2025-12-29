@@ -1,5 +1,5 @@
 // ========================================
-// DASHBOARD – VERSIÓN FINAL Y CORREGIDA
+// DASHBOARD – VERSIÓN CORREGIDA Y DEFINITIVA
 // ========================================
 import '../styles/base.css';
 import '../styles/layout.css';
@@ -110,13 +110,14 @@ function updateBanner() {
   try {
     const estado = calcularEstadoPlan(comercioData);
     let html = '';
-    const planActual = PLANS[comercioData.plan || 'trial'];
+    const planId = comercioData.plan || 'trial';
+    const planActual = PLANS[planId];
 
     if (estado === 'trial') {
       const dias = getDiasRestantesTrial(comercioData);
       html = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong> de acceso completo`;
     } else if (estado === 'activo') {
-      if (isHighValuePlan(comercioData.plan)) {
+      if (isHighValuePlan(planId)) {
         html = `<strong>Plan High Value activo</strong> – Gratis con comisión por ventas`;
       } else {
         html = `<strong>Plan ${planActual.nombre} activo</strong> – Todo funcionando`;
