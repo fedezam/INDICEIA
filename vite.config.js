@@ -21,7 +21,7 @@ export default defineConfig({
         "link-publico": resolve(__dirname, "src/pages/link-publico.html"),
 
         // Planes
-        Planes: resolve(__dirname, "src/pages/Planes.html"),
+        planes: resolve(__dirname, "src/pages/planes.html"),
 
         // Pago
         "pago-exitoso": resolve(
