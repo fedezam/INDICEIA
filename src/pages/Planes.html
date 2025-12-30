@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elegí tu Plan | Mi Comercio IA</title>
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/planes.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Fonts distintivos -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app-container">
+    <!-- El layout se renderiza aquí -->
+  </div>
+
+  <div id="planesContainer" class="planes-page">
+    <!-- Loading inicial -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <p>Cargando planes...</p>
+    </div>
+  </div>
+
+  <!-- Modal de confirmación de pago -->
+  <div id="paymentModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content payment-modal">
+      <button class="modal-close" onclick="closePaymentModal()">
+        <i class="fas fa-times"></i>
+      </button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Modal de High Value -->
+  <div id="highValueModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content highvalue-modal">
+      <button class="modal-close" onclick="closeHighValueModal()">
+        <i class="fas fa-times"></i>
+      </button>
+      <div id="highValueModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Toast de notificaciones -->
+  <div id="toast-container"></div>
+
+  <script type="module" src="planes.js"></script>
+</body>
+</html>
