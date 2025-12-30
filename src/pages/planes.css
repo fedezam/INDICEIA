@@ -155,3 +155,67 @@
 .loading-overlay p {
   color: #334155;
 }
+
+/* =====================================================
+   RESPONSIVE FIX – MOBILE FIRST
+   ===================================================== */
+
+@media (max-width: 1024px) {
+  .plans-grid {
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+
+  .planes-page {
+    padding: 2.5rem 1rem;
+  }
+
+  .planes-header h1 {
+    font-size: 2rem;
+  }
+
+  .planes-header p {
+    font-size: 1rem;
+  }
+
+  .plans-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem;
+  }
+
+  .plan-card {
+    padding: 1.5rem;
+  }
+
+  .price-amount {
+    font-size: 2.25rem;
+  }
+
+  .btn-select-plan {
+    width: 100%;
+    padding: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .planes-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .plan-name {
+    font-size: 1.4rem;
+  }
+
+  .price-amount {
+    font-size: 2rem;
+  }
+
+  .plan-features li {
+    font-size: 0.9rem;
+  }
+}
+
+
