@@ -35,9 +35,10 @@ function renderPlan(plan) {
       class="cta-button"
       target="_blank"
       rel="noopener"
-    >
+      onclick="localStorage.setItem('pendingPlan', '${plan.id}')"
+   >
       Elegir plan
-    </a>
+   </a>
   `;
 
   return card;
