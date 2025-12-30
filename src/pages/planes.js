@@ -2,12 +2,21 @@
 // PLANES.JS - Selección de Planes y Pagos
 // ========================================
 
-import { auth, db } from './firebase.js';
+import { auth, db } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { renderLayout, updateHeaderInfo } from './shared/layout.js';
-import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, getPlanData, normalizePlanId } from './shared/plans.js';
-import { showToast, showLoading, hideLoading } from './shared/utils.js';
+
+import { renderLayout, updateHeaderInfo } from '../shared/layout.js';
+import {
+  PLANS,
+  calcularEstadoPlan,
+  getDiasRestantesTrial,
+  getPlanData,
+  normalizePlanId
+} from '../shared/plans.js';
+
+import { showToast, showLoading, hideLoading } from '../shared/utils.js';
+
 
 let currentUser = null;
 let currentComercioId = null;
