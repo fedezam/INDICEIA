@@ -55,6 +55,15 @@ async function initializePage() {
 
     await loadComercioData();
 
+    // Validar que el plan exista antes de usarlo
+    const planId = comercioData.plan || 'trial';
+    const planData = PLANS[planId];
+    
+    if (!planData) {
+      console.warn(`⚠️ Plan "${planId}" no encontrado, usando trial por defecto`);
+      comercioData.plan = 'trial';
+    }
+
     updateHeaderInfo(
       comercioData.nombreComercio || 'Mi Comercio',
       PLANS[comercioData.plan || 'trial']
@@ -113,6 +122,15 @@ function updateBanner() {
     const planId = comercioData.plan || 'trial';
     const planActual = PLANS[planId];
 
+    // Validación: si el plan no existe en PLANS, usar trial por defecto
+    if (!planActual) {
+      console.warn(`⚠️ Plan "${planId}" no encontrado en PLANS, usando trial por defecto`);
+      comercioData.plan = 'trial'; // Corregir el plan en memoria
+      html = `<strong>Plan no reconocido</strong> – Por favor verifica tu configuración`;
+      updateSubscriptionBanner(html, 'trial');
+      return;
+    }
+
     if (estado === 'trial') {
       const dias = getDiasRestantesTrial(comercioData);
       html = `<strong>Trial activo</strong> – Te quedan <strong>${dias} días</strong> de acceso completo`;
@@ -131,6 +149,8 @@ function updateBanner() {
     updateSubscriptionBanner(html, estado);
   } catch (error) {
     console.error('Error actualizando banner:', error);
+    // Fallback seguro
+    updateSubscriptionBanner('Dashboard cargado', 'trial');
   }
 }
 
@@ -149,6 +169,15 @@ function renderDashboard() {
   const horarios = comercioData.stats?.horariosConfigurados === true;
   const planId = comercioData.plan || 'trial';
   const planActual = PLANS[planId];
+
+  // Validación defensiva: si el plan no existe, usar trial
+  if (!planActual) {
+    console.error(`❌ CRÍTICO: Plan "${planId}" no existe en PLANS. Usando trial por defecto.`);
+    comercioData.plan = 'trial';
+    // Recargar para aplicar el cambio
+    setTimeout(() => renderDashboard(), 0);
+    return;
+  }
 
   cont.innerHTML = `
     <div class="page-header">
