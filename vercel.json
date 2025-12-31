@@ -12,19 +12,20 @@
   "rewrites": [
     {
       "source": "/c/:comercio_id",
-      "destination": "/api/link-builder?comercio_id=:comercio_id"
+      "destination": "/api/link-builder/index?comercio_id=:comercio_id"
     },
     {
       "source": "/bot/:comercio_id",
-      "destination": "/api/link-builder?comercio_id=:comercio_id"
+      "destination": "/api/link-builder/index?comercio_id=:comercio_id"
     },
     {
       "source": "/c/:comercio_id/",
-      "destination": "/api/link-builder?comercio_id=:comercio_id"
+      "destination": "/api/link-builder/index?comercio_id=:comercio_id"
     },
     {
       "source": "/bot/:comercio_id/",
-      "destination": "/api/link-builder?comercio_id=:comercio_id"
+      "destination": "/api/link-builder/index?comercio_id=:comercio_id"
     }
   ]
 }
+
