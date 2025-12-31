@@ -9,15 +9,14 @@
       "maxDuration": 10
     }
   },
-  {
   "routes": [
     {
       "src": "^/c/([^/]+)$",
-      "dest": "/api/link-builder?comercio_id=$1"
+      "dest": "/api/link-builder/index?comercio_id=$1"
     },
     {
       "src": "^/bot/([^/]+)$",
-      "dest": "/api/link-builder?comercio_id=$1"
+      "dest": "/api/link-builder/index?comercio_id=$1"
     },
 
     { "handle": "filesystem" },
