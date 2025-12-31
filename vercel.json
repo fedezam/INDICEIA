@@ -9,22 +9,22 @@
       "maxDuration": 10
     }
   },
-  "rewrites": [
+  {
+  "routes": [
     {
-      "source": "/c/:comercio_id",
-      "destination": "/api/link-builder?comercio_id=:comercio_id"
+      "src": "^/c/([^/]+)$",
+      "dest": "/api/link-builder?comercio_id=$1"
     },
     {
-      "source": "/bot/:comercio_id",
-      "destination": "/api/link-builder?comercio_id=:comercio_id"
+      "src": "^/bot/([^/]+)$",
+      "dest": "/api/link-builder?comercio_id=$1"
     },
+
+    { "handle": "filesystem" },
+
     {
-      "source": "/c/:comercio_id/",
-      "destination": "/api/link-builder?comercio_id=:comercio_id"
-    },
-    {
-      "source": "/bot/:comercio_id/",
-      "destination": "/api/link-builder?comercio_id=:comercio_id"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
