@@ -196,7 +196,7 @@ function renderDashboard() {
           ${getLiveStatus(planId, comercioData.liveEnabled ?? false)}
           ${getHighValueSection(planId, comercioData.terms?.highValueAccepted || false)}
         </div>
-        <a href="plans.html" class="btn btn-primary btn-sm">
+        <a href="/plans.html" class="btn btn-primary btn-sm">
           <i class="fas fa-arrow-right"></i> Ver planes
         </a>
       </div>
