@@ -1,5 +1,6 @@
 import { auth, db } from "../firebase.js";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import './pago-exitoso.css';
 
 const pendingPlan = localStorage.getItem("pendingPlan");
 
