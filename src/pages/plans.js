@@ -1,4 +1,5 @@
 import { getAllPlans } from "../shared/pricing/plans.service.js";
+import './plans.css';
 
 const grid = document.getElementById("plansGrid");
 const plans = getAllPlans();
