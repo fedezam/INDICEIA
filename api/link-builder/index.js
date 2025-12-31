@@ -1,4 +1,7 @@
 // api/link-builder/index.js
+export const config = {
+  runtime: 'nodejs'
+};
 import { getFirestore, getDoc, doc } from 'firebase-admin/firestore'; // ✅ Agregado getFirestore
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { generateClaudeUrl } from '../../lib/link-builder/claude.js';
