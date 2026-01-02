@@ -34,6 +34,29 @@
             <input id="nombreComercio" name="nombreComercio" type="text" required />
           </div>
 
+          <!-- 🔥 NUEVO: Campo de Slug Editable -->
+          <div class="form-field full-width">
+            <label for="comercioSlug">
+              Link público de tu comercio *
+              <small style="color: #666; font-weight: normal;">Podés editarlo si querés</small>
+            </label>
+            <div class="slug-input-wrapper">
+              <span class="slug-prefix">indiceia.com/</span>
+              <input 
+                id="comercioSlug" 
+                name="slug" 
+                type="text" 
+                placeholder="tu-comercio" 
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+            <div id="slugStatus" class="slug-status">
+              <span id="slugStatusIcon"></span>
+              <span id="slugStatusText"></span>
+            </div>
+          </div>
+
           <div class="form-field">
             <label for="pais">País *</label>
             <select id="pais" name="pais">
@@ -120,61 +143,58 @@
         <div id="selectedTags" class="selected-tags"></div>
 
         <!-- MÉTODOS DE PAGO -->
-<div class="config-section">
-    <h3 class="section-title">Métodos de Pago</h3>
+        <div class="config-section">
+          <h3 class="section-title">Métodos de Pago</h3>
 
-    <div id="metodosPagoContainer" class="payment-methods-grid">
+          <div id="metodosPagoContainer" class="payment-methods-grid">
 
-        <!-- Efectivo -->
-        <label class="payment-method-card">
-            <input type="checkbox" name="metodos_pago" value="efectivo" />
-            <div class="payment-method-content">
+            <!-- Efectivo -->
+            <label class="payment-method-card">
+              <input type="checkbox" name="metodos_pago" value="efectivo" />
+              <div class="payment-method-content">
                 <i class="fas fa-money-bill-wave"></i>
                 <span>Efectivo</span>
-            </div>
-        </label>
+              </div>
+            </label>
 
-        <!-- Billeteras digitales -->
-        <label class="payment-method-card">
-            <input type="checkbox" name="metodos_pago" value="billetera" />
-            <div class="payment-method-content">
+            <!-- Billeteras digitales -->
+            <label class="payment-method-card">
+              <input type="checkbox" name="metodos_pago" value="billetera" />
+              <div class="payment-method-content">
                 <i class="fas fa-mobile-alt"></i>
                 <span>Billetera virtual (Mercado Pago, MODO, Ualá, etc.)</span>
-            </div>
-        </label>
+              </div>
+            </label>
 
-        <!-- Tarjeta crédito -->
-        <label class="payment-method-card">
-            <input type="checkbox" name="metodos_pago" value="tarjeta_credito" />
-            <div class="payment-method-content">
+            <!-- Tarjeta crédito -->
+            <label class="payment-method-card">
+              <input type="checkbox" name="metodos_pago" value="tarjeta_credito" />
+              <div class="payment-method-content">
                 <i class="fas fa-credit-card"></i>
                 <span>Tarjeta de crédito</span>
-            </div>
-        </label>
+              </div>
+            </label>
 
-        <!-- Tarjeta débito -->
-        <label class="payment-method-card">
-            <input type="checkbox" name="metodos_pago" value="tarjeta_debito" />
-            <div class="payment-method-content">
+            <!-- Tarjeta débito -->
+            <label class="payment-method-card">
+              <input type="checkbox" name="metodos_pago" value="tarjeta_debito" />
+              <div class="payment-method-content">
                 <i class="fas fa-credit-card"></i>
                 <span>Tarjeta de débito</span>
-            </div>
-        </label>
+              </div>
+            </label>
 
-        <!-- Transferencia -->
-        <label class="payment-method-card">
-            <input type="checkbox" name="metodos_pago" value="transferencia" />
-            <div class="payment-method-content">
+            <!-- Transferencia -->
+            <label class="payment-method-card">
+              <input type="checkbox" name="metodos_pago" value="transferencia" />
+              <div class="payment-method-content">
                 <i class="fas fa-university"></i>
                 <span>Transferencia bancaria</span>
-            </div>
-        </label>
+              </div>
+            </label>
 
-    </div>
-</div>
-
-
-        </section>
+          </div>
+        </div>
 
       </form>
     </div>
@@ -188,4 +208,3 @@
 </body>
 
 </html>
-
