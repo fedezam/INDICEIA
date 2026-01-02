@@ -19,11 +19,14 @@ import { runFlowController, redirectAfterSave } from '../controllers/flowControl
 function slugify(text) {
   return text
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
     .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
+    // Eliminar comillas y caracteres especiales ANTES de normalizar
+    .replace(/["'`´""'']/g, '') // Elimina todo tipo de comillas
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Elimina acentos
+    .replace(/[^a-z0-9\s-]/g, '') // Solo letras, números, espacios y guiones
+    .replace(/\s+/g, '-') // Espacios a guiones
+    .replace(/-+/g, '-') // Múltiples guiones a uno solo
+    .replace(/^-+|-+$/g, ''); // Elimina guiones al inicio/final
 }
 
 // ==================== DATOS ESTÁTICOS ====================
@@ -104,7 +107,6 @@ async function initializePage() {
     initNavigation();
     updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan || 'trial']);
     updateBanner();
-    // ❌ ELIMINADO: renderPlans();
     renderCategoriesSection();
     renderPaymentMethods();
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -165,8 +167,6 @@ function updateBanner() {
 }
 
 // ==================== RENDERS ====================
-// ❌ FUNCIÓN ELIMINADA: renderPlans()
-
 function renderCategoriesSection() {
   const container = document.getElementById('categoriesGrid');
   if (!container) {
@@ -253,32 +253,51 @@ function renderSelectedTags() {
 }
 
 function renderPaymentMethods() {
-  const container = document.getElementById('paymentMethods');
+  const container = document.getElementById('metodosPagoContainer'); // ✅ Corregido el ID
   if (!container) {
-    console.warn('⚠️ #paymentMethods no encontrado');
+    console.warn('⚠️ #metodosPagoContainer no encontrado');
     return;
   }
-  container.innerHTML = '';
-  METODOS_PAGO.forEach(m => {
-    const checked = comercioData.paymentMethods?.includes(m.value) || false;
-    const tag = document.createElement('div');
-    tag.className = `payment-tag ${checked ? 'selected' : ''}`;
-    tag.innerHTML = `
-      <input type="checkbox" id="pay_${m.value}" name="paymentMethods" value="${m.value}" ${checked ? 'checked' : ''}>
-      <label for="pay_${m.value}">
-        <i class="fas ${m.icon}"></i> ${m.label}
-      </label>
-    `;
-    tag.addEventListener('click', (e) => {
-      e.preventDefault();
-      const checkbox = tag.querySelector('input');
-      checkbox.checked = !checkbox.checked;
-      tag.classList.toggle('selected', checkbox.checked);
-      markAsChanged();
-      checkFormValidity();
+  
+  // Limpiar solo si tiene contenido dinámico previo
+  const existingCheckboxes = container.querySelectorAll('input[type="checkbox"]');
+  if (existingCheckboxes.length > 0) {
+    // Ya está renderizado desde el HTML, solo actualizar estados
+    existingCheckboxes.forEach(checkbox => {
+      const isChecked = comercioData.paymentMethods?.includes(checkbox.value) || false;
+      checkbox.checked = isChecked;
+      const card = checkbox.closest('.payment-method-card');
+      if (card) {
+        card.classList.toggle('selected', isChecked);
+      }
     });
-    container.appendChild(tag);
-  });
+    
+    // Agregar listeners
+    container.addEventListener('click', (e) => {
+      const card = e.target.closest('.payment-method-card');
+      if (card) {
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        if (checkbox && e.target !== checkbox) {
+          checkbox.checked = !checkbox.checked;
+          card.classList.toggle('selected', checkbox.checked);
+          markAsChanged();
+          checkFormValidity();
+        }
+      }
+    });
+    
+    container.addEventListener('change', (e) => {
+      if (e.target.type === 'checkbox') {
+        const card = e.target.closest('.payment-method-card');
+        if (card) {
+          card.classList.toggle('selected', e.target.checked);
+          markAsChanged();
+          checkFormValidity();
+        }
+      }
+    });
+  }
+  
   checkFormValidity();
 }
 
@@ -300,7 +319,8 @@ async function validarSlug(slug, showSuggestions = false) {
     if (!snap.exists() || snap.data().comercioId === currentComercioId) {
       comercioSlug = slug;
       slugDisponible = true;
-      updateSlugStatus('available', `indiceia.com/${slug}`);
+      updateSlugStatus('available', `✓ indiceia.com/${slug}`);
+      checkFormValidity();
       return;
     }
 
@@ -319,17 +339,22 @@ async function validarSlug(slug, showSuggestions = false) {
           // Auto-rellenar la sugerencia
           const slugInput = document.getElementById('comercioSlug');
           if (slugInput) slugInput.value = alt;
+          checkFormValidity();
           return;
         }
       }
     }
 
     slugDisponible = false;
+    comercioSlug = null;
     updateSlugStatus('taken', 'Este nombre ya está en uso. Probá con otro.');
+    checkFormValidity();
   } catch (err) {
     console.error('Error validando slug:', err);
     slugDisponible = false;
+    comercioSlug = null;
     updateSlugStatus('error', 'Error al validar. Intentá de nuevo.');
+    checkFormValidity();
   }
 }
 
@@ -398,7 +423,6 @@ function checkFormValidity() {
   });
   if (!hasSocial) missing = true;
   if (selectedCategories.length === 0) missing = true;
-  // ❌ ELIMINADO: if (!document.querySelector('.plan-card.selected')) missing = true;
   
   // Validar slug
   if (!slugDisponible) missing = true;
@@ -442,7 +466,9 @@ function fillForm() {
   const slugInput = document.getElementById('comercioSlug');
   if (slugInput && comercioSlug) {
     slugInput.value = comercioSlug;
-    updateSlugStatus('available', `indiceia.com/${comercioSlug}`);
+    slugInput.disabled = true; // ✅ Deshabilitar si ya existe
+    slugInput.classList.add('readonly');
+    updateSlugStatus('available', `✓ indiceia.com/${comercioSlug}`);
   }
   
   checkFormValidity();
@@ -472,49 +498,60 @@ function setupEventListeners() {
     form.addEventListener('input', checkFormValidity);
   }
   
-  // Auto-generar slug desde nombreComercio
   const nombreInput = document.getElementById('nombreComercio');
-  if (nombreInput) {
-    nombreInput.addEventListener('input', () => {
-      clearTimeout(slugValidationTimer);
-      
-      slugValidationTimer = setTimeout(async () => {
-        const slugInput = document.getElementById('comercioSlug');
-        if (!slugInput) return;
-        
-        // Solo auto-generar si el campo está vacío
-        if (!slugInput.value.trim()) {
-          const nombre = nombreInput.value.trim();
-          if (nombre.length >= 3) {
-            const newSlug = slugify(nombre);
-            slugInput.value = newSlug;
-            await validarSlug(newSlug, true);
-          }
-        }
-      }, 500);
-    });
-  }
-  
-  // Validar slug cuando el usuario edita manualmente
   const slugInput = document.getElementById('comercioSlug');
-  if (slugInput) {
-    slugInput.addEventListener('input', (e) => {
-      clearTimeout(slugValidationTimer);
+  
+  if (nombreInput && slugInput) {
+    // ✅ SI YA EXISTE SLUG (usuario editando): deshabilitar campo
+    if (comercioSlug) {
+      slugInput.disabled = true;
+      slugInput.classList.add('readonly');
+      console.log('✅ Slug existente, campo deshabilitado:', comercioSlug);
+    } else {
+      // ✅ USUARIO NUEVO: Auto-generar slug mientras escribe el nombre
+      console.log('✅ Usuario nuevo, activando auto-generación de slug');
       
-      // Normalizar mientras escribe
-      let value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-      e.target.value = value;
-      
-      slugValidationTimer = setTimeout(async () => {
-        if (value.length >= 3) {
-          await validarSlug(value, false);
-        } else {
+      nombreInput.addEventListener('input', () => {
+        clearTimeout(slugValidationTimer);
+        
+        const nombre = nombreInput.value.trim();
+        
+        // Limpiar estado si el nombre es muy corto
+        if (nombre.length < 3) {
+          slugInput.value = '';
           updateSlugStatus('empty', 'Mínimo 3 caracteres');
           slugDisponible = false;
+          checkFormValidity();
+          return;
         }
-        checkFormValidity();
-      }, 500);
-    });
+        
+        slugValidationTimer = setTimeout(async () => {
+          const newSlug = slugify(nombre);
+          slugInput.value = newSlug;
+          await validarSlug(newSlug, true); // Con sugerencias
+        }, 500);
+      });
+      
+      // Permitir edición manual del slug
+      slugInput.addEventListener('input', (e) => {
+        clearTimeout(slugValidationTimer);
+        
+        // Normalizar mientras escribe
+        let value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        e.target.value = value;
+        
+        if (value.length < 3) {
+          updateSlugStatus('empty', 'Mínimo 3 caracteres');
+          slugDisponible = false;
+          checkFormValidity();
+          return;
+        }
+        
+        slugValidationTimer = setTimeout(async () => {
+          await validarSlug(value, false); // Sin sugerencias (edición manual)
+        }, 500);
+      });
+    }
   }
   
   const logoutBtn = document.getElementById('logoutBtn');
@@ -527,7 +564,7 @@ function setupEventListeners() {
   if (btnBottom) {
     btnBottom.addEventListener('click', saveFormData);
   }
-  const paymentContainer = document.getElementById('paymentMethods');
+  const paymentContainer = document.getElementById('metodosPagoContainer');
   if (paymentContainer) {
     paymentContainer.addEventListener('change', () => {
       markAsChanged();
@@ -560,7 +597,6 @@ async function saveFormData() {
   });
   if (!hasSocial) missing.push('al menos una red social o web');
   if (selectedCategories.length === 0) missing.push('categorías');
-  // ❌ ELIMINADO: if (!document.querySelector('.plan-card.selected')) missing.push('un plan');
   
   if (missing.length > 0) {
     showToast('Faltan datos', 'Completá: ' + missing.join(', '), 'warning');
@@ -588,28 +624,33 @@ async function saveFormData() {
     const updates = {};
     for (let [k, v] of formData) updates[k] = v.trim();
     updates.categories = selectedCategories;
-    updates.paymentMethods = Array.from(document.querySelectorAll('input[name="paymentMethods"]:checked')).map(i => i.value);
-    // ❌ ELIMINADO: updates.plan = document.querySelector('.plan-card.selected')?.dataset.plan || 'trial';
-    // ✅ Mantener el plan actual sin modificar
+    updates.paymentMethods = Array.from(document.querySelectorAll('input[name="metodos_pago"]:checked')).map(i => i.value);
     updates['onboardingSteps.mi-comercio'] = true;
     updates.fechaActualizacion = new Date();
-    updates.slug = comercioSlug;
+    
+    // ✅ Solo guardar slug si es nuevo (no existía antes)
+    if (!originalData.slug) {
+      updates.slug = comercioSlug;
+    }
     
     const comercioRef = doc(db, 'comercios', currentComercioId);
-    const slugRef = doc(db, 'landings', comercioSlug);
     
     // Guardar comercio
     await updateDoc(comercioRef, updates);
     
-    // Crear/actualizar índice de slug
-    await setDoc(slugRef, {
-      slug: comercioSlug,
-      comercioId: currentComercioId,
-      nombre: updates.nombreComercio,
-      activo: true,
-      createdAt: originalData.slug ? (comercioData.createdAt || new Date()) : new Date(),
-      updatedAt: new Date()
-    });
+    // ✅ Crear índice de slug SOLO si es nuevo
+    if (!originalData.slug) {
+      const slugRef = doc(db, 'landings', comercioSlug);
+      await setDoc(slugRef, {
+        slug: comercioSlug,
+        comercioId: currentComercioId,
+        nombre: updates.nombreComercio,
+        activo: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      console.log('✅ Slug creado en landings:', comercioSlug);
+    }
     
     comercioData = { ...comercioData, ...updates };
     originalData = structuredClone(comercioData);
