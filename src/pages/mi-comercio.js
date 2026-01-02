@@ -14,7 +14,7 @@ import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { runFlowController, redirectAfterSave } from '../controllers/flowController.js';
-
+window.auth = auth;
 // ==================== SLUG UTILS ====================
 function slugify(text) {
   return text
