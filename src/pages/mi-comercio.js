@@ -104,7 +104,7 @@ async function initializePage() {
     initNavigation();
     updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan || 'trial']);
     updateBanner();
-    renderPlans();
+    // ❌ ELIMINADO: renderPlans();
     renderCategoriesSection();
     renderPaymentMethods();
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -165,43 +165,7 @@ function updateBanner() {
 }
 
 // ==================== RENDERS ====================
-function renderPlans() {
-  const container = document.getElementById('planSelector');
-  if (!container) {
-    console.warn('⚠️ #planSelector no encontrado');
-    return;
-  }
-  container.innerHTML = '';
-  Object.entries(PLANS).forEach(([key, plan]) => {
-    if (key === 'trial') return;
-    const selected = comercioData.plan === key;
-    const card = document.createElement('div');
-    card.className = `plan-card ${selected ? 'selected' : ''}`;
-    card.dataset.plan = key;
-    card.innerHTML = `
-      <div class="plan-header">
-        <h4>${plan.emoji} ${plan.nombre}</h4>
-        <div class="plan-price">$${plan.precio || 0}<small>/mes</small></div>
-      </div>
-      <p class="plan-description">${plan.descripcion}</p>
-      <div class="plan-features">
-        ${plan.features.map(f => `<div class="feature"><i class="fas fa-check"></i> ${f}</div>`).join('')}
-      </div>
-      ${plan.masVendido ? '<div style="background:#10b981;color:white;padding:0.25rem 0.75rem;border-radius:8px;font-size:0.8rem;margin-top:1rem;">MÁS VENDIDO</div>' : ''}
-    `;
-    card.onclick = () => {
-      document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      comercioData.plan = key;
-      markAsChanged();
-      checkFormValidity();
-      updateHeaderInfo(comercioData.nombreComercio, plan);
-      updateBanner();
-      showToast('Plan seleccionado', `Ahora tenés el plan ${plan.nombre}`, 'info');
-    };
-    container.appendChild(card);
-  });
-}
+// ❌ FUNCIÓN ELIMINADA: renderPlans()
 
 function renderCategoriesSection() {
   const container = document.getElementById('categoriesGrid');
@@ -434,7 +398,7 @@ function checkFormValidity() {
   });
   if (!hasSocial) missing = true;
   if (selectedCategories.length === 0) missing = true;
-  if (!document.querySelector('.plan-card.selected')) missing = true;
+  // ❌ ELIMINADO: if (!document.querySelector('.plan-card.selected')) missing = true;
   
   // Validar slug
   if (!slugDisponible) missing = true;
@@ -596,7 +560,7 @@ async function saveFormData() {
   });
   if (!hasSocial) missing.push('al menos una red social o web');
   if (selectedCategories.length === 0) missing.push('categorías');
-  if (!document.querySelector('.plan-card.selected')) missing.push('un plan');
+  // ❌ ELIMINADO: if (!document.querySelector('.plan-card.selected')) missing.push('un plan');
   
   if (missing.length > 0) {
     showToast('Faltan datos', 'Completá: ' + missing.join(', '), 'warning');
@@ -625,7 +589,8 @@ async function saveFormData() {
     for (let [k, v] of formData) updates[k] = v.trim();
     updates.categories = selectedCategories;
     updates.paymentMethods = Array.from(document.querySelectorAll('input[name="paymentMethods"]:checked')).map(i => i.value);
-    updates.plan = document.querySelector('.plan-card.selected')?.dataset.plan || 'trial';
+    // ❌ ELIMINADO: updates.plan = document.querySelector('.plan-card.selected')?.dataset.plan || 'trial';
+    // ✅ Mantener el plan actual sin modificar
     updates['onboardingSteps.mi-comercio'] = true;
     updates.fechaActualizacion = new Date();
     updates.slug = comercioSlug;
