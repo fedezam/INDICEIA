@@ -7,7 +7,7 @@ import '../styles/forms-premium.css';
 import './mi-comercio.css';
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc, addDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, collection, setDoc } from 'firebase/firestore';
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { initNavigation } from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
@@ -321,12 +321,12 @@ async function validarSlug(slug, showSuggestions = false) {
   updateSlugStatus('checking', 'Verificando disponibilidad...');
 
   try {
-    const querySnapshot = await getDocs(collection(db, 'comercios'));
-    const existing = querySnapshot.docs.find(doc =>
-      doc.id !== currentComercioId && doc.data().landing?.slug === slug
-    );
+    // ✅ Consultar el índice de landings (documento único)
+    const landingRef = doc(db, 'landings', slug);
+    const landingSnap = await getDoc(landingRef);
 
-    if (!existing) {
+    // Si no existe o es mío, está disponible
+    if (!landingSnap.exists() || landingSnap.data().comercioId === currentComercioId) {
       comercioSlug = slug;
       slugDisponible = true;
       updateSlugStatus('available', `✓ indiceia.com/${slug}`);
@@ -334,13 +334,14 @@ async function validarSlug(slug, showSuggestions = false) {
       return;
     }
 
+    // Está ocupado - buscar alternativas
     if (showSuggestions) {
       for (let i = 2; i <= 5; i++) {
         const alt = `${slug}-${i}`;
-        const altExists = querySnapshot.docs.find(doc =>
-          doc.data().landing?.slug === alt
-        );
-        if (!altExists) {
+        const altRef = doc(db, 'landings', alt);
+        const altSnap = await getDoc(altRef);
+
+        if (!altSnap.exists()) {
           comercioSlug = alt;
           slugDisponible = true;
           updateSlugStatus('suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`, alt);
@@ -516,8 +517,11 @@ function setupEventListeners() {
       // Ya existe landing → todo bloqueado
       slugInput.disabled = true;
       slugInput.classList.add('readonly');
+      console.log('✅ Slug existente, campo deshabilitado:', comercioSlug);
     } else {
       // Comercio nuevo → auto-generar slug
+      console.log('✅ Usuario nuevo, activando auto-generación de slug');
+      
       nombreInput.addEventListener('input', () => {
         clearTimeout(slugValidationTimer);
         const nombre = nombreInput.value.trim();
@@ -539,7 +543,7 @@ function setupEventListeners() {
 
       slugInput.addEventListener('input', (e) => {
         clearTimeout(slugValidationTimer);
-        let value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+        let value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
         e.target.value = value;
 
         if (value.length < 3) {
@@ -622,7 +626,7 @@ async function saveFormData() {
     updates['onboardingSteps.mi-comercio'] = true;
     updates.fechaActualizacion = new Date();
 
-    // Crear landing solo si no existe
+    // ✅ Guardar landing dentro del comercio
     if (!originalData.landing) {
       updates.landing = {
         activo: true,
@@ -642,6 +646,20 @@ async function saveFormData() {
 
     const comercioRef = doc(db, 'comercios', currentComercioId);
     await updateDoc(comercioRef, updates);
+
+    // ✅ Crear índice en landings SOLO si es nuevo
+    if (!originalData.landing) {
+      const landingRef = doc(db, 'landings', comercioSlug);
+      await setDoc(landingRef, {
+        slug: comercioSlug,
+        comercioId: currentComercioId,
+        nombre: updates.nombreComercio,
+        activo: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      console.log('✅ Índice de landing creado:', comercioSlug);
+    }
 
     // Actualizar estado local
     comercioData = { ...comercioData, ...updates };
