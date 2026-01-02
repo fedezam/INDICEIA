@@ -1,5 +1,4 @@
-export const config = { runtime: 'nodejs' };
-
+// api/resolve-cta/[slug].js
 import admin from 'firebase-admin';
 import { generateLLMUrl } from '../../lib/link-builder/link-generator.js';
 
