@@ -329,7 +329,7 @@ async function validarSlug(slug, showSuggestions = false) {
   updateSlugStatus('checking', 'Verificando disponibilidad...');
 
   try {
-    const slugRef = doc(db, 'slugs', slug);
+    const slugRef = doc(db, 'landings', slug);
     const snap = await getDoc(slugRef);
 
     // Si no existe o es mío, está disponible
@@ -345,7 +345,7 @@ async function validarSlug(slug, showSuggestions = false) {
       // Buscar alternativas
       for (let i = 2; i <= 5; i++) {
         const alt = `${slug}-${i}`;
-        const altRef = doc(db, 'slugs', alt);
+        const altRef = doc(db, 'landings', alt);
         const altSnap = await getDoc(altRef);
 
         if (!altSnap.exists()) {
@@ -631,7 +631,7 @@ async function saveFormData() {
     updates.slug = comercioSlug;
     
     const comercioRef = doc(db, 'comercios', currentComercioId);
-    const slugRef = doc(db, 'slugs', comercioSlug);
+    const slugRef = doc(db, 'landings', comercioSlug);
     
     // Guardar comercio
     await updateDoc(comercioRef, updates);
