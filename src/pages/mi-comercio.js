@@ -51,6 +51,7 @@ let selectedCategories = [];
 let hasUnsavedChanges = false;
 let comercioSlug = null;
 let slugDisponible = false;
+let slugValidationTimer = null;
 
 // ==================== INICIALIZACIÓN ====================
 onAuthStateChanged(auth, async (user) => {
@@ -138,7 +139,7 @@ async function loadComercioData() {
   
   // Cargar slug si existe
   comercioSlug = comercioData.slug || null;
-  slugDisponible = !!comercioSlug; // Si ya existe slug, está disponible
+  slugDisponible = !!comercioSlug;
 }
 
 // ==================== BANNER HELPER ====================
@@ -317,47 +318,97 @@ function renderPaymentMethods() {
   checkFormValidity();
 }
 
-// ==================== VALIDACIÓN DE SLUG ====================
-async function validarSlug(baseSlug) {
+// ==================== VALIDACIÓN DE SLUG (MEJORADA) ====================
+async function validarSlug(slug, showSuggestions = false) {
+  if (!slug || slug.length < 3) {
+    updateSlugStatus('empty', 'El nombre debe tener al menos 3 caracteres');
+    slugDisponible = false;
+    return;
+  }
+
+  updateSlugStatus('checking', 'Verificando disponibilidad...');
+
   try {
-    const slugRef = doc(db, 'slugs', baseSlug);
+    const slugRef = doc(db, 'slugs', slug);
     const snap = await getDoc(slugRef);
 
-    if (!snap.exists()) {
-      comercioSlug = baseSlug;
+    // Si no existe o es mío, está disponible
+    if (!snap.exists() || snap.data().comercioId === currentComercioId) {
+      comercioSlug = slug;
       slugDisponible = true;
-      showToast('Slug disponible', `Tu link será /${baseSlug}`, 'success');
+      updateSlugStatus('available', `indiceia.com/${slug}`);
       return;
     }
 
-    // Si existe, probamos alternativas automáticas
-    for (let i = 2; i <= 5; i++) {
-      const alt = `${baseSlug}-${i}`;
-      const altRef = doc(db, 'slugs', alt);
-      const altSnap = await getDoc(altRef);
+    // Está ocupado
+    if (showSuggestions) {
+      // Buscar alternativas
+      for (let i = 2; i <= 5; i++) {
+        const alt = `${slug}-${i}`;
+        const altRef = doc(db, 'slugs', alt);
+        const altSnap = await getDoc(altRef);
 
-      if (!altSnap.exists()) {
-        comercioSlug = alt;
-        slugDisponible = true;
-        showToast(
-          'Slug alternativo',
-          `El nombre estaba ocupado. Usaremos /${alt}`,
-          'info'
-        );
-        return;
+        if (!altSnap.exists()) {
+          comercioSlug = alt;
+          slugDisponible = true;
+          updateSlugStatus('suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`, alt);
+          // Auto-rellenar la sugerencia
+          const slugInput = document.getElementById('comercioSlug');
+          if (slugInput) slugInput.value = alt;
+          return;
+        }
       }
     }
 
     slugDisponible = false;
-    showToast(
-      'Slug no disponible',
-      'Probá cambiar el nombre del comercio',
-      'warning'
-    );
+    updateSlugStatus('taken', 'Este nombre ya está en uso. Probá con otro.');
   } catch (err) {
     console.error('Error validando slug:', err);
     slugDisponible = false;
-    showToast('Error', 'No se pudo validar el slug', 'error');
+    updateSlugStatus('error', 'Error al validar. Intentá de nuevo.');
+  }
+}
+
+function updateSlugStatus(status, message, suggestion = null) {
+  const statusEl = document.getElementById('slugStatus');
+  const iconEl = document.getElementById('slugStatusIcon');
+  const textEl = document.getElementById('slugStatusText');
+  
+  if (!statusEl || !iconEl || !textEl) return;
+
+  statusEl.className = 'slug-status';
+  
+  switch (status) {
+    case 'checking':
+      statusEl.classList.add('checking');
+      iconEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      textEl.textContent = message;
+      break;
+    case 'available':
+      statusEl.classList.add('available');
+      iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
+      textEl.textContent = message;
+      break;
+    case 'suggestion':
+      statusEl.classList.add('suggestion');
+      iconEl.innerHTML = '<i class="fas fa-info-circle"></i>';
+      textEl.textContent = message;
+      break;
+    case 'taken':
+      statusEl.classList.add('taken');
+      iconEl.innerHTML = '<i class="fas fa-times-circle"></i>';
+      textEl.textContent = message;
+      break;
+    case 'error':
+      statusEl.classList.add('error');
+      iconEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+      textEl.textContent = message;
+      break;
+    case 'empty':
+      statusEl.classList.add('empty');
+      iconEl.innerHTML = '';
+      textEl.textContent = message;
+      break;
   }
 }
 
@@ -384,6 +435,10 @@ function checkFormValidity() {
   if (!hasSocial) missing = true;
   if (selectedCategories.length === 0) missing = true;
   if (!document.querySelector('.plan-card.selected')) missing = true;
+  
+  // Validar slug
+  if (!slugDisponible) missing = true;
+  
   const btnTop = document.getElementById('saveChangesBtn');
   const btnBottom = document.getElementById('saveChangesBtnBottom');
   const buttons = [btnTop, btnBottom].filter(Boolean);
@@ -418,6 +473,14 @@ function fillForm() {
     const field = form.elements[key];
     if (field && value) field.value = value;
   });
+  
+  // Llenar slug si existe
+  const slugInput = document.getElementById('comercioSlug');
+  if (slugInput && comercioSlug) {
+    slugInput.value = comercioSlug;
+    updateSlugStatus('available', `indiceia.com/${comercioSlug}`);
+  }
+  
   checkFormValidity();
 }
 
@@ -445,16 +508,48 @@ function setupEventListeners() {
     form.addEventListener('input', checkFormValidity);
   }
   
-  // Evento para generar slug automático al perder foco del nombre
+  // Auto-generar slug desde nombreComercio
   const nombreInput = document.getElementById('nombreComercio');
   if (nombreInput) {
-    nombreInput.addEventListener('blur', async () => {
-      if (comercioSlug) return; // ya existe → no regenerar
-
-      const baseSlug = slugify(nombreInput.value);
-      if (!baseSlug) return;
-
-      await validarSlug(baseSlug);
+    nombreInput.addEventListener('input', () => {
+      clearTimeout(slugValidationTimer);
+      
+      slugValidationTimer = setTimeout(async () => {
+        const slugInput = document.getElementById('comercioSlug');
+        if (!slugInput) return;
+        
+        // Solo auto-generar si el campo está vacío
+        if (!slugInput.value.trim()) {
+          const nombre = nombreInput.value.trim();
+          if (nombre.length >= 3) {
+            const newSlug = slugify(nombre);
+            slugInput.value = newSlug;
+            await validarSlug(newSlug, true);
+          }
+        }
+      }, 500);
+    });
+  }
+  
+  // Validar slug cuando el usuario edita manualmente
+  const slugInput = document.getElementById('comercioSlug');
+  if (slugInput) {
+    slugInput.addEventListener('input', (e) => {
+      clearTimeout(slugValidationTimer);
+      
+      // Normalizar mientras escribe
+      let value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+      e.target.value = value;
+      
+      slugValidationTimer = setTimeout(async () => {
+        if (value.length >= 3) {
+          await validarSlug(value, false);
+        } else {
+          updateSlugStatus('empty', 'Mínimo 3 caracteres');
+          slugDisponible = false;
+        }
+        checkFormValidity();
+      }, 500);
     });
   }
   
@@ -509,13 +604,9 @@ async function saveFormData() {
     return;
   }
   
-  // Validar slug antes de guardar
+  // Validar slug
   if (!comercioSlug || !slugDisponible) {
-    showToast(
-      'Link público',
-      'Necesitamos un nombre válido para generar tu link público',
-      'warning'
-    );
+    showToast('Link público', 'Elegí un nombre disponible para tu link público', 'warning');
     return;
   }
   
@@ -537,8 +628,6 @@ async function saveFormData() {
     updates.plan = document.querySelector('.plan-card.selected')?.dataset.plan || 'trial';
     updates['onboardingSteps.mi-comercio'] = true;
     updates.fechaActualizacion = new Date();
-    
-    // Agregar slug al update
     updates.slug = comercioSlug;
     
     const comercioRef = doc(db, 'comercios', currentComercioId);
@@ -547,14 +636,15 @@ async function saveFormData() {
     // Guardar comercio
     await updateDoc(comercioRef, updates);
     
-    // Crear índice de slug SOLO si no existía
-    if (!originalData.slug) {
-      await setDoc(slugRef, {
-        slug: comercioSlug,
-        comercioId: currentComercioId,
-        createdAt: new Date()
-      });
-    }
+    // Crear/actualizar índice de slug
+    await setDoc(slugRef, {
+      slug: comercioSlug,
+      comercioId: currentComercioId,
+      nombre: updates.nombreComercio,
+      activo: true,
+      createdAt: originalData.slug ? (comercioData.createdAt || new Date()) : new Date(),
+      updatedAt: new Date()
+    });
     
     comercioData = { ...comercioData, ...updates };
     originalData = structuredClone(comercioData);
@@ -584,7 +674,6 @@ async function saveFormData() {
     updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
     updateBanner();
 
-    // Redirección después de guardar
     setTimeout(() => {
       redirectAfterSave();
     }, 1000);
