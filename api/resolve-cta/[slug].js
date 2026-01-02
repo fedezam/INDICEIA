@@ -1,8 +1,7 @@
-// INDICEIA/api/resolve-cta/[slug].js
 export const config = { runtime: 'nodejs' };
 
 import admin from 'firebase-admin';
-import { generateClaudeUrl } from '../../lib/link-builder/claude.js';
+import { generateLLMUrl } from '../../lib/link-builder/link-generator.js';
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -41,10 +40,10 @@ export default async function handler(req, res) {
       return res.status(409).json({ ok: false, error: 'entidad no generada' });
     }
 
-    // 3️⃣ Construir CTA FINAL (CLAUDE + PROMPT + BLOB)
-    const ctaUrl = generateClaudeUrl(data.entityPublicUrl);
+    // 3️⃣ Construir CTA FINAL (LLM URL universal)
+    const ctaUrl = generateLLMUrl(data.entityPublicUrl, 'claude'); // motor por defecto: claude
 
-    // 4️⃣ Responder JSON público
+    // 4️⃣ Devolver contrato público completo
     return res.status(200).json({
       ok: true,
       slug,
@@ -52,10 +51,12 @@ export default async function handler(req, res) {
       descripcion: data.descripcion || '',
       direccion: data.direccion || '',
       ciudad: data.ciudad || '',
+
       cta: {
         label: 'Hablar con la IA',
         url: ctaUrl,
       },
+
       branding: {
         logo: data.logoUrl || null,
         color: data.brandColor || '#0070f3',
