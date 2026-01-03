@@ -2,106 +2,76 @@
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
 
-// ---------------------------------------------------------
-// 🔹 Configuración de pasos del onboarding
-// ---------------------------------------------------------
-const FLOW_STEPS = [
-  { id: "usuario", name: "Usuario" },
-  { id: "mi-comercio", name: "Mi Comercio" },
-  { id: "horarios", name: "Horarios" },
-  { id: "productos", name: "Productos" },
-  { id: "ia-config", name: "Configuración IA" },
+/* =========================================================
+   CONFIGURACIÓN DEL FLOW (orden estricto)
+   ========================================================= */
+
+const FLOW_ORDER = [
+  "usuario",
+  "mi-comercio",
+  "horarios",
+  "productos",
+  "ia-config",
 ];
 
-// ---------------------------------------------------------
-// 🔹 Helper: obtiene página actual sin extensión
-// ---------------------------------------------------------
+const PUBLIC_PAGES = ["login", "registro", "index", ""];
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+
 function getCurrentPage() {
   if (typeof window === "undefined") return null;
-  const path = window.location.pathname;
-  const fileName = path.split('/').pop();
-  return fileName.replace('.html', '');
+  const file = window.location.pathname.split("/").pop();
+  return file?.replace(".html", "") || "usuario";
 }
 
-// ---------------------------------------------------------
-// 🔹 FIX rutas fantasma (build Vite + Vercel)
-// ---------------------------------------------------------
-if (typeof window !== "undefined") {
-  const path = window.location.pathname;
-  if (path.startsWith("/pages/")) {
-    const clean = path.replace("/pages/", "/");
-    window.location.replace(clean);
-  }
-}
-
-// ---------------------------------------------------------
-// 🔹 Detectar si estamos en modo edición (dashboard → páginas)
-// ---------------------------------------------------------
 function isEditMode() {
   const params = new URLSearchParams(window.location.search);
   return params.get("edit") === "true";
 }
 
-// ---------------------------------------------------------
-// 🔹 Setea window.flowState para navigation.js
-// ---------------------------------------------------------
-function updateFlowState(steps, currentPage) {
-  const pages = FLOW_STEPS.map(step => ({
-    id: step.id,
-    name: step.name,
-    completed: step.id === "usuario" ? true : (steps[step.id] === true)
-  }));
-
-  const completedCount = pages.filter(p => p.completed).length;
-
-  window.flowState = {
-    pages,
-    current: currentPage || 'usuario',
-    completed: completedCount
-  };
-
-  window.dispatchEvent(new CustomEvent('flowStateUpdated'));
-  console.log('✅ flowState actualizado:', window.flowState);
+function getFirstIncompleteStep(steps = {}) {
+  return FLOW_ORDER.find(
+    (step) => step !== "usuario" && steps[step] !== true
+  ) || null;
 }
 
-// ---------------------------------------------------------
-// 🔹 Controlador principal de flujo
-// ---------------------------------------------------------
+function canAccessStep(step, steps = {}) {
+  const index = FLOW_ORDER.indexOf(step);
+  if (index === -1) return false;
+
+  for (let i = 1; i < index; i++) {
+    if (steps[FLOW_ORDER[i]] !== true) return false;
+  }
+  return true;
+}
+
+/* =========================================================
+   FLOW CONTROLLER (SOLO DECIDE AL ENTRAR A UNA PÁGINA)
+   ========================================================= */
+
 export async function runFlowController(uid) {
   if (typeof window === "undefined") return;
 
-  // 🆕 MANEJO DE AUTH: Si no hay uid, redirigir al login
+  const currentPage = getCurrentPage();
+  const editMode = isEditMode();
+  window.isEditMode = editMode;
+
+  /* ---------- AUTH ---------- */
+
   if (!uid) {
-    const currentPage = getCurrentPage();
-    
-    // Permitir acceso a login y páginas públicas sin auth
-    const publicPages = ['login', 'registro', 'index', ''];
-    
-    if (!publicPages.includes(currentPage)) {
-      console.warn("❌ No hay UID, redirigiendo al login");
+    if (!PUBLIC_PAGES.includes(currentPage)) {
       window.location.href = "/login.html";
-      return;
     }
-    
-    // Si ya está en una página pública, no hacer nada
-    console.log("✅ Página pública, sin auth requerida");
     return;
   }
 
-  const currentPage = getCurrentPage();
-  const editMode = isEditMode();
-
-  // 🆕 EXPONER MODO EDICIÓN GLOBALMENTE
-  window.isEditMode = editMode;
-
   try {
-    // 1️⃣ Obtener datos del usuario
-    const userRef = doc(db, "usuarios", uid);
-    const userSnap = await getDoc(userRef);
-    
-    // 🆕 Si el usuario no existe en Firestore, redirigir al login
+    /* ---------- USUARIO ---------- */
+
+    const userSnap = await getDoc(doc(db, "usuarios", uid));
     if (!userSnap.exists()) {
-      console.warn("❌ Usuario no existe en Firestore");
       window.location.href = "/login.html";
       return;
     }
@@ -109,131 +79,111 @@ export async function runFlowController(uid) {
     const userData = userSnap.data();
     const comercioId = userData?.comercioId;
 
-    const usuarioCompleto = userData?.onboardingSteps?.usuario === true;
-
-    // 2️⃣ Página usuario: la única que siempre puede cargar libremente
-    if (currentPage === "usuario" && (!usuarioCompleto || !comercioId)) {
-      updateFlowState({}, "usuario");
-      return;
-    }
-
-    // 3️⃣ Si no hay comercioId no puede acceder a otras páginas
-    if (!comercioId && currentPage !== "usuario" && !editMode) {
-      console.warn("⚠️ Sin comercioId, redirigiendo a usuario.html");
+    if (!comercioId && currentPage !== "usuario") {
       window.location.href = "/usuario.html";
       return;
     }
 
-    // 4️⃣ Obtener steps del comercio
+    /* ---------- COMERCIO / STEPS ---------- */
+
     let steps = {};
     if (comercioId) {
-      const comercioRef = doc(db, "comercios", comercioId);
-      const comercioSnap = await getDoc(comercioRef);
-      steps = comercioSnap.exists() ? comercioSnap.data()?.onboardingSteps || {} : {};
+      const comercioSnap = await getDoc(doc(db, "comercios", comercioId));
+      steps = comercioSnap.exists()
+        ? comercioSnap.data()?.onboardingSteps || {}
+        : {};
     }
 
-    updateFlowState(steps, currentPage);
+    /* =====================================================
+       MODO EDICIÓN (dashboard → páginas)
+       ===================================================== */
 
-    // 🆕 SI ESTÁ EN MODO EDICIÓN → NO REDIRIGIR, SOLO ACTUALIZAR ESTADO
     if (editMode) {
-      console.log('✅ Modo edición activado - flowController no redirige');
-      setupEditMode();
+      // Solo permite entrar a pasos ya completados
+      if (
+        currentPage !== "dashboard" &&
+        currentPage !== "usuario" &&
+        steps[currentPage] !== true
+      ) {
+        window.location.href = "/dashboard.html";
+        return;
+      }
+
+      setupEditModeUI();
       return;
     }
 
-    // 5️⃣ Primer paso incompleto (solo aplica en onboarding)
-    let firstIncompleteStep = null;
-    for (const step of FLOW_STEPS) {
-      if (step.id === "usuario") continue;
-      if (!steps[step.id]) {
-        firstIncompleteStep = step.id;
-        break;
-      }
-    }
+    /* =====================================================
+       ONBOARDING NORMAL
+       ===================================================== */
 
-    // 6️⃣ ONBOARDING: Redirigir al primer paso incompleto
-    if (firstIncompleteStep) {
-      if (currentPage !== firstIncompleteStep) {
-        console.log(`🔄 ONBOARDING: Redirigiendo a paso incompleto: ${firstIncompleteStep}`);
-        window.location.href = `/${firstIncompleteStep}.html`;
+    const firstIncomplete = getFirstIncompleteStep(steps);
+
+    // Aún hay pasos pendientes → forzar orden
+    if (firstIncomplete) {
+      if (currentPage !== firstIncomplete) {
+        window.location.href = `/${firstIncomplete}.html`;
       }
       return;
     }
 
-    // 7️⃣ ONBOARDING completo → ir al dashboard
+    // Todo completo → dashboard
     if (currentPage !== "dashboard") {
-      console.log('✅ Onboarding completo, redirigiendo al dashboard');
       window.location.href = "/dashboard.html";
     }
-
-  } catch (error) {
-    console.error("❌ Error en flowController:", error);
-    // 🆕 En caso de error crítico, redirigir al login (failsafe)
+  } catch (err) {
+    console.error("❌ FlowController error:", err);
     window.location.href = "/login.html";
   }
 }
 
-// ---------------------------------------------------------
-// 🆕 Configurar interfaz para modo edición
-// ---------------------------------------------------------
-function setupEditMode() {
-  // Agregar botón "Volver al Dashboard" si no existe
-  if (!document.getElementById('btnVolverDashboard')) {
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      const btnVolver = document.createElement('button');
-      btnVolver.id = 'btnVolverDashboard';
-      btnVolver.type = 'button';
-      btnVolver.className = 'btn btn-secondary';
-      btnVolver.innerHTML = '<i class="fas fa-arrow-left"></i> Volver al Dashboard';
-      btnVolver.style.marginBottom = '1rem';
-      
-      btnVolver.addEventListener('click', () => {
-        // 🆕 Advertir si hay cambios sin guardar
-        if (window.hasUnsavedChanges) {
-          if (confirm('¿Seguro que querés volver? Tenés cambios sin guardar.')) {
-            window.location.href = '/dashboard.html';
-          }
-        } else {
-          window.location.href = '/dashboard.html';
-        }
-      });
-      
-      // Insertar al principio del main-content
-      mainContent.insertBefore(btnVolver, mainContent.firstChild);
-    }
-  }
+/* =========================================================
+   UI PARA MODO EDICIÓN
+   ========================================================= */
 
-  // 🆕 Habilitar siempre el botón guardar en modo edición
-  // Esperar a que el DOM esté listo
+function setupEditModeUI() {
+  if (document.getElementById("btnVolverDashboard")) return;
+
+  const main = document.querySelector(".main-content");
+  if (!main) return;
+
+  const btn = document.createElement("button");
+  btn.id = "btnVolverDashboard";
+  btn.className = "btn btn-secondary";
+  btn.innerHTML = "← Volver al Dashboard";
+  btn.style.marginBottom = "1rem";
+
+  btn.onclick = () => {
+    if (window.hasUnsavedChanges) {
+      if (!confirm("Tenés cambios sin guardar. ¿Salir igual?")) return;
+    }
+    window.location.href = "/dashboard.html";
+  };
+
+  main.prepend(btn);
+
+  // En modo edición, el botón guardar siempre está habilitado
   setTimeout(() => {
-    const btnGuardar = document.querySelector('.btn-save, #saveChangesBtn, [type="submit"]');
-    if (btnGuardar) {
-      btnGuardar.disabled = false;
-      console.log('✅ Botón guardar habilitado en modo edición');
-    }
-  }, 500);
+    const saveBtn = document.querySelector(
+      ".btn-save, #saveChangesBtn, [type='submit']"
+    );
+    if (saveBtn) saveBtn.disabled = false;
+  }, 300);
 }
 
-// ---------------------------------------------------------
-// 🆕 Función para redirigir después de guardar
-// ---------------------------------------------------------
-export function redirectAfterSave() {
+/* =========================================================
+   HELPERS PÚBLICOS
+   ========================================================= */
+
+// Usar SOLO después de guardar
+export function redirectAfterSave(nextPage) {
   if (window.isEditMode) {
-    console.log('✅ Modo edición: redirigiendo al dashboard');
-    window.location.href = '/dashboard.html';
-  } else {
-    console.log('✅ Modo onboarding: continuando con flowController');
-    // Recargar flowController para que decida el siguiente paso
-    if (window.auth?.currentUser) {
-      runFlowController(window.auth.currentUser.uid);
-    }
+    window.location.href = "/dashboard.html";
+  } else if (nextPage) {
+    window.location.href = `/${nextPage}.html`;
   }
 }
 
-// ---------------------------------------------------------
-// 🆕 Exportar función para verificar modo edición
-// ---------------------------------------------------------
 export function checkEditMode() {
-  return window.isEditMode || false;
+  return window.isEditMode === true;
 }
