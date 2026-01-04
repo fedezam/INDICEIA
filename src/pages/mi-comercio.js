@@ -13,7 +13,7 @@ import { initNavigation } from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { redirectAfterSave } from '../controllers/flowController.js';
+
 
 // ✅ BOOT DEL FLOW
 import { bootFlow } from "../controllers/boot/flowBoot.js";
