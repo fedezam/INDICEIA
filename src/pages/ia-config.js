@@ -15,10 +15,10 @@ import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 
-// ✅ CORRECCIÓN: importar desde flowController
-import { redirectAfterSave } from '../controllers/flowController.js';
-// ✅ CORRECCIÓN: importar bootFlow
-import { bootFlow } from '../boot/flowBoot.js';
+import { bootFlow } from "../controllers/boot/flowBoot.js";
+import { redirectAfterSave } from "../controllers/flowController.js";
+
+bootFlow();
 
 // ==================== FORZAR SCROLL ARRIBA ====================
 window.addEventListener('load', () => window.scrollTo(0, 0));
