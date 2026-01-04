@@ -9,14 +9,17 @@ import '../styles/forms-premium.css';
 import './productos.css';
 
 import { auth, db } from '../firebase.js';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc, collection, getDocs, addDoc, deleteDoc } from 'firebase/firestore';
 
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { runFlowController, redirectAfterSave } from '../controllers/flowController.js';
+
+// ✅ CORRECCIÓN: importar desde flowController
+import { redirectAfterSave } from '../controllers/flowController.js';
+// ✅ CORRECCIÓN: importar bootFlow
+import { bootFlow } from '../boot/flowBoot.js';
 
 // ==================== VARIABLES GLOBALES ====================
 let currentUser = null;
@@ -31,11 +34,14 @@ let atributos = [];
 let etiquetas = [];
 
 // ==================== INICIALIZACIÓN ====================
-onAuthStateChanged(auth, async (user) => {
-  // 🔹 flowController maneja todo el flujo de auth
+// ✅ CORRECCIÓN: usar bootFlow() en lugar de onAuthStateChanged manual
+bootFlow();
+
+// ✅ Mantener la lógica de inicialización pero sin duplicar auth
+auth.onAuthStateChanged(async (user) => {
   if (!user) {
     console.warn("No hay usuario autenticado");
-    runFlowController(null); // ← flowController redirige al login
+    // flowController ya redirigió, no hacer nada más
     return;
   }
 
@@ -46,13 +52,11 @@ onAuthStateChanged(auth, async (user) => {
     await user.getIdToken();
   } catch (err) {
     console.warn("Sesión expirada, cerrando...");
-    await signOut(auth);
-    runFlowController(null);
+    await auth.signOut();
     return;
   }
 
   await initializePage();
-  runFlowController(user.uid);
 });
 
 // ==================== CARGA INICIAL ====================
@@ -62,12 +66,11 @@ async function initializePage() {
 
     renderLayout();  // ← Header con logout global
 
+    // ✅ CORRECCIÓN CRÍTICA: extraer comercioId correctamente
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userSnap = await getDoc(userRef);
 
-    if (userSnap.exists() && userSnap.data().comercioId) {
-      currentComercioId = userSnap.data().comercioId;
-    } else {
+    if (!userSnap.exists() || !userSnap.data().comercioId) {
       showToast('Error', 'No se encontró comercio. Completá primero "Mi comercio".', 'warning');
       hideLoading();
       setTimeout(() => {
@@ -75,6 +78,9 @@ async function initializePage() {
       }, 2000);
       return;
     }
+
+    // ✅ CORRECCIÓN: extraer comercioId del usuario
+    currentComercioId = userSnap.data().comercioId;
 
     await loadComercioData();
     await loadProducts();
@@ -821,6 +827,7 @@ async function saveAllProducts() {
       }
     }
 
+    // ✅ CORRECCIÓN CRÍTICA: actualizar comercio con comercioId correcto
     await updateDoc(doc(db, 'comercios', currentComercioId), {
       cantidadProductos: productos.length,
       'onboardingSteps.productos': true,
@@ -862,11 +869,13 @@ async function saveAllProducts() {
     }, 2500);
 
     hideLoading();
-    showToast('Éxito', '¡Productos guardados con éxito!', 'success'); // ✅ CORREGIDO
+    showToast('Éxito', '¡Productos guardados con éxito!', 'success');
     updateBanner();
 
+    // ✅ CORRECCIÓN: usar redirectAfterSave sin parámetro
+    // flowController decide si va a ia-config o dashboard según modo
     setTimeout(() => {
-      redirectAfterSave(); // ← flowController decide: dashboard o siguiente paso
+      redirectAfterSave('ia-config'); // ← hardcodeado: siguiente paso
     }, 500);
 
     return true;
