@@ -5,61 +5,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pago recibido – Mi Comercio IA</title>
 
-  <!-- CSS separado -->
-  <link rel="stylesheet" href="/src/styles/pago-exitoso.css" />
-  
-
+  <!-- ✅ CSS correcto para Vite -->
+  <link rel="stylesheet" href="./pago-exitoso.css" />
 </head>
-  <script type="module" src="/src/pages/pago-exitoso.js"></script>
+
 <body>
   <main class="payment-container">
-  <section class="payment-card">
+    <section class="payment-card">
 
-    <div class="status-icon">⏳</div>
+      <div class="status-icon">⏳</div>
 
-    <h1>¡Pago confirmado!</h1>
+      <h1>¡Pago confirmado!</h1>
 
-    <p class="primary-text">
-      Tu suscripción a <strong>ÍndiceIA</strong> fue registrada correctamente.
-      Ya sos parte del sistema 🚀
-    </p>
-
-    <div class="activation-box">
-      <p class="activation-title">
-        Estamos activando tu asistente comercial
+      <p class="primary-text">
+        Tu suscripción a <strong>ÍndiceIA</strong> fue registrada correctamente.
+        Ya sos parte del sistema 🚀
       </p>
 
-      <p class="activation-text">
-        En esta etapa beta, la activación del plan se realiza de forma
-        <strong>manual</strong> para garantizar que todo funcione perfecto.
+      <div class="activation-box">
+        <p class="activation-title">
+          Estamos activando tu asistente comercial
+        </p>
+
+        <p class="activation-text">
+          En esta etapa beta, la activación del plan se realiza de forma
+          <strong>manual</strong>.
+        </p>
+
+        <p class="activation-text">
+          Esto puede demorar algunas horas.
+          Apenas esté activo, vas a poder usar tu IA desde el dashboard.
+        </p>
+      </div>
+
+      <p class="secondary-text">
+        No tenés que hacer nada más 😉
       </p>
 
-      <p class="activation-text">
-        Esto puede demorar algunas horas.
-        Apenas esté activo, vas a poder usar tu IA desde el dashboard.
-      </p>
-    </div>
+      <div class="actions">
+        <a href="./dashboard.html" class="btn-primary">
+          Ir al dashboard
+        </a>
+      </div>
 
-    <p class="secondary-text">
-      No tenés que hacer nada más.
-      Si cerraste una venta gracias a ÍndiceIA, el trabajo ya está hecho 😉
-    </p>
+      <footer class="payment-footer">
+        ¿Dudas?
+        <a href="mailto:indiceia.team@gmail.com">
+          indiceia.team@gmail.com
+        </a>
+      </footer>
 
-    <div class="actions">
-      <a href="/src/pages/dashboard.html" class="btn-primary">
-        Ir al dashboard
-      </a>
-    </div>
+    </section>
+  </main>
 
-    <footer class="payment-footer">
-      ¿Dudas o consultas?
-      <a href="mailto:indiceia.team@gmail.com">
-        indiceia.team@gmail.com
-      </a>
-    </footer>
-
-  </section>
-</main>
-
+  <!-- JS siempre al final -->
+  <script type="module" src="./pago-exitoso.js"></script>
 </body>
 </html>
