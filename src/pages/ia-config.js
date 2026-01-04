@@ -8,14 +8,17 @@ import '../styles/forms-premium-final.css';
 import './ia-config.css';
 
 import { auth, db } from '../firebase.js';
-import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { runFlowController, redirectAfterSave } from '../controllers/flowController.js';
+
+// ✅ CORRECCIÓN: importar desde flowController
+import { redirectAfterSave } from '../controllers/flowController.js';
+// ✅ CORRECCIÓN: importar bootFlow
+import { bootFlow } from '../boot/flowBoot.js';
 
 // ==================== FORZAR SCROLL ARRIBA ====================
 window.addEventListener('load', () => window.scrollTo(0, 0));
@@ -94,15 +97,19 @@ function updateBanner() {
 }
 
 // ==================== INICIALIZACIÓN ====================
-onAuthStateChanged(auth, async (user) => {
+// ✅ CORRECCIÓN: usar bootFlow() en lugar de onAuthStateChanged manual
+bootFlow();
+
+// ✅ Mantener la lógica de inicialización pero sin duplicar auth
+auth.onAuthStateChanged(async (user) => {
   if (!user) {
     console.warn("No hay usuario autenticado");
+    // flowController ya redirigió, no hacer nada más
     return;
   }
 
   currentUser = user;
   await initializePage();
-  runFlowController(user.uid);
 });
 
 // ==================== CARGA INICIAL ====================
@@ -112,6 +119,7 @@ async function initializePage() {
 
     renderLayout();  // ← Header con logout global
 
+    // ✅ CORRECCIÓN CRÍTICA: extraer comercioId correctamente
     const userRef = doc(db, 'usuarios', currentUser.uid);
     const userSnap = await getDoc(userRef);
 
@@ -121,6 +129,7 @@ async function initializePage() {
       return;
     }
 
+    // ✅ CORRECCIÓN: extraer comercioId del usuario
     currentComercioId = userSnap.data().comercioId;
 
     await loadComercioData();
@@ -638,7 +647,7 @@ function createSaveButton() {
   btn.addEventListener('click', saveAIConfig);
 }
 
-// ==================== EVENTOS (sin logout local) ====================
+// ==================== EVENTOS ====================
 function setupEventListeners() {
   const form = $('iaConfigForm');
   if (form) {
@@ -712,6 +721,7 @@ async function saveAIConfig() {
 
     const config = getCurrentConfig();
 
+    // ✅ CORRECCIÓN CRÍTICA: actualizar comercio con comercioId correcto
     await updateDoc(doc(db, 'comercios', currentComercioId), {
       aiConfig: config,
       'onboardingSteps.ia-config': true,
@@ -723,7 +733,7 @@ async function saveAIConfig() {
     originalAIConfig = JSON.parse(JSON.stringify(config));
 
     hideLoading();
-    showToast('¡Configuración guardada!', 'success');
+    showToast('¡Configuración guardada!', 'Tu IA está lista', 'success');
 
     if (btn) {
       btn.classList.remove('saving');
@@ -737,7 +747,11 @@ async function saveAIConfig() {
       }, 2500);
     }
 
-    setTimeout(() => redirectAfterSave(), 500);
+    // ✅ CORRECCIÓN: sin parámetro porque es el último paso
+    // flowController decide si va a dashboard (modo normal) o vuelve a dashboard (modo edición)
+    setTimeout(() => {
+      redirectAfterSave(); // ← Sin parámetro: último paso del onboarding
+    }, 500);
   } catch (err) {
     console.error(err);
     hideLoading();
