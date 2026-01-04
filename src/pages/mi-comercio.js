@@ -6,15 +6,22 @@ import '../styles/forms.css';
 import '../styles/forms-premium.css';
 import './mi-comercio.css';
 import { auth, db } from '../firebase.js';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc, addDoc, collection, setDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { initNavigation } from '../shared/navigation.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { runFlowController, redirectAfterSave } from '../controllers/flowController.js';
+import { redirectAfterSave } from '../controllers/flowController.js';
+
+// ✅ BOOT DEL FLOW
+import { bootFlow } from '../boot/flowBoot.js';
+
+bootFlow();
+
 window.auth = auth;
+
 // ==================== SLUG UTILS ====================
 function slugify(text) {
   return text
@@ -45,7 +52,6 @@ const METODOS_PAGO = [
 ];
 
 // ==================== VARIABLES GLOBALES ====================
-let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
 let originalData = {};
@@ -55,55 +61,25 @@ let comercioSlug = null;
 let slugDisponible = false;
 let slugValidationTimer = null;
 
-// ==================== INICIALIZACIÓN ====================
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "/login.html";
-    return;
-  }
-  currentUser = user;
-  try {
-    await user.getIdToken();
-  } catch (err) {
-    console.warn("Sesión expirada, cerrando...");
-    signOut(auth);
-    window.location.href = "/login.html";
-    return;
-  }
-  await initializePage();
-  runFlowController(user.uid);
-});
-
 // ==================== CARGA INICIAL ====================
 async function initializePage() {
   try {
     showLoading('Cargando tu comercio...');
     renderLayout();
 
-    const userRef = doc(db, 'usuarios', currentUser.uid);
+    const userId = auth.currentUser.uid;
+
+    // 1️⃣ Leer usuario para obtener comercioId
+    const userRef = doc(db, 'usuarios', userId);
     const userSnap = await getDoc(userRef);
 
-    if (userSnap.exists() && userSnap.data().comercioId) {
-      currentComercioId = userSnap.data().comercioId;
-    } else {
-      const nuevo = await addDoc(collection(db, 'comercios'), {
-        dueñoId: currentUser.uid,
-        duenoId: currentUser.uid,
-        fechaCreacion: new Date(),
-        plan: 'trial',
-        pais: 'Argentina',
-        fechaInicioTrial: new Date(),
-        onboardingSteps: {
-          usuario: true,
-          'mi-comercio': false,
-          horarios: false,
-          productos: false,
-          'ia-config': false
-        }
-      });
-      currentComercioId = nuevo.id;
-      await updateDoc(userRef, { comercioId: currentComercioId });
+    if (!userSnap.exists() || !userSnap.data().comercioId) {
+      hideLoading();
+      showToast('Error', 'No se encontró el comercio asociado', 'error');
+      return;
     }
+
+    currentComercioId = userSnap.data().comercioId;
 
     await loadComercioData();
     initNavigation();
@@ -617,6 +593,13 @@ async function saveFormData() {
       }
     });
 
+    const userId = auth.currentUser.uid;
+
+    // 1️⃣ Leer usuario para obtener comercioId
+    const userRef = doc(db, 'usuarios', userId);
+    const userSnap = await getDoc(userRef);
+    const comercioId = userSnap.data().comercioId;
+
     const formData = new FormData(form);
     const updates = {};
     for (let [k, v] of formData) updates[k] = v.trim();
@@ -644,7 +627,8 @@ async function saveFormData() {
       };
     }
 
-    const comercioRef = doc(db, 'comercios', currentComercioId);
+    // 2️⃣ Actualizar comercio
+    const comercioRef = doc(db, 'comercios', comercioId);
     await updateDoc(comercioRef, updates);
 
     // ✅ Crear índice en landings SOLO si es nuevo
@@ -652,7 +636,7 @@ async function saveFormData() {
       const landingRef = doc(db, 'landings', comercioSlug);
       await setDoc(landingRef, {
         slug: comercioSlug,
-        comercioId: currentComercioId,
+        comercioId: comercioId,
         nombre: updates.nombreComercio,
         activo: true,
         createdAt: new Date(),
@@ -689,8 +673,9 @@ async function saveFormData() {
     updateHeaderInfo(comercioData.nombreComercio, PLANS[comercioData.plan]);
     updateBanner();
 
+    // 3️⃣ Redirigir al siguiente paso
     setTimeout(() => {
-      redirectAfterSave();
+      redirectAfterSave("horarios");
     }, 1000);
 
   } catch (err) {
@@ -731,3 +716,6 @@ window.validateCurrentPageData = async () => {
   }
   return true;
 };
+
+// ==================== INICIALIZACIÓN ====================
+initializePage();
