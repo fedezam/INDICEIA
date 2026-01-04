@@ -12,13 +12,17 @@ import './usuario.css';
 // Firebase
 import { auth, db } from "../firebase.js";
 import { doc, getDoc, setDoc, addDoc, collection, updateDoc } from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
 
 // Compartidos
 import { renderLayout, updateHeaderInfo } from "../shared/layout.js";
 import { showToast, showLoading, hideLoading } from "../shared/utils.js";
-import { runFlowController } from "../controllers/flowController.js";
 import { fillProvinciaSelector } from "../shared/provincias.js";
+
+// ✅ BOOT DEL FLOW
+import { bootFlow } from "../boot/flowBoot.js";
+import { redirectAfterSave } from "../controllers/flowController.js";
+
+bootFlow();
 
 // ==================== ELEMENTOS DEL DOM ====================
 const nombre = document.getElementById("nombre");
@@ -38,7 +42,6 @@ const checkServicio = document.getElementById("checkServicio");
 const btnGuardar = document.getElementById("saveUserData");
 
 // ==================== ESTADO ====================
-let userId = null;
 let tipoSeleccionado = null;
 
 // ==================== UTIL: FORMATO FECHA ====================
@@ -185,6 +188,8 @@ if (pais && provincia) {
 // ==================== GUARDAR DATOS ====================
 if (btnGuardar) {
   btnGuardar.addEventListener("click", async () => {
+    const userId = auth.currentUser?.uid;
+    
     if (!userId) {
       showToast('Error: usuario no identificado', 'error');
       return;
@@ -205,6 +210,7 @@ if (btnGuardar) {
       const snapAnterior = await getDoc(ref);
       const prevSteps = snapAnterior.exists() ? (snapAnterior.data().onboardingSteps || {}) : {};
 
+      // 1️⃣ Guardar datos de usuario
       await setDoc(ref, {
         nombre: nombre.value.trim(),
         apellido: apellido.value.trim(),
@@ -221,7 +227,7 @@ if (btnGuardar) {
         onboardingSteps: { ...prevSteps, usuario: true }
       }, { merge: true });
 
-      // Crear comercio si no existe
+      // 2️⃣ Crear comercio si no existe
       const userDoc = await getDoc(ref);
       const existingComercioId = userDoc.data()?.comercioId;
 
@@ -247,8 +253,8 @@ if (btnGuardar) {
       hideLoading();
       showToast('¡Datos guardados con éxito!', 'success');
 
-      // Dejar que flowController decida a dónde ir
-      await runFlowController(userId);
+      // 3️⃣ Redirigir al siguiente paso
+      redirectAfterSave("mi-comercio");
 
     } catch (error) {
       console.error("Error guardando:", error);
@@ -260,23 +266,12 @@ if (btnGuardar) {
   });
 }
 
-// ==================== AUTENTICACIÓN ====================
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    // NO redirigir aquí → dejar que el sistema global/flowController lo maneje
-    console.warn("No hay usuario autenticado");
-    return;
-  }
+// ==================== RENDER LAYOUT ====================
+// Renderizar layout compartido (incluye header con logout global)
+renderLayout();
 
-  console.log("✅ Usuario autenticado:", user.uid);
-  userId = user.uid;
-
-  // Renderizar layout compartido (incluye header con logout global)
-  renderLayout();
-
-  // Opcional: actualizar header con nombre del usuario
-  updateHeaderInfo(user.displayName || 'Usuario', { nombre: 'Trial' });
-
-  // Cargar datos y continuar
-  await cargarDatosUsuario(user.uid);
-});
+// Opcional: actualizar header con nombre del usuario
+if (auth.currentUser) {
+  updateHeaderInfo(auth.currentUser.displayName || 'Usuario', { nombre: 'Trial' });
+  cargarDatosUsuario(auth.currentUser.uid);
+}
