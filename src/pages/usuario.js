@@ -19,7 +19,7 @@ import { showToast, showLoading, hideLoading } from "../shared/utils.js";
 import { fillProvinciaSelector } from "../shared/provincias.js";
 
 // ✅ BOOT DEL FLOW
-import { bootFlow } from "../boot/flowBoot.js";
+import { bootFlow } from "../controllers/boot/flowBoot.js";
 import { redirectAfterSave } from "../controllers/flowController.js";
 
 bootFlow();
