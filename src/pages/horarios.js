@@ -17,9 +17,11 @@ import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { redirectAfterSave } from '../controllers/flowController.js';
 
 // ✅ BOOT DEL FLOW
-import { bootFlow } from '../boot/flowBoot.js';
+import { bootFlow } from "../controllers/boot/flowBoot.js";
+import { redirectAfterSave } from "../controllers/flowController.js";
 
 bootFlow();
+
 
 // ==================== CONSTANTES ====================
 const DAYS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
