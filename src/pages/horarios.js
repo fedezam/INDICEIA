@@ -8,14 +8,18 @@ import '../styles/forms.css';
 import '../styles/forms-premium.css';
 import './horarios.css';
 import { auth, db } from '../firebase.js';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { initNavigation } from '../shared/navigation.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { runFlowController, redirectAfterSave } from '../controllers/flowController.js';
+import { redirectAfterSave } from '../controllers/flowController.js';
 
+// ✅ BOOT DEL FLOW
+import { bootFlow } from '../boot/flowBoot.js';
+
+bootFlow();
 
 // ==================== CONSTANTES ====================
 const DAYS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
@@ -30,32 +34,10 @@ const DAYS_LABELS = {
 };
 
 // ==================== VARIABLES GLOBALES ====================
-let currentUser = null;
 let currentComercioId = null;
 let comercioData = {};
 let originalHorarios = {};
 let hasUnsavedChanges = false;
-
-// ==================== INICIALIZACIÓN ====================
-onAuthStateChanged(auth, async (user) => {
-  if (!user) {
-    window.location.href = "/login.html";
-    return;
-  }
-  currentUser = user;
-  
-  try {
-    await user.getIdToken();
-  } catch (err) {
-    console.warn("Sesión expirada, cerrando...");
-    signOut(auth);
-    window.location.href = "/login.html";
-    return;
-  }
-  
-  await initializePage();
-  runFlowController(user.uid);
-});
 
 // ==================== CARGA INICIAL ====================
 async function initializePage() {
@@ -63,16 +45,19 @@ async function initializePage() {
     showLoading('Cargando horarios...');
     renderLayout();
     
-    const userRef = doc(db, 'usuarios', currentUser.uid);
+    const userId = auth.currentUser.uid;
+    
+    // 1️⃣ Leer usuario para obtener comercioId
+    const userRef = doc(db, 'usuarios', userId);
     const userSnap = await getDoc(userRef);
     
-    if (userSnap.exists() && userSnap.data().comercioId) {
-      currentComercioId = userSnap.data().comercioId;
-    } else {
+    if (!userSnap.exists() || !userSnap.data().comercioId) {
       showToast('Error', 'No se encontró comercio. Completá primero "Mi comercio".', 'warning');
       hideLoading();
       return;
     }
+    
+    currentComercioId = userSnap.data().comercioId;
     
     await loadComercioData();
     initNavigation();
@@ -651,13 +636,21 @@ async function saveFormData() {
       }
     });
     
+    const userId = auth.currentUser.uid;
+    
+    // 1️⃣ Leer usuario para obtener comercioId
+    const userRef = doc(db, 'usuarios', userId);
+    const userSnap = await getDoc(userRef);
+    const comercioId = userSnap.data().comercioId;
+    
     const updates = {
       horarios: comercioData.horarios,
       'onboardingSteps.horarios': true,
       fechaActualizacion: new Date()
     };
     
-    await updateDoc(doc(db, 'comercios', currentComercioId), updates);
+    // 2️⃣ Actualizar comercio
+    await updateDoc(doc(db, 'comercios', comercioId), updates);
     
     originalHorarios = structuredClone(comercioData.horarios);
     hasUnsavedChanges = false;
@@ -693,9 +686,9 @@ async function saveFormData() {
     showToast('Éxito', 'Horarios guardados correctamente', 'success');
     updateBanner();
 
-    // Nueva forma centralizada
+    // 3️⃣ Redirigir al siguiente paso
     setTimeout(() => {
-      redirectAfterSave(); 
+      redirectAfterSave("productos");
     }, 1000);
 
   } catch (err) {
@@ -737,3 +730,6 @@ window.validateCurrentPageData = async () => {
   }
   return true;
 };
+
+// ==================== INICIALIZACIÓN ====================
+initializePage();
