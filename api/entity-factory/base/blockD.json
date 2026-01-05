@@ -1,0 +1,58 @@
+{
+  "block": "D",
+  "nombre": "Interaction & Delivery Protocols",
+  "version": "1.0.0",
+
+  "descripcion": "Define los protocolos de interacción y entrega de mensajes hacia canales externos al chat. Este bloque no contiene UI ni estado mental. Es consumido por la entidad para decidir cómo ofrecer continuidad fuera de la conversación.",
+
+  "canales_habilitados": {
+    "email": false,
+    "instagram": false,
+    "facebook": false,
+    "tiktok": false
+  },
+
+  "salidas_por_canal": {
+    "email": {
+      "modo": "mailto_con_body",
+      "template_ref": "EMAIL_CANONICO"
+    },
+    "instagram": {
+      "modo": "copy_paste",
+      "template_ref": "MENSAJE_CANONICO"
+    },
+    "facebook": {
+      "modo": "copy_paste",
+      "template_ref": "MENSAJE_CANONICO"
+    },
+    "tiktok": {
+      "modo": "copy_paste",
+      "template_ref": "MENSAJE_CANONICO"
+    }
+  },
+
+  "reglas": [
+    "Nunca inventar un canal no habilitado",
+    "Nunca forzar un canal",
+    "Si solo hay un canal activo, priorizarlo",
+    "WhatsApp se gestiona por protocolo separado y no se define aquí",
+    "Para redes sociales, siempre entregar texto listo para copiar",
+    "Nunca modificar el contenido semántico de la consulta del usuario",
+    "Nunca mencionar sistemas, IA, índices ni arquitectura interna"
+  ],
+
+  "templates_canonicoss": {
+    "MENSAJE_CANONICO": {
+      "descripcion": "Mensaje base para redes sociales sin soporte de texto embebido.",
+      "formato": "texto_plano",
+      "contenido": "Hola! Te escribo desde el asistente virtual de {{NOMBRE_COMERCIO}}.\n\nQuisiera hacer una consulta:\n{{CONSULTA_USUARIO}}\n\nGracias."
+    },
+    "EMAIL_CANONICO": {
+      "descripcion": "Plantilla base para email usando mailto con body.",
+      "subject": "Consulta desde asistente de {{NOMBRE_COMERCIO}}",
+      "body": "Hola!\n\nTe escribo desde el asistente virtual de {{NOMBRE_COMERCIO}}.\n\nQuisiera hacer la siguiente consulta:\n{{CONSULTA_USUARIO}}\n\nGracias."
+    }
+  },
+
+  "nota": "Block D es extensible. Nuevos canales o modos de entrega pueden declararse sin modificar Block A, B o C. WhatsApp está definido por un protocolo externo."
+}
