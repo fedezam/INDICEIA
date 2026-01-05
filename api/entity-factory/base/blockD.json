@@ -1,58 +1,88 @@
 {
-  "block": "D",
-  "nombre": "Interaction & Delivery Protocols",
-  "version": "1.0.0",
-
-  "descripcion": "Define los protocolos de interacción y entrega de mensajes hacia canales externos al chat. Este bloque no contiene UI ni estado mental. Es consumido por la entidad para decidir cómo ofrecer continuidad fuera de la conversación.",
-
-  "canales_habilitados": {
-    "email": false,
-    "instagram": false,
-    "facebook": false,
-    "tiktok": false
+  "meta": {
+    "nombre": "Interaction & Delivery Protocols",
+    "version": "1.0.1",
+    "descripcion": "Define canales alternativos de contacto y cómo la entidad debe preparar mensajes para cada uno. WhatsApp queda fuera de este bloque."
   },
 
-  "salidas_por_canal": {
+  "availableChannels": {
     "email": {
-      "modo": "mailto_con_body",
-      "template_ref": "EMAIL_CANONICO"
+      "enabled": false,
+      "modo": "mailto_link",
+      "template": "EMAIL_CON_LINK",
+      "limitaciones": {
+        "soporta_link": true,
+        "soporta_multilinea": true
+      }
     },
+
     "instagram": {
+      "enabled": false,
       "modo": "copy_paste",
-      "template_ref": "MENSAJE_CANONICO"
+      "template": "MENSAJE_CANONICO",
+      "limitaciones": {
+        "soporta_link": false,
+        "soporta_multilinea": true
+      }
     },
+
     "facebook": {
+      "enabled": false,
       "modo": "copy_paste",
-      "template_ref": "MENSAJE_CANONICO"
+      "template": "MENSAJE_CANONICO",
+      "limitaciones": {
+        "soporta_link": false,
+        "soporta_multilinea": true
+      }
     },
+
     "tiktok": {
+      "enabled": false,
       "modo": "copy_paste",
-      "template_ref": "MENSAJE_CANONICO"
+      "template": "MENSAJE_CANONICO",
+      "limitaciones": {
+        "soporta_link": false,
+        "soporta_multilinea": false
+      }
     }
   },
 
-  "reglas": [
-    "Nunca inventar un canal no habilitado",
-    "Nunca forzar un canal",
-    "Si solo hay un canal activo, priorizarlo",
-    "WhatsApp se gestiona por protocolo separado y no se define aquí",
-    "Para redes sociales, siempre entregar texto listo para copiar",
-    "Nunca modificar el contenido semántico de la consulta del usuario",
-    "Nunca mencionar sistemas, IA, índices ni arquitectura interna"
-  ],
-
-  "templates_canonicoss": {
+  "templates_canonicos": {
     "MENSAJE_CANONICO": {
-      "descripcion": "Mensaje base para redes sociales sin soporte de texto embebido.",
-      "formato": "texto_plano",
-      "contenido": "Hola! Te escribo desde el asistente virtual de {{NOMBRE_COMERCIO}}.\n\nQuisiera hacer una consulta:\n{{CONSULTA_USUARIO}}\n\nGracias."
+      "descripcion": "Mensaje listo para copiar y pegar en redes sociales.",
+      "formato": [
+        "Hola! Te escribo desde el asistente virtual de {{NOMBRE_COMERCIO}}.",
+        "Quisiera hacer una consulta:",
+        "",
+        "{{CONSULTA_DEL_CLIENTE}}"
+      ]
     },
-    "EMAIL_CANONICO": {
-      "descripcion": "Plantilla base para email usando mailto con body.",
-      "subject": "Consulta desde asistente de {{NOMBRE_COMERCIO}}",
-      "body": "Hola!\n\nTe escribo desde el asistente virtual de {{NOMBRE_COMERCIO}}.\n\nQuisiera hacer la siguiente consulta:\n{{CONSULTA_USUARIO}}\n\nGracias."
+
+    "EMAIL_CON_LINK": {
+      "descripcion": "Email generado como enlace mailto con subject y body embebidos.",
+      "mailto": {
+        "subject": "Consulta desde asistente virtual de {{NOMBRE_COMERCIO}}",
+        "body": [
+          "Hola,",
+          "",
+          "Te escribo desde el asistente virtual de {{NOMBRE_COMERCIO}}.",
+          "Quisiera realizar la siguiente consulta:",
+          "",
+          "{{CONSULTA_DEL_CLIENTE}}",
+          "",
+          "Gracias."
+        ]
+      }
     }
   },
 
-  "nota": "Block D es extensible. Nuevos canales o modos de entrega pueden declararse sin modificar Block A, B o C. WhatsApp está definido por un protocolo externo."
+  "reglas_globales": [
+    "Los canales aquí definidos son alternativos a WhatsApp.",
+    "Nunca sugerir un canal que tenga enabled=false.",
+    "Nunca inventar canales no presentes en availableChannels.",
+    "Para email, generar un enlace mailto con subject y body embebidos.",
+    "Para redes sociales, siempre entregar el mensaje listo para copiar y pegar.",
+    "Si solo existe un canal alternativo habilitado, puede sugerirse de forma directa.",
+    "Si no hay canales alternativos habilitados, continuar solo con WhatsApp."
+  ]
 }
