@@ -1,55 +1,103 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
- 
-  <title>Configuración de IA — ÍndiceIA</title>
- 
-  <meta name="description" content="Configurá el comportamiento, personalidad y capacidades de tu IA comercial.">
-  <meta name="robots" content="noindex, nofollow">
- 
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
- 
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Configuración de IA - ÍndiceIA">
-  <meta property="og:description" content="Definí cómo actuará tu asistente inteligente.">
-  <meta property="og:image" content="/images/og-image.jpg">
-  <meta property="og:url" content="https://indiceia.com/ia-config.html">
- 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
- 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>Configuración de IA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
-<body data-page="ia-config">
-  
-  <!-- 1. LAYOUT GLOBAL (inyectado por renderLayout()) -->
-  <header id="layout-header"></header>
-  
-  <!-- 2. CONTENIDO PRINCIPAL -->
-  <main>
-    <div class="container">
-      <!-- El contenido se renderiza desde ia-config.js -->
-    </div>
+<body>
+  <main class="container">
+
+    <!-- ================= IA IDENTIDAD ================= -->
+    <section class="card">
+      <h3>Identidad del asistente</h3>
+
+      <label>Nombre de la IA</label>
+      <input id="aiName" type="text" placeholder="Ej: JuancaBot" />
+
+      <label>Idioma</label>
+      <select id="aiLanguage">
+        <option value="es-AR">Español (Argentina)</option>
+        <option value="es">Español neutro</option>
+      </select>
+
+      <label>Personalidad</label>
+      <select id="aiPersonality">
+        <option value="amigable">Amigable</option>
+        <option value="profesional">Profesional</option>
+        <option value="directa">Directa</option>
+      </select>
+
+      <label>Tono</label>
+      <select id="aiTone">
+        <option value="informal">Informal</option>
+        <option value="neutral">Neutral</option>
+        <option value="formal">Formal</option>
+      </select>
+    </section>
+
+    <!-- ================= SALUDO ================= -->
+    <section class="card">
+      <h3>Mensaje de bienvenida</h3>
+      <textarea
+        id="aiGreeting"
+        rows="3"
+        placeholder="Hola! Soy JuancaBot, estoy acá para ayudarte con tu consulta"
+      ></textarea>
+    </section>
+
+    <!-- ================= COMPORTAMIENTO ================= -->
+    <section class="card">
+      <h3>Comportamiento de la IA</h3>
+
+      <label>Formato de respuestas</label>
+      <select id="formatoRespuestas">
+        <option value="breves">Breves</option>
+        <option value="detalladas">Detalladas</option>
+      </select>
+
+      <label>Proactividad</label>
+      <select id="proactividad">
+        <option value="baja">Baja</option>
+        <option value="media">Media</option>
+        <option value="alta">Alta</option>
+      </select>
+
+      <label>Cuando el local está cerrado</label>
+      <select id="localCerrado">
+        <option value="informar">Informar horario</option>
+        <option value="derivar">Derivar igual</option>
+      </select>
+    </section>
+
+    <!-- ================= MENSAJES CANÓNICOS ================= -->
+    <section class="card">
+      <h3>Mensajes por canal</h3>
+
+      <label>Mensaje WhatsApp</label>
+      <textarea id="mensajeWhatsapp" rows="2"></textarea>
+
+      <label>Mensaje Instagram</label>
+      <textarea id="mensajeInstagram" rows="2"></textarea>
+
+      <label>Mensaje Web</label>
+      <textarea id="mensajeWeb" rows="2"></textarea>
+
+      <label>Mensaje por defecto</label>
+      <textarea id="mensajeDefault" rows="2"></textarea>
+    </section>
+
+    <!-- ================= CANALES ALTERNATIVOS ================= -->
+    <section class="card">
+      <h3>Canales alternativos de contacto</h3>
+
+      <!-- ACA INYECTA renderCanalesAlternativos() -->
+      <div id="contactosValidacion"></div>
+    </section>
+
   </main>
-  
-  <!-- 3. BOTÓN INFERIOR FIJO -->
-  <div class="bottom-action-bar">
-    <button id="saveChangesBtnBottom" class="btn-save" disabled>
-      Guardar Cambios
-    </button>
-  </div>
-  
-  <!-- 4. FOOTER (placeholder) -->
-  <footer id="layout-footer"></footer>
 
-  <!-- ✅ Scripts al final del body -->
-  <script type="module" src="../controllers/flowController.js"></script>
   <script type="module" src="./ia-config.js"></script>
-
 </body>
 </html>
