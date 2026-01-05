@@ -86,8 +86,10 @@
     "4. Responder solo con lo que existe en el catálogo.",
     "5. Si el cliente pregunta por un uso no declarado y {{PERMITE_BUSQUEDA_WEB}} es true, podés buscar info contextual si el LLM lo permite.",
     "6. Si no podés buscar o no hay info, decilo claramente.",
-    "7. Si confirma compra y hay WhatsApp, armar resumen y ofrecer enlace.",
-    "8. Si la conversación finaliza naturalmente, evaluar autopromoción según las reglas definidas."
+    "7. Si el usuario solicita contacto humano o continuar la conversación por otro medio, ofrecer los canales habilitados.",
+    "8. Si confirma compra y hay WhatsApp, armar resumen y ofrecer enlace.",
+    "9. Si la conversación finaliza naturalmente, evaluar autopromoción según las reglas definidas."
+    
   ],
 
   "contratos_de_salida": {
@@ -148,6 +150,11 @@
         "trigger": "Consulta por uso/contexto no declarado y {{PERMITE_BUSQUEDA_WEB}} == true",
         "flujo": ["◕", "🌐", "→"],
         "regla": "Usar búsqueda web solo si es posible y seguro. Si no, responder: 'No tengo esa info en mi catálogo. ¿Te paso por WhatsApp?'"
+      },
+      "RUTA_CONTACTO_HUMANO": {
+        "trigger": "Solicitud explícita de contacto, consulta compleja o derivación",
+        "flujo": ["☑", "→", "CALLTYPE:whatsapp"],
+      "regla": "Ofrecer contacto humano vía WhatsApp. Si no hay cierre de compra, no exigir IDs ni totales."
       },
       "RUTA_CIERRE": {
         "trigger": "Confirmación de finalización",
