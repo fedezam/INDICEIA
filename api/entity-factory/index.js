@@ -1,5 +1,6 @@
 // /api/entity-factory/index.js
 // Entity Factory oficial — ÍndiceIA v1 (Production Ready)
+
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -7,37 +8,33 @@ import admin from 'firebase-admin';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-// ----- Template Registry (Bloque C) - Cargado desde el archivo generado por sync-templates.js
+// ----- Template Registry (Block C)
 const templateRegistryPath = resolve(__dirname, 'templates/registry.entity.json');
 let templateRegistry = { templates: {} };
 
 try {
   const raw = readFileSync(templateRegistryPath, 'utf-8');
   const parsed = JSON.parse(raw);
-  if (parsed && parsed.templates && typeof parsed.templates === 'object') {
+  if (parsed?.templates && typeof parsed.templates === 'object') {
     templateRegistry.templates = parsed.templates;
     console.log(`✅ Registry entity cargado: ${Object.keys(templateRegistry.templates).length} template(s)`);
-  } else {
-    console.warn('⚠️ registry.entity.json sin "templates" válido → Block C vacío');
   }
-} catch (err) {
-  console.error('❌ Error leyendo registry.entity.json', err);
-  console.warn('⚠️ Block C deshabilitado hasta que se genere el registry');
+} catch {
+  console.warn('⚠️ Block C deshabilitado (registry no disponible)');
 }
 
-// Inicialización segura de Firebase Admin
+// ----- Firebase Admin
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
     throw new Error('Falta FIREBASE_SERVICE_ACCOUNT');
   }
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
+    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
   });
 }
 const db = admin.firestore();
 
-// Solo incluir campos con datos reales
+// ----- Utils
 function hasData(value) {
   if (typeof value === 'boolean') return true;
   if (typeof value === 'string') return value.trim().length > 0;
@@ -46,83 +43,64 @@ function hasData(value) {
   return value !== undefined && value !== null;
 }
 
+// ===== ENTITY BUILDER =====
 export async function buildEntity({ comercioId }) {
   if (!comercioId) throw new Error('Falta comercioId');
 
-  // ----- Block A (archivo base hardcodeado)
+  // ----- Block A
   const blockAPath = resolve(__dirname, 'base/blockA.json');
-  let blockA;
-  try {
-    blockA = JSON.parse(readFileSync(blockAPath, 'utf-8'));
-  } catch (err) {
-    console.error('❌ Error leyendo blockA.json', err);
-    throw new Error('No se pudo cargar Block A');
-  }
+  const blockA = JSON.parse(readFileSync(blockAPath, 'utf-8'));
 
-  // ----- Lectura Firestore
+  // ----- Block D
+  const blockDPath = resolve(__dirname, 'base/blockD.json');
+  const blockD = JSON.parse(readFileSync(blockDPath, 'utf-8'));
+
+  // ----- Firestore comercio
   const comercioRef = db.collection('comercios').doc(comercioId);
   const comercioSnap = await comercioRef.get();
   if (!comercioSnap.exists) throw new Error(`Comercio ${comercioId} no encontrado`);
 
   const comercioData = comercioSnap.data();
 
-  // ===== DETERMINAR .LIVE SEGÚN PLAN =====
+  // ===== LIVE MODE =====
   const plan = comercioData.plan || 'trial';
-  const PLANS_WITH_LIVE = ['trial', 'pro', 'highvalue', 'premium'];
-  const liveEnabled = PLANS_WITH_LIVE.includes(plan);
-  console.log(`🔧 Plan "${plan}" → .live ${liveEnabled ? 'HABILITADO' : 'DESHABILITADO'}`);
-  // ===== FIN .LIVE =====
+  const liveEnabled = ['trial', 'pro', 'highvalue', 'premium'].includes(plan);
 
-  // ===== OBTENER REFERRAL DEL DUEÑO =====
-  let referralCode = comercioId.substring(0, 8).toUpperCase(); // fallback seguro
-
+  // ===== REFERRAL =====
+  let referralCode = comercioId.substring(0, 8).toUpperCase();
   if (comercioData.duenoId) {
-    try {
-      const ownerSnap = await db.collection('usuarios').doc(comercioData.duenoId).get();
-      if (ownerSnap.exists) {
-        const ownerData = ownerSnap.data();
-        if (ownerData.referralId) {
-          referralCode = ownerData.referralId;
-        }
-      }
-    } catch (err) {
-      console.warn('⚠️ No se pudo obtener referralId del dueño, usando fallback');
+    const ownerSnap = await db.collection('usuarios').doc(comercioData.duenoId).get();
+    if (ownerSnap.exists && ownerSnap.data()?.referralId) {
+      referralCode = ownerSnap.data().referralId;
     }
   }
-  console.log(`🔗 Referral code: ${referralCode}`);
-  // ===== FIN REFERRAL =====
 
-  // ----- Productos
+  // ===== PRODUCTOS =====
   let productos = [];
   try {
-    const productosSnap = await comercioRef.collection('productos').get();
-    productos = productosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (err) {
-    console.warn('⚠️ Subcolección productos vacía o no encontrada');
-  }
+    const snap = await comercioRef.collection('productos').get();
+    productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch {}
 
-  // ----- Block B
+  // ===== BLOCK B =====
   const B = { id: comercioId };
 
   if (hasData(comercioData.nombreComercio)) B.nombre = comercioData.nombreComercio;
   if (hasData(comercioData.descripcion)) B.descripcion = comercioData.descripcion;
 
+  // Ubicación
   const ubicacion = {};
-  if (hasData(comercioData.direccion)) ubicacion.direccion = comercioData.direccion;
-  if (hasData(comercioData.ciudad)) ubicacion.ciudad = comercioData.ciudad;
-  if (hasData(comercioData.provincia)) ubicacion.provincia = comercioData.provincia;
-  if (hasData(comercioData.pais)) ubicacion.pais = comercioData.pais;
-  if (Object.keys(ubicacion).length > 0) B.ubicacion = ubicacion;
+  ['direccion', 'ciudad', 'provincia', 'pais'].forEach(k => {
+    if (hasData(comercioData[k])) ubicacion[k] = comercioData[k];
+  });
+  if (hasData(ubicacion)) B.ubicacion = ubicacion;
 
+  // Contacto
   const contacto = {};
-  if (hasData(comercioData.telefono)) contacto.telefono = comercioData.telefono;
-  if (hasData(comercioData.whatsapp)) contacto.whatsapp = comercioData.whatsapp;
-  if (hasData(comercioData.email)) contacto.email = comercioData.email;
-  if (hasData(comercioData.website)) contacto.website = comercioData.website;
-  if (hasData(comercioData.instagram)) contacto.instagram = comercioData.instagram;
-  if (hasData(comercioData.facebook)) contacto.facebook = comercioData.facebook;
-  if (hasData(comercioData.tiktok)) contacto.tiktok = comercioData.tiktok;
-  if (Object.keys(contacto).length > 0) B.contacto = contacto;
+  ['telefono', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok'].forEach(k => {
+    if (hasData(comercioData[k])) contacto[k] = comercioData[k];
+  });
+  if (hasData(contacto)) B.contacto = contacto;
 
   if (hasData(comercioData.horarios)) B.horarios = comercioData.horarios;
   if (hasData(comercioData.plan)) B.plan = comercioData.plan;
@@ -132,64 +110,19 @@ export async function buildEntity({ comercioId }) {
   // IA Config
   if (hasData(comercioData.aiConfig)) {
     const ai = comercioData.aiConfig;
-    const iaBlock = {};
-    if (hasData(ai.aiName)) iaBlock.nombre = ai.aiName;
-    if (hasData(ai.aiGreeting)) iaBlock.saludo = ai.aiGreeting;
-    if (hasData(ai.aiLanguage)) iaBlock.idioma = ai.aiLanguage;
-    if (hasData(ai.aiPersonality)) iaBlock.personalidad = ai.aiPersonality;
-    if (hasData(ai.aiTone)) iaBlock.tono = ai.aiTone;
-    if (hasData(ai.formatoRespuestas)) iaBlock.formatoRespuestas = ai.formatoRespuestas;
-    if (hasData(ai.proactividad)) iaBlock.proactividad = ai.proactividad;
-    if (Object.keys(iaBlock).length > 0) B.ia = iaBlock;
-  }
-
-  // Mensajes y reglas
-  if (hasData(comercioData.aiConfig)) {
-    const ai = comercioData.aiConfig;
-    const mensajes = {};
-    if (hasData(ai.aiGreeting)) mensajes.saludo = ai.aiGreeting;
-    if (hasData(ai.mensajeDefault)) mensajes.mensajeDefault = ai.mensajeDefault;
-    if (hasData(ai.mensajeWhatsapp)) mensajes.mensajeWhatsapp = ai.mensajeWhatsapp;
-    if (hasData(ai.mensajeInstagram)) mensajes.mensajeInstagram = ai.mensajeInstagram;
-    if (hasData(ai.mensajeWeb)) mensajes.mensajeWeb = ai.mensajeWeb;
-    if (Object.keys(mensajes).length > 0) B.mensajes = mensajes;
-
-    const reglas = {};
-    if (hasData(ai.sinStock)) reglas.accionSinStock = ai.sinStock;
-    if (hasData(ai.sinPrecio)) reglas.accionSinPrecio = ai.sinPrecio;
-    if (hasData(ai.localCerrado)) reglas.accionLocalCerrado = ai.localCerrado;
-    if (Object.keys(reglas).length > 0) B.reglasNegocio = reglas;
-  }
-
-  // Pagos
-  if (hasData(comercioData.paymentMethods)) {
-    B.pagos = { metodosDisponibles: comercioData.paymentMethods };
-  } else if (hasData(comercioData.metodos_pago)) {
-    B.pagos = { metodosDisponibles: [comercioData.metodos_pago] };
+    B.ia = {};
+    if (hasData(ai.aiName)) B.ia.nombre = ai.aiName;
+    if (hasData(ai.aiGreeting)) B.ia.saludo = ai.aiGreeting;
+    if (hasData(ai.aiLanguage)) B.ia.idioma = ai.aiLanguage;
+    if (hasData(ai.aiPersonality)) B.ia.personalidad = ai.aiPersonality;
+    if (hasData(ai.aiTone)) B.ia.tono = ai.aiTone;
+    if (hasData(ai.formatoRespuestas)) B.ia.formatoRespuestas = ai.formatoRespuestas;
+    if (hasData(ai.proactividad)) B.ia.proactividad = ai.proactividad;
+    if (!hasData(B.ia)) delete B.ia;
   }
 
   // Catálogo
-  if (productos.length > 0) {
-    const items = productos.map(p => {
-      const item = {
-        id: p.id,
-        nombre: p.nombre,
-        precio_final: p.precio_final,
-        paused: p.paused ?? false,
-      };
-      if (hasData(p.codigo)) item.codigo = p.codigo;
-      if (hasData(p.descripcion)) item.descripcion = p.descripcion;
-      if (hasData(p.categoria)) item.categoria = p.categoria;
-      if (hasData(p.subcategoria)) item.subcategoria = p.subcategoria;
-      if (hasData(p.marca)) item.marca = p.marca;
-      if (hasData(p.imagen)) item.imagen = p.imagen;
-      if (hasData(p.stock)) item.stock = p.stock;
-      if (hasData(p.etiquetas)) item.etiquetas = p.etiquetas;
-      if (hasData(p.atributos)) item.atributos = p.atributos;
-      if (hasData(p.destacado)) item.destacado = p.destacado;
-      return item;
-    });
-
+  if (productos.length) {
     B.catalogo = {
       moneda: comercioData.moneda || 'ARS',
       secciones: [{
@@ -197,70 +130,68 @@ export async function buildEntity({ comercioId }) {
         titulo: comercioData.nombreComercio || 'Catálogo',
         tipo: 'grid',
         prioridad: 1,
-        items,
-      }],
+        items: productos.map(p => ({
+          id: p.id,
+          nombre: p.nombre,
+          precio_final: p.precio_final,
+          paused: p.paused ?? false,
+          ...(hasData(p.codigo) && { codigo: p.codigo }),
+          ...(hasData(p.descripcion) && { descripcion: p.descripcion }),
+          ...(hasData(p.stock) && { stock: p.stock })
+        }))
+      }]
     };
-
-    if (hasData(comercioData.productosDestacados)) {
-      B.catalogo.destacados = comercioData.productosDestacados.map(d => typeof d === 'string' ? d : d.id);
-    }
   }
 
-  // ===== INYECCIÓN VIRALIDAD ORGÁNICA EN BLOCK B =====
+  // Referral injection
   B.referral = {
     code: referralCode,
-    shareMessage: `¿Te gustaría tener una IA como yo para tu negocio? Visitá https://indiceia.app/r/${referralCode} y empezá gratis.`
+    shareMessage: `¿Te gustaría tener una IA como yo para tu negocio? Visitá https://indiceia.app/r/${referralCode}`
   };
-  // ===== FIN INYECCIÓN =====
 
   B.updatedAt = new Date().toISOString();
   Object.freeze(B);
 
-  // ===== RESOLVER PLACEHOLDERS EN BLOCK A =====
-  const blockAString = JSON.stringify(blockA);
-  const blockAResolved = blockAString
-    .replace(/\{\{LIVE_ENABLED\}\}/g, liveEnabled.toString())
-    .replace(/\{\{REFERRAL_URL\}\}/g, `https://indiceia.app/guia?ref=${referralCode}`);
+  // ===== RESOLVER BLOCK A PLACEHOLDERS =====
+  const A = JSON.parse(
+    JSON.stringify(blockA)
+      .replace(/\{\{LIVE_ENABLED\}\}/g, liveEnabled.toString())
+      .replace(/\{\{REFERRAL_URL\}\}/g, `https://indiceia.app/guia?ref=${referralCode}`)
+  );
 
-  const A = JSON.parse(blockAResolved);
-  console.log(`✅ Block A con placeholders resueltos: .live=${liveEnabled}, referralUrl con código ${referralCode}`);
-  // ===== FIN RESOLUCIÓN PLACEHOLDERS =====
+  // ===== RESOLVER AVAILABLE CHANNELS (BLOCK D) =====
+  if (blockD?.availableChannels && B.contacto) {
+    Object.entries(blockD.availableChannels).forEach(([channel, cfg]) => {
+      if (typeof cfg === 'object') {
+        cfg.enabled = hasData(B.contacto[channel]);
+      }
+    });
+  }
+  Object.freeze(blockD);
 
-  // ----- Block C - Dinámico con URL absoluta al component.jsx
+  // ===== BLOCK C =====
   let C = {};
-
   if (hasData(B.templateId)) {
-    const templateConfig = templateRegistry.templates[B.templateId];
-
-    if (!templateConfig) {
-      console.warn(`⚠️ Template "${B.templateId}" no encontrado → Block C vacío`);
-    } else {
-      const TEMPLATES_BASE_URL = 'https://indiceia-templates.vercel.app/templates';
-
-      const componentUrl = `${TEMPLATES_BASE_URL}/${templateConfig.entrypoint}/component.jsx`;
-      const baseUrl = `${TEMPLATES_BASE_URL}/${templateConfig.entrypoint}/`;
-
+    const t = templateRegistry.templates[B.templateId];
+    if (t) {
+      const base = 'https://indiceia-templates.vercel.app/templates';
       C = {
         visual: {
           available: true,
           template: {
-            id: templateConfig.id,
-            version: templateConfig.version,
-            entrypoint: componentUrl,
-            baseUrl: baseUrl,
-            supports: templateConfig.supports || {},
-            requirements: templateConfig.requirements || {}
+            id: t.id,
+            version: t.version,
+            entrypoint: `${base}/${t.entrypoint}/component.jsx`,
+            baseUrl: `${base}/${t.entrypoint}/`
           },
           mode: 'dynamic-client',
           consumes: ['B']
         }
       };
-
-      console.log(`✅ Block C listo con entrypoint: ${componentUrl}`);
     }
   }
 
-  // ----- Entidad final
+  // ===== FINAL ENTITY =====
   return {
     meta: {
       version: A?.meta?.version || '1.0.0',
@@ -270,21 +201,13 @@ export async function buildEntity({ comercioId }) {
       mode: 'production',
     },
     contracts: {
-      blockB: {
-        role: 'single_source_of_truth',
-        mutable: false,
-        renderReady: true,
-        allowedConsumers: ['renderer', 'llm'],
-      },
-      blockC: {
-        role: 'visual_only',
-        optional: true,
-        consumedBy: ['renderer'],
-        ignoredByEntity: true,
-      },
+      blockB: { role: 'single_source_of_truth', mutable: false },
+      blockC: { role: 'visual_only', optional: true },
+      blockD: { role: 'interaction_protocols', mutable: false }
     },
-    A,  // ← Block A con placeholders resueltos
-    B,  // ← Block B con datos del comercio + referral
-    C,  // ← Block C con template visual
+    A,
+    B,
+    C,
+    D: blockD
   };
 }
