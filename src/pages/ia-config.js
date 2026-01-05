@@ -72,7 +72,7 @@ async function initializePage() {
     updateHeaderInfo(comercioData.nombreComercio || 'Mi comercio', PLANS[comercioData.plan || 'trial']);
     updateBanner();
 
-    renderPageContent();
+    
     loadAIConfig();
     renderCanalesAlternativos();
 
