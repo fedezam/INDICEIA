@@ -1,5 +1,5 @@
 // src/pages/ia-config.js
-// Onboarding Paso 5 – Configuración de IA (final, estable)
+// Onboarding Paso 5 – Configuración de IA (FINAL – FULL)
 
 import '../styles/base.css';
 import '../styles/layout.css';
@@ -28,7 +28,6 @@ let productos = [];
 let productosDestacados = [];
 let hasUnsavedChanges = false;
 let originalAIConfig = {};
-let searchTimeout = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -72,7 +71,6 @@ async function initializePage() {
     updateHeaderInfo(comercioData.nombreComercio || 'Mi comercio', PLANS[comercioData.plan || 'trial']);
     updateBanner();
 
-    
     loadAIConfig();
     renderCanalesAlternativos();
 
@@ -124,7 +122,6 @@ function getAvailableChannelsFromUI() {
     result[cb.dataset.canal] = cb.checked;
   });
 
-  result.whatsapp = true;
   return result;
 }
 
@@ -135,15 +132,18 @@ function getCurrentConfig() {
     aiPersonality: safeGet('aiPersonality'),
     aiTone: safeGet('aiTone'),
     aiGreeting: safeGet('aiGreeting'),
+
     sinPrecio: safeGet('sinPrecio'),
     sinStock: safeGet('sinStock'),
     localCerrado: safeGet('localCerrado'),
     proactividad: safeGet('proactividad'),
     formatoRespuestas: safeGet('formatoRespuestas'),
+
     mensajeWhatsapp: safeGet('mensajeWhatsapp'),
     mensajeInstagram: safeGet('mensajeInstagram'),
     mensajeWeb: safeGet('mensajeWeb'),
     mensajeDefault: safeGet('mensajeDefault'),
+
     productosDestacados,
     availableChannels: getAvailableChannelsFromUI()
   };
@@ -170,8 +170,8 @@ function renderCanalesAlternativos() {
   if (!container) return;
 
   const canales = [
-    { key: 'whatsapp', label: 'WhatsApp', obligatorio: true },
-    { key: 'email', label: 'Email', obligatorio: true },
+    { key: 'whatsapp', label: 'WhatsApp', locked: true },
+    { key: 'email', label: 'Email' },
     { key: 'instagram', label: 'Instagram' },
     { key: 'facebook', label: 'Facebook' },
     { key: 'tiktok', label: 'TikTok' }
@@ -189,17 +189,23 @@ function renderCanalesAlternativos() {
   `;
 
   canales.forEach(c => {
-    const existe = !!comercioData[c.key]?.trim();
-    if (!existe && !c.obligatorio) return;
+    if (c.key !== 'whatsapp') {
+      const existe = !!comercioData[c.key]?.trim();
+      if (!existe) return;
+    }
 
-    const checked = c.obligatorio ? true : !!available[c.key];
-    const disabled = c.obligatorio ? 'disabled' : '';
+    const checked =
+      c.key === 'whatsapp'
+        ? true
+        : !!available[c.key];
+
+    const disabled = c.locked ? 'disabled' : '';
 
     html += `
-      <label class="canal-item ${disabled}">
+      <label class="canal-item">
         <input type="checkbox" data-canal="${c.key}" ${checked ? 'checked' : ''} ${disabled}>
         <span>${c.label}</span>
-        ${c.obligatorio ? '<small>(principal)</small>' : ''}
+        ${c.locked ? '<small>(principal)</small>' : ''}
       </label>
     `;
   });
@@ -233,9 +239,9 @@ async function saveAIConfig() {
 
     hasUnsavedChanges = false;
     originalAIConfig = JSON.parse(JSON.stringify(config));
+
     hideLoading();
     showToast('Listo', 'IA configurada correctamente', 'success');
-
     setTimeout(() => redirectAfterSave(), 500);
   } catch (err) {
     hideLoading();
@@ -253,7 +259,9 @@ function checkFormValidity() {
   const btn = $('saveChangesBtn');
   if (!btn) return;
 
-  const changed = JSON.stringify(getCurrentConfig()) !== JSON.stringify(originalAIConfig);
+  const changed =
+    JSON.stringify(getCurrentConfig()) !== JSON.stringify(originalAIConfig);
+
   btn.disabled = !changed;
 }
 
