@@ -62,9 +62,9 @@ const iaConfigModule = {
 
   // 2️⃣ RENDER - Dibujar UI específica
   render() {
-    // Verificar que DOM esté listo
-    const form = document.getElementById('iaConfigForm');
-    if (!form) {
+    // Verificar que DOM esté listo - buscar un elemento que existe
+    const container = document.querySelector('main .container');
+    if (!container || !document.getElementById('aiName')) {
       console.error('❌ DOM no está listo, reintentando...');
       setTimeout(() => this.render(), 100);
       return;
