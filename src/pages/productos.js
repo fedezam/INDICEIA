@@ -1,6 +1,6 @@
 // src/pages/productos.js
 // Onboarding · Paso 4 · Productos
-// Versión canónica – SIN parches
+// Versión CANÓNICA – detección de cambios correcta
 
 // ==================== ESTILOS ====================
 import '../styles/base.css';
@@ -67,8 +67,17 @@ let comercioData = {};
 
 let productos = [];
 let originalProductos = [];
+
 let hasUnsavedChanges = false;
 let isEditMode = false;
+
+// ==================== DIRTY STATE (CANÓNICO) ====================
+function markAsDirty() {
+  if (hasUnsavedChanges) return;
+  hasUnsavedChanges = true;
+  updateExitButtonState();
+  updateSaveButtonState();
+}
 
 // ==================== AUTH ====================
 auth.onAuthStateChanged(async (user) => {
@@ -90,14 +99,11 @@ async function initializePage() {
   try {
     showLoading('Cargando productos...');
 
-    // Determinar modo edición
     const urlParams = new URLSearchParams(window.location.search);
     isEditMode = urlParams.get('edit') === 'true';
 
-    // 1. Layout global
     renderLayout();
 
-    // 2. Usuario → comercio
     const userSnap = await getDoc(doc(db, 'usuarios', currentUser.uid));
     if (!userSnap.exists() || !userSnap.data().comercioId) {
       showToast('Error', 'Completá primero Mi Comercio', 'warning');
@@ -107,11 +113,9 @@ async function initializePage() {
 
     currentComercioId = userSnap.data().comercioId;
 
-    // 3. Datos base
     await loadComercio();
     await loadProductos();
 
-    // 4. Header + navegación
     updateHeaderInfo(
       comercioData.nombreComercio || 'Mi comercio',
       PLANS[comercioData.plan || 'trial']
@@ -120,11 +124,9 @@ async function initializePage() {
     initNavigation();
     updateBanner();
 
-    // 5. Render UI
     renderProductsTable();
     setupEvents();
 
-    // 6. Context bar en modo edición
     if (isEditMode) {
       injectEditContextBar({
         hasUnsavedChangesFn: () => hasUnsavedChanges,
@@ -135,9 +137,10 @@ async function initializePage() {
       });
     }
 
-    // Remover loading inicial
-    document.getElementById('initialLoading')?.remove();
+    updateExitButtonState();
+    updateSaveButtonState();
 
+    document.getElementById('initialLoading')?.remove();
     hideLoading();
   } catch (err) {
     console.error(err);
@@ -185,10 +188,7 @@ function renderProductsTable() {
   const counter = document.getElementById('productCount');
   const empty = document.getElementById('emptyMessage');
 
-  if (counter) {
-    counter.textContent = productos.length;
-  }
-
+  if (counter) counter.textContent = productos.length;
   if (!tbody) return;
 
   if (productos.length === 0) {
@@ -225,16 +225,14 @@ function renderProductsTable() {
 function setupEvents() {
   window.toggleProduct = (i) => {
     productos[i].paused = !productos[i].paused;
-    hasUnsavedChanges = true;
+    markAsDirty();
     renderProductsTable();
-    updateExitButtonState();
   };
 
   window.deleteProduct = (i) => {
     productos.splice(i, 1);
-    hasUnsavedChanges = true;
+    markAsDirty();
     renderProductsTable();
-    updateExitButtonState();
   };
 
   document
@@ -242,14 +240,23 @@ function setupEvents() {
     ?.addEventListener('click', saveAll);
 }
 
+// ==================== BOTONES CONTEXTO ====================
 function updateExitButtonState() {
   const exitBtn = document.querySelector('.edit-context-bar .btn-back');
-  if (exitBtn) {
-    exitBtn.disabled = hasUnsavedChanges;
-    exitBtn.title = hasUnsavedChanges 
-      ? 'Guardá los cambios antes de salir' 
-      : 'Volver al Dashboard';
-  }
+  if (!exitBtn) return;
+
+  exitBtn.disabled = hasUnsavedChanges;
+  exitBtn.title = hasUnsavedChanges
+    ? 'Guardá los cambios antes de salir'
+    : 'Volver al Dashboard';
+}
+
+function updateSaveButtonState() {
+  const saveBtn = document.getElementById('saveChangesBtnBottom');
+  if (!saveBtn) return;
+
+  saveBtn.disabled = !hasUnsavedChanges;
+  saveBtn.classList.toggle('disabled', !hasUnsavedChanges);
 }
 
 // ==================== SAVE ====================
@@ -263,7 +270,6 @@ async function saveAll() {
 
   const ref = collection(db, 'comercios', currentComercioId, 'productos');
   const existing = await getDocs(ref);
-
   const keep = new Set(productos.map(p => p.id).filter(Boolean));
 
   for (const d of existing.docs) {
@@ -289,13 +295,14 @@ async function saveAll() {
   });
 
   finishProgressOverlay('Catálogo sincronizado');
-
   showToast('Guardado', 'Productos actualizados', 'success');
 
   hasUnsavedChanges = false;
   updateExitButtonState();
-  
+  updateSaveButtonState();
+
   if (!isEditMode) {
     redirectAfterSave('ia-config');
   }
 }
+
