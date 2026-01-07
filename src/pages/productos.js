@@ -126,6 +126,9 @@ async function initializePage() {
     renderProductsTable();
     setupEvents();
 
+    // Remover loading inicial
+    document.getElementById('initialLoading')?.remove();
+
     hideLoading();
   } catch (err) {
     console.error(err);
@@ -171,6 +174,7 @@ function updateBanner() {
 function renderProductsTable() {
   const tbody = document.getElementById('tableBody');
   const counter = document.getElementById('productCount');
+  const empty = document.getElementById('emptyMessage');
 
   if (counter) {
     counter.textContent = productos.length;
@@ -179,9 +183,12 @@ function renderProductsTable() {
   if (!tbody) return;
 
   if (productos.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7">Sin productos cargados</td></tr>`;
+    tbody.innerHTML = '';
+    if (empty) empty.style.display = 'block';
     return;
   }
+
+  if (empty) empty.style.display = 'none';
 
   tbody.innerHTML = productos.map((p, i) => `
     ...
