@@ -49,11 +49,21 @@ const productosModule = {
 
   // 2️⃣ RENDER - Dibujar UI específica de productos
   render() {
+    // Verificar que el DOM esté listo
+    const tbody = document.getElementById('tableBody');
+    if (!tbody) {
+      console.error('❌ DOM no está listo, reintentando...');
+      setTimeout(() => this.render(), 100);
+      return;
+    }
+
+    console.log('🎨 Renderizando UI de productos...');
     renderProductsTable();
     renderManualForm();
     renderImportZone();
     setupProductEvents();
     insertAIHelperCard();
+    console.log('✅ UI renderizada correctamente');
   },
 
   // 3️⃣ GET CURRENT DATA - Snapshot para dirty detection
@@ -127,15 +137,24 @@ const productosModule = {
 // ==================== UI RENDERING ====================
 
 function renderProductsTable() {
+  console.log('🔧 renderProductsTable() llamado, productos:', productos.length);
+  
   const tbody = document.getElementById('tableBody');
   const productCount = document.getElementById('productCount');
   
-  if (!tbody) return;
+  if (!tbody) {
+    console.error('❌ #tableBody no encontrado en DOM');
+    return;
+  }
   
-  if (productCount) productCount.textContent = productos.length;
+  if (productCount) {
+    productCount.textContent = productos.length;
+    console.log('📊 Contador actualizado:', productos.length);
+  }
 
   if (productos.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7">Sin productos cargados</td></tr>';
+    console.log('⚠️ Sin productos, mostrando mensaje vacío');
     return;
   }
 
@@ -156,6 +175,8 @@ function renderProductsTable() {
       </td>
     </tr>
   `).join('');
+  
+  console.log('✅ Tabla renderizada con', productos.length, 'filas');
 }
 
 function renderManualForm() {
