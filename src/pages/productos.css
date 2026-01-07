@@ -344,6 +344,40 @@
   font-size: 0.85rem;
 }
 
+.btn-icon {
+  background: none;
+  border: none;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  color: var(--gray-600);
+  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0.15rem;
+}
+
+.btn-icon:hover {
+  background: var(--gray-100);
+  color: var(--gray-900);
+  transform: scale(1.15);
+}
+
+.btn-icon.btn-danger {
+  color: #dc2626;
+}
+
+.btn-icon.btn-danger:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-icon i {
+  pointer-events: none;
+}
+
 /* -------------------- EMPTY STATE -------------------- */
 .empty-state {
   text-align: center;
