@@ -37,21 +37,32 @@ let atributos = [];
 let etiquetas = [];
 
 // ==================== HELPERS ====================
-// Normalizar objeto para comparación (elimina fechas y ordena keys)
+// Normalizar objeto para comparación (elimina fechas y ordena keys recursivamente)
 function normalizeForComparison(obj) {
-  const normalized = { ...obj };
+  if (obj === null || obj === undefined) return obj;
   
-  // Eliminar campos que no importan para comparación
-  delete normalized.fechaActualizacion;
-  delete normalized.fechaCreacion;
+  // Si es array, normalizar cada elemento
+  if (Array.isArray(obj)) {
+    return obj.map(item => normalizeForComparison(item));
+  }
   
-  // Ordenar keys alfabéticamente
-  const ordered = {};
-  Object.keys(normalized).sort().forEach(key => {
-    ordered[key] = normalized[key];
+  // Si no es objeto, devolver tal cual
+  if (typeof obj !== 'object') return obj;
+  
+  const normalized = {};
+  
+  // Ordenar keys alfabéticamente y normalizar recursivamente
+  Object.keys(obj).sort().forEach(key => {
+    // Skip fechas
+    if (key === 'fechaActualizacion' || key === 'fechaCreacion') {
+      return;
+    }
+    
+    // Normalizar recursivamente el valor
+    normalized[key] = normalizeForComparison(obj[key]);
   });
   
-  return ordered;
+  return normalized;
 }
 
 // ==================== MÓDULO EXPORTADO ====================
