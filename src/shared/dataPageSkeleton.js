@@ -1,5 +1,4 @@
 // src/shared/dataPageSkeleton.js
-// Runtime canónico para páginas de carga de datos (onboarding + edición)
 
 import { auth, db } from '../firebase.js';
 import { doc, getDoc } from 'firebase/firestore';
@@ -26,27 +25,17 @@ import {
 
 import { injectEditContextBar } from './editContextBar.js';
 
-import { bootFlow } from '../controllers/boot/flowBoot.js';
-
-/**
- * Skeleton principal
- * pageConfig define lo único que cambia por página
- */
-export function createDataPage(pageConfig) {
-  bootFlow();
-
+// ==================== SKELETON ====================
+export async function runDataPage(pageModule) {
   let currentUser = null;
-  let comercioId = null;
+  let currentComercioId = null;
   let comercioData = {};
+
+  let originalSnapshot = null;
   let hasUnsavedChanges = false;
   let isEditMode = false;
 
-  const markAsDirty = () => {
-    if (hasUnsavedChanges) return;
-    hasUnsavedChanges = true;
-    pageConfig.onDirtyChange?.(true);
-  };
-
+  // ---------- AUTH ----------
   auth.onAuthStateChanged(async (user) => {
     if (!user) return;
     currentUser = user;
@@ -61,9 +50,10 @@ export function createDataPage(pageConfig) {
     await init();
   });
 
+  // ---------- INIT ----------
   async function init() {
     try {
-      showLoading(pageConfig.loadingMessage || 'Cargando...');
+      showLoading('Cargando...');
 
       const urlParams = new URLSearchParams(window.location.search);
       isEditMode = urlParams.get('edit') === 'true';
@@ -73,18 +63,17 @@ export function createDataPage(pageConfig) {
       const userSnap = await getDoc(doc(db, 'usuarios', currentUser.uid));
       if (!userSnap.exists() || !userSnap.data().comercioId) {
         showToast('Error', 'Completá primero Mi Comercio', 'warning');
-        pageConfig.onMissingComercio?.();
+        window.location.href = '/mi-comercio.html';
         return;
       }
 
-      comercioId = userSnap.data().comercioId;
+      currentComercioId = userSnap.data().comercioId;
 
-      const comercioSnap = await getDoc(doc(db, 'comercios', comercioId));
+      const comercioSnap = await getDoc(doc(db, 'comercios', currentComercioId));
       comercioData = comercioSnap.exists()
-        ? { id: comercioId, ...comercioSnap.data() }
+        ? { id: currentComercioId, ...comercioSnap.data() }
         : { plan: 'trial' };
 
-      // Header + navegación
       updateHeaderInfo(
         comercioData.nombreComercio || 'Mi comercio',
         PLANS[comercioData.plan || 'trial']
@@ -93,19 +82,22 @@ export function createDataPage(pageConfig) {
       initNavigation();
       updateBanner();
 
-      // 🔽 Hook de página
-      await pageConfig.load({
-        db,
-        comercioId,
-        comercioData,
-        markAsDirty
-      });
+      // 🔌 PAGE HOOKS
+      await pageModule.load({ currentComercioId, comercioData });
+      pageModule.render();
+
+      // 📸 SNAPSHOT INICIAL
+      originalSnapshot = structuredClone(pageModule.getCurrentData());
+
+      setupButtons();
 
       if (isEditMode) {
         injectEditContextBar({
           hasUnsavedChangesFn: () => hasUnsavedChanges,
-          message: pageConfig.editMessage,
-          onExit: pageConfig.onExitEdit
+          message: 'Estás editando información de tu comercio',
+          onExit: () => {
+            window.location.href = '/dashboard.html';
+          }
         });
       }
 
@@ -117,6 +109,7 @@ export function createDataPage(pageConfig) {
     }
   }
 
+  // ---------- BANNER ----------
   function updateBanner() {
     const estado = calcularEstadoPlan(comercioData);
     const plan = PLANS[comercioData.plan || 'trial'];
@@ -127,18 +120,55 @@ export function createDataPage(pageConfig) {
     } else if (estado === 'activo') {
       html = `Plan ${plan.nombre} activo`;
     } else {
-      html = 'Configurá tu información';
+      html = 'Configurá tu comercio';
     }
 
     updateSubscriptionBanner(html, estado);
   }
 
-  return {
-    get comercioId() {
-      return comercioId;
-    },
-    get comercioData() {
-      return comercioData;
+  // ---------- DIRTY DETECTION ----------
+  function reevaluateState() {
+    const current = pageModule.getCurrentData();
+    hasUnsavedChanges =
+      JSON.stringify(current) !== JSON.stringify(originalSnapshot);
+
+    updateSaveButtonState();
+  }
+
+  // ---------- BOTONES ----------
+  function setupButtons() {
+    const saveBtn = document.getElementById('saveChangesBtnBottom');
+    if (!saveBtn) return;
+
+    saveBtn.addEventListener('click', async () => {
+      if (saveBtn.disabled) return;
+
+      await pageModule.save({
+        currentComercioId,
+        isEditMode
+      });
+
+      originalSnapshot = structuredClone(pageModule.getCurrentData());
+      hasUnsavedChanges = false;
+      updateSaveButtonState();
+
+      if (isEditMode) {
+        window.location.href = '/dashboard.html';
+      }
+    });
+
+    // 🔁 Observador simple (canónico)
+    setInterval(reevaluateState, 300);
+  }
+
+  function updateSaveButtonState() {
+    const saveBtn = document.getElementById('saveChangesBtnBottom');
+    if (!saveBtn) return;
+
+    if (isEditMode) {
+      saveBtn.disabled = !hasUnsavedChanges;
+    } else {
+      saveBtn.disabled = !pageModule.isFormValid();
     }
-  };
+  }
 }
