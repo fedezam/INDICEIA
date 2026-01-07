@@ -191,8 +191,26 @@ function renderProductsTable() {
   if (empty) empty.style.display = 'none';
 
   tbody.innerHTML = productos.map((p, i) => `
-    ...
-  `).join('');
+  <tr>
+    <td style="text-align:center">
+      <input type="checkbox">
+    </td>
+    <td>${p.codigo || '-'}</td>
+    <td>${p.nombre || '(sin nombre)'}</td>
+    <td>$${Number(p.precio_final || 0).toLocaleString('es-AR')}</td>
+    <td>${p.stock ?? '-'}</td>
+    <td>${p.categoria || '-'}</td>
+    <td style="text-align:center">
+      <button onclick="toggleProduct(${i})" title="Pausar">
+        ⏸
+      </button>
+      <button onclick="deleteProduct(${i})" title="Eliminar">
+        🗑
+      </button>
+    </td>
+  </tr>
+ `).join('');
+
 }
 
 function injectExitButton() {
