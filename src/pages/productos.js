@@ -9,6 +9,7 @@ import '../styles/components.css';
 import '../styles/forms.css';
 import '../styles/forms-premium.css';
 import './productos.css';
+import '../styles/progressOverlay.css';
 
 // ==================== FIREBASE ====================
 import { auth, db } from '../firebase.js';
@@ -43,6 +44,12 @@ import {
   hideLoading
 } from '../shared/utils.js';
 
+import {
+  showProgressOverlay,
+  updateProgress,
+  finishProgressOverlay
+} from '../shared/progressOverlay.js';
+
 // ==================== FLOW ====================
 import { bootFlow } from '../controllers/boot/flowBoot.js';
 import { redirectAfterSave } from '../controllers/flowController.js';
@@ -58,6 +65,7 @@ let comercioData = {};
 let productos = [];
 let originalProductos = [];
 let hasUnsavedChanges = false;
+let isEditMode = false;
 
 // ==================== AUTH ====================
 auth.onAuthStateChanged(async (user) => {
@@ -78,6 +86,10 @@ auth.onAuthStateChanged(async (user) => {
 async function initializePage() {
   try {
     showLoading('Cargando productos...');
+
+    // Determinar modo edición
+    const urlParams = new URLSearchParams(window.location.search);
+    isEditMode = urlParams.get('mode') === 'edit';
 
     // 1. Layout global
     renderLayout();
@@ -105,7 +117,12 @@ async function initializePage() {
     initNavigation();
     updateBanner();
 
-    // 5. Render UI
+    // 5. Botón volver en edit mode
+    if (isEditMode) {
+      injectExitButton();
+    }
+
+    // 6. Render UI
     renderProductsTable();
     setupEvents();
 
@@ -130,7 +147,7 @@ async function loadProductos() {
   const snap = await getDocs(ref);
 
   productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  originalProductos = structuredClone(productos);
+  originalProductos = JSON.parse(JSON.stringify(productos));
 }
 
 // ==================== HEADER BANNER ====================
@@ -171,6 +188,24 @@ function renderProductsTable() {
   `).join('');
 }
 
+function injectExitButton() {
+  const header = document.querySelector('.header .user-info');
+  if (!header) return;
+
+  const btn = document.createElement('button');
+  btn.className = 'btn-secondary';
+  btn.innerText = '← Volver al Dashboard';
+
+  btn.onclick = () => {
+    if (hasUnsavedChanges) {
+      const ok = confirm('Tenés cambios sin guardar. ¿Salir igual?');
+      if (!ok) return;
+    }
+    window.location.href = '/dashboard.html';
+  };
+
+  header.prepend(btn);
+}
 
 // ==================== EVENTS ====================
 function setupEvents() {
@@ -195,7 +230,10 @@ function setupEvents() {
 async function saveAll() {
   if (!hasUnsavedChanges) return;
 
-  showLoading('Guardando...');
+  showProgressOverlay(productos.length, {
+    title: 'Guardando productos',
+    initialMessage: 'Preparando catálogo'
+  });
 
   const ref = collection(db, 'comercios', currentComercioId, 'productos');
   const existing = await getDocs(ref);
@@ -209,6 +247,8 @@ async function saveAll() {
   }
 
   for (const p of productos) {
+    updateProgress(`Procesando "${p.nombre || 'producto'}"`);
+
     if (p.id) {
       await updateDoc(doc(ref, p.id), p);
     } else {
@@ -222,9 +262,13 @@ async function saveAll() {
     cantidadProductos: productos.length
   });
 
-  hideLoading();
+  finishProgressOverlay('Catálogo sincronizado');
+
   showToast('Guardado', 'Productos actualizados', 'success');
 
   hasUnsavedChanges = false;
-  redirectAfterSave('ia-config');
+  
+  if (!isEditMode) {
+    redirectAfterSave('ia-config');
+  }
 }
