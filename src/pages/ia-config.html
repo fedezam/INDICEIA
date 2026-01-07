@@ -21,6 +21,9 @@
     href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap"
     rel="stylesheet"
   />
+  
+  <!-- CSS ADICIONAL PARA SKELETON -->
+  <link rel="stylesheet" href="../styles/progressOverlay.css">
 </head>
 
 <body data-page="ia-config">
@@ -84,6 +87,10 @@
             rows="3"
             placeholder="Hola! Soy JuancaBot, estoy acá para ayudarte 😊"
           ></textarea>
+          <small id="greetingCount" class="char-counter">0/200</small>
+          <div id="greetingPreview" class="greeting-preview">
+            Tu saludo aparecerá aquí...
+          </div>
         </div>
       </section>
 
@@ -137,6 +144,13 @@
           </select>
         </div>
       </section>
+
+      <!-- ================= BOTÓN GUARDAR (SKELETON) ================= -->
+      <div class="bottom-action-bar">
+        <button id="saveChangesBtnBottom" class="btn btn-primary btn-save" disabled>
+          Guardar Cambios
+        </button>
+      </div>
 
     </div>
   </main>
