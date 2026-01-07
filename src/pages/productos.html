@@ -4,88 +4,238 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Productos - Tu Comercio</title>
-
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
   <!-- CSS -->
   <link rel="stylesheet" href="./productos.css">
-
   <!-- SheetJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+  <header id="layout-header"></header>
 
-<header id="layout-header"></header>
-
-<main>
-  <div class="container">
-
-    <div class="page-header">
-      <h1><i class="fas fa-box"></i> Catálogo de Productos</h1>
-      <p>Cargá tus productos manualmente o importá desde Excel/CSV</p>
-      <div class="product-stats">
-        <span class="stat-badge">
-          <i class="fas fa-boxes"></i>
-          <strong id="productCount">0</strong> productos
-        </span>
+  <main>
+    <div class="container">
+      <!-- Page Header -->
+      <div class="page-header">
+        <h1><i class="fas fa-box"></i> Catálogo de Productos</h1>
+        <p>Cargá tus productos manualmente o importá desde Excel/CSV</p>
+        <div class="product-stats">
+          <span class="stat-badge">
+            <i class="fas fa-boxes"></i>
+            <strong id="productCount">0</strong> productos
+          </span>
+        </div>
       </div>
-    </div>
 
-    <div id="initialLoading" class="loading-hint">
-      <i class="fas fa-spinner fa-spin"></i>
-      Cargando catálogo…
-    </div>
+      <!-- Loading inicial -->
+      <div id="initialLoading" class="loading-hint" style="display: none;">
+        <i class="fas fa-spinner fa-spin"></i>
+        Cargando catálogo…
+      </div>
 
-    <div id="productsTable" class="form-section">
+      <!-- ========== SECCIÓN 1: CARGA MANUAL ========== -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3><i class="fas fa-plus-circle"></i> Agregar Producto Manualmente</h3>
+        </div>
 
-      <div class="table-header">
-        <h3><i class="fas fa-table"></i> Productos Cargados</h3>
-        <div class="table-actions">
-          <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchProducts" placeholder="Buscar productos...">
+        <form id="manualForm" class="product-form">
+          <!-- Campos básicos -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="codigo">Código (opcional)</label>
+              <input type="text" id="codigo" name="codigo" placeholder="SKU123">
+              <small>Si no lo completás, se genera automáticamente</small>
+            </div>
+
+            <div class="form-group">
+              <label for="nombre">Nombre del producto <span class="required">*</span></label>
+              <input type="text" id="nombre" name="nombre" placeholder="Ej: Remera deportiva" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="descripcion">Descripción <span class="required">*</span></label>
+            <textarea id="descripcion" name="descripcion" rows="3" placeholder="Describe el producto..." required></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="precio_final">Precio <span class="required">*</span></label>
+              <input type="number" id="precio_final" name="precio_final" step="0.01" min="0" placeholder="0.00" required>
+            </div>
+
+            <div class="form-group">
+              <label for="stock">Stock</label>
+              <input type="number" id="stock" name="stock" min="0" placeholder="0">
+            </div>
+
+            <div class="form-group">
+              <label for="categoria">Categoría</label>
+              <input type="text" id="categoria" name="categoria" placeholder="Ej: Ropa">
+            </div>
+          </div>
+
+          <!-- Toggle campos avanzados -->
+          <button type="button" id="toggleMode" class="btn-link">
+            <i class="fas fa-chevron-down"></i> Agregar más detalles
+          </button>
+
+          <!-- Campos avanzados (colapsados por defecto) -->
+          <div id="advancedFields" class="advanced-fields" style="display: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="subcategoria">Subcategoría</label>
+                <input type="text" id="subcategoria" name="subcategoria" placeholder="Ej: Remeras">
+              </div>
+
+              <div class="form-group">
+                <label for="marca">Marca</label>
+                <input type="text" id="marca" name="marca" placeholder="Ej: Nike">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="imagen">URL de imagen</label>
+              <input type="url" id="imagen" name="imagen" placeholder="https://...">
+            </div>
+
+            <div class="form-group">
+              <label for="disponibilidad">Disponibilidad</label>
+              <select id="disponibilidad" name="disponibilidad">
+                <option value="inmediata">Inmediata</option>
+                <option value="bajo_pedido">Bajo pedido</option>
+                <option value="sin_stock">Sin stock</option>
+              </select>
+            </div>
+
+            <!-- Atributos personalizados -->
+            <div class="form-group">
+              <label>Atributos personalizados</label>
+              <div id="atributosList"></div>
+              <button type="button" id="addAtributo" class="btn btn-secondary btn-sm">
+                <i class="fas fa-plus"></i> Agregar atributo
+              </button>
+            </div>
+
+            <!-- Etiquetas -->
+            <div class="form-group">
+              <label>Etiquetas</label>
+              <div class="etiquetas-input-group">
+                <input type="text" id="etiquetaInput" placeholder="Ej: nuevo, destacado">
+                <button type="button" id="addEtiqueta" class="btn btn-secondary btn-sm">
+                  <i class="fas fa-tag"></i> Agregar
+                </button>
+              </div>
+              <div id="etiquetasList" class="etiquetas-container"></div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-plus"></i> Agregar Producto
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ========== SECCIÓN 2: IMPORTAR EXCEL/CSV ========== -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3><i class="fas fa-file-excel"></i> Importar desde Excel/CSV</h3>
+        </div>
+
+        <div id="fileUploadZone" class="upload-zone">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <p><strong>Arrastrá tu archivo</strong> o hacé clic para seleccionar</p>
+          <small>Formatos admitidos: .xlsx, .xls, .csv</small>
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+        </div>
+
+        <!-- Preview y mapeo (oculto por defecto) -->
+        <div id="csvPreviewSection" class="preview-section" style="display: none;">
+          <h4>
+            <i class="fas fa-eye"></i> Vista previa
+            <span class="badge" id="importCount">0</span> filas detectadas
+          </h4>
+
+          <div class="preview-table-container">
+            <table class="preview-table">
+              <thead id="previewHeader"></thead>
+              <tbody id="previewBody"></tbody>
+            </table>
+          </div>
+
+          <h4><i class="fas fa-random"></i> Mapeo de columnas</h4>
+          <p class="help-text">Indicá qué campo de tu archivo corresponde a cada dato del producto:</p>
+          
+          <div id="mappingFields" class="mapping-container"></div>
+
+          <div class="form-actions">
+            <button id="applyMapping" class="btn btn-primary">
+              <i class="fas fa-check"></i> Importar productos
+            </button>
+            <button id="cancelImport" class="btn btn-secondary">
+              <i class="fas fa-times"></i> Cancelar
+            </button>
           </div>
         </div>
       </div>
 
-      <div class="table-container">
-        <table class="products-table">
-          <thead>
-            <tr>
-              <th class="col-check">
-                <input type="checkbox" id="checkAll">
-              </th>
-              <th class="col-code">Código</th>
-              <th class="col-name">Nombre</th>
-              <th class="col-price">Precio</th>
-              <th class="col-stock">Stock</th>
-              <th class="col-category">Categoría</th>
-              <th class="col-actions">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
+      <!-- ========== SECCIÓN 3: TABLA DE PRODUCTOS ========== -->
+      <div id="productsTable" class="form-section">
+        <div class="table-header">
+          <h3><i class="fas fa-table"></i> Productos Cargados</h3>
+          <div class="table-actions">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="searchProducts" placeholder="Buscar productos...">
+            </div>
+          </div>
+        </div>
 
-        <div id="emptyMessage" class="empty-state" style="display:none">
-          <i class="fas fa-box-open"></i>
-          <p>Aún no tenés productos cargados</p>
-          <small>Agregá productos manualmente o importá desde Excel</small>
+        <div class="table-container">
+          <table class="products-table">
+            <thead>
+              <tr>
+                <th class="col-check">
+                  <input type="checkbox" id="checkAll">
+                </th>
+                <th class="col-code">Código</th>
+                <th class="col-name">Nombre</th>
+                <th class="col-price">Precio</th>
+                <th class="col-stock">Stock</th>
+                <th class="col-category">Categoría</th>
+                <th class="col-actions">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr>
+                <td colspan="7" class="text-center">Cargando productos...</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div id="emptyMessage" class="empty-state" style="display: none;">
+            <i class="fas fa-box-open"></i>
+            <p>Aún no tenés productos cargados</p>
+            <small>Agregá productos manualmente o importá desde Excel</small>
+          </div>
         </div>
       </div>
+
+      <!-- Bottom Action Bar -->
+      <div class="bottom-action-bar">
+        <button id="saveChangesBtnBottom" class="btn btn-primary btn-save" disabled>
+          Guardar cambios
+        </button>
+      </div>
     </div>
+  </main>
 
-    <div class="bottom-action-bar">
-      <button id="saveChangesBtnBottom" class="btn btn-primary btn-save" disabled>
-        Guardar cambios
-      </button>
-    </div>
+  <footer id="layout-footer"></footer>
 
-  </div>
-</main>
-
-<footer id="layout-footer"></footer>
-
-<script type="module" src="./productos.js"></script>
+  <script type="module" src="./productos.js"></script>
 </body>
 </html>
