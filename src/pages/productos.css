@@ -338,49 +338,57 @@
   accent-color: var(--primary);
 }
 
-/* Botones de acción */
+/* -------------------- BOTONES DE ACCIÓN -------------------- */
 .btn-icon {
-  background: transparent;
-  border: 1px solid transparent;
-  padding: 0.45rem 0.6rem;
+  background: var(--gray-100);
+  border: 1px solid var(--gray-300);
+  padding: 0.45rem 0.65rem;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 8px;
 
-  color: var(--gray-600);
+  color: var(--gray-700);
   font-size: 1rem;
 
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  transition: background 0.15s ease, color 0.15s ease, border 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
 }
 
 .btn-icon:hover {
-  background: var(--gray-100);
+  background: var(--gray-200);
   color: var(--gray-900);
-  border-color: var(--gray-300);
+  transform: translateY(-1px);
 }
 
-/* Pausar / Activar */
-.btn-icon.pause {
-  color: #1f2937;
+.btn-icon:active {
+  transform: scale(0.95);
 }
 
-.btn-icon.pause:hover {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-  color: #4338ca;
+/* Pausar / Activar (acción reversible) */
+.btn-icon i.fa-pause {
+  color: #92400e;
 }
 
-/* Eliminar */
+.btn-icon i.fa-play {
+  color: #065f46;
+}
+
+/* Eliminar (acción destructiva) */
 .btn-icon.btn-danger {
+  background: #fee2e2;
+  border-color: #fecaca;
   color: #b91c1c;
 }
 
 .btn-icon.btn-danger:hover {
-  background: #fee2e2;
-  border-color: #fecaca;
+  background: #fecaca;
+  border-color: #fca5a5;
   color: #7f1d1d;
 }
 
