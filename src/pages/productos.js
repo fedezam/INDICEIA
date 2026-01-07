@@ -58,6 +58,11 @@ const productosModule = {
     }
 
     console.log('🎨 Renderizando UI de productos...');
+    
+    // Ocultar loading inicial
+    const initialLoading = document.getElementById('initialLoading');
+    if (initialLoading) initialLoading.style.display = 'none';
+    
     renderProductsTable();
     renderManualForm();
     renderImportZone();
