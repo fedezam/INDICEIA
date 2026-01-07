@@ -1,29 +1,121 @@
+/* src/styles/editContextBar.css */
+/* Barra de contexto para modo edición - Diseño llamativo y claro */
+
 .edit-context-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.5rem;
   margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+  animation: slideDown 0.3s ease-out;
+}
 
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.edit-context-bar .edit-context-text {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.edit-context-bar .edit-context-text i {
+  font-size: 1.2rem;
+  color: #fbbf24;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+.edit-context-bar .btn-back {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: #ffffff;
+  color: #667eea;
+  border: 2px solid transparent;
   border-radius: 8px;
-
   font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.edit-context-bar .btn-secondary {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
+.edit-context-bar .btn-back:hover:not(:disabled) {
+  background: #f0f4ff;
+  border-color: #ffffff;
+  transform: translateX(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.edit-context-text {
-  color: #475569;
+.edit-context-bar .btn-back:disabled {
+  background: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
+.edit-context-bar .btn-back i {
+  font-size: 1rem;
+}
+
+/* Responsive */
 @media (max-width: 640px) {
   .edit-context-bar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    padding: 1rem;
   }
+  
+  .edit-context-bar .edit-context-text {
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .edit-context-bar .btn-back {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Variante alternativa: tema amarillo de advertencia */
+.edit-context-bar.warning-theme {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.edit-context-bar.warning-theme .btn-back {
+  color: #92400e;
+}
+
+.edit-context-bar.warning-theme .edit-context-text i {
+  color: #ffffff;
 }
