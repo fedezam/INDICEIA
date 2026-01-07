@@ -378,3 +378,14 @@
 .empty-state small {
   color: #a0aec0;
 }
+
+/* 9️⃣ BOTÓN GUARDAR - Z-index bajo para no competir con overlay */
+.bottom-action-bar {
+  position: relative;
+  z-index: 100; /* Menor que overlay (9999) */
+}
+
+#saveChangesBtnBottom {
+  position: relative;
+  z-index: 100; /* Menor que overlay (9999) */
+}
