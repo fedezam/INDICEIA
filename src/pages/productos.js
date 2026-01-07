@@ -51,7 +51,7 @@ import {
 } from '../shared/progressOverlay.js';
 
 import { injectEditContextBar } from '../shared/editContextBar.js';
-import '../styles/editContextBar.css';
+import '../shared/editContextBar.css';
 
 // ==================== FLOW ====================
 import { bootFlow } from '../controllers/boot/flowBoot.js';
@@ -128,7 +128,10 @@ async function initializePage() {
     if (isEditMode) {
       injectEditContextBar({
         hasUnsavedChangesFn: () => hasUnsavedChanges,
-        message: 'Estás editando tu catálogo de productos'
+        message: 'Estás editando tu catálogo de productos',
+        onExit: () => {
+          window.location.href = '/dashboard.html';
+        }
       });
     }
 
@@ -224,17 +227,29 @@ function setupEvents() {
     productos[i].paused = !productos[i].paused;
     hasUnsavedChanges = true;
     renderProductsTable();
+    updateExitButtonState();
   };
 
   window.deleteProduct = (i) => {
     productos.splice(i, 1);
     hasUnsavedChanges = true;
     renderProductsTable();
+    updateExitButtonState();
   };
 
   document
     .getElementById('saveChangesBtnBottom')
     ?.addEventListener('click', saveAll);
+}
+
+function updateExitButtonState() {
+  const exitBtn = document.querySelector('.edit-context-bar .btn-back');
+  if (exitBtn) {
+    exitBtn.disabled = hasUnsavedChanges;
+    exitBtn.title = hasUnsavedChanges 
+      ? 'Guardá los cambios antes de salir' 
+      : 'Volver al Dashboard';
+  }
 }
 
 // ==================== SAVE ====================
@@ -278,6 +293,7 @@ async function saveAll() {
   showToast('Guardado', 'Productos actualizados', 'success');
 
   hasUnsavedChanges = false;
+  updateExitButtonState();
   
   if (!isEditMode) {
     redirectAfterSave('ia-config');
