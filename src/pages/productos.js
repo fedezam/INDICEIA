@@ -51,7 +51,7 @@ import {
 } from '../shared/progressOverlay.js';
 
 import { injectEditContextBar } from '../shared/editContextBar.js';
-import '../shared/editContextBar.css';
+import '../styles/editContextBar.css';
 
 // ==================== FLOW ====================
 import { bootFlow } from '../controllers/boot/flowBoot.js';
