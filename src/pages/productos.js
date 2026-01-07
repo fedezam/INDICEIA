@@ -50,6 +50,9 @@ import {
   finishProgressOverlay
 } from '../shared/progressOverlay.js';
 
+import { injectEditContextBar } from '../shared/editContextBar.js';
+import '../styles/editContextBar.css';
+
 // ==================== FLOW ====================
 import { bootFlow } from '../controllers/boot/flowBoot.js';
 import { redirectAfterSave } from '../controllers/flowController.js';
@@ -117,14 +120,17 @@ async function initializePage() {
     initNavigation();
     updateBanner();
 
-    // 5. Botón volver en edit mode
-    if (isEditMode) {
-      injectExitButton();
-    }
-
-    // 6. Render UI
+    // 5. Render UI
     renderProductsTable();
     setupEvents();
+
+    // 6. Context bar en modo edición
+    if (isEditMode) {
+      injectEditContextBar({
+        hasUnsavedChangesFn: () => hasUnsavedChanges,
+        message: 'Estás editando tu catálogo de productos'
+      });
+    }
 
     // Remover loading inicial
     document.getElementById('initialLoading')?.remove();
@@ -191,45 +197,25 @@ function renderProductsTable() {
   if (empty) empty.style.display = 'none';
 
   tbody.innerHTML = productos.map((p, i) => `
-  <tr>
-    <td style="text-align:center">
-      <input type="checkbox">
-    </td>
-    <td>${p.codigo || '-'}</td>
-    <td>${p.nombre || '(sin nombre)'}</td>
-    <td>$${Number(p.precio_final || 0).toLocaleString('es-AR')}</td>
-    <td>${p.stock ?? '-'}</td>
-    <td>${p.categoria || '-'}</td>
-    <td style="text-align:center">
-      <button onclick="toggleProduct(${i})" title="Pausar">
-        ⏸
-      </button>
-      <button onclick="deleteProduct(${i})" title="Eliminar">
-        🗑
-      </button>
-    </td>
-  </tr>
- `).join('');
-
-}
-
-function injectExitButton() {
-  const header = document.querySelector('.header .user-info');
-  if (!header) return;
-
-  const btn = document.createElement('button');
-  btn.className = 'btn-secondary';
-  btn.innerText = '← Volver al Dashboard';
-
-  btn.onclick = () => {
-    if (hasUnsavedChanges) {
-      const ok = confirm('Tenés cambios sin guardar. ¿Salir igual?');
-      if (!ok) return;
-    }
-    window.location.href = '/dashboard.html';
-  };
-
-  header.prepend(btn);
+    <tr>
+      <td style="text-align:center">
+        <input type="checkbox">
+      </td>
+      <td>${p.codigo || '-'}</td>
+      <td>${p.nombre || '(sin nombre)'}</td>
+      <td>$${Number(p.precio_final || 0).toLocaleString('es-AR')}</td>
+      <td>${p.stock ?? '-'}</td>
+      <td>${p.categoria || '-'}</td>
+      <td style="text-align:center">
+        <button onclick="toggleProduct(${i})" class="btn-icon" title="${p.paused ? 'Activar' : 'Pausar'}">
+          <i class="fas fa-${p.paused ? 'play' : 'pause'}"></i>
+        </button>
+        <button onclick="deleteProduct(${i})" class="btn-icon btn-danger" title="Eliminar">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+  `).join('');
 }
 
 // ==================== EVENTS ====================
