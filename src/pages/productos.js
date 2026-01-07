@@ -90,68 +90,97 @@ const productosModule = {
       throw new Error('No hay productos activos');
     }
 
-    // Mostrar overlay de progreso
-    showProgressOverlay(productos.length, {
-      title: 'Guardando productos',
-      initialMessage: 'Preparando operación...'
+    const ref = collection(db, 'comercios', currentComercioId, 'productos');
+
+    // 🔹 Estado remoto actual
+    const snap = await getDocs(ref);
+    const existing = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const existingMap = new Map(existing.map(p => [p.id, p]));
+    const currentMap = new Map(productos.filter(p => p.id).map(p => [p.id, p]));
+
+    const toDelete = [];
+    const toUpdate = [];
+    const toAdd = [];
+
+    // 🗑 Detectar eliminados
+    for (const old of existing) {
+      if (!currentMap.has(old.id)) {
+        toDelete.push(old);
+      }
+    }
+
+    // ✏️ Detectar updates y ➕ creates
+    for (const p of productos) {
+      if (!p.id) {
+        toAdd.push(p);
+      } else {
+        const old = existingMap.get(p.id);
+        if (JSON.stringify(old) !== JSON.stringify(p)) {
+          toUpdate.push(p);
+        }
+      }
+    }
+
+    const totalOps = toDelete.length + toUpdate.length + toAdd.length;
+
+    if (totalOps === 0) {
+      showToast('Sin cambios', 'No hay cambios para guardar', 'info');
+      return;
+    }
+
+    // 📊 Overlay REAL
+    showProgressOverlay(totalOps, {
+      title: 'Sincronizando catálogo',
+      initialMessage: `${toDelete.length} eliminados, ${toUpdate.length} actualizados, ${toAdd.length} nuevos`
     });
 
-    const ref = collection(db, 'comercios', currentComercioId, 'productos');
-    
     try {
-      // Eliminar productos borrados
-      updateProgress('Eliminando productos borrados...');
-      const currentIds = new Set(productos.map(p => p.id).filter(Boolean));
-      const allDocs = await getDocs(ref);
-      
-      for (const docSnap of allDocs.docs) {
-        if (!currentIds.has(docSnap.id)) {
-          await deleteDoc(docSnap.ref);
-        }
+      // 🗑 Eliminaciones
+      for (const p of toDelete) {
+        updateProgress(`Eliminando ${p.nombre || 'producto'}`);
+        await deleteDoc(doc(ref, p.id));
       }
 
-      // Guardar/actualizar productos uno por uno con progreso
-      for (let i = 0; i < productos.length; i++) {
-        const producto = productos[i];
-        const { id, ...data } = producto;
-        
-        if (id) {
-          await updateDoc(doc(ref, id), {
-            ...data,
-            fechaActualizacion: new Date()
-          });
-        } else {
-          const newDoc = await addDoc(ref, {
-            ...data,
-            fechaCreacion: new Date(),
-            fechaActualizacion: new Date()
-          });
-          producto.id = newDoc.id;
-        }
-        
-        // Actualizar progreso con nombre del producto
-        updateProgress(`Guardando: ${producto.nombre || producto.codigo || `Producto ${i + 1}`}`);
+      // ✏️ Actualizaciones
+      for (const p of toUpdate) {
+        updateProgress(`Actualizando ${p.nombre || 'producto'}`);
+        const { id, ...data } = p;
+        await updateDoc(doc(ref, id), {
+          ...data,
+          fechaActualizacion: new Date()
+        });
       }
 
-      // Marcar paso como completado
+      // ➕ Nuevos
+      for (const p of toAdd) {
+        updateProgress(`Creando ${p.nombre || 'producto'}`);
+        const { id, ...data } = p;
+        const newDoc = await addDoc(ref, {
+          ...data,
+          fechaCreacion: new Date(),
+          fechaActualizacion: new Date()
+        });
+        p.id = newDoc.id;
+      }
+
+      // Marcar onboarding
       await updateDoc(doc(db, 'comercios', currentComercioId), {
         'onboardingSteps.productos': true,
         cantidadProductos: productos.length
       });
 
-      // Finalizar overlay con éxito
-      finishProgressOverlay('¡Productos guardados correctamente!', 800);
+      finishProgressOverlay('Catálogo sincronizado', 800);
       
-      // Toast final después del overlay
       setTimeout(() => {
-        showToast('Éxito', `${productos.length} productos actualizados`, 'success');
+        showToast('Éxito', `${totalOps} cambios guardados`, 'success');
       }, 900);
 
     } catch (error) {
-      finishProgressOverlay('Error al guardar', 500);
       console.error('❌ Error guardando:', error);
+      finishProgressOverlay('Error al guardar', 500);
       setTimeout(() => {
-        showToast('Error', 'No se pudieron guardar: ' + error.message, 'error');
+        showToast('Error', error.message, 'error');
       }, 600);
       throw error;
     }
