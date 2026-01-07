@@ -158,28 +158,45 @@ function renderProductsTable() {
   }
 
   if (productos.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7">Sin productos cargados</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6">Sin productos cargados</td></tr>';
     console.log('⚠️ Sin productos, mostrando mensaje vacío');
     return;
   }
 
-  tbody.innerHTML = productos.map((p, i) => `
-    <tr class="${p.paused ? 'paused-row' : ''}">
-      <td style="text-align: center;">
-        <input type="checkbox" ${!p.paused ? 'checked' : ''} onchange="window.toggleProduct(${i})">
-      </td>
-      <td>${p.codigo || '-'}</td>
-      <td>${p.nombre || '-'}</td>
-      <td>${p.precio_final ? `$${formatNumber(p.precio_final)}` : '-'}</td>
-      <td>${p.stock ?? 0}</td>
-      <td>${p.categoria || '-'}</td>
-      <td style="text-align: center;">
-        <button class="btn btn-danger btn-sm" onclick="window.deleteProduct(${i})" title="Eliminar">
-          <i class="fas fa-trash"></i>
-        </button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = productos.map((p, i) => {
+    const isPaused = p.paused;
+    const rowClass = isPaused ? 'paused-row' : '';
+    
+    // Botón pausar/activar
+    const toggleBtn = isPaused
+      ? `<button class="btn-action btn-play" onclick="window.toggleProduct(${i})" title="Activar producto">
+           <i class="fas fa-play"></i>
+         </button>`
+      : `<button class="btn-action btn-pause" onclick="window.toggleProduct(${i})" title="Pausar producto">
+           <i class="fas fa-pause"></i>
+         </button>`;
+    
+    // Botón eliminar
+    const deleteBtn = `<button class="btn-action btn-delete" onclick="window.deleteProduct(${i})" title="Eliminar producto">
+                         <i class="fas fa-trash"></i>
+                       </button>`;
+
+    return `
+      <tr class="${rowClass}">
+        <td>${p.codigo || '-'}</td>
+        <td>${p.nombre || '-'}</td>
+        <td style="text-align: right;">${p.precio_final ? `$${formatNumber(p.precio_final)}` : '-'}</td>
+        <td style="text-align: center;">${p.stock ?? 0}</td>
+        <td>${p.categoria || '-'}</td>
+        <td>
+          <div class="action-buttons">
+            ${toggleBtn}
+            ${deleteBtn}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
   
   console.log('✅ Tabla renderizada con', productos.length, 'filas');
 }
@@ -267,10 +284,13 @@ function setupProductEvents() {
     const p = productos[i];
     const nombre = p.nombre || p.codigo || 'este producto';
     
-    if (confirm(`¿Eliminar "${nombre}"?`)) {
+    // Confirmación con mensaje claro
+    const confirmMessage = `¿Estás seguro de eliminar "${nombre}"?\n\nEsta acción no se puede deshacer.`;
+    
+    if (confirm(confirmMessage)) {
       productos.splice(i, 1);
       renderProductsTable();
-      showToast('Producto eliminado', 'Guardá para confirmar', 'info');
+      showToast('Producto eliminado', 'Guardá para confirmar los cambios', 'info');
     }
   };
 
