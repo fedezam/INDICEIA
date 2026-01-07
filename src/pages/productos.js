@@ -36,6 +36,24 @@ let csvColumns = [];
 let atributos = [];
 let etiquetas = [];
 
+// ==================== HELPERS ====================
+// Normalizar objeto para comparación (elimina fechas y ordena keys)
+function normalizeForComparison(obj) {
+  const normalized = { ...obj };
+  
+  // Eliminar campos que no importan para comparación
+  delete normalized.fechaActualizacion;
+  delete normalized.fechaCreacion;
+  
+  // Ordenar keys alfabéticamente
+  const ordered = {};
+  Object.keys(normalized).sort().forEach(key => {
+    ordered[key] = normalized[key];
+  });
+  
+  return ordered;
+}
+
 // ==================== MÓDULO EXPORTADO ====================
 const productosModule = {
   // 1️⃣ LOAD - Cargar datos desde Firebase
@@ -127,15 +145,9 @@ const productosModule = {
           continue;
         }
         
-        // Normalizar fechas para comparación
-        const oldNormalized = { ...old };
-        const newNormalized = { ...p };
-        
-        // Eliminar campos de comparación que cambian siempre
-        delete oldNormalized.fechaActualizacion;
-        delete oldNormalized.fechaCreacion;
-        delete newNormalized.fechaActualizacion;
-        delete newNormalized.fechaCreacion;
+        // Normalizar para comparación (quita fechas y ordena keys)
+        const oldNormalized = normalizeForComparison(old);
+        const newNormalized = normalizeForComparison(p);
         
         const oldJson = JSON.stringify(oldNormalized);
         const newJson = JSON.stringify(newNormalized);
