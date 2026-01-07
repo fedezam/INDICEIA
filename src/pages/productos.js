@@ -153,6 +153,12 @@ function updateBanner() {
 // ==================== UI ====================
 function renderProductsTable() {
   const tbody = document.getElementById('tableBody');
+  const counter = document.getElementById('productCount');
+
+  if (counter) {
+    counter.textContent = productos.length;
+  }
+
   if (!tbody) return;
 
   if (productos.length === 0) {
@@ -161,19 +167,10 @@ function renderProductsTable() {
   }
 
   tbody.innerHTML = productos.map((p, i) => `
-    <tr class="${p.paused ? 'paused-row' : ''}">
-      <td><input type="checkbox" ${!p.paused ? 'checked' : ''} onchange="toggleProduct(${i})"></td>
-      <td>${p.codigo || '-'}</td>
-      <td>${p.nombre || '-'}</td>
-      <td>${p.precio_final ? `$${p.precio_final}` : '-'}</td>
-      <td>${p.stock ?? 0}</td>
-      <td>${p.categoria || '-'}</td>
-      <td>
-        <button onclick="deleteProduct(${i})">🗑</button>
-      </td>
-    </tr>
+    ...
   `).join('');
 }
+
 
 // ==================== EVENTS ====================
 function setupEvents() {
