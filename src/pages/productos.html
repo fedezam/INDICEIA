@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- CSS -->
   <link rel="stylesheet" href="./productos.css">
+  <link rel="stylesheet" href="./productos-ux-improvements.css">
   <!-- SheetJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -147,9 +148,16 @@
         </div>
 
         <div id="fileUploadZone" class="upload-zone">
-          <i class="fas fa-cloud-upload-alt"></i>
-          <p><strong>Arrastrá tu archivo</strong> o hacé clic para seleccionar</p>
-          <small>Formatos admitidos: .xlsx, .xls, .csv</small>
+          <div class="upload-icon">
+            <i class="fas fa-cloud-upload-alt"></i>
+          </div>
+          <p class="upload-text"><strong>Arrastrá tu archivo aquí</strong></p>
+          <p class="upload-subtext">o hacé clic para seleccionar</p>
+          <div class="upload-formats">
+            <span class="format-badge">.xlsx</span>
+            <span class="format-badge">.xls</span>
+            <span class="format-badge">.csv</span>
+          </div>
           <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
         </div>
 
@@ -199,9 +207,6 @@
           <table class="products-table">
             <thead>
               <tr>
-                <th class="col-check">
-                  <input type="checkbox" id="checkAll">
-                </th>
                 <th class="col-code">Código</th>
                 <th class="col-name">Nombre</th>
                 <th class="col-price">Precio</th>
@@ -212,7 +217,7 @@
             </thead>
             <tbody id="tableBody">
               <tr>
-                <td colspan="7" class="text-center">Cargando productos...</td>
+                <td colspan="6" class="text-center">Cargando productos...</td>
               </tr>
             </tbody>
           </table>
