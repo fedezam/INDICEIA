@@ -1,173 +1,151 @@
-<!-- ia-config.html -->
-<main class="container">
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- HEADER / PASO DEL ONBOARDING -->
-  <section class="onboarding-header">
-    <h1>Paso 5 – Configuración de tu asistente IA</h1>
-    <p>Definí cómo se comporta tu asistente y qué canales puede usar para contactar a tus clientes.</p>
-  </section>
+  <title>Configuración de IA — ÍndiceIA</title>
 
-  <!-- SECCIÓN 1: IDENTIDAD DEL ASISTENTE -->
-  <section class="ia-section" id="section-identidad">
-    <h2>Identidad del asistente</h2>
-    <p>Acá definís cómo se llama tu asistente y cómo se presenta frente a tus clientes. Esto influye en la confianza y cercanía de la conversación.</p>
+  <!-- SEO / META -->
+  <meta name="description" content="Configurá el comportamiento, personalidad y capacidades de tu IA comercial." />
+  <meta name="robots" content="noindex, nofollow" />
 
-    <!-- Nombre -->
-    <div class="field-group">
-      <label for="aiName">Nombre del asistente</label>
-      <input id="aiName" type="text" placeholder="Ej: JuancaBot, Sofi, Asistente Calzados Juanca">
-      <small>Es el nombre con el que la IA se presentará a tus clientes.</small>
+  <!-- FAVICON -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+  <!-- FONTS / ICONS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap"
+    rel="stylesheet"
+  />
+</head>
+
+<body data-page="ia-config">
+
+  <!-- ================= HEADER GLOBAL ================= -->
+  <!-- renderLayout() INYECTA ACÁ -->
+  <header id="layout-header"></header>
+
+  <!-- ================= NAVEGACIÓN DE PASOS ================= -->
+  <!-- initNavigation() USA data-page="ia-config" -->
+  <!-- (se inyecta dentro del header o layout) -->
+
+  <!-- ================= CONTENIDO PRINCIPAL ================= -->
+  <main id="main-content">
+    <div class="container">
+
+      <!-- ================= IDENTIDAD IA ================= -->
+      <section class="card">
+        <h2>Identidad del asistente</h2>
+
+        <div class="form-group">
+          <label for="aiName">Nombre de la IA</label>
+          <input
+            type="text"
+            id="aiName"
+            placeholder="Ej: JuancaBot"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="aiLanguage">Idioma</label>
+          <select id="aiLanguage">
+            <option value="es-AR">Español (Argentina)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="aiPersonality">Personalidad</label>
+          <select id="aiPersonality">
+            <option value="">Seleccionar</option>
+            <option value="amigable">Amigable</option>
+            <option value="formal">Formal</option>
+            <option value="vendedor">Vendedor</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="aiTone">Tono</label>
+          <select id="aiTone">
+            <option value="">Seleccionar</option>
+            <option value="informal">Informal</option>
+            <option value="neutral">Neutral</option>
+            <option value="formal">Formal</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="aiGreeting">Mensaje de bienvenida</label>
+          <textarea
+            id="aiGreeting"
+            rows="3"
+            placeholder="Hola! Soy JuancaBot, estoy acá para ayudarte 😊"
+          ></textarea>
+        </div>
+      </section>
+
+      <!-- ================= COMPORTAMIENTO ================= -->
+      <section class="card">
+        <h2>Comportamiento</h2>
+
+        <div class="form-group">
+          <label for="proactividad">Nivel de proactividad</label>
+          <select id="proactividad">
+            <option value="">Seleccionar</option>
+            <option value="bajo">Bajo</option>
+            <option value="medio">Medio</option>
+            <option value="alto">Alto</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="formatoRespuestas">Formato de respuestas</label>
+          <select id="formatoRespuestas">
+            <option value="">Seleccionar</option>
+            <option value="cortas">Cortas</option>
+            <option value="detalladas">Detalladas</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="sinPrecio">Si no hay precio</label>
+          <select id="sinPrecio">
+            <option value="">Seleccionar</option>
+            <option value="informar">Informar</option>
+            <option value="consultar">Pedir consulta</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="sinStock">Si no hay stock</label>
+          <select id="sinStock">
+            <option value="">Seleccionar</option>
+            <option value="informar">Informar</option>
+            <option value="ofrecerAlternativa">Ofrecer alternativa</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="localCerrado">Si el local está cerrado</label>
+          <select id="localCerrado">
+            <option value="">Seleccionar</option>
+            <option value="informar">Informar horario</option>
+            <option value="tomarMensaje">Tomar mensaje</option>
+          </select>
+        </div>
+      </section>
+
     </div>
+  </main>
 
-    <!-- Idioma -->
-    <div class="field-group">
-      <label for="aiLanguage">Idioma</label>
-      <select id="aiLanguage">
-        <option value="es-AR">Español (Argentina)</option>
-        <option value="es-ES">Español (España)</option>
-        <option value="en-US">Inglés (US)</option>
-      </select>
-      <small>Define el idioma principal y las expresiones culturales que usará la IA.</small>
-    </div>
+  <!-- ================= FOOTER ================= -->
+  <footer id="layout-footer"></footer>
 
-    <!-- Personalidad -->
-    <div class="field-group">
-      <label for="aiPersonality">Personalidad</label>
-      <select id="aiPersonality">
-        <option value="amigable">Amigable</option>
-        <option value="profesional">Profesional</option>
-        <option value="casual">Casual</option>
-        <option value="entusiasta">Entusiasta</option>
-        <option value="servicial">Servicial</option>
-      </select>
-      <small>Define cómo se expresa tu asistente: cercano, formal, relajado o enfocado en ayudar.</small>
-    </div>
+  <!-- ================= SCRIPTS ================= -->
+  <script type="module" src="./ia-config.js"></script>
 
-    <!-- Tono -->
-    <div class="field-group">
-      <label for="aiTone">Tono de comunicación</label>
-      <select id="aiTone">
-        <option value="informal">Informal (vos/tú)</option>
-        <option value="formal">Formal (usted)</option>
-        <option value="mixto">Mixto (se adapta)</option>
-      </select>
-      <small>Define cómo se dirige la IA al cliente: cercano, respetuoso o adaptable.</small>
-    </div>
-
-    <!-- Saludo -->
-    <div class="field-group">
-      <label for="aiGreeting">Saludo inicial</label>
-      <input id="aiGreeting" type="text" placeholder="Ej: ¡Hola! Soy JuancaBot, estoy aquí para ayudarte con tu consulta">
-      <small>Es el mensaje que la IA mostrará al iniciar la conversación.</small>
-    </div>
-  </section>
-
-  <!-- SECCIÓN 2: COMPORTAMIENTOS ESPECIALES -->
-  <section class="ia-section" id="section-comportamiento">
-    <h2>Comportamientos especiales</h2>
-    <p>Definí cómo actúa la IA en situaciones comunes: falta de precio, sin stock o cuando el local está cerrado.</p>
-
-    <!-- Sin precio -->
-    <div class="field-group">
-      <label for="sinPrecio">Si un producto no tiene precio</label>
-      <select id="sinPrecio">
-        <option value="redirWhatsapp">Redirigir a WhatsApp</option>
-        <option value="redirInstagram">Redirigir a Instagram</option>
-        <option value="noMostrar">No mostrar el producto</option>
-      </select>
-      <small>Define qué debe hacer la IA cuando un producto no tiene precio.</small>
-    </div>
-
-    <!-- Sin stock -->
-    <div class="field-group">
-      <label for="sinStock">Si un producto no tiene stock</label>
-      <select id="sinStock">
-        <option value="informarAlternativas">Informar y ofrecer alternativas</option>
-        <option value="pedirConsulta">Pedir que consulte disponibilidad</option>
-        <option value="permitirPedido">Permitir pedido</option>
-        <option value="noMostrar">No mostrar el producto</option>
-      </select>
-      <small>Define cómo responde la IA cuando un producto no está disponible.</small>
-    </div>
-
-    <!-- Local cerrado -->
-    <div class="field-group">
-      <label for="localCerrado">Cuando el local está cerrado</label>
-      <select id="localCerrado">
-        <option value="informarHorarios">Informar horarios y permitir consultas</option>
-        <option value="agendarPedido">Agendar pedido</option>
-        <option value="soloInfo">Solo información</option>
-        <option value="derivarContacto">Derivar a contacto directo</option>
-      </select>
-      <small>Define cómo actúa la IA fuera del horario de atención.</small>
-    </div>
-
-    <!-- Proactividad -->
-    <div class="field-group">
-      <label for="proactividad">Nivel de proactividad</label>
-      <select id="proactividad">
-        <option value="bajo">Bajo (solo responde)</option>
-        <option value="medio">Medio (sugiere productos)</option>
-        <option value="alto">Alto (ofertas y productos destacados)</option>
-      </select>
-      <small>Define cuánto se adelanta la IA en la conversación con tus clientes.</small>
-    </div>
-
-    <!-- Formato de respuestas -->
-    <div class="field-group">
-      <label for="formatoRespuestas">Formato de respuestas</label>
-      <select id="formatoRespuestas">
-        <option value="cortas">Cortas y directas</option>
-        <option value="detalladas">Detalladas y explicativas</option>
-        <option value="listas">Con listas</option>
-        <option value="conversacionales">Conversacionales</option>
-      </select>
-      <small>Define cómo se presentan las respuestas de la IA.</small>
-    </div>
-  </section>
-
-  <!-- SECCIÓN 3: CANALES DE CONTACTO -->
-  <section class="ia-section" id="section-canales">
-    <h2>Canales alternativos de contacto</h2>
-    <p>WhatsApp es el canal principal. Activá otros canales solo si realmente podés atenderlos.</p>
-
-    <div id="contactosValidacion" class="canales-box">
-      <!-- Canales serán generados dinámicamente por JS -->
-      <!-- Ejemplo de estructura de referencia:
-      <label class="canal-item">
-        <input type="checkbox" data-canal="whatsapp" checked disabled>
-        <span>WhatsApp</span>
-        <small>(principal)</small>
-      </label>
-      -->
-    </div>
-
-    <small class="muted">⚠️ Cada canal adicional implica más puntos de atención para tu negocio.</small>
-  </section>
-
-  <!-- BOTÓN GUARDAR -->
-  <section class="ia-section">
-    <button id="saveChangesBtn" class="btn-save" disabled>Guardar cambios</button>
-  </section>
-
-</main>
-
-<!-- ESTILOS MÍNIMOS PARA ONBOARDING -->
-<style>
-  main.container { max-width: 900px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; }
-  .onboarding-header h1 { font-size: 1.8em; margin-bottom: 5px; }
-  .onboarding-header p { color: #555; margin-bottom: 20px; }
-  .ia-section { margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 20px; }
-  .ia-section h2 { font-size: 1.3em; margin-bottom: 10px; }
-  .ia-section p { font-size: 0.95em; color: #555; margin-bottom: 15px; }
-  .field-group { margin-bottom: 15px; display: flex; flex-direction: column; }
-  .field-group label { font-weight: bold; margin-bottom: 3px; }
-  .field-group input, .field-group select { padding: 8px; font-size: 0.95em; }
-  .field-group small { color: #777; font-size: 0.85em; margin-top: 3px; }
-  .canales-box { background: #f9f9f9; padding: 15px; border-radius: 8px; }
-  .canales-list { display: flex; flex-wrap: wrap; gap: 10px; }
-  .canal-item { display: flex; align-items: center; gap: 5px; font-size: 0.95em; }
-  .canal-item input { margin-right: 5px; }
-  .btn-save { background: #007bff; color: #fff; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; }
-  .btn-save:disabled { background: #ccc; cursor: not-allowed; }
-</style>
+</body>
+</html>
