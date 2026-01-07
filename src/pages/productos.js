@@ -89,7 +89,7 @@ async function initializePage() {
 
     // Determinar modo edición
     const urlParams = new URLSearchParams(window.location.search);
-    isEditMode = urlParams.get('mode') === 'edit';
+    isEditMode = urlParams.get('edit') === 'true';
 
     // 1. Layout global
     renderLayout();
