@@ -93,8 +93,11 @@ const productosModule = {
     const ref = collection(db, 'comercios', currentComercioId, 'productos');
 
     // 🔹 Estado remoto actual
+    console.log('🔍 Obteniendo estado remoto...');
     const snap = await getDocs(ref);
     const existing = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    console.log('📦 Productos remotos:', existing.length);
+    console.log('📦 Productos locales:', productos.length);
 
     const existingMap = new Map(existing.map(p => [p.id, p]));
     const currentMap = new Map(productos.filter(p => p.id).map(p => [p.id, p]));
@@ -107,6 +110,7 @@ const productosModule = {
     for (const old of existing) {
       if (!currentMap.has(old.id)) {
         toDelete.push(old);
+        console.log('🗑️ A eliminar:', old.nombre || old.codigo);
       }
     }
 
@@ -114,13 +118,41 @@ const productosModule = {
     for (const p of productos) {
       if (!p.id) {
         toAdd.push(p);
+        console.log('➕ A crear:', p.nombre || p.codigo);
       } else {
         const old = existingMap.get(p.id);
-        if (JSON.stringify(old) !== JSON.stringify(p)) {
+        if (!old) {
+          console.warn('⚠️ Producto con ID pero no existe en remoto:', p.id);
+          toAdd.push(p);
+          continue;
+        }
+        
+        // Normalizar fechas para comparación
+        const oldNormalized = { ...old };
+        const newNormalized = { ...p };
+        
+        // Eliminar campos de comparación que cambian siempre
+        delete oldNormalized.fechaActualizacion;
+        delete oldNormalized.fechaCreacion;
+        delete newNormalized.fechaActualizacion;
+        delete newNormalized.fechaCreacion;
+        
+        const oldJson = JSON.stringify(oldNormalized);
+        const newJson = JSON.stringify(newNormalized);
+        
+        if (oldJson !== newJson) {
           toUpdate.push(p);
+          console.log('✏️ A actualizar:', p.nombre || p.codigo);
+          console.log('   OLD:', oldJson.substring(0, 100));
+          console.log('   NEW:', newJson.substring(0, 100));
         }
       }
     }
+
+    console.log('📊 Resumen:');
+    console.log('   🗑️ Eliminar:', toDelete.length);
+    console.log('   ✏️ Actualizar:', toUpdate.length);
+    console.log('   ➕ Crear:', toAdd.length);
 
     const totalOps = toDelete.length + toUpdate.length + toAdd.length;
 
