@@ -301,8 +301,11 @@ async function saveAll() {
   updateExitButtonState();
   updateSaveButtonState();
 
-  if (!isEditMode) {
-    redirectAfterSave('ia-config');
+  if (isEditMode) {
+   // Volver al dashboard luego de guardar cambios
+   window.location.href = '/dashboard.html';
+  } else {
+   redirectAfterSave('ia-config');
   }
 }
 
