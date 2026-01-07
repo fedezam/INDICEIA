@@ -121,3 +121,260 @@
     min-width: 900px;
   }
 }
+
+/* ========================================
+   MEJORAS UX - productos.css (adicional)
+   ======================================== */
+
+/* 1️⃣ ZONA DRAG & DROP - Más visible */
+.upload-zone {
+  border: 3px dashed #cbd5e0;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+  background: #f7fafc;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-zone:hover {
+  border-color: var(--primary, #4a90e2);
+  background: #edf2f7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.upload-zone.dragover {
+  border-color: var(--primary, #4a90e2);
+  background: #e6f2ff;
+  border-style: solid;
+}
+
+.upload-icon {
+  font-size: 4rem;
+  color: #a0aec0;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.upload-zone:hover .upload-icon {
+  color: var(--primary, #4a90e2);
+  transform: scale(1.1);
+}
+
+.upload-text {
+  font-size: 1.25rem;
+  color: #2d3748;
+  margin: 0.5rem 0;
+}
+
+.upload-subtext {
+  color: #718096;
+  margin: 0.25rem 0 1.5rem 0;
+}
+
+.upload-formats {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.format-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+/* 2️⃣ TABLA CON SCROLL - Max height + sticky header */
+.table-container {
+  max-height: 60vh;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  position: relative;
+}
+
+.products-table {
+  width: 100%;
+  border-collapse: collapse;
+  position: relative;
+}
+
+.products-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.products-table thead th {
+  padding: 1rem;
+  background: #f7fafc;
+  border-bottom: 2px solid #e2e8f0;
+  font-weight: 600;
+  text-align: left;
+}
+
+.products-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.2s ease;
+}
+
+.products-table tbody tr:hover {
+  background: #f7fafc;
+}
+
+.products-table tbody td {
+  padding: 0.875rem 1rem;
+}
+
+/* 3️⃣ BOTONES DE ACCIÓN - Con tooltips */
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  width: 36px;
+  height: 36px;
+  position: relative;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-action.btn-pause {
+  color: #f59e0b;
+  border-color: #fbbf24;
+}
+
+.btn-action.btn-pause:hover {
+  background: #fffbeb;
+  border-color: #f59e0b;
+}
+
+.btn-action.btn-play {
+  color: #10b981;
+  border-color: #34d399;
+}
+
+.btn-action.btn-play:hover {
+  background: #ecfdf5;
+  border-color: #10b981;
+}
+
+.btn-action.btn-delete {
+  color: #ef4444;
+  border-color: #f87171;
+}
+
+.btn-action.btn-delete:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+/* Fila pausada - estilo visual */
+.paused-row {
+  opacity: 0.6;
+  background: #f9fafb;
+}
+
+.paused-row td {
+  color: #6b7280;
+}
+
+/* 4️⃣ COLUMNAS - Anchos optimizados */
+.col-code { width: 120px; }
+.col-name { width: auto; min-width: 200px; }
+.col-price { width: 120px; text-align: right; }
+.col-stock { width: 100px; text-align: center; }
+.col-category { width: 150px; }
+.col-actions { width: 120px; text-align: center; }
+
+/* 5️⃣ TOOLTIPS NATIVOS - Mejora visual */
+[title] {
+  cursor: help;
+}
+
+/* 6️⃣ RESPONSIVE - Scroll horizontal en mobile */
+@media (max-width: 768px) {
+  .table-container {
+    max-height: 50vh;
+    overflow-x: auto;
+  }
+  
+  .products-table {
+    min-width: 700px;
+  }
+  
+  .upload-zone {
+    padding: 2rem 1rem;
+  }
+  
+  .upload-icon {
+    font-size: 3rem;
+  }
+}
+
+/* 7️⃣ ANIMACIÓN SUAVE al cargar */
+.products-table tbody tr {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 8️⃣ MENSAJE VACÍO - Mejorado */
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #718096;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  color: #cbd5e0;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.empty-state p {
+  font-size: 1.125rem;
+  margin: 0.5rem 0;
+  color: #4a5568;
+}
+
+.empty-state small {
+  color: #a0aec0;
+}
