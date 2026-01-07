@@ -12,7 +12,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-  <!-- El layout se renderiza dinámicamente desde shared/layout.js -->
+  <!-- Layout hooks -->
+  <header id="layout-header"></header>
   
   <main>
     <div class="container">
@@ -26,6 +27,12 @@
             <strong id="productCount">0</strong> productos
           </span>
         </div>
+      </div>
+
+      <!-- Loading inicial -->
+      <div id="initialLoading" class="loading-hint">
+        <i class="fas fa-spinner fa-spin"></i>
+        Cargando catálogo…
       </div>
 
       <!-- Formulario Manual -->
@@ -234,6 +241,8 @@
       </div>
     </div>
   </main>
+
+  <footer id="layout-footer"></footer>
 
   <script type="module" src="./productos.js"></script>
 </body>
