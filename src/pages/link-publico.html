@@ -1,49 +1,127 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Link Público - ÍndiceIA</title>
-  <link rel="stylesheet" href="../styles/base.css" />
-  <link rel="stylesheet" href="../styles/layout.css" />
-  <link rel="stylesheet" href="../pages/landing.css" />
-  <link rel="stylesheet" href="./link-publico.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link Público</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: #f5f5f5;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    #publicUrl {
+      display: block;
+      margin: 1rem 0;
+      font-weight: bold;
+      color: #0070f3;
+      word-break: break-all;
+    }
+
+    button {
+      padding: 0.5rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #0070f3;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #005bb5;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    #toast.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
 </head>
 <body>
-  <main class="container">
-    <section class="public-link-section">
-      <h1>Tu link público está listo</h1>
-      <p class="info-text">Comparte tu comercio fácilmente con este enlace:</p>
-      
-      <div class="link-container">
-        <input type="text" id="publicUrl" readonly />
-        <button id="copyBtn">Copiar</button>
-      </div>
 
-      <div class="qr-section">
-        <div class="qr-card">
-          <h2>QR Pequeño</h2>
-          <div id="qr-small" class="qr-box"></div>
-          <button onclick="downloadQR('small', 'png')">Descargar PNG</button>
-        </div>
-        <div class="qr-card">
-          <h2>QR Mediano</h2>
-          <div id="qr-medium" class="qr-box"></div>
-          <button onclick="downloadQR('medium', 'png')">Descargar PNG</button>
-        </div>
-        <div class="qr-card">
-          <h2>QR Grande</h2>
-          <div id="qr-large" class="qr-box"></div>
-          <button onclick="downloadQR('large', 'png')">Descargar PNG</button>
-        </div>
-      </div>
-    </section>
-  </main>
+  <div class="container">
+    <h1>Tu Link Público</h1>
+    <span id="publicUrl">Cargando...</span>
+    <button id="copyBtn">Copiar al portapapeles</button>
+  </div>
 
-  <!-- Toast container -->
-  <div id="toast-container"></div>
+  <div id="toast">¡Link copiado!</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode-styling@1.5.0/lib/qr-code-styling.js"></script>
-  <script type="module" src="./link-publico.js"></script>
+  <script type="module">
+    import { auth, db } from './firebase.js';
+    import { onAuthStateChanged } from 'firebase/auth';
+    import { doc, getDoc } from 'firebase/firestore';
+
+    let comercioId = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = '/index.html';
+        return;
+      }
+
+      const userRef = doc(db, 'usuarios', user.uid);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) return;
+
+      const userData = userSnap.data();
+      comercioId = userData.comercioId;
+
+      if (comercioId) {
+        initPage(comercioId);
+      }
+    });
+
+    function initPage(id) {
+      const publicUrl = `https://indiceia.app/live/${id}`;
+      const urlEl = document.getElementById('publicUrl');
+      urlEl.textContent = publicUrl;
+
+      document.getElementById('copyBtn').addEventListener('click', () => {
+        navigator.clipboard.writeText(publicUrl)
+          .then(() => showToast('¡Link copiado al portapapeles!'))
+          .catch(() => showToast('Error al copiar el link', true));
+      });
+    }
+
+    function showToast(msg, error = false) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.background = error ? '#b00020' : '#333';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+  </script>
 </body>
 </html>
+
