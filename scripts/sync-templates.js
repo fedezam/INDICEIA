@@ -132,7 +132,11 @@ function buildRegistries(dirs) {
     entityRegistry.templates[templateId] = {
       id: templateId,
       version: meta.version,
-      entrypoint: `templates/${dir}`,
+
+      paths: {
+        runtime_html: `${TEMPLATES_BASE_URL}/${dir}/runtime.html`
+      },
+
       supports: meta.supports ?? {},
       requirements: meta.requirements ?? {}
     };
