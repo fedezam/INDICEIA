@@ -2,13 +2,24 @@
   "C": {
     "visual": {
       "available": true,
-      "mode": "iframe",
+      "mode": "iframe",          
       "template": {
-        // Campos que querés controlar centralizadamente
-        // Ej: si mañana querés cambiar mode a 'ssr' para todos, solo acá
-        // O agregar un campo nuevo como "theme": "dark"
+        "id": null,               // Se inyecta dinámicamente desde buildEntity
+        "version": null,          // Se inyecta dinámicamente
+        "entrypoint": null,       // URL al componente, inyectada
+        "baseUrl": null,          // Base URL del template, inyectada
+        "theme": "default",       // Tema por defecto, puede ser "dark"/"light"
+        "showHeader": true,       // Flag general, puede ser sobrescrito por template
+        "showFooter": true,       // Flag general
+        "customCSS": null,        // Posibilidad de agregar CSS adicional
+        "customJS": null          // Posibilidad de agregar JS adicional
       },
-      "consumes": ["B"]
+      "consumes": ["B"],           // Siempre consume los datos de bloque B
+      "props": {
+        "responsive": true,        // Activar responsividad por defecto
+        "lazyLoad": true,          // Lazy load de imágenes y assets
+        "animations": true         // Animaciones activas por defecto
+      }
     }
   }
 }
