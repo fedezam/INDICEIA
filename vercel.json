@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/live/:slug",
+      "destination": "/api/live/:slug"
+    }
+  ]
+}
