@@ -1,11 +1,11 @@
 // api/link-builder/index.js
-
 // 🔒 FORZAR NODE (firebase-admin NO funciona en edge)
 export const config = {
   runtime: 'nodejs'
 };
 
-import { getFirestore, getDoc, doc } from 'firebase-admin/firestore';
+// ✅ CORREGIDO: Sacamos doc y getDoc
+import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { generateClaudeUrl } from '../../lib/link-builder/claude.js';
 import { generateLandingHTML } from '../../lib/link-builder/landing.js';
@@ -21,11 +21,9 @@ try {
     if (!process.env.FIREBASE_ADMIN) {
       throw new Error('FIREBASE_ADMIN env is missing');
     }
-
     initializeApp({
       credential: cert(JSON.parse(process.env.FIREBASE_ADMIN))
     });
-
     console.log('[LINK-BUILDER] Firebase Admin initialized');
   } else {
     console.log('[LINK-BUILDER] Firebase Admin already initialized');
@@ -50,44 +48,45 @@ const ENTITY_BLOB_BASE =
 
 export default async function handler(req, res) {
   console.log('[LINK-BUILDER] HANDLER START');
-
   try {
     const { comercio_id } = req.query;
     console.log('[LINK-BUILDER] comercio_id:', comercio_id);
-
+    
     if (!comercio_id) {
       console.warn('[LINK-BUILDER] Missing comercio_id');
       return res.status(400).send('Missing comercio_id');
     }
-
+    
     if (!db) {
       console.error('[LINK-BUILDER] Firestore not available');
       return res.status(500).send('Firestore not initialized');
     }
-
+    
     console.log('[LINK-BUILDER] Fetching comercio document...');
-    const comercioRef = doc(db, 'comercios', comercio_id);
-    const comercioSnap = await getDoc(comercioRef);
-
-    if (!comercioSnap.exists()) {
+    
+    // ✅ CORREGIDO: Sintaxis de firebase-admin
+    const comercioRef = db.collection('comercios').doc(comercio_id);
+    const comercioSnap = await comercioRef.get();
+    
+    // ✅ CORREGIDO: .exists SIN paréntesis
+    if (!comercioSnap.exists) {
       console.warn('[LINK-BUILDER] Comercio not found:', comercio_id);
       return res.status(404).send('Comercio no encontrado');
     }
-
+    
     const data = comercioSnap.data();
     console.log('[LINK-BUILDER] Comercio data:', data);
-
+    
     const { nombreComercio = 'tu comercio' } = data;
-
     const entityUrl = `${ENTITY_BLOB_BASE}/${comercio_id}/entity.json`;
     console.log('[LINK-BUILDER] entityUrl:', entityUrl);
-
+    
     const claudeUrl = generateClaudeUrl(entityUrl);
     console.log('[LINK-BUILDER] claudeUrl:', claudeUrl);
-
+    
     const html = generateLandingHTML(nombreComercio, claudeUrl);
     console.log('[LINK-BUILDER] HTML generated, length:', html.length);
-
+    
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader(
       'Cache-Control',
@@ -95,7 +94,7 @@ export default async function handler(req, res) {
     );
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-
+    
     return res.status(200).send(html);
   } catch (error) {
     console.error('[LINK-BUILDER] UNHANDLED ERROR');
