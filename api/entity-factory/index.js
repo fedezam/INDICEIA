@@ -150,15 +150,17 @@ export async function buildEntity({ comercioId }) {
       if(t){
         const base = 'https://indiceia-templates.vercel.app/templates';
         const epPath = t.entrypoint.replace(/^templates\//,'');
-        C.visual.template = {
-          ...C.visual.template,
-          id: t.id,
-          version: t.version,
-          entrypoint: `${base}/${epPath}/component.jsx`,
-          baseUrl: `${base}/${epPath}/`
+        C.visual = {
+          available: true,
+          mode: 'iframe',
+          runtime: {
+            iframe_url: `https://indiceia-templates.vercel.app${t.paths.runtime_html}`,
+            input: {
+              binding: 'bloque_B_contexto_comercial',
+              strategy: 'postMessage'
+            }
+          }
         };
-        C.visual.mode = 'dynamic-client';
-        C.visual.available = true;
       }
     }
   } catch(err){
