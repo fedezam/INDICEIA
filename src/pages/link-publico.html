@@ -1,119 +1,49 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Link Público - ÍndiceIA</title>
-  <link rel="stylesheet" href="../styles/base.css">
-  <link rel="stylesheet" href="../styles/layout.css">
-  <link rel="stylesheet" href="../styles/components.css">
-  <link rel="stylesheet" href="dashboard.css">
-  <script type="module" src="link-publico.js" defer></script>
-  <script src="https://unpkg.com/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
-  <style>
-    .link-page { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
-    .header { text-align: center; margin-bottom: 40px; }
-    .unique-link { 
-      font-size: 28px; 
-      font-weight: bold; 
-      color: #0070f3; 
-      word-break: break-all; 
-      background: #f0f7ff; 
-      padding: 16px; 
-      border-radius: 12px; 
-      margin: 30px 0;
-    }
-    .copy-btn { 
-      padding: 12px 24px; 
-      background: #0070f3; 
-      color: white; 
-      border: none; 
-      border-radius: 8px; 
-      font-size: 16px; 
-      cursor: pointer; 
-      margin-top: 10px;
-    }
-    .qr-grid { 
-      display: grid; 
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-      gap: 40px; 
-      margin: 50px 0; 
-    }
-    .qr-item { text-align: center; }
-    .qr-canvas { 
-      border: 16px solid white; 
-      border-radius: 20px; 
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
-      background: white;
-    }
-    .qr-label { margin: 20px 0 10px; font-weight: bold; font-size: 18px; }
-    .download-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .download-btn { 
-      padding: 10px 20px; 
-      background: #0070f3; 
-      color: white; 
-      border: none; 
-      border-radius: 8px; 
-      cursor: pointer;
-    }
-    .instructions { 
-      background: #f8f9fa; 
-      padding: 24px; 
-      border-radius: 12px; 
-      margin: 40px 0; 
-      font-size: 16px; 
-      line-height: 1.6;
-    }
-    .powered { text-align: center; margin-top: 60px; color: #666; font-size: 15px; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Link Público - ÍndiceIA</title>
+  <link rel="stylesheet" href="../styles/base.css" />
+  <link rel="stylesheet" href="../styles/layout.css" />
+  <link rel="stylesheet" href="../pages/landing.css" />
+  <link rel="stylesheet" href="./link-publico.css" />
 </head>
 <body>
-  <div class="link-page">
-    <div class="header">
-      <h1>Tu Link Público Permanente</h1>
-      <p>Este enlace y QR siempre apuntan a la versión actual de tu IA. Nunca cambian.</p>
-    </div>
+  <main class="container">
+    <section class="public-link-section">
+      <h1>Tu link público está listo</h1>
+      <p class="info-text">Comparte tu comercio fácilmente con este enlace:</p>
+      
+      <div class="link-container">
+        <input type="text" id="publicUrl" readonly />
+        <button id="copyBtn">Copiar</button>
+      </div>
 
-    <div class="unique-link" id="publicUrl">Cargando...</div>
-    <button class="copy-btn" id="copyBtn">Copiar Link</button>
-
-    <div class="instructions">
-      <strong>¿Cómo usarlo?</strong><br>
-      Compartí este link o los QR en WhatsApp, Instagram, Google Maps, carteles, tarjetas, menú, vidriera, redes sociales...<br>
-      Tus clientes escanean o hacen click → hablan directamente con tu agente IA.
-    </div>
-
-    <h2 style="text-align:center;margin:50px 0 30px;">Tus QR Personalizados</h2>
-    <div class="qr-grid">
-      <div class="qr-item">
-        <canvas id="qr-small" class="qr-canvas"></canvas>
-        <div class="qr-label">Pequeño (200px) – Stickers / Tarjetas</div>
-        <div class="download-buttons">
-          <button class="download-btn" onclick="downloadQR('small','png')">PNG</button>
-          <button class="download-btn" onclick="downloadQR('small','svg')">SVG</button>
+      <div class="qr-section">
+        <div class="qr-card">
+          <h2>QR Pequeño</h2>
+          <div id="qr-small" class="qr-box"></div>
+          <button onclick="downloadQR('small', 'png')">Descargar PNG</button>
+        </div>
+        <div class="qr-card">
+          <h2>QR Mediano</h2>
+          <div id="qr-medium" class="qr-box"></div>
+          <button onclick="downloadQR('medium', 'png')">Descargar PNG</button>
+        </div>
+        <div class="qr-card">
+          <h2>QR Grande</h2>
+          <div id="qr-large" class="qr-box"></div>
+          <button onclick="downloadQR('large', 'png')">Descargar PNG</button>
         </div>
       </div>
-      <div class="qr-item">
-        <canvas id="qr-medium" class="qr-canvas"></canvas>
-        <div class="qr-label">Mediano (400px) – Redes / Web</div>
-        <div class="download-buttons">
-          <button class="download-btn" onclick="downloadQR('medium','png')">PNG</button>
-          <button class="download-btn" onclick="downloadQR('medium','svg')">SVG</button>
-        </div>
-      </div>
-      <div class="qr-item">
-        <canvas id="qr-large" class="qr-canvas"></canvas>
-        <div class="qr-label">Grande (800px) – Cartelería / Vidriera</div>
-        <div class="download-buttons">
-          <button class="download-btn" onclick="downloadQR('large','png')">PNG</button>
-          <button class="download-btn" onclick="downloadQR('large','svg')">SVG</button>
-        </div>
-      </div>
-    </div>
+    </section>
+  </main>
 
-    <p class="powered">
-      Escaneá para hablar con la IA de tu comercio • Powered by <strong>ÍndiceIA</strong>
-    </p>
-  </div>
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-styling@1.5.0/lib/qr-code-styling.js"></script>
+  <script type="module" src="./link-publico.js"></script>
 </body>
 </html>
