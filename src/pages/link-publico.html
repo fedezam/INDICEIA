@@ -1,127 +1,34 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Link Público</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Link Público - ÍndiceIA</title>
+  <link rel="stylesheet" href="/src/styles/base.css" />
+  <link rel="stylesheet" href="/src/styles/layout.css" />
+  <link rel="stylesheet" href="/src/styles/components.css" />
+  <link rel="stylesheet" href="/src/pages/landing.css" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      background-color: #f5f5f5;
-      margin: 0;
-    }
-
-    .container {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-
-    #publicUrl {
-      display: block;
-      margin: 1rem 0;
-      font-weight: bold;
-      color: #0070f3;
-      word-break: break-all;
-    }
-
-    button {
-      padding: 0.5rem 1.5rem;
-      border: none;
-      border-radius: 8px;
-      background-color: #0070f3;
-      color: white;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    button:hover {
-      background-color: #005bb5;
-    }
-
-    #toast {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #333;
-      color: white;
-      padding: 1rem 2rem;
-      border-radius: 8px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-    }
-
-    #toast.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #f7f8fa; }
+    .container { text-align: center; background: #fff; padding: 3rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    h1 { font-size: 2rem; margin-bottom: 1rem; }
+    p { font-size: 1rem; margin-bottom: 2rem; color: #555; }
+    #publicUrl { font-weight: bold; color: #0070f3; word-break: break-all; }
+    button { background: #0070f3; color: #fff; border: none; padding: 0.8rem 1.6rem; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+    button:hover { background: #005bb5; }
+    .toast { position: fixed; top: 20px; right: 20px; background: #4caf50; color: #fff; padding: 1rem 1.5rem; border-radius: 8px; opacity: 0; pointer-events: none; transition: 0.3s; }
+    .toast.show { opacity: 1; pointer-events: auto; }
   </style>
 </head>
 <body>
-
   <div class="container">
-    <h1>Tu Link Público</h1>
-    <span id="publicUrl">Cargando...</span>
-    <button id="copyBtn">Copiar al portapapeles</button>
+    <h1>Tu link público</h1>
+    <p id="publicUrl">Cargando...</p>
+    <button id="copyBtn">Copiar link</button>
   </div>
+  <div id="toast" class="toast"></div>
 
-  <div id="toast">¡Link copiado!</div>
-
-  <script type="module">
-    import { auth, db } from './firebase.js';
-    import { onAuthStateChanged } from 'firebase/auth';
-    import { doc, getDoc } from 'firebase/firestore';
-
-    let comercioId = null;
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = '/index.html';
-        return;
-      }
-
-      const userRef = doc(db, 'usuarios', user.uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) return;
-
-      const userData = userSnap.data();
-      comercioId = userData.comercioId;
-
-      if (comercioId) {
-        initPage(comercioId);
-      }
-    });
-
-    function initPage(id) {
-      const publicUrl = `https://indiceia.app/live/${id}`;
-      const urlEl = document.getElementById('publicUrl');
-      urlEl.textContent = publicUrl;
-
-      document.getElementById('copyBtn').addEventListener('click', () => {
-        navigator.clipboard.writeText(publicUrl)
-          .then(() => showToast('¡Link copiado al portapapeles!'))
-          .catch(() => showToast('Error al copiar el link', true));
-      });
-    }
-
-    function showToast(msg, error = false) {
-      const toast = document.getElementById('toast');
-      toast.textContent = msg;
-      toast.style.background = error ? '#b00020' : '#333';
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2500);
-    }
-  </script>
+  <!-- Este script carga el bundle JS que ya incluye todos los imports y Firebase -->
+  <script type="module" src="/src/pages/link-publico.js"></script>
 </body>
 </html>
-
