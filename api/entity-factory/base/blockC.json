@@ -2,24 +2,29 @@
   "C": {
     "visual": {
       "available": true,
-      "mode": "iframe",          
+      "mode": "dynamic-client",
       "template": {
-        "id": null,               // Se inyecta dinámicamente desde buildEntity
-        "version": null,          // Se inyecta dinámicamente
-        "entrypoint": null,       // URL al componente, inyectada
-        "baseUrl": null,          // Base URL del template, inyectada
-        "theme": "default",       // Tema por defecto, puede ser "dark"/"light"
-        "showHeader": true,       // Flag general, puede ser sobrescrito por template
-        "showFooter": true,       // Flag general
-        "customCSS": null,        // Posibilidad de agregar CSS adicional
-        "customJS": null          // Posibilidad de agregar JS adicional
+        "id": "",
+        "version": "1.0.0",
+        "entrypoint": "",
+        "baseUrl": "",
+        "theme": "default",
+        "showHeader": true,
+        "showFooter": true,
+        "props": {
+          "responsive": true,
+          "lazyLoadImages": true,
+          "prefetchData": true
+        }
       },
-      "consumes": ["B"],           // Siempre consume los datos de bloque B
-      "props": {
-        "responsive": true,        // Activar responsividad por defecto
-        "lazyLoad": true,          // Lazy load de imágenes y assets
-        "animations": true         // Animaciones activas por defecto
+      "consumes": ["B"],
+      "options": {
+        "allowCustomCSS": false,
+        "allowCustomJS": false,
+        "enableSSR": false,
+        "sandboxed": true
       }
     }
   }
 }
+
