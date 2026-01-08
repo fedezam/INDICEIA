@@ -1,6 +1,3 @@
-// /api/entity-factory/index.js
-// Entity Factory oficial — ÍndiceIA v1 (Production Ready)
-
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
@@ -20,14 +17,12 @@ try {
     console.log(`✅ Registry entity cargado: ${Object.keys(templateRegistry.templates).length} template(s)`);
   }
 } catch {
-  console.warn('⚠️ Block C deshabilitado (registry no disponible)');
+  console.warn('⚠️ Registry entity no disponible. Block C inactivo.');
 }
 
 // ----- Firebase Admin
 if (!admin.apps.length) {
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
-    throw new Error('Falta FIREBASE_SERVICE_ACCOUNT');
-  }
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) throw new Error('Falta FIREBASE_SERVICE_ACCOUNT');
   admin.initializeApp({
     credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
   });
@@ -35,81 +30,49 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 // ----- Utils
-function hasData(value) {
+const hasData = (value) => {
   if (typeof value === 'boolean') return true;
   if (typeof value === 'string') return value.trim().length > 0;
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
   return value !== undefined && value !== null;
-}
+};
 
 // ===== ENTITY BUILDER =====
 export async function buildEntity({ comercioId }) {
   if (!comercioId) throw new Error('Falta comercioId');
 
-  // ----- Block A
-  const blockAPath = resolve(__dirname, 'base/blockA.json');
-  const blockA = JSON.parse(readFileSync(blockAPath, 'utf-8'));
+  // Block A y D
+  const blockA = JSON.parse(readFileSync(resolve(__dirname, 'base/blockA.json'), 'utf-8'));
+  const blockD = JSON.parse(readFileSync(resolve(__dirname, 'base/blockD.json'), 'utf-8'));
 
-  // ----- Block D
-  const blockDPath = resolve(__dirname, 'base/blockD.json');
-  const blockD = JSON.parse(readFileSync(blockDPath, 'utf-8'));
-
-  // ----- Firestore comercio
+  // Firestore
   const comercioRef = db.collection('comercios').doc(comercioId);
-  const comercioSnap = await comercioRef.get();
-  if (!comercioSnap.exists) throw new Error(`Comercio ${comercioId} no encontrado`);
-
-  const comercioData = comercioSnap.data();
-
-  // ===== LIVE MODE =====
-  const plan = comercioData.plan || 'trial';
-  const liveEnabled = ['trial', 'pro', 'highvalue', 'premium'].includes(plan);
-
-  // ===== REFERRAL =====
-  let referralCode = comercioId.substring(0, 8).toUpperCase();
-  if (comercioData.duenoId) {
-    const ownerSnap = await db.collection('usuarios').doc(comercioData.duenoId).get();
-    if (ownerSnap.exists && ownerSnap.data()?.referralId) {
-      referralCode = ownerSnap.data().referralId;
-    }
-  }
-
-  // ===== PRODUCTOS =====
-  let productos = [];
-  try {
-    const snap = await comercioRef.collection('productos').get();
-    productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch {}
+  const snap = await comercioRef.get();
+  if (!snap.exists) throw new Error(`Comercio ${comercioId} no encontrado`);
+  const data = snap.data();
 
   // ===== BLOCK B =====
   const B = { id: comercioId };
 
-  if (hasData(comercioData.nombreComercio)) B.nombre = comercioData.nombreComercio;
-  if (hasData(comercioData.descripcion)) B.descripcion = comercioData.descripcion;
+  if (hasData(data.nombreComercio)) B.nombre = data.nombreComercio;
+  if (hasData(data.descripcion)) B.descripcion = data.descripcion;
 
-  // Ubicación
   const ubicacion = {};
-  ['direccion', 'ciudad', 'provincia', 'pais'].forEach(k => {
-    if (hasData(comercioData[k])) ubicacion[k] = comercioData[k];
-  });
+  ['direccion','ciudad','provincia','pais'].forEach(k => { if(hasData(data[k])) ubicacion[k] = data[k]; });
   if (hasData(ubicacion)) B.ubicacion = ubicacion;
 
-  // Contacto
   const contacto = {};
-  ['telefono', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok'].forEach(k => {
-    if (hasData(comercioData[k])) contacto[k] = comercioData[k];
-  });
+  ['telefono','whatsapp','email','website','instagram','facebook','tiktok'].forEach(k => { if(hasData(data[k])) contacto[k] = data[k]; });
   if (hasData(contacto)) B.contacto = contacto;
 
-  if (hasData(comercioData.horarios)) B.horarios = comercioData.horarios;
-  if (hasData(comercioData.plan)) B.plan = comercioData.plan;
-  if (hasData(comercioData.templateId)) B.templateId = comercioData.templateId;
-  if (hasData(comercioData.categories)) B.categorias = comercioData.categories;
+  if (hasData(data.horarios)) B.horarios = data.horarios;
+  if (hasData(data.plan)) B.plan = data.plan;
+  if (hasData(data.templateId)) B.templateId = data.templateId;
+  if (hasData(data.categories)) B.categorias = data.categories;
 
-  // IA Config
-  if (hasData(comercioData.aiConfig)) {
-    const ai = comercioData.aiConfig;
+  if (hasData(data.aiConfig)) {
+    const ai = data.aiConfig;
     B.ia = {};
     if (hasData(ai.aiName)) B.ia.nombre = ai.aiName;
     if (hasData(ai.aiGreeting)) B.ia.saludo = ai.aiGreeting;
@@ -121,13 +84,19 @@ export async function buildEntity({ comercioId }) {
     if (!hasData(B.ia)) delete B.ia;
   }
 
-  // Catálogo
+  // Productos
+  let productos = [];
+  try {
+    const ps = await comercioRef.collection('productos').get();
+    productos = ps.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch {}
+
   if (productos.length) {
     B.catalogo = {
-      moneda: comercioData.moneda || 'ARS',
+      moneda: data.moneda || 'ARS',
       secciones: [{
         id: 'principal',
-        titulo: comercioData.nombreComercio || 'Catálogo',
+        titulo: data.nombreComercio || 'Catálogo',
         tipo: 'grid',
         prioridad: 1,
         items: productos.map(p => ({
@@ -143,64 +112,59 @@ export async function buildEntity({ comercioId }) {
     };
   }
 
-  // Referral injection
+  // Referral
+  let referralCode = comercioId.substring(0,8).toUpperCase();
+  if(data.duenoId){
+    const ownerSnap = await db.collection('usuarios').doc(data.duenoId).get();
+    if(ownerSnap.exists && ownerSnap.data()?.referralId) referralCode = ownerSnap.data().referralId;
+  }
   B.referral = {
     code: referralCode,
-    shareMessage: `¿Te gustaría tener una IA como yo para tu negocio? Visitá https://indiceia.app/r/${referralCode}`
+    shareMessage: `¿Querés tu IA? Visitá https://indiceia.app/r/${referralCode}`
   };
-
   B.updatedAt = new Date().toISOString();
   Object.freeze(B);
 
-  // ===== RESOLVER BLOCK A PLACEHOLDERS =====
-  const A = JSON.parse(
-    JSON.stringify(blockA)
-      .replace(/\{\{LIVE_ENABLED\}\}/g, liveEnabled.toString())
-      .replace(/\{\{REFERRAL_URL\}\}/g, `https://indiceia.app/guia?ref=${referralCode}`)
+  // Block A placeholders
+  const liveEnabled = ['trial','pro','highvalue','premium'].includes(data.plan);
+  const A = JSON.parse(JSON.stringify(blockA)
+    .replace(/\{\{LIVE_ENABLED\}\}/g, liveEnabled.toString())
+    .replace(/\{\{REFERRAL_URL\}\}/g, `https://indiceia.app/guia?ref=${referralCode}`)
   );
 
-  // ===== RESOLVER AVAILABLE CHANNELS (BLOCK D) =====
-  if (blockD?.availableChannels && B.contacto) {
-    Object.entries(blockD.availableChannels).forEach(([channel, cfg]) => {
-      if (typeof cfg === 'object') {
-        cfg.enabled = hasData(B.contacto[channel]);
-      }
+  // Block D channels
+  if(blockD?.availableChannels && B.contacto){
+    Object.entries(blockD.availableChannels).forEach(([ch,cfg])=>{
+      if(typeof cfg==='object') cfg.enabled = hasData(B.contacto[ch]);
     });
   }
   Object.freeze(blockD);
 
- // ===== BLOCK C =====
-let C = {};
-try {
-  // Leemos la base desde blockC.json
-  C = JSON.parse(readFileSync(resolve(__dirname, 'base/blockC.json'), 'utf-8'));
+  // ===== BLOCK C =====
+  let C = {};
+  try {
+    C = JSON.parse(readFileSync(resolve(__dirname,'base/blockC.json'),'utf-8')).C;
 
-  if (hasData(B.templateId)) {
-    const t = templateRegistry.templates[B.templateId];
-    if (t) {
-      const base = 'https://indiceia-templates.vercel.app/templates';
-      // Limpiar prefijo "templates/" si ya existe
-      const epPath = t.entrypoint.replace(/^templates\//, '');
-
-      // Inyectar los datos dinámicos sobre el bloque base
-      C.visual.template = {
-        ...C.visual.template,  // mantiene campos de blockC.json
-        id: t.id,
-        version: t.version,
-        entrypoint: `${base}/${epPath}/component.jsx`,
-        baseUrl: `${base}/${epPath}/`
-      };
-
-      // Ajustar mode dinámico si querés override
-      C.visual.mode = 'dynamic-client';
-      C.visual.available = true; // asegurar que esté activo
+    if(hasData(B.templateId)){
+      const t = templateRegistry.templates[B.templateId];
+      if(t){
+        const base = 'https://indiceia-templates.vercel.app/templates';
+        const epPath = t.entrypoint.replace(/^templates\//,'');
+        C.visual.template = {
+          ...C.visual.template,
+          id: t.id,
+          version: t.version,
+          entrypoint: `${base}/${epPath}/component.jsx`,
+          baseUrl: `${base}/${epPath}/`
+        };
+        C.visual.mode = 'dynamic-client';
+        C.visual.available = true;
+      }
     }
+  } catch(err){
+    console.warn('⚠️ No se pudo cargar blockC.json, Bloque C inhabilitado', err);
+    C = {};
   }
-} catch (err) {
-  console.warn('⚠️ No se pudo cargar blockC.json, Bloque C deshabilitado', err);
-  C = {};
-}
-
 
   // ===== FINAL ENTITY =====
   return {
@@ -209,7 +173,7 @@ try {
       tipo: 'entidad_comercial_indiceIA',
       comercioId,
       generatedAt: new Date().toISOString(),
-      mode: 'production',
+      mode: 'production'
     },
     contracts: {
       blockB: { role: 'single_source_of_truth', mutable: false },
