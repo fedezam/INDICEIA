@@ -169,27 +169,38 @@ export async function buildEntity({ comercioId }) {
   }
   Object.freeze(blockD);
 
-  // ===== BLOCK C =====
-  let C = {};
+ // ===== BLOCK C =====
+let C = {};
+try {
+  // Leemos la base desde blockC.json
+  C = JSON.parse(readFileSync(resolve(__dirname, 'base/blockC.json'), 'utf-8'));
+
   if (hasData(B.templateId)) {
     const t = templateRegistry.templates[B.templateId];
     if (t) {
       const base = 'https://indiceia-templates.vercel.app/templates';
-      C = {
-        visual: {
-          available: true,
-          template: {
-            id: t.id,
-            version: t.version,
-            entrypoint: `${base}/${t.entrypoint}/component.jsx`,
-            baseUrl: `${base}/${t.entrypoint}/`
-          },
-          mode: 'dynamic-client',
-          consumes: ['B']
-        }
+      // Limpiar prefijo "templates/" si ya existe
+      const epPath = t.entrypoint.replace(/^templates\//, '');
+
+      // Inyectar los datos dinámicos sobre el bloque base
+      C.visual.template = {
+        ...C.visual.template,  // mantiene campos de blockC.json
+        id: t.id,
+        version: t.version,
+        entrypoint: `${base}/${epPath}/component.jsx`,
+        baseUrl: `${base}/${epPath}/`
       };
+
+      // Ajustar mode dinámico si querés override
+      C.visual.mode = 'dynamic-client';
+      C.visual.available = true; // asegurar que esté activo
     }
   }
+} catch (err) {
+  console.warn('⚠️ No se pudo cargar blockC.json, Bloque C deshabilitado', err);
+  C = {};
+}
+
 
   // ===== FINAL ENTITY =====
   return {
