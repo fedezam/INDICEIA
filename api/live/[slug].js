@@ -28,8 +28,7 @@ try {
   console.error('[LIVE-SLUG] Firestore init FAILED', err);
 }
 
-const ENTITY_BLOB_BASE =
-  'https://oigwwzzmvibflie8.public.blob.vercel-storage.com/entidades';
+const ENTITY_BLOB_BASE = 'https://oigwwzzmvibflie8.public.blob.vercel-storage.com/entidades';
 
 export default async function handler(req, res) {
   try {
@@ -66,10 +65,7 @@ export default async function handler(req, res) {
     const html = generateLandingHTML(nombreComercio, claudeUrl);
     
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader(
-      'Cache-Control',
-      'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
-    );
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     
@@ -80,13 +76,3 @@ export default async function handler(req, res) {
     return res.status(500).send('Error interno');
   }
 }
-```
-
----
-
-## 📍 **Donde va:**
-```
-tu-proyecto/
-└── api/
-    └── live/
-        └── [slug].js  ← ESTE ARCHIVO (con corchetes!)
