@@ -1,107 +1,59 @@
-// /api/resolve-cta/[slug].js
-import { db } from '../../firebase.js';
-import { doc, getDoc } from 'firebase/firestore';
-
+// src/pages/live/[slug].js
 export const config = {
-  runtime: 'nodejs'
+  runtime: 'edge' // o 'nodejs' según Vercel, pero edge funciona para rutas dinámicas
 };
 
-export default async function handler(req, res) {
-  const { slug } = req.query;
-
-  if (!slug) {
-    res.status(400).send('Missing slug');
-    return;
-  }
-
+export default async function handler(req) {
   try {
-    // 1️⃣ Buscar slug en la colección landings
-    const landingRef = doc(db, 'landings', slug);
-    const landingSnap = await getDoc(landingRef);
+    const { searchParams, pathname } = new URL(req.url);
+    // Extraemos el slug de la URL
+    const slug = pathname.split('/').pop();
 
-    if (!landingSnap.exists()) {
-      res.status(404).send('Landing no encontrada');
-      return;
+    if (!slug) {
+      return new Response('Slug no proporcionado', { status: 400 });
     }
 
-    const landing = landingSnap.data();
+    // 🔹 Traemos el comercioId desde Firestore usando el slug
+    // Importamos admin de forma dinámica para edge
+    const { getFirestore, collection, getDocs, query, where } = await import('firebase-admin/firestore');
+    const { initializeApp, getApps, cert } = await import('firebase-admin/app');
 
-    // 2️⃣ Buscar datos del comercio
-    const comercioRef = doc(db, 'comercios', landing.comercioId);
-    const comercioSnap = await getDoc(comercioRef);
-
-    if (!comercioSnap.exists()) {
-      res.status(404).send('Comercio no encontrado');
-      return;
+    if (!getApps().length) {
+      if (!process.env.FIREBASE_ADMIN) {
+        throw new Error('FIREBASE_ADMIN env is missing');
+      }
+      initializeApp({
+        credential: cert(JSON.parse(process.env.FIREBASE_ADMIN))
+      });
     }
 
-    const comercio = comercioSnap.data();
+    const db = getFirestore();
+    const comerciosRef = collection(db, 'comercios');
+    const q = query(comerciosRef, where('slug', '==', slug));
+    const querySnap = await getDocs(q);
 
-    // 3️⃣ Renderizar HTML de la landing
-    const html = `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>${landing.nombre}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f7f7f7;
-      color: #111;
-      margin: 0;
-      padding: 0;
+    if (querySnap.empty) {
+      return new Response('Comercio no encontrado', { status: 404 });
     }
-    .container {
-      max-width: 800px;
-      margin: 50px auto;
-      padding: 32px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,.1);
-    }
-    h1 { margin-top: 0; }
-    .categories, .payment-methods {
-      margin-top: 16px;
-    }
-    .category, .method {
-      display: inline-block;
-      padding: 6px 12px;
-      margin: 4px;
-      background: #eee;
-      border-radius: 8px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>${landing.nombre}</h1>
-    <p>${comercio.descripcion || ''}</p>
 
-    ${comercio.categories?.length ? `
-    <div class="categories">
-      <strong>Categorías:</strong>
-      ${comercio.categories.map(c => `<span class="category">${c}</span>`).join(' ')}
-    </div>` : ''}
+    const comercioDoc = querySnap.docs[0];
+    const comercioId = comercioDoc.id;
 
-    ${comercio.paymentMethods?.length ? `
-    <div class="payment-methods">
-      <strong>Métodos de pago:</strong>
-      ${comercio.paymentMethods.map(m => `<span class="method">${m}</span>`).join(' ')}
-    </div>` : ''}
-    
-    <p><small>¡Tu IA comercial está lista para ayudarte!</small></p>
-  </div>
-</body>
-</html>
-    `;
+    // 🔹 Llamamos a tu API interna para generar la landing HTML
+    const apiUrl = `${req.url.origin}/api/link-builder?comercio_id=${comercioId}`;
+    const apiRes = await fetch(apiUrl);
+    const html = await apiRes.text();
 
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.status(200).send(html);
-
+    return new Response(html, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        Pragma: 'no-cache',
+        Expires: '0'
+      }
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error generando landing');
+    console.error('[LIVE SLUG]', err);
+    return new Response('Error interno', { status: 500 });
   }
 }
