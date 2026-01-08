@@ -39,7 +39,7 @@ async function initPage(id) {
     }
 
     const slug = comercioData.slug;
-    const publicUrl = `https://indiceia.vercel.app/api/live/${slug}`;
+    const publicUrl = `https://indiceia.vercel.app/live/${slug}`;
     document.getElementById('publicUrl').textContent = publicUrl;
 
     document.getElementById('copyBtn').addEventListener('click', () => {
