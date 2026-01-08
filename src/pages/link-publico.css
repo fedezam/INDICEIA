@@ -1,0 +1,144 @@
+/* Reset y básicos */
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  background: #f8f9fa;
+  color: #222;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.public-link-section {
+  background: #ffffff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.public-link-section h1 {
+  font-size: 2.2rem;
+  margin-bottom: 10px;
+}
+
+.public-link-section .info-text {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+.link-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.link-container input {
+  padding: 12px 16px;
+  width: 400px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+.link-container button {
+  padding: 12px 20px;
+  background-color: #0070f3;
+  color: #fff;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.link-container button:hover {
+  background-color: #0059c1;
+}
+
+.qr-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+}
+
+.qr-card {
+  background: #f1f3f5;
+  padding: 20px;
+  border-radius: 16px;
+  text-align: center;
+  width: 260px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.qr-card h2 {
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+}
+
+.qr-box {
+  margin: 0 auto 16px auto;
+}
+
+.qr-card button {
+  padding: 8px 16px;
+  background-color: #00b37e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.qr-card button:hover {
+  background-color: #02875f;
+}
+
+/* Toast container */
+#toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.toast {
+  background: #333;
+  color: #fff;
+  padding: 12px 24px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  opacity: 0;
+  animation: fadeInOut 3s forwards;
+}
+
+.toast.success { background: #00b37e; }
+.toast.error { background: #f31260; }
+.toast.warning { background: #f5a524; }
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-20px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-20px); }
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .qr-section {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .link-container input {
+    width: 100%;
+  }
+}
