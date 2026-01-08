@@ -2,15 +2,7 @@
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-
-// Toast simple
-function showToast(msg, type = 'success') {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.style.background = type === 'success' ? '#4caf50' : '#f44336';
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
-}
+import { showToast } from '../shared/utils.js';
 
 let comercioId = null;
 
@@ -32,12 +24,36 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-function initPage(id) {
-  const publicUrl = `https://indiceia.app/c/${id}`;
-  document.getElementById('publicUrl').textContent = publicUrl;
+async function initPage(id) {
+  try {
+    const comercioSnap = await getDoc(doc(db, 'comercios', id));
+    if (!comercioSnap.exists()) {
+      showToast('Error: comercio no encontrado', 'error');
+      return;
+    }
 
-  document.getElementById('copyBtn').addEventListener('click', () => {
-    navigator.clipboard.writeText(publicUrl);
-    showToast('¡Link copiado al portapapeles!', 'success');
-  });
+    const comercioData = comercioSnap.data();
+    if (!comercioData.slug) {
+      showToast('Error: este comercio no tiene slug asignado', 'error');
+      return;
+    }
+
+    const slug = comercioData.slug;
+    const publicUrl = `https://indiceia.app/live/${slug}`;
+    document.getElementById('publicUrl').textContent = publicUrl;
+
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      navigator.clipboard.writeText(publicUrl);
+      showToast('¡Link copiado al portapapeles!', 'success');
+    });
+
+    // QR: lo dejamos comentado hasta que lo integres
+    // const qrOptions = { data: publicUrl, width: 800, height: 800 };
+    // const qr = new QRCodeStyling(qrOptions);
+    // qr.append(document.getElementById("qr-container"));
+
+  } catch (err) {
+    console.error(err);
+    showToast('Error al inicializar la página', 'error');
+  }
 }
