@@ -1,4 +1,3 @@
-// api/live/[slug].js
 export const config = {
   runtime: 'nodejs'
 };
@@ -34,12 +33,6 @@ const ENTITY_BLOB_BASE =
 
 export default async function handler(req, res) {
   try {
-    // 🔒 BLOQUEO: solo permitir acceso vía rewrite (/live/:slug)
-    const rewrittenFrom = req.headers['x-vercel-rewrite'];
-    if (!rewrittenFrom) {
-      return res.status(404).send('Not found');
-    }
-
     const { slug } = req.query;
 
     if (!slug) {
@@ -72,14 +65,10 @@ export default async function handler(req, res) {
     const claudeUrl = generateClaudeUrl(entityUrl);
     const html = generateLandingHTML(nombreComercio, claudeUrl);
 
-    // 🔗 CANONICAL URL
+    // 🔗 Canonical URL (esto SÍ está perfecto)
     const canonicalUrl = `https://indiceia.vercel.app/live/${slug}`;
-    res.setHeader(
-      'Link',
-      `<${canonicalUrl}>; rel="canonical"`
-    );
+    res.setHeader('Link', `<${canonicalUrl}>; rel="canonical"`);
 
-    // Headers estándar
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader(
       'Cache-Control',
@@ -95,4 +84,3 @@ export default async function handler(req, res) {
     return res.status(500).send('Error interno');
   }
 }
-
