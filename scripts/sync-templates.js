@@ -92,10 +92,10 @@ function buildRegistries(dirs) {
       continue;
     }
 
-    // Determinar ID del template (prioridad: template_id > id > nombre de carpeta)
+    // Determinar ID del template (mantener consistencia Visual Registry)
     const templateId = meta.template_id || meta.id || dir;
 
-    if (!templateId || !/^[A-Z0-9_]+$/.test(templateId)) {
+    if (!templateId || !/^[A-Z0-9_]+$/i.test(templateId)) {
       console.warn(`⚠️  ${dir}: ID inválido o no determinado → saltando`);
       continue;
     }
@@ -104,6 +104,11 @@ function buildRegistries(dirs) {
 
     // Construir URLs
     const baseUrl = `${TEMPLATES_BASE_URL}/${dir}`;
+
+    // runtime.html para Entity Factory
+    const runtimeUrl = `${baseUrl}/runtime.html`;
+
+    // preview HTML/JSX para Visual Builder
     const iframeUrl = meta.visual?.preview_html
       ? `${baseUrl}/${meta.visual.preview_html}`
       : null;
@@ -112,7 +117,7 @@ function buildRegistries(dirs) {
       ? `${baseUrl}/${meta.visual.thumbnail}`
       : null;
 
-    // ======== VISUAL REGISTRY (estricto según schema actual) ========
+    // ======== VISUAL REGISTRY (para Visual Builder) ========
     visualRegistry.templates.push({
       id: templateId,
       name: meta.name,
@@ -121,28 +126,26 @@ function buildRegistries(dirs) {
       description: meta.description,
       ideal_for: meta.ideal_for,
       visual: {
-        iframe_url: iframeUrl // puede ser null → permitido por el schema
+        iframe_url: iframeUrl // preview HTML completo
       },
       previews: {
-        thumbnail: thumbnailUrl // puede ser null
+        thumbnail: thumbnailUrl
       }
     });
 
-    // ======== ENTITY REGISTRY ========
+    // ======== ENTITY REGISTRY (para Entity Factory) ========
     entityRegistry.templates[templateId] = {
       id: templateId,
       version: meta.version,
-
       paths: {
-        runtime_html: `${TEMPLATES_BASE_URL}/${dir}/runtime.html`
+        runtime_html: runtimeUrl
       },
-
       supports: meta.supports ?? {},
       requirements: meta.requirements ?? {}
     };
   }
 
-  // Orden final para visual registry
+  // Orden final para Visual Registry
   visualRegistry.templates.sort((a, b) => a.id.localeCompare(b.id));
 
   return { visualRegistry, entityRegistry };
