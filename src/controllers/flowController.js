@@ -3,11 +3,12 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
 
 /* =========================================================
-   CONFIGURACIÓN DEL FLOW (orden estricto)
+   CONFIGURACIÓN DEL FLOW (orden canónico)
    ========================================================= */
 
 const FLOW_ORDER = [
   "usuario",
+  "crear-entidad",
   "mi-comercio",
   "horarios",
   "productos",
@@ -33,22 +34,15 @@ function isEditMode() {
 
 function getFirstIncompleteStep(steps = {}) {
   return FLOW_ORDER.find(
-    (step) => step !== "usuario" && steps[step] !== true
+    (step) =>
+      step !== "usuario" &&
+      step !== "crear-entidad" &&
+      steps[step] !== true
   ) || null;
 }
 
-function canAccessStep(step, steps = {}) {
-  const index = FLOW_ORDER.indexOf(step);
-  if (index === -1) return false;
-
-  for (let i = 1; i < index; i++) {
-    if (steps[FLOW_ORDER[i]] !== true) return false;
-  }
-  return true;
-}
-
 /* =========================================================
-   FLOW CONTROLLER (SOLO DECIDE AL ENTRAR A UNA PÁGINA)
+   FLOW CONTROLLER
    ========================================================= */
 
 export async function runFlowController(uid) {
@@ -77,32 +71,46 @@ export async function runFlowController(uid) {
     }
 
     const userData = userSnap.data();
-    const comercioId = userData?.comercioId;
+    const userSteps = userData.onboardingSteps || {};
 
-    if (!comercioId && currentPage !== "usuario") {
-      window.location.href = "/usuario.html";
+    /* ---------- PASO 1: USUARIO ---------- */
+
+    if (!userSteps.usuario) {
+      if (currentPage !== "usuario") {
+        window.location.href = "/usuario.html";
+      }
       return;
     }
 
-    /* ---------- COMERCIO / STEPS ---------- */
+    /* ---------- PASO 2: CREAR ENTIDAD ---------- */
+
+    if (!userData.entityType) {
+      if (currentPage !== "crear-entidad") {
+        window.location.href = "/crear-entidad.html";
+      }
+      return;
+    }
+
+    /* ---------- CARGA STEPS SEGÚN ENTIDAD ---------- */
 
     let steps = {};
-    if (comercioId) {
-      const comercioSnap = await getDoc(doc(db, "comercios", comercioId));
+
+    if (userData.entityType === "comercio" && userData.comercioId) {
+      const comercioSnap = await getDoc(
+        doc(db, "comercios", userData.comercioId)
+      );
       steps = comercioSnap.exists()
         ? comercioSnap.data()?.onboardingSteps || {}
         : {};
     }
 
-    /* =====================================================
-       MODO EDICIÓN (dashboard → páginas)
-       ===================================================== */
+    /* ---------- MODO EDICIÓN ---------- */
 
     if (editMode) {
-      // Solo permite entrar a pasos ya completados
       if (
         currentPage !== "dashboard" &&
         currentPage !== "usuario" &&
+        currentPage !== "crear-entidad" &&
         steps[currentPage] !== true
       ) {
         window.location.href = "/dashboard.html";
@@ -113,13 +121,10 @@ export async function runFlowController(uid) {
       return;
     }
 
-    /* =====================================================
-       ONBOARDING NORMAL
-       ===================================================== */
+    /* ---------- ONBOARDING NORMAL ---------- */
 
     const firstIncomplete = getFirstIncompleteStep(steps);
 
-    // Aún hay pasos pendientes → forzar orden
     if (firstIncomplete) {
       if (currentPage !== firstIncomplete) {
         window.location.href = `/${firstIncomplete}.html`;
@@ -127,7 +132,8 @@ export async function runFlowController(uid) {
       return;
     }
 
-    // Todo completo → dashboard
+    /* ---------- TODO COMPLETO ---------- */
+
     if (currentPage !== "dashboard") {
       window.location.href = "/dashboard.html";
     }
@@ -162,7 +168,6 @@ function setupEditModeUI() {
 
   main.prepend(btn);
 
-  // En modo edición, el botón guardar siempre está habilitado
   setTimeout(() => {
     const saveBtn = document.querySelector(
       ".btn-save, #saveChangesBtn, [type='submit']"
@@ -175,7 +180,6 @@ function setupEditModeUI() {
    HELPERS PÚBLICOS
    ========================================================= */
 
-// Usar SOLO después de guardar
 export function redirectAfterSave(nextPage) {
   if (window.isEditMode) {
     window.location.href = "/dashboard.html";
