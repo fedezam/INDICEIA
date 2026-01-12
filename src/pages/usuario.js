@@ -1,5 +1,5 @@
 // ================================
-// usuario.js — Onboarding Paso 1 (Normalizado y limpio)
+// usuario.js — Onboarding Paso 1 (Datos personales ONLY)
 // ================================
 
 // CSS
@@ -11,14 +11,14 @@ import './usuario.css';
 
 // Firebase
 import { auth, db } from "../firebase.js";
-import { doc, getDoc, setDoc, addDoc, collection, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 // Compartidos
 import { renderLayout, updateHeaderInfo } from "../shared/layout.js";
 import { showToast, showLoading, hideLoading } from "../shared/utils.js";
 import { fillProvinciaSelector } from "../shared/provincias.js";
 
-// ✅ BOOT DEL FLOW
+// Flow
 import { bootFlow } from "../controllers/boot/flowBoot.js";
 import { redirectAfterSave } from "../controllers/flowController.js";
 
@@ -35,16 +35,9 @@ const provincia = document.getElementById("provincia");
 const localidad = document.getElementById("localidad");
 const barrio = document.getElementById("barrio");
 const direccion = document.getElementById("direccion");
-
-const checkComercio = document.getElementById("checkComercio");
-const checkServicio = document.getElementById("checkServicio");
-
 const btnGuardar = document.getElementById("saveUserData");
 
-// ==================== ESTADO ====================
-let tipoSeleccionado = null;
-
-// ==================== UTIL: FORMATO FECHA ====================
+// ==================== FECHA ====================
 function aplicarMascaraFecha(input) {
   input.addEventListener("input", (e) => {
     let value = e.target.value.replace(/\D/g, "");
@@ -63,7 +56,7 @@ function fechaToISO(fechaDDMMYYYY) {
   if (!fechaDDMMYYYY || !fechaDDMMYYYY.includes("/")) return null;
   const [dd, mm, yyyy] = fechaDDMMYYYY.split("/");
   if (!dd || !mm || !yyyy || yyyy.length !== 4) return null;
-  return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+  return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
 }
 
 function fechaFromISO(fechaISO) {
@@ -72,112 +65,75 @@ function fechaFromISO(fechaISO) {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-// ==================== VALIDACIÓN FORMULARIO ====================
+// ==================== VALIDACIÓN ====================
 function validarFormulario() {
-  const obligatoriosCompletos =
-    nombre?.value.trim() &&
-    apellido?.value.trim() &&
-    mail?.value.trim() &&
-    fechaNacimiento?.value.trim() &&
-    telefono?.value.trim() &&
-    pais?.value.trim() &&
-    provincia?.value.trim() &&
-    localidad?.value.trim() &&
-    direccion?.value.trim();
+  const completo =
+    nombre.value.trim() &&
+    apellido.value.trim() &&
+    mail.value.trim() &&
+    fechaNacimiento.value.trim() &&
+    telefono.value.trim() &&
+    pais.value.trim() &&
+    provincia.value.trim() &&
+    localidad.value.trim() &&
+    direccion.value.trim();
 
-  const actividadOK = tipoSeleccionado !== null;
-
-  if (btnGuardar) {
-    btnGuardar.disabled = !(obligatoriosCompletos && actividadOK);
-  }
+  btnGuardar.disabled = !completo;
 }
 
-// Listeners de validación
-[nombre, apellido, mail, fechaNacimiento, telefono, pais, provincia, localidad, direccion]
-  .filter(el => el)
-  .forEach(el => el.addEventListener("input", validarFormulario));
+[
+  nombre,
+  apellido,
+  mail,
+  fechaNacimiento,
+  telefono,
+  pais,
+  provincia,
+  localidad,
+  direccion
+].forEach(el => el.addEventListener("input", validarFormulario));
 
-// ==================== HANDLERS TIPO ACTIVIDAD ====================
-if (checkComercio) {
-  checkComercio.addEventListener("change", () => {
-    if (checkComercio.checked) {
-      tipoSeleccionado = "comercio";
-      if (checkServicio) checkServicio.checked = false;
-    } else {
-      tipoSeleccionado = null;
-    }
-    validarFormulario();
-  });
-}
-
-if (checkServicio) {
-  checkServicio.addEventListener("change", () => {
-    if (checkServicio.checked) {
-      tipoSeleccionado = "servicio";
-      if (checkComercio) checkComercio.checked = false;
-    } else {
-      tipoSeleccionado = null;
-    }
-    validarFormulario();
-  });
-}
-
-// ==================== CARGA INICIAL ====================
+// ==================== CARGA DATOS ====================
 async function cargarDatosUsuario(uid) {
   try {
-    console.log("🔄 Cargando datos del usuario:", uid);
-
-    // Llenar provincias
-    fillProvinciaSelector(pais.value || "Argentina", provincia);
+    fillProvinciaSelector("Argentina", provincia);
 
     const ref = doc(db, "usuarios", uid);
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
-      console.log("ℹ️ Usuario nuevo");
-      if (mail && auth.currentUser?.email) mail.value = auth.currentUser.email;
+      if (mail && auth.currentUser?.email) {
+        mail.value = auth.currentUser.email;
+      }
       validarFormulario();
       return;
     }
 
     const data = snap.data();
 
-    if (nombre) nombre.value = data.nombre || "";
-    if (apellido) apellido.value = data.apellido || "";
-    if (mail) mail.value = data.mail || auth.currentUser?.email || "";
-    if (telefono) telefono.value = data.telefono || "";
-    if (pais) pais.value = data.pais || "Argentina";
+    nombre.value = data.nombre || "";
+    apellido.value = data.apellido || "";
+    mail.value = data.mail || auth.currentUser?.email || "";
+    telefono.value = data.telefono || "";
+    pais.value = data.pais || "Argentina";
 
     fillProvinciaSelector(pais.value, provincia);
-    if (provincia && data.provincia) provincia.value = data.provincia;
+    provincia.value = data.provincia || "";
+    localidad.value = data.localidad || "";
+    barrio.value = data.barrio || "";
+    direccion.value = data.direccion || "";
 
-    if (localidad) localidad.value = data.localidad || "";
-    if (barrio) barrio.value = data.barrio || "";
-    if (direccion) direccion.value = data.direccion || "";
-
-    if (fechaNacimiento && data.fechaNacimiento) {
+    if (data.fechaNacimiento) {
       fechaNacimiento.value = fechaFromISO(data.fechaNacimiento);
     }
 
-    if (data.tipoActividad) {
-      const tipo = data.tipoActividad.toLowerCase();
-      if (tipo === "comercio" && checkComercio) {
-        checkComercio.checked = true;
-        tipoSeleccionado = "comercio";
-      } else if (tipo === "servicio" && checkServicio) {
-        checkServicio.checked = true;
-        tipoSeleccionado = "servicio";
-      }
-    }
-
     validarFormulario();
-  } catch (error) {
-    console.error("❌ Error cargando datos:", error);
-    showToast('Error al cargar datos', 'error');
+  } catch (err) {
+    console.error(err);
+    showToast("Error cargando datos", "error");
   }
 }
 
-// Cambio de país → recargar provincias
 if (pais && provincia) {
   pais.addEventListener("change", () => {
     fillProvinciaSelector(pais.value, provincia);
@@ -185,93 +141,64 @@ if (pais && provincia) {
   });
 }
 
-// ==================== GUARDAR DATOS ====================
-if (btnGuardar) {
-  btnGuardar.addEventListener("click", async () => {
-    const userId = auth.currentUser?.uid;
-    
-    if (!userId) {
-      showToast('Error: usuario no identificado', 'error');
-      return;
-    }
+// ==================== GUARDAR ====================
+btnGuardar.addEventListener("click", async () => {
+  const uid = auth.currentUser?.uid;
+  if (!uid) {
+    showToast("Usuario no autenticado", "error");
+    return;
+  }
 
-    const fechaISO = fechaToISO(fechaNacimiento.value);
-    if (!fechaISO) {
-      showToast('Fecha inválida (usa DD/MM/AAAA)', 'error');
-      return;
-    }
+  const fechaISO = fechaToISO(fechaNacimiento.value);
+  if (!fechaISO) {
+    showToast("Fecha inválida (DD/MM/AAAA)", "error");
+    return;
+  }
 
-    showLoading('Guardando datos...');
-    btnGuardar.disabled = true;
-    btnGuardar.classList.add('saving');
+  showLoading("Guardando datos...");
+  btnGuardar.disabled = true;
 
-    try {
-      const ref = doc(db, "usuarios", userId);
-      const snapAnterior = await getDoc(ref);
-      const prevSteps = snapAnterior.exists() ? (snapAnterior.data().onboardingSteps || {}) : {};
+  try {
+    const ref = doc(db, "usuarios", uid);
+    const snap = await getDoc(ref);
+    const prevOnboarding = snap.exists() ? snap.data().onboarding || {} : {};
 
-      // 1️⃣ Guardar datos de usuario
-      await setDoc(ref, {
-        nombre: nombre.value.trim(),
-        apellido: apellido.value.trim(),
-        mail: mail.value.trim(),
-        fechaNacimiento: fechaISO,
-        telefono: telefono.value.trim(),
-        pais: pais.value,
-        provincia: provincia.value,
-        localidad: localidad.value.trim(),
-        barrio: barrio.value.trim() || "",
-        direccion: direccion.value.trim(),
-        tipoActividad: tipoSeleccionado,
-        updatedAt: new Date().toISOString(),
-        onboardingSteps: { ...prevSteps, usuario: true }
-      }, { merge: true });
-
-      // 2️⃣ Crear comercio si no existe
-      const userDoc = await getDoc(ref);
-      const existingComercioId = userDoc.data()?.comercioId;
-
-      if (!existingComercioId) {
-        const newComercioRef = await addDoc(collection(db, 'comercios'), {
-          duenoId: userId,
-          fechaCreacion: new Date(),
-          tipo: tipoSeleccionado,
-          plan: 'trial',
-          pais: 'Argentina',
-          onboardingSteps: {
-            "mi-comercio": false,
-            "horarios": false,
-            "productos": false,
-            "ia-config": false
-          }
-        });
-
-        await updateDoc(ref, { comercioId: newComercioRef.id });
-        console.log("✅ Nuevo comercio creado:", newComercioRef.id);
+    await setDoc(ref, {
+      nombre: nombre.value.trim(),
+      apellido: apellido.value.trim(),
+      mail: mail.value.trim(),
+      fechaNacimiento: fechaISO,
+      telefono: telefono.value.trim(),
+      pais: pais.value.trim(),
+      provincia: provincia.value.trim(),
+      localidad: localidad.value.trim(),
+      barrio: barrio.value.trim(),
+      direccion: direccion.value.trim(),
+      updatedAt: new Date().toISOString(),
+      onboarding: {
+        ...prevOnboarding,
+        usuario: true
       }
+    }, { merge: true });
 
-      hideLoading();
-      showToast('¡Datos guardados con éxito!', 'success');
+    hideLoading();
+    showToast("Datos guardados correctamente", "success");
 
-      // 3️⃣ Redirigir al siguiente paso
-      redirectAfterSave("mi-comercio");
+    // 👉 siguiente paso: crear entidad
+    redirectAfterSave("crear-entidad");
 
-    } catch (error) {
-      console.error("Error guardando:", error);
-      hideLoading();
-      showToast('Error al guardar. Intentá de nuevo.', 'error');
-      btnGuardar.disabled = false;
-      btnGuardar.classList.remove('saving');
-    }
-  });
-}
+  } catch (err) {
+    console.error(err);
+    hideLoading();
+    showToast("Error al guardar datos", "error");
+    btnGuardar.disabled = false;
+  }
+});
 
-// ==================== RENDER LAYOUT ====================
-// Renderizar layout compartido (incluye header con logout global)
+// ==================== RENDER ====================
 renderLayout();
 
-// Opcional: actualizar header con nombre del usuario
 if (auth.currentUser) {
-  updateHeaderInfo(auth.currentUser.displayName || 'Usuario', { nombre: 'Trial' });
+  updateHeaderInfo(auth.currentUser.displayName || "Usuario", { nombre: "Trial" });
   cargarDatosUsuario(auth.currentUser.uid);
 }
