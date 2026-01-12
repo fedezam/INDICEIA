@@ -107,11 +107,15 @@ export async function runFlowController(uid) {
     // ⚠️ Acá NACE el comercioId
 
     if (!userData.comercioId) {
-      if (currentPage !== "mi-comercio") {
-        window.location.href = "/mi-comercio.html";
-      }
-      return;
+       // ⚠️ Estamos creando el comercio: no intervenir
+      if (currentPage === "mi-comercio") {
+        return;
     }
+
+    window.location.href = "/mi-comercio.html";
+    return;
+}
+
 
     /* ---------- COMERCIO EXISTE ---------- */
 
