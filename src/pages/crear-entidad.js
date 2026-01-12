@@ -23,24 +23,24 @@ import { redirectAfterSave } from "../controllers/flowController.js";
 
 bootFlow();
 
-// =======================================================
-// DOM
-// =======================================================
+/* =======================================================
+   DOM
+   ======================================================= */
 
 const chkProductos = document.getElementById("opt-productos");
 const chkServicios = document.getElementById("opt-servicios");
 const btnContinuar = document.getElementById("btnContinuar");
 const errorBox = document.getElementById("errorBox");
 
-// =======================================================
-// VALIDACIÓN
-// =======================================================
+/* =======================================================
+   VALIDACIÓN
+   ======================================================= */
 
 function validarSeleccion() {
   const valido = chkProductos.checked || chkServicios.checked;
   btnContinuar.disabled = !valido;
 
-  if (valido) {
+  if (valido && errorBox) {
     errorBox.style.display = "none";
   }
 }
@@ -48,15 +48,14 @@ function validarSeleccion() {
 chkProductos.addEventListener("change", validarSeleccion);
 chkServicios.addEventListener("change", validarSeleccion);
 
-// =======================================================
-// CARGA ESTADO PREVIO (EDIT / REFRESH)
-// =======================================================
+/* =======================================================
+   CARGA ESTADO PREVIO (refresh / edit)
+   ======================================================= */
 
 async function cargarEstadoPrevio(uid) {
   try {
     const ref = doc(db, "usuarios", uid);
     const snap = await getDoc(ref);
-
     if (!snap.exists()) return;
 
     const data = snap.data();
@@ -67,27 +66,23 @@ async function cargarEstadoPrevio(uid) {
 
     validarSeleccion();
   } catch (err) {
-    console.error("Error cargando crear-entidad:", err);
+    console.error("❌ Error cargando crear-entidad:", err);
   }
 }
 
-// =======================================================
-// GUARDAR
-// =======================================================
+/* =======================================================
+   GUARDAR
+   ======================================================= */
 
-btnContinuar.addEventListener("click", async () => {
-  const user = auth.currentUser;
-  if (!user) {
-    showToast("Usuario no autenticado", "error");
-    return;
-  }
-
+async function guardarConfiguracion(uid) {
   const productos = chkProductos.checked;
   const servicios = chkServicios.checked;
 
   if (!productos && !servicios) {
-    errorBox.textContent = "Seleccioná al menos una opción para continuar.";
-    errorBox.style.display = "block";
+    if (errorBox) {
+      errorBox.textContent = "Seleccioná al menos una opción para continuar.";
+      errorBox.style.display = "block";
+    }
     return;
   }
 
@@ -95,8 +90,9 @@ btnContinuar.addEventListener("click", async () => {
   btnContinuar.disabled = true;
 
   try {
-    const ref = doc(db, "usuarios", user.uid);
+    const ref = doc(db, "usuarios", uid);
     const snap = await getDoc(ref);
+
     const prevSteps = snap.exists()
       ? snap.data().onboardingSteps || {}
       : {};
@@ -120,26 +116,40 @@ btnContinuar.addEventListener("click", async () => {
     hideLoading();
     showToast("Configuración guardada", "success");
 
-    // El flowController decide a dónde ir
-    redirectAfterSave("mi-comercio");
+    // 🔑 NO decidimos acá el próximo paso
+    // El flowController se encarga
+    redirectAfterSave();
 
   } catch (err) {
-    console.error("Error guardando crear-entidad:", err);
+    console.error("❌ Error guardando crear-entidad:", err);
     hideLoading();
     showToast("Error al guardar la configuración", "error");
     btnContinuar.disabled = false;
   }
+}
+
+btnContinuar.addEventListener("click", () => {
+  const user = auth.currentUser;
+  if (!user) {
+    showToast("Usuario no autenticado", "error");
+    return;
+  }
+  guardarConfiguracion(user.uid);
 });
 
-// =======================================================
-// INIT
-// =======================================================
+/* =======================================================
+   INIT
+   ======================================================= */
 
 renderLayout();
 
-if (auth.currentUser) {
-  updateHeaderInfo(auth.currentUser.displayName || "Usuario", {
+auth.onAuthStateChanged((user) => {
+  if (!user) return;
+
+  updateHeaderInfo(user.displayName || "Usuario", {
     nombre: "Trial"
   });
-  cargarEstadoPrevio(auth.currentUser.uid);
-}
+
+  cargarEstadoPrevio(user.uid);
+});
+
