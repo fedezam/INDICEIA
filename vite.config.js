@@ -11,6 +11,7 @@ export default defineConfig({
 
         // Pages
         usuario: resolve(__dirname, "src/pages/usuario.html"),
+        "crear-entidad": resolve(__dirname, "src/pages/crear-entidad.html"),
         "mi-comercio": resolve(__dirname, "src/pages/mi-comercio.html"),
         horarios: resolve(__dirname, "src/pages/horarios.html"),
         productos: resolve(__dirname, "src/pages/productos.html"),
