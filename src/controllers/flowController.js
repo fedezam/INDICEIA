@@ -19,39 +19,28 @@ function isEditMode() {
 const PUBLIC_PAGES = ["login", "registro", "index", ""];
 
 /* =========================================================
-   PIPELINE BUILDER (CLAVE DEL SISTEMA)
-   ⚠️ NO incluye "mi-comercio"
+   PIPELINE BUILDER
    ========================================================= */
 
 function buildPipeline(offerType = {}) {
-  const steps = [];
-
-  steps.push("usuario");
-  steps.push("crear-entidad");
+  const steps = ["usuario", "crear-entidad"];
 
   const { productos, servicios } = offerType;
 
   if (productos && servicios) {
-    steps.push("horarios");
-    steps.push("servicios");
-    steps.push("productos");
+    steps.push("horarios", "servicios", "productos");
   } else if (servicios) {
-    steps.push("servicios");
-    steps.push("horarios");
+    steps.push("servicios", "horarios");
   } else if (productos) {
-    steps.push("horarios");
-    steps.push("productos");
+    steps.push("horarios", "productos");
   }
 
   steps.push("ia-config");
-
   return steps;
 }
 
 function getFirstIncompleteStep(pipeline, completedSteps = {}) {
-  return pipeline.find(
-    (step) => completedSteps[step] !== true
-  );
+  return pipeline.find(step => completedSteps[step] !== true);
 }
 
 /* =========================================================
@@ -59,21 +48,15 @@ function getFirstIncompleteStep(pipeline, completedSteps = {}) {
    ========================================================= */
 
 export async function runFlowController(uid) {
-  if (!uid) {
-    const current = getCurrentPage();
-    if (!PUBLIC_PAGES.includes(current)) {
-      window.location.href = "/login.html";
-    }
-    return;
-  }
-
   const currentPage = getCurrentPage();
+
+  // ⛔ ESPERAR AUTH — NO REDIRIGIR TODAVÍA
+  if (!uid) return;
+
   const editMode = isEditMode();
   window.isEditMode = editMode;
 
   try {
-    /* ---------- USER ---------- */
-
     const userRef = doc(db, "usuarios", uid);
     const userSnap = await getDoc(userRef);
 
@@ -85,7 +68,7 @@ export async function runFlowController(uid) {
     const userData = userSnap.data();
     const userSteps = userData.onboardingSteps || {};
 
-    /* ---------- PASO 1: USUARIO ---------- */
+    /* ---------- USUARIO ---------- */
 
     if (!userSteps.usuario) {
       if (currentPage !== "usuario") {
@@ -94,7 +77,7 @@ export async function runFlowController(uid) {
       return;
     }
 
-    /* ---------- PASO 2: CREAR ENTIDAD ---------- */
+    /* ---------- CREAR ENTIDAD ---------- */
 
     if (!userSteps["crear-entidad"] || !userData.offerType) {
       if (currentPage !== "crear-entidad") {
@@ -103,19 +86,15 @@ export async function runFlowController(uid) {
       return;
     }
 
-    /* ---------- PASO 3: CREAR COMERCIO ---------- */
-    // ⚠️ Acá NACE el comercioId
+    /* ---------- CREACIÓN DE COMERCIO (ZONA PROTEGIDA) ---------- */
 
     if (!userData.comercioId) {
-       // ⚠️ Estamos creando el comercio: no intervenir
-      if (currentPage === "mi-comercio") {
-        return;
+      if (currentPage !== "mi-comercio") {
+        window.location.href = "/mi-comercio.html";
+      }
+      // ⛔ NO SE EVALÚA NADA MÁS
+      return;
     }
-
-    window.location.href = "/mi-comercio.html";
-    return;
-}
-
 
     /* ---------- COMERCIO EXISTE ---------- */
 
@@ -126,8 +105,6 @@ export async function runFlowController(uid) {
     const comercioSteps = comercioSnap.exists()
       ? comercioSnap.data().onboardingSteps || {}
       : {};
-
-    /* ---------- PIPELINE DINÁMICO ---------- */
 
     const pipeline = buildPipeline(userData.offerType);
 
@@ -151,10 +128,7 @@ export async function runFlowController(uid) {
 
     const firstIncomplete = getFirstIncompleteStep(
       pipeline,
-      {
-        ...userSteps,
-        ...comercioSteps
-      }
+      { ...userSteps, ...comercioSteps }
     );
 
     if (firstIncomplete && currentPage !== firstIncomplete) {
