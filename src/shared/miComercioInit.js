@@ -97,7 +97,7 @@ export async function runMiComercioPage(pageModule) {
         
         comercioData = {
           id: currentComercioId,
-          usuarioId: currentUser.uid,
+          duenoId: currentUser.uid, // ✅ CAMPO CORRECTO PARA LAS REGLAS
           plan: 'trial',
           fechaCreacion: new Date(),
           onboardingSteps: {}
@@ -145,29 +145,17 @@ export async function runMiComercioPage(pageModule) {
       if (saveBtn.disabled) return;
 
       try {
-        showLoading('Guardando comercio...');
-
         // Ejecutar save del módulo
-        await pageModule.save({
-          currentComercioId,
-          isNewComercio,
-          currentUser,
-          userData
-        });
+        await pageModule.save();
 
-        hideLoading();
-        showToast('Éxito', 'Comercio guardado correctamente', 'success');
-
-        // Redirigir al siguiente paso del pipeline después de 1 segundo
+        // Redirigir después del guardado exitoso
         setTimeout(() => {
-          // El flowController se encargará de determinar el siguiente paso
-          window.location.href = '/dashboard.html'; // Temporal, el flow redirigirá
+          window.location.reload(); // El flowController redirigirá al siguiente paso
         }, 1000);
 
       } catch (err) {
         console.error('❌ Error guardando:', err);
-        hideLoading();
-        showToast('Error', 'No se pudo guardar', 'error');
+        // El error ya se muestra en el método save()
       }
     });
 
