@@ -33,7 +33,10 @@ export async function runDataPage(pageModule) {
   let hasUnsavedChanges = false;
   let isEditMode = false;
 
-  const currentPage = window.location.pathname.split('/').pop()?.replace('.html', '');
+  const currentPage = window.location.pathname
+    .split('/')
+    .pop()
+    ?.replace('.html', '');
 
   // ---------- AUTH ----------
   auth.onAuthStateChanged(async (user) => {
@@ -69,18 +72,20 @@ export async function runDataPage(pageModule) {
 
       const userData = userSnap.data();
 
-      // 🔥 FIX CLAVE: mi-comercio NO requiere comercioId
+      // Mi comercio es el único que no requiere comercioId
       if (!userData.comercioId && currentPage !== 'mi-comercio') {
         showToast('Error', 'Completá primero Mi Comercio', 'warning');
         window.location.href = '/mi-comercio.html';
         return;
       }
 
-      // 👉 A partir de acá, comercioId YA EXISTE o estamos en mi-comercio
       currentComercioId = userData.comercioId || null;
 
       if (currentComercioId) {
-        const comercioSnap = await getDoc(doc(db, 'comercios', currentComercioId));
+        const comercioSnap = await getDoc(
+          doc(db, 'comercios', currentComercioId)
+        );
+
         comercioData = comercioSnap.exists()
           ? { id: currentComercioId, ...comercioSnap.data() }
           : { plan: 'trial' };
@@ -95,7 +100,7 @@ export async function runDataPage(pageModule) {
 
       initNavigation();
 
-      // 🔌 PAGE HOOKS
+      // ---------- PAGE ----------
       await pageModule.load({ currentComercioId, comercioData });
       pageModule.render();
 
@@ -159,13 +164,9 @@ export async function runDataPage(pageModule) {
         isEditMode
       });
 
-      originalSnapshot = structuredClone(pageModule.getCurrentData());
-      hasUnsavedChanges = false;
-      updateSaveButtonState();
-
-      if (isEditMode) {
-        window.location.href = '/dashboard.html';
-      }
+      // 🔁 REGLA DE ORO:
+      // DESPUÉS DE GUARDAR → DASHBOARD SIEMPRE
+      window.location.href = '/dashboard.html';
     });
 
     setInterval(reevaluateState, 300);
@@ -182,4 +183,3 @@ export async function runDataPage(pageModule) {
     }
   }
 }
-
