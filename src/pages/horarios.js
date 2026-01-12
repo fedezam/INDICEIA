@@ -13,6 +13,7 @@ import './horarios.css';
 // ==================== FIREBASE ====================
 import { db } from '../firebase.js';
 import { doc, updateDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 // ==================== UTILS ====================
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
@@ -126,13 +127,26 @@ const horariosModule = {
     showLoading('Guardando horarios...');
 
     try {
-      const updates = {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      // 1️⃣ Guardar horarios en el comercio
+      const comercioUpdates = {
         horarios: horarios,
         'onboardingSteps.horarios': true,
         fechaActualizacion: new Date()
       };
 
-      await updateDoc(doc(db, 'comercios', currentComercioId), updates);
+      await updateDoc(doc(db, 'comercios', currentComercioId), comercioUpdates);
+
+      // 2️⃣ 🔥 FIX CRÍTICO - Marcar paso completo en usuario
+      await updateDoc(doc(db, 'usuarios', user.uid), {
+        'onboardingSteps.horarios': true
+      });
 
       hideLoading();
       showToast('Éxito', 'Horarios guardados correctamente', 'success');
