@@ -1,5 +1,3 @@
-// src/shared/dataPageSkeleton.js
-
 import { auth, db } from '../firebase.js';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -35,6 +33,8 @@ export async function runDataPage(pageModule) {
   let hasUnsavedChanges = false;
   let isEditMode = false;
 
+  const currentPage = window.location.pathname.split('/').pop()?.replace('.html', '');
+
   // ---------- AUTH ----------
   auth.onAuthStateChanged(async (user) => {
     if (!user) return;
@@ -61,34 +61,45 @@ export async function runDataPage(pageModule) {
       renderLayout();
 
       const userSnap = await getDoc(doc(db, 'usuarios', currentUser.uid));
-      if (!userSnap.exists() || !userSnap.data().comercioId) {
+      if (!userSnap.exists()) {
+        hideLoading();
+        window.location.href = '/login.html';
+        return;
+      }
+
+      const userData = userSnap.data();
+
+      // 🔥 FIX CLAVE: mi-comercio NO requiere comercioId
+      if (!userData.comercioId && currentPage !== 'mi-comercio') {
         showToast('Error', 'Completá primero Mi Comercio', 'warning');
         window.location.href = '/mi-comercio.html';
         return;
       }
 
-      currentComercioId = userSnap.data().comercioId;
+      // 👉 A partir de acá, comercioId YA EXISTE o estamos en mi-comercio
+      currentComercioId = userData.comercioId || null;
 
-      const comercioSnap = await getDoc(doc(db, 'comercios', currentComercioId));
-      comercioData = comercioSnap.exists()
-        ? { id: currentComercioId, ...comercioSnap.data() }
-        : { plan: 'trial' };
+      if (currentComercioId) {
+        const comercioSnap = await getDoc(doc(db, 'comercios', currentComercioId));
+        comercioData = comercioSnap.exists()
+          ? { id: currentComercioId, ...comercioSnap.data() }
+          : { plan: 'trial' };
 
-      updateHeaderInfo(
-        comercioData.nombreComercio || 'Mi comercio',
-        PLANS[comercioData.plan || 'trial']
-      );
+        updateHeaderInfo(
+          comercioData.nombreComercio || 'Mi comercio',
+          PLANS[comercioData.plan || 'trial']
+        );
+
+        updateBanner();
+      }
 
       initNavigation();
-      updateBanner();
 
       // 🔌 PAGE HOOKS
       await pageModule.load({ currentComercioId, comercioData });
       pageModule.render();
 
-      // 📸 SNAPSHOT INICIAL
       originalSnapshot = structuredClone(pageModule.getCurrentData());
-
       setupButtons();
 
       if (isEditMode) {
@@ -126,7 +137,7 @@ export async function runDataPage(pageModule) {
     updateSubscriptionBanner(html, estado);
   }
 
-  // ---------- DIRTY DETECTION ----------
+  // ---------- DIRTY ----------
   function reevaluateState() {
     const current = pageModule.getCurrentData();
     hasUnsavedChanges =
@@ -157,7 +168,6 @@ export async function runDataPage(pageModule) {
       }
     });
 
-    // 🔁 Observador simple (canónico)
     setInterval(reevaluateState, 300);
   }
 
@@ -172,3 +182,4 @@ export async function runDataPage(pageModule) {
     }
   }
 }
+
