@@ -1,141 +1,126 @@
-import { doc, updateDoc } from 'firebase/firestore';
+// ==================== STYLES ====================
+import '../styles/base.css';
+import '../styles/layout.css';
+import '../styles/components.css';
+import '../styles/forms.css';
+import '../styles/forms-premium.css';
+import './horarios.css';
+
+// ==================== FIREBASE ====================
 import { db } from '../firebase.js';
-import { showToast } from '../shared/utils.js';
+import { doc, updateDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+
+// ==================== UTILS ====================
+import { showToast, showLoading, hideLoading } from '../shared/utils.js';
+
+// ==================== SKELETON ====================
+import { runDataPage } from '../shared/dataPageSkeleton.js';
+
+// ==================== CONSTANTES ====================
+const DAYS = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+const LABELS = {
+  lunes: 'Lunes',
+  martes: 'Martes',
+  miercoles: 'Miércoles',
+  jueves: 'Jueves',
+  viernes: 'Viernes',
+  sabado: 'Sábado',
+  domingo: 'Domingo'
+};
 
 // ==================== STATE ====================
-let state = {
-  dias: {
-    lunes:     { abierto: false, desde: '', hasta: '' },
-    martes:    { abierto: false, desde: '', hasta: '' },
-    miercoles: { abierto: false, desde: '', hasta: '' },
-    jueves:    { abierto: false, desde: '', hasta: '' },
-    viernes:   { abierto: false, desde: '', hasta: '' },
-    sabado:    { abierto: false, desde: '', hasta: '' },
-    domingo:   { abierto: false, desde: '', hasta: '' }
+let horarios = {};
+
+// ==================== HELPERS ====================
+function defaultDay() {
+  return { closed:false, open:'09:00', close:'18:00' };
+}
+
+function normalize(data={}) {
+  DAYS.forEach(d => {
+    if (!data[d]) data[d] = defaultDay();
+  });
+  return data;
+}
+
+// ==================== MODULE ====================
+const horariosModule = {
+
+  async load({ comercioData }) {
+    horarios = normalize(structuredClone(comercioData?.horarios || {}));
+  },
+
+  render() {
+    const container = document.querySelector('main .container');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="page-header">
+        <h1><i class="fas fa-clock"></i> Horarios</h1>
+        <p>Configurá los horarios de tu comercio</p>
+      </div>
+
+      <form id="horariosForm">
+        ${DAYS.map(d => `
+          <div class="horario-row">
+            <label>
+              <input type="checkbox" data-day="${d}" ${!horarios[d].closed ? 'checked' : ''}>
+              ${LABELS[d]}
+            </label>
+
+            <input type="time" data-day="${d}" data-field="open" value="${horarios[d].open}">
+            <input type="time" data-day="${d}" data-field="close" value="${horarios[d].close}">
+          </div>
+        `).join('')}
+
+        <button type="button" id="saveChangesBtnBottom" class="btn btn-primary" disabled>
+          Guardar cambios
+        </button>
+      </form>
+    `;
+
+    this.attachListeners();
+  },
+
+  attachListeners() {
+    document.querySelectorAll('input[data-day]').forEach(el => {
+      el.addEventListener('change', e => {
+        const day = e.target.dataset.day;
+
+        if (e.target.type === 'checkbox') {
+          horarios[day].closed = !e.target.checked;
+        } else {
+          horarios[day][e.target.dataset.field] = e.target.value;
+        }
+      });
+    });
+  },
+
+  getCurrentData() {
+    return { horarios: structuredClone(horarios) };
+  },
+
+  isFormValid() {
+    return DAYS.some(d => !horarios[d].closed);
+  },
+
+  async save({ currentComercioId }) {
+    const auth = getAuth();
+    if (!auth.currentUser) throw new Error('No auth');
+
+    showLoading('Guardando horarios…');
+
+    await updateDoc(doc(db,'comercios',currentComercioId), {
+      horarios,
+      'onboardingSteps.horarios': true
+    });
+
+    hideLoading();
+    showToast('OK','Horarios guardados','success');
   }
 };
 
-let comercioId = null;
+// ==================== BOOT ====================
+runDataPage(horariosModule);
 
-// ==================== API SKELETON ====================
-export async function load({ currentComercioId, comercioData }) {
-  comercioId = currentComercioId;
-
-  if (comercioData?.horarios) {
-    state.dias = structuredClone(comercioData.horarios);
-  }
-}
-
-export function render() {
-  renderHorarios();
-  attachListeners();
-}
-
-export function getCurrentData() {
-  return structuredClone(state);
-}
-
-export function isFormValid() {
-  return true;
-}
-
-export async function save() {
-  await updateDoc(doc(db, 'comercios', comercioId), {
-    horarios: state.dias
-  });
-
-  showToast('Guardado', 'Horarios guardados', 'success');
-}
-
-// ==================== RENDER ====================
-function renderHorarios() {
-  const container = document.getElementById('pageContent');
-  if (!container) {
-    console.error('No existe #pageContent');
-    return;
-  }
-
-  container.innerHTML = `
-    <div id="horariosContainer"></div>
-
-    <div style="margin-top:16px">
-      <button id="copiarATodosBtn">Copiar lunes a todos</button>
-      <button id="cerrarTodosBtn">Cerrar todos</button>
-    </div>
-  `;
-
-  const horariosContainer = document.getElementById('horariosContainer');
-
-  Object.entries(state.dias).forEach(([dia, data]) => {
-    const row = document.createElement('div');
-    row.style.display = 'flex';
-    row.style.gap = '8px';
-    row.style.marginBottom = '8px';
-
-    row.innerHTML = `
-      <label style="width:120px">
-        <input type="checkbox" data-dia="${dia}" ${data.abierto ? 'checked' : ''}>
-        ${capitalizar(dia)}
-      </label>
-
-      <input type="time" data-dia="${dia}" data-field="desde" value="${data.desde}">
-      <input type="time" data-dia="${dia}" data-field="hasta" value="${data.hasta}">
-    `;
-
-    horariosContainer.appendChild(row);
-  });
-}
-
-// ==================== LISTENERS ====================
-function attachListeners() {
-  const container = document.getElementById('horariosContainer');
-  if (!container) return;
-
-  container.addEventListener('change', (e) => {
-    const dia = e.target.dataset.dia;
-    if (!dia) return;
-
-    if (e.target.type === 'checkbox') {
-      state.dias[dia].abierto = e.target.checked;
-    }
-
-    if (e.target.type === 'time') {
-      state.dias[dia][e.target.dataset.field] = e.target.value;
-    }
-  });
-
-  document.getElementById('copiarATodosBtn')?.addEventListener('click', () => {
-    const base = structuredClone(state.dias.lunes);
-    Object.keys(state.dias).forEach(dia => {
-      state.dias[dia] = structuredClone(base);
-    });
-    syncUI();
-    showToast('Listo', 'Copiado', 'info');
-  });
-
-  document.getElementById('cerrarTodosBtn')?.addEventListener('click', () => {
-    Object.keys(state.dias).forEach(dia => {
-      state.dias[dia] = { abierto: false, desde: '', hasta: '' };
-    });
-    syncUI();
-    showToast('Listo', 'Cerrados', 'info');
-  });
-}
-
-// ==================== SYNC UI ====================
-function syncUI() {
-  Object.entries(state.dias).forEach(([dia, data]) => {
-    const c = document.querySelector(`input[type="checkbox"][data-dia="${dia}"]`);
-    const d = document.querySelector(`input[data-dia="${dia}"][data-field="desde"]`);
-    const h = document.querySelector(`input[data-dia="${dia}"][data-field="hasta"]`);
-
-    if (c) c.checked = data.abierto;
-    if (d) d.value = data.desde;
-    if (h) h.value = data.hasta;
-  });
-}
-
-// ==================== UTILS ====================
-function capitalizar(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
