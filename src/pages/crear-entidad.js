@@ -1,52 +1,49 @@
-import { auth, db } from "../firebase.js";
-import { doc, updateDoc, setDoc, collection, addDoc } from "firebase/firestore";
-import { bootFlow } from "../controllers/boot/flowBoot.js";
+import { auth } from "../firebase.js";
+import { db } from "../firebase.js";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, updateDoc } from "firebase/firestore";
 
-bootFlow();
+document.addEventListener("DOMContentLoaded", () => {
 
-const btnComercio = document.getElementById("btnComercio");
-const btnServicio = document.getElementById("btnServicio");
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = "/login.html";
+      return;
+    }
 
-async function elegirEntidad(tipo) {
-  const user = auth.currentUser;
-  if (!user) return;
+    bindEntitySelection(user.uid);
+  });
 
-  const userRef = doc(db, "usuarios", user.uid);
+});
 
-  if (tipo === "comercio") {
-    const comercioRef = await addDoc(collection(db, "comercios"), {
-      duenoId: user.uid,
-      tipo: "comercio",
-      plan: "trial",
-      pais: "Argentina",
-      fechaCreacion: new Date(),
-      onboardingSteps: {
-        "mi-comercio": false,
-        "horarios": false,
-        "productos": false,
-        "ia-config": false
+function bindEntitySelection(uid) {
+  const cards = document.querySelectorAll(".entity-card");
+
+  cards.forEach(card => {
+    if (card.classList.contains("disabled")) return;
+
+    card.addEventListener("click", async () => {
+      const type = card.dataset.type;
+
+      if (type === "comercio") {
+        await selectComercioFlow(uid);
       }
     });
-
-    await updateDoc(userRef, {
-      entityType: "comercio",
-      comercioId: comercioRef.id
-    });
-
-    window.location.href = "/mi-comercio.html";
-    return;
-  }
-
-  if (tipo === "servicio") {
-    await updateDoc(userRef, {
-      entityType: "servicio"
-    });
-
-    // pipeline futuro
-    window.location.href = "/dashboard.html";
-  }
+  });
 }
 
-btnComercio?.addEventListener("click", () => elegirEntidad("comercio"));
-btnServicio?.addEventListener("click", () => elegirEntidad("servicio"));
+async function selectComercioFlow(uid) {
+  try {
+    // Marcamos explícitamente el tipo de entidad elegida
+    await updateDoc(doc(db, "usuarios", uid), {
+      entityType: "comercio"
+    });
 
+    // El FlowController ya sabe qué hacer después
+    window.location.href = "/usuario.html";
+
+  } catch (err) {
+    console.error("Error seleccionando entidad:", err);
+    alert("No se pudo crear la entidad. Intentá nuevamente.");
+  }
+}
