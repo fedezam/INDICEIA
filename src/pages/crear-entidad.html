@@ -2,36 +2,128 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Crear entidad | ÍndiceIA</title>
-
-  <link rel="stylesheet" href="./crear-entidad.css" />
+  <title>Crear entidad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
+
 <body>
+  <main class="main-content">
 
-  <main class="main-content crear-entidad-page">
+    <!-- ===============================
+         TÍTULO
+    ================================ -->
+    <section class="page-header">
+      <h1>¿Qué va a hacer tu IA?</h1>
+      <p class="subtitle">
+        Elegí qué tipo de actividades querés que esta IA ayude a gestionar.
+        <br />
+        <strong>Podés seleccionar una o ambas opciones.</strong>
+      </p>
+    </section>
 
-    <header class="header">
-      <h1>Crear nueva entidad</h1>
-      <p>Elegí qué tipo de entidad querés activar en ÍndiceIA</p>
-    </header>
+    <!-- ===============================
+         OPCIONES
+    ================================ -->
+    <section class="entity-options">
 
-    <section class="entity-grid">
+      <!-- PRODUCTOS -->
+      <div class="option-card">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            id="opt-productos"
+          />
+          <span class="checkbox-custom"></span>
 
-      <button class="entity-card" data-type="comercio">
-        <h2>Comercio</h2>
-        <p>Negocio físico o digital con IA comercial</p>
+          <div class="option-content">
+            <h3>Vender productos</h3>
+            <p>
+              Elegí esta opción si vendés <strong>productos físicos o digitales</strong>.
+            </p>
+
+            <ul>
+              <li>🛒 Tiendas, comercios, locales</li>
+              <li>📦 Productos con precio</li>
+              <li>🧴 Ej: ropa, comida, cosmética, tecnología</li>
+            </ul>
+
+            <p class="hint">
+              La IA va a ayudarte a mostrar productos, responder consultas
+              y asistir en ventas.
+            </p>
+          </div>
+        </label>
+      </div>
+
+      <!-- SERVICIOS -->
+      <div class="option-card">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            id="opt-servicios"
+          />
+          <span class="checkbox-custom"></span>
+
+          <div class="option-content">
+            <h3>Ofrecer servicios</h3>
+            <p>
+              Elegí esta opción si ofrecés <strong>trabajos, turnos o atención profesional</strong>.
+            </p>
+
+            <ul>
+              <li>🛠️ Servicios para terceros</li>
+              <li>📅 Turnos, consultas, reservas</li>
+              <li>👩‍⚕️ Ej: médico, electricista, peluquería</li>
+            </ul>
+
+            <p class="hint">
+              La IA va a explicar tus servicios, gestionar horarios
+              y responder consultas frecuentes.
+            </p>
+          </div>
+        </label>
+      </div>
+
+    </section>
+
+    <!-- ===============================
+         MENSAJE DE ERROR
+    ================================ -->
+    <div
+      id="errorBox"
+      class="error-box"
+      style="display:none;"
+    >
+      Tenés que seleccionar al menos una opción para continuar.
+    </div>
+
+    <!-- ===============================
+         CONTINUAR
+    ================================ -->
+    <div class="actions">
+      <button
+        id="btnContinuar"
+        class="btn btn-primary"
+        disabled
+      >
+        Continuar
       </button>
+    </div>
 
-      <button class="entity-card disabled" data-type="servicio">
-        <h2>Servicio</h2>
-        <p>Próximamente</p>
-      </button>
-
+    <!-- ===============================
+         AYUDA FINAL
+    ================================ -->
+    <section class="help-box">
+      <h4>¿Puedo cambiar esto más adelante?</h4>
+      <p>
+        Sí. Esta elección define el camino inicial de configuración,
+        pero después vas a poder ajustar y ampliar las funciones desde el panel.
+      </p>
     </section>
 
   </main>
 
+  <!-- JS -->
   <script type="module" src="./crear-entidad.js"></script>
 </body>
 </html>
