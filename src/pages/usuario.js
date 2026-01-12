@@ -1,7 +1,6 @@
 // ================================
 // usuario.js — Onboarding Paso 1 (Datos personales ONLY)
 // ================================
-
 // CSS
 import '../styles/base.css';
 import '../styles/layout.css';
@@ -25,19 +24,19 @@ import { redirectAfterSave } from "../controllers/flowController.js";
 bootFlow();
 
 // ==================== ELEMENTOS DEL DOM ====================
-const nombre = document.getElementById("nombre");
-const apellido = document.getElementById("apellido");
-const mail = document.getElementById("mail");
+const nombre      = document.getElementById("nombre");
+const apellido    = document.getElementById("apellido");
+const mail        = document.getElementById("mail");
 const fechaNacimiento = document.getElementById("fechaNacimiento");
-const telefono = document.getElementById("telefono");
-const pais = document.getElementById("pais");
-const provincia = document.getElementById("provincia");
-const localidad = document.getElementById("localidad");
-const barrio = document.getElementById("barrio");
-const direccion = document.getElementById("direccion");
-const btnGuardar = document.getElementById("saveUserData");
+const telefono    = document.getElementById("telefono");
+const pais        = document.getElementById("pais");
+const provincia   = document.getElementById("provincia");
+const localidad   = document.getElementById("localidad");
+const barrio      = document.getElementById("barrio");
+const direccion   = document.getElementById("direccion");
+const btnGuardar  = document.getElementById("saveUserData");
 
-// ==================== FECHA ====================
+// ==================== MASCARA FECHA ====================
 function aplicarMascaraFecha(input) {
   input.addEventListener("input", (e) => {
     let value = e.target.value.replace(/\D/g, "");
@@ -49,6 +48,7 @@ function aplicarMascaraFecha(input) {
     e.target.value = value.substring(0,10);
   });
 }
+
 if (fechaNacimiento) aplicarMascaraFecha(fechaNacimiento);
 
 function fechaToISO(fechaDDMMYYYY) {
@@ -61,75 +61,70 @@ function fechaToISO(fechaDDMMYYYY) {
 function fechaFromISO(fechaISO) {
   if (!fechaISO) return "";
   const [yyyy, mm, dd] = fechaISO.split("-");
-  return `${dd}/${mm}/${yyyy}`;
+  return `${dd.padStart(2,'0')}/${mm.padStart(2,'0')}/${yyyy}`;
 }
 
 // ==================== VALIDACIÓN ====================
+const camposObligatorios = [
+  nombre, apellido, mail,
+  fechaNacimiento, telefono,
+  pais, provincia, localidad, direccion
+];
+
 function validarFormulario() {
-  const completo =
-    fechaNacimiento.value.trim() &&
-    telefono.value.trim() &&
-    pais.value.trim() &&
-    provincia.value.trim() &&
-    localidad.value.trim() &&
-    direccion.value.trim();
-  
-  btnGuardar.disabled = !completo;
+  const todosCompletos = camposObligatorios.every(campo => 
+    campo?.value?.trim?.() !== "" && 
+    campo?.value?.trim?.() !== undefined
+  );
+
+  btnGuardar.disabled = !todosCompletos;
 }
 
-// Listeners para validar campos editables
-[fechaNacimiento, telefono, pais, provincia, localidad, direccion].forEach(el => {
-  el.addEventListener("input", validarFormulario);
+// Listener de validación en tiempo real (solo campos editables)
+[
+  fechaNacimiento, telefono, provincia, localidad, direccion, barrio
+].forEach(el => {
+  if (el) el.addEventListener("input", validarFormulario);
 });
 
 // ==================== CARGA DATOS ====================
 async function cargarDatosUsuario(uid) {
   try {
-    fillProvinciaSelector("Argentina", provincia);
-
     const ref = doc(db, "usuarios", uid);
     const snap = await getDoc(ref);
+    const data = snap.exists() ? snap.data() : {};
 
-    let data = snap.exists() ? snap.data() : {};
-
-    // Nombre / Apellido / Mail desde Auth si no existen en Firestore
-    if (auth.currentUser) {
-      nombre.value = data.nombre || auth.currentUser.displayName?.split(" ")[0] || "";
-      apellido.value = data.apellido || auth.currentUser.displayName?.split(" ").slice(1).join(" ") || "";
-      mail.value = data.mail || auth.currentUser.email || "";
-    }
+    // Campos de autenticación Google - SIEMPRE bloqueados
+    nombre.value = data.nombre || auth.currentUser?.displayName?.split(" ")[0] || "";
+    apellido.value = data.apellido || auth.currentUser?.displayName?.split(" ").slice(1).join(" ") || "";
+    mail.value = data.mail || auth.currentUser?.email || "";
 
     nombre.disabled = true;
     apellido.disabled = true;
     mail.disabled = true;
 
-    // Campos editables
-    telefono.value = data.telefono || "";
-    pais.value = data.pais || "Argentina";
+    // País FIJO y BLOQUEADO
+    pais.value = "Argentina";
+    pais.disabled = true;
 
-    fillProvinciaSelector(pais.value, provincia);
+    // Provincias (siempre Argentina)
+    fillProvinciaSelector("Argentina", provincia);
+
+    // Resto de campos
+    fechaNacimiento.value = data.fechaNacimiento ? fechaFromISO(data.fechaNacimiento) : "";
+    telefono.value = data.telefono || "";
     provincia.value = data.provincia || "";
     localidad.value = data.localidad || "";
     barrio.value = data.barrio || "";
     direccion.value = data.direccion || "";
 
-    if (data.fechaNacimiento) {
-      fechaNacimiento.value = fechaFromISO(data.fechaNacimiento);
-    }
-
+    // Validar al cargar
     validarFormulario();
+
   } catch (err) {
     console.error("Error cargando usuario:", err);
     showToast("Error al cargar datos", "error");
   }
-}
-
-// Cambio de país → actualizar provincias
-if (pais && provincia) {
-  pais.addEventListener("change", () => {
-    fillProvinciaSelector(pais.value, provincia);
-    validarFormulario();
-  });
 }
 
 // ==================== GUARDAR ====================
@@ -142,7 +137,7 @@ btnGuardar.addEventListener("click", async () => {
 
   const fechaISO = fechaToISO(fechaNacimiento.value);
   if (!fechaISO) {
-    showToast("Fecha inválida (DD/MM/AAAA)", "error");
+    showToast("Fecha de nacimiento inválida (DD/MM/AAAA)", "error");
     return;
   }
 
@@ -155,13 +150,15 @@ btnGuardar.addEventListener("click", async () => {
     const prevOnboarding = snap.exists() ? snap.data().onboarding || {} : {};
 
     await setDoc(ref, {
-      // Solo actualizamos los campos editables
+      nombre: nombre.value.trim(),
+      apellido: apellido.value.trim(),
+      mail: mail.value.trim(),
       fechaNacimiento: fechaISO,
       telefono: telefono.value.trim(),
-      pais: pais.value.trim(),
+      pais: "Argentina",
       provincia: provincia.value.trim(),
       localidad: localidad.value.trim(),
-      barrio: barrio.value.trim(),
+      barrio: barrio.value.trim() || null,
       direccion: direccion.value.trim(),
       updatedAt: new Date().toISOString(),
       onboarding: {
@@ -172,9 +169,9 @@ btnGuardar.addEventListener("click", async () => {
 
     hideLoading();
     showToast("Datos guardados correctamente", "success");
-
-    // Redirigir al pipeline de crear entidad
+    
     redirectAfterSave("crear-entidad");
+
   } catch (err) {
     console.error("Error guardando datos:", err);
     hideLoading();
@@ -183,10 +180,13 @@ btnGuardar.addEventListener("click", async () => {
   }
 });
 
-// ==================== RENDER LAYOUT ====================
+// ==================== INICIO ====================
 renderLayout();
 
 if (auth.currentUser) {
   updateHeaderInfo(auth.currentUser.displayName || "Usuario", { nombre: "Trial" });
   cargarDatosUsuario(auth.currentUser.uid);
+} else {
+  // Por si acaso, aunque bootFlow debería haberlo manejado
+  showToast("Debes iniciar sesión primero", "error");
 }
