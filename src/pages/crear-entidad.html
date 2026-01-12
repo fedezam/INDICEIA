@@ -2,51 +2,36 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Crear entidad | ÍndiceIA</title>
+  <title>Crear entidad</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="/styles/crear-entidad.css" />
+  <!-- CSS -->
+  <link rel="stylesheet" href="../styles/base.css" />
+  <link rel="stylesheet" href="../styles/layout.css" />
+  <link rel="stylesheet" href="../styles/components.css" />
+  <link rel="stylesheet" href="../styles/forms.css" />
+  <link rel="stylesheet" href="../styles/crear-entidad.css" />
 </head>
 <body>
 
-  <main class="container">
-    <h1>Crear tu entidad IA</h1>
-    <p class="subtitle">
-      Definí qué va a ofrecer esta entidad.  
-      Podés elegir una o ambas opciones.
-    </p>
+  <main class="main-content">
+    <h1>¿Qué querés crear?</h1>
 
-    <form id="crear-entidad-form" class="card">
-
-      <label class="option">
-        <input type="checkbox" id="opt-productos" />
-        <div class="option-content">
-          <h3>Vender productos</h3>
-          <p>
-            Ideal para comercios, tiendas, catálogos o ventas online.
-          </p>
-        </div>
-      </label>
-
-      <label class="option">
-        <input type="checkbox" id="opt-servicios" />
-        <div class="option-content">
-          <h3>Ofrecer servicios</h3>
-          <p>
-            Turnos, atención personalizada, asesorías o trabajos a pedido.
-          </p>
-        </div>
-      </label>
-
-      <div id="error" class="error"></div>
-
-      <button type="submit" class="primary-btn">
-        Continuar
+    <div class="entity-options">
+      <button id="btnComercio" class="entity-card">
+        <h2>🏪 Comercio</h2>
+        <p>Vendo productos y/o servicios desde un negocio</p>
       </button>
 
-    </form>
+      <button id="btnServicio" class="entity-card">
+        <h2>🛠️ Servicio</h2>
+        <p>Ofrezco servicios profesionales o personales</p>
+      </button>
+    </div>
   </main>
 
-  <script type="module" src="/js/crear-entidad.js"></script>
+  <!-- JS -->
+  <script type="module" src="../js/crear-entidad.js"></script>
 </body>
 </html>
+
