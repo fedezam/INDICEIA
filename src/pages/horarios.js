@@ -5,19 +5,19 @@ import { showToast } from '../shared/utils.js';
 // ==================== STATE ====================
 let state = {
   dias: {
-    lunes:    { abierto: false, desde: '', hasta: '' },
-    martes:   { abierto: false, desde: '', hasta: '' },
-    miercoles:{ abierto: false, desde: '', hasta: '' },
-    jueves:   { abierto: false, desde: '', hasta: '' },
-    viernes:  { abierto: false, desde: '', hasta: '' },
-    sabado:   { abierto: false, desde: '', hasta: '' },
-    domingo:  { abierto: false, desde: '', hasta: '' }
+    lunes:     { abierto: false, desde: '', hasta: '' },
+    martes:    { abierto: false, desde: '', hasta: '' },
+    miercoles: { abierto: false, desde: '', hasta: '' },
+    jueves:    { abierto: false, desde: '', hasta: '' },
+    viernes:   { abierto: false, desde: '', hasta: '' },
+    sabado:    { abierto: false, desde: '', hasta: '' },
+    domingo:   { abierto: false, desde: '', hasta: '' }
   }
 };
 
 let comercioId = null;
 
-// ==================== API DEL SKELETON ====================
+// ==================== API SKELETON ====================
 export async function load({ currentComercioId, comercioData }) {
   comercioId = currentComercioId;
 
@@ -36,7 +36,7 @@ export function getCurrentData() {
 }
 
 export function isFormValid() {
-  return true; // horarios no bloquea onboarding
+  return true;
 }
 
 export async function save() {
@@ -44,20 +44,36 @@ export async function save() {
     horarios: state.dias
   });
 
-  showToast('Guardado', 'Horarios guardados correctamente', 'success');
+  showToast('Guardado', 'Horarios guardados', 'success');
 }
 
-// ==================== RENDER (UNA SOLA VEZ) ====================
+// ==================== RENDER ====================
 function renderHorarios() {
-  const container = document.getElementById('horariosContainer');
-  container.innerHTML = '';
+  const container = document.getElementById('pageContent');
+  if (!container) {
+    console.error('No existe #pageContent');
+    return;
+  }
+
+  container.innerHTML = `
+    <div id="horariosContainer"></div>
+
+    <div style="margin-top:16px">
+      <button id="copiarATodosBtn">Copiar lunes a todos</button>
+      <button id="cerrarTodosBtn">Cerrar todos</button>
+    </div>
+  `;
+
+  const horariosContainer = document.getElementById('horariosContainer');
 
   Object.entries(state.dias).forEach(([dia, data]) => {
     const row = document.createElement('div');
-    row.className = 'dia-row';
+    row.style.display = 'flex';
+    row.style.gap = '8px';
+    row.style.marginBottom = '8px';
 
     row.innerHTML = `
-      <label>
+      <label style="width:120px">
         <input type="checkbox" data-dia="${dia}" ${data.abierto ? 'checked' : ''}>
         ${capitalizar(dia)}
       </label>
@@ -66,62 +82,56 @@ function renderHorarios() {
       <input type="time" data-dia="${dia}" data-field="hasta" value="${data.hasta}">
     `;
 
-    container.appendChild(row);
+    horariosContainer.appendChild(row);
   });
 }
 
-// ==================== LISTENERS (SIN RE-RENDER) ====================
+// ==================== LISTENERS ====================
 function attachListeners() {
-  document
-    .getElementById('horariosContainer')
-    .addEventListener('change', (e) => {
-      const dia = e.target.dataset.dia;
-      if (!dia) return;
+  const container = document.getElementById('horariosContainer');
+  if (!container) return;
 
-      if (e.target.type === 'checkbox') {
-        state.dias[dia].abierto = e.target.checked;
-      }
+  container.addEventListener('change', (e) => {
+    const dia = e.target.dataset.dia;
+    if (!dia) return;
 
-      if (e.target.type === 'time') {
-        const field = e.target.dataset.field;
-        state.dias[dia][field] = e.target.value;
-      }
+    if (e.target.type === 'checkbox') {
+      state.dias[dia].abierto = e.target.checked;
+    }
+
+    if (e.target.type === 'time') {
+      state.dias[dia][e.target.dataset.field] = e.target.value;
+    }
+  });
+
+  document.getElementById('copiarATodosBtn')?.addEventListener('click', () => {
+    const base = structuredClone(state.dias.lunes);
+    Object.keys(state.dias).forEach(dia => {
+      state.dias[dia] = structuredClone(base);
     });
+    syncUI();
+    showToast('Listo', 'Copiado', 'info');
+  });
 
-  // COPIAR A TODOS
-  document
-    .getElementById('copiarATodosBtn')
-    ?.addEventListener('click', () => {
-      const base = state.dias.lunes;
-      Object.keys(state.dias).forEach((dia) => {
-        state.dias[dia] = structuredClone(base);
-      });
-      syncUI();
-      showToast('Listo', 'Horarios copiados', 'info');
+  document.getElementById('cerrarTodosBtn')?.addEventListener('click', () => {
+    Object.keys(state.dias).forEach(dia => {
+      state.dias[dia] = { abierto: false, desde: '', hasta: '' };
     });
-
-  // CERRAR TODOS
-  document
-    .getElementById('cerrarTodosBtn')
-    ?.addEventListener('click', () => {
-      Object.keys(state.dias).forEach((dia) => {
-        state.dias[dia] = { abierto: false, desde: '', hasta: '' };
-      });
-      syncUI();
-      showToast('Listo', 'Todos cerrados', 'info');
-    });
+    syncUI();
+    showToast('Listo', 'Cerrados', 'info');
+  });
 }
 
-// ==================== SYNC UI (NO RE-RENDER) ====================
+// ==================== SYNC UI ====================
 function syncUI() {
   Object.entries(state.dias).forEach(([dia, data]) => {
-    const checkbox = document.querySelector(`input[type="checkbox"][data-dia="${dia}"]`);
-    const desde = document.querySelector(`input[data-dia="${dia}"][data-field="desde"]`);
-    const hasta = document.querySelector(`input[data-dia="${dia}"][data-field="hasta"]`);
+    const c = document.querySelector(`input[type="checkbox"][data-dia="${dia}"]`);
+    const d = document.querySelector(`input[data-dia="${dia}"][data-field="desde"]`);
+    const h = document.querySelector(`input[data-dia="${dia}"][data-field="hasta"]`);
 
-    if (checkbox) checkbox.checked = data.abierto;
-    if (desde) desde.value = data.desde;
-    if (hasta) hasta.value = data.hasta;
+    if (c) c.checked = data.abierto;
+    if (d) d.value = data.desde;
+    if (h) h.value = data.hasta;
   });
 }
 
