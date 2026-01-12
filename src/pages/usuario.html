@@ -2,81 +2,74 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Datos personales | ÍndiceIA</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Datos Personales</title>
+  <link rel="stylesheet" href="../styles/base.css" />
+  <link rel="stylesheet" href="../styles/layout.css" />
+  <link rel="stylesheet" href="../styles/components.css" />
+  <link rel="stylesheet" href="../styles/forms.css" />
   <link rel="stylesheet" href="./usuario.css" />
 </head>
 <body>
-
-  <main class="main-content usuario-page">
-
-    <header class="header">
-      <h1>Datos personales</h1>
-      <p>Completá tus datos para continuar con la creación de tu entidad</p>
-    </header>
-
-    <form class="form">
-
-      <div class="form-row">
-        <label>Nombre</label>
-        <input id="nombre" type="text" />
+  <div class="main-content">
+    <h1>Datos Personales</h1>
+    <form id="usuarioForm" autocomplete="off">
+      <div class="form-group">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" type="text" placeholder="Tu nombre" required />
       </div>
 
-      <div class="form-row">
-        <label>Apellido</label>
-        <input id="apellido" type="text" />
+      <div class="form-group">
+        <label for="apellido">Apellido</label>
+        <input id="apellido" type="text" placeholder="Tu apellido" required />
       </div>
 
-      <div class="form-row">
-        <label>Email</label>
-        <input id="mail" type="email" disabled />
+      <div class="form-group">
+        <label for="mail">Email</label>
+        <input id="mail" type="email" disabled placeholder="tuemail@ejemplo.com" />
       </div>
 
-      <div class="form-row">
-        <label>Fecha de nacimiento</label>
-        <input id="fechaNacimiento" type="text" placeholder="DD/MM/AAAA" />
+      <div class="form-group">
+        <label for="fechaNacimiento">Fecha de Nacimiento</label>
+        <input id="fechaNacimiento" type="text" placeholder="DD/MM/AAAA" required />
       </div>
 
-      <div class="form-row">
-        <label>Teléfono</label>
-        <input id="telefono" type="tel" />
+      <div class="form-group">
+        <label for="telefono">Teléfono</label>
+        <input id="telefono" type="text" placeholder="Ej: +541112345678" required />
       </div>
 
-      <div class="form-row">
-        <label>País</label>
-        <input id="pais" type="text" />
+      <div class="form-group">
+        <label for="pais">País</label>
+        <input id="pais" type="text" value="Argentina" required />
       </div>
 
-      <div class="form-row">
-        <label>Provincia</label>
-        <select id="provincia"></select>
+      <div class="form-group">
+        <label for="provincia">Provincia</label>
+        <select id="provincia" required>
+          <option value="">Seleccionar...</option>
+        </select>
       </div>
 
-      <div class="form-row">
-        <label>Localidad</label>
-        <input id="localidad" type="text" />
+      <div class="form-group">
+        <label for="localidad">Localidad</label>
+        <input id="localidad" type="text" required />
       </div>
 
-      <div class="form-row">
-        <label>Barrio</label>
+      <div class="form-group">
+        <label for="barrio">Barrio</label>
         <input id="barrio" type="text" />
       </div>
 
-      <div class="form-row">
-        <label>Dirección</label>
-        <input id="direccion" type="text" />
+      <div class="form-group">
+        <label for="direccion">Dirección</label>
+        <input id="direccion" type="text" required />
       </div>
 
-      <button id="saveUserData" class="btn btn-primary" disabled>
-        Guardar y continuar
-      </button>
-
+      <button id="saveUserData" type="button" class="btn btn-primary" disabled>Guardar y continuar</button>
     </form>
-
-  </main>
+  </div>
 
   <script type="module" src="./usuario.js"></script>
 </body>
 </html>
-
