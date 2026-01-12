@@ -1,51 +1,81 @@
-<!-- src/pages/usuario.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Usuario — Paso 1</title>
-  <link rel="stylesheet" href="./usuario.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Completa tu perfil - Primer paso</title>
 </head>
 <body>
-  <main class="main-content">
-    <h1>Datos Personales</h1>
-    <form id="usuarioForm">
-      <label>Nombre</label>
-      <input type="text" id="nombre" disabled />
 
-      <label>Apellido</label>
-      <input type="text" id="apellido" disabled />
+  <div class="container">
+    <header>
+      <h1>Completa tu información</h1>
+      <p>Estos datos son obligatorios para continuar</p>
+    </header>
 
-      <label>Email</label>
-      <input type="email" id="mail" disabled />
+    <form id="profileForm" class="profile-form">
 
-      <label>Fecha de Nacimiento</label>
-      <input type="text" id="fechaNacimiento" placeholder="DD/MM/AAAA" />
+      <div class="form-group">
+        <label for="nombre">Nombre *</label>
+        <input type="text" id="nombre" disabled required>
+      </div>
 
-      <label>Teléfono</label>
-      <input type="text" id="telefono" />
+      <div class="form-group">
+        <label for="apellido">Apellido *</label>
+        <input type="text" id="apellido" disabled required>
+      </div>
 
-      <label>País</label>
-      <select id="pais" disabled>
-        <option value="Argentina">Argentina</option>
-      </select>
+      <div class="form-group">
+        <label for="mail">Email *</label>
+        <input type="email" id="mail" disabled required>
+      </div>
 
-      <label>Provincia</label>
-      <select id="provincia"></select>
+      <div class="form-group">
+        <label for="fechaNacimiento">Fecha de nacimiento * (DD/MM/AAAA)</label>
+        <input type="text" id="fechaNacimiento" placeholder="DD/MM/AAAA" required>
+      </div>
 
-      <label>Localidad</label>
-      <input type="text" id="localidad" />
+      <div class="form-group">
+        <label for="telefono">Teléfono *</label>
+        <input type="tel" id="telefono" required>
+      </div>
 
-      <label>Barrio</label>
-      <input type="text" id="barrio" />
+      <div class="form-group">
+        <label for="pais">País *</label>
+        <input type="text" id="pais" value="Argentina" disabled required>
+      </div>
 
-      <label>Dirección</label>
-      <input type="text" id="direccion" />
+      <div class="form-group">
+        <label for="provincia">Provincia *</label>
+        <select id="provincia" required>
+          <option value="">Selecciona una provincia</option>
+          <!-- Las opciones se llenan desde JS -->
+        </select>
+      </div>
 
-      <button type="button" id="saveUserData" disabled>Guardar y continuar</button>
+      <div class="form-group">
+        <label for="localidad">Localidad *</label>
+        <input type="text" id="localidad" required>
+      </div>
+
+      <div class="form-group">
+        <label for="direccion">Dirección *</label>
+        <input type="text" id="direccion" required>
+      </div>
+
+      <div class="form-group">
+        <label for="barrio">Barrio (opcional)</label>
+        <input type="text" id="barrio">
+      </div>
+
+      <div class="form-actions">
+        <button type="button" id="saveUserData" disabled>
+          Guardar y continuar
+        </button>
+      </div>
+
     </form>
-  </main>
+  </div>
 
   <script type="module" src="./usuario.js"></script>
 </body>
