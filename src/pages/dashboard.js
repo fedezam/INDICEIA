@@ -165,8 +165,8 @@ function renderDashboard() {
     return;
   }
 
-  const productCount = comercioData.stats?.productosCount ?? 0;
-  const horarios = comercioData.stats?.horariosConfigurados === true;
+  const productCount = comercioData.cantidadProductos ?? 0;
+  const horarios = comercioData.onboardingSteps?.horarios === true;
   const planId = comercioData.plan || 'trial';
   const planActual = PLANS[planId];
 
