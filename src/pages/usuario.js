@@ -42,21 +42,20 @@ function aplicarMascaraFecha(input) {
   input.addEventListener("input", (e) => {
     let value = e.target.value.replace(/\D/g, "");
     if (value.length >= 3 && value.length <= 4) {
-      value = value.slice(0, 2) + "/" + value.slice(2);
+      value = value.slice(0,2) + "/" + value.slice(2);
     } else if (value.length >= 5) {
-      value = value.slice(0, 2) + "/" + value.slice(2, 4) + "/" + value.slice(4, 8);
+      value = value.slice(0,2) + "/" + value.slice(2,4) + "/" + value.slice(4,8);
     }
-    e.target.value = value.substring(0, 10);
+    e.target.value = value.substring(0,10);
   });
 }
-
 if (fechaNacimiento) aplicarMascaraFecha(fechaNacimiento);
 
 function fechaToISO(fechaDDMMYYYY) {
   if (!fechaDDMMYYYY || !fechaDDMMYYYY.includes("/")) return null;
   const [dd, mm, yyyy] = fechaDDMMYYYY.split("/");
   if (!dd || !mm || !yyyy || yyyy.length !== 4) return null;
-  return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
+  return `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
 }
 
 function fechaFromISO(fechaISO) {
@@ -68,30 +67,20 @@ function fechaFromISO(fechaISO) {
 // ==================== VALIDACIÓN ====================
 function validarFormulario() {
   const completo =
-    nombre.value.trim() &&
-    apellido.value.trim() &&
-    mail.value.trim() &&
     fechaNacimiento.value.trim() &&
     telefono.value.trim() &&
     pais.value.trim() &&
     provincia.value.trim() &&
     localidad.value.trim() &&
     direccion.value.trim();
-
+  
   btnGuardar.disabled = !completo;
 }
 
-[
-  nombre,
-  apellido,
-  mail,
-  fechaNacimiento,
-  telefono,
-  pais,
-  provincia,
-  localidad,
-  direccion
-].forEach(el => el.addEventListener("input", validarFormulario));
+// Listeners para validar campos editables
+[fechaNacimiento, telefono, pais, provincia, localidad, direccion].forEach(el => {
+  el.addEventListener("input", validarFormulario);
+});
 
 // ==================== CARGA DATOS ====================
 async function cargarDatosUsuario(uid) {
@@ -101,19 +90,20 @@ async function cargarDatosUsuario(uid) {
     const ref = doc(db, "usuarios", uid);
     const snap = await getDoc(ref);
 
-    if (!snap.exists()) {
-      if (mail && auth.currentUser?.email) {
-        mail.value = auth.currentUser.email;
-      }
-      validarFormulario();
-      return;
+    let data = snap.exists() ? snap.data() : {};
+
+    // Nombre / Apellido / Mail desde Auth si no existen en Firestore
+    if (auth.currentUser) {
+      nombre.value = data.nombre || auth.currentUser.displayName?.split(" ")[0] || "";
+      apellido.value = data.apellido || auth.currentUser.displayName?.split(" ").slice(1).join(" ") || "";
+      mail.value = data.mail || auth.currentUser.email || "";
     }
 
-    const data = snap.data();
+    nombre.disabled = true;
+    apellido.disabled = true;
+    mail.disabled = true;
 
-    nombre.value = data.nombre || "";
-    apellido.value = data.apellido || "";
-    mail.value = data.mail || auth.currentUser?.email || "";
+    // Campos editables
     telefono.value = data.telefono || "";
     pais.value = data.pais || "Argentina";
 
@@ -129,11 +119,12 @@ async function cargarDatosUsuario(uid) {
 
     validarFormulario();
   } catch (err) {
-    console.error(err);
-    showToast("Error cargando datos", "error");
+    console.error("Error cargando usuario:", err);
+    showToast("Error al cargar datos", "error");
   }
 }
 
+// Cambio de país → actualizar provincias
 if (pais && provincia) {
   pais.addEventListener("change", () => {
     fillProvinciaSelector(pais.value, provincia);
@@ -164,9 +155,7 @@ btnGuardar.addEventListener("click", async () => {
     const prevOnboarding = snap.exists() ? snap.data().onboarding || {} : {};
 
     await setDoc(ref, {
-      nombre: nombre.value.trim(),
-      apellido: apellido.value.trim(),
-      mail: mail.value.trim(),
+      // Solo actualizamos los campos editables
       fechaNacimiento: fechaISO,
       telefono: telefono.value.trim(),
       pais: pais.value.trim(),
@@ -184,18 +173,17 @@ btnGuardar.addEventListener("click", async () => {
     hideLoading();
     showToast("Datos guardados correctamente", "success");
 
-    // 👉 siguiente paso: crear entidad
+    // Redirigir al pipeline de crear entidad
     redirectAfterSave("crear-entidad");
-
   } catch (err) {
-    console.error(err);
+    console.error("Error guardando datos:", err);
     hideLoading();
     showToast("Error al guardar datos", "error");
     btnGuardar.disabled = false;
   }
 });
 
-// ==================== RENDER ====================
+// ==================== RENDER LAYOUT ====================
 renderLayout();
 
 if (auth.currentUser) {
