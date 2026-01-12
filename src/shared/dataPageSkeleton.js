@@ -164,7 +164,7 @@ export async function runDataPage(pageModule) {
         isEditMode
       });
 
-      // 🔁 REGLA DE ORO:
+      // 🔥 ÚNICA REGLA QUE IMPORTA
       // DESPUÉS DE GUARDAR → DASHBOARD SIEMPRE
       window.location.href = '/dashboard.html';
     });
