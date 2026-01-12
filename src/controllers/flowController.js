@@ -20,15 +20,14 @@ const PUBLIC_PAGES = ["login", "registro", "index", ""];
 
 /* =========================================================
    PIPELINE BUILDER (CLAVE DEL SISTEMA)
+   ⚠️ NO incluye "mi-comercio"
    ========================================================= */
 
 function buildPipeline(offerType = {}) {
   const steps = [];
 
-  // Siempre existen
   steps.push("usuario");
   steps.push("crear-entidad");
-  steps.push("mi-comercio");
 
   const { productos, servicios } = offerType;
 
@@ -104,7 +103,8 @@ export async function runFlowController(uid) {
       return;
     }
 
-    /* ---------- COMERCIO ---------- */
+    /* ---------- PASO 3: CREAR COMERCIO ---------- */
+    // ⚠️ Acá NACE el comercioId
 
     if (!userData.comercioId) {
       if (currentPage !== "mi-comercio") {
@@ -112,6 +112,8 @@ export async function runFlowController(uid) {
       }
       return;
     }
+
+    /* ---------- COMERCIO EXISTE ---------- */
 
     const comercioSnap = await getDoc(
       doc(db, "comercios", userData.comercioId)
