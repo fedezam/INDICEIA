@@ -1,113 +1,61 @@
-/* ==================== USUARIO PAGE ==================== */
+/* ============================= */
+/* usuario.css - Producción       */
+/* ============================= */
 
-/* Page Container */
-body.usuario-page .container {
-  max-width: 800px;
-  margin-top: 40px;
+.main-content {
+  max-width: 500px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.05);
 }
 
-body.usuario-page .main-content {
-  padding: 30px;
+h1 {
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
-/* Title & Subtitle */
-.title {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--gray-900);
-  margin-bottom: 10px;
-}
-
-.subtitle {
-  color: var(--gray-600);
-  margin-bottom: 30px;
-}
-
-/* Form Sections */
-.usuario-page .form-section h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--gray-900);
-  margin-bottom: 20px;
-}
-
-/* Options Grid */
-.options {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
-
-.options .btn {
+.form-group {
+  display: flex;
   flex-direction: column;
-  padding: 25px;
-  height: auto;
-  text-align: center;
+  margin-bottom: 1rem;
 }
 
-.options .btn:disabled {
-  background: var(--gray-200);
-  cursor: not-allowed;
-  opacity: 0.7;
+label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
 }
 
-.options .btn i {
-  font-size: 32px;
-  margin-bottom: 10px;
+input, select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+  background-color: #fff;
+  color: #333;
 }
 
-.options .btn strong {
-  font-size: 16px;
-  margin-bottom: 5px;
-  display: block;
+input:disabled {
+  background-color: #f2f2f2;
+  color: #555;
 }
 
-.btn-desc {
-  font-size: 13px;
-  color: var(--gray-600);
-  margin: 0;
-  font-weight: 400;
-}
-
-/* Info Text */
-.info-text {
-  background: rgba(102, 126, 234, 0.1);
-  padding: 15px;
+button.btn {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1.1rem;
+  border: none;
   border-radius: 8px;
-  margin-bottom: 20px;
-  color: var(--gray-900);
+  cursor: pointer;
 }
 
-/* Logout Section */
-.usuario-page .logout-section {
-  text-align: center;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid var(--gray-200);
-}
-
-/* Email field readonly */
-.usuario-page input[readonly] {
-  background: #f5f5f5;
+button.btn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* ==================== RESPONSIVE ==================== */
-@media (max-width: 768px) {
-  body.usuario-page .container {
-    margin-top: 20px;
-  }
-
-  body.usuario-page .main-content {
-    padding: 20px;
-  }
-
-  .title {
-    font-size: 24px;
-  }
-
-  .options {
-    grid-template-columns: 1fr;
-  }
+button.btn-primary {
+  background-color: #007bff;
+  color: #fff;
 }
