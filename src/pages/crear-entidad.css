@@ -1,25 +1,59 @@
-.entity-options {
+.crear-entidad-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+
+.header {
+  margin-bottom: 2.5rem;
+}
+
+.header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: #666;
+}
+
+.entity-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.5rem;
-  margin-top: 2rem;
 }
 
 .entity-card {
   padding: 2rem;
-  border-radius: 12px;
-  border: 2px solid #e5e7eb;
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  border-radius: 16px;
+  border: 1px solid #ddd;
+  background: #fff;
   text-align: left;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
 }
 
 .entity-card:hover {
-  border-color: #6366f1;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
 }
 
 .entity-card h2 {
-  margin-bottom: 0.5rem;
+  margin-bottom: .5rem;
+  font-size: 1.4rem;
 }
+
+.entity-card p {
+  color: #555;
+}
+
+.entity-card.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.entity-card.disabled:hover {
+  transform: none;
+}
+
