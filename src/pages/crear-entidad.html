@@ -2,36 +2,36 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Crear entidad</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Crear entidad | ÍndiceIA</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="../styles/base.css" />
-  <link rel="stylesheet" href="../styles/layout.css" />
-  <link rel="stylesheet" href="../styles/components.css" />
-  <link rel="stylesheet" href="../styles/forms.css" />
-  <link rel="stylesheet" href="../styles/crear-entidad.css" />
+  <link rel="stylesheet" href="./crear-entidad.css" />
 </head>
 <body>
 
-  <main class="main-content">
-    <h1>¿Qué querés crear?</h1>
+  <main class="main-content crear-entidad-page">
 
-    <div class="entity-options">
-      <button id="btnComercio" class="entity-card">
-        <h2>🏪 Comercio</h2>
-        <p>Vendo productos y/o servicios desde un negocio</p>
+    <header class="header">
+      <h1>Crear nueva entidad</h1>
+      <p>Elegí qué tipo de entidad querés activar en ÍndiceIA</p>
+    </header>
+
+    <section class="entity-grid">
+
+      <button class="entity-card" data-type="comercio">
+        <h2>Comercio</h2>
+        <p>Negocio físico o digital con IA comercial</p>
       </button>
 
-      <button id="btnServicio" class="entity-card">
-        <h2>🛠️ Servicio</h2>
-        <p>Ofrezco servicios profesionales o personales</p>
+      <button class="entity-card disabled" data-type="servicio">
+        <h2>Servicio</h2>
+        <p>Próximamente</p>
       </button>
-    </div>
+
+    </section>
+
   </main>
 
-  <!-- JS -->
-  <script type="module" src="../js/crear-entidad.js"></script>
+  <script type="module" src="./crear-entidad.js"></script>
 </body>
 </html>
-
