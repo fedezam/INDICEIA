@@ -3,26 +3,10 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
 
 /* =========================================================
-   CONFIGURACIÓN DEL FLOW (orden canónico)
-   ========================================================= */
-
-const FLOW_ORDER = [
-  "usuario",
-  "crear-entidad",
-  "mi-comercio",
-  "horarios",
-  "productos",
-  "ia-config",
-];
-
-const PUBLIC_PAGES = ["login", "registro", "index", ""];
-
-/* =========================================================
    HELPERS
    ========================================================= */
 
 function getCurrentPage() {
-  if (typeof window === "undefined") return null;
   const file = window.location.pathname.split("/").pop();
   return file?.replace(".html", "") || "usuario";
 }
@@ -32,13 +16,43 @@ function isEditMode() {
   return params.get("edit") === "true";
 }
 
-function getFirstIncompleteStep(steps = {}) {
-  return FLOW_ORDER.find(
-    (step) =>
-      step !== "usuario" &&
-      step !== "crear-entidad" &&
-      steps[step] !== true
-  ) || null;
+const PUBLIC_PAGES = ["login", "registro", "index", ""];
+
+/* =========================================================
+   PIPELINE BUILDER (CLAVE DEL SISTEMA)
+   ========================================================= */
+
+function buildPipeline(offerType = {}) {
+  const steps = [];
+
+  // Siempre existen
+  steps.push("usuario");
+  steps.push("crear-entidad");
+  steps.push("mi-comercio");
+
+  const { productos, servicios } = offerType;
+
+  if (productos && servicios) {
+    steps.push("horarios");
+    steps.push("servicios");
+    steps.push("productos");
+  } else if (servicios) {
+    steps.push("servicios");
+    steps.push("horarios");
+  } else if (productos) {
+    steps.push("horarios");
+    steps.push("productos");
+  }
+
+  steps.push("ia-config");
+
+  return steps;
+}
+
+function getFirstIncompleteStep(pipeline, completedSteps = {}) {
+  return pipeline.find(
+    (step) => completedSteps[step] !== true
+  );
 }
 
 /* =========================================================
@@ -46,25 +60,24 @@ function getFirstIncompleteStep(steps = {}) {
    ========================================================= */
 
 export async function runFlowController(uid) {
-  if (typeof window === "undefined") return;
-
-  const currentPage = getCurrentPage();
-  const editMode = isEditMode();
-  window.isEditMode = editMode;
-
-  /* ---------- AUTH ---------- */
-
   if (!uid) {
-    if (!PUBLIC_PAGES.includes(currentPage)) {
+    const current = getCurrentPage();
+    if (!PUBLIC_PAGES.includes(current)) {
       window.location.href = "/login.html";
     }
     return;
   }
 
-  try {
-    /* ---------- USUARIO ---------- */
+  const currentPage = getCurrentPage();
+  const editMode = isEditMode();
+  window.isEditMode = editMode;
 
-    const userSnap = await getDoc(doc(db, "usuarios", uid));
+  try {
+    /* ---------- USER ---------- */
+
+    const userRef = doc(db, "usuarios", uid);
+    const userSnap = await getDoc(userRef);
+
     if (!userSnap.exists()) {
       window.location.href = "/login.html";
       return;
@@ -84,51 +97,62 @@ export async function runFlowController(uid) {
 
     /* ---------- PASO 2: CREAR ENTIDAD ---------- */
 
-    if (!userData.entityType) {
+    if (!userSteps["crear-entidad"] || !userData.offerType) {
       if (currentPage !== "crear-entidad") {
         window.location.href = "/crear-entidad.html";
       }
       return;
     }
 
-    /* ---------- CARGA STEPS SEGÚN ENTIDAD ---------- */
+    /* ---------- COMERCIO ---------- */
 
-    let steps = {};
-
-    if (userData.entityType === "comercio" && userData.comercioId) {
-      const comercioSnap = await getDoc(
-        doc(db, "comercios", userData.comercioId)
-      );
-      steps = comercioSnap.exists()
-        ? comercioSnap.data()?.onboardingSteps || {}
-        : {};
+    if (!userData.comercioId) {
+      if (currentPage !== "mi-comercio") {
+        window.location.href = "/mi-comercio.html";
+      }
+      return;
     }
+
+    const comercioSnap = await getDoc(
+      doc(db, "comercios", userData.comercioId)
+    );
+
+    const comercioSteps = comercioSnap.exists()
+      ? comercioSnap.data().onboardingSteps || {}
+      : {};
+
+    /* ---------- PIPELINE DINÁMICO ---------- */
+
+    const pipeline = buildPipeline(userData.offerType);
 
     /* ---------- MODO EDICIÓN ---------- */
 
     if (editMode) {
       if (
         currentPage !== "dashboard" &&
-        currentPage !== "usuario" &&
-        currentPage !== "crear-entidad" &&
-        steps[currentPage] !== true
+        pipeline.includes(currentPage)
       ) {
-        window.location.href = "/dashboard.html";
         return;
       }
 
-      setupEditModeUI();
+      if (currentPage !== "dashboard") {
+        window.location.href = "/dashboard.html";
+      }
       return;
     }
 
     /* ---------- ONBOARDING NORMAL ---------- */
 
-    const firstIncomplete = getFirstIncompleteStep(steps);
-
-    if (firstIncomplete) {
-      if (currentPage !== firstIncomplete) {
-        window.location.href = `/${firstIncomplete}.html`;
+    const firstIncomplete = getFirstIncompleteStep(
+      pipeline,
+      {
+        ...userSteps,
+        ...comercioSteps
       }
+    );
+
+    if (firstIncomplete && currentPage !== firstIncomplete) {
+      window.location.href = `/${firstIncomplete}.html`;
       return;
     }
 
@@ -137,6 +161,7 @@ export async function runFlowController(uid) {
     if (currentPage !== "dashboard") {
       window.location.href = "/dashboard.html";
     }
+
   } catch (err) {
     console.error("❌ FlowController error:", err);
     window.location.href = "/login.html";
@@ -144,50 +169,13 @@ export async function runFlowController(uid) {
 }
 
 /* =========================================================
-   UI PARA MODO EDICIÓN
-   ========================================================= */
-
-function setupEditModeUI() {
-  if (document.getElementById("btnVolverDashboard")) return;
-
-  const main = document.querySelector(".main-content");
-  if (!main) return;
-
-  const btn = document.createElement("button");
-  btn.id = "btnVolverDashboard";
-  btn.className = "btn btn-secondary";
-  btn.innerHTML = "← Volver al Dashboard";
-  btn.style.marginBottom = "1rem";
-
-  btn.onclick = () => {
-    if (window.hasUnsavedChanges) {
-      if (!confirm("Tenés cambios sin guardar. ¿Salir igual?")) return;
-    }
-    window.location.href = "/dashboard.html";
-  };
-
-  main.prepend(btn);
-
-  setTimeout(() => {
-    const saveBtn = document.querySelector(
-      ".btn-save, #saveChangesBtn, [type='submit']"
-    );
-    if (saveBtn) saveBtn.disabled = false;
-  }, 300);
-}
-
-/* =========================================================
    HELPERS PÚBLICOS
    ========================================================= */
 
-export function redirectAfterSave(nextPage) {
+export function redirectAfterSave(nextStep) {
   if (window.isEditMode) {
     window.location.href = "/dashboard.html";
-  } else if (nextPage) {
-    window.location.href = `/${nextPage}.html`;
+  } else if (nextStep) {
+    window.location.href = `/${nextStep}.html`;
   }
-}
-
-export function checkEditMode() {
-  return window.isEditMode === true;
 }
