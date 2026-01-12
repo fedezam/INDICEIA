@@ -1,87 +1,52 @@
+<!-- src/pages/usuario.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Usuario - Paso 1</title>
-
-  <!-- Estilos base -->
-  <link rel="stylesheet" href="../styles/base.css" />
-  <link rel="stylesheet" href="../styles/layout.css" />
-  <link rel="stylesheet" href="../styles/components.css" />
-  <link rel="stylesheet" href="../styles/forms.css" />
+  <title>Usuario — Paso 1</title>
   <link rel="stylesheet" href="./usuario.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Completa tus datos</h1>
-    <p>Los campos con tu nombre, apellido y email ya vienen de tu cuenta y no se pueden editar.</p>
+  <main class="main-content">
+    <h1>Datos Personales</h1>
+    <form id="usuarioForm">
+      <label>Nombre</label>
+      <input type="text" id="nombre" disabled />
 
-    <form id="usuarioForm" class="form">
-      <!-- Nombre / Apellido / Mail (no editables) -->
-      <div class="form-group">
-        <label for="nombre">Nombre</label>
-        <input type="text" id="nombre" name="nombre" disabled />
-      </div>
+      <label>Apellido</label>
+      <input type="text" id="apellido" disabled />
 
-      <div class="form-group">
-        <label for="apellido">Apellido</label>
-        <input type="text" id="apellido" name="apellido" disabled />
-      </div>
+      <label>Email</label>
+      <input type="email" id="mail" disabled />
 
-      <div class="form-group">
-        <label for="mail">Email</label>
-        <input type="email" id="mail" name="mail" disabled />
-      </div>
+      <label>Fecha de Nacimiento</label>
+      <input type="text" id="fechaNacimiento" placeholder="DD/MM/AAAA" />
 
-      <!-- Campos obligatorios editables -->
-      <div class="form-group">
-        <label for="fechaNacimiento">Fecha de nacimiento</label>
-        <input type="text" id="fechaNacimiento" name="fechaNacimiento" placeholder="DD/MM/AAAA" />
-      </div>
+      <label>Teléfono</label>
+      <input type="text" id="telefono" />
 
-      <div class="form-group">
-        <label for="telefono">Teléfono</label>
-        <input type="tel" id="telefono" name="telefono" placeholder="Ej: 1122334455" />
-      </div>
+      <label>País</label>
+      <select id="pais" disabled>
+        <option value="Argentina">Argentina</option>
+      </select>
 
-      <div class="form-group">
-        <label for="pais">País</label>
-        <select id="pais" name="pais">
-          <option value="Argentina">Argentina</option>
-        </select>
-      </div>
+      <label>Provincia</label>
+      <select id="provincia"></select>
 
-      <div class="form-group">
-        <label for="provincia">Provincia</label>
-        <select id="provincia" name="provincia"></select>
-      </div>
+      <label>Localidad</label>
+      <input type="text" id="localidad" />
 
-      <div class="form-group">
-        <label for="localidad">Localidad</label>
-        <input type="text" id="localidad" name="localidad" placeholder="Ej: Buenos Aires" />
-      </div>
+      <label>Barrio</label>
+      <input type="text" id="barrio" />
 
-      <div class="form-group">
-        <label for="barrio">Barrio</label>
-        <input type="text" id="barrio" name="barrio" placeholder="Opcional" />
-      </div>
+      <label>Dirección</label>
+      <input type="text" id="direccion" />
 
-      <div class="form-group">
-        <label for="direccion">Dirección</label>
-        <input type="text" id="direccion" name="direccion" placeholder="Ej: Av. Siempre Viva 123" />
-      </div>
-
-      <div class="form-actions">
-        <button type="button" id="saveUserData" class="btn btn-primary" disabled>
-          Guardar y continuar
-        </button>
-      </div>
+      <button type="button" id="saveUserData" disabled>Guardar y continuar</button>
     </form>
-  </div>
+  </main>
 
-  <!-- Script del paso de usuario -->
   <script type="module" src="./usuario.js"></script>
 </body>
 </html>
-
