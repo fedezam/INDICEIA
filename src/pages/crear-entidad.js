@@ -1,49 +1,145 @@
-import { auth } from "../firebase.js";
-import { db } from "../firebase.js";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, updateDoc } from "firebase/firestore";
+// =======================================================
+// crear-entidad.js — Definición de capacidades de la entidad
+// =======================================================
 
-document.addEventListener("DOMContentLoaded", () => {
+// CSS
+import '../styles/base.css';
+import '../styles/layout.css';
+import '../styles/components.css';
+import '../styles/forms.css';
+import './crear-entidad.css';
 
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = "/login.html";
-      return;
-    }
+// Firebase
+import { auth, db } from "../firebase.js";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
-    bindEntitySelection(user.uid);
-  });
+// Layout / Utils
+import { renderLayout, updateHeaderInfo } from "../shared/layout.js";
+import { showToast, showLoading, hideLoading } from "../shared/utils.js";
 
-});
+// Flow
+import { bootFlow } from "../controllers/boot/flowBoot.js";
+import { redirectAfterSave } from "../controllers/flowController.js";
 
-function bindEntitySelection(uid) {
-  const cards = document.querySelectorAll(".entity-card");
+bootFlow();
 
-  cards.forEach(card => {
-    if (card.classList.contains("disabled")) return;
+// =======================================================
+// DOM
+// =======================================================
 
-    card.addEventListener("click", async () => {
-      const type = card.dataset.type;
+const chkProductos = document.getElementById("opt-productos");
+const chkServicios = document.getElementById("opt-servicios");
+const btnContinuar = document.getElementById("btnContinuar");
+const errorBox = document.getElementById("errorBox");
 
-      if (type === "comercio") {
-        await selectComercioFlow(uid);
-      }
-    });
-  });
+// =======================================================
+// VALIDACIÓN
+// =======================================================
+
+function validarSeleccion() {
+  const valido = chkProductos.checked || chkServicios.checked;
+  btnContinuar.disabled = !valido;
+
+  if (valido) {
+    errorBox.style.display = "none";
+  }
 }
 
-async function selectComercioFlow(uid) {
-  try {
-    // Marcamos explícitamente el tipo de entidad elegida
-    await updateDoc(doc(db, "usuarios", uid), {
-      entityType: "comercio"
-    });
+chkProductos.addEventListener("change", validarSeleccion);
+chkServicios.addEventListener("change", validarSeleccion);
 
-    // El FlowController ya sabe qué hacer después
-    window.location.href = "/usuario.html";
+// =======================================================
+// CARGA ESTADO PREVIO (EDIT / REFRESH)
+// =======================================================
+
+async function cargarEstadoPrevio(uid) {
+  try {
+    const ref = doc(db, "usuarios", uid);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+    const offerType = data.offerType || {};
+
+    chkProductos.checked = offerType.productos === true;
+    chkServicios.checked = offerType.servicios === true;
+
+    validarSeleccion();
+  } catch (err) {
+    console.error("Error cargando crear-entidad:", err);
+  }
+}
+
+// =======================================================
+// GUARDAR
+// =======================================================
+
+btnContinuar.addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    showToast("Usuario no autenticado", "error");
+    return;
+  }
+
+  const productos = chkProductos.checked;
+  const servicios = chkServicios.checked;
+
+  if (!productos && !servicios) {
+    errorBox.textContent = "Seleccioná al menos una opción para continuar.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  showLoading("Guardando configuración...");
+  btnContinuar.disabled = true;
+
+  try {
+    const ref = doc(db, "usuarios", user.uid);
+    const snap = await getDoc(ref);
+    const prevSteps = snap.exists()
+      ? snap.data().onboardingSteps || {}
+      : {};
+
+    await setDoc(
+      ref,
+      {
+        offerType: {
+          productos,
+          servicios
+        },
+        onboardingSteps: {
+          ...prevSteps,
+          "crear-entidad": true
+        },
+        updatedAt: new Date().toISOString()
+      },
+      { merge: true }
+    );
+
+    hideLoading();
+    showToast("Configuración guardada", "success");
+
+    // El flowController decide a dónde ir
+    redirectAfterSave("mi-comercio");
 
   } catch (err) {
-    console.error("Error seleccionando entidad:", err);
-    alert("No se pudo crear la entidad. Intentá nuevamente.");
+    console.error("Error guardando crear-entidad:", err);
+    hideLoading();
+    showToast("Error al guardar la configuración", "error");
+    btnContinuar.disabled = false;
   }
+});
+
+// =======================================================
+// INIT
+// =======================================================
+
+renderLayout();
+
+if (auth.currentUser) {
+  updateHeaderInfo(auth.currentUser.displayName || "Usuario", {
+    nombre: "Trial"
+  });
+  cargarEstadoPrevio(auth.currentUser.uid);
 }
