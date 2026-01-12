@@ -1,125 +1,82 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Datos del Usuario – ÍndiceIA</title>
-    <meta name="description" content="Completá tus datos personales para comenzar la configuración de tu asistente ÍndiceIA.">
-    <meta name="robots" content="noindex, nofollow">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Datos del Usuario – ÍndiceIA">
-    <meta property="og:description" content="Completá tu perfil para activar tu asistente inteligente.">
-    <meta property="og:image" content="/images/og-image.jpg">
-    
-    <!-- Google Fonts - Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Datos personales | ÍndiceIA</title>
+
+  <link rel="stylesheet" href="./usuario.css" />
 </head>
+<body>
 
-<body class="usuario-page">
-  <!-- Toast Container -->
-  <div class="toast-container"></div>
+  <main class="main-content usuario-page">
 
-  <div class="container">
-    <div class="main-content">
-      <h1 class="title"><i class="fas fa-user"></i> Datos del Usuario</h1>
-      <p class="subtitle">Completá tu información personal para continuar con el alta del comercio.</p>
-      
-      <section class="form-section">
-        <h3>Datos personales</h3>
-        <div class="form-fields">
-          <div class="form-field">
-            <label for="nombre">Nombre <span class="required">*</span> (obligatorio)</label>
-            <input type="text" id="nombre" required />
-          </div>
-          
-          <div class="form-field">
-            <label for="apellido">Apellido <span class="required">*</span> (obligatorio)</label>
-            <input type="text" id="apellido" required />
-          </div>
-          
-          <div class="form-field">
-            <label for="mail">Email <span class="required">*</span> (obligatorio)</label>
-            <input type="email" id="mail" readonly required />
-          </div>
-          
-          <div class="form-field">
-            <label for="fechaNacimiento">Fecha de nacimiento <span class="required">*</span> (obligatorio)</label>
-            <input 
-              type="text" 
-              id="fechaNacimiento"
-              placeholder="DD/MM/AAAA"
-              inputmode="numeric"
-              required 
-            />
-          </div>
-          
-          <div class="form-field">
-            <label for="telefono">Teléfono <span class="required">*</span> (obligatorio)</label>
-            <input type="tel" id="telefono" required />
-          </div>
-          
-          <div class="form-field">
-            <label for="pais">País <span class="required">*</span> (obligatorio)</label>
-            <select id="pais" required>
-              <option value="Argentina">Argentina</option>
-            </select>
-          </div>
-          
-          <div class="form-field">
-            <label for="provincia">Provincia <span class="required">*</span> (obligatorio)</label>
-            <select id="provincia" required>
-              <option value="">Seleccione provincia</option>
-            </select>
-          </div>
-          
-          <div class="form-field">
-            <label for="localidad">Localidad <span class="required">*</span> (obligatorio)</label>
-            <input type="text" id="localidad" required />
-          </div>
-          
-          <div class="form-field">
-            <label for="barrio">Barrio (opcional)</label>
-            <input type="text" id="barrio" />
-          </div>
-          
-          <div class="form-field">
-            <label for="direccion">Dirección <span class="required">*</span> (obligatorio)</label>
-            <input type="text" id="direccion" required />
-          </div>
-        </div>
-        
-        <h3 style="margin-top:20px;">Tipo de actividad</h3>
-        <div class="checkbox-group">
-          <label class="checkbox-item">
-            <input type="checkbox" id="checkComercio" /> Comercio
-          </label>
-          <label class="checkbox-item">
-            <input type="checkbox" id="checkServicio" /> Servicio
-          </label>
-        </div>
-        
-        <div class="info-text" style="margin-top: 40px;">
-          ⚡ Al guardar tus datos, se creará automáticamente tu IA comercial personalizada.
-        </div>
-        
-        <div class="btn-group btn-group-end" style="margin-top: 30px;">
-          <button type="button" id="saveUserData" class="btn btn-primary btn-lg" disabled>
-            <i class="fas fa-save"></i> Guardar Cambios y Crear IA
-          </button>
-        </div>
-      </section>
-    </div>
-  </div>
+    <header class="header">
+      <h1>Datos personales</h1>
+      <p>Completá tus datos para continuar con la creación de tu entidad</p>
+    </header>
 
-  <!-- Scripts al final del body -->
-  <script type="module" src="../controllers/flowController.js"></script>
+    <form class="form">
+
+      <div class="form-row">
+        <label>Nombre</label>
+        <input id="nombre" type="text" />
+      </div>
+
+      <div class="form-row">
+        <label>Apellido</label>
+        <input id="apellido" type="text" />
+      </div>
+
+      <div class="form-row">
+        <label>Email</label>
+        <input id="mail" type="email" disabled />
+      </div>
+
+      <div class="form-row">
+        <label>Fecha de nacimiento</label>
+        <input id="fechaNacimiento" type="text" placeholder="DD/MM/AAAA" />
+      </div>
+
+      <div class="form-row">
+        <label>Teléfono</label>
+        <input id="telefono" type="tel" />
+      </div>
+
+      <div class="form-row">
+        <label>País</label>
+        <input id="pais" type="text" />
+      </div>
+
+      <div class="form-row">
+        <label>Provincia</label>
+        <select id="provincia"></select>
+      </div>
+
+      <div class="form-row">
+        <label>Localidad</label>
+        <input id="localidad" type="text" />
+      </div>
+
+      <div class="form-row">
+        <label>Barrio</label>
+        <input id="barrio" type="text" />
+      </div>
+
+      <div class="form-row">
+        <label>Dirección</label>
+        <input id="direccion" type="text" />
+      </div>
+
+      <button id="saveUserData" class="btn btn-primary" disabled>
+        Guardar y continuar
+      </button>
+
+    </form>
+
+  </main>
+
   <script type="module" src="./usuario.js"></script>
 </body>
 </html>
+
