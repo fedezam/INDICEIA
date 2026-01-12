@@ -9,93 +9,65 @@
 
   <div class="container">
     <h1>Completa tu información</h1>
-    <p>Estos datos son obligatorios para continuar</p>
+    <p>Obligatorio para continuar</p>
 
-    <!-- Formulario -->
     <form id="profileForm">
-
-      <div>
+      <div class="form-group">
         <label>Nombre</label>
         <input type="text" id="nombre" disabled>
       </div>
 
-      <div>
+      <div class="form-group">
         <label>Apellido</label>
         <input type="text" id="apellido" disabled>
       </div>
 
-      <div>
+      <div class="form-group">
         <label>Email</label>
         <input type="email" id="mail" disabled>
       </div>
 
-      <div>
+      <div class="form-group">
         <label>Fecha de nacimiento (DD/MM/AAAA)</label>
-        <input type="text" id="fechaNacimiento">
+        <input type="text" id="fechaNacimiento" placeholder="DD/MM/AAAA">
       </div>
 
-      <div>
+      <div class="form-group">
         <label>Teléfono</label>
         <input type="tel" id="telefono">
       </div>
 
-      <div>
+      <div class="form-group">
         <label>País</label>
         <input type="text" id="pais" value="Argentina" disabled>
       </div>
 
-      <div>
+      <div class="form-group">
         <label>Provincia</label>
         <select id="provincia">
           <option value="">Selecciona una provincia</option>
         </select>
       </div>
 
-      <div>
+      <div class="form-group">
         <label>Localidad</label>
         <input type="text" id="localidad">
       </div>
 
-      <div>
+      <div class="form-group">
         <label>Dirección</label>
         <input type="text" id="direccion">
       </div>
 
-      <div>
+      <div class="form-group">
         <label>Barrio (opcional)</label>
         <input type="text" id="barrio">
       </div>
 
-      <button type="button" id="saveUserData" disabled>Guardar</button>
+      <button type="button" id="saveUserData" disabled>Guardar y continuar</button>
     </form>
   </div>
 
-  <!-- Logs simples directamente en HTML para ver qué existe -->
-  <script>
-    console.log("HTML cargado - momento:", new Date().toLocaleString());
-
-    window.addEventListener('DOMContentLoaded', () => {
-      console.log("DOM listo - buscando elementos:");
-
-      const elementos = [
-        "nombre", "apellido", "mail", "fechaNacimiento", "telefono",
-        "pais", "provincia", "localidad", "direccion", "barrio", "saveUserData"
-      ];
-
-      elementos.forEach(id => {
-        const el = document.getElementById(id);
-        console.log(`  → #${id}: ${el ? 'EXISTE' : 'NO EXISTE'}`);
-        if (el) {
-          console.log(`     valor actual: "${el.value || el.textContent || '(vacío)'}"`);
-          if (el.tagName === 'SELECT') {
-            console.log(`     opciones en provincia: ${el.options.length}`);
-          }
-        }
-      });
-    });
-  </script>
-
-  <!-- Tu script principal (el que ya tenías) -->
   <script type="module" src="./usuario.js"></script>
 </body>
 </html>
