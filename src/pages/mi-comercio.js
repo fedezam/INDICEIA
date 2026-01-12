@@ -1,6 +1,6 @@
 // src/pages/mi-comercio.js
 // ==================== VERSIÓN REFACTORIZADA ====================
-// Usa dataPageSkeleton.js - SOLO lógica específica de mi-comercio
+// Usa miComercioInit.js - Página especial que CREA el comercio
 
 // ==================== ESTILOS ====================
 import '../styles/base.css';
@@ -18,8 +18,8 @@ import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 
-// ==================== SKELETON ====================
-import { runDataPage } from '../shared/dataPageSkeleton.js';
+// ==================== SKELETON ESPECIAL ====================
+import { runMiComercioPage } from '../shared/miComercioInit.js';
 
 // ==================== SLUG UTILS ====================
 function slugify(text) {
@@ -49,11 +49,21 @@ let comercioSlug = null;
 let slugDisponible = false;
 let slugValidationTimer = null;
 
+// Variables del contexto de inicialización
+let isNewComercio = false;
+let currentUser = null;
+let currentComercioId = null;
+
 // ==================== MÓDULO EXPORTADO ====================
 const miComercioModule = {
   // 1️⃣ LOAD - Cargar datos desde Firebase
-  async load({ currentComercioId, comercioData: comercio }) {
+  async load({ currentComercioId: comercioId, comercioData: comercio, isNewComercio: isNew, currentUser: user }) {
+    // Guardar contexto
+    currentComercioId = comercioId;
     comercioData = comercio;
+    isNewComercio = isNew;
+    currentUser = user;
+
     selectedCategories = comercioData.categories || [];
 
     // Cargar slug desde landing si existe
@@ -65,7 +75,7 @@ const miComercioModule = {
       slugDisponible = false;
     }
 
-    console.log('✅ Datos del comercio cargados');
+    console.log('✅ Datos del comercio cargados:', { isNewComercio, comercioId });
   },
 
   // 2️⃣ RENDER - Dibujar UI específica
@@ -110,7 +120,7 @@ const miComercioModule = {
   },
 
   // 4️⃣ SAVE - Guardar cambios
-  async save({ currentComercioId, isEditMode }) {
+  async save() {
     const form = document.getElementById('miComercioForm');
     if (!form) {
       showToast('Error', 'Formulario no encontrado', 'error');
@@ -155,8 +165,6 @@ const miComercioModule = {
 
       updates.categories = selectedCategories;
       updates.paymentMethods = Array.from(document.querySelectorAll('input[name="metodos_pago"]:checked')).map(i => i.value);
-      updates['onboardingSteps.mi-comercio'] = true;
-      updates.fechaActualizacion = new Date();
 
       // Guardar landing dentro del comercio
       if (!originalHasLanding) {
@@ -176,11 +184,30 @@ const miComercioModule = {
         };
       }
 
-      // Actualizar comercio
-      await updateDoc(doc(db, 'comercios', currentComercioId), updates);
+      // ========================================
+      // LÓGICA DIFERENCIADA: NUEVO vs EXISTENTE
+      // ========================================
 
-      // Crear índice en landings SOLO si es nuevo
-      if (!originalHasLanding) {
+      if (isNewComercio) {
+        // 🆕 CREAR COMERCIO NUEVO
+        console.log('🆕 Creando comercio nuevo...');
+
+        const nuevoComercio = {
+          ...updates,
+          duenoId: currentUser.uid, // ✅ CAMPO CORRECTO PARA LAS REGLAS
+          plan: 'trial',
+          fechaCreacion: new Date(),
+          fechaActualizacion: new Date(),
+          onboardingSteps: {
+            'mi-comercio': true
+          }
+        };
+
+        // Crear documento del comercio
+        await setDoc(doc(db, 'comercios', currentComercioId), nuevoComercio);
+        console.log('✅ Documento de comercio creado:', currentComercioId);
+
+        // Crear índice en landings
         const landingRef = doc(db, 'landings', comercioSlug);
         await setDoc(landingRef, {
           slug: comercioSlug,
@@ -191,13 +218,45 @@ const miComercioModule = {
           updatedAt: new Date()
         });
         console.log('✅ Índice de landing creado:', comercioSlug);
+
+        // 🔑 GUARDAR comercioId EN EL USUARIO
+        await updateDoc(doc(db, 'usuarios', currentUser.uid), {
+          comercioId: currentComercioId,
+          'onboardingSteps.mi-comercio': true
+        });
+        console.log('✅ comercioId guardado en usuario:', currentComercioId);
+
+      } else {
+        // ✏️ ACTUALIZAR COMERCIO EXISTENTE
+        console.log('✏️ Actualizando comercio existente...');
+
+        updates['onboardingSteps.mi-comercio'] = true;
+        updates.fechaActualizacion = new Date();
+
+        // Actualizar comercio
+        await updateDoc(doc(db, 'comercios', currentComercioId), updates);
+        console.log('✅ Comercio actualizado');
+
+        // Crear índice en landings SOLO si es nuevo
+        if (!originalHasLanding) {
+          const landingRef = doc(db, 'landings', comercioSlug);
+          await setDoc(landingRef, {
+            slug: comercioSlug,
+            comercioId: currentComercioId,
+            nombre: updates.nombreComercio,
+            activo: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+          console.log('✅ Índice de landing creado:', comercioSlug);
+        }
       }
 
       // Actualizar estado local
       comercioData = { ...comercioData, ...updates };
 
       hideLoading();
-      showToast('Éxito', 'Comercio guardado correctamente', 'success');
+      console.log('✅ Guardado completado exitosamente');
 
     } catch (error) {
       hideLoading();
@@ -558,4 +617,4 @@ function insertAIHelperCard() {
 }
 
 // ==================== BOOT ====================
-runDataPage(miComercioModule);
+runMiComercioPage(miComercioModule);
