@@ -368,6 +368,7 @@ function renderSelectedTags() {
   const grid = document.getElementById('selectedTags');
   if (!grid) return;
 
+  // Renderizar las tarjetas de categorías
   grid.innerHTML = selectedCategories.map(cat => `
     <div class="selected-category-tag">
       ${cat}
@@ -381,8 +382,19 @@ function renderSelectedTags() {
       renderSelectedTags();
     };
   });
-}
 
+  // 🔥 ACTUALIZAR el mensaje de "Aún no seleccionaste"
+  const emptyMsg = document.querySelector('.empty-categories');
+  if (emptyMsg) {
+    emptyMsg.style.display = selectedCategories.length === 0 ? 'block' : 'none';
+  }
+
+  // 🔥 ACTUALIZAR el contador en el título
+  const titleH4 = document.querySelector('.selected-categories h4');
+  if (titleH4) {
+    titleH4.innerHTML = `<i class="fas fa-tags"></i> Categorías seleccionadas (${selectedCategories.length})`;
+  }
+}
 function renderPaymentMethods() {
   const container = document.getElementById('metodosPagoContainer');
   if (!container) {
