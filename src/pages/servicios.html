@@ -3,43 +3,126 @@
 <head>
   <meta charset="UTF-8" />
   <title>Servicios</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
 <body>
-  <!-- Layout general lo inyecta runDataPage -->
-  <main class="page-content">
+  <main class="page-container servicios-page">
 
-    <!-- ===== INTRO ===== -->
-    <section class="page-intro">
-      <h1>Servicios</h1>
-      <p>
-        Declarás los servicios que ofrece tu comercio.
-        Cada tarjeta representa un servicio real que la IA podrá explicar
-        sin inventar información.
-      </p>
+    <!-- ================= TARJETA 1: IDENTIDAD ================= -->
+    <section class="card">
+      <h2 class="card-title">Servicio</h2>
+
+      <label class="form-label">
+        ¿Qué servicio ofrecés?
+        <input
+          type="text"
+          placeholder="Ej: Masaje descontracturante"
+          oninput="window.setNombre(this.value)"
+        />
+      </label>
+
+      <label class="form-label">
+        Descripción (opcional)
+        <textarea
+          placeholder="Detalle breve para el cliente"
+          oninput="window.setDescripcion(this.value)"
+        ></textarea>
+      </label>
     </section>
 
-    <!-- ===== TARJETAS ===== -->
-    <section
-      id="serviciosContainer"
-      class="servicios-container"
-    >
-      <!-- Las tarjetas se renderizan desde servicios.js -->
+    <!-- ================= TARJETA 2: MODALIDAD ================= -->
+    <section class="card">
+      <h2 class="card-title">¿Cómo se presta?</h2>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" value="presencial" onchange="handleModalidades()" />
+          Presencial
+        </label>
+        <label>
+          <input type="checkbox" value="remoto" onchange="handleModalidades()" />
+          Remoto
+        </label>
+        <label>
+          <input type="checkbox" value="domicilio" onchange="handleModalidades()" />
+          A domicilio
+        </label>
+      </div>
     </section>
 
-    <!-- ===== NOTA ===== -->
-    <section class="page-hint">
-      <p>
-        💡 Completá solo lo que aplique.
-        Si un dato no existe, no se guarda ni se usa.
-      </p>
+    <!-- ================= TARJETA 3: PRECIO ================= -->
+    <section class="card">
+      <h2 class="card-title">Precio</h2>
+
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="precio" onchange="setPrecioConsultar()" />
+          Consultar
+        </label>
+
+        <label>
+          <input type="radio" name="precio" onchange="togglePrecioFijo(true)" />
+          Precio fijo
+        </label>
+      </div>
+
+      <div id="precioFijoContainer" class="hidden">
+        <input
+          type="number"
+          placeholder="Valor"
+          oninput="setPrecioFijo(this.value)"
+        />
+      </div>
+    </section>
+
+    <!-- ================= TARJETA 4: DISPONIBILIDAD ================= -->
+    <section class="card">
+      <h2 class="card-title">Disponibilidad</h2>
+
+      <select onchange="setDisponibilidad(this.value)">
+        <option value="">Seleccionar</option>
+        <option value="turno">Con turno</option>
+        <option value="reserva">Por reserva</option>
+        <option value="consultar">Consultar</option>
+      </select>
+    </section>
+
+    <!-- ================= TARJETA 5: DURACIÓN ================= -->
+    <section class="card">
+      <h2 class="card-title">Duración (opcional)</h2>
+
+      <input
+        type="number"
+        placeholder="Minutos (ej: 40)"
+        oninput="setDuracion(this.value)"
+      />
     </section>
 
   </main>
 
-  <!-- El botón Guardar es global (skeleton) -->
+  <!-- ================= HELPERS UI ================= -->
+  <script>
+    function handleModalidades() {
+      const checked = Array.from(
+        document.querySelectorAll('input[type="checkbox"]:checked')
+      ).map(i => i.value);
+
+      window.setModalidadesSeleccionadas(checked);
+    }
+
+    function togglePrecioFijo(show) {
+      document
+        .getElementById('precioFijoContainer')
+        .classList.toggle('hidden', !show);
+
+      if (!show) {
+        window.setPrecioConsultar();
+      }
+    }
+  </script>
+
   <script type="module" src="./servicios.js"></script>
 </body>
 </html>
+
 
