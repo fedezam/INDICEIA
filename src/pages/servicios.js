@@ -1,8 +1,6 @@
 // src/pages/servicios.js
-// ==================== VERSIÓN FULL PRODUCTION ====================
-// Página: Servicios
-// Declaración de servicios (no productos)
-// Respeta contrato mínimo Bloque E v1
+// ==================== SERVICIOS ====================
+// Página par de productos, pero para servicios declarativos
 
 // ==================== ESTILOS ====================
 import '../styles/base.css';
@@ -14,13 +12,7 @@ import './servicios.css';
 
 // ==================== FIREBASE ====================
 import { db } from '../firebase.js';
-import {
-  collection,
-  getDocs,
-  addDoc,
-  deleteDoc,
-  doc
-} from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 // ==================== UTILS ====================
 import { showToast } from '../shared/utils.js';
@@ -28,290 +20,232 @@ import { showToast } from '../shared/utils.js';
 // ==================== SKELETON ====================
 import { runDataPage } from '../shared/dataPageSkeleton.js';
 
-// =================================================
+// ==================================================
 // ESTADO LOCAL
-// =================================================
+// ==================================================
 
-let currentComercioId = null;
-
-// Servicios cargados desde DB
 let servicios = [];
+let serviciosVistos = new Set();
 
-// Estado UI
-let tarjetasVistas = new Set();
+const containerId = 'serviciosContainer';
 
-// =================================================
+// ==================================================
 // HELPERS
-// =================================================
-
-function servicioVacio() {
-  return {
-    activo: true
-    // el resto NO existe hasta que el usuario lo complete
-  };
-}
+// ==================================================
 
 function limpiarObjeto(obj) {
-  // elimina null, undefined, strings vacíos, arrays vacíos
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => {
-      if (v === null || v === undefined) return false;
-      if (typeof v === 'string' && v.trim() === '') return false;
-      if (Array.isArray(v) && v.length === 0) return false;
-      return true;
-    })
-  );
+  const limpio = {};
+  Object.entries(obj).forEach(([k, v]) => {
+    if (
+      v === null ||
+      v === undefined ||
+      v === '' ||
+      (Array.isArray(v) && v.length === 0)
+    ) {
+      return;
+    }
+    limpio[k] = v;
+  });
+  return limpio;
 }
 
-function esServicioValido(servicio) {
-  return (
-    servicio.activo !== undefined &&
+function servicioValido(servicio) {
+  return Boolean(
     servicio.nombre &&
     servicio.modalidad &&
     servicio.acceso_precio &&
-    servicio.disponibilidad
+    servicio.disponibilidad &&
+    servicio.activo !== undefined
   );
 }
 
-// =================================================
-// PAGE MODULE
-// =================================================
+// ==================================================
+// RENDER
+// ==================================================
 
-const pageModule = {
-  // ---------- LOAD ----------
-  async load({ currentComercioId: comercioId }) {
-    console.log('🔍 servicios.load() ejecutándose');
-    console.log('🔍 currentComercioId recibido:', comercioId);
-    
-    currentComercioId = comercioId;
+function renderServicios() {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
 
-    try {
-      const snap = await getDocs(
-        collection(db, 'comercios', currentComercioId, 'servicios')
-      );
+  servicios.forEach((servicio, index) => {
+    const card = document.createElement('div');
+    card.className = 'servicio-card';
+    card.dataset.index = index;
 
-      servicios = snap.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data()
-      }));
-      
-      console.log('✅ Servicios cargados desde DB:', servicios.length);
-      console.log('📦 Contenido:', servicios);
-    } catch (err) {
-      console.error('❌ Error cargando servicios:', err);
-      servicios = [];
-    }
-  },
+    card.innerHTML = `
+      <div class="servicio-card-header">
+        <input
+          type="text"
+          placeholder="Nombre del servicio"
+          value="${servicio.nombre || ''}"
+          data-field="nombre"
+        />
+        <label class="servicio-card-status">
+          <input
+            type="checkbox"
+            data-field="activo"
+            ${servicio.activo ? 'checked' : ''}
+          />
+          Activo
+        </label>
+      </div>
 
-  // ---------- RENDER ----------
-  render() {
-    console.log('🎨 servicios.render() ejecutándose');
-    console.log('🎨 Cantidad de servicios a renderizar:', servicios.length);
-    
-    const container = document.getElementById('serviciosContainer');
-    
-    if (!container) {
-      console.error('❌ Container #serviciosContainer NO encontrado en DOM');
-      console.log('DOM actual:', document.body.innerHTML.substring(0, 500));
-      return;
-    }
-    
-    console.log('✅ Container encontrado:', container);
+      <div class="servicio-card-body">
 
-    container.innerHTML = '';
-
-    if (servicios.length === 0) {
-      console.log('⚠️ No hay servicios, creando uno vacío');
-      servicios.push(servicioVacio());
-    }
-
-    console.log(`🔄 Renderizando ${servicios.length} tarjeta(s)...`);
-
-    servicios.forEach((servicio, index) => {
-      console.log(`  → Renderizando servicio ${index + 1}:`, servicio);
-      
-      const card = document.createElement('div');
-      card.className = 'servicio-card';
-      card.dataset.index = index;
-
-      card.innerHTML = `
-        <div class="servicio-header">
-          <h3>Servicio ${index + 1}</h3>
+        <!-- MODALIDAD -->
+        <div class="servicio-field-group">
+          <label>¿Cómo se presta?</label>
+          <select data-field="modalidad">
+            <option value="">Seleccionar</option>
+            <option value="presencial">Presencial</option>
+            <option value="remoto">Remoto</option>
+            <option value="domicilio">A domicilio</option>
+            <option value="hibrido">Híbrido</option>
+          </select>
         </div>
 
-        <div class="servicio-body">
-          <label>
-            Nombre del servicio
-            <input type="text" data-field="nombre" value="${servicio.nombre || ''}">
-          </label>
-
-          <label>
-            Modalidad
-            <select data-field="modalidad">
-              <option value="">Seleccionar</option>
-              <option value="presencial">Presencial</option>
-              <option value="remoto">Remoto</option>
-              <option value="domicilio">A domicilio</option>
-              <option value="hibrido">Híbrido</option>
-            </select>
-          </label>
-
-          <label>
-            ¿Cómo se obtiene el precio?
-            <select data-field="acceso_precio">
-              <option value="">Seleccionar</option>
-              <option value="precio_fijo">Precio fijo</option>
-              <option value="desde">Desde un valor</option>
-              <option value="presupuesto">Requiere presupuesto</option>
-              <option value="consultar">Consultar</option>
-              <option value="gratis">Gratis</option>
-            </select>
-          </label>
-
-          <label>
-            Disponibilidad
-            <select data-field="disponibilidad">
-              <option value="">Seleccionar</option>
-              <option value="inmediata">Inmediata</option>
-              <option value="turno">Según turno</option>
-              <option value="reserva">Por reserva</option>
-              <option value="consultar">Consultar</option>
-              <option value="agotado">Agotado</option>
-            </select>
-          </label>
-
-          <label>
-            Duración aproximada (opcional)
-            <input type="text" data-field="duracion_aprox" value="${servicio.duracion_aprox || ''}">
-          </label>
-
-          <label>
-            Notas (opcional)
-            <textarea data-field="notas">${servicio.notas || ''}</textarea>
-          </label>
+        <!-- PRECIO -->
+        <div class="servicio-field-group">
+          <label>¿Cómo se obtiene el precio?</label>
+          <select data-field="acceso_precio">
+            <option value="">Seleccionar</option>
+            <option value="fijo">Precio fijo</option>
+            <option value="desde">Desde un valor</option>
+            <option value="presupuesto">Requiere presupuesto</option>
+            <option value="consultar">Consultar</option>
+            <option value="gratis">Gratis</option>
+          </select>
         </div>
-      `;
 
-      container.appendChild(card);
-      console.log(`  ✅ Tarjeta ${index + 1} agregada al DOM`);
+        <div class="servicio-field-group servicio-precio-valor">
+          <input
+            type="number"
+            placeholder="Valor de referencia"
+            data-field="precio_referencia"
+          />
+        </div>
 
-      // set selects
-      ['modalidad', 'acceso_precio', 'disponibilidad'].forEach(field => {
-        if (servicio[field]) {
-          const select = card.querySelector(`[data-field="${field}"]`);
-          if (select) {
-            select.value = servicio[field];
-            console.log(`    → ${field} seteado a: ${servicio[field]}`);
-          }
+        <!-- DISPONIBILIDAD -->
+        <div class="servicio-field-group">
+          <label>Disponibilidad</label>
+          <select data-field="disponibilidad">
+            <option value="">Seleccionar</option>
+            <option value="inmediata">Inmediata</option>
+            <option value="turno">Según turno</option>
+            <option value="reserva">Por reserva</option>
+            <option value="consultar">Consultar</option>
+            <option value="agotado">Agotado</option>
+          </select>
+        </div>
+
+        <!-- OPCIONALES -->
+        <div class="servicio-field-group">
+          <label>Duración aproximada (opcional)</label>
+          <input
+            type="text"
+            placeholder="Ej: 1 hora"
+            data-field="duracion_aprox"
+          />
+        </div>
+
+        <div class="servicio-field-group servicio-notas">
+          <label>Notas (opcional)</label>
+          <textarea
+            placeholder="Información adicional"
+            data-field="notas"
+          ></textarea>
+        </div>
+
+      </div>
+    `;
+
+    // Setear valores de selects
+    card.querySelectorAll('select, input, textarea').forEach((el) => {
+      const field = el.dataset.field;
+      if (!field) return;
+
+      if (el.type === 'checkbox') return;
+      if (servicio[field] !== undefined) {
+        el.value = servicio[field];
+      }
+    });
+
+    // Eventos
+    card.addEventListener('focusin', () => {
+      serviciosVistos.add(index);
+    });
+
+    card.querySelectorAll('[data-field]').forEach((el) => {
+      el.addEventListener('change', () => {
+        const field = el.dataset.field;
+        let value;
+
+        if (el.type === 'checkbox') {
+          value = el.checked;
+        } else {
+          value = el.value;
         }
-      });
 
-      // listeners
-      card.querySelectorAll('[data-field]').forEach(input => {
-        input.addEventListener('change', () => {
-          tarjetasVistas.add(index);
-          actualizarServicioDesdeUI(index, card);
-          console.log(`📝 Campo actualizado en servicio ${index + 1}`);
-        });
+        servicios[index][field] = value;
       });
     });
-    
-    console.log('✅ Render completado. Total de tarjetas en DOM:', container.children.length);
+
+    container.appendChild(card);
+  });
+}
+
+// ==================================================
+// PAGE MODULE (SKELETON CONTRACT)
+// ==================================================
+
+const pageModule = {
+  async load({ currentComercioId }) {
+    if (!currentComercioId) return;
+
+    const snap = await getDoc(doc(db, 'comercios', currentComercioId));
+    if (snap.exists()) {
+      servicios = snap.data().servicios || [];
+    }
+
+    if (servicios.length === 0) {
+      servicios.push({
+        nombre: '',
+        modalidad: '',
+        acceso_precio: '',
+        disponibilidad: '',
+        activo: true
+      });
+    }
   },
 
-  // ---------- DATA ----------
+  render() {
+    renderServicios();
+  },
+
   getCurrentData() {
-    const data = servicios.map(s => limpiarObjeto(s));
-    console.log('📊 getCurrentData():', data);
-    return data;
+    return servicios;
   },
 
   isFormValid() {
-    const vistasCompletas = tarjetasVistas.size >= servicios.length;
-    const todosValidos = servicios.every(s => !s.activo || esServicioValido(s));
-    
-    console.log('✓ Validación:', {
-      tarjetasVistas: tarjetasVistas.size,
-      totalServicios: servicios.length,
-      vistasCompletas,
-      todosValidos
-    });
-    
-    return vistasCompletas && todosValidos;
+    if (serviciosVistos.size === 0) return false;
+    return servicios.every((s) => servicioValido(s));
   },
 
-  // ---------- SAVE ----------
-  async save() {
-    console.log('💾 Guardando servicios...');
-    
-    const colRef = collection(db, 'comercios', currentComercioId, 'servicios');
+  async save({ currentComercioId }) {
+    const serviciosLimpios = servicios
+      .filter(servicioValido)
+      .map((s) => limpiarObjeto(s));
 
-    try {
-      // borrar existentes
-      const snap = await getDocs(colRef);
-      console.log(`🗑️ Borrando ${snap.docs.length} servicios existentes`);
-      
-      for (const d of snap.docs) {
-        await deleteDoc(doc(colRef, d.id));
-      }
+    await updateDoc(doc(db, 'comercios', currentComercioId), {
+      servicios: serviciosLimpios
+    });
 
-      // guardar nuevos
-      let guardados = 0;
-      for (const servicio of servicios) {
-        if (!servicio.activo) {
-          console.log('⏭️ Servicio inactivo, saltando:', servicio);
-          continue;
-        }
-
-        const limpio = limpiarObjeto(servicio);
-
-        if (!esServicioValido(limpio)) {
-          console.error('❌ Servicio inválido:', limpio);
-          showToast(
-            'Servicio incompleto',
-            'Completá los campos obligatorios',
-            'warning'
-          );
-          return;
-        }
-
-        await addDoc(colRef, limpio);
-        guardados++;
-        console.log(`✅ Servicio ${guardados} guardado:`, limpio);
-      }
-      
-      console.log(`✅ Total guardados: ${guardados} servicios`);
-    } catch (err) {
-      console.error('❌ Error en save():', err);
-      throw err;
-    }
+    showToast('Servicios guardados', 'La información fue actualizada', 'success');
   }
 };
 
-// =================================================
-// UI → STATE
-// =================================================
-
-function actualizarServicioDesdeUI(index, card) {
-  const servicio = servicios[index];
-
-  card.querySelectorAll('[data-field]').forEach(el => {
-    const field = el.dataset.field;
-    const value = el.value;
-
-    if (value === '') {
-      delete servicio[field];
-    } else {
-      servicio[field] = value;
-    }
-  });
-  
-  console.log(`🔄 Servicio ${index + 1} actualizado:`, servicio);
-}
-
-// =================================================
+// ==================================================
 // INIT
-// =================================================
+// ==================================================
 
-console.log('🚀 servicios.js cargado, iniciando skeleton...');
 runDataPage(pageModule);
