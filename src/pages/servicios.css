@@ -1,109 +1,52 @@
-/* src/pages/servicios.css */
-/* ==================== SERVICIOS ==================== */
-
-.servicios-container {
+.servicios-page {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+  gap: 24px;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
-/* ---------- CARD ---------- */
-
-.servicio-card {
+.card {
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 1.25rem;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.card-title {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.form-label {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 
-.servicio-card:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
 }
 
-/* ---------- HEADER ---------- */
-
-.servicio-card-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.servicio-card-header input[type="text"] {
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.servicio-card-status {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-/* ---------- BODY ---------- */
-
-.servicio-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-.servicio-field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.servicio-field-group label {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #6b7280;
-}
-
-.servicio-field-group input,
-.servicio-field-group select,
-.servicio-field-group textarea {
-  width: 100%;
-}
-
-/* ---------- PRECIO ---------- */
-
-.servicio-precio-valor {
-  margin-top: 0.25rem;
-}
-
-/* ---------- NOTAS ---------- */
-
-.servicio-notas textarea {
+textarea {
   resize: vertical;
-  min-height: 70px;
+  min-height: 80px;
 }
 
-/* ---------- ESTADOS ---------- */
-
-.servicio-card.is-incomplete {
-  border-color: #f59e0b;
+.checkbox-group,
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.servicio-card.is-not-viewed {
-  opacity: 0.85;
+.hidden {
+  display: none;
 }
 
-/* ---------- RESPONSIVE ---------- */
-
-@media (max-width: 480px) {
-  .servicios-container {
-    grid-template-columns: 1fr;
-  }
-
-  .servicio-card {
-    padding: 1rem;
-  }
-}
