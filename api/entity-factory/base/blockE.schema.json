@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://indiceia.com/schemas/blockE.schema.json",
+  "title": "Block E – Servicios Operables",
+  "description": "Definición declarativa de servicios para uso por LLMs y templates",
+  "type": "object",
+  "additionalProperties": false,
+
+  "required": ["habilitado", "servicios"],
+
+  "properties": {
+    "habilitado": {
+      "type": "boolean",
+      "description": "Activa o desactiva completamente el bloque de servicios"
+    },
+
+    "servicios": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/servicio" }
+    }
+  },
+
+  "$defs": {
+    "servicio": {
+      "type": "object",
+      "additionalProperties": false,
+
+      "required": [
+        "id",
+        "titulo",
+        "que",
+        "como",
+        "donde",
+        "cuando",
+        "activo"
+      ],
+
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identificador único del servicio"
+        },
+
+        "titulo": {
+          "type": "string",
+          "description": "Nombre corto y visible del servicio"
+        },
+
+        "descripcion": {
+          "type": "string",
+          "description": "Descripción breve opcional"
+        },
+
+        "activo": {
+          "type": "boolean",
+          "description": "Indica si el servicio está disponible actualmente"
+        },
+
+        /* ==== LAS 4 PREGUNTAS CLAVE ==== */
+
+        "que": {
+          "type": "string",
+          "description": "Qué es el servicio"
+        },
+
+        "como": {
+          "type": "string",
+          "description": "Cómo se presta el servicio (modalidad)"
+        },
+
+        "donde": {
+          "type": "string",
+          "description": "Dónde se presta el servicio"
+        },
+
+        "cuando": {
+          "type": "string",
+          "description": "Cuándo o bajo qué disponibilidad se presta"
+        },
+
+        /* ==== PRECIO (OPCIONAL Y TOLERANTE) ==== */
+
+        "precio": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tipo": {
+              "type": "string",
+              "enum": ["fijo", "desde", "presupuesto", "consultar"],
+              "description": "Forma de determinación del precio"
+            },
+            "valor": {
+              "type": "number",
+              "minimum": 0
+            },
+            "moneda": {
+              "type": "string",
+              "default": "ARS"
+            },
+            "unidad": {
+              "type": "string",
+              "description": "por_sesion, por_hora, por_m2, etc."
+            }
+          }
+        },
+
+        /* ==== UI SUGERIDA (NO OBLIGATORIA) ==== */
+
+        "ui": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "presentacion": {
+              "type": "string",
+              "enum": ["card", "lista"],
+              "default": "card"
+            },
+            "accion_principal": {
+              "type": "string",
+              "description": "Ej: pedir_turno, solicitar_presupuesto, contactar"
+            }
+          }
+        },
+
+        /* ==== NOTAS LIBRES ==== */
+
+        "notas": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
