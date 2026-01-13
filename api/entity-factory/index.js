@@ -168,6 +168,29 @@ export async function buildEntity({ comercioId }) {
     C = {};
   }
 
+    // ===== BLOCK E (Servicios) =====
+  let E = { habilitado: false };
+
+  try {
+    const ss = await comercioRef.collection('servicios').get();
+    const servicios = ss.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+
+    if (servicios.length > 0) {
+      E = {
+        habilitado: true,
+        servicios
+      };
+    }
+  } catch (err) {
+    console.warn('⚠️ No se pudieron cargar servicios (Block E)', err);
+    E = { habilitado: false };
+  }
+
+  Object.freeze(E);
+
   // ===== FINAL ENTITY =====
   return {
     meta: {
@@ -181,10 +204,12 @@ export async function buildEntity({ comercioId }) {
       blockB: { role: 'single_source_of_truth', mutable: false },
       blockC: { role: 'visual_only', optional: true },
       blockD: { role: 'interaction_protocols', mutable: false }
+      blockE: { role: 'services_runtime', optional: true }
     },
     A,
     B,
     C,
-    D: blockD
+    D: blockD,
+    E
   };
 }
