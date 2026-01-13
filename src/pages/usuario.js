@@ -106,8 +106,6 @@ async function cargarDatosUsuario(uid) {
     const data = snap.exists() ? snap.data() : {};
 
     // Datos reales (NO editables)
-    nombre.value   = data.nombre   || auth.currentUser?.displayName?.split(" ")[0] || "";
-    apellido.value = data.apellido || auth.currentUser?.displayName?.split(" ").slice(1).join(" ") || "";
     mail.value     = data.mail     || auth.currentUser?.email || "";
 
     nombre.disabled = true;
