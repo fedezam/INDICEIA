@@ -75,17 +75,18 @@
       </div>
     </section>
 
-    <!-- ================= TARJETA 4: DISPONIBILIDAD ================= -->
-    <section class="card">
-      <h2 class="card-title">Disponibilidad</h2>
+    <!-- ================= TARJETA: DISPONIBILIDAD ================= -->
+<section class="card">
+  <h2 class="card-title">Disponibilidad</h2>
 
-      <select onchange="setDisponibilidad(this.value)">
-        <option value="">Seleccionar</option>
-        <option value="turno">Con turno</option>
-        <option value="reserva">Por reserva</option>
-        <option value="consultar">Consultar</option>
-      </select>
-    </section>
+  <select onchange="setDisponibilidad(this.value)">
+    <option value="">Seleccionar</option>
+    <option value="inmediata">Disponible de forma inmediata</option>
+    <option value="con_agenda">Requiere coordinación previa</option>
+    <option value="no_disponible">No disponible actualmente</option>
+  </select>
+</section>
+
 
     <!-- ================= TARJETA 5: DURACIÓN ================= -->
     <section class="card">
