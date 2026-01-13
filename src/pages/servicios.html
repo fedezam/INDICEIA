@@ -1,64 +1,45 @@
-<!-- src/pages/servicios.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <title>Servicios</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- El CSS se importa desde servicios.js -->
 </head>
+
 <body>
-
-  <!-- ==================== HEADER / LAYOUT ==================== -->
-  <!-- renderLayout() del skeleton se encarga de esto -->
-
-  <!-- ==================== CONTENIDO ==================== -->
+  <!-- Layout general lo inyecta runDataPage -->
   <main class="page-content">
 
-    <!-- ---------- INTRO ---------- -->
+    <!-- ===== INTRO ===== -->
     <section class="page-intro">
       <h1>Servicios</h1>
       <p>
         Declarás los servicios que ofrece tu comercio.
-        No son productos individuales, sino prestaciones que explican
-        <strong>qué hacés, cómo lo hacés y en qué condiciones</strong>.
+        Cada tarjeta representa un servicio real que la IA podrá explicar
+        sin inventar información.
       </p>
     </section>
 
-    <!-- ---------- TARJETAS DE SERVICIOS ---------- -->
+    <!-- ===== TARJETAS ===== -->
     <section
       id="serviciosContainer"
       class="servicios-container"
     >
-      <!--
-        Las tarjetas se renderizan dinámicamente desde servicios.js
-
-        Cada tarjeta representa UN servicio,
-        pero NO guarda de forma independiente.
-      -->
+      <!-- Las tarjetas se renderizan desde servicios.js -->
     </section>
 
-    <!-- ---------- AYUDA / NOTA ---------- -->
+    <!-- ===== NOTA ===== -->
     <section class="page-hint">
       <p>
-        💡 No todos los servicios necesitan precio fijo o duración exacta.
-        Completá solo lo que aplique a tu caso.
+        💡 Completá solo lo que aplique.
+        Si un dato no existe, no se guarda ni se usa.
       </p>
     </section>
 
   </main>
 
-  <!-- ==================== FOOTER / SAVE ==================== -->
-  <!--
-    El botón Guardar NO va acá.
-    Lo inyecta el skeleton (saveChangesBtnBottom)
-    y controla el flujo hacia dashboard.
-  -->
-
-  <!-- ==================== SCRIPT ==================== -->
+  <!-- El botón Guardar es global (skeleton) -->
   <script type="module" src="./servicios.js"></script>
-
 </body>
 </html>
 
