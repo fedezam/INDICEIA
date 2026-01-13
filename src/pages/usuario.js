@@ -105,14 +105,14 @@ async function cargarDatosUsuario(uid) {
     const snap = await getDoc(ref);
     const data = snap.exists() ? snap.data() : {};
 
-    // Datos reales (NO editables)
+    // Datos reales 
     nombre.disabled = false;    // ← Agregar esto
     apellido.disabled = false;  // ← Agregar esto 
     mail.value     = data.mail     || auth.currentUser?.email || "";
 
-    nombre.disabled = true;
-    apellido.disabled = true;
+    // Solo deshabilitar email
     mail.disabled = true;
+
 
     // País fijo
     pais.value = "Argentina";
