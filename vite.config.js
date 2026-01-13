@@ -15,6 +15,7 @@ export default defineConfig({
         "mi-comercio": resolve(__dirname, "src/pages/mi-comercio.html"),
         horarios: resolve(__dirname, "src/pages/horarios.html"),
         productos: resolve(__dirname, "src/pages/productos.html"),
+        servicios: resolve(__dirname, "src/pages/servicios.html"),
         "ia-config": resolve(__dirname, "src/pages/ia-config.html"),
         dashboard: resolve(__dirname, "src/pages/dashboard.html"),
         visual: resolve(__dirname, "src/pages/visual.html"),
