@@ -116,8 +116,10 @@ async function guardarConfiguracion(uid) {
     hideLoading();
     showToast("Configuración guardada", "success");
 
-    // 🔑 NO decidimos acá el próximo paso
-    // El flowController se encarga
+    // ⏳ Esperar a que Firestore propague los cambios
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // 🔑 Redirigir al dashboard para que flow controller decida el siguiente paso
     redirectAfterSave();
 
   } catch (err) {
@@ -152,4 +154,3 @@ auth.onAuthStateChanged((user) => {
 
   cargarEstadoPrevio(user.uid);
 });
-
