@@ -254,11 +254,9 @@ const miComercioModule = {
 
       // Actualizar estado local
       comercioData = { ...comercioData, ...updates };
-
+      
       hideLoading();
       console.log('✅ Guardado completado exitosamente');
-
-      // ⏳ AGREGAR ESTO ACÁ ⏳
       showToast('Comercio guardado correctamente', 'success');
       
       // Esperar a que Firestore propague
@@ -266,14 +264,6 @@ const miComercioModule = {
       
       // Redirigir para que flow controller decida el siguiente paso
       window.location.href = "/dashboard.html";
-
-    } catch (error) {
-      hideLoading();
-      console.error('❌ Error guardando:', error);
-      showToast('Error', 'No se pudo guardar: ' + error.message, 'error');
-      throw error;
-    }
-  },
 
     } catch (error) {
       hideLoading();
