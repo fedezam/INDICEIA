@@ -23,7 +23,7 @@ const PUBLIC_PAGES = ["login", "registro", "index", ""];
    ========================================================= */
 
 function buildPipeline(offerType = {}) {
-  const steps = ["usuario", "crear-entidad"];
+  const steps = ["usuario", "crear-entidad", "mi-comercio"];
 
   const { productos, servicios } = offerType;
 
