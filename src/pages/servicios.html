@@ -1,3 +1,4 @@
+<!-- src/pages/servicios.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,99 +6,59 @@
   <title>Servicios</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- CSS globales -->
-  <link rel="stylesheet" href="../styles/global.css" />
-  <link rel="stylesheet" href="../styles/forms.css" />
-  <link rel="stylesheet" href="../styles/buttons.css" />
-
-  <!-- CSS exclusivo -->
-  <link rel="stylesheet" href="./servicios.css" />
+  <!-- El CSS se importa desde servicios.js -->
 </head>
-
 <body>
-  <main class="container">
-    <header class="page-header">
+
+  <!-- ==================== HEADER / LAYOUT ==================== -->
+  <!-- renderLayout() del skeleton se encarga de esto -->
+
+  <!-- ==================== CONTENIDO ==================== -->
+  <main class="page-content">
+
+    <!-- ---------- INTRO ---------- -->
+    <section class="page-intro">
       <h1>Servicios</h1>
-      <p>Definí los servicios que ofrece tu comercio.</p>
-    </header>
-
-    <section id="services-list"></section>
-
-    <section class="service-form">
-      <h2>Agregar / Editar servicio</h2>
-
-      <form id="serviceForm">
-        <!-- Nombre -->
-        <label>
-          ¿Qué servicio ofrecés? *
-          <input type="text" id="nombre" required />
-        </label>
-
-        <!-- Modalidad -->
-        <fieldset>
-          <legend>¿Cómo se brinda? *</legend>
-          <label><input type="checkbox" value="presencial" /> Presencial</label>
-          <label><input type="checkbox" value="remoto" /> Remoto</label>
-          <label><input type="checkbox" value="a_domicilio" /> A domicilio</label>
-        </fieldset>
-
-        <!-- Precio -->
-        <label>
-          ¿Cómo se obtiene el precio? *
-          <select id="accesoPrecio" required>
-            <option value="">Seleccionar</option>
-            <option value="fijo">Precio fijo</option>
-            <option value="desde">Desde un valor</option>
-            <option value="presupuesto">Requiere presupuesto</option>
-            <option value="consultar">Consultar</option>
-            <option value="gratis">Gratis</option>
-          </select>
-        </label>
-
-        <div id="precioWrapper" class="hidden">
-          <label>
-            Precio ($)
-            <input type="number" id="precioValor" min="0" />
-          </label>
-        </div>
-
-        <!-- Disponibilidad -->
-        <label>
-          Disponibilidad *
-          <select id="disponibilidad" required>
-            <option value="">Seleccionar</option>
-            <option value="inmediata">Inmediata</option>
-            <option value="segun_turno">Según turno</option>
-            <option value="por_reserva">Por reserva</option>
-            <option value="consultar">Consultar</option>
-            <option value="agotado">Agotado</option>
-          </select>
-        </label>
-
-        <!-- Opcionales -->
-        <label>
-          Duración aproximada (opcional)
-          <input type="text" id="duracion" placeholder="Ej: 60 minutos, 2 horas, 3 meses" />
-        </label>
-
-        <label>
-          Notas (opcional)
-          <textarea id="notas" rows="3"></textarea>
-        </label>
-
-        <button type="submit" class="btn btn-primary">
-          Guardar servicio
-        </button>
-      </form>
+      <p>
+        Declarás los servicios que ofrece tu comercio.
+        No son productos individuales, sino prestaciones que explican
+        <strong>qué hacés, cómo lo hacés y en qué condiciones</strong>.
+      </p>
     </section>
 
-    <footer class="actions">
-      <button id="saveAndContinue" class="btn btn-success">
-        Guardar y continuar
-      </button>
-    </footer>
+    <!-- ---------- TARJETAS DE SERVICIOS ---------- -->
+    <section
+      id="serviciosContainer"
+      class="servicios-container"
+    >
+      <!--
+        Las tarjetas se renderizan dinámicamente desde servicios.js
+
+        Cada tarjeta representa UN servicio,
+        pero NO guarda de forma independiente.
+      -->
+    </section>
+
+    <!-- ---------- AYUDA / NOTA ---------- -->
+    <section class="page-hint">
+      <p>
+        💡 No todos los servicios necesitan precio fijo o duración exacta.
+        Completá solo lo que aplique a tu caso.
+      </p>
+    </section>
+
   </main>
 
+  <!-- ==================== FOOTER / SAVE ==================== -->
+  <!--
+    El botón Guardar NO va acá.
+    Lo inyecta el skeleton (saveChangesBtnBottom)
+    y controla el flujo hacia dashboard.
+  -->
+
+  <!-- ==================== SCRIPT ==================== -->
   <script type="module" src="./servicios.js"></script>
+
 </body>
 </html>
+
