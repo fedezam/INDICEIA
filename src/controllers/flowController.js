@@ -8,7 +8,7 @@ import { db } from "../firebase.js";
 
 function getCurrentPage() {
   const file = window.location.pathname.split("/").pop();
-  return file?.replace(".html", "") || "usuario";
+  return file?.replace(".html", "") || "index";
 }
 
 function isEditMode() {
