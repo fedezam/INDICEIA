@@ -1,0 +1,35 @@
+.service-form {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border-radius: 8px;
+}
+
+.service-form label,
+.service-form fieldset {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.service-form input,
+.service-form select,
+.service-form textarea {
+  width: 100%;
+}
+
+.service-card {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.hidden {
+  display: none;
+}
+
+.actions {
+  margin-top: 2rem;
+  text-align: right;
+}
