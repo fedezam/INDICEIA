@@ -3,127 +3,137 @@
 <head>
   <meta charset="UTF-8" />
   <title>Servicios</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
-
 <body>
-  <main class="page-container servicios-page">
 
-    <!-- ================= TARJETA 1: IDENTIDAD ================= -->
-    <section class="card">
-      <h2 class="card-title">Servicio</h2>
+<main class="page">
 
-      <label class="form-label">
-        ¿Qué servicio ofrecés?
-        <input
-          type="text"
-          placeholder="Ej: Masaje descontracturante"
-          oninput="window.setNombre(this.value)"
-        />
+  <h1>Servicios</h1>
+  <p class="page-hint">
+    Definí qué servicios ofrecés. Con esto alcanza para que la IA los entienda.
+  </p>
+
+  <!-- TARJETA SERVICIO -->
+  <section class="card">
+
+    <label>
+      ¿Qué servicio ofrecés? *
+      <input
+        type="text"
+        placeholder="Ej: Masaje descontracturante"
+        oninput="page.setNombre(this.value)"
+      />
+    </label>
+
+    <label>
+      Descripción (opcional)
+      <textarea
+        placeholder="Detalle breve para el cliente"
+        oninput="page.setDescripcion(this.value)"
+      ></textarea>
+    </label>
+
+    <fieldset>
+      <legend>¿Cómo se presta?</legend>
+
+      <label>
+        <input type="checkbox" value="presencial" onchange="updateModalidades()" />
+        Presencial
       </label>
 
-      <label class="form-label">
-        Descripción (opcional)
-        <textarea
-          placeholder="Detalle breve para el cliente"
-          oninput="window.setDescripcion(this.value)"
-        ></textarea>
+      <label>
+        <input type="checkbox" value="remoto" onchange="updateModalidades()" />
+        Remoto
       </label>
-    </section>
 
-    <!-- ================= TARJETA 2: MODALIDAD ================= -->
-    <section class="card">
-      <h2 class="card-title">¿Cómo se presta?</h2>
+      <label>
+        <input type="checkbox" value="a_domicilio" onchange="updateModalidades()" />
+        A domicilio
+      </label>
+    </fieldset>
 
-      <div class="checkbox-group">
-        <label>
-          <input type="checkbox" value="presencial" onchange="handleModalidades()" />
-          Presencial
-        </label>
-        <label>
-          <input type="checkbox" value="remoto" onchange="handleModalidades()" />
-          Remoto
-        </label>
-        <label>
-          <input type="checkbox" value="domicilio" onchange="handleModalidades()" />
-          A domicilio
-        </label>
-      </div>
-    </section>
+    <fieldset>
+      <legend>Precio</legend>
 
-    <!-- ================= TARJETA 3: PRECIO ================= -->
-    <section class="card">
-      <h2 class="card-title">Precio</h2>
-
-      <div class="radio-group">
-        <label>
-          <input type="radio" name="precio" onchange="setPrecioConsultar()" />
-          Consultar
-        </label>
-
-        <label>
-          <input type="radio" name="precio" onchange="togglePrecioFijo(true)" />
-          Precio fijo
-        </label>
-      </div>
-
-      <div id="precioFijoContainer" class="hidden">
+      <label>
         <input
-          type="number"
-          placeholder="Valor"
-          oninput="setPrecioFijo(this.value)"
+          type="radio"
+          name="precio"
+          checked
+          onchange="page.setPrecioConsultar()"
         />
-      </div>
-    </section>
+        Consultar
+      </label>
 
-    <!-- ================= TARJETA: DISPONIBILIDAD ================= -->
-<section class="card">
-  <h2 class="card-title">Disponibilidad</h2>
-
-  <select onchange="setDisponibilidad(this.value)">
-    <option value="">Seleccionar</option>
-    <option value="inmediata">Disponible de forma inmediata</option>
-    <option value="con_agenda">Requiere coordinación previa</option>
-    <option value="no_disponible">No disponible actualmente</option>
-  </select>
-</section>
-
-
-    <!-- ================= TARJETA 5: DURACIÓN ================= -->
-    <section class="card">
-      <h2 class="card-title">Duración (opcional)</h2>
+      <label>
+        <input
+          type="radio"
+          name="precio"
+          onchange="enablePrecioFijo(true)"
+        />
+        Precio fijo
+      </label>
 
       <input
+        id="precioFijoInput"
         type="number"
-        placeholder="Minutos (ej: 40)"
-        oninput="setDuracion(this.value)"
+        placeholder="Valor"
+        disabled
+        oninput="page.setPrecioFijo(this.value)"
       />
-    </section>
+    </fieldset>
 
-  </main>
+    <fieldset>
+      <legend>Disponibilidad</legend>
 
-  <!-- ================= HELPERS UI ================= -->
-  <script>
-    function handleModalidades() {
-      const checked = Array.from(
-        document.querySelectorAll('input[type="checkbox"]:checked')
-      ).map(i => i.value);
+      <select onchange="page.setDisponibilidad(this.value)">
+        <option value="">Seleccionar</option>
+        <option value="turno">Requiere coordinación previa</option>
+        <option value="reserva">Disponible con agenda</option>
+        <option value="consultar">Consultar disponibilidad</option>
+      </select>
+    </fieldset>
 
-      window.setModalidadesSeleccionadas(checked);
-    }
+    <label>
+      Duración (opcional)
+      <input
+        type="number"
+        placeholder="Minutos"
+        oninput="page.setDuracion(this.value)"
+      />
+    </label>
 
-    function togglePrecioFijo(show) {
-      document
-        .getElementById('precioFijoContainer')
-        .classList.toggle('hidden', !show);
+  </section>
 
-      if (!show) {
-        window.setPrecioConsultar();
-      }
-    }
-  </script>
+</main>
 
-  <script type="module" src="./servicios.js"></script>
+<!-- BOTÓN GLOBAL (skeleton) -->
+<button id="saveChangesBtnBottom">
+  Guardar y continuar
+</button>
+
+<script type="module">
+  import * as page from './servicios.js';
+  window.page = page;
+
+  window.updateModalidades = () => {
+    const values = Array.from(
+      document.querySelectorAll('input[type="checkbox"]:checked')
+    ).map(c => c.value);
+
+    page.setModalidadesSeleccionadas(values);
+  };
+
+  window.enablePrecioFijo = (enabled) => {
+    const input = document.getElementById('precioFijoInput');
+    input.disabled = !enabled;
+    if (!enabled) input.value = '';
+  };
+</script>
+
 </body>
 </html>
+
 
 
