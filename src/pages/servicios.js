@@ -257,7 +257,7 @@ function limpiarFormulario() {
     input.value = '';
   });
 
-  // Checkboxes de modalidad
+  // Checkboxes (modalidad y disponibilidad)
   document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
     cb.checked = false;
   });
@@ -271,10 +271,6 @@ function limpiarFormulario() {
     inputPrecioFijo.disabled = true;
     inputPrecioFijo.value = '';
   }
-
-  // Select de disponibilidad
-  const selectDisponibilidad = document.querySelector('select[name="disponibilidad"]');
-  if (selectDisponibilidad) selectDisponibilidad.value = '';
 }
 
 // ==================== SAVE ====================
