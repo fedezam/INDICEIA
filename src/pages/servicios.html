@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -17,14 +16,9 @@
   <section class="card">
     <h2>Crear nuevo servicio</h2>
 
-    <!-- NOMBRE (OBLIGATORIO) -->
+    <!-- NOMBRE -->
     <label class="campo-obligatorio">
       <span class="label-titulo">¿Qué servicio ofrecés? *</span>
-      <span class="label-ayuda">
-        El nombre del servicio tal como lo conocen tus clientes.
-        <br>
-        <em>Ejemplos: "Corte de pelo", "Consulta médica", "Trámite de partida de nacimiento"</em>
-      </span>
       <input
         type="text"
         placeholder="Ej: Masaje descontracturante"
@@ -32,14 +26,9 @@
       />
     </label>
 
-    <!-- DESCRIPCIÓN (OPCIONAL) -->
+    <!-- DESCRIPCIÓN -->
     <label>
       <span class="label-titulo">Descripción (opcional)</span>
-      <span class="label-ayuda">
-        Agregá detalles que ayuden a entender mejor el servicio.
-        <br>
-        <em>Ejemplo: "Masaje terapéutico para aliviar tensiones musculares"</em>
-      </span>
       <textarea
         rows="3"
         placeholder="Explicá brevemente en qué consiste el servicio"
@@ -47,52 +36,41 @@
       ></textarea>
     </label>
 
-    <!-- MODALIDAD (OBLIGATORIO) -->
+    <!-- MODALIDAD -->
     <fieldset class="campo-obligatorio">
       <legend>¿Cómo se presta este servicio? *</legend>
-      <span class="fieldset-ayuda">
-        Indicá de qué manera ofrecés este servicio. Podés marcar más de una opción.
-      </span>
+
       <label class="checkbox-con-explicacion">
         <input type="checkbox" value="presencial" onchange="updateModalidades()" />
-        <div>
-          <strong>Presencial</strong>
-          <span>El cliente viene a tu local, consultorio u oficina</span>
-        </div>
+        <strong>Presencial</strong>
       </label>
+
       <label class="checkbox-con-explicacion">
         <input type="checkbox" value="a_domicilio" onchange="updateModalidades()" />
-        <div>
-          <strong>A domicilio</strong>
-          <span>Vos vas al domicilio del cliente</span>
-        </div>
+        <strong>A domicilio</strong>
       </label>
+
       <label class="checkbox-con-explicacion">
         <input type="checkbox" value="remoto" onchange="updateModalidades()" />
-        <div>
-          <strong>Remoto (online)</strong>
-          <span>Se hace por videollamada, teléfono o internet (ideal para trámites o cursos)</span>
-        </div>
+        <strong>Remoto</strong>
       </label>
     </fieldset>
 
-    <!-- PRECIO (OPCIONAL) -->
+    <!-- PRECIO -->
     <fieldset>
       <legend>Precio</legend>
-      <span class="fieldset-ayuda">
-        Si tenés un precio fijo, indicalo. Si varía según el caso, dejá en "A consultar".
-      </span>
+
       <label class="radio-option">
         <input
           type="radio"
           name="precio"
           value="consultar"
           checked
-          onchange="enablePrecioFijo(false); page.setPrecioConsultar()"
+          onchange="page.setPrecioConsultar(); enablePrecioFijo(false)"
         />
         <strong>A consultar</strong>
-        <span>El precio se define con cada cliente</span>
       </label>
+
       <label class="radio-option">
         <input
           type="radio"
@@ -101,102 +79,73 @@
           onchange="enablePrecioFijo(true)"
         />
         <strong>Precio fijo</strong>
-        <span>Siempre tiene el mismo precio</span>
       </label>
+
       <input
         id="precioFijoInput"
         type="number"
         placeholder="Ej: 5000"
         disabled
         oninput="page.setPrecioFijo(this.value)"
-        style="margin-top: 0.5rem;"
       />
     </fieldset>
 
-    <!-- DISPONIBILIDAD (OBLIGATORIO) -->
+    <!-- DISPONIBILIDAD -->
     <fieldset class="campo-obligatorio">
       <legend>¿Cuándo está disponible este servicio? *</legend>
-      <span class="fieldset-ayuda">
-        Indicá si el cliente puede acceder inmediatamente o si necesita coordinación previa.
-        <br>
-        <strong>Seleccioná solo UNA opción.</strong>
-      </span>
+
       <label class="checkbox-con-explicacion">
-        <input type="checkbox" name="disponibilidad" value="inmediata" onchange="updateDisponibilidad(this)" />
-        <div>
-          <strong>Inmediata</strong>
-          <span>Sin turno, por orden de llegada (ej: peluquería, trámite simple)</span>
-        </div>
+        <input
+          type="checkbox"
+          name="disponibilidad"
+          value="inmediata"
+          onchange="updateDisponibilidad(this)"
+        />
+        <strong>Inmediata</strong>
       </label>
+
       <label class="checkbox-con-explicacion">
-        <input type="checkbox" name="disponibilidad" value="a_coordinar" onchange="updateDisponibilidad(this)" />
-        <div>
-          <strong>A coordinar</strong>
-          <span>Requiere turno o agenda previa (ej: médico, masajista, abogado)</span>
-        </div>
+        <input
+          type="checkbox"
+          name="disponibilidad"
+          value="a_coordinar"
+          onchange="updateDisponibilidad(this)"
+        />
+        <strong>A coordinar</strong>
       </label>
     </fieldset>
 
-    <!-- DURACIÓN (OPCIONAL) -->
+    <!-- DURACIÓN -->
     <label>
       <span class="label-titulo">Duración aproximada (opcional)</span>
-      <span class="label-ayuda">
-        Solo si podés estimar cuánto dura el servicio.
-        <br>
-        <em>Ejemplo: un masaje dura 60 minutos. Un arreglo técnico NO se puede estimar.</em>
-        <br>
-        Si no sabés cuánto dura, dejalo vacío.
-      </span>
       <input
         type="number"
-        placeholder="Ej: 60 (minutos)"
+        placeholder="Ej: 60"
         oninput="page.setDuracion(this.value)"
       />
     </label>
 
-    <!-- VARIANTES (OPCIONAL) -->
+    <!-- VARIANTES -->
     <label>
-      <span class="label-titulo">Variantes del servicio (opcional)</span>
-      <span class="label-ayuda">
-        Si este servicio tiene opciones diferentes (básico, premium, corto, largo), escribí cada una en una línea.
-        <br>
-        <em>Ejemplo para masajes:</em>
-        <br>
-        Básico 30min $500
-        <br>
-        Extendido 60min $1000
-        <br>
-        Full con piedras 90min $1500
-      </span>
+      <span class="label-titulo">Variantes (opcional)</span>
       <textarea
         rows="4"
-        placeholder="Escribí cada variante en una línea&#10;Ej: Básico 30min $500&#10;Ej: Premium 60min $1200"
+        placeholder="Una variante por línea"
         oninput="page.setVariantes(this.value)"
       ></textarea>
     </label>
 
-    <!-- NOTAS (OPCIONAL) -->
+    <!-- NOTAS -->
     <label>
-      <span class="label-titulo">Notas o información adicional (opcional)</span>
-      <span class="label-ayuda">
-        Agregá cualquier dato útil: requisitos, URLs de formularios, direcciones, horarios especiales, etc.
-        <br>
-        <em>Ejemplos:</em>
-        <br>
-        • "Traer DNI original y fotocopia"
-        <br>
-        • "Formulario disponible en: www.ejemplo.com/form.pdf"
-        <br>
-        • "Se retira en: Calle Falsa 123, ventanilla 5"
-      </span>
+      <span class="label-titulo">Notas (opcional)</span>
       <textarea
         rows="4"
-        placeholder="Agregá toda la información que consideres importante para el cliente"
+        placeholder="Información adicional"
         oninput="page.setNotas(this.value)"
       ></textarea>
     </label>
 
-    <!-- BOTÓN AGREGAR -->
+    <!-- AGREGAR -->
     <button
       type="button"
       class="btn-agregar"
@@ -206,44 +155,42 @@
     </button>
   </section>
 
-  <!-- ==================== LISTA DE SERVICIOS ACUMULADOS ==================== -->
+  <!-- ==================== LISTA ==================== -->
   <section class="card lista-servicios">
     <h2>Servicios agregados</h2>
-    <p class="lista-ayuda">
-      Estos servicios se guardarán cuando hagas click en "Guardar y continuar" al final.
-    </p>
     <div id="serviciosAcumuladosContainer">
       <p class="lista-vacia">No hay servicios agregados aún</p>
     </div>
   </section>
-
 </main>
 
-<!-- BOTÓN GLOBAL (skeleton) -->
 <button id="saveChangesBtnBottom">
   💾 Guardar y continuar
 </button>
 
+<!-- ==================== SCRIPT ==================== -->
 <script type="module">
   import * as page from './servicios.js';
   window.page = page;
 
   window.updateModalidades = () => {
     const values = Array.from(
-      document.querySelectorAll('input[type="checkbox"][value="presencial"], input[type="checkbox"][value="a_domicilio"], input[type="checkbox"][value="remoto"]')
+      document.querySelectorAll(
+        'input[type="checkbox"][value="presencial"], input[type="checkbox"][value="a_domicilio"], input[type="checkbox"][value="remoto"]'
+      )
     )
-    .filter(cb => cb.checked)
-    .map(c => c.value);
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+
     page.setModalidadesSeleccionadas(values);
   };
 
   window.updateDisponibilidad = (checkbox) => {
-    // Solo uno puede estar marcado
     const checkboxes = document.querySelectorAll('input[name="disponibilidad"]');
     checkboxes.forEach(cb => {
       if (cb !== checkbox) cb.checked = false;
     });
-    
+
     if (checkbox.checked) {
       page.setDisponibilidad(checkbox.value);
     } else {
@@ -254,6 +201,7 @@
   window.enablePrecioFijo = (enabled) => {
     const input = document.getElementById('precioFijoInput');
     input.disabled = !enabled;
+
     if (!enabled) {
       input.value = '';
       page.setPrecioConsultar();
