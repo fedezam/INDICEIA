@@ -1,6 +1,6 @@
 // src/pages/servicios.js
 // ==================== SERVICIOS ====================
-// Lógica completa · sin inferencias · sin campos vacíos
+// Lógica de acumulación · sin campos vacíos · núcleo obligatorio
 
 // ==================== ESTILOS ====================
 import '../styles/base.css';
@@ -14,9 +14,8 @@ import './servicios.css';
 import { db } from '../firebase.js';
 import {
   collection,
-  getDocs,
-  addDoc,
-  deleteDoc
+  writeBatch,
+  doc
 } from 'firebase/firestore';
 
 // ==================== UTILS ====================
@@ -27,7 +26,7 @@ import { runDataPage } from '../shared/dataPageSkeleton.js';
 
 // ==================== ESTADO ====================
 let currentComercioId = null;
-let servicios = [];
+let serviciosAcumulados = []; // Array temporal para acumular servicios antes de guardar
 let draft = createEmptyDraft();
 
 // ==================== DRAFT ====================
@@ -38,32 +37,35 @@ function createEmptyDraft() {
 // ==================== LOAD ====================
 async function load({ currentComercioId: comercioId }) {
   currentComercioId = comercioId;
-
-  if (!currentComercioId) return;
-
-  const snap = await getDocs(
-    collection(db, 'comercios', currentComercioId, 'servicios')
-  );
-
-  servicios = snap.docs.map(d => ({
-    id: d.id,
-    ...d.data()
-  }));
+  serviciosAcumulados = [];
+  draft = createEmptyDraft();
 }
 
 // ==================== RENDER ====================
 function render() {
-  // HTML se enchufa después
+  renderServiciosAcumulados();
 }
 
 // ==================== VALIDACIÓN ====================
+
+// Validar NÚCLEO obligatorio del draft actual
+function isDraftValid() {
+  return Boolean(
+    draft.nombre &&
+    draft.nombre.trim().length > 0 &&
+    draft.modalidad &&
+    draft.disponibilidad
+  );
+}
+
+// Validar si hay servicios para guardar en DB
 function isFormValid() {
-  return Boolean(draft.nombre && draft.nombre.trim().length > 0);
+  return serviciosAcumulados.length > 0;
 }
 
 // ==================== DATA ====================
 function getCurrentData() {
-  return structuredClone(draft);
+  return { serviciosAcumulados: structuredClone(serviciosAcumulados) };
 }
 
 // ==================== MUTADORES (REGLAS) ====================
@@ -106,7 +108,7 @@ function setModalidadesSeleccionadas(values) {
 
 // ---- Precio ----
 function setPrecioConsultar() {
-  draft.precio = { tipo: 'consultar' };
+  delete draft.precio;
 }
 
 function setPrecioFijo(valor) {
@@ -124,12 +126,12 @@ function setPrecioFijo(valor) {
 
 // ---- Disponibilidad ----
 function setDisponibilidad(tipo) {
-  if (!['turno', 'reserva', 'consultar'].includes(tipo)) {
+  if (!tipo || !['inmediata', 'a_coordinar'].includes(tipo)) {
     delete draft.disponibilidad;
     return;
   }
 
-  draft.disponibilidad = { tipo };
+  draft.disponibilidad = tipo;
 }
 
 // ---- Duración ----
@@ -143,24 +145,159 @@ function setDuracion(minutos) {
   draft.duracion_minutos = num;
 }
 
-// ==================== SAVE ====================
-async function save() {
-  if (!currentComercioId) return;
-  if (!isFormValid()) {
-    showToast('Error', 'El servicio debe tener un nombre', 'warning');
+// ---- Variantes ----
+function setVariantes(texto) {
+  if (!texto || !texto.trim()) {
+    delete draft.variantes;
     return;
   }
 
-  showLoading('Guardando servicio...');
+  // Split por saltos de línea y filtrar vacíos
+  const lineas = texto
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
+
+  if (lineas.length === 0) {
+    delete draft.variantes;
+    return;
+  }
+
+  draft.variantes = lineas;
+}
+
+// ---- Notas ----
+function setNotas(value) {
+  if (!value || !value.trim()) {
+    delete draft.notas;
+    return;
+  }
+  draft.notas = value.trim();
+}
+
+// ==================== AGREGAR SERVICIO ====================
+function agregarServicio() {
+  if (!isDraftValid()) {
+    showToast(
+      'Campos obligatorios',
+      'Completá: Nombre, Modalidad y Disponibilidad',
+      'warning'
+    );
+    return;
+  }
+
+  // Clonar draft y agregarlo al array
+  serviciosAcumulados.push(structuredClone(draft));
+
+  // Limpiar formulario
+  draft = createEmptyDraft();
+  limpiarFormulario();
+
+  // Actualizar vista
+  renderServiciosAcumulados();
+
+  showToast('Listo', 'Servicio agregado. Podés crear otro o guardar.', 'success');
+}
+
+// ==================== ELIMINAR SERVICIO ====================
+function eliminarServicio(index) {
+  if (index < 0 || index >= serviciosAcumulados.length) return;
+
+  serviciosAcumulados.splice(index, 1);
+  renderServiciosAcumulados();
+
+  showToast('Eliminado', 'Servicio eliminado de la lista', 'info');
+}
+
+// ==================== RENDER LISTA ====================
+function renderServiciosAcumulados() {
+  const container = document.getElementById('serviciosAcumuladosContainer');
+  if (!container) return;
+
+  if (serviciosAcumulados.length === 0) {
+    container.innerHTML = '<p class="lista-vacia">No hay servicios agregados aún</p>';
+    return;
+  }
+
+  const html = serviciosAcumulados
+    .map((s, idx) => {
+      const modalidad = s.modalidades
+        ? s.modalidades.join(', ')
+        : s.modalidad || '';
+
+      const precio = s.precio
+        ? `$${s.precio.valor}`
+        : 'A consultar';
+
+      return `
+        <div class="servicio-item">
+          <div class="servicio-info">
+            <strong>${s.nombre}</strong>
+            <span>${modalidad} · ${s.disponibilidad || ''}</span>
+            <span>${precio}</span>
+          </div>
+          <button
+            class="btn-eliminar"
+            onclick="page.eliminarServicio(${idx})"
+          >
+            Eliminar
+          </button>
+        </div>
+      `;
+    })
+    .join('');
+
+  container.innerHTML = html;
+}
+
+// ==================== LIMPIAR FORMULARIO ====================
+function limpiarFormulario() {
+  // Inputs de texto
+  document.querySelectorAll('input[type="text"], textarea, input[type="number"]').forEach(input => {
+    input.value = '';
+  });
+
+  // Checkboxes de modalidad
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+  });
+
+  // Radios de precio
+  const radioConsultar = document.querySelector('input[name="precio"][value="consultar"]');
+  if (radioConsultar) radioConsultar.checked = true;
+
+  const inputPrecioFijo = document.getElementById('precioFijoInput');
+  if (inputPrecioFijo) {
+    inputPrecioFijo.disabled = true;
+    inputPrecioFijo.value = '';
+  }
+
+  // Select de disponibilidad
+  const selectDisponibilidad = document.querySelector('select[name="disponibilidad"]');
+  if (selectDisponibilidad) selectDisponibilidad.value = '';
+}
+
+// ==================== SAVE ====================
+async function save() {
+  if (!currentComercioId) return;
+  if (serviciosAcumulados.length === 0) {
+    showToast('Error', 'Agregá al menos un servicio', 'warning');
+    return;
+  }
+
+  showLoading('Guardando servicios...');
 
   try {
-    await addDoc(
-      collection(db, 'comercios', currentComercioId, 'servicios'),
-      draft
-    );
+    const batch = writeBatch(db);
 
-    draft = createEmptyDraft();
-    showToast('OK', 'Servicio guardado', 'success');
+    serviciosAcumulados.forEach(servicio => {
+      const docRef = doc(collection(db, 'comercios', currentComercioId, 'servicios'));
+      batch.set(docRef, servicio);
+    });
+
+    await batch.commit();
+
+    showToast('OK', `${serviciosAcumulados.length} servicio(s) guardado(s)`, 'success');
   } catch (err) {
     console.error(err);
     showToast('Error', err.message, 'error');
@@ -184,5 +321,11 @@ runDataPage({
   setPrecioConsultar,
   setPrecioFijo,
   setDisponibilidad,
-  setDuracion
+  setDuracion,
+  setVariantes,
+  setNotas,
+
+  // acciones
+  agregarServicio,
+  eliminarServicio
 });
