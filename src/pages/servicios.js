@@ -1,4 +1,3 @@
-
 // src/pages/servicios.js
 // ==================== SERVICIOS ====================
 // Lógica de acumulación · sin campos vacíos · núcleo obligatorio
@@ -16,7 +15,8 @@ import { db } from '../firebase.js';
 import {
   collection,
   writeBatch,
-  doc
+  doc,
+  getDocs
 } from 'firebase/firestore';
 
 // ==================== UTILS ====================
@@ -38,7 +38,28 @@ function createEmptyDraft() {
 // ==================== LOAD ====================
 async function load({ currentComercioId: comercioId }) {
   currentComercioId = comercioId;
-  serviciosAcumulados = [];
+
+  if (!currentComercioId) {
+    serviciosAcumulados = [];
+    draft = createEmptyDraft();
+    return;
+  }
+
+  // Cargar servicios existentes de la DB
+  try {
+    const snap = await getDocs(
+      collection(db, 'comercios', currentComercioId, 'servicios')
+    );
+
+    serviciosAcumulados = snap.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+  } catch (err) {
+    console.error('Error cargando servicios:', err);
+    serviciosAcumulados = [];
+  }
+
   draft = createEmptyDraft();
 }
 
@@ -187,6 +208,11 @@ function agregarServicio() {
     return;
   }
 
+  // Agregar campo activo si no existe (por default true)
+  if (draft.activo === undefined) {
+    draft.activo = true;
+  }
+
   // Clonar draft y agregarlo al array
   serviciosAcumulados.push(structuredClone(draft));
 
@@ -197,7 +223,11 @@ function agregarServicio() {
   // Actualizar vista
   renderServiciosAcumulados();
 
-  showToast('Listo', 'Servicio agregado. Podés crear otro o guardar.', 'success');
+  showToast(
+    '✅ Servicio agregado',
+    'Podés crear otro servicio o guardar cuando termines.',
+    'success'
+  );
 }
 
 // ==================== ELIMINAR SERVICIO ====================
@@ -208,6 +238,106 @@ function eliminarServicio(index) {
   renderServiciosAcumulados();
 
   showToast('Eliminado', 'Servicio eliminado de la lista', 'info');
+}
+
+// ==================== EDITAR SERVICIO ====================
+function editarServicio(index) {
+  if (index < 0 || index >= serviciosAcumulados.length) return;
+
+  const servicio = serviciosAcumulados[index];
+
+  // Cargar datos en el draft
+  draft = structuredClone(servicio);
+
+  // Llenar el formulario
+  cargarServicioEnFormulario(servicio);
+
+  // Eliminar de la lista (se volverá a agregar al guardar)
+  serviciosAcumulados.splice(index, 1);
+  renderServiciosAcumulados();
+
+  // Scroll al formulario
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  showToast('Edición', 'Modificá los campos y agregá el servicio nuevamente', 'info');
+}
+
+// ==================== TOGGLE ACTIVAR/PAUSAR ====================
+function toggleActivarServicio(index) {
+  if (index < 0 || index >= serviciosAcumulados.length) return;
+
+  const servicio = serviciosAcumulados[index];
+  servicio.activo = !servicio.activo;
+
+  renderServiciosAcumulados();
+
+  const estado = servicio.activo ? 'activado' : 'pausado';
+  showToast('Estado actualizado', `Servicio ${estado}`, 'success');
+}
+
+// ==================== CARGAR SERVICIO EN FORMULARIO ====================
+function cargarServicioEnFormulario(servicio) {
+  // Nombre
+  const inputNombre = document.querySelector('input[placeholder*="Masaje"]');
+  if (inputNombre) inputNombre.value = servicio.nombre || '';
+
+  // Descripción
+  const textareaDesc = document.querySelector('textarea[placeholder*="Explicá"]');
+  if (textareaDesc) textareaDesc.value = servicio.descripcion || '';
+
+  // Modalidades (checkboxes)
+  document.querySelectorAll('input[value="presencial"], input[value="a_domicilio"], input[value="remoto"]').forEach(cb => {
+    cb.checked = false;
+  });
+  
+  if (servicio.modalidades && Array.isArray(servicio.modalidades)) {
+    servicio.modalidades.forEach(m => {
+      const cb = document.querySelector(`input[value="${m}"]`);
+      if (cb) cb.checked = true;
+    });
+  } else if (servicio.modalidad) {
+    const cb = document.querySelector(`input[value="${servicio.modalidad}"]`);
+    if (cb) cb.checked = true;
+  }
+
+  // Precio
+  if (servicio.precio && servicio.precio.tipo === 'fijo') {
+    const radioFijo = document.querySelector('input[name="precio"][value="fijo"]');
+    if (radioFijo) {
+      radioFijo.checked = true;
+      const inputPrecio = document.getElementById('precioFijoInput');
+      if (inputPrecio) {
+        inputPrecio.disabled = false;
+        inputPrecio.value = servicio.precio.valor || '';
+      }
+    }
+  } else {
+    const radioConsultar = document.querySelector('input[name="precio"][value="consultar"]');
+    if (radioConsultar) radioConsultar.checked = true;
+  }
+
+  // Disponibilidad
+  document.querySelectorAll('input[name="disponibilidad"]').forEach(cb => {
+    cb.checked = false;
+  });
+  if (servicio.disponibilidad) {
+    const cbDisp = document.querySelector(`input[name="disponibilidad"][value="${servicio.disponibilidad}"]`);
+    if (cbDisp) cbDisp.checked = true;
+  }
+
+  // Duración
+  const inputDuracion = document.querySelector('input[placeholder*="60 (minutos)"]');
+  if (inputDuracion) inputDuracion.value = servicio.duracion_minutos || '';
+
+  // Variantes
+  const textareaVariantes = document.querySelector('textarea[placeholder*="Básico 30min"]');
+  if (textareaVariantes && servicio.variantes) {
+    textareaVariantes.value = servicio.variantes.join('\n');
+  }
+
+  // Notas
+  const textareaNotas = document.querySelector('textarea[placeholder*="información importante"]');
+  if (textareaNotas) textareaNotas.value = servicio.notas || '';
 }
 
 // ==================== RENDER LISTA ====================
@@ -222,27 +352,110 @@ function renderServiciosAcumulados() {
 
   const html = serviciosAcumulados
     .map((s, idx) => {
-      const modalidad = s.modalidades
-        ? s.modalidades.join(', ')
-        : s.modalidad || '';
+      // Modalidad
+      let modalidadTexto = '';
+      if (s.modalidades && s.modalidades.length > 0) {
+        modalidadTexto = s.modalidades.join(' + ');
+      } else if (s.modalidad) {
+        modalidadTexto = s.modalidad;
+      }
 
-      const precio = s.precio
+      // Disponibilidad
+      const disponibilidadTexto = s.disponibilidad === 'inmediata' 
+        ? 'Inmediata (sin turno)' 
+        : 'A coordinar (con turno)';
+
+      // Precio
+      const precioTexto = s.precio
         ? `$${s.precio.valor}`
         : 'A consultar';
 
+      // Duración
+      const duracionTexto = s.duracion_minutos
+        ? `${s.duracion_minutos} minutos`
+        : null;
+
+      // Descripción
+      const descripcionTexto = s.descripcion || null;
+
+      // Estado (activo/pausado)
+      const activo = s.activo !== false; // Por default true si no existe
+      const estadoClass = activo ? 'estado-activo' : 'estado-pausado';
+      const estadoTexto = activo ? '🟢 Activo' : '🔴 Pausado';
+      const botonActivarTexto = activo ? '⏸️ Pausar' : '▶️ Activar';
+
+      // Variantes
+      const variantesHtml = s.variantes && s.variantes.length > 0
+        ? `<div class="servicio-variantes">
+             <strong>Variantes:</strong>
+             <ul>
+               ${s.variantes.map(v => `<li>${v}</li>`).join('')}
+             </ul>
+           </div>`
+        : '';
+
+      // Notas
+      const notasHtml = s.notas
+        ? `<div class="servicio-notas">
+             <strong>Notas:</strong>
+             <p>${s.notas}</p>
+           </div>`
+        : '';
+
       return `
-        <div class="servicio-item">
-          <div class="servicio-info">
-            <strong>${s.nombre}</strong>
-            <span>${modalidad} · ${s.disponibilidad || ''}</span>
-            <span>${precio}</span>
+        <div class="servicio-item ${activo ? '' : 'servicio-pausado'}">
+          <div class="servicio-header">
+            <div class="servicio-titulo-estado">
+              <h3>${s.nombre}</h3>
+              <span class="badge-estado ${estadoClass}">${estadoTexto}</span>
+            </div>
+            <div class="servicio-acciones">
+              <button
+                class="btn-editar"
+                onclick="page.editarServicio(${idx})"
+              >
+                ✏️ Editar
+              </button>
+              <button
+                class="btn-toggle-activo"
+                onclick="page.toggleActivarServicio(${idx})"
+              >
+                ${botonActivarTexto}
+              </button>
+              <button
+                class="btn-eliminar"
+                onclick="page.eliminarServicio(${idx})"
+              >
+                🗑️ Eliminar
+              </button>
+            </div>
           </div>
-          <button
-            class="btn-eliminar"
-            onclick="page.eliminarServicio(${idx})"
-          >
-            Eliminar
-          </button>
+          
+          ${descripcionTexto ? `<p class="servicio-descripcion">${descripcionTexto}</p>` : ''}
+          
+          <div class="servicio-detalles">
+            <div class="detalle-item">
+              <span class="detalle-label">Modalidad:</span>
+              <span class="detalle-valor">${modalidadTexto}</span>
+            </div>
+            <div class="detalle-item">
+              <span class="detalle-label">Disponibilidad:</span>
+              <span class="detalle-valor">${disponibilidadTexto}</span>
+            </div>
+            <div class="detalle-item">
+              <span class="detalle-label">Precio:</span>
+              <span class="detalle-valor">${precioTexto}</span>
+            </div>
+            ${duracionTexto ? `
+              <div class="detalle-item">
+                <span class="detalle-label">Duración:</span>
+                <span class="detalle-valor">${duracionTexto}</span>
+              </div>
+            ` : ''}
+          </div>
+          
+          ${variantesHtml}
+          ${notasHtml}
         </div>
       `;
     })
@@ -285,21 +498,46 @@ async function save() {
   showLoading('Guardando servicios...');
 
   try {
+    // 1. Obtener todos los servicios actuales de la DB
+    const snap = await getDocs(
+      collection(db, 'comercios', currentComercioId, 'servicios')
+    );
+
     const batch = writeBatch(db);
 
+    // 2. Borrar todos los servicios viejos
+    snap.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    // 3. Escribir todos los servicios del array (nuevos y editados)
     serviciosAcumulados.forEach(servicio => {
+      // Remover el id temporal si existe (Firebase genera uno nuevo)
+      const { id, ...servicioData } = servicio;
+      
       const docRef = doc(collection(db, 'comercios', currentComercioId, 'servicios'));
-      batch.set(docRef, servicio);
+      batch.set(docRef, servicioData);
     });
 
     await batch.commit();
 
-    showToast('OK', `${serviciosAcumulados.length} servicio(s) guardado(s)`, 'success');
+    hideLoading();
+    
+    showToast(
+      '💾 Servicios guardados',
+      `Se guardaron ${serviciosAcumulados.length} servicio(s) correctamente.`,
+      'success'
+    );
+
+    // Esperar 1.5 segundos para que el usuario vea el toast antes de redirigir
+    setTimeout(() => {
+      // El skeleton se encarga del redirect automáticamente
+    }, 1500);
+    
   } catch (err) {
     console.error(err);
-    showToast('Error', err.message, 'error');
-  } finally {
     hideLoading();
+    showToast('Error', err.message, 'error');
   }
 }
 
@@ -325,7 +563,9 @@ export {
   
   // Acciones
   agregarServicio,
-  eliminarServicio
+  eliminarServicio,
+  editarServicio,
+  toggleActivarServicio
 };
 
 runDataPage({
@@ -350,3 +590,4 @@ runDataPage({
   agregarServicio,
   eliminarServicio
 });
+
