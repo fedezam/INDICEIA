@@ -1,3 +1,4 @@
+
 // src/pages/servicios.js
 // ==================== SERVICIOS ====================
 // Lógica de acumulación · sin campos vacíos · núcleo obligatorio
@@ -303,6 +304,30 @@ async function save() {
 }
 
 // ==================== EXPORT ====================
+export {
+  // Funciones del ciclo de vida
+  load,
+  render,
+  save,
+  isFormValid,
+  getCurrentData,
+  
+  // Mutadores expuestos para el HTML
+  setNombre,
+  setDescripcion,
+  setModalidadesSeleccionadas,
+  setPrecioConsultar,
+  setPrecioFijo,
+  setDisponibilidad,
+  setDuracion,
+  setVariantes,
+  setNotas,
+  
+  // Acciones
+  agregarServicio,
+  eliminarServicio
+};
+
 runDataPage({
   load,
   render,
