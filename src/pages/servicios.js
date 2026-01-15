@@ -56,8 +56,15 @@ async function load({ currentComercioId: comercioId }) {
       ...d.data()
     }));
   } catch (err) {
-    console.error('Error cargando servicios:', err);
-    serviciosAcumulados = [];
+    // Si es error de permisos, probablemente no hay servicios aún (colección vacía)
+    // Esto es normal en la primera carga
+    if (err.code === 'permission-denied') {
+      console.log('No hay servicios previos o permisos insuficientes. Iniciando con lista vacía.');
+      serviciosAcumulados = [];
+    } else {
+      console.error('Error cargando servicios:', err);
+      serviciosAcumulados = [];
+    }
   }
 
   draft = createEmptyDraft();
@@ -590,4 +597,3 @@ runDataPage({
   agregarServicio,
   eliminarServicio
 });
-
