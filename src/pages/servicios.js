@@ -513,8 +513,8 @@ async function save() {
     const batch = writeBatch(db);
 
     // 2. Borrar todos los servicios viejos
-    snap.docs.forEach(doc => {
-      batch.delete(doc.ref);
+    snap.docs.forEach(docSnap => {
+      batch.delete(docSnap.ref);
     });
 
     // 3. Escribir todos los servicios del array (nuevos y editados)
@@ -524,6 +524,12 @@ async function save() {
       
       const docRef = doc(collection(db, 'comercios', currentComercioId, 'servicios'));
       batch.set(docRef, servicioData);
+    });
+
+    // 4. Marcar onboardingStep como completado
+    const comercioRef = doc(db, 'comercios', currentComercioId);
+    batch.update(comercioRef, {
+      'onboardingSteps.servicios': true
     });
 
     await batch.commit();
