@@ -1,11 +1,9 @@
 /* ==================== DASHBOARD ESPECÍFICO ==================== */
-
 .page-header {
   text-align: center;
   margin-bottom: 3rem;
   padding-top: 2rem;
 }
-
 .page-header h1 {
   font-size: 2.5rem;
   color: var(--gray-900);
@@ -15,17 +13,14 @@
   justify-content: center;
   gap: 0.75rem;
 }
-
 .page-header h1 i {
   color: var(--primary);
 }
-
 .page-header p {
   color: var(--gray-600);
   font-size: 1.1rem;
   margin: 0;
 }
-
 /* Dashboard Grid */
 .dashboard-grid {
   display: grid;
@@ -34,7 +29,6 @@
   max-width: 1200px;
   margin: 0 auto;
 }
-
 /* Dash Card */
 .dash-card {
   background: white;
@@ -47,22 +41,18 @@
   transition: var(--transition);
   border: 2px solid transparent;
 }
-
 .dash-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
   border-color: var(--gray-200);
 }
-
 .dash-card.highlight {
   background: linear-gradient(135deg, #f0f4ff 0%, #e6eeff 100%);
   border-color: var(--primary);
 }
-
 .dash-card.highlight:hover {
   background: linear-gradient(135deg, #e6eeff 0%, #d9e6ff 100%);
 }
-
 /* Dash Icon */
 .dash-icon {
   width: 60px;
@@ -76,16 +66,13 @@
   font-size: 1.75rem;
   flex-shrink: 0;
 }
-
 .dash-card.highlight .dash-icon {
   background: var(--primary);
 }
-
 /* Dash Content */
 .dash-content {
   flex: 1;
 }
-
 .dash-content h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.3rem;
@@ -94,13 +81,11 @@
   align-items: center;
   gap: 0.5rem;
 }
-
 .dash-content p {
   margin: 0;
   color: var(--gray-600);
   font-size: 0.95rem;
 }
-
 /* Badge Optional */
 .badge-optional {
   display: inline-block;
@@ -114,38 +99,56 @@
   margin-left: 0.5rem;
 }
 
+/* ==================== SERVICIOS BADGES ==================== */
+.servicios-detail {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+.badge-activo,
+.badge-pausado {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-activo {
+  background: #d4edda;
+  color: #155724;
+}
+.badge-pausado {
+  background: #f8d7da;
+  color: #721c24;
+}
+
 /* Buttons dentro de cards */
 .dash-card .btn {
   width: 100%;
   justify-content: center;
 }
-
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
   .page-header h1 {
     font-size: 2rem;
     flex-direction: column;
   }
-
   .page-header p {
     font-size: 1rem;
   }
-
   .dashboard-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-
   .dash-card {
     padding: 1.5rem;
   }
-
   .dash-icon {
     width: 50px;
     height: 50px;
     font-size: 1.5rem;
   }
-
   .dash-content h3 {
     font-size: 1.1rem;
   }
