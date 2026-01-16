@@ -528,9 +528,15 @@ async function save() {
 
     // 4. Marcar onboardingStep como completado
     const comercioRef = doc(db, 'comercios', currentComercioId);
-    batch.update(comercioRef, {
-      'onboardingSteps.servicios': true
-    });
+    batch.set(
+      comercioRef,
+      {
+       onboardingSteps: {
+         servicios: true
+      }
+      },
+      { merge: true }
+    );
 
     await batch.commit();
 
