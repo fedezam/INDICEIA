@@ -9,7 +9,7 @@ import './dashboard.css';
 
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
 
 import { renderLayout, updateHeaderInfo, updateSubscriptionBanner } from '../shared/layout.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, hasLiveAccess, isHighValuePlan } from '../shared/plans.js';
@@ -101,6 +101,9 @@ async function loadComercioData() {
         terms: { highValueAccepted: false }
       };
     }
+
+    // Cargar estadísticas de servicios
+    await loadServiciosStats();
   } catch (error) {
     console.error('❌ Error cargando comercio:', error);
     comercioData = {
@@ -112,6 +115,31 @@ async function loadComercioData() {
       commissionEnabled: false,
       terms: { highValueAccepted: false }
     };
+  }
+}
+
+async function loadServiciosStats() {
+  try {
+    const serviciosSnap = await getDocs(
+      collection(db, 'comercios', currentComercioId, 'servicios')
+    );
+
+    let activos = 0;
+    let pausados = 0;
+
+    serviciosSnap.docs.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.activo === false) {
+        pausados++;
+      } else {
+        activos++;
+      }
+    });
+
+    comercioData.serviciosStats = { activos, pausados, total: activos + pausados };
+  } catch (error) {
+    console.error('Error cargando stats de servicios:', error);
+    comercioData.serviciosStats = { activos: 0, pausados: 0, total: 0 };
   }
 }
 
@@ -167,6 +195,7 @@ function renderDashboard() {
 
   const productCount = comercioData.cantidadProductos ?? 0;
   const horarios = comercioData.onboardingSteps?.horarios === true;
+  const serviciosStats = comercioData.serviciosStats || { activos: 0, pausados: 0, total: 0 };
   const planId = comercioData.plan || 'trial';
   const planActual = PLANS[planId];
 
@@ -233,6 +262,21 @@ function renderDashboard() {
           <p>${horarios ? 'Configurados ✓' : 'No configurados'}</p>
         </div>
         <a href="horarios.html?edit=true" class="btn btn-secondary btn-sm">
+          <i class="fas fa-edit"></i> Editar
+        </a>
+      </div>
+
+      <div class="dash-card">
+        <div class="dash-icon"><i class="fas fa-concierge-bell"></i></div>
+        <div class="dash-content">
+          <h3>Servicios</h3>
+          <p>${serviciosStats.total} total${serviciosStats.total !== 1 ? 'es' : ''}</p>
+          <p class="servicios-detail">
+            <span class="badge-activo">🟢 ${serviciosStats.activos} activo${serviciosStats.activos !== 1 ? 's' : ''}</span>
+            ${serviciosStats.pausados > 0 ? `<span class="badge-pausado">🔴 ${serviciosStats.pausados} pausado${serviciosStats.pausados !== 1 ? 's' : ''}</span>` : ''}
+          </p>
+        </div>
+        <a href="servicios.html?edit=true" class="btn btn-secondary btn-sm">
           <i class="fas fa-edit"></i> Editar
         </a>
       </div>
