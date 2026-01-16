@@ -582,13 +582,14 @@ export {
 };
 
 runDataPage({
+  // ciclo de vida
   load,
   render,
   save,
   isFormValid,
   getCurrentData,
 
-  // mutadores expuestos para el HTML
+  // mutadores
   setNombre,
   setDescripcion,
   setModalidadesSeleccionadas,
@@ -601,5 +602,8 @@ runDataPage({
 
   // acciones
   agregarServicio,
-  eliminarServicio
+  eliminarServicio,
+  editarServicio,
+  toggleActivarServicio
 });
+
