@@ -31,7 +31,6 @@
         "titulo",
         "que",
         "como",
-        "donde",
         "cuando",
         "activo"
       ],
@@ -47,18 +46,6 @@
           "description": "Nombre corto y visible del servicio"
         },
 
-        "descripcion": {
-          "type": "string",
-          "description": "Descripción breve opcional"
-        },
-
-        "activo": {
-          "type": "boolean",
-          "description": "Indica si el servicio está disponible actualmente"
-        },
-
-        /* ==== LAS 4 PREGUNTAS CLAVE ==== */
-
         "que": {
           "type": "string",
           "description": "Qué es el servicio"
@@ -69,17 +56,27 @@
           "description": "Cómo se presta el servicio (modalidad)"
         },
 
-        "donde": {
-          "type": "string",
-          "description": "Dónde se presta el servicio"
-        },
-
         "cuando": {
           "type": "string",
-          "description": "Cuándo o bajo qué disponibilidad se presta"
+          "description": "Disponibilidad o forma de acceso"
         },
 
-        /* ==== PRECIO (OPCIONAL Y TOLERANTE) ==== */
+        "prestacion": {
+          "type": "string",
+          "enum": [
+            "local",
+            "domicilio_cliente",
+            "remoto",
+            "mixto",
+            "variable"
+          ],
+          "description": "Ámbito donde se presta el servicio"
+        },
+
+        "activo": {
+          "type": "boolean",
+          "description": "Indica si el servicio está disponible actualmente"
+        },
 
         "precio": {
           "type": "object",
@@ -87,8 +84,7 @@
           "properties": {
             "tipo": {
               "type": "string",
-              "enum": ["fijo", "desde", "presupuesto", "consultar"],
-              "description": "Forma de determinación del precio"
+              "enum": ["fijo", "desde", "presupuesto", "consultar"]
             },
             "valor": {
               "type": "number",
@@ -99,13 +95,10 @@
               "default": "ARS"
             },
             "unidad": {
-              "type": "string",
-              "description": "por_sesion, por_hora, por_m2, etc."
+              "type": "string"
             }
           }
         },
-
-        /* ==== UI SUGERIDA (NO OBLIGATORIA) ==== */
 
         "ui": {
           "type": "object",
@@ -117,13 +110,10 @@
               "default": "card"
             },
             "accion_principal": {
-              "type": "string",
-              "description": "Ej: pedir_turno, solicitar_presupuesto, contactar"
+              "type": "string"
             }
           }
         },
-
-        /* ==== NOTAS LIBRES ==== */
 
         "notas": {
           "type": "array",
