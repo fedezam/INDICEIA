@@ -59,11 +59,15 @@ export async function buildEntity({ comercioId }) {
   if (hasData(data.descripcion)) B.descripcion = data.descripcion;
 
   const ubicacion = {};
-  ['direccion','ciudad','provincia','pais'].forEach(k => { if(hasData(data[k])) ubicacion[k] = data[k]; });
+  ['direccion', 'ciudad', 'provincia', 'pais'].forEach(k => {
+    if (hasData(data[k])) ubicacion[k] = data[k];
+  });
   if (hasData(ubicacion)) B.ubicacion = ubicacion;
 
   const contacto = {};
-  ['telefono','whatsapp','email','website','instagram','facebook','tiktok'].forEach(k => { if(hasData(data[k])) contacto[k] = data[k]; });
+  ['telefono', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok'].forEach(k => {
+    if (hasData(data[k])) contacto[k] = data[k];
+  });
   if (hasData(contacto)) B.contacto = contacto;
 
   if (hasData(data.horarios)) B.horarios = data.horarios;
@@ -113,29 +117,34 @@ export async function buildEntity({ comercioId }) {
   }
 
   // Referral
-  let referralCode = comercioId.substring(0,8).toUpperCase();
-  if(data.duenoId){
+  let referralCode = comercioId.substring(0, 8).toUpperCase();
+  if (data.duenoId) {
     const ownerSnap = await db.collection('usuarios').doc(data.duenoId).get();
-    if(ownerSnap.exists && ownerSnap.data()?.referralId) referralCode = ownerSnap.data().referralId;
+    if (ownerSnap.exists && ownerSnap.data()?.referralId) {
+      referralCode = ownerSnap.data().referralId;
+    }
   }
+
   B.referral = {
     code: referralCode,
     shareMessage: `¿Querés tu IA? Visitá https://indiceia.app/r/${referralCode}`
   };
+
   B.updatedAt = new Date().toISOString();
   Object.freeze(B);
 
   // Block A placeholders
-  const liveEnabled = ['trial','pro','highvalue','premium'].includes(data.plan);
-  const A = JSON.parse(JSON.stringify(blockA)
-    .replace(/\{\{LIVE_ENABLED\}\}/g, liveEnabled.toString())
-    .replace(/\{\{REFERRAL_URL\}\}/g, `https://indiceia.app/guia?ref=${referralCode}`)
+  const liveEnabled = ['trial', 'pro', 'highvalue', 'premium'].includes(data.plan);
+  const A = JSON.parse(
+    JSON.stringify(blockA)
+      .replace(/\{\{LIVE_ENABLED\}\}/g, liveEnabled.toString())
+      .replace(/\{\{REFERRAL_URL\}\}/g, `https://indiceia.app/guia?ref=${referralCode}`)
   );
 
   // Block D channels
-  if(blockD?.availableChannels && B.contacto){
-    Object.entries(blockD.availableChannels).forEach(([ch,cfg])=>{
-      if(typeof cfg==='object') cfg.enabled = hasData(B.contacto[ch]);
+  if (blockD?.availableChannels && B.contacto) {
+    Object.entries(blockD.availableChannels).forEach(([ch, cfg]) => {
+      if (typeof cfg === 'object') cfg.enabled = hasData(B.contacto[ch]);
     });
   }
   Object.freeze(blockD);
@@ -143,13 +152,11 @@ export async function buildEntity({ comercioId }) {
   // ===== BLOCK C =====
   let C = {};
   try {
-    C = JSON.parse(readFileSync(resolve(__dirname,'base/blockC.json'),'utf-8')).C;
+    C = JSON.parse(readFileSync(resolve(__dirname, 'base/blockC.json'), 'utf-8')).C;
 
-    if(hasData(B.templateId)){
+    if (hasData(B.templateId)) {
       const t = templateRegistry.templates[B.templateId];
-      if(t){
-        const base = 'https://indiceia-templates.vercel.app/templates';
-        const epPath = t.entrypoint.replace(/^templates\//,'');
+      if (t) {
         C.visual = {
           available: true,
           mode: 'iframe',
@@ -163,20 +170,31 @@ export async function buildEntity({ comercioId }) {
         };
       }
     }
-  } catch(err){
+  } catch (err) {
     console.warn('⚠️ No se pudo cargar blockC.json, Bloque C inhabilitado', err);
     C = {};
   }
 
-    // ===== BLOCK E (Servicios) =====
+  // ===== BLOCK E (Servicios) =====
   let E = { habilitado: false };
 
   try {
     const ss = await comercioRef.collection('servicios').get();
-    const servicios = ss.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }));
+
+    const servicios = ss.docs.map(d => {
+      const s = d.data();
+      return {
+        id: d.id,
+        titulo: s.nombre || '',
+        que: s.descripcion || '',
+        como: s.modalidad || '',
+        cuando: s.disponibilidad || '',
+        prestacion: s.prestacion || 'variable',
+        activo: s.activo === true,
+        ...(hasData(s.precio) && { precio: s.precio }),
+        ...(hasData(s.notas) && { notas: s.notas })
+      };
+    });
 
     if (servicios.length > 0) {
       E = {
@@ -203,7 +221,7 @@ export async function buildEntity({ comercioId }) {
     contracts: {
       blockB: { role: 'single_source_of_truth', mutable: false },
       blockC: { role: 'visual_only', optional: true },
-      blockD: { role: 'interaction_protocols', mutable: false }
+      blockD: { role: 'interaction_protocols', mutable: false },
       blockE: { role: 'services_runtime', optional: true }
     },
     A,
