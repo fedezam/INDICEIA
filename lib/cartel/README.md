@@ -48,3 +48,34 @@ renderCartel({
   qrSvg,
   template
 })
+
+
+# Módulo Cartel
+
+Cartel es el sistema visual de presentación pública de entidades ÍndiceIA.
+
+## Estructura
+
+- `index.js`  
+  Punto de entrada del módulo. Es el único archivo que deben importar las páginas.
+
+- `cartel.config.js`  
+  Normaliza y valida datos de entrada.
+
+- `cartel.renderer.js`  
+  Renderiza el cartel en el DOM sin lógica de negocio.
+
+- `cartel.templates.js`  
+  Registro de templates visuales disponibles.
+
+## Uso básico
+
+```js
+import { initCartel } from "../lib/cartel/index.js"
+
+initCartel({
+  containerId: "cartel",
+  data: comercio,
+  template: "default"
+})
+
