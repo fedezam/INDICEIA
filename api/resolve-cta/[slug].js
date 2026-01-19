@@ -1,5 +1,6 @@
 // api/resolve-cta/[slug].js
 import admin from 'firebase-admin';
+import { buildPrompt } from '../../lib/link-builder/config/prompt-template.js';
 import { generateLLMUrl } from '../../lib/link-builder/link-generator.js';
 
 if (!admin.apps.length) {
@@ -35,14 +36,21 @@ export default async function handler(req, res) {
     }
 
     const data = comercioSnap.data();
+
     if (!data.entityPublicUrl) {
       return res.status(409).json({ ok: false, error: 'entidad no generada' });
     }
 
-    // 3️⃣ Construir CTA FINAL (LLM URL universal)
-    const ctaUrl = generateLLMUrl(data.entityPublicUrl, 'claude'); // motor por defecto: claude
+    // 3️⃣ Construir prompt embebido (neutral)
+    const prompt = buildPrompt(data.entityPublicUrl);
 
-    // 4️⃣ Devolver contrato público completo
+    // 4️⃣ Construir CTA universal (sin elegir motor)
+    // El sistema operativo decide qué app abrir
+    const ctaUrl = generateLLMUrl({
+      prompt,
+    });
+
+    // 5️⃣ Devolver contrato público
     return res.status(200).json({
       ok: true,
       slug,
