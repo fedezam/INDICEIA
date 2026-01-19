@@ -3,6 +3,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { showToast } from '../shared/utils.js';
 
+import { getCarteles, buildCartelQR } from '../lib/cartel/index.js';
+
 let publicUrl = null;
 
 // ==================== AUTH ====================
@@ -35,69 +37,47 @@ async function initPage(id) {
     }
 
     publicUrl = `https://indiceia.vercel.app/live/${slug}`;
-    document.getElementById('publicUrl').textContent = publicUrl;
 
+    document.getElementById('publicUrl').textContent = publicUrl;
     document.getElementById('copyBtn').onclick = () => {
       navigator.clipboard.writeText(publicUrl);
       showToast('Link copiado', 'success');
     };
 
-    initQR();
+    renderCarteles();
   } catch (err) {
     console.error(err);
     showToast('Error al cargar la página', 'error');
   }
 }
 
-// ==================== QR ====================
+// ==================== CARTELES ====================
 
-const QR_SIZES = {
-  redes: 360,
-  a4: 900,
-  vidriera: 1600
-};
-
-let currentQR = null;
-
-function buildQR(size) {
-  return new QRCodeStyling({
-    width: size,
-    height: size,
-    data: publicUrl,
-    margin: 20,
-    qrOptions: { errorCorrectionLevel: 'H' },
-    dotsOptions: { type: 'rounded', color: '#000' },
-    cornersSquareOptions: { type: 'extra-rounded', color: '#000' },
-    cornersDotOptions: { type: 'dot', color: '#000' },
-    backgroundOptions: { color: '#fff' },
-    imageOptions: { margin: 10 }
-    // image: '/assets/indiceia-logo-mono.png'
-  });
-}
-
-function renderQR(type) {
-  const container = document.getElementById('qr-preview');
+function renderCarteles() {
+  const container = document.getElementById('carteles');
   container.innerHTML = '';
-  currentQR = buildQR(QR_SIZES[type]);
-  currentQR.append(container);
-}
 
-function downloadQR(type) {
-  const qr = buildQR(QR_SIZES[type]);
-  qr.download({
-    name: `indiceia-${type}`,
-    extension: 'png'
+  const carteles = getCarteles(publicUrl);
+
+  carteles.forEach(cartel => {
+    const card = document.createElement('div');
+    card.className = 'cartel-card';
+
+    card.innerHTML = `
+      <h3>${cartel.titulo}</h3>
+      <p>${cartel.descripcion}</p>
+      <button>Descargar cartel</button>
+    `;
+
+    card.querySelector('button').onclick = () => {
+      const qr = buildCartelQR(cartel, publicUrl);
+      qr.download({
+        name: `indiceia-${cartel.id}`,
+        extension: 'png',
+      });
+    };
+
+    container.appendChild(card);
   });
 }
 
-function initQR() {
-  renderQR('redes');
-
-  document.getElementById('qrRedes').onclick = () => renderQR('redes');
-  document.getElementById('qrA4').onclick = () => renderQR('a4');
-  document.getElementById('qrVidriera').onclick = () => renderQR('vidriera');
-
-  document.getElementById('downloadRedes').onclick = () => downloadQR('redes');
-  document.getElementById('downloadA4').onclick = () => downloadQR('a4');
-  document.getElementById('downloadVidriera').onclick = () => downloadQR('vidriera');
-}
