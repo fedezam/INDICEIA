@@ -3,7 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { showToast } from '../shared/utils.js';
 
-import { getCarteles, buildCartelQR } from '../lib/cartel/index.js';
+import { getCarteles, buildCartelQR } from '../../lib/cartel/index.js';
 
 let publicUrl = null;
 
