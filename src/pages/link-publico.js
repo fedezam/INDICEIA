@@ -1,8 +1,9 @@
+// src/pages/link-publico.js
+
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { showToast } from '../shared/utils.js';
-
 import { getCarteles, buildCartelQR } from '../../lib/cartel/index.js';
 
 let publicUrl = null;
@@ -37,8 +38,8 @@ async function initPage(id) {
     }
 
     publicUrl = `https://indiceia.vercel.app/live/${slug}`;
-
     document.getElementById('publicUrl').textContent = publicUrl;
+
     document.getElementById('copyBtn').onclick = () => {
       navigator.clipboard.writeText(publicUrl);
       showToast('Link copiado', 'success');
@@ -52,7 +53,6 @@ async function initPage(id) {
 }
 
 // ==================== CARTELES ====================
-
 function renderCarteles() {
   const container = document.getElementById('carteles');
   container.innerHTML = '';
@@ -62,22 +62,37 @@ function renderCarteles() {
   carteles.forEach(cartel => {
     const card = document.createElement('div');
     card.className = 'cartel-card';
-
     card.innerHTML = `
       <h3>${cartel.titulo}</h3>
       <p>${cartel.descripcion}</p>
-      <button>Descargar cartel</button>
+      <button class="download-btn">Descargar cartel</button>
     `;
 
-    card.querySelector('button').onclick = () => {
-      const qr = buildCartelQR(cartel, publicUrl);
-      qr.download({
-        name: `indiceia-${cartel.id}`,
-        extension: 'png',
-      });
+    const btn = card.querySelector('.download-btn');
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      btn.textContent = 'Generando...';
+
+      try {
+        // buildCartelQR ahora retorna una Promise
+        const qrObject = await buildCartelQR(cartel, publicUrl);
+        
+        qrObject.download({
+          name: `indiceia-${cartel.id}`,
+          extension: 'png',
+        });
+
+        showToast('Cartel descargado', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Error al generar cartel', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Descargar cartel';
+      }
     };
 
     container.appendChild(card);
   });
 }
-
