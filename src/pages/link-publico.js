@@ -1,12 +1,9 @@
-// src/pages/link-publico.js
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { showToast } from '../shared/utils.js';
 
-let comercioId = null;
 let publicUrl = null;
-let qrInstance = null;
 
 // ==================== AUTH ====================
 onAuthStateChanged(auth, async (user) => {
@@ -15,16 +12,11 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  const userRef = doc(db, 'usuarios', user.uid);
-  const userSnap = await getDoc(userRef);
+  const userSnap = await getDoc(doc(db, 'usuarios', user.uid));
   if (!userSnap.exists()) return;
 
-  const userData = userSnap.data();
-  comercioId = userData.comercioId;
-
-  if (comercioId) {
-    initPage(comercioId);
-  }
+  const { comercioId } = userSnap.data();
+  if (comercioId) initPage(comercioId);
 });
 
 // ==================== INIT ====================
@@ -32,130 +24,80 @@ async function initPage(id) {
   try {
     const comercioSnap = await getDoc(doc(db, 'comercios', id));
     if (!comercioSnap.exists()) {
-      showToast('Error: comercio no encontrado', 'error');
+      showToast('Comercio no encontrado', 'error');
       return;
     }
 
-    const comercioData = comercioSnap.data();
-    if (!comercioData.slug) {
-      showToast('Error: este comercio no tiene slug asignado', 'error');
+    const { slug } = comercioSnap.data();
+    if (!slug) {
+      showToast('Este comercio no tiene slug', 'error');
       return;
     }
 
-    const slug = comercioData.slug;
     publicUrl = `https://indiceia.vercel.app/live/${slug}`;
-
     document.getElementById('publicUrl').textContent = publicUrl;
 
-    document.getElementById('copyBtn').addEventListener('click', () => {
+    document.getElementById('copyBtn').onclick = () => {
       navigator.clipboard.writeText(publicUrl);
-      showToast('¡Link copiado al portapapeles!', 'success');
-    });
+      showToast('Link copiado', 'success');
+    };
 
-    initQRControls();
-    renderQR('redes'); // preview inicial
-
+    initQR();
   } catch (err) {
     console.error(err);
-    showToast('Error al inicializar la página', 'error');
+    showToast('Error al cargar la página', 'error');
   }
 }
 
 // ==================== QR ====================
 
-// Presets de tamaño
-const QR_PRESETS = {
+const QR_SIZES = {
   redes: 360,
   a4: 900,
   vidriera: 1600
 };
 
-function createQR(size) {
+let currentQR = null;
+
+function buildQR(size) {
   return new QRCodeStyling({
     width: size,
     height: size,
     data: publicUrl,
     margin: 20,
-
-    qrOptions: {
-      errorCorrectionLevel: 'H'
-    },
-
-    dotsOptions: {
-      color: '#000000',
-      type: 'rounded'
-    },
-
-    cornersSquareOptions: {
-      type: 'extra-rounded',
-      color: '#000000'
-    },
-
-    cornersDotOptions: {
-      type: 'dot',
-      color: '#000000'
-    },
-
-    backgroundOptions: {
-      color: '#ffffff'
-    },
-
-    imageOptions: {
-      crossOrigin: 'anonymous',
-      margin: 10
-    }
-
-    // Si después querés logo:
+    qrOptions: { errorCorrectionLevel: 'H' },
+    dotsOptions: { type: 'rounded', color: '#000' },
+    cornersSquareOptions: { type: 'extra-rounded', color: '#000' },
+    cornersDotOptions: { type: 'dot', color: '#000' },
+    backgroundOptions: { color: '#fff' },
+    imageOptions: { margin: 10 }
     // image: '/assets/indiceia-logo-mono.png'
   });
 }
 
-function renderQR(preset) {
-  const size = QR_PRESETS[preset];
-  if (!size) return;
-
+function renderQR(type) {
   const container = document.getElementById('qr-preview');
   container.innerHTML = '';
-
-  qrInstance = createQR(size);
-  qrInstance.append(container);
+  currentQR = buildQR(QR_SIZES[type]);
+  currentQR.append(container);
 }
 
-function downloadQR(preset) {
-  const size = QR_PRESETS[preset];
-  if (!size) return;
-
-  const qr = createQR(size);
+function downloadQR(type) {
+  const qr = buildQR(QR_SIZES[type]);
   qr.download({
-    name: `indiceia-${preset}`,
+    name: `indiceia-${type}`,
     extension: 'png'
   });
 }
 
-// ==================== CONTROLS ====================
-function initQRControls() {
-  document.getElementById('qrRedes').addEventListener('click', () => {
-    renderQR('redes');
-  });
+function initQR() {
+  renderQR('redes');
 
-  document.getElementById('qrA4').addEventListener('click', () => {
-    renderQR('a4');
-  });
+  document.getElementById('qrRedes').onclick = () => renderQR('redes');
+  document.getElementById('qrA4').onclick = () => renderQR('a4');
+  document.getElementById('qrVidriera').onclick = () => renderQR('vidriera');
 
-  document.getElementById('qrVidriera').addEventListener('click', () => {
-    renderQR('vidriera');
-  });
-
-  document.getElementById('downloadRedes').addEventListener('click', () => {
-    downloadQR('redes');
-  });
-
-  document.getElementById('downloadA4').addEventListener('click', () => {
-    downloadQR('a4');
-  });
-
-  document.getElementById('downloadVidriera').addEventListener('click', () => {
-    downloadQR('vidriera');
-  });
+  document.getElementById('downloadRedes').onclick = () => downloadQR('redes');
+  document.getElementById('downloadA4').onclick = () => downloadQR('a4');
+  document.getElementById('downloadVidriera').onclick = () => downloadQR('vidriera');
 }
-
