@@ -4,19 +4,11 @@
   <meta charset="UTF-8" />
   <title>Link público · ÍndiceIA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Global styles -->
   <link rel="stylesheet" href="/src/shared/global.css" />
-  <!-- Page styles -->
   <link rel="stylesheet" href="./link-publico.css" />
-
-  <!-- QR library -->
-  <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
 </head>
-
 <body>
   <main class="page">
-
     <header class="header">
       <h1>Link público</h1>
       <p class="subtitle">
@@ -32,34 +24,12 @@
       </div>
     </section>
 
-    <!-- QR -->
-    <section class="card qr-card">
-      <h2>QR de acceso</h2>
-
-      <div class="qr-layout">
-        <div class="qr-preview-wrapper">
-          <div id="qr-preview"></div>
-          <span class="qr-caption">Escaneá y accedé al comercio</span>
-        </div>
-
-        <div class="qr-controls">
-          <div class="qr-group">
-            <h3>Vista previa</h3>
-            <button id="qrRedes" class="btn">Redes</button>
-            <button id="qrA4" class="btn">Impresión A4</button>
-            <button id="qrVidriera" class="btn">Vidriera</button>
-          </div>
-
-          <div class="qr-group">
-            <h3>Descargar</h3>
-            <button id="downloadRedes" class="btn secondary">PNG · Redes</button>
-            <button id="downloadA4" class="btn secondary">PNG · A4</button>
-            <button id="downloadVidriera" class="btn secondary">PNG · Vidriera</button>
-          </div>
-        </div>
-      </div>
+    <!-- CARTELES -->
+    <section class="card">
+      <h2>Carteles disponibles</h2>
+      <p>Descargá carteles listos para imprimir o compartir en redes</p>
+      <div id="carteles" class="carteles-grid"></div>
     </section>
-
   </main>
 
   <script type="module" src="./link-publico.js"></script>
