@@ -1,144 +1,124 @@
-/* Reset y básicos */
-body {
-  font-family: 'Inter', sans-serif;
-  margin: 0;
-  background: #f8f9fa;
-  color: #222;
-}
+/* ==================== BASE ==================== */
 
-.container {
-  max-width: 1200px;
+.page {
+  max-width: 960px;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 32px 20px 64px;
 }
 
-.public-link-section {
+.header {
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 14px;
+}
+
+/* ==================== CARDS ==================== */
+
+.card {
   background: #ffffff;
-  padding: 40px;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-  text-align: center;
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
 }
 
-.public-link-section h1 {
-  font-size: 2.2rem;
-  margin-bottom: 10px;
-}
+/* ==================== LINK ==================== */
 
-.public-link-section .info-text {
-  font-size: 1rem;
-  color: #555;
-  margin-bottom: 20px;
-}
-
-.link-container {
+.link-box {
   display: flex;
-  justify-content: center;
+  gap: 12px;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 40px;
 }
 
-.link-container input {
-  padding: 12px 16px;
-  width: 400px;
-  font-size: 1rem;
+.public-url {
+  flex: 1;
+  font-family: monospace;
+  font-size: 14px;
+  background: #f4f4f4;
+  padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid #ccc;
-  text-align: center;
+  overflow-x: auto;
 }
 
-.link-container button {
-  padding: 12px 20px;
-  background-color: #0070f3;
-  color: #fff;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.3s ease;
+/* ==================== QR ==================== */
+
+.qr-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 32px;
 }
 
-.link-container button:hover {
-  background-color: #0059c1;
-}
-
-.qr-section {
+.qr-preview-wrapper {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 30px;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
 }
 
-.qr-card {
-  background: #f1f3f5;
-  padding: 20px;
-  border-radius: 16px;
-  text-align: center;
-  width: 260px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+#qr-preview {
+  background: #ffffff;
+  padding: 18px;
+  border-radius: 18px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.08);
 }
 
-.qr-card h2 {
-  margin-bottom: 16px;
-  font-size: 1.1rem;
+.qr-caption {
+  font-size: 13px;
+  color: #555;
 }
 
-.qr-box {
-  margin: 0 auto 16px auto;
+/* ==================== CONTROLS ==================== */
+
+.qr-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.qr-card button {
-  padding: 8px 16px;
-  background-color: #00b37e;
-  color: #fff;
-  border: none;
+.qr-group h3 {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.qr-group button {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+/* ==================== BUTTONS ==================== */
+
+.btn {
+  padding: 10px 14px;
   border-radius: 8px;
+  border: none;
   cursor: pointer;
-  font-weight: 500;
+  background: #000000;
+  color: #ffffff;
+  font-size: 14px;
 }
 
-.qr-card button:hover {
-  background-color: #02875f;
+.btn.secondary {
+  background: #eeeeee;
+  color: #000000;
 }
 
-/* Toast container */
-#toast-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 9999;
+.btn:hover {
+  opacity: 0.9;
 }
 
-.toast {
-  background: #333;
-  color: #fff;
-  padding: 12px 24px;
-  margin-bottom: 12px;
-  border-radius: 12px;
-  opacity: 0;
-  animation: fadeInOut 3s forwards;
-}
+/* ==================== RESPONSIVE ==================== */
 
-.toast.success { background: #00b37e; }
-.toast.error { background: #f31260; }
-.toast.warning { background: #f5a524; }
-
-@keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(-20px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-20px); }
-}
-
-/* Responsive */
-@media (max-width: 900px) {
-  .qr-section {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .link-container input {
-    width: 100%;
+@media (max-width: 768px) {
+  .qr-layout {
+    grid-template-columns: 1fr;
   }
 }
