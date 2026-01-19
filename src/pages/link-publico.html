@@ -2,33 +2,66 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <title>Link público · ÍndiceIA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Link Público - ÍndiceIA</title>
-  <link rel="stylesheet" href="/src/styles/base.css" />
-  <link rel="stylesheet" href="/src/styles/layout.css" />
-  <link rel="stylesheet" href="/src/styles/components.css" />
-  <link rel="stylesheet" href="/src/pages/landing.css" />
-  <style>
-    body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #f7f8fa; }
-    .container { text-align: center; background: #fff; padding: 3rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-    h1 { font-size: 2rem; margin-bottom: 1rem; }
-    p { font-size: 1rem; margin-bottom: 2rem; color: #555; }
-    #publicUrl { font-weight: bold; color: #0070f3; word-break: break-all; }
-    button { background: #0070f3; color: #fff; border: none; padding: 0.8rem 1.6rem; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: 0.2s; }
-    button:hover { background: #005bb5; }
-    .toast { position: fixed; top: 20px; right: 20px; background: #4caf50; color: #fff; padding: 1rem 1.5rem; border-radius: 8px; opacity: 0; pointer-events: none; transition: 0.3s; }
-    .toast.show { opacity: 1; pointer-events: auto; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>Tu link público</h1>
-    <p id="publicUrl">Cargando...</p>
-    <button id="copyBtn">Copiar link</button>
-  </div>
-  <div id="toast" class="toast"></div>
 
-  <!-- Este script carga el bundle JS que ya incluye todos los imports y Firebase -->
-  <script type="module" src="/src/pages/link-publico.js"></script>
+  <!-- Global styles -->
+  <link rel="stylesheet" href="/src/shared/global.css" />
+  <!-- Page styles -->
+  <link rel="stylesheet" href="./link-publico.css" />
+
+  <!-- QR library -->
+  <script src="https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+</head>
+
+<body>
+  <main class="page">
+
+    <header class="header">
+      <h1>Link público</h1>
+      <p class="subtitle">
+        Este es el acceso directo a tu comercio en ÍndiceIA
+      </p>
+    </header>
+
+    <!-- LINK -->
+    <section class="card link-card">
+      <div class="link-box">
+        <span id="publicUrl" class="public-url">—</span>
+        <button id="copyBtn" class="btn secondary">Copiar</button>
+      </div>
+    </section>
+
+    <!-- QR -->
+    <section class="card qr-card">
+      <h2>QR de acceso</h2>
+
+      <div class="qr-layout">
+        <div class="qr-preview-wrapper">
+          <div id="qr-preview"></div>
+          <span class="qr-caption">Escaneá y accedé al comercio</span>
+        </div>
+
+        <div class="qr-controls">
+          <div class="qr-group">
+            <h3>Vista previa</h3>
+            <button id="qrRedes" class="btn">Redes</button>
+            <button id="qrA4" class="btn">Impresión A4</button>
+            <button id="qrVidriera" class="btn">Vidriera</button>
+          </div>
+
+          <div class="qr-group">
+            <h3>Descargar</h3>
+            <button id="downloadRedes" class="btn secondary">PNG · Redes</button>
+            <button id="downloadA4" class="btn secondary">PNG · A4</button>
+            <button id="downloadVidriera" class="btn secondary">PNG · Vidriera</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module" src="./link-publico.js"></script>
 </body>
 </html>
