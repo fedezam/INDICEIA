@@ -6,6 +6,10 @@ import { doc, getDoc } from 'firebase/firestore';
 import { showToast } from '../shared/utils.js';
 import { getCarteles, buildCartelQR } from '../../lib/cartel/index.js';
 
+// ==================== CONSTANTE ÚNICA ====================
+// Dominio público / humano (landing)
+const PUBLIC_BASE_URL = 'https://indiceia-public.vercel.app';
+
 let publicUrl = null;
 
 // ==================== AUTH ====================
@@ -37,7 +41,9 @@ async function initPage(id) {
       return;
     }
 
-    publicUrl = `https://indiceia.vercel.app/live/${slug}`;
+    // ✅ LINK PÚBLICO CORRECTO (landing humana)
+    publicUrl = `${PUBLIC_BASE_URL}/landing/${slug}`;
+
     document.getElementById('publicUrl').textContent = publicUrl;
 
     document.getElementById('copyBtn').onclick = () => {
@@ -75,9 +81,8 @@ function renderCarteles() {
       btn.textContent = 'Generando...';
 
       try {
-        // buildCartelQR ahora retorna una Promise
         const qrObject = await buildCartelQR(cartel, publicUrl);
-        
+
         qrObject.download({
           name: `indiceia-${cartel.id}`,
           extension: 'png',
