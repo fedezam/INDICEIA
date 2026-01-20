@@ -3,16 +3,26 @@ import admin from 'firebase-admin';
 import { buildPrompt } from '../../lib/link-builder/config/prompt-template.js';
 import { generateLLMUrl } from '../../lib/link-builder/link-generator.js';
 
+// ================================
+// 🔧 Firebase Admin init (FIX \\n)
+// ================================
 if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+  // FIX CLAVE PRIVADA (Vercel env vars)
+  serviceAccount.private_key =
+    serviceAccount.private_key.replace(/\\n/g, '\n');
+
   admin.initializeApp({
-    credential: admin.credential.cert(
-      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-    ),
+    credential: admin.credential.cert(serviceAccount),
   });
 }
 
 const db = admin.firestore();
 
+// ================================
+// Handler
+// ================================
 export default async function handler(req, res) {
   const { slug } = req.query;
 
@@ -44,11 +54,8 @@ export default async function handler(req, res) {
     // 3️⃣ Construir prompt embebido (neutral)
     const prompt = buildPrompt(data.entityPublicUrl);
 
-    // 4️⃣ Construir CTA universal (sin elegir motor)
-    // El sistema operativo decide qué app abrir
-    const ctaUrl = generateLLMUrl({
-      prompt,
-    });
+    // 4️⃣ Construir CTA universal
+    const ctaUrl = generateLLMUrl({ prompt });
 
     // 5️⃣ Devolver contrato público
     return res.status(200).json({
@@ -58,12 +65,10 @@ export default async function handler(req, res) {
       descripcion: data.descripcion || '',
       direccion: data.direccion || '',
       ciudad: data.ciudad || '',
-
       cta: {
         label: 'Hablar con la IA',
         url: ctaUrl,
       },
-
       branding: {
         logo: data.logoUrl || null,
         color: data.brandColor || '#0070f3',
