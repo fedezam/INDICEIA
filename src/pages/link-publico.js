@@ -4,13 +4,20 @@ import { auth, db } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { showToast } from '../shared/utils.js';
-import { getCarteles, buildCartelQR } from '../../lib/cartel/index.js';
+
+// NUEVA API CARTEL
+import {
+  generateQR,
+  renderPreview,
+  getExportFormats,
+  exportCartel,
+} from '../../lib/cartel/index.js';
 
 // ==================== CONSTANTE ÚNICA ====================
-// Dominio público / humano (landing)
 const PUBLIC_BASE_URL = 'https://indiceia-public.vercel.app';
 
 let publicUrl = null;
+let qrCanvas = null;
 
 // ==================== AUTH ====================
 onAuthStateChanged(auth, async (user) => {
@@ -27,9 +34,9 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // ==================== INIT ====================
-async function initPage(id) {
+async function initPage(comercioId) {
   try {
-    const comercioSnap = await getDoc(doc(db, 'comercios', id));
+    const comercioSnap = await getDoc(doc(db, 'comercios', comercioId));
     if (!comercioSnap.exists()) {
       showToast('Comercio no encontrado', 'error');
       return;
@@ -41,9 +48,8 @@ async function initPage(id) {
       return;
     }
 
-    // ✅ LINK PÚBLICO CORRECTO (landing humana)
+    // LINK PÚBLICO
     publicUrl = `${PUBLIC_BASE_URL}/landing/${slug}`;
-
     document.getElementById('publicUrl').textContent = publicUrl;
 
     document.getElementById('copyBtn').onclick = () => {
@@ -51,53 +57,63 @@ async function initPage(id) {
       showToast('Link copiado', 'success');
     };
 
-    renderCarteles();
+    // 1️⃣ Generar QR único
+    qrCanvas = await generateQR(publicUrl);
+
+    // 2️⃣ Renderizar preview único
+    renderCartelPreview();
+
+    // 3️⃣ Renderizar botones de descarga
+    renderDownloadOptions();
+
   } catch (err) {
     console.error(err);
     showToast('Error al cargar la página', 'error');
   }
 }
 
-// ==================== CARTELES ====================
-function renderCarteles() {
+// ==================== PREVIEW ====================
+function renderCartelPreview() {
+  const container = document.getElementById('cartel-preview');
+  container.innerHTML = '';
+
+  const previewCanvas = renderPreview({ qrCanvas });
+  previewCanvas.style.maxWidth = '100%';
+  previewCanvas.style.height = 'auto';
+
+  container.appendChild(previewCanvas);
+}
+
+// ==================== DESCARGAS ====================
+function renderDownloadOptions() {
   const container = document.getElementById('carteles');
   container.innerHTML = '';
 
-  const carteles = getCarteles(publicUrl);
+  const formats = getExportFormats();
 
-  carteles.forEach(cartel => {
-    const card = document.createElement('div');
-    card.className = 'cartel-card';
-    card.innerHTML = `
-      <h3>${cartel.titulo}</h3>
-      <p>${cartel.descripcion}</p>
-      <button class="download-btn">Descargar cartel</button>
-    `;
+  formats.forEach((format) => {
+    const btn = document.createElement('button');
+    btn.className = 'download-btn';
+    btn.textContent = `Descargar ${format.label}`;
 
-    const btn = card.querySelector('.download-btn');
-
-    btn.onclick = async () => {
-      btn.disabled = true;
-      btn.textContent = 'Generando...';
-
+    btn.onclick = () => {
       try {
-        const qrObject = await buildCartelQR(cartel, publicUrl);
+        const result = exportCartel({
+          formatId: format.id,
+          qrCanvas,
+        });
 
-        qrObject.download({
-          name: `indiceia-${cartel.id}`,
-          extension: 'png',
+        result.download({
+          name: `indiceia-${format.id}`,
         });
 
         showToast('Cartel descargado', 'success');
       } catch (err) {
         console.error(err);
         showToast('Error al generar cartel', 'error');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Descargar cartel';
       }
     };
 
-    container.appendChild(card);
+    container.appendChild(btn);
   });
 }
