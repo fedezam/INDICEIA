@@ -1,6 +1,18 @@
 // INDICEIA/api/public-landing-event.js
-import { db } from '../src/firebase.js';
-import { collection, addDoc } from 'firebase/firestore';
+import admin from 'firebase-admin';
+
+// Inicializar Admin SDK si no está ya
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    }),
+  });
+}
+
+const db = admin.firestore();
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,9 +26,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const ref = collection(db, 'stats', data.comercioId, 'events');
+    const ref = db.collection('stats').doc(data.comercioId).collection('events');
 
-    await addDoc(ref, {
+    await ref.add({
       event: data.event,
       timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
       device: data.device || 'unknown',
