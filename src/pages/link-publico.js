@@ -60,13 +60,10 @@ async function initPage(comercioId) {
     // 1️⃣ Generar QR único
     qrCanvas = await generateQR(publicUrl);
 
-   // esperar un frame real antes de usar el canvas
+   // 2️⃣ esperar un frame real antes de usar el canvas
      requestAnimationFrame(() => {
        renderCartelPreview();
      });
-
-    // 2️⃣ Preview
-    renderCartelPreview();
 
     // 3️⃣ Botones de descarga
     renderDownloadOptions();
