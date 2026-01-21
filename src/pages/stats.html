@@ -2,102 +2,58 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Estadísticas – ÍndiceIA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Base styles del sistema -->
-  <link rel="stylesheet" href="../styles/base.css" />
-  <link rel="stylesheet" href="../styles/layout.css" />
-  <link rel="stylesheet" href="../styles/components.css" />
-
-  <!-- Stats styles -->
-  <link rel="stylesheet" href="./stats.css" />
+  <title>Estadísticas · ÍndiceIA</title>
+  <link rel="stylesheet" href="stats.css" />
 </head>
 <body>
+  <header>
+    <h1>📊 Estadísticas de tu Landing</h1>
+    <p class="subtitle">Aprende cómo tus visitantes interactúan con tu IA y mejora tu mensaje</p>
+  </header>
 
-  <!-- Layout global (header/sidebar) -->
-  <div id="appLayout">
+  <!-- GENERAL -->
+  <section class="kpi-section">
+    <h2>General</h2>
+    <div class="kpi">👥 Visitas totales: <span id="kpiViews">—</span></div>
+    <div class="kpi">🤖 Clicks "Hablar con la IA": <span id="kpiClicks">—</span></div>
+    <div class="kpi">📈 Tasa de conversión: <span id="kpiCTR">—</span></div>
+    <div class="kpi">📉 Abandonos: <span id="kpiAbandonos">—</span></div>
+    <p class="hint">El CTR indica qué porcentaje de visitantes realmente interactúa con tu IA.</p>
+  </section>
 
-    <main class="page-container">
+  <!-- DISPOSITIVOS -->
+  <section class="kpi-section">
+    <h2>Dispositivos</h2>
+    <div id="kpiDevices"></div>
+    <p class="hint">Detecta qué dispositivos usan tus visitantes para optimizar compatibilidad.</p>
+  </section>
 
-      <!-- ================= HEADER ================= -->
-      <header class="page-header">
-        <h1>
-          <i class="fas fa-chart-bar"></i>
-          Estadísticas de la IA
-        </h1>
-        <p>Actividad real de usuarios antes de interactuar con la IA comercial</p>
-      </header>
+  <!-- ORIGEN DEL TRÁFICO -->
+  <section class="kpi-section">
+    <h2>Origen del Tráfico</h2>
+    <div id="kpiReferrers"></div>
+    <p class="hint">Conocer la fuente de tus visitantes te permite enfocar tus campañas donde funciona.</p>
+  </section>
 
-      <!-- ================= KPIs ================= -->
-      <section class="stats-kpi-grid">
+  <!-- TIEMPO DE DECISIÓN -->
+  <section class="kpi-section">
+    <h2>Tiempo de decisión</h2>
+    <div id="kpiTiempo"></div>
+    <p class="hint">⏱ Indica qué tan rápido los visitantes hacen click. Menor tiempo = mensaje claro y atractivo.</p>
+  </section>
 
-        <div class="kpi-card">
-          <span class="kpi-label">Vistas de Landing</span>
-          <span class="kpi-value" id="kpiViews">—</span>
-        </div>
+  <!-- HORARIOS -->
+  <section class="kpi-section">
+    <h2>Horarios y días</h2>
+    <div id="kpiHorarios"></div>
+    <p class="hint">Detecta las horas con mayor interacción y planifica tus publicaciones y promociones.</p>
+  </section>
 
-        <div class="kpi-card">
-          <span class="kpi-label">Clicks a la IA</span>
-          <span class="kpi-value" id="kpiClicks">—</span>
-        </div>
+  <footer>
+    <span>Asistente impulsado por ÍndiceIA</span>
+  </footer>
 
-        <div class="kpi-card">
-          <span class="kpi-label">QR Escaneados</span>
-          <span class="kpi-value" id="kpiQr">—</span>
-        </div>
-
-        <div class="kpi-card">
-          <span class="kpi-label">Dispositivos únicos</span>
-          <span class="kpi-value" id="kpiDevices">—</span>
-        </div>
-
-      </section>
-
-      <!-- ================= GRÁFICOS (PLACEHOLDER) ================= -->
-      <section class="stats-section">
-        <h2>Actividad en el tiempo</h2>
-        <div class="chart-placeholder">
-          <p>Gráfico temporal (views / clicks)</p>
-        </div>
-      </section>
-
-      <section class="stats-section">
-        <h2>Distribución por dispositivo</h2>
-        <div class="chart-placeholder">
-          <p>Mobile / Desktop / Tablet</p>
-        </div>
-      </section>
-
-      <!-- ================= EVENTOS ================= -->
-      <section class="stats-section">
-        <h2>Eventos recientes</h2>
-
-        <table class="stats-table">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Evento</th>
-              <th>Origen</th>
-              <th>Dispositivo</th>
-            </tr>
-          </thead>
-          <tbody id="eventsTable">
-            <tr>
-              <td colspan="4" class="muted">Sin datos aún</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-    </main>
-  </div>
-
-  <!-- FontAwesome (ya usado en el dashboard) -->
-  <script src="https://kit.fontawesome.com/a2e0e6ad65.js" crossorigin="anonymous"></script>
-
-  <!-- JS se conecta en fase 4.2+ -->
-  <script type="module" src="./stats.js"></script> -->
-
+  <script src="stats.js"></script>
 </body>
 </html>
