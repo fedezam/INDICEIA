@@ -5,7 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { showToast } from '../shared/utils.js';
 
-// NUEVA API CARTEL
+// API CARTEL (cerrada)
 import {
   generateQR,
   renderPreview,
@@ -60,10 +60,10 @@ async function initPage(comercioId) {
     // 1️⃣ Generar QR único
     qrCanvas = await generateQR(publicUrl);
 
-    // 2️⃣ Renderizar preview único
+    // 2️⃣ Preview
     renderCartelPreview();
 
-    // 3️⃣ Renderizar botones de descarga
+    // 3️⃣ Botones de descarga
     renderDownloadOptions();
 
   } catch (err) {
@@ -75,11 +75,14 @@ async function initPage(comercioId) {
 // ==================== PREVIEW ====================
 function renderCartelPreview() {
   const container = document.getElementById('cartel-preview');
+  if (!container) return;
+
   container.innerHTML = '';
 
   const previewCanvas = renderPreview({ qrCanvas });
   previewCanvas.style.maxWidth = '100%';
   previewCanvas.style.height = 'auto';
+  previewCanvas.style.display = 'block';
 
   container.appendChild(previewCanvas);
 }
@@ -96,7 +99,12 @@ function renderDownloadOptions() {
     btn.className = 'download-btn';
     btn.textContent = `Descargar ${format.label}`;
 
-    btn.onclick = () => {
+    btn.onclick = async () => {
+      if (!qrCanvas) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Generando…';
+
       try {
         const result = exportCartel({
           formatId: format.id,
@@ -111,6 +119,9 @@ function renderDownloadOptions() {
       } catch (err) {
         console.error(err);
         showToast('Error al generar cartel', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = `Descargar ${format.label}`;
       }
     };
 
