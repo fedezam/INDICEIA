@@ -1,58 +1,82 @@
-.stats-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.kpi-card {
-  background: #fff;
-  border-radius: 10px;
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0f0f10;
+  color: #f4f4f5;
+  min-height: 100vh;
   padding: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+
+header h1 {
+  text-align: center;
+  margin-bottom: 4px;
+  font-size: 2rem;
+}
+
+header p.subtitle {
+  text-align: center;
+  color: #a1a1aa;
+  margin-bottom: 24px;
+}
+
+.kpi-section {
+  background: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+.kpi-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 8px;
+  color: #22c55e;
+}
+
+.kpi {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  justify-content: space-between;
+  align-items: center;
+  margin: 4px 0;
+  font-size: 1rem;
 }
 
-.kpi-label {
-  font-size: 13px;
-  color: #666;
+.hint {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #a1a1aa;
 }
 
-.kpi-value {
-  font-size: 28px;
-  font-weight: 600;
-}
-
-.stats-section {
-  margin-top: 40px;
-}
-
-.chart-placeholder {
-  background: #f4f4f4;
-  border-radius: 8px;
-  padding: 32px;
+footer {
   text-align: center;
-  color: #999;
-  font-style: italic;
+  margin-top: 24px;
+  font-size: 0.75rem;
+  color: #71717a;
 }
 
-.stats-table {
+footer span {
+  opacity: 0.7;
+}
+
+/* BARRAS DE PROGRESO */
+.kpi-bar {
+  background: #27272a;
+  border-radius: 12px;
+  height: 16px;
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
+  margin-top: 4px;
+  overflow: hidden;
 }
 
-.stats-table th,
-.stats-table td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-  text-align: left;
-  font-size: 14px;
+.kpi-bar-fill {
+  height: 100%;
+  border-radius: 12px;
+  background-color: #22c55e;
+  width: 0%;
+  transition: width 0.5s ease;
 }
 
-.stats-table .muted {
-  color: #999;
-  text-align: center;
-}
+.ctr-high { color: #22c55e; font-weight: bold; }   /* verde */
+.ctr-medium { color: #facc15; font-weight: bold; } /* amarillo */
+.ctr-low { color: #ef4444; font-weight: bold; }    /* rojo */
