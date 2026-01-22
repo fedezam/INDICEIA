@@ -14,7 +14,10 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', 'https://indiceia-public.vercel.app');
+  res.setHeader(
+    'Access-Control-Allow-Origin',
+    'https://indiceia-public.vercel.app'
+  );
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -28,25 +31,46 @@ export default async function handler(req, res) {
 
   const data = req.body;
 
-  if (!data?.comercioId || !data?.event) {
-    return res.status(400).json({ error: 'comercioId y event son obligatorios' });
+  // ⛔️ YA NO ACEPTAMOS comercioId
+  if (!data?.slug || !data?.event) {
+    return res
+      .status(400)
+      .json({ error: 'slug y event son obligatorios' });
   }
 
   try {
-    // ✅ PATH CORRECTO
-    const ref = db
+    // ==================== RESOLVER SLUG → COMERCIO ====================
+    const snap = await db
       .collection('comercios')
-      .doc(data.comercioId)
-      .collection('stats');
+      .where('slug', '==', data.slug)
+      .limit(1)
+      .get();
 
-    await ref.add({
-      event: data.event,
-      timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
-      device: data.device || 'unknown',
-      browser: data.browser || 'unknown',
-      referrer: data.referrer || 'direct',
-      fingerprint: data.fingerprint || null,
-    });
+    if (snap.empty) {
+      return res.status(404).json({ error: 'Comercio no encontrado' });
+    }
+
+    const comercioDoc = snap.docs[0];
+    const comercioId = comercioDoc.id;
+
+    // ==================== WRITE STAT ====================
+    await db
+      .collection('comercios')
+      .doc(comercioId)
+      .collection('stats')
+      .add({
+        event: data.event,
+        timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
+
+        device: data.device || 'unknown',
+        browser: data.browser || 'unknown',
+        referrer: data.referrer || 'direct',
+        fingerprint: data.fingerprint || null,
+
+        // contexto útil
+        slug: data.slug,
+        source: 'public-landing',
+      });
 
     return res.status(200).json({ ok: true });
   } catch (err) {
