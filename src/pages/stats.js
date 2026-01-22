@@ -29,7 +29,6 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 async function loadStats() {
-  // 🔹 Ahora apunta a la subcolección correcta
   const ref = collection(db, 'comercios', comercioId, 'stats');
   const snap = await getDocs(ref);
 
@@ -56,15 +55,19 @@ async function loadStats() {
   events.forEach(e => {
     if (!e.fingerprint) return;
     if (!fingerprints[e.fingerprint]) fingerprints[e.fingerprint] = {};
-    if (e.event === 'landing_view') fingerprints[e.fingerprint].view = e.timestamp;
-    if (e.event === 'talk_click') fingerprints[e.fingerprint].click = e.timestamp;
+    
+    // ✅ Convertir Firestore Timestamp a Date
+    const timestamp = e.timestamp?.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
+    
+    if (e.event === 'landing_view') fingerprints[e.fingerprint].view = timestamp;
+    if (e.event === 'talk_click') fingerprints[e.fingerprint].click = timestamp;
   });
 
   const tiempos = [];
   for (const fp in fingerprints) {
     const { view, click } = fingerprints[fp];
     if (view && click) {
-      tiempos.push((new Date(click) - new Date(view)) / 1000);
+      tiempos.push((click - view) / 1000); // Ya son objetos Date
     }
   }
   const tiempoPromedio = tiempos.length
@@ -102,7 +105,8 @@ async function loadStats() {
   // ==============================
   const horarios = {};
   events.forEach(e => {
-    const dt = new Date(e.timestamp);
+    // ✅ Convertir Firestore Timestamp a Date
+    const dt = e.timestamp?.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
     const h = dt.getHours();
     if (!horarios[h]) horarios[h] = { views:0, clicks:0 };
     if (e.event === 'landing_view') horarios[h].views++;
