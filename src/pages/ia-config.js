@@ -242,6 +242,25 @@ function setupEvents() {
     });
   }
 }
+// 👇 NUEVO: cognitive permissions trigger dirty
+  Object.values(COGNITIVE_CAPABILITIES)
+    .flat()
+    .forEach(cap => {
+      const checkbox = document.getElementById(`cap_${cap}`);
+      if (checkbox) {
+        checkbox.addEventListener('change', () => {
+          document.dispatchEvent(new Event('dataPage:changed'));
+        });
+      }
+    });
+
+  const levelSelect = $('aiCognitionLevel');
+  if (levelSelect) {
+    levelSelect.addEventListener('change', () => {
+      document.dispatchEvent(new Event('dataPage:changed'));
+    });
+  }
+}
 
 function insertAIHelperCard() {
   const container = document.querySelector('main .container');
