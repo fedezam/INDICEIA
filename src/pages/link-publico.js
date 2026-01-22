@@ -49,7 +49,7 @@ async function initPage(comercioId) {
     }
 
     // LINK PÚBLICO
-    publicUrl = `${PUBLIC_BASE_URL}/landing/${slug}`;
+    publicUrl = `${PUBLIC_BASE_URL}/c/${slug}`;
     document.getElementById('publicUrl').textContent = publicUrl;
 
     document.getElementById('copyBtn').onclick = () => {
