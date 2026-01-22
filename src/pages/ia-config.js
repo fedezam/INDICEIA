@@ -1,6 +1,5 @@
 // src/pages/ia-config.js
-// ==================== VERSIÓN REFACTORIZADA ====================
-// Usa dataPageSkeleton.js - SOLO lógica específica de configuración IA
+// ==================== IA CONFIG + COGNITIVE PERMISSIONS ====================
 
 // ==================== ESTILOS ====================
 import '../styles/base.css';
@@ -21,6 +20,7 @@ import { runDataPage } from '../shared/dataPageSkeleton.js';
 
 // ==================== ESTADO LOCAL ====================
 let aiConfig = {};
+let aiCognition = {};
 
 // ==================== HELPERS ====================
 const $ = (id) => document.getElementById(id);
@@ -40,6 +40,13 @@ function getDefaultAIConfig() {
   };
 }
 
+function getDefaultAICognition() {
+  return {
+    level: 'basico',
+    capabilities: {}
+  };
+}
+
 function setValue(id, value) {
   const el = $(id);
   if (el && value !== undefined && value !== null) {
@@ -52,34 +59,95 @@ function getValue(id) {
   return el ? el.value.trim() : '';
 }
 
-// ==================== MÓDULO EXPORTADO ====================
+function setChecked(id, value) {
+  const el = $(id);
+  if (el) el.checked = Boolean(value);
+}
+
+function getChecked(id) {
+  const el = $(id);
+  return el ? el.checked : false;
+}
+
+// ==================== COGNITION ====================
+
+const COGNITIVE_CAPABILITIES = {
+  basico: [
+    'examples_simple',
+    'anticipate_common_questions'
+  ],
+  recomendado: [
+    'explain_implicit_services',
+    'domain_knowledge',
+    'causal_explanations'
+  ],
+  avanzado: [
+    'infer_missing_details',
+    'contextual_adaptation',
+    'guided_suggestions'
+  ]
+};
+
+function loadCognitionToForm() {
+  if (!aiCognition?.capabilities) return;
+
+  Object.values(COGNITIVE_CAPABILITIES)
+    .flat()
+    .forEach(cap => {
+      setChecked(`cap_${cap}`, aiCognition.capabilities[cap]);
+    });
+
+  if (aiCognition.level) {
+    setValue('aiCognitionLevel', aiCognition.level);
+  }
+}
+
+function getCognitionFromForm() {
+  const level = getValue('aiCognitionLevel') || 'basico';
+  const enabledCaps = {};
+
+  Object.values(COGNITIVE_CAPABILITIES)
+    .flat()
+    .forEach(cap => {
+      if (getChecked(`cap_${cap}`)) {
+        enabledCaps[cap] = true;
+      }
+    });
+
+  if (Object.keys(enabledCaps).length === 0) {
+    return { level };
+  }
+
+  return {
+    level,
+    capabilities: enabledCaps
+  };
+}
+
+// ==================== MÓDULO ====================
 const iaConfigModule = {
-  // 1️⃣ LOAD - Cargar datos desde Firebase
-  async load({ currentComercioId, comercioData }) {
+  // 1️⃣ LOAD
+  async load({ comercioData }) {
     aiConfig = comercioData.aiConfig || getDefaultAIConfig();
-    console.log('✅ Configuración de IA cargada');
+    aiCognition = comercioData.aiCognition || getDefaultAICognition();
+    console.log('✅ IA + Cognición cargadas');
   },
 
-  // 2️⃣ RENDER - Dibujar UI específica
+  // 2️⃣ RENDER
   render() {
-    // Verificar que DOM esté listo - buscar un elemento que existe
     const container = document.querySelector('main .container');
     if (!container || !document.getElementById('aiName')) {
-      console.error('❌ DOM no está listo, reintentando...');
       setTimeout(() => this.render(), 100);
       return;
     }
 
-    console.log('🎨 Renderizando UI de IA config...');
-
     loadAIConfigToForm();
+    loadCognitionToForm();
     setupEvents();
     insertAIHelperCard();
-
-    console.log('✅ UI renderizada correctamente');
   },
 
-  // 3️⃣ GET CURRENT DATA - Snapshot para dirty detection
+  // 3️⃣ SNAPSHOT
   getCurrentData() {
     return {
       aiConfig: {
@@ -93,77 +161,62 @@ const iaConfigModule = {
         localCerrado: getValue('localCerrado'),
         proactividad: getValue('proactividad'),
         formatoRespuestas: getValue('formatoRespuestas')
-      }
+      },
+      aiCognition: getCognitionFromForm()
     };
   },
 
-  // 4️⃣ SAVE - Guardar cambios
-  async save({ currentComercioId, isEditMode }) {
-    // Validaciones básicas
+  // 4️⃣ SAVE
+  async save({ currentComercioId }) {
     const required = ['aiName', 'aiPersonality', 'aiTone', 'aiGreeting'];
-    const missing = [];
+    const missing = required.filter(id => !getValue(id));
 
-    required.forEach(id => {
-      const value = getValue(id);
-      if (!value) missing.push(id);
-    });
-
-    if (missing.length > 0) {
-      showToast('Faltan datos', 'Completá todos los campos requeridos', 'warning');
+    if (missing.length) {
+      showToast('Faltan datos', 'Completá los campos requeridos', 'warning');
       throw new Error('Validación fallida');
     }
 
     showLoading('Guardando configuración de IA...');
 
     try {
-      const configToSave = {
-        aiName: getValue('aiName'),
-        aiLanguage: getValue('aiLanguage'),
-        aiPersonality: getValue('aiPersonality'),
-        aiTone: getValue('aiTone'),
-        aiGreeting: getValue('aiGreeting'),
-        sinPrecio: getValue('sinPrecio'),
-        sinStock: getValue('sinStock'),
-        localCerrado: getValue('localCerrado'),
-        proactividad: getValue('proactividad'),
-        formatoRespuestas: getValue('formatoRespuestas')
-      };
-
       const updates = {
-        aiConfig: configToSave,
+        aiConfig: {
+          aiName: getValue('aiName'),
+          aiLanguage: getValue('aiLanguage'),
+          aiPersonality: getValue('aiPersonality'),
+          aiTone: getValue('aiTone'),
+          aiGreeting: getValue('aiGreeting'),
+          sinPrecio: getValue('sinPrecio'),
+          sinStock: getValue('sinStock'),
+          localCerrado: getValue('localCerrado'),
+          proactividad: getValue('proactividad'),
+          formatoRespuestas: getValue('formatoRespuestas')
+        },
+        aiCognition: getCognitionFromForm(),
         'onboardingSteps.ia-config': true,
         fechaActualizacion: new Date()
       };
 
       await updateDoc(doc(db, 'comercios', currentComercioId), updates);
 
-      // Actualizar estado local
-      aiConfig = configToSave;
-
       hideLoading();
-      showToast('Éxito', 'Configuración de IA guardada correctamente', 'success');
+      showToast('Éxito', 'Configuración guardada correctamente', 'success');
 
-    } catch (error) {
+    } catch (err) {
       hideLoading();
-      console.error('❌ Error guardando:', error);
-      showToast('Error', 'No se pudo guardar: ' + error.message, 'error');
-      throw error;
+      showToast('Error', err.message, 'error');
+      throw err;
     }
   },
 
-  // 5️⃣ VALIDACIÓN - ¿Puede avanzar?
+  // 5️⃣ VALIDACIÓN
   isFormValid() {
-    // Validar campos requeridos
-    const required = ['aiName', 'aiPersonality', 'aiTone', 'aiGreeting'];
-    
-    return required.every(id => {
-      const value = getValue(id);
-      return value && value.length > 0;
-    });
+    return ['aiName', 'aiPersonality', 'aiTone', 'aiGreeting']
+      .every(id => getValue(id));
   }
 };
 
-// ==================== UI FUNCTIONS ====================
+// ==================== UI ====================
 
 function loadAIConfigToForm() {
   setValue('aiName', aiConfig.aiName);
@@ -179,49 +232,14 @@ function loadAIConfigToForm() {
 }
 
 function setupEvents() {
-  // Character counters (si existen en el HTML)
-  const fieldsWithCounter = [
-    { id: 'aiPersonality', counterId: 'personalityCount', max: 500 },
-    { id: 'aiGreeting', counterId: 'greetingCount', max: 200 },
-    { id: 'sinPrecio', counterId: 'sinPrecioCount', max: 200 },
-    { id: 'sinStock', counterId: 'sinStockCount', max: 200 },
-    { id: 'localCerrado', counterId: 'localCerradoCount', max: 200 }
-  ];
-
-  fieldsWithCounter.forEach(({ id, counterId, max }) => {
-    const field = $(id);
-    const counter = $(counterId);
-    
-    if (field && counter) {
-      const updateCounter = () => {
-        const length = field.value.length;
-        counter.textContent = `${length}/${max}`;
-        
-        if (length > max * 0.9) {
-          counter.style.color = '#ef4444';
-        } else {
-          counter.style.color = '#6b7280';
-        }
-      };
-      
-      field.addEventListener('input', updateCounter);
-      updateCounter(); // Initial update
-    }
-  });
-
-  // Preview de saludo (si existe en el HTML)
   const greetingField = $('aiGreeting');
   const greetingPreview = $('greetingPreview');
-  
+
   if (greetingField && greetingPreview) {
     greetingField.addEventListener('input', () => {
-      const value = greetingField.value.trim();
-      greetingPreview.textContent = value || 'Tu saludo aparecerá aquí...';
+      greetingPreview.textContent =
+        greetingField.value.trim() || 'Tu saludo aparecerá aquí...';
     });
-    
-    // Initial preview
-    const initialValue = greetingField.value.trim();
-    greetingPreview.textContent = initialValue || 'Tu saludo aparecerá aquí...';
   }
 }
 
@@ -234,9 +252,9 @@ function insertAIHelperCard() {
   card.innerHTML = `
     <div class="ai-helper-icon">AI</div>
     <div class="ai-helper-content">
-      <h4>¡Configurá la personalidad de tu IA!</h4>
-      <p>Definí cómo se comportará tu asistente virtual: su tono, estilo de respuesta y manejo de situaciones especiales.</p>
-      <small>Una buena configuración mejora la experiencia del cliente</small>
+      <h4>Cómo piensa tu IA</h4>
+      <p>Elegí qué tan inteligente querés que sea tu asistente. Siempre responde con información real de tu negocio.</p>
+      <small>Podés cambiar esto cuando quieras</small>
     </div>
   `;
   container.insertBefore(card, container.firstChild);
