@@ -14,29 +14,24 @@
   <!-- FAVICON -->
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
-  <!-- FONTS / ICONS -->
+  <!-- FONTS -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap"
     rel="stylesheet"
   />
-  
-  <!-- CSS ADICIONAL PARA SKELETON -->
+
+  <!-- CSS ADICIONAL -->
   <link rel="stylesheet" href="../styles/progressOverlay.css">
 </head>
 
 <body data-page="ia-config">
 
-  <!-- ================= HEADER GLOBAL ================= -->
-  <!-- renderLayout() INYECTA ACÁ -->
+  <!-- ================= HEADER ================= -->
   <header id="layout-header"></header>
 
-  <!-- ================= NAVEGACIÓN DE PASOS ================= -->
-  <!-- initNavigation() USA data-page="ia-config" -->
-  <!-- (se inyecta dentro del header o layout) -->
-
-  <!-- ================= CONTENIDO PRINCIPAL ================= -->
+  <!-- ================= MAIN ================= -->
   <main id="main-content">
     <div class="container">
 
@@ -46,11 +41,7 @@
 
         <div class="form-group">
           <label for="aiName">Nombre de la IA</label>
-          <input
-            type="text"
-            id="aiName"
-            placeholder="Ej: JuancaBot"
-          />
+          <input type="text" id="aiName" placeholder="Ej: JuancaBot" />
         </div>
 
         <div class="form-group">
@@ -145,7 +136,79 @@
         </div>
       </section>
 
-      <!-- ================= BOTÓN GUARDAR (SKELETON) ================= -->
+      <!-- ================= CAPACIDADES COGNITIVAS ================= -->
+      <section class="card">
+        <h2>Capacidades de la IA</h2>
+        <p class="section-description">
+          Activá qué tan lejos puede razonar tu asistente dentro de tu negocio.
+          <br />
+          <strong>No cambia lo que vendés</strong>, solo cómo explica y ayuda.
+        </p>
+
+        <div class="checkbox-group">
+          <label class="checkbox-item">
+            <input type="checkbox" id="cap_contextualizar" />
+            <span>
+              <strong>Explicar mejor los servicios</strong><br />
+              Puede dar ejemplos, analogías simples y explicar beneficios aunque no estén escritos palabra por palabra.
+            </span>
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" id="cap_relacionar" />
+            <span>
+              <strong>Relacionar productos entre sí</strong><br />
+              Puede sugerir combinaciones lógicas o alternativas dentro de tu catálogo.
+            </span>
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" id="cap_deducir" />
+            <span>
+              <strong>Deducir necesidades del cliente</strong><br />
+              Puede inferir qué le conviene al cliente según lo que pregunta.
+            </span>
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" id="cap_explicar_tecnico" />
+            <span>
+              <strong>Traducir lo técnico a simple</strong><br />
+              Convierte explicaciones complejas en lenguaje claro y cotidiano.
+            </span>
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" id="cap_comparar" />
+            <span>
+              <strong>Comparar opciones</strong><br />
+              Puede explicar diferencias entre productos o servicios del negocio.
+            </span>
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" id="cap_argumentar" />
+            <span>
+              <strong>Argumentar por qué algo conviene</strong><br />
+              Puede justificar recomendaciones sin inventar información.
+            </span>
+          </label>
+
+          <label class="checkbox-item">
+            <input type="checkbox" id="cap_recordar_contexto" />
+            <span>
+              <strong>Recordar el contexto de la charla</strong><br />
+              Mantiene coherencia durante la conversación con el cliente.
+            </span>
+          </label>
+        </div>
+
+        <small class="helper-text">
+          💡 Si no activás nada, la IA funciona igual que siempre.
+        </small>
+      </section>
+
+      <!-- ================= GUARDAR ================= -->
       <div class="bottom-action-bar">
         <button id="saveChangesBtnBottom" class="btn btn-primary btn-save" disabled>
           Guardar Cambios
