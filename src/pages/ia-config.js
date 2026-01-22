@@ -260,7 +260,7 @@ function setupEvents() {
       document.dispatchEvent(new Event('dataPage:changed'));
     });
   }
-}
+
 
 function insertAIHelperCard() {
   const container = document.querySelector('main .container');
