@@ -22,9 +22,13 @@ try {
 
 // ----- Firebase Admin
 if (!admin.apps.length) {
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT) throw new Error('Falta FIREBASE_SERVICE_ACCOUNT');
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+    throw new Error('Falta FIREBASE_SERVICE_ACCOUNT');
+  }
   admin.initializeApp({
-    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
+    credential: admin.credential.cert(
+      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    ),
   });
 }
 const db = admin.firestore();
@@ -38,18 +42,39 @@ const hasData = (value) => {
   return value !== undefined && value !== null;
 };
 
+// ===== BLOCK A2 BUILDER =====
+function buildCognitivePermissions(aiConfig) {
+  if (!aiConfig?.cognitive_permissions) return null;
+
+  const enabled = {};
+
+  Object.entries(aiConfig.cognitive_permissions).forEach(([key, value]) => {
+    if (value === true) {
+      enabled[key] = true;
+    }
+  });
+
+  return Object.keys(enabled).length > 0 ? enabled : null;
+}
+
 // ===== ENTITY BUILDER =====
 export async function buildEntity({ comercioId }) {
   if (!comercioId) throw new Error('Falta comercioId');
 
-  // Block A y D
-  const blockA = JSON.parse(readFileSync(resolve(__dirname, 'base/blockA.json'), 'utf-8'));
-  const blockD = JSON.parse(readFileSync(resolve(__dirname, 'base/blockD.json'), 'utf-8'));
+  // Block A y D (base)
+  const blockA = JSON.parse(
+    readFileSync(resolve(__dirname, 'base/blockA.json'), 'utf-8')
+  );
+  const blockD = JSON.parse(
+    readFileSync(resolve(__dirname, 'base/blockD.json'), 'utf-8')
+  );
 
   // Firestore
   const comercioRef = db.collection('comercios').doc(comercioId);
   const snap = await comercioRef.get();
-  if (!snap.exists) throw new Error(`Comercio ${comercioId} no encontrado`);
+  if (!snap.exists) {
+    throw new Error(`Comercio ${comercioId} no encontrado`);
+  }
   const data = snap.data();
 
   // ===== BLOCK B =====
@@ -65,9 +90,10 @@ export async function buildEntity({ comercioId }) {
   if (hasData(ubicacion)) B.ubicacion = ubicacion;
 
   const contacto = {};
-  ['telefono', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok'].forEach(k => {
-    if (hasData(data[k])) contacto[k] = data[k];
-  });
+  ['telefono', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok']
+    .forEach(k => {
+      if (hasData(data[k])) contacto[k] = data[k];
+    });
   if (hasData(contacto)) B.contacto = contacto;
 
   if (hasData(data.horarios)) B.horarios = data.horarios;
@@ -75,9 +101,11 @@ export async function buildEntity({ comercioId }) {
   if (hasData(data.templateId)) B.templateId = data.templateId;
   if (hasData(data.categories)) B.categorias = data.categories;
 
+  // IA config → Block B
   if (hasData(data.aiConfig)) {
     const ai = data.aiConfig;
     B.ia = {};
+
     if (hasData(ai.aiName)) B.ia.nombre = ai.aiName;
     if (hasData(ai.aiGreeting)) B.ia.saludo = ai.aiGreeting;
     if (hasData(ai.aiLanguage)) B.ia.idioma = ai.aiLanguage;
@@ -85,6 +113,7 @@ export async function buildEntity({ comercioId }) {
     if (hasData(ai.aiTone)) B.ia.tono = ai.aiTone;
     if (hasData(ai.formatoRespuestas)) B.ia.formatoRespuestas = ai.formatoRespuestas;
     if (hasData(ai.proactividad)) B.ia.proactividad = ai.proactividad;
+
     if (!hasData(B.ia)) delete B.ia;
   }
 
@@ -133,18 +162,27 @@ export async function buildEntity({ comercioId }) {
   B.updatedAt = new Date().toISOString();
   Object.freeze(B);
 
-  // Block A placeholders
+  // ===== BLOCK A (A1 + A2) =====
   const liveEnabled = ['trial', 'pro', 'highvalue', 'premium'].includes(data.plan);
+
   const A = JSON.parse(
     JSON.stringify(blockA)
       .replace(/\{\{LIVE_ENABLED\}\}/g, liveEnabled.toString())
       .replace(/\{\{REFERRAL_URL\}\}/g, `https://indiceia.app/guia?ref=${referralCode}`)
   );
 
-  // Block D channels
+  // ---- blockA2 (cognitive permissions)
+  const cognitivePermissions = buildCognitivePermissions(data.aiConfig);
+  if (cognitivePermissions) {
+    A.cognitive_permissions = cognitivePermissions;
+  }
+
+  // ===== BLOCK D =====
   if (blockD?.availableChannels && B.contacto) {
     Object.entries(blockD.availableChannels).forEach(([ch, cfg]) => {
-      if (typeof cfg === 'object') cfg.enabled = hasData(B.contacto[ch]);
+      if (typeof cfg === 'object') {
+        cfg.enabled = hasData(B.contacto[ch]);
+      }
     });
   }
   Object.freeze(blockD);
@@ -152,7 +190,9 @@ export async function buildEntity({ comercioId }) {
   // ===== BLOCK C =====
   let C = {};
   try {
-    C = JSON.parse(readFileSync(resolve(__dirname, 'base/blockC.json'), 'utf-8')).C;
+    C = JSON.parse(
+      readFileSync(resolve(__dirname, 'base/blockC.json'), 'utf-8')
+    ).C;
 
     if (hasData(B.templateId)) {
       const t = templateRegistry.templates[B.templateId];
@@ -175,7 +215,7 @@ export async function buildEntity({ comercioId }) {
     C = {};
   }
 
-  // ===== BLOCK E (Servicios) =====
+  // ===== BLOCK E =====
   let E = { habilitado: false };
 
   try {
@@ -197,10 +237,7 @@ export async function buildEntity({ comercioId }) {
     });
 
     if (servicios.length > 0) {
-      E = {
-        habilitado: true,
-        servicios
-      };
+      E = { habilitado: true, servicios };
     }
   } catch (err) {
     console.warn('⚠️ No se pudieron cargar servicios (Block E)', err);
