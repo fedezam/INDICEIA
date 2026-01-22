@@ -1,19 +1,31 @@
 import { auth, db } from '../firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
 let comercioId = null;
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) return;
 
-  comercioId = localStorage.getItem('currentComercioId');
-  if (!comercioId) {
-    console.warn('[STATS] comercioId no disponible');
-    return;
-  }
+  // ✅ OBTENER comercioId DESDE FIRESTORE
+  try {
+    const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+    if (!userDoc.exists()) {
+      console.warn('[STATS] Usuario no encontrado en Firestore');
+      return;
+    }
+    
+    comercioId = userDoc.data().comercioId;
+    
+    if (!comercioId) {
+      console.warn('[STATS] comercioId no disponible en el usuario');
+      return;
+    }
 
-  loadStats();
+    loadStats();
+  } catch (error) {
+    console.error('[STATS] Error obteniendo comercioId:', error);
+  }
 });
 
 async function loadStats() {
