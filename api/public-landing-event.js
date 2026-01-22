@@ -19,8 +19,8 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', 'https://indiceia-public.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  // Manejar preflight request de OPTIONS
+
+  // Preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -36,15 +36,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const ref = db.collection('stats').doc(data.comercioId).collection('events');
+    // ✅ PATH CORRECTO: dentro del comercio
+    const ref = db
+      .collection('comercios')
+      .doc(data.comercioId)
+      .collection('stats')
+      .collection('events');
+
     await ref.add({
       event: data.event,
       timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
       device: data.device || 'unknown',
       browser: data.browser || 'unknown',
       referrer: data.referrer || 'direct',
-      fingerprint: data.fingerprint || null
+      fingerprint: data.fingerprint || null,
     });
+
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error('Error escribiendo evento:', err);
