@@ -1,7 +1,6 @@
 // INDICEIA/api/public-landing-event.js
 import admin from 'firebase-admin';
 
-// Inicializar Admin SDK si no está ya
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -15,12 +14,10 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 export default async function handler(req, res) {
-  // 🔥 CORS - permitir requests desde indiceia-public
   res.setHeader('Access-Control-Allow-Origin', 'https://indiceia-public.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -36,12 +33,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ✅ PATH CORRECTO: dentro del comercio
+    // ✅ PATH CORRECTO
     const ref = db
       .collection('comercios')
       .doc(data.comercioId)
-      .collection('stats')
-      .collection('events');
+      .collection('stats');
 
     await ref.add({
       event: data.event,
