@@ -114,10 +114,6 @@ function getCognitionFromForm() {
       }
     });
 
-  if (Object.keys(enabledCaps).length === 0) {
-    return { level };
-  }
-
   return {
     level,
     capabilities: enabledCaps
@@ -126,14 +122,11 @@ function getCognitionFromForm() {
 
 // ==================== MÓDULO ====================
 const iaConfigModule = {
-  // 1️⃣ LOAD
   async load({ comercioData }) {
     aiConfig = comercioData.aiConfig || getDefaultAIConfig();
     aiCognition = comercioData.aiCognition || getDefaultAICognition();
-    console.log('✅ IA + Cognición cargadas');
   },
 
-  // 2️⃣ RENDER
   render() {
     const container = document.querySelector('main .container');
     if (!container || !document.getElementById('aiName')) {
@@ -147,7 +140,6 @@ const iaConfigModule = {
     insertAIHelperCard();
   },
 
-  // 3️⃣ SNAPSHOT
   getCurrentData() {
     return {
       aiConfig: {
@@ -166,50 +158,20 @@ const iaConfigModule = {
     };
   },
 
-  // 4️⃣ SAVE
   async save({ currentComercioId }) {
-    const required = ['aiName', 'aiPersonality', 'aiTone', 'aiGreeting'];
-    const missing = required.filter(id => !getValue(id));
-
-    if (missing.length) {
-      showToast('Faltan datos', 'Completá los campos requeridos', 'warning');
-      throw new Error('Validación fallida');
-    }
-
     showLoading('Guardando configuración de IA...');
 
-    try {
-      const updates = {
-        aiConfig: {
-          aiName: getValue('aiName'),
-          aiLanguage: getValue('aiLanguage'),
-          aiPersonality: getValue('aiPersonality'),
-          aiTone: getValue('aiTone'),
-          aiGreeting: getValue('aiGreeting'),
-          sinPrecio: getValue('sinPrecio'),
-          sinStock: getValue('sinStock'),
-          localCerrado: getValue('localCerrado'),
-          proactividad: getValue('proactividad'),
-          formatoRespuestas: getValue('formatoRespuestas')
-        },
-        aiCognition: getCognitionFromForm(),
-        'onboardingSteps.ia-config': true,
-        fechaActualizacion: new Date()
-      };
+    await updateDoc(doc(db, 'comercios', currentComercioId), {
+      aiConfig: this.getCurrentData().aiConfig,
+      aiCognition: this.getCurrentData().aiCognition,
+      'onboardingSteps.ia-config': true,
+      fechaActualizacion: new Date()
+    });
 
-      await updateDoc(doc(db, 'comercios', currentComercioId), updates);
-
-      hideLoading();
-      showToast('Éxito', 'Configuración guardada correctamente', 'success');
-
-    } catch (err) {
-      hideLoading();
-      showToast('Error', err.message, 'error');
-      throw err;
-    }
+    hideLoading();
+    showToast('Éxito', 'Configuración guardada correctamente', 'success');
   },
 
-  // 5️⃣ VALIDACIÓN
   isFormValid() {
     return ['aiName', 'aiPersonality', 'aiTone', 'aiGreeting']
       .every(id => getValue(id));
@@ -219,16 +181,9 @@ const iaConfigModule = {
 // ==================== UI ====================
 
 function loadAIConfigToForm() {
-  setValue('aiName', aiConfig.aiName);
-  setValue('aiLanguage', aiConfig.aiLanguage || 'es-AR');
-  setValue('aiPersonality', aiConfig.aiPersonality);
-  setValue('aiTone', aiConfig.aiTone);
-  setValue('aiGreeting', aiConfig.aiGreeting);
-  setValue('sinPrecio', aiConfig.sinPrecio);
-  setValue('sinStock', aiConfig.sinStock);
-  setValue('localCerrado', aiConfig.localCerrado);
-  setValue('proactividad', aiConfig.proactividad);
-  setValue('formatoRespuestas', aiConfig.formatoRespuestas);
+  Object.keys(getDefaultAIConfig()).forEach(k => {
+    setValue(k, aiConfig[k]);
+  });
 }
 
 function setupEvents() {
@@ -241,26 +196,22 @@ function setupEvents() {
         greetingField.value.trim() || 'Tu saludo aparecerá aquí...';
     });
   }
-}
-// 👇 NUEVO: cognitive permissions trigger dirty
+
+  // 👇 AHORA SÍ: listeners cognitivos en el lugar correcto
   Object.values(COGNITIVE_CAPABILITIES)
     .flat()
     .forEach(cap => {
-      const checkbox = document.getElementById(`cap_${cap}`);
+      const checkbox = $(`cap_${cap}`);
       if (checkbox) {
-        checkbox.addEventListener('change', () => {
-          document.dispatchEvent(new Event('dataPage:changed'));
-        });
+        checkbox.addEventListener('change', () => {});
       }
     });
 
   const levelSelect = $('aiCognitionLevel');
   if (levelSelect) {
-    levelSelect.addEventListener('change', () => {
-      document.dispatchEvent(new Event('dataPage:changed'));
-    });
+    levelSelect.addEventListener('change', () => {});
   }
-
+}
 
 function insertAIHelperCard() {
   const container = document.querySelector('main .container');
@@ -272,8 +223,7 @@ function insertAIHelperCard() {
     <div class="ai-helper-icon">AI</div>
     <div class="ai-helper-content">
       <h4>Cómo piensa tu IA</h4>
-      <p>Elegí qué tan inteligente querés que sea tu asistente. Siempre responde con información real de tu negocio.</p>
-      <small>Podés cambiar esto cuando quieras</small>
+      <p>Elegí qué tan inteligente querés que sea tu asistente.</p>
     </div>
   `;
   container.insertBefore(card, container.firstChild);
