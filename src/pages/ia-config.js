@@ -187,6 +187,14 @@ function loadAIConfigToForm() {
 }
 
 function setupEvents() {
+  // 👇 Fix para detección de cambios por el skeleton
+  const inputs = document.querySelectorAll('input, textarea, select');
+  inputs.forEach(el => {
+    el.addEventListener('input', () => {});
+    el.addEventListener('change', () => {});
+  });
+
+  // Preview del saludo en tiempo real
   const greetingField = $('aiGreeting');
   const greetingPreview = $('greetingPreview');
 
@@ -195,21 +203,6 @@ function setupEvents() {
       greetingPreview.textContent =
         greetingField.value.trim() || 'Tu saludo aparecerá aquí...';
     });
-  }
-
-  // 👇 AHORA SÍ: listeners cognitivos en el lugar correcto
-  Object.values(COGNITIVE_CAPABILITIES)
-    .flat()
-    .forEach(cap => {
-      const checkbox = $(`cap_${cap}`);
-      if (checkbox) {
-        checkbox.addEventListener('change', () => {});
-      }
-    });
-
-  const levelSelect = $('aiCognitionLevel');
-  if (levelSelect) {
-    levelSelect.addEventListener('change', () => {});
   }
 }
 
