@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://indiceia.vercel.app/api/entity-factory/base/context.schema.json"
+  "title": "Context – Identidad y Configuración del Comercio",
+  "description": "Define quién es el comercio y cómo se presenta. No incluye oferta transaccional.",
+  "type": "object",
+  "additionalProperties": false,
+  
+  "required": ["identity", "contacto"],
+  
+  "properties": {
+    "identity": {
+      "type": "object",
+      "required": ["nombre_comercio"],
+      "properties": {
+        "nombre_comercio": { 
+          "type": "string",
+          "minLength": 1,
+          "description": "Mapea desde: nombreComercio"
+        },
+        "descripcion": { 
+          "type": "string",
+          "description": "Mapea desde: descripcion"
+        },
+        "tipo": { 
+          "type": "string",
+          "description": "Mapea desde: tipo o tipoActividad"
+        },
+        "categorias": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Mapea desde: categories"
+        }
+      }
+    },
+    
+    "ubicacion": {
+      "type": "object",
+      "properties": {
+        "direccion": { "type": "string" },
+        "ciudad": { "type": "string" },
+        "provincia": { "type": "string" },
+        "pais": { "type": "string" }
+      }
+    },
+    
+    "contacto": {
+      "type": "object",
+      "required": ["whatsapp_number"],
+      "properties": {
+        "whatsapp_number": { 
+          "type": "string",
+          "pattern": "^549[0-9]{10}$",
+          "description": "Mapea desde: whatsapp (agregando prefijo 549 si falta)"
+        },
+        "telefono": { 
+          "type": "string",
+          "description": "Mapea desde: telefono"
+        },
+        "email": { 
+          "type": "string",
+          "format": "email"
+        },
+        "instagram": { "type": "string" },
+        "facebook": { "type": "string" },
+        "tiktok": { "type": "string" },
+        "website": { "type": "string" }
+      }
+    },
+    
+    "horarios": {
+      "type": "object",
+      "description": "Mapea desde: horarios (estructura idéntica)",
+      "additionalProperties": { "$ref": "#/$defs/diaHorario" }
+    },
+    
+    "pagos": {
+      "type": "object",
+      "properties": {
+        "metodosDisponibles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Parsear desde: metodos_pago + paymentMethods"
+        },
+        "descuentos": {
+          "type": "object",
+          "additionalProperties": { "type": "number" },
+          "description": "Descuentos por método de pago. Ej: {'efectivo': 0.10} = 10% desc"
+        }
+      }
+    },
+    
+    "ia": {
+      "type": "object",
+      "description": "Mapea desde: aiConfig",
+      "properties": {
+        "nombre": { 
+          "type": "string",
+          "description": "Mapea desde: aiConfig.aiName"
+        },
+        "saludo": { 
+          "type": "string",
+          "description": "Mapea desde: aiConfig.aiGreeting"
+        },
+        "idioma": { 
+          "type": "string",
+          "description": "Mapea desde: aiConfig.aiLanguage"
+        },
+        "personalidad": { 
+          "type": "string",
+          "description": "Mapea desde: aiConfig.aiPersonality"
+        },
+        "tono": { 
+          "type": "string",
+          "description": "Mapea desde: aiConfig.aiTone"
+        }
+      }
+    },
+    
+    "plan": {
+      "type": "object",
+      "description": "Info del plan contratado (NO estado runtime)",
+      "properties": {
+        "tipo": { 
+          "type": "string",
+          "description": "Mapea desde: plan"
+        },
+        "templateId": { 
+          "type": "string",
+          "description": "Mapea desde: templateId"
+        },
+        "templateUpdatedAt": { 
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "fechaCreacion": { "type": "string", "format": "date-time" },
+        "fechaActualizacion": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  
+  "$defs": {
+    "diaHorario": {
+      "type": "object",
+      "required": ["closed"],
+      "properties": {
+        "closed": { "type": "boolean" },
+        "continuous": { "type": "boolean" },
+        "morning": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "open": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+            "close": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" }
+          }
+        },
+        "afternoon": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "open": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" },
+            "close": { "type": "string", "pattern": "^\\d{2}:\\d{2}$" }
+          }
+        }
+      }
+    }
+  }
+}
