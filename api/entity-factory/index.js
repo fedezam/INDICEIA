@@ -5,7 +5,7 @@ import admin from 'firebase-admin';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-// ----- Template Registry (Block C)
+// ----- Template Registry (visual)
 const templateRegistryPath = resolve(__dirname, 'templates/registry.entity.json');
 let templateRegistry = { templates: {} };
 
@@ -17,7 +17,7 @@ try {
     console.log(`✅ Registry entity cargado: ${Object.keys(templateRegistry.templates).length} template(s)`);
   }
 } catch {
-  console.warn('⚠️ Registry entity no disponible. Block C inactivo.');
+  console.warn('⚠️ Registry entity no disponible. visual inactivo.');
 }
 
 // ----- Firebase Admin
@@ -42,7 +42,7 @@ const hasData = (value) => {
   return value !== undefined && value !== null;
 };
 
-// ===== BLOCK A2 BUILDER =====
+// ===== COGNITION BUILDER =====
 function buildCognitivePermissions(aiConfig) {
   if (!aiConfig?.cognitive_permissions) return null;
 
@@ -61,12 +61,12 @@ function buildCognitivePermissions(aiConfig) {
 export async function buildEntity({ comercioId }) {
   if (!comercioId) throw new Error('Falta comercioId');
 
-  // Block A y D (base)
-  const blockA = JSON.parse(
-    readFileSync(resolve(__dirname, 'base/blockA.json'), 'utf-8')
+  // mind y capabilities (base)
+  const mind = JSON.parse(
+    readFileSync(resolve(__dirname, 'base/mind.json'), 'utf-8')
   );
-  const blockD = JSON.parse(
-    readFileSync(resolve(__dirname, 'base/blockD.json'), 'utf-8')
+  const capabilities = JSON.parse(
+    readFileSync(resolve(__dirname, 'base/capabilities.json'), 'utf-8')
   );
 
   // Firestore
@@ -77,72 +77,76 @@ export async function buildEntity({ comercioId }) {
   }
   const data = snap.data();
 
-  // ===== BLOCK B =====
-  const B = { id: comercioId };
+  // ===== CONTEXT (ex-Block B sin catálogo) =====
+  const context = { id: comercioId };
 
-  if (hasData(data.nombreComercio)) B.nombre = data.nombreComercio;
-  if (hasData(data.descripcion)) B.descripcion = data.descripcion;
+  if (hasData(data.nombreComercio)) context.nombre = data.nombreComercio;
+  if (hasData(data.descripcion)) context.descripcion = data.descripcion;
 
   const ubicacion = {};
   ['direccion', 'ciudad', 'provincia', 'pais'].forEach(k => {
     if (hasData(data[k])) ubicacion[k] = data[k];
   });
-  if (hasData(ubicacion)) B.ubicacion = ubicacion;
+  if (hasData(ubicacion)) context.ubicacion = ubicacion;
 
   const contacto = {};
   ['telefono', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok']
     .forEach(k => {
       if (hasData(data[k])) contacto[k] = data[k];
     });
-  if (hasData(contacto)) B.contacto = contacto;
+  if (hasData(contacto)) context.contacto = contacto;
 
-  if (hasData(data.horarios)) B.horarios = data.horarios;
-  if (hasData(data.plan)) B.plan = data.plan;
-  if (hasData(data.templateId)) B.templateId = data.templateId;
-  if (hasData(data.categories)) B.categorias = data.categories;
+  if (hasData(data.horarios)) context.horarios = data.horarios;
+  if (hasData(data.plan)) context.plan = data.plan;
+  if (hasData(data.templateId)) context.templateId = data.templateId;
+  if (hasData(data.categories)) context.categorias = data.categories;
 
-  // IA config → Block B
+  // IA config → context
   if (hasData(data.aiConfig)) {
     const ai = data.aiConfig;
-    B.ia = {};
+    context.ia = {};
 
-    if (hasData(ai.aiName)) B.ia.nombre = ai.aiName;
-    if (hasData(ai.aiGreeting)) B.ia.saludo = ai.aiGreeting;
-    if (hasData(ai.aiLanguage)) B.ia.idioma = ai.aiLanguage;
-    if (hasData(ai.aiPersonality)) B.ia.personalidad = ai.aiPersonality;
-    if (hasData(ai.aiTone)) B.ia.tono = ai.aiTone;
-    if (hasData(ai.formatoRespuestas)) B.ia.formatoRespuestas = ai.formatoRespuestas;
-    if (hasData(ai.proactividad)) B.ia.proactividad = ai.proactividad;
+    if (hasData(ai.aiName)) context.ia.nombre = ai.aiName;
+    if (hasData(ai.aiGreeting)) context.ia.saludo = ai.aiGreeting;
+    if (hasData(ai.aiLanguage)) context.ia.idioma = ai.aiLanguage;
+    if (hasData(ai.aiPersonality)) context.ia.personalidad = ai.aiPersonality;
+    if (hasData(ai.aiTone)) context.ia.tono = ai.aiTone;
+    if (hasData(ai.formatoRespuestas)) context.ia.formatoRespuestas = ai.formatoRespuestas;
+    if (hasData(ai.proactividad)) context.ia.proactividad = ai.proactividad;
 
-    if (!hasData(B.ia)) delete B.ia;
+    if (!hasData(context.ia)) delete context.ia;
   }
 
-  // Productos
-  let productos = [];
+  // ===== GOODS (ex-catálogo de Block B) =====
+  let goods = { enabled: false };
+  
   try {
     const ps = await comercioRef.collection('productos').get();
-    productos = ps.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch {}
+    const productos = ps.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  if (productos.length) {
-    B.catalogo = {
-      moneda: data.moneda || 'ARS',
-      secciones: [{
-        id: 'principal',
-        titulo: data.nombreComercio || 'Catálogo',
-        tipo: 'grid',
-        prioridad: 1,
-        items: productos.map(p => ({
-          id: p.id,
-          nombre: p.nombre,
-          precio_final: p.precio_final,
-          paused: p.paused ?? false,
-          ...(hasData(p.codigo) && { codigo: p.codigo }),
-          ...(hasData(p.descripcion) && { descripcion: p.descripcion }),
-          ...(hasData(p.stock) && { stock: p.stock })
-        }))
-      }]
-    };
+    if (productos.length) {
+      goods = {
+        enabled: true,
+        moneda: data.moneda || 'ARS',
+        secciones: [{
+          id: 'principal',
+          titulo: data.nombreComercio || 'Catálogo',
+          tipo: 'grid',
+          prioridad: 1,
+          items: productos.map(p => ({
+            id: p.id,
+            nombre: p.nombre,
+            precio_final: p.precio_final,
+            paused: p.paused ?? false,
+            ...(hasData(p.codigo) && { codigo: p.codigo }),
+            ...(hasData(p.descripcion) && { descripcion: p.descripcion }),
+            ...(hasData(p.stock) && { stock: p.stock })
+          }))
+        }]
+      };
+    }
+  } catch (err) {
+    console.warn('⚠️ No se pudieron cargar productos (goods)', err);
   }
 
   // Referral
@@ -154,50 +158,50 @@ export async function buildEntity({ comercioId }) {
     }
   }
 
-  B.referral = {
+  context.referral = {
     code: referralCode,
     shareMessage: `¿Querés tu IA? Visitá https://indiceia.app/r/${referralCode}`
   };
 
-  B.updatedAt = new Date().toISOString();
-  Object.freeze(B);
+  context.updatedAt = new Date().toISOString();
+  Object.freeze(context);
 
-  // ===== BLOCK A (A1 + A2) =====
+  // ===== MIND (ex-Block A con cognition integrado) =====
   const liveEnabled = ['trial', 'pro', 'highvalue', 'premium'].includes(data.plan);
 
-  const A = JSON.parse(
-    JSON.stringify(blockA)
+  const mindProcessed = JSON.parse(
+    JSON.stringify(mind)
       .replace(/\{\{LIVE_ENABLED\}\}/g, liveEnabled.toString())
       .replace(/\{\{REFERRAL_URL\}\}/g, `https://indiceia.app/guia?ref=${referralCode}`)
   );
 
-  // ---- blockA2 (cognitive permissions)
+  // ---- cognition (ex-blockA2 - cognitive permissions)
   const cognitivePermissions = buildCognitivePermissions(data.aiConfig);
   if (cognitivePermissions) {
-    A.cognitive_permissions = cognitivePermissions;
+    mindProcessed.cognitive_permissions = cognitivePermissions;
   }
 
-  // ===== BLOCK D =====
-  if (blockD?.availableChannels && B.contacto) {
-    Object.entries(blockD.availableChannels).forEach(([ch, cfg]) => {
+  // ===== CAPABILITIES (ex-Block D) =====
+  if (capabilities?.availableChannels && context.contacto) {
+    Object.entries(capabilities.availableChannels).forEach(([ch, cfg]) => {
       if (typeof cfg === 'object') {
-        cfg.enabled = hasData(B.contacto[ch]);
+        cfg.enabled = hasData(context.contacto[ch]);
       }
     });
   }
-  Object.freeze(blockD);
+  Object.freeze(capabilities);
 
-  // ===== BLOCK C =====
-  let C = {};
+  // ===== VISUAL (ex-Block C) =====
+  let visual = {};
   try {
-    C = JSON.parse(
-      readFileSync(resolve(__dirname, 'base/blockC.json'), 'utf-8')
+    visual = JSON.parse(
+      readFileSync(resolve(__dirname, 'base/visual.json'), 'utf-8')
     ).C;
 
-    if (hasData(B.templateId)) {
-      const t = templateRegistry.templates[B.templateId];
+    if (hasData(context.templateId)) {
+      const t = templateRegistry.templates[context.templateId];
       if (t) {
-        C.visual = {
+        visual.visual = {
           available: true,
           mode: 'iframe',
           runtime: {
@@ -211,12 +215,12 @@ export async function buildEntity({ comercioId }) {
       }
     }
   } catch (err) {
-    console.warn('⚠️ No se pudo cargar blockC.json, Bloque C inhabilitado', err);
-    C = {};
+    console.warn('⚠️ No se pudo cargar visual.json, visual inhabilitado', err);
+    visual = {};
   }
 
-  // ===== BLOCK E =====
-  let E = { habilitado: false };
+  // ===== SERVICES (ex-Block E) =====
+  let services = { enabled: false };
 
   try {
     const ss = await comercioRef.collection('servicios').get();
@@ -237,34 +241,36 @@ export async function buildEntity({ comercioId }) {
     });
 
     if (servicios.length > 0) {
-      E = { habilitado: true, servicios };
+      services = { enabled: true, servicios };
     }
   } catch (err) {
-    console.warn('⚠️ No se pudieron cargar servicios (Block E)', err);
-    E = { habilitado: false };
+    console.warn('⚠️ No se pudieron cargar servicios (services)', err);
+    services = { enabled: false };
   }
 
-  Object.freeze(E);
+  Object.freeze(services);
 
   // ===== FINAL ENTITY =====
   return {
     meta: {
-      version: A?.meta?.version || '1.0.0',
+      version: mindProcessed?.meta?.version || '1.0.0',
       tipo: 'entidad_comercial_indiceIA',
       comercioId,
       generatedAt: new Date().toISOString(),
       mode: 'production'
     },
     contracts: {
-      blockB: { role: 'single_source_of_truth', mutable: false },
-      blockC: { role: 'visual_only', optional: true },
-      blockD: { role: 'interaction_protocols', mutable: false },
-      blockE: { role: 'services_runtime', optional: true }
+      context: { role: 'identity', mutable: false },
+      goods: { role: 'products_catalog', optional: true },
+      services: { role: 'services_catalog', optional: true },
+      visual: { role: 'visual_only', optional: true },
+      capabilities: { role: 'interaction_protocols', mutable: false }
     },
-    A,
-    B,
-    C,
-    D: blockD,
-    E
+    mind: mindProcessed,
+    context,
+    goods,
+    services,
+    visual,
+    capabilities
   };
 }
