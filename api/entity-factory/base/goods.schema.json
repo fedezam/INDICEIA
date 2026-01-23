@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://indiceia.vercel.app/api/entity-factory/base/goods.schema.json"
+  "title": "Goods – Catálogo de Productos",
+  "description": "Ontología transaccional de productos físicos o digitales. Si no está aquí, no existe como producto.",
+  "type": "object",
+  "additionalProperties": false,
+  
+  "required": ["enabled", "secciones"],
+  
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "description": "Activa o desactiva completamente el bloque de productos",
+      "default": true
+    },
+    
+    "moneda": {
+      "type": "string",
+      "enum": ["ARS", "USD", "EUR", "BRL", "CLP", "UYU", "PEN", "COP", "MXN"],
+      "default": "ARS",
+      "description": "Moneda del catálogo. Mapea desde: config o se infiere del país"
+    },
+    
+    "secciones": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/seccionCatalogo" },
+      "description": "GENERADAS desde: productosDestacados + categories + subcollection productos"
+    }
+  },
+  
+  "$defs": {
+    "seccionCatalogo": {
+      "type": "object",
+      "required": ["id", "titulo", "tipo", "prioridad", "items"],
+      "properties": {
+        "id": { 
+          "type": "string",
+          "description": "ID único de la sección. Ej: 'destacados', 'pizzas', 'bebidas'"
+        },
+        "titulo": { 
+          "type": "string",
+          "description": "Nombre visible de la sección. Ej: 'Productos Destacados', 'Pizzas', 'Bebidas'"
+        },
+        "tipo": {
+          "type": "string",
+          "enum": ["grid", "lista", "carousel"],
+          "description": "Tipo de presentación visual de la sección"
+        },
+        "prioridad": { 
+          "type": "number", 
+          "minimum": 1,
+          "description": "Orden de aparición. 1 = primera sección"
+        },
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/producto" },
+          "description": "Productos de esta sección"
+        }
+      }
+    },
+    
+    "producto": {
+      "type": "object",
+      "required": ["id", "nombre", "precio_final"],
+      "properties": {
+        "id": { 
+          "type": "string",
+          "description": "ID único del producto en Firestore"
+        },
+        "codigo": { 
+          "type": "string",
+          "description": "Código interno del comercio. Ej: 'PIZ-001', 'BEB-032'"
+        },
+        "nombre": { 
+          "type": "string",
+          "description": "Nombre del producto. Ej: 'Pizza Muzzarella', 'Coca Cola 1.5L'"
+        },
+        "descripcion": { 
+          "type": "string",
+          "description": "Descripción del producto. Puede incluir ingredientes, características."
+        },
+        "categoria": { 
+          "type": "string",
+          "description": "Categoría del producto. Ej: 'Pizzas', 'Bebidas', 'Postres'"
+        },
+        "precio_final": { 
+          "type": "number", 
+          "minimum": 0,
+          "description": "Precio final del producto (obligatorio). Si tiene variantes, este es el precio base."
+        },
+        "precio_mediana": { 
+          "type": "number",
+          "description": "Precio para tamaño mediano (opcional, para productos con variantes de tamaño)"
+        },
+        "precio_grande": { 
+          "type": "number",
+          "description": "Precio para tamaño grande (opcional, para productos con variantes de tamaño)"
+        },
+        "imagen": { 
+          "type": "string", 
+          "format": "uri",
+          "description": "URL de la imagen del producto"
+        },
+        "stock": { 
+          "type": "number",
+          "description": "Cantidad disponible en stock. Si no se maneja stock, omitir."
+        },
+        "paused": { 
+          "type": "boolean",
+          "default": false,
+          "description": "Si true, el producto está pausado temporalmente (no disponible)"
+        },
+        "etiquetas": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags del producto. Ej: ['vegano', 'sin gluten', 'nuevo', 'promo']"
+        },
+        "atributos": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Atributos personalizados del producto. Estructura libre según el comercio."
+        }
+      }
+    }
+  }
+}
