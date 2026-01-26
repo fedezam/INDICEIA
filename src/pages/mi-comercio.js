@@ -12,7 +12,10 @@ import './mi-comercio.css';
 
 // ==================== FIREBASE ====================
 import { db } from '../firebase.js';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
+
+// ==================== PLAN MANAGEMENT ====================
+import { applyPlanStateChange } from '../lib/plan/applyPlanStateChange.js';
 
 // ==================== UTILS ====================
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
@@ -194,8 +197,7 @@ const miComercioModule = {
 
         const nuevoComercio = {
           ...updates,
-          duenoId: currentUser.uid, // ✅ CAMPO CORRECTO PARA LAS REGLAS
-          plan: 'trial',
+          duenoId: currentUser.uid,
           fechaCreacion: new Date(),
           fechaActualizacion: new Date(),
           onboardingSteps: {
@@ -203,9 +205,27 @@ const miComercioModule = {
           }
         };
 
-        // Crear documento del comercio
+        // 1️⃣ crear comercio SIN plan
         await setDoc(doc(db, 'comercios', currentComercioId), nuevoComercio);
         console.log('✅ Documento de comercio creado:', currentComercioId);
+
+        // 2️⃣ aplicar TRIAL automáticamente (Oscar v0)
+        const now = Timestamp.now();
+        const trialEnds = Timestamp.fromDate(
+          new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
+        );
+
+        await applyPlanStateChange({
+          comercioId: currentComercioId,
+          type: 'trial',
+          active: true,
+          trial: true,
+          startedAt: now,
+          expiresAt: trialEnds,
+          source: 'system',
+          reason: 'trial_started'
+        });
+        console.log('✅ Plan TRIAL aplicado por Oscar');
 
         // Crear índice en landings
         const landingRef = doc(db, 'landings', comercioSlug);
