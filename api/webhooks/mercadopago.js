@@ -4,6 +4,8 @@ import mercadopago from "mercadopago";
 import { initializeApp, getApps } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 
+import { applyPlanStateChange } from "../../lib/plan/applyPlanStateChange.js";
+
 // ===============================
 // MERCADO PAGO
 // ===============================
@@ -23,6 +25,12 @@ if (!getApps().length) {
 const db = getFirestore();
 
 // ===============================
+// CONSTANTES DE PLAN
+// ===============================
+const PLAN_DURATION_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// ===============================
 // HANDLER
 // ===============================
 export default async function handler(req, res) {
@@ -33,7 +41,7 @@ export default async function handler(req, res) {
   try {
     const { type, data } = req.body;
 
-    // Solo nos interesa pagos
+    // Solo pagos
     if (type !== "payment") {
       return res.status(200).send("Ignored");
     }
@@ -43,7 +51,7 @@ export default async function handler(req, res) {
       return res.status(400).send("Missing payment id");
     }
 
-    // Buscar el pago real
+    // Obtener pago real desde MP
     const payment = await mercadopago.payment.findById(paymentId);
     const info = payment.body;
 
@@ -57,23 +65,34 @@ export default async function handler(req, res) {
       throw new Error("Missing external_reference");
     }
 
-    // comercioId:planId
-    const [comercioId, planId] = externalRef.split(":");
-    if (!comercioId || !planId) {
+    // external_reference = comercioId:planType
+    const [comercioId, planType] = externalRef.split(":");
+
+    if (!comercioId || !planType) {
       throw new Error("Invalid external_reference format");
     }
 
     // ===============================
-    // ESCRIBIMOS LA VERDAD
+    // CALCULO DE FECHAS
     // ===============================
-    await db.doc(`comercios/${comercioId}`).update({
-      plan: {
-        id: planId,
-        status: "active",
-        source: "mercadopago",
-        paymentId: paymentId,
-        updatedAt: Timestamp.now(),
-      },
+    const startedAt = Timestamp.now();
+    const expiresAt = Timestamp.fromMillis(
+      startedAt.toMillis() + PLAN_DURATION_DAYS * DAY_MS
+    );
+
+    // ===============================
+    // APLICAR CAMBIO DE PLAN (VERDAD ÚNICA)
+    // ===============================
+    await applyPlanStateChange({
+      comercioId,
+      type: planType,
+      active: true,
+      trial: false,
+      startedAt,
+      expiresAt,
+      source: "mercadopago",
+      reason: "payment_confirmed",
+      eventId: paymentId,
     });
 
     return res.status(200).send("OK");
