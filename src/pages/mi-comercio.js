@@ -15,7 +15,7 @@ import { db } from '../firebase.js';
 import { doc, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 
 // ==================== PLAN MANAGEMENT ====================
-import { writePlanState } from '../lib/plan/writePlanState.js';
+import { applyPlanStateChange } from "../lib/plan/applyPlanStateChange.js";
 
 // ==================== UTILS ====================
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
@@ -215,7 +215,7 @@ const miComercioModule = {
           new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
         );
 
-        await writePlanState({
+        await applyPlanStateChange({
           comercioId: currentComercioId,
           type: 'trial',
           active: true,
