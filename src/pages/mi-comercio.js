@@ -15,7 +15,7 @@ import { db } from '../firebase.js';
 import { doc, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
 
 // ==================== PLAN MANAGEMENT ====================
-import { applyPlanStateChange } from "../lib/plan/applyPlanStateChange.js";
+import { applyPlanStateChange } from "../../lib/plan/applyPlanStateChange.js";
 
 // ==================== UTILS ====================
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
