@@ -207,23 +207,27 @@ const miComercioModule = {
         await setDoc(doc(db, 'comercios', currentComercioId), nuevoComercio);
         console.log('✅ Documento de comercio creado:', currentComercioId);
 
-        // 2️⃣ aplicar TRIAL automáticamente (Oscar v0)
+        // ================================
+        // PLAN — TRIAL 30 DÍAS (CANÓNICO)
+        // ================================
         const now = Timestamp.now();
-        const trialEnds = Timestamp.fromDate(
-          new Date(Date.now() + 15 * 24 * 60 * 60 * 1000)
+        const expiresAt = Timestamp.fromDate(
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         );
-
-        await applyPlanStateChange({
-          comercioId: currentComercioId,
-          type: 'trial',
-          active: true,
-          trial: true,
-          startedAt: now,
-          expiresAt: trialEnds,
-          source: 'system',
-          reason: 'trial_started'
+        await updateDoc(doc(db, 'comercios', currentComercioId), {
+          plan: {
+            type: 'trial',
+            active: true,
+            trial: true,
+            startedAt: now,
+            expiresAt: expiresAt,
+            createdAt: now,
+            updatedAt: now,
+            source: 'system'
+          },
+          fechaActualizacion: new Date()
         });
-        console.log('✅ Plan TRIAL aplicado por Oscar');
+        console.log('✅ Plan TRIAL 30 días aplicado');
 
         // Crear índice en landings
         const landingRef = doc(db, 'landings', comercioSlug);
