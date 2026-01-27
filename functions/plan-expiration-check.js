@@ -19,16 +19,19 @@ export async function checkExpiredPlans() {
 
     if (!plan) continue;
     if (!plan.active) continue;
-    if (!plan.expires_at) continue;
-    if (plan.expires_at.toMillis() > now.toMillis()) continue;
+    if (!plan.expiresAt) continue;
 
+    // ⏱️ Aún no venció
+    if (plan.expiresAt.toMillis() > now.toMillis()) continue;
+
+    // 🔥 PLAN VENCIDO → delegamos TODO
     await applyPlanStateChange({
       comercioId: docSnap.id,
       type: plan.type,
       active: false,
       trial: plan.trial,
-      startedAt: plan.started_at,
-      expiresAt: plan.expires_at,
+      startedAt: plan.startedAt,
+      expiresAt: plan.expiresAt,
       source: "system",
       reason: plan.trial ? "trial_expired" : "plan_expired"
     });
