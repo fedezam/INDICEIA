@@ -21,6 +21,7 @@ export default defineConfig({
         visual: resolve(__dirname, "src/pages/visual.html"),
         stats: resolve(__dirname, "src/pages/stats.html"),
         "link-publico": resolve(__dirname, "src/pages/link-publico.html"),
+        skeletonTest: resolve(__dirname, "src/pages/skeletonTest.html"),
 
         // Planes
         plans: resolve(__dirname, "src/pages/plans.html"),
