@@ -1,6 +1,6 @@
 // src/services/firebase/context.js
 
-import { auth, db } from '../firebase.js';
+import { auth, db } from './firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
