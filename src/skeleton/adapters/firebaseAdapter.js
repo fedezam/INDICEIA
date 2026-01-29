@@ -3,7 +3,7 @@
 // Adapter entre skeleton y firebaseDB
 // ============================================
 
-import { resolveFirebaseContext } from './firebaseContext.js';
+import { resolveFirebaseContext } from '../../services/firebase/context.js';
 import { getComercioData } from './firebaseDB.js';
 
 /**
