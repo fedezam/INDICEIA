@@ -2,15 +2,22 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Skeleton Test</title>
+  <title>Skeleton Header Test – Premium Pro</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #f4f4f4;
+    }
+    #app {
+      min-height: 100vh;
+    }
+  </style>
 </head>
 <body>
+  <div id="app"></div>
 
-  <!-- mismo root que producción -->
-  <div id="skeleton-root"></div>
-
-  <!-- entrypoint real -->
-  <script type="module" src="/src/pages/skeleton-test.js"></script>
+  <!-- IMPORTANTE: type="module" -->
+  <script type="module" src="./skeletonTest.js"></script>
 </body>
 </html>
-
