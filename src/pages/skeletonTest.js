@@ -49,4 +49,3 @@ runSkeleton({
     loadingMessage: 'Probando Skeleton + Firebase + Header...'
   }
 });
-
