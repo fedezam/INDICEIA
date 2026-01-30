@@ -1,94 +1,39 @@
-console.log('🧪 skeletonTest.js iniciado');
+// src/pages/skeleton-test.js
 
 import { runSkeleton } from '../skeleton/skeleton.js';
-import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 
-console.group('🦴 TEST BOOT');
-console.log('✔ Imports cargados');
-console.log('runSkeleton:', runSkeleton);
-console.log('createFirebaseAdapter:', createFirebaseAdapter);
-console.groupEnd();
+// ⬇️ el MISMO adapter que usa una página real
+import { dashboardAdapter } from '../adapters/dashboardAdapter.js';
 
-/* ---------------------------
-   TEST PAGE
----------------------------- */
+// ⬇️ layout real
+import { renderLayout } from '../skeleton/layout/renderLayout.js';
+import { updateHeader } from '../skeleton/layout/header/update.js';
 
-const testPage = {
+console.log('🐶 SKELETON TEST — INIT');
 
-  async load(context) {
-    console.group('📦 PAGE.load(context)');
-    console.log('Contexto recibido:', context);
+const page = {
+  load(context) {
+    console.log('📦 PAGE.load() context real:', context);
 
-    if (!context) {
-      console.error('❌ Contexto undefined');
-    }
+    // render layout base
+    const root = document.getElementById('skeleton-root');
+    root.innerHTML = '';
+    root.appendChild(renderLayout());
 
-    if (context?.user) {
-      console.log('👤 Usuario:', context.user.uid);
-      console.log('📧 Email:', context.user.email);
-    } else {
-      console.warn('⚠️ No hay usuario autenticado');
-    }
-
-    console.groupEnd();
+    // ⬇️ acá está el foco del test
+    console.log('🧠 Actualizando header con datos reales');
+    updateHeader(context);
   },
 
   render() {
-    console.group('🎨 PAGE.render()');
-
-    const app = document.getElementById('app');
-
-    if (!app) {
-      console.error('❌ #app no existe');
-      return;
-    }
-
-    app.innerHTML = `
-      <h2>🦴 Skeleton Test</h2>
-
-      <p>✔ Layout renderizado</p>
-      <p>✔ Firebase adapter ejecutado</p>
-      <p>✔ Page montada correctamente</p>
-
-      <div class="log">
-        Abrí la consola → logs detallados
-      </div>
-    `;
-
-    console.log('✔ DOM renderizado en #app');
-    console.groupEnd();
+    console.log('🎨 PAGE.render()');
   }
 };
 
-/* ---------------------------
-   RUN SKELETON
----------------------------- */
-
-console.group('🚀 runSkeleton()');
-
 runSkeleton({
-  page: testPage,
-  adapter: createFirebaseAdapter,
+  page,
+  adapter: dashboardAdapter, // 🔥 real, con Firebase
   options: {
-    loadingMessage: '🔌 Probando Skeleton + Firebase...',
     debug: true
   }
 });
-
-console.log('✔ runSkeleton invocado');
-console.groupEnd();
-
-/* ---------------------------
-   WATCHDOG
----------------------------- */
-
-setTimeout(() => {
-  console.group('🐶 WATCHDOG (5s)');
-  console.log('Skeleton root:', document.getElementById('skeleton-root'));
-  console.log('Header slot:', document.getElementById('skeleton-header'));
-  console.log('Banner slot:', document.getElementById('skeleton-banner'));
-  console.log('Progress slot:', document.getElementById('skeleton-progress'));
-  console.log('Page slot:', document.getElementById('skeleton-page'));
-  console.groupEnd();
-}, 5000);
-
