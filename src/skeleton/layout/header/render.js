@@ -1,3 +1,5 @@
+import './header.css';
+
 export function renderHeader() {
   console.log('🧱 renderHeader()');
 
@@ -29,3 +31,4 @@ export function renderHeader() {
     </div>
   `;
 }
+
