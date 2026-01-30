@@ -1,43 +1,26 @@
-// src/skeleton/layout/header/render.js
-
 export function renderHeader() {
   const slot = document.getElementById('skeleton-header');
-
   if (!slot) {
-    console.warn('❌ Header slot no encontrado');
+    console.warn('⚠️ No existe slot header');
     return;
   }
 
   slot.innerHTML = `
-    <div class="header-container">
-      
-      <!-- IZQUIERDA -->
-      <div class="header-left">
-        <div class="logo">
-          🤖 <span class="brand">INDICEIA</span>
-        </div>
+    <div class="header-left">
+      <div class="logo">
+        <img src="/logo.png" alt="Logo INDICEIA" class="logo-img" />
+        <span class="logo-text">INDICEIA</span>
       </div>
+      <span id="headerPageName" class="page-name">Cargando...</span>
+    </div>
 
-      <!-- DERECHA -->
-      <div class="header-right">
-        <div class="user-block">
-          <span class="user-name" id="headerUserName">...</span>
-          <span class="page-name" id="headerPageName">...</span>
-        </div>
-
-        <div class="commerce-block">
-          <span class="commerce-name" id="headerCommerceName">...</span>
-          <span class="plan-badge" id="headerPlan">...</span>
-        </div>
-
-        <button id="headerLogoutBtn" class="logout-btn">
-          ⎋
-        </button>
-      </div>
-
+    <div class="header-right">
+      <span id="headerUserName" class="user-name">Cargando...</span>
+      <span id="headerCommerceName" class="commerce-name">Cargando...</span>
+      <span id="headerPlan" class="plan-name">...</span>
+      <button id="headerLogoutBtn" class="btn-logout">Logout</button>
     </div>
   `;
 
-  console.log('🧩 Header renderizado (estructura)');
+  console.log('🖼️ Header renderizado en DOM');
 }
-
