@@ -1,51 +1,26 @@
-import { runSkeleton } from './skeleton/skeleton.js';
-import { createFirebaseAdapter } from './skeleton/adapters/firebaseAdapter.js';
-import { renderHeader } from './skeleton/layout/header/render.js';
-import { updateHeader } from './skeleton/layout/header/update.js';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Skeleton + Firebase Test</title>
+  <link rel="stylesheet" href="/skeleton/layout/header/header.css">
+  <link rel="stylesheet" href="/skeleton/layout/banner/banner.css">
+  <link rel="stylesheet" href="/skeleton/layout/progress/progress.css">
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 0; }
+    #app { padding: 20px; }
+    .header-left, .header-right { display: inline-block; vertical-align: middle; }
+    .header-left { float: left; }
+    .header-right { float: right; }
+    .logo-img { height: 30px; vertical-align: middle; }
+    .btn-logout { margin-left: 10px; }
+    header { padding: 10px; border-bottom: 1px solid #ccc; overflow: auto; }
+  </style>
+</head>
+<body>
+  <div id="app">Cargando test...</div>
 
-console.log('🧪 skeletonTest.js iniciado');
+  <script type="module" src="skeletonTest.js"></script>
+</body>
+</html>
 
-const testPage = {
-  async load(context) {
-    console.log('📦 PAGE.load(context)');
-    console.log('Contexto recibido:', context);
-
-    const { user, userData, comercioData } = context;
-    console.log('👤 Usuario:', user.uid);
-    console.log('📧 Email:', user.email);
-    console.log('🏪 Comercio:', comercioData?.nombre);
-    console.log('🎟️ Plan:', comercioData?.plan);
-
-    // Guardamos los datos para render
-    this._context = { userData, comercioData };
-  },
-
-  render() {
-    console.log('🎨 PAGE.render()');
-
-    const app = document.getElementById('app');
-    app.innerHTML = `
-      <p>🔥 Skeleton + Firebase + Header Test</p>
-      <p>Abrí la consola para ver todos los logs</p>
-    `;
-
-    // Renderizamos el header y luego lo actualizamos
-    renderHeader();
-    updateHeader({
-      ...this._context,
-      pageName: 'Página de prueba'
-    });
-
-    console.log('✔ DOM renderizado en #app y header actualizado');
-  }
-};
-
-// Ejecutamos el skeleton real
-console.log('🚀 runSkeleton()');
-runSkeleton({
-  page: testPage,
-  adapter: createFirebaseAdapter,
-  options: {
-    loadingMessage: 'Probando Skeleton + Firebase + Header...'
-  }
-});
