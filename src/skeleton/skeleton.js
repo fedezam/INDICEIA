@@ -1,5 +1,6 @@
 import { runLifecycle } from './lifecycle.js';
 import { initDirtyState } from './dirtyState.js';
+import { renderLayout } from './layout/renderLayout.js';
 
 /**
  * Skeleton canónico de ÍndiceIA
@@ -12,15 +13,21 @@ export async function runSkeleton({
   adapter,
   options = {}
 }) {
+
+  // 🦴 1. Render layout base UNA sola vez
+  renderLayout();
+
+  // 🧬 2. Ciclo de vida (contexto, auth, etc)
   await runLifecycle({
     adapter,
     options,
     onReady: async (context) => {
-      // La página vive DENTRO del contexto resuelto
+
+      // 📦 3. Página vive dentro del contexto
       await page.load(context);
       page.render();
 
-      // Dirty / save logic (si aplica)
+      // 💾 4. Dirty / save logic (si aplica)
       if (page.getCurrentData && page.save) {
         initDirtyState({
           page,
@@ -31,3 +38,4 @@ export async function runSkeleton({
     }
   });
 }
+
