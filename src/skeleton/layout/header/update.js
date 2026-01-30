@@ -1,42 +1,37 @@
-// src/skeleton/layout/header/update.js
-
-export function updateHeader({
-  userData,
-  comercioData,
-  pageName = ''
-}) {
+export function updateHeader({ userData, comercioData, pageName = '' }) {
   console.log('🧩 Header update()', { userData, comercioData, pageName });
 
-  // Usuario
   const userEl = document.getElementById('headerUserName');
-  if (userEl && userData) {
-    userEl.textContent = userData.nombre || userData.email || 'Usuario';
+  if (userEl) {
+    userEl.textContent = userData?.nombre || userData?.email || 'Usuario';
+    console.log('👤 Usuario actualizado:', userEl.textContent);
   }
 
-  // Página actual
   const pageEl = document.getElementById('headerPageName');
   if (pageEl) {
-    pageEl.textContent = pageName;
+    pageEl.textContent = pageName || 'Página';
+    console.log('📄 Página actual:', pageEl.textContent);
   }
 
-  // Comercio
   const commerceEl = document.getElementById('headerCommerceName');
-  if (commerceEl && comercioData) {
-    commerceEl.textContent = comercioData.nombre || 'Mi comercio';
+  if (commerceEl) {
+    commerceEl.textContent = comercioData?.nombre || 'Mi comercio';
+    console.log('🏪 Comercio actualizado:', commerceEl.textContent);
   }
 
-  // Plan
   const planEl = document.getElementById('headerPlan');
-  if (planEl && comercioData?.plan) {
-    planEl.textContent = comercioData.plan;
+  if (planEl) {
+    planEl.textContent = comercioData?.plan || 'Plan';
+    console.log('🎟️ Plan actualizado:', planEl.textContent);
   }
 
-  // Logout (hook, no lógica)
   const logoutBtn = document.getElementById('headerLogoutBtn');
   if (logoutBtn) {
     logoutBtn.onclick = () => {
-      console.log('⎋ Logout clickeado (hook)');
+      console.log('⎋ Logout clickeado');
       document.dispatchEvent(new CustomEvent('skeleton:logout'));
     };
+    console.log('🔌 Logout hook listo');
   }
 }
+
