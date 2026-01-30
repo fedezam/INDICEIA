@@ -2,13 +2,18 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Skeleton Test</title>
+  <title>Skeleton Render Test</title>
+  <link rel="stylesheet" href="/src/ui/layout/layout.css" />
 </head>
 <body>
 
-  <h1>Skeleton Test</h1>
-  <div id="app"></div>
+<script type="module">
+  import { renderLayoutBase } from '/src/ui/layout/layout.render.js';
+  import { renderHeader } from '/src/ui/header/header.render.js';
 
-  <script type="module" src="./skeletonTest.js"></script>
+  renderLayoutBase();
+  renderHeader();
+</script>
+
 </body>
 </html>
