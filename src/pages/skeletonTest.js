@@ -1,60 +1,52 @@
-// ================================
-// Skeleton Header Test – PREMIUM PRO
-// ================================
+import { runSkeleton } from './skeleton/skeleton.js';
+import { createFirebaseAdapter } from './skeleton/adapters/firebaseAdapter.js';
+import { renderHeader } from './skeleton/layout/header/render.js';
+import { updateHeader } from './skeleton/layout/header/update.js';
 
-import { resolveFirebaseContext } from '../src/services/firebase/context.js';
+console.log('🧪 skeletonTest.js iniciado');
 
-// Skeleton
-import { renderLayout } from '../src/skeleton/layout/renderLayout.js';
-import { updateHeader } from '../src/skeleton/layout/header/update.js';
-
-const app = document.getElementById('app');
-
-console.log('🧪 Skeleton TEST booting…');
-
-resolveFirebaseContext(
-  (context) => {
+const testPage = {
+  async load(context) {
     console.log('📦 PAGE.load(context)');
     console.log('Contexto recibido:', context);
-    console.log('👤 Usuario:', context.user?.uid);
-    console.log('📧 Email:', context.user?.email);
-    console.log('🏪 Comercio:', context.comercioData?.nombre);
 
-    // ================================
-    // RENDER
-    // ================================
+    const { user, userData, comercioData } = context;
+    console.log('👤 Usuario:', user.uid);
+    console.log('📧 Email:', user.email);
+    console.log('🏪 Comercio:', comercioData?.nombre);
+    console.log('🎟️ Plan:', comercioData?.plan);
+
+    // Guardamos los datos para render
+    this._context = { userData, comercioData };
+  },
+
+  render() {
     console.log('🎨 PAGE.render()');
 
-    app.innerHTML = '';
-    const skeletonRoot = renderLayout();
-    app.appendChild(skeletonRoot);
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <p>🔥 Skeleton + Firebase + Header Test</p>
+      <p>Abrí la consola para ver todos los logs</p>
+    `;
 
-    console.log('✔ DOM renderizado en #app');
+    // Renderizamos el header y luego lo actualizamos
+    renderHeader();
+    updateHeader({
+      ...this._context,
+      pageName: 'Página de prueba'
+    });
 
-    // ================================
-    // WATCHDOG
-    // ================================
-    setTimeout(() => {
-      console.log('🐶 WATCHDOG (5s)');
-      console.log('Skeleton root:', document.getElementById('skeleton-root'));
-      console.log('Header slot:', document.getElementById('skeleton-header'));
-      console.log('Banner slot:', document.getElementById('skeleton-banner'));
-      console.log('Progress slot:', document.getElementById('skeleton-progress'));
-      console.log('Page slot:', document.getElementById('skeleton-page'));
-    }, 5000);
-
-    // ================================
-    // UPDATE HEADER (🔥 LO QUE FALTABA 🔥)
-    // ================================
-    console.log('🧠 updateHeader(context)');
-    try {
-      updateHeader(context);
-      console.log('✅ Header actualizado correctamente');
-    } catch (err) {
-      console.error('💥 Error en updateHeader:', err);
-    }
-  },
-  (error) => {
-    console.error('🔥 Error resolviendo contexto Firebase:', error);
+    console.log('✔ DOM renderizado en #app y header actualizado');
   }
-);
+};
+
+// Ejecutamos el skeleton real
+console.log('🚀 runSkeleton()');
+runSkeleton({
+  page: testPage,
+  adapter: createFirebaseAdapter,
+  options: {
+    loadingMessage: 'Probando Skeleton + Firebase + Header...'
+  }
+});
+
