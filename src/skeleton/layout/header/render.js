@@ -1,26 +1,31 @@
 export function renderHeader() {
-  const slot = document.getElementById('skeleton-header');
-  if (!slot) {
-    console.warn('⚠️ No existe slot header');
+  console.log('🧱 renderHeader()');
+
+  const header = document.getElementById('skeleton-header');
+  if (!header) {
+    console.error('❌ skeleton-header no existe');
     return;
   }
 
-  slot.innerHTML = `
+  header.innerHTML = `
     <div class="header-left">
-      <div class="logo">
-        <img src="/logo.png" alt="Logo INDICEIA" class="logo-img" />
-        <span class="logo-text">INDICEIA</span>
+      <div class="logo">🧠</div>
+      <div class="left-text">
+        <div class="brand">INDICEIA</div>
+        <div class="user" id="headerUserName">Usuario</div>
       </div>
-      <span id="headerPageName" class="page-name">Cargando...</span>
     </div>
 
     <div class="header-right">
-      <span id="headerUserName" class="user-name">Cargando...</span>
-      <span id="headerCommerceName" class="commerce-name">Cargando...</span>
-      <span id="headerPlan" class="plan-name">...</span>
-      <button id="headerLogoutBtn" class="btn-logout">Logout</button>
+      <div class="right-text">
+        <div class="commerce" id="headerCommerceName">Mi comercio</div>
+        <div class="plan">
+          <span id="headerPlan">Plan</span>
+          <span id="headerPlanType"></span>
+        </div>
+      </div>
+
+      <button id="headerLogoutBtn" class="logout">⎋</button>
     </div>
   `;
-
-  console.log('🖼️ Header renderizado en DOM');
 }
