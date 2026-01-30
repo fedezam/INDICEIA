@@ -1,6 +1,10 @@
 // src/skeleton/layout/renderLayout.js
 // Render base del layout skeleton (estructura pura)
 
+import { renderHeader } from './header/render.js';
+import { renderBanner } from './banner/render.js';
+import { renderProgress } from './progress/render.js';
+
 export function renderLayout() {
   const body = document.body;
 
@@ -31,4 +35,9 @@ export function renderLayout() {
   body.insertAdjacentHTML('afterbegin', layoutHTML);
 
   console.log('🦴 Skeleton layout base renderizado');
+
+  // ⬇️ ESTO ES LO QUE FALTABA
+  renderHeader();
+  renderBanner();
+  renderProgress();
 }
