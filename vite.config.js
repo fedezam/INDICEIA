@@ -3,6 +3,13 @@ import { resolve } from "path";
 
 export default defineConfig({
   root: ".",
+
+  resolve: {
+    alias: {
+      "@": resolve(__dirname, "src"),
+    },
+  },
+
   build: {
     outDir: "dist",
     rollupOptions: {
@@ -27,12 +34,8 @@ export default defineConfig({
         plans: resolve(__dirname, "src/pages/plans.html"),
 
         // Pago
-        "pago-exitoso": resolve(
-          __dirname,
-          "src/pages/pago-exitoso.html"
-        ),
+        "pago-exitoso": resolve(__dirname, "src/pages/pago-exitoso.html"),
       },
     },
   },
 });
-
