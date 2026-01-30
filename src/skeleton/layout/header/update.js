@@ -1,28 +1,28 @@
-export function updateHeader({ userData, comercioData, pageName = '' }) {
-  console.log('🧩 Header update()', { userData, comercioData, pageName });
+export function updateHeader({ userData, comercioData }) {
+  console.log('🧩 updateHeader()', { userData, comercioData });
 
   const userEl = document.getElementById('headerUserName');
-  if (userEl) {
-    userEl.textContent = userData?.nombre || userData?.email || 'Usuario';
-    console.log('👤 Usuario actualizado:', userEl.textContent);
-  }
-
-  const pageEl = document.getElementById('headerPageName');
-  if (pageEl) {
-    pageEl.textContent = pageName || 'Página';
-    console.log('📄 Página actual:', pageEl.textContent);
+  if (userEl && userData) {
+    userEl.textContent =
+      `${userData.nombre || ''} ${userData.apellido || ''}`.trim()
+      || userData.email
+      || 'Usuario';
   }
 
   const commerceEl = document.getElementById('headerCommerceName');
-  if (commerceEl) {
-    commerceEl.textContent = comercioData?.nombre || 'Mi comercio';
-    console.log('🏪 Comercio actualizado:', commerceEl.textContent);
+  if (commerceEl && comercioData) {
+    commerceEl.textContent = comercioData.nombre || 'Mi comercio';
   }
 
   const planEl = document.getElementById('headerPlan');
-  if (planEl) {
-    planEl.textContent = comercioData?.plan || 'Plan';
-    console.log('🎟️ Plan actualizado:', planEl.textContent);
+  const planTypeEl = document.getElementById('headerPlanType');
+
+  if (planEl && comercioData?.plan) {
+    planEl.textContent = comercioData.plan;
+  }
+
+  if (planTypeEl && comercioData?.tipoPlan) {
+    planTypeEl.textContent = ` · ${comercioData.tipoPlan}`;
   }
 
   const logoutBtn = document.getElementById('headerLogoutBtn');
@@ -31,7 +31,6 @@ export function updateHeader({ userData, comercioData, pageName = '' }) {
       console.log('⎋ Logout clickeado');
       document.dispatchEvent(new CustomEvent('skeleton:logout'));
     };
-    console.log('🔌 Logout hook listo');
   }
 }
 
