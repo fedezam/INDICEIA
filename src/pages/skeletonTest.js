@@ -1,20 +1,28 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>Skeleton Render Test</title>
-  <link rel="stylesheet" href="/src/ui/layout/layout.css" />
-</head>
-<body>
+import { runSkeleton } from '../skeleton/skeleton.js';
+import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 
-<script type="module">
-  import { renderLayoutBase } from '/src/ui/layout/layout.render.js';
-  import { renderHeader } from '/src/ui/header/header.render.js';
+const testPage = {
 
-  renderLayoutBase();
-  renderHeader();
-</script>
+  async load(context) {
+    console.log('✅ Contexto recibido:', context);
+  },
 
-</body>
-</html>
+  render() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <p>🔥 Skeleton funcionando</p>
+      <p>Usuario autenticado ✔️</p>
+      <p>Abrí la consola para ver el contexto</p>
+    `;
+  }
+
+};
+
+runSkeleton({
+  page: testPage,
+  adapter: createFirebaseAdapter,
+  options: {
+    loadingMessage: 'Probando skeleton + Firebase...'
+  }
+});
 
