@@ -1,20 +1,57 @@
-/* ==================== HEADER - COMPACTO ==================== */
+/* ========================================
+   HEADER CUSTOM - CSS CONSOLIDADO
+   Todos los estilos del header en un solo lugar
+   ======================================== */
+
+/* ==================== VARIABLES DEL HEADER ==================== */
+:root {
+  /* Colores del Header */
+  --header-bg: #ffffff;
+  --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --header-text: #111827;
+  
+  /* Logo */
+  --logo-bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --logo-icon-size: 45px;
+  --logo-text-size: 1.5rem;
+  
+  /* Badge del Plan */
+  --badge-bg: #6366f1;
+  --badge-text: #ffffff;
+  --badge-radius: 20px;
+  --badge-padding: 0.4rem 1rem;
+  
+  /* Botón Logout - PERSONALIZABLE */
+  --logout-bg: #ef4444;           /* 🔴 Color de fondo (rojo) */
+  --logout-bg-hover: #dc2626;     /* 🔴 Color al pasar mouse (rojo oscuro) */
+  --logout-text: #ffffff;         /* ⚪ Color del texto/icono */
+  --logout-size: 40px;            /* 📏 Tamaño del botón */
+  --logout-icon-size: 1.1rem;     /* 📏 Tamaño del ícono */
+  --logout-radius: 10px;          /* 🔲 Bordes redondeados */
+  --logout-font-weight: 600;      /* 🔤 Grosor de la fuente */
+}
+
+/* ==================== ESTRUCTURA DEL HEADER ==================== */
 .header {
-  background: white;
-  box-shadow: var(--shadow);
-  padding: 0.75rem 0;
+  background: var(--header-bg);
+  box-shadow: var(--header-shadow);
+  padding: 0.9rem 0;
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header .container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-/* Logo */
+/* ==================== SECCIÓN IZQUIERDA: LOGO ==================== */
 .header .logo {
   display: flex;
   align-items: center;
@@ -24,104 +61,261 @@
 }
 
 .header .logo-icon {
-  width: 40px;
-  height: 40px;
-  background: var(--gradient-primary);
+  width: var(--logo-icon-size);
+  height: var(--logo-icon-size);
+  background: var(--logo-bg-gradient);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   margin: 0;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: transform 0.3s ease;
+}
+
+.header .logo-icon:hover {
+  transform: scale(1.05);
 }
 
 .header h1 {
-  font-size: 1.4rem;
-  color: var(--gray-900);
+  font-size: var(--logo-text-size);
+  color: var(--header-text);
   margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-/* User Info - Mejorado */
+/* ==================== SECCIÓN DERECHA: USER INFO ==================== */
 .user-info {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .user-details {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.25rem;
+  gap: 0.3rem;
 }
 
 .user-name {
-  font-weight: 600;
-  color: var(--gray-900);
-  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--header-text);
+  font-size: 1rem;
+  letter-spacing: 0.01em;
 }
 
+/* ==================== BADGE DEL PLAN ==================== */
 .plan-badge {
   display: inline-block;
-  background: var(--primary);
-  color: white;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  padding: var(--badge-padding);
+  border-radius: var(--badge-radius);
+  font-size: 0.8rem;
+  font-weight: 700;
   text-transform: uppercase;
-  transition: var(--transition);
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
+.plan-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* Estados del plan */
 .plan-badge.active {
-  background: var(--success);
+  background: #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
 
 .plan-badge.expired {
-  background: var(--danger);
+  background: #ef4444;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
+.plan-badge.trial {
+  background: #6366f1;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* ==================== BOTÓN LOGOUT - PERSONALIZABLE ==================== */
 .btn-logout {
-  background: var(--gray-100);
-  border: none;
-  padding: 0.65rem;
-  border-radius: 8px;
-  cursor: pointer;
-  color: var(--gray-700);
-  transition: var(--transition);
-  font-size: 1rem;
+  /* Estructura base */
   display: flex;
   align-items: center;
   justify-content: center;
+  
+  /* Tamaño - PERSONALIZABLE */
+  width: var(--logout-size);
+  height: var(--logout-size);
+  padding: 0;
+  
+  /* Colores - PERSONALIZABLE */
+  background: var(--logout-bg);
+  color: var(--logout-text);
+  
+  /* Bordes - PERSONALIZABLE */
+  border: none;
+  border-radius: var(--logout-radius);
+  
+  /* Fuente - PERSONALIZABLE */
+  font-size: var(--logout-icon-size);
+  font-weight: var(--logout-font-weight);
+  
+  /* Efectos */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .btn-logout:hover {
-  background: var(--danger);
-  color: white;
-  transform: scale(1.05);
+  background: var(--logout-bg-hover);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
 }
 
-/* ==================== SUBSCRIPTION BANNER - MÁS DISCRETO ==================== */
+.btn-logout:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Si el botón tiene texto además del ícono */
+.btn-logout.with-text {
+  width: auto;
+  padding: 0.65rem 1.2rem;
+  gap: 0.5rem;
+}
+
+.btn-logout.with-text span {
+  font-size: 0.9rem;
+  font-weight: var(--logout-font-weight);
+}
+
+/* ==================== VARIANTES DEL BOTÓN LOGOUT ==================== */
+
+/* Logout con borde (outline) */
+.btn-logout.outline {
+  background: transparent;
+  color: var(--logout-bg);
+  border: 2px solid var(--logout-bg);
+  box-shadow: none;
+}
+
+.btn-logout.outline:hover {
+  background: var(--logout-bg);
+  color: var(--logout-text);
+}
+
+/* Logout redondeado completo (circular) */
+.btn-logout.circular {
+  border-radius: 50%;
+}
+
+/* Logout con esquinas cuadradas */
+.btn-logout.square {
+  border-radius: 4px;
+}
+
+/* Logout más grande */
+.btn-logout.large {
+  width: 50px;
+  height: 50px;
+  font-size: 1.3rem;
+}
+
+/* Logout más pequeño */
+.btn-logout.small {
+  width: 32px;
+  height: 32px;
+  font-size: 0.9rem;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  .header .container {
+    padding: 0 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.2rem;
+  }
+
+  .header .logo-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.3rem;
+  }
+
+  /* En móvil, ocultar el nombre de usuario */
+  .user-name {
+    display: none;
+  }
+
+  /* Ajustar tamaños en móvil */
+  .btn-logout {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .plan-badge {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0.7rem 0;
+  }
+
+  .header h1 {
+    font-size: 1.1rem;
+  }
+
+  .header .logo-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+
+  .user-info {
+    gap: 0.75rem;
+  }
+
+  /* En pantallas muy pequeñas, ocultar el badge */
+  .plan-badge {
+    display: none;
+  }
+}
+
+/* ==================== SUBSCRIPTION BANNER ==================== */
 .subscription-banner {
   background: #eff6ff;
-  border-left: 3px solid #3b82f6;
-  padding: 0.5rem 1rem;
+  border-left: 4px solid #3b82f6;
+  padding: 0.75rem 1.5rem;
   margin: 0;
   font-weight: 500;
   color: #1e40af;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+  gap: 0.75rem;
+  font-size: 0.9rem;
 }
 
 .subscription-banner i {
-  font-size: 1rem;
+  font-size: 1.1rem;
   flex-shrink: 0;
 }
 
+/* Estados del banner */
 .subscription-banner.expired {
   background: #fee2e2;
   border-left-color: #ef4444;
@@ -146,262 +340,35 @@
   color: #92400e;
 }
 
-/* ==================== ONBOARDING PROGRESS BAR - COMPACTO ==================== */
-.onboarding-progress {
-  background: white;
-  border-radius: var(--border-radius);
-  padding: 1rem 2rem;
-  margin: 0.5rem 0;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--gray-200);
-  animation: slideUp 0.6s ease forwards;
-}
-
-.progress-header {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.progress-header h3 {
-  margin: 0 0 0.25rem 0;
-  color: var(--gray-900);
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.progress-subtitle {
-  color: var(--gray-600);
-  font-size: 0.85rem;
-  margin: 0;
-  font-weight: 500;
-}
-
-.progress-bar-container {
-  margin: 1rem 0;
-}
-
-.progress-bar {
-  height: 8px;
-  background: var(--gray-200);
-  border-radius: 50px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--gradient-primary);
-  border-radius: 50px;
-  transition: width 0.8s ease;
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
-}
-
-.steps-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.step-item {
-  text-align: center;
-  opacity: 0.6;
-  transition: all 0.3s ease;
-}
-
-.step-item.completed,
-.step-item.current {
-  opacity: 1;
-}
-
-.step-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--gray-200);
-  color: var(--gray-600);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 0.5rem;
-  font-weight: 700;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-}
-
-.step-item.completed .step-circle {
-  background: var(--success);
-  color: white;
-  border-color: var(--success);
-}
-
-.step-item.current .step-circle {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
-  animation: pulse 2s infinite;
-}
-
-.step-label {
-  font-size: 0.8rem;
-  color: var(--gray-700);
-  font-weight: 500;
-  display: block;
-}
-
-.step-item.current .step-label {
-  color: var(--primary);
-  font-weight: 700;
-}
-
-.step-item.completed .step-label {
-  color: var(--success);
-  font-weight: 600;
-}
-
-/* ==================== MAIN CONTENT ==================== */
-.main-content {
-  max-width: 1200px;
-  margin: 1.5rem auto 6rem;
-  padding: 0 2rem;
-}
-
-/* ==================== NAVIGATION CONTROLS ==================== */
-.navigation-controls {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  padding: 1rem 2rem;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  z-index: 90;
-}
-
-.nav-buttons {
-  display: flex;
-  gap: 1rem;
-}
-
-.nav-info {
-  font-size: 0.9rem;
-  color: var(--gray-600);
-}
-
-/* Dashboard Navbar */
-.navbar-dashboard {
-  display: flex;
-  gap: 1rem;
-  margin: 2rem 0;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.nav-item {
-  padding: 1rem 1.5rem;
-  background: var(--gray-50);
-  border-radius: 12px;
-  text-decoration: none;
-  color: var(--gray-700);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: var(--transition);
-}
-
-.nav-item:hover {
-  background: var(--gray-100);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-}
-
-/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
-  .header .container {
-    padding: 0 1rem;
-  }
-
-  .header h1 {
-    font-size: 1.2rem;
-  }
-
-  .header .logo-icon {
-    width: 36px;
-    height: 36px;
-    font-size: 1.1rem;
-  }
-
-  .user-details {
-    display: none;
-  }
-
   .subscription-banner {
-    padding: 0.5rem;
-    font-size: 0.8rem;
-  }
-
-  .onboarding-progress {
-    padding: 0.75rem 1rem;
-    margin: 0.25rem 0;
-  }
-
-  .progress-header h3 {
-    font-size: 1rem;
-  }
-
-  .progress-subtitle {
-    font-size: 0.75rem;
-  }
-
-  .steps-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.5rem;
-  }
-
-  .step-circle {
-    width: 32px;
-    height: 32px;
+    padding: 0.6rem 1rem;
     font-size: 0.85rem;
   }
-
-  .step-label {
-    font-size: 0.7rem;
-  }
-
-  .main-content {
-    padding: 0 1rem 6rem;
-    margin: 1rem auto;
-  }
-
-  .navigation-controls {
-    padding: 1rem;
-    flex-direction: column;
-  }
-
-  .nav-buttons {
-    width: 100%;
-  }
 }
 
-@media (max-width: 480px) {
-  .header h1 {
-    font-size: 1.1rem;
-  }
+/* ==================== NOTAS DE PERSONALIZACIÓN ==================== */
+/*
+  
+  🎨 CÓMO PERSONALIZAR EL BOTÓN DE LOGOUT:
+  
+  1. Cambia las variables al inicio del archivo (líneas 15-21):
+     --logout-bg: #tu-color-aquí;
+     --logout-size: 45px;
+     etc.
+  
+  2. O agrega clases al botón en el HTML:
+     <button class="btn-logout large">      // Botón más grande
+     <button class="btn-logout circular">   // Completamente redondo
+     <button class="btn-logout outline">    // Con borde transparente
+     <button class="btn-logout with-text">  // Con texto
+  
+  3. Ejemplos de colores populares:
+     Rojo:    #ef4444
+     Verde:   #10b981
+     Azul:    #3b82f6
+     Negro:   #1f2937
+     Morado:  #8b5cf6
+     Naranja: #f59e0b
 
-  .step-label {
-    font-size: 0.65rem;
-  }
-
-  .subscription-banner {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.25rem;
-  }
-}
+*/
