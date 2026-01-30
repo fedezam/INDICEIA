@@ -2,23 +2,20 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Skeleton + Firebase Test Full</title>
-  <link rel="stylesheet" href="/skeleton/layout/header/header.css">
-  <link rel="stylesheet" href="/skeleton/layout/banner/banner.css">
-  <link rel="stylesheet" href="/skeleton/layout/progress/progress.css">
+  <title>🧪 Skeleton + Firebase + Header Test</title>
+  <link rel="stylesheet" href="./skeleton/layout/header/header.css">
   <style>
     body { font-family: sans-serif; margin: 0; padding: 0; }
-    #app { padding: 20px; }
-    .header-left, .header-right { display: inline-block; vertical-align: middle; }
-    .header-left { float: left; }
-    .header-right { float: right; }
-    .logo-img { height: 30px; vertical-align: middle; }
-    .btn-logout { margin-left: 10px; cursor: pointer; }
-    header { padding: 10px; border-bottom: 1px solid #ccc; overflow: auto; }
+    #app { padding: 1rem; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; background: #f5f5f5; border-bottom: 1px solid #ccc; }
+    header .left, header .right { display: flex; align-items: center; gap: 1rem; }
+    header .logo { font-weight: bold; font-size: 1.2rem; }
+    header button { cursor: pointer; }
   </style>
 </head>
 <body>
-  <div id="app">Cargando test...</div>
-  <script type="module" src="skeletonTest.js"></script>
+  <div id="app"></div>
+
+  <script type="module" src="./skeletonTest.js"></script>
 </body>
 </html>
