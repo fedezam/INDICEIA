@@ -1,12 +1,17 @@
 console.log('🧪 skeletonTest.js iniciado');
 
-import { runSkeleton } from '@/skeleton/skeleton.js';
-import { createFirebaseAdapter } from '@/skeleton/adapters/firebaseAdapter.js';
+import { runSkeleton } from '../skeleton/skeleton.js';
+import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
+
+import { renderHeader } from '../skeleton/layout/header/render.js';
+import { updateHeader } from '../skeleton/layout/header/update.js';
 
 console.group('🦴 TEST BOOT');
 console.log('✔ Imports cargados');
 console.log('runSkeleton:', runSkeleton);
 console.log('createFirebaseAdapter:', createFirebaseAdapter);
+console.log('renderHeader:', renderHeader);
+console.log('updateHeader:', updateHeader);
 console.groupEnd();
 
 /* ---------------------------
@@ -19,21 +24,13 @@ const testPage = {
     console.group('📦 PAGE.load(context)');
     console.log('Contexto recibido:', context);
 
-    if (!context) {
-      console.error('❌ Contexto undefined');
-    }
+    this._context = context;
 
     if (context?.user) {
       console.log('👤 Usuario UID:', context.user.uid);
       console.log('📧 Email:', context.user.email);
     } else {
       console.warn('⚠️ No hay usuario autenticado');
-    }
-
-    if (context?.commerce) {
-      console.log('🏪 Comercio:', context.commerce);
-    } else {
-      console.warn('⚠️ No hay comercio');
     }
 
     console.groupEnd();
@@ -43,7 +40,6 @@ const testPage = {
     console.group('🎨 PAGE.render()');
 
     const app = document.getElementById('app');
-
     if (!app) {
       console.error('❌ #app no existe');
       return;
@@ -51,17 +47,26 @@ const testPage = {
 
     app.innerHTML = `
       <h2>🦴 Skeleton Test</h2>
-
       <p>✔ Skeleton inicializado</p>
       <p>✔ Firebase adapter conectado</p>
-      <p>✔ Header debería estar visible arriba</p>
+      <p>✔ Header debería verse arriba</p>
 
       <div class="log">
         Abrí la consola → logs premium pro 😎
       </div>
     `;
 
-    console.log('✔ DOM renderizado en #app');
+    console.log('🧱 renderHeader()');
+    renderHeader();
+
+    console.log('🧩 updateHeader()');
+    updateHeader({
+      userData: this._context?.userData,
+      comercioData: this._context?.comercioData,
+      pageName: 'Skeleton Test'
+    });
+
+    console.log('✔ DOM renderizado + header actualizado');
     console.groupEnd();
   }
 };
@@ -76,7 +81,7 @@ runSkeleton({
   page: testPage,
   adapter: createFirebaseAdapter,
   options: {
-    loadingMessage: '🔌 Probando Skeleton + Firebase...',
+    loadingMessage: '🔌 Probando Skeleton + Firebase + Header...',
     debug: true
   }
 });
