@@ -2,18 +2,23 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Skeleton Render Test</title>
-  <link rel="stylesheet" href="/src/ui/layout/layout.css" />
+  <title>Skeleton Layout Test</title>
+
+  <!-- CSS de prueba -->
+  <link rel="stylesheet" href="./skeleton/layout/header/header.css" />
+  <link rel="stylesheet" href="./skeleton/layout/banner/banner.css" />
+  <link rel="stylesheet" href="./skeleton/layout/progress/progress.css" />
+
+  <style>
+    body {
+      font-family: monospace;
+      background: #111;
+      color: #0f0;
+    }
+  </style>
 </head>
 <body>
 
-<script type="module">
-  import { renderLayoutBase } from '/src/ui/layout/layout.render.js';
-  import { renderHeader } from '/src/ui/header/header.render.js';
-
-  renderLayoutBase();
-  renderHeader();
-</script>
-
+  <script type="module" src="./test.js"></script>
 </body>
 </html>
