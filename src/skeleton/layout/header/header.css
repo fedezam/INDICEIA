@@ -1,120 +1,375 @@
-/* src/skeleton/layout/header/header.css */
+/* ========================================
+   HEADER CUSTOM - CSS CONSOLIDADO
+   Todos los estilos del header en un solo lugar
+   ======================================== */
 
-/* ==================== VARIABLES BASE ==================== */
+/* ==================== VARIABLES DEL HEADER ==================== */
 :root {
-  --primary: #6366f1;
-  --success: #10b981;
-  --danger: #ef4444;
-
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-900: #111827;
-
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
-  --transition: all 0.25s ease;
+  /* Colores del Header */
+  --header-bg: #ffffff;
+  --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --header-text: #111827;
+  
+  /* Logo */
+  --logo-bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --logo-icon-size: 45px;
+  --logo-text-size: 1.5rem;
+  
+  /* Badge del Plan */
+  --badge-bg: #6366f1;
+  --badge-text: #ffffff;
+  --badge-radius: 20px;
+  --badge-padding: 0.4rem 1rem;
+  
+  /* Botón Logout - PERSONALIZABLE */
+  --logout-bg: #ef4444;           /* 🔴 Color de fondo (rojo) */
+  --logout-bg-hover: #dc2626;     /* 🔴 Color al pasar mouse (rojo oscuro) */
+  --logout-text: #ffffff;         /* ⚪ Color del texto/icono */
+  --logout-size: 40px;            /* 📏 Tamaño del botón */
+  --logout-icon-size: 1.1rem;     /* 📏 Tamaño del ícono */
+  --logout-radius: 10px;          /* 🔲 Bordes redondeados */
+  --logout-font-weight: 600;      /* 🔤 Grosor de la fuente */
 }
 
-/* ==================== HEADER ==================== */
-#skeleton-header {
-  background: white;
-  box-shadow: var(--shadow);
-  padding: 0.75rem 1.5rem;
-
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+/* ==================== ESTRUCTURA DEL HEADER ==================== */
+.header {
+  background: var(--header-bg);
+  box-shadow: var(--header-shadow);
+  padding: 0.9rem 0;
   position: sticky;
   top: 0;
   z-index: 100;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-/* ==================== LEFT ==================== */
-.header-left {
+.header .container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.logo {
-  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: var(--gray-900);
 }
 
-.logo::before {
-  content: "🧠";
-  width: 36px;
-  height: 36px;
-  background: var(--gradient-primary);
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.1rem;
-}
-
-.user-name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--gray-700);
-}
-
-/* ==================== RIGHT ==================== */
-.header-right {
+/* ==================== SECCIÓN IZQUIERDA: LOGO ==================== */
+.header .logo {
   display: flex;
   align-items: center;
   gap: 1rem;
+  text-align: left;
+  margin: 0;
 }
 
-.commerce {
+.header .logo-icon {
+  width: var(--logo-icon-size);
+  height: var(--logo-icon-size);
+  background: var(--logo-bg-gradient);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  margin: 0;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: transform 0.3s ease;
+}
+
+.header .logo-icon:hover {
+  transform: scale(1.05);
+}
+
+.header h1 {
+  font-size: var(--logo-text-size);
+  color: var(--header-text);
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ==================== SECCIÓN DERECHA: USER INFO ==================== */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.user-details {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.25rem;
+  gap: 0.3rem;
 }
 
-.commerce-name {
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--gray-900);
+.user-name {
+  font-weight: 700;
+  color: var(--header-text);
+  font-size: 1rem;
+  letter-spacing: 0.01em;
 }
 
-.plan {
+/* ==================== BADGE DEL PLAN ==================== */
+.plan-badge {
   display: inline-block;
-  background: var(--primary);
-  color: white;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
+  background: var(--badge-bg);
+  color: var(--badge-text);
+  padding: var(--badge-padding);
+  border-radius: var(--badge-radius);
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
-/* ==================== LOGOUT ==================== */
-.logout {
-  background: var(--gray-100);
+.plan-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* Estados del plan */
+.plan-badge.active {
+  background: #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.plan-badge.expired {
+  background: #ef4444;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.plan-badge.trial {
+  background: #6366f1;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* ==================== BOTÓN LOGOUT - PERSONALIZABLE ==================== */
+.btn-logout {
+  /* Estructura base */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Tamaño - PERSONALIZABLE */
+  width: var(--logout-size);
+  height: var(--logout-size);
+  padding: 0;
+  
+  /* Colores - PERSONALIZABLE */
+  background: var(--logout-bg);
+  color: var(--logout-text);
+  
+  /* Bordes - PERSONALIZABLE */
   border: none;
-  padding: 0.6rem;
-  border-radius: 8px;
+  border-radius: var(--logout-radius);
+  
+  /* Fuente - PERSONALIZABLE */
+  font-size: var(--logout-icon-size);
+  font-weight: var(--logout-font-weight);
+  
+  /* Efectos */
   cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--gray-700);
-  transition: var(--transition);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
-.logout:hover {
-  background: var(--danger);
-  color: white;
-  transform: scale(1.05);
+.btn-logout:hover {
+  background: var(--logout-bg-hover);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
 }
+
+.btn-logout:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Si el botón tiene texto además del ícono */
+.btn-logout.with-text {
+  width: auto;
+  padding: 0.65rem 1.2rem;
+  gap: 0.5rem;
+}
+
+.btn-logout.with-text span {
+  font-size: 0.9rem;
+  font-weight: var(--logout-font-weight);
+}
+
+/* ==================== VARIANTES DEL BOTÓN LOGOUT ==================== */
+
+/* Logout con borde (outline) */
+.btn-logout.outline {
+  background: transparent;
+  color: var(--logout-bg);
+  border: 2px solid var(--logout-bg);
+  box-shadow: none;
+}
+
+.btn-logout.outline:hover {
+  background: var(--logout-bg);
+  color: var(--logout-text);
+}
+
+/* Logout redondeado completo (circular) */
+.btn-logout.circular {
+  border-radius: 50%;
+}
+
+/* Logout con esquinas cuadradas */
+.btn-logout.square {
+  border-radius: 4px;
+}
+
+/* Logout más grande */
+.btn-logout.large {
+  width: 50px;
+  height: 50px;
+  font-size: 1.3rem;
+}
+
+/* Logout más pequeño */
+.btn-logout.small {
+  width: 32px;
+  height: 32px;
+  font-size: 0.9rem;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  .header .container {
+    padding: 0 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.2rem;
+  }
+
+  .header .logo-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.3rem;
+  }
+
+  /* En móvil, ocultar el nombre de usuario */
+  .user-name {
+    display: none;
+  }
+
+  /* Ajustar tamaños en móvil */
+  .btn-logout {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  .plan-badge {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0.7rem 0;
+  }
+
+  .header h1 {
+    font-size: 1.1rem;
+  }
+
+  .header .logo-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+
+  .user-info {
+    gap: 0.75rem;
+  }
+
+  /* En pantallas muy pequeñas, ocultar el badge */
+  .plan-badge {
+    display: none;
+  }
+}
+
+/* ==================== SUBSCRIPTION BANNER ==================== */
+.subscription-banner {
+  background: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  padding: 0.75rem 1.5rem;
+  margin: 0;
+  font-weight: 500;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.subscription-banner i {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* Estados del banner */
+.subscription-banner.expired {
+  background: #fee2e2;
+  border-left-color: #ef4444;
+  color: #991b1b;
+}
+
+.subscription-banner.active {
+  background: #d1fae5;
+  border-left-color: #10b981;
+  color: #065f46;
+}
+
+.subscription-banner.trial {
+  background: #eff6ff;
+  border-left-color: #3b82f6;
+  color: #1e40af;
+}
+
+.subscription-banner.warning {
+  background: #fef3c7;
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+@media (max-width: 768px) {
+  .subscription-banner {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* ==================== NOTAS DE PERSONALIZACIÓN ==================== */
+/*
+  
+  🎨 CÓMO PERSONALIZAR EL BOTÓN DE LOGOUT:
+  
+  1. Cambia las variables al inicio del archivo (líneas 15-21):
+     --logout-bg: #tu-color-aquí;
+     --logout-size: 45px;
+     etc.
+  
+  2. O agrega clases al botón en el HTML:
+     <button class="btn-logout large">      // Botón más grande
+     <button class="btn-logout circular">   // Completamente redondo
+     <button class="btn-logout outline">    // Con borde transparente
+     <button class="btn-logout with-text">  // Con texto
+  
+  3. Ejemplos de colores populares:
+     Rojo:    #ef4444
+     Verde:   #10b981
+     Azul:    #3b82f6
+     Negro:   #1f2937
+     Morado:  #8b5cf6
+     Naranja: #f59e0b
+
+*/
 
