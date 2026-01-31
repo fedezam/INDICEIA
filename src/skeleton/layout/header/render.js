@@ -13,43 +13,68 @@ export function renderHeader() {
   header.className = 'header';
   
   header.innerHTML = `
-    <div class="container">
-      <!-- Fila superior -->
-      <div class="header-top">
-        <div class="header-left">
-          <div class="logo">
-            <div class="logo-icon">🧠</div>
-            <h1>INDICEIA</h1>
-          </div>
-        </div>
+  <style>
+    #skeleton-header .container {
+      display: flex;
+      flex-direction: column;
+      gap: 6px; /* separación entre las dos filas – subí/bajá este valor si querés más/menos espacio */
+    }
+    #skeleton-header .header-top,
+    #skeleton-header .header-bottom {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+    }
+    #skeleton-header .header-right-top {
+      display: flex !important;
+      align-items: center !important;
+      gap: 16px !important; /* espacio entre nombre comercio y botón logout */
+    }
+    #skeleton-header .commerce-name {
+      max-width: 40%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
 
-        <div class="header-right-top">
-          <div id="headerCommerceName" class="commerce-name">
-            Mi Comercio
-          </div>
-
-          <button
-            id="headerLogoutBtn"
-            class="btn-logout"
-            title="Cerrar sesión"
-          >
-            <i class="fas fa-sign-out-alt"></i>
-          </button>
+  <div class="container">
+    <!-- Fila superior -->
+    <div class="header-top">
+      <div class="header-left">
+        <div class="logo">
+          <div class="logo-icon">🧠</div>
+          <h1>INDICEIA</h1>
         </div>
       </div>
 
-      <!-- Fila inferior -->
-      <div class="header-bottom">
-        <div id="headerUserName" class="user-name">
-          Usuario
+      <div class="header-right-top">
+        <div id="headerCommerceName" class="commerce-name">
+          Mi Comercio
         </div>
 
-        <div id="headerPlan" class="plan-badge trial">
-          TRIAL
-        </div>
+        <button
+          id="headerLogoutBtn"
+          class="btn-logout"
+          title="Cerrar sesión"
+        >
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
       </div>
     </div>
-  `;
+
+    <!-- Fila inferior -->
+    <div class="header-bottom">
+      <div id="headerUserName" class="user-name">
+        Usuario
+      </div>
+
+      <div id="headerPlan" class="plan-badge trial">
+        TRIAL
+      </div>
+    </div>
+  </div>
+`;
 
   console.log('✅ Header HTML renderizado con dos filas');
 }
