@@ -3,15 +3,10 @@ console.log('🧪 skeletonTest.js iniciado');
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 
-import { renderHeader } from '../skeleton/layout/header/render.js';
-import { updateHeader } from '../skeleton/layout/header/update.js';
-
 console.group('🦴 TEST BOOT');
 console.log('✔ Imports cargados');
 console.log('runSkeleton:', runSkeleton);
 console.log('createFirebaseAdapter:', createFirebaseAdapter);
-console.log('renderHeader:', renderHeader);
-console.log('updateHeader:', updateHeader);
 console.groupEnd();
 
 /* ---------------------------
@@ -45,28 +40,20 @@ const testPage = {
       return;
     }
 
+    // Solo renderizamos el contenido de la página
+    // NO tocamos el header → el skeleton ya lo hizo
     app.innerHTML = `
       <h2>🦴 Skeleton Test</h2>
       <p>✔ Skeleton inicializado</p>
       <p>✔ Firebase adapter conectado</p>
-      <p>✔ Header debería verse arriba</p>
+      <p>✔ Header ya debería estar arriba (manejado por skeleton)</p>
 
       <div class="log">
         Abrí la consola → logs premium pro 😎
       </div>
     `;
 
-    console.log('🧱 renderHeader()');
-    renderHeader();
-
-    console.log('🧩 updateHeader()');
-    updateHeader({
-      userData: this._context?.userData,
-      comercioData: this._context?.comercioData,
-      pageName: 'Skeleton Test'
-    });
-
-    console.log('✔ DOM renderizado + header actualizado');
+    console.log('✔ DOM renderizado (solo contenido de página)');
     console.groupEnd();
   }
 };
