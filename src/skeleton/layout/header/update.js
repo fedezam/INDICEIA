@@ -1,37 +1,40 @@
+// src/skeleton/layout/header/update.js
+
 export function updateHeader({ userData, comercioData }) {
   console.log('🧩 updateHeader()', { userData, comercioData });
 
+  // Actualizar nombre del usuario (izquierda)
   const userEl = document.getElementById('headerUserName');
   if (userEl && userData) {
-    userEl.textContent =
-      `${userData.nombre || ''} ${userData.apellido || ''}`.trim()
-      || userData.email
-      || 'Usuario';
+    const fullName = `${userData.nombre || ''} ${userData.apellido || ''}`.trim();
+    userEl.textContent = fullName || userData.email || 'Usuario';
   }
 
+  // Actualizar nombre del comercio (derecha)
   const commerceEl = document.getElementById('headerCommerceName');
   if (commerceEl && comercioData) {
-    commerceEl.textContent = comercioData.nombre || 'Mi comercio';
+    commerceEl.textContent = comercioData.nombre || 'Mi Comercio';
   }
 
-  const comercioNameEl = document.getElementById('headerCommerceName');
-
-  if (comercioNameEl && comercioData) {
-     comercioNameEl.textContent =
-      comercioData.nombre || 'Mi Comercio';
-  }
-
+  // Actualizar badge del plan (derecha)
   const planEl = document.getElementById('headerPlan');
-  const planTypeEl = document.getElementById('headerPlanType');
-
   if (planEl && comercioData?.plan) {
-    planEl.textContent = comercioData.plan;
+    const planText = comercioData.plan.toUpperCase();
+    planEl.textContent = planText;
+    
+    // Actualizar clase según el estado del plan
+    planEl.className = 'plan-badge';
+    
+    if (comercioData.plan === 'trial') {
+      planEl.classList.add('trial');
+    } else if (comercioData.planActivo) {
+      planEl.classList.add('active');
+    } else {
+      planEl.classList.add('expired');
+    }
   }
 
-  if (planTypeEl && comercioData?.tipoPlan) {
-    planTypeEl.textContent = ` · ${comercioData.tipoPlan}`;
-  }
-
+  // Configurar evento de logout
   const logoutBtn = document.getElementById('headerLogoutBtn');
   if (logoutBtn) {
     logoutBtn.onclick = () => {
@@ -39,5 +42,6 @@ export function updateHeader({ userData, comercioData }) {
       document.dispatchEvent(new CustomEvent('skeleton:logout'));
     };
   }
-}
 
+  console.log('✅ Header actualizado');
+}
