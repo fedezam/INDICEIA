@@ -3,28 +3,26 @@
 export function updateHeader({ userData, comercioData }) {
   console.log('🧩 updateHeader()', { userData, comercioData });
 
-  // Actualizar nombre del usuario (izquierda)
+  // Nombre usuario (abajo izquierda)
   const userEl = document.getElementById('headerUserName');
   if (userEl && userData) {
     const fullName = `${userData.nombre || ''} ${userData.apellido || ''}`.trim();
     userEl.textContent = fullName || userData.email || 'Usuario';
   }
 
-  // Actualizar nombre del comercio (derecha)
+  // Nombre comercio (arriba derecha)
   const commerceEl = document.getElementById('headerCommerceName');
   if (commerceEl && comercioData) {
     commerceEl.textContent = comercioData.nombre || 'Mi Comercio';
   }
 
-  // Actualizar badge del plan (derecha)
+  // Badge plan (abajo derecha)
   const planEl = document.getElementById('headerPlan');
   if (planEl && comercioData?.plan) {
     const planText = comercioData.plan.toUpperCase();
     planEl.textContent = planText;
     
-    // Actualizar clase según el estado del plan
-    planEl.className = 'plan-badge';
-    
+    planEl.className = 'plan-badge'; // reset
     if (comercioData.plan === 'trial') {
       planEl.classList.add('trial');
     } else if (comercioData.planActivo) {
@@ -34,7 +32,7 @@ export function updateHeader({ userData, comercioData }) {
     }
   }
 
-  // Configurar evento de logout
+  // Evento logout
   const logoutBtn = document.getElementById('headerLogoutBtn');
   if (logoutBtn) {
     logoutBtn.onclick = () => {
