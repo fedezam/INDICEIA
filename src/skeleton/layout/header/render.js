@@ -15,40 +15,57 @@ export function renderHeader() {
   header.className = 'header';
 
   header.innerHTML = `
-    <div class="container">
+  <div class="container">
 
-      <!-- IZQUIERDA -->
-      <div class="logo">
-        <div class="logo-icon">🧠</div>
-        <h1>INDICEIA</h1>
-      </div>
+    <!-- IZQUIERDA -->
+    <div class="logo">
+      <div class="logo-icon">🧠</div>
+      <h1>INDICEIA</h1>
+    </div>
 
-      <!-- DERECHA -->
-      <div class="user-info">
-        <div class="user-details">
-          <div id="headerUserName" class="user-name">
-            Usuario
-          </div>
+    <!-- DERECHA -->
+    <div class="user-info">
 
-          <div
-            id="headerPlan"
-            class="plan-badge trial"
-          >
-            Trial
-          </div>
+      <!-- COMERCIO -->
+      <div class="user-details">
+        <div
+          id="headerCommerceName"
+          class="user-name"
+        >
+          Mi Comercio
         </div>
 
-        <button
-          id="headerLogoutBtn"
-          class="btn-logout"
-          title="Cerrar sesión"
+        <div
+          id="headerPlan"
+          class="plan-badge trial"
         >
-          ⎋
-        </button>
+          Trial
+        </div>
       </div>
 
+      <!-- USUARIO -->
+      <div class="user-details">
+        <div
+          id="headerUserName"
+          class="user-name"
+        >
+          Usuario
+        </div>
+      </div>
+
+      <!-- LOGOUT -->
+      <button
+        id="headerLogoutBtn"
+        class="btn-logout outline"
+        title="Cerrar sesión"
+      >
+        ⎋
+      </button>
+
     </div>
-  `;
+
+  </div>
+`;
 
   console.log('✅ Header HTML renderizado (layout correcto)');
 }
