@@ -1,407 +1,230 @@
-/* ==================== HEADER - COMPACTO ==================== */
-.header {
-  background: white;
-  box-shadow: var(--shadow);
-  padding: 0.75rem 0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
+// src/shared/layout.js
+// Renderiza el header + banner + barra de progreso (común a todas las páginas del onboarding)
+// Renderiza el header + banner + barra de progreso (común a todas las páginas)
 
-.header .container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+import { setupLogout } from './logout.js';  // ← NUEVO: Import global del logout
 
-/* Logo */
-.header .logo {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  text-align: left;
-  margin: 0;
-}
+/**
+ * Renderiza la estructura base del layout (header + banner + progress container)
+ * Esta función solo genera el HTML vacío con placeholders
+ * Cada página debe llamar a las funciones update* para rellenar con datos reales
+ */
+export function renderLayout() {
+  const body = document.querySelector('body');
+  
 
-.header .logo-icon {
-  width: 40px;
-  height: 40px;
-  background: var(--gradient-primary);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.3rem;
-  margin: 0;
-  flex-shrink: 0;
-}
-
-.header h1 {
-  font-size: 1.4rem;
-  color: var(--gray-900);
-  margin: 0;
-}
-
-/* User Info - Mejorado */
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.user-details {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
-}
-
-.user-name {
-  font-weight: 600;
-  color: var(--gray-900);
-  font-size: 0.9rem;
-}
-
-.plan-badge {
-  display: inline-block;
-  background: var(--primary);
-  color: white;
-  padding: 0.2rem 0.6rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  transition: var(--transition);
-}
-
-.plan-badge.active {
-  background: var(--success);
-}
-
-.plan-badge.expired {
-  background: var(--danger);
-}
-
-.btn-logout {
-  background: var(--gray-100);
-  border: none;
-  padding: 0.65rem;
-  border-radius: 8px;
-  cursor: pointer;
-  color: var(--gray-700);
-  transition: var(--transition);
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-logout:hover {
-  background: var(--danger);
-  color: white;
-  transform: scale(1.05);
-}
-
-/* ==================== SUBSCRIPTION BANNER - MÁS DISCRETO ==================== */
-.subscription-banner {
-  background: #eff6ff;
-  border-left: 3px solid #3b82f6;
-  padding: 0.5rem 1rem;
-  margin: 0;
-  font-weight: 500;
-  color: #1e40af;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.subscription-banner i {
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.subscription-banner.expired {
-  background: #fee2e2;
-  border-left-color: #ef4444;
-  color: #991b1b;
-}
-
-.subscription-banner.active {
-  background: #d1fae5;
-  border-left-color: #10b981;
-  color: #065f46;
-}
-
-.subscription-banner.trial {
-  background: #eff6ff;
-  border-left-color: #3b82f6;
-  color: #1e40af;
-}
-
-.subscription-banner.warning {
-  background: #fef3c7;
-  border-left-color: #f59e0b;
-  color: #92400e;
-}
-
-/* ==================== ONBOARDING PROGRESS BAR - COMPACTO ==================== */
-.onboarding-progress {
-  background: white;
-  border-radius: var(--border-radius);
-  padding: 1rem 2rem;
-  margin: 0.5rem 0;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--gray-200);
-  animation: slideUp 0.6s ease forwards;
-}
-
-.progress-header {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.progress-header h3 {
-  margin: 0 0 0.25rem 0;
-  color: var(--gray-900);
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.progress-subtitle {
-  color: var(--gray-600);
-  font-size: 0.85rem;
-  margin: 0;
-  font-weight: 500;
-}
-
-.progress-bar-container {
-  margin: 1rem 0;
-}
-
-.progress-bar {
-  height: 8px;
-  background: var(--gray-200);
-  border-radius: 50px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--gradient-primary);
-  border-radius: 50px;
-  transition: width 0.8s ease;
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
-}
-
-.steps-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.step-item {
-  text-align: center;
-  opacity: 0.6;
-  transition: all 0.3s ease;
-}
-
-.step-item.completed,
-.step-item.current {
-  opacity: 1;
-}
-
-.step-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--gray-200);
-  color: var(--gray-600);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 0.5rem;
-  font-weight: 700;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-}
-
-.step-item.completed .step-circle {
-  background: var(--success);
-  color: white;
-  border-color: var(--success);
-}
-
-.step-item.current .step-circle {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
-  animation: pulse 2s infinite;
-}
-
-.step-label {
-  font-size: 0.8rem;
-  color: var(--gray-700);
-  font-weight: 500;
-  display: block;
-}
-
-.step-item.current .step-label {
-  color: var(--primary);
-  font-weight: 700;
-}
-
-.step-item.completed .step-label {
-  color: var(--success);
-  font-weight: 600;
-}
-
-/* ==================== MAIN CONTENT ==================== */
-.main-content {
-  max-width: 1200px;
-  margin: 1.5rem auto 6rem;
-  padding: 0 2rem;
-}
-
-/* ==================== NAVIGATION CONTROLS ==================== */
-.navigation-controls {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  padding: 1rem 2rem;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  z-index: 90;
-}
-
-.nav-buttons {
-  display: flex;
-  gap: 1rem;
-}
-
-.nav-info {
-  font-size: 0.9rem;
-  color: var(--gray-600);
-}
-
-/* Dashboard Navbar */
-.navbar-dashboard {
-  display: flex;
-  gap: 1rem;
-  margin: 2rem 0;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.nav-item {
-  padding: 1rem 1.5rem;
-  background: var(--gray-50);
-  border-radius: 12px;
-  text-decoration: none;
-  color: var(--gray-700);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: var(--transition);
-}
-
-.nav-item:hover {
-  background: var(--gray-100);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-}
-
-/* ==================== RESPONSIVE ==================== */
-@media (max-width: 768px) {
-  .header .container {
-    padding: 0 1rem;
+  // Verificar que no esté ya renderizado
+  if (document.querySelector('.header')) {
+    console.warn('⚠️ Layout ya renderizado');
+    return;
   }
 
-  .header h1 {
-    font-size: 1.2rem;
-  }
+  const layoutHTML = `
+    <!-- HEADER PRINCIPAL -->
+    <header class="header">
+      <div class="container">
+        <div class="logo">
+          <div class="logo-icon"><i class="fas fa-robot"></i></div>
+          <h1>INDICEIA</h1>
+        </div>
+        <div class="user-info">
+          <div class="user-details">
+            <span class="user-name" id="commerceName">Cargando...</span>
+            <span class="plan-badge" id="planBadge">...</span>
+          </div>
+          <button id="logoutBtn" class="btn-logout" title="Cerrar sesión">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </div>
+    </header>
 
-  .header .logo-icon {
-    width: 36px;
-    height: 36px;
-    font-size: 1.1rem;
-  }
+    <!-- BANNER DE ESTADO (sutil, debajo del header) -->
+    <div id="subscriptionBanner" class="subscription-banner trial">
+      <i class="fas fa-info-circle"></i>
+      <span id="subscriptionMessage">Cargando información del plan...</span>
+    </div>
 
-  .user-details {
-    display: none;
-  }
+    <!-- BARRA DE PROGRESO COMPACTA -->
+    <div id="progressContainer"></div>
+  `;
 
-  .subscription-banner {
-    padding: 0.5rem;
-    font-size: 0.8rem;
-  }
+  // ✅ CORREGIDO: Usar insertAdjacentHTML para mantener el orden correcto
+  // Insertar al inicio del body
+  body.insertAdjacentHTML('afterbegin', layoutHTML);
+  
 
-  .onboarding-progress {
-    padding: 0.75rem 1rem;
-    margin: 0.25rem 0;
-  }
+  console.log('✅ Layout renderizado');
+  
+  // Configurar evento de logout
+  setupLogoutButton();
+}
 
-  .progress-header h3 {
-    font-size: 1rem;
-  }
+/**
+ * Configura el botón de cerrar sesión
+ */
+function setupLogoutButton() {
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (!logoutBtn) return;
+  
+  logoutBtn.addEventListener('click', async () => {
+    if (confirm('¿Seguro que deseas cerrar sesión?')) {
+      try {
+        // Aquí iría la lógica de logout con Firebase
+        // await firebase.auth().signOut();
+        localStorage.removeItem('userId');
+        window.location.href = '/login.html';
+      } catch (error) {
+        console.error('Error al cerrar sesión:', error);
+        alert('Error al cerrar sesión');
+      }
+    }
+  });
+  // ← NUEVO: Configurar logout global UNA SOLA VEZ por página
+  setupLogout();
+}
 
-  .progress-subtitle {
-    font-size: 0.75rem;
-  }
+/**
+ * Actualiza la información del header (nombre del comercio y plan)
+ * @param {string} nombreComercio - Nombre del comercio del usuario
+ * @param {Object} planData - Datos del plan { nombre, emoji, estado }
+ */
+export function updateHeaderInfo(nombreComercio, planData) {
+  const nameEl = document.getElementById('commerceName');
+  const badgeEl = document.getElementById('planBadge');
+  
 
-  .steps-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.5rem;
+  if (nameEl) {
+    nameEl.textContent = nombreComercio || 'Mi Comercio';
   }
+  
 
-  .step-circle {
-    width: 32px;
-    height: 32px;
-    font-size: 0.85rem;
-  }
+  if (badgeEl && planData) {
+    badgeEl.textContent = `${planData.emoji || '🔵'} ${planData.nombre || 'Trial'}`;
+    
 
-  .step-label {
-    font-size: 0.7rem;
-  }
-
-  .main-content {
-    padding: 0 1rem 6rem;
-    margin: 1rem auto;
-  }
-
-  .navigation-controls {
-    padding: 1rem;
-    flex-direction: column;
-  }
-
-  .nav-buttons {
-    width: 100%;
+    // Cambiar color del badge según el plan
+    badgeEl.className = 'plan-badge';
+    if (planData.estado === 'activo') {
+      badgeEl.classList.add('active');
+    } else if (planData.estado === 'expirado') {
+      badgeEl.classList.add('expired');
+    }
   }
 }
 
-@media (max-width: 480px) {
-  .header h1 {
-    font-size: 1.1rem;
-  }
+/**
+ * Actualiza el banner de suscripción con mensaje y estado
+ * @param {string} mensaje - Mensaje a mostrar en el banner (puede incluir HTML)
+ * @param {string} estado - Estado: 'trial', 'active', 'warning', 'expired'
+ */
+export function updateSubscriptionBanner(mensaje, estado = 'trial') {
+  const banner = document.getElementById('subscriptionBanner');
+  const msg = document.getElementById('subscriptionMessage');
+  
 
-  .step-label {
-    font-size: 0.65rem;
-  }
+  if (!banner || !msg) return;
+  
 
-  .subscription-banner {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.25rem;
+  // Cambiar clases según estado
+  banner.className = 'subscription-banner';
+  banner.classList.add(estado);
+  
+  // ✅ CORREGIDO: Usar innerHTML para que renderice las etiquetas HTML
+
+  // Usar innerHTML para permitir HTML en el mensaje
+  msg.innerHTML = mensaje;
+  
+
+  // Cambiar icono según estado
+  const icon = banner.querySelector('i');
+  if (icon) {
+    const iconMap = {
+      'expired': 'fas fa-exclamation-triangle',
+      'warning': 'fas fa-clock',
+      'active': 'fas fa-check-circle',
+      'trial': 'fas fa-info-circle'
+    };
+    icon.className = iconMap[estado] || iconMap.trial;
   }
 }
+
+/**
+ * Oculta el banner de suscripción (útil para planes que no lo necesiten)
+ * Oculta el banner de suscripción
+ */
+export function hideSubscriptionBanner() {
+  const banner = document.getElementById('subscriptionBanner');
+  if (banner) {
+    banner.style.display = 'none';
+  }
+}
+
+/**
+ * Muestra el banner de suscripción
+ */
+export function showSubscriptionBanner() {
+  const banner = document.getElementById('subscriptionBanner');
+  if (banner) {
+    banner.style.display = 'flex';
+  }
+}
+
+/**
+ * Renderiza la barra de progreso del onboarding
+ * @param {number} currentStep - Paso actual (1-5)
+ * @param {Array} steps - Array de pasos completados
+ */
+export function renderProgressBar(currentStep, steps = []) {
+  const container = document.getElementById('progressContainer');
+  if (!container) return;
+
+  const totalSteps = 5;
+  const percentage = Math.round((steps.length / totalSteps) * 100);
+
+  const stepLabels = [
+    { num: 1, name: 'Usuario', icon: 'fa-user' },
+    { num: 2, name: 'Mi Comercio', icon: 'fa-store' },
+    { num: 3, name: 'Horarios', icon: 'fa-clock' },
+    { num: 4, name: 'Productos', icon: 'fa-box' },
+    { num: 5, name: 'Config. IA', icon: 'fa-robot' }
+  ];
+
+  const stepsHTML = stepLabels.map(step => {
+    const isCompleted = steps.includes(step.num);
+    const isCurrent = step.num === currentStep;
+    const statusClass = isCompleted ? 'completed' : (isCurrent ? 'current' : '');
+
+    return `
+      <div class="step-item ${statusClass}">
+        <div class="step-circle">
+          ${isCompleted ? '<i class="fas fa-check"></i>' : step.num}
+        </div>
+        <span class="step-label">${step.name}</span>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="onboarding-progress">
+      <div class="progress-header">
+        <h3>Configuración de tu comercio</h3>
+        <p class="progress-subtitle">Paso ${currentStep} de ${totalSteps} • ${percentage}% completado</p>
+      </div>
+      
+     
+      <div class="progress-bar-container">
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${percentage}%"></div>
+        </div>
+      </div>
+      
+     
+      <div class="steps-grid">
+        ${stepsHTML}
+      </div>
+    </div>
+  `;
+}
+
+console.log('📦 Módulo layout.js cargado');
