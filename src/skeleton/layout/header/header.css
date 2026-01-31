@@ -37,3 +37,30 @@
   text-overflow: ellipsis;
   text-align: right;
 }
+
+
+/* Solo posicionamiento nuevo – agregar al final */
+
+.header-main-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;   /* espacio entre fila logo y fila info – probá 0.3rem o 0.6rem */
+}
+
+.header-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;             /* distancia entre nombre comercio y botón logout – ajustá si está muy pegado o lejos */
+}
+
+/* Opcional: alinear un poco mejor el nombre usuario con el logo */
+.user-name {
+  padding-left: 3.2rem;    /* si querés que quede visualmente debajo del logo – quitá o poné 0 si no te gusta */
+}
