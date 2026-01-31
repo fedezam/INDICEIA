@@ -22,9 +22,9 @@
   --badge-padding: 0.4rem 1rem;
   
   /* Botón Logout - PERSONALIZABLE */
-  --logout-bg: #ef4444;           /* 🔴 Color de fondo (rojo) */
-  --logout-bg-hover: #dc2626;     /* 🔴 Color al pasar mouse (rojo oscuro) */
-  --logout-text: #ffffff;         /* ⚪ Color del texto/icono */
+  --logout-bg: #e5e7eb;           /* gris */
+  --logout-bg-hover: #ef4444;     /* rojo */
+  --logout-text: #374151;         /* gris oscuro */
   --logout-size: 40px;            /* 📏 Tamaño del botón */
   --logout-icon-size: 1.1rem;     /* 📏 Tamaño del ícono */
   --logout-radius: 10px;          /* 🔲 Bordes redondeados */
