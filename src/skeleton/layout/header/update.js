@@ -14,6 +14,13 @@ export function updateHeader({ userData, comercioData }) {
     commerceEl.textContent = comercioData.nombre || 'Mi comercio';
   }
 
+  const comercioNameEl = document.getElementById('headerCommerceName');
+
+  if (comercioNameEl && comercioData) {
+     comercioNameEl.textContent =
+      comercioData.nombre || 'Mi Comercio';
+  }
+
   const planEl = document.getElementById('headerPlan');
   const planTypeEl = document.getElementById('headerPlanType');
 
