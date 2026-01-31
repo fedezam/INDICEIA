@@ -1,6 +1,4 @@
 // src/skeleton/layout/header/render.js
-import './header.css';
-
 export function renderHeader() {
   console.log('🧱 renderHeader()');
   
@@ -11,70 +9,88 @@ export function renderHeader() {
   }
 
   header.className = 'header';
-  
-  header.innerHTML = `
-  <style>
-    #skeleton-header .container {
-      display: flex;
-      flex-direction: column;
-      gap: 6px; /* separación entre las dos filas – subí/bajá este valor si querés más/menos espacio */
-    }
-    #skeleton-header .header-top,
-    #skeleton-header .header-bottom {
-      display: flex !important;
-      justify-content: space-between !important;
-      align-items: center !important;
-    }
-    #skeleton-header .header-right-top {
-      display: flex !important;
-      align-items: center !important;
-      gap: 16px !important; /* espacio entre nombre comercio y botón logout */
-    }
-    #skeleton-header .commerce-name {
-      max-width: 40%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  </style>
 
-  <div class="container">
-    <!-- Fila superior -->
-    <div class="header-top">
-      <div class="header-left">
+  header.innerHTML = `
+    <style>
+      /* Estilos internos forzados para garantizar las filas - no dependen de header.css externo */
+      .skeleton-header-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;               /* separación entre filas - ajusta este valor si querés más/menos */
+      }
+
+      .header-top,
+      .header-bottom {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+      }
+
+      .header-right-top {
+        display: flex !important;
+        align-items: center !important;
+        gap: 1.2rem !important; /* espacio entre comercio y logout */
+      }
+
+      .commerce-name {
+        max-width: 40%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Opcional: mínimo para que no se rompa en mobile */
+      @media (max-width: 768px) {
+        .header-top, .header-bottom {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.6rem;
+        }
+        .header-right-top {
+          width: 100%;
+          justify-content: space-between;
+        }
+      }
+    </style>
+
+    <div class="skeleton-header-container">
+      <!-- Fila superior -->
+      <div class="header-top">
         <div class="logo">
           <div class="logo-icon">🧠</div>
           <h1>INDICEIA</h1>
         </div>
+
+        <div class="header-right-top">
+          <div id="headerCommerceName" class="commerce-name">
+            Mi Comercio
+          </div>
+
+          <button
+            id="headerLogoutBtn"
+            class="btn-logout"
+            title="Cerrar sesión"
+          >
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
       </div>
 
-      <div class="header-right-top">
-        <div id="headerCommerceName" class="commerce-name">
-          Mi Comercio
+      <!-- Fila inferior -->
+      <div class="header-bottom">
+        <div id="headerUserName" class="user-name">
+          Usuario
         </div>
 
-        <button
-          id="headerLogoutBtn"
-          class="btn-logout"
-          title="Cerrar sesión"
-        >
-          <i class="fas fa-sign-out-alt"></i>
-        </button>
+        <div id="headerPlan" class="plan-badge trial">
+          TRIAL
+        </div>
       </div>
     </div>
-
-    <!-- Fila inferior -->
-    <div class="header-bottom">
-      <div id="headerUserName" class="user-name">
-        Usuario
-      </div>
-
-      <div id="headerPlan" class="plan-badge trial">
-        TRIAL
-      </div>
-    </div>
-  </div>
-`;
+  `;
 
   console.log('✅ Header HTML renderizado con dos filas');
 }
