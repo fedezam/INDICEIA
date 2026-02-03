@@ -2,18 +2,7 @@ console.log('🧪 skeletonTest.js iniciado');
 
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-import { renderCard } from '../skeleton/components/card/index.js';
-
-console.group('🦴 TEST BOOT');
-console.log('✔ Imports cargados');
-console.log('runSkeleton:', runSkeleton);
-console.log('createFirebaseAdapter:', createFirebaseAdapter);
-console.log('renderCard:', renderCard);
-console.groupEnd();
-
-/* ---------------------------
-   TEST PAGE
----------------------------- */
+import { renderCard } from '../skeleton/components/card/render.js';
 
 const testPage = {
 
@@ -22,46 +11,39 @@ const testPage = {
   },
 
   render() {
-    const app = document.getElementById('app');
-    if (!app) return;
+    const page = document.getElementById('skeleton-page');
+    if (!page) {
+      console.error('❌ #skeleton-page no existe');
+      return;
+    }
 
-    // ⬇️ TODO lo que YA tenía el test, intacto
-    app.innerHTML = `
+    // 👉 lo que YA tenía el test
+    page.innerHTML = `
       <h2>🦴 Skeleton Test</h2>
       <p>✔ Skeleton inicializado</p>
       <p>✔ Firebase adapter conectado</p>
-      <p>✔ Header ya debería estar arriba (manejado por skeleton)</p>
-
-      <div class="log">
-        Abrí la consola → logs premium pro 😎
-      </div>
+      <p>✔ Header arriba, footer abajo</p>
     `;
 
-    // ⬇️ SOLO agregamos una card
+    // 👉 LA CARD
     const card = renderCard({
       title: 'Card Skeleton',
       icon: 'fas fa-vial',
       content: `
-        <p>Esta card viene del skeleton y debe verse igual en toda la app.</p>
-      `,
-      actions: []
+        <p>Si ves esto, las cards del skeleton funcionan.</p>
+      `
     });
 
     card.classList.add('highlight');
 
-    app.appendChild(card);
+    page.appendChild(card);
   }
 };
-
-/* ---------------------------
-   RUN SKELETON
----------------------------- */
 
 runSkeleton({
   page: testPage,
   adapter: createFirebaseAdapter,
   options: {
-    loadingMessage: '🔌 Probando Skeleton + Firebase + Header...',
     debug: true
   }
 });
