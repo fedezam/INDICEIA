@@ -5,26 +5,24 @@ import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 
 // 👇 IMPORT DIRECTO Y LOG
 import { renderCard } from '../skeleton/components/card/render.js';
-console.log('renderCard:', renderCard);
 
-const testPage = {
+render() {
+  const page = document.getElementById('skeleton-page');
 
-  async load(context) {
-    this._context = context;
-  },
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = renderCard({
+    title: 'Card de prueba',
+    description: 'Si ves esto, la card funciona',
+    icon: 'fas fa-box',
+    highlight: true
+  });
 
-  render() {
-    const page = document.getElementById('skeleton-page');
-    if (!page) {
-      console.error('❌ #skeleton-page no existe');
-      return;
-    }
+  const cardNode = wrapper.firstElementChild;
 
-    page.innerHTML = `
-      <h2>🦴 Skeleton Test</h2>
-      <p>✔ Skeleton inicializado</p>
-      <p>✔ Firebase adapter conectado</p>
-    `;
+  console.log('✅ Card creada:', cardNode);
+
+  page.appendChild(cardNode);
+}
 
     // -------------------------
     // CARD TEST
