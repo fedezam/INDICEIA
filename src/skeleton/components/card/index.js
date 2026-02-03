@@ -1,5 +1,7 @@
-// src/skeleton/components/card/index.js
-// Punto de entrada del componente Card
+import { renderCard } from './render.js';
+import { updateCard } from './update.js';
 
-export { renderCard, renderCardWithActions } from './render.js';
-export { updateCard, createAndUpdateCard } from './update.js';
+export const Card = {
+  render: renderCard,
+  update: updateCard
+};
