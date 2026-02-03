@@ -4,6 +4,7 @@
 import { renderHeader } from './header/render.js';
 import { renderBanner } from './banner/render.js';
 import { renderProgress } from './progress/render.js';
+import { renderFooter } from '../components/footer/render.js';
 
 export function renderLayout() {
   const body = document.body;
@@ -29,6 +30,9 @@ export function renderLayout() {
       <!-- PAGE CONTENT -->
       <main id="skeleton-page"></main>
 
+      <!-- FOOTER SLOT -->
+      <footer id="skeleton-footer"></footer>
+
     </div>
   `;
 
@@ -36,8 +40,9 @@ export function renderLayout() {
 
   console.log('🦴 Skeleton layout base renderizado');
 
-  // ⬇️ ESTO ES LO QUE FALTABA
+  // Renderizar todos los componentes
   renderHeader();
   renderBanner();
   renderProgress();
+  renderFooter();
 }
