@@ -2,7 +2,10 @@ console.log('🧪 skeletonTest.js iniciado');
 
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
+
+// 👇 IMPORT DIRECTO Y LOG
 import { renderCard } from '../skeleton/components/card/render.js';
+console.log('renderCard:', renderCard);
 
 const testPage = {
 
@@ -17,24 +20,32 @@ const testPage = {
       return;
     }
 
-    // 👉 lo que YA tenía el test
     page.innerHTML = `
       <h2>🦴 Skeleton Test</h2>
       <p>✔ Skeleton inicializado</p>
       <p>✔ Firebase adapter conectado</p>
-      <p>✔ Header arriba, footer abajo</p>
     `;
 
-    // 👉 LA CARD
+    // -------------------------
+    // CARD TEST
+    // -------------------------
+    if (typeof renderCard !== 'function') {
+      console.error('❌ renderCard NO es una función');
+      return;
+    }
+
     const card = renderCard({
-      title: 'Card Skeleton',
+      title: 'Card de prueba',
       icon: 'fas fa-vial',
-      content: `
-        <p>Si ves esto, las cards del skeleton funcionan.</p>
-      `
+      content: `<p>Si ves esta card, el componente funciona.</p>`
     });
 
-    card.classList.add('highlight');
+    if (!card) {
+      console.error('❌ renderCard devolvió undefined/null');
+      return;
+    }
+
+    console.log('✅ Card creada:', card);
 
     page.appendChild(card);
   }
