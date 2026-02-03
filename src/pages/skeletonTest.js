@@ -2,57 +2,63 @@ console.log('🧪 skeletonTest.js iniciado');
 
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-
-// 👇 IMPORT DIRECTO Y LOG
 import { renderCard } from '../skeleton/components/card/render.js';
 
-render() {
-  const page = document.getElementById('skeleton-page');
+/* ---------------------------
+   TEST PAGE
+---------------------------- */
 
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = renderCard({
-    title: 'Card de prueba',
-    description: 'Si ves esto, la card funciona',
-    icon: 'fas fa-box',
-    highlight: true
-  });
+const testPage = {
+  async load(context) {
+    console.group('📦 PAGE.load(context)');
+    console.log('Contexto recibido:', context);
+    this._context = context;
+    console.groupEnd();
+  },
 
-  const cardNode = wrapper.firstElementChild;
+  render() {
+    console.group('🎨 PAGE.render()');
 
-  console.log('✅ Card creada:', cardNode);
-
-  page.appendChild(cardNode);
-}
-
-    // -------------------------
-    // CARD TEST
-    // -------------------------
-    if (typeof renderCard !== 'function') {
-      console.error('❌ renderCard NO es una función');
+    const page = document.getElementById('skeleton-page');
+    if (!page) {
+      console.error('❌ skeleton-page no existe');
       return;
     }
 
-    const card = renderCard({
+    // contenido base del test (NO tocamos header/footer)
+    page.innerHTML = `
+      <h2>🦴 Skeleton Test</h2>
+      <p>✔ Skeleton inicializado</p>
+      <p>✔ Firebase adapter conectado</p>
+    `;
+
+    // ---- CARD DE PRUEBA ----
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = renderCard({
       title: 'Card de prueba',
-      icon: 'fas fa-vial',
-      content: `<p>Si ves esta card, el componente funciona.</p>`
+      description: 'Si ves esto, la card funciona',
+      icon: 'fas fa-box',
+      highlight: true
     });
 
-    if (!card) {
-      console.error('❌ renderCard devolvió undefined/null');
-      return;
-    }
+    const cardNode = wrapper.firstElementChild;
+    console.log('✅ Card creada:', cardNode);
 
-    console.log('✅ Card creada:', card);
+    page.appendChild(cardNode);
 
-    page.appendChild(card);
+    console.groupEnd();
   }
 };
+
+/* ---------------------------
+   RUN SKELETON
+---------------------------- */
 
 runSkeleton({
   page: testPage,
   adapter: createFirebaseAdapter,
   options: {
+    loadingMessage: '🧪 Probando Skeleton + Card',
     debug: true
   }
 });
