@@ -1,46 +1,22 @@
-// src/skeleton/components/card/render.js
-import './card.css';
+export function renderCard(props = {}) {
+  const {
+    id = '',
+    highlight = false
+  } = props;
 
-/**
- * Renderiza la estructura base de una card
- * Retorna el elemento DOM para que pueda ser montado donde se necesite
- */
-export function renderCard() {
-  const card = document.createElement('div');
-  card.className = 'dash-card';
-  
-  card.innerHTML = `
-    <div class="dash-icon">
-      <i class="fas fa-box"></i>
-    </div>
-    <div class="dash-content">
-      <h3>Título</h3>
-      <p>Descripción</p>
+  return `
+    <div class="dash-card${highlight ? ' highlight' : ''}" ${id ? `data-id="${id}"` : ''}>
+      <div class="dash-icon"></div>
+
+      <div class="dash-content">
+        <h3></h3>
+        <p></p>
+
+        <div class="servicios-detail"></div>
+      </div>
+
+      <div class="card-actions"></div>
     </div>
   `;
-  
-  return card;
 }
 
-/**
- * Renderiza una card con acciones (botones)
- */
-export function renderCardWithActions() {
-  const card = document.createElement('div');
-  card.className = 'dash-card';
-  
-  card.innerHTML = `
-    <div class="dash-icon">
-      <i class="fas fa-box"></i>
-    </div>
-    <div class="dash-content">
-      <h3>Título</h3>
-      <p>Descripción</p>
-    </div>
-    <div class="dash-actions">
-      <!-- Los botones se agregan dinámicamente -->
-    </div>
-  `;
-  
-  return card;
-}
