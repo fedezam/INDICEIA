@@ -2,7 +2,8 @@ console.log('🧪 skeletonTest.js iniciado');
 
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-import { renderCard } from '../skeleton/components/card/render.js';
+import { Card } from '../skeleton/components/card/index.js';
+import '../skeleton/components/card/card.css';
 
 /* ---------------------------
    TEST PAGE
@@ -34,15 +35,17 @@ const testPage = {
 
     // ---- CARD DE PRUEBA ----
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = renderCard({
-      title: 'Card de prueba',
-      description: 'Si ves esto, la card funciona',
-      icon: 'fas fa-box',
-      highlight: true
-    });
+    wrapper.innerHTML = Card.render({ highlight: true });
 
     const cardNode = wrapper.firstElementChild;
     console.log('✅ Card creada:', cardNode);
+
+    // Ahora hidratamos con datos reales usando update
+    Card.update(cardNode, {
+      icon: 'fas fa-box',
+      title: 'Card de prueba',
+      description: 'Si ves esto, la card funciona'
+    });
 
     page.appendChild(cardNode);
 
