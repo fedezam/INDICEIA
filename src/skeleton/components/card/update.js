@@ -1,56 +1,52 @@
-export function updateCard(el, data = {}) {
-  if (!el) return;
-
-  const {
-    icon,
-    title,
-    description,
-    badgeOptional,
-    servicios = [],
-    actions = []
-  } = data;
+// /src/skeleton/components/card/update.js
+export function updateCard(el, data) {
+  const iconEl = el.querySelector('.dash-icon i');
+  const titleEl = el.querySelector('h3');
+  const bodyEl = el.querySelector('.card-body');
+  const actionSlot = el.querySelector('.card-action-slot');
 
   // Icono
-  const iconEl = el.querySelector('.dash-icon');
-  if (iconEl && icon) {
-    iconEl.innerHTML = `<i class="${icon}"></i>`;
-  }
+  iconEl.className = `fas fa-${data.icon || 'cube'}`;
 
   // Título
-  const titleEl = el.querySelector('.dash-content h3');
-  if (titleEl && title) {
-    titleEl.innerHTML = title;
+  titleEl.textContent = data.title || '';
 
-    if (badgeOptional) {
-      titleEl.innerHTML += `<span class="badge-optional">${badgeOptional}</span>`;
+  // Contenido: string simple o array de líneas
+  if (Array.isArray(data.content)) {
+    bodyEl.innerHTML = data.content.map(line => `<p>${line}</p>`).join('');
+  } else {
+    bodyEl.innerHTML = `<p>${data.content || ''}</p>`;
+  }
+
+  // Highlight
+  el.classList.toggle('highlight', !!data.highlight);
+
+  // Acción (link o botón)
+  actionSlot.innerHTML = '';
+  if (data.action) {
+    if (data.action.type === 'link') {
+      const link = document.createElement('a');
+      link.href = data.action.url;
+      link.className = data.action.class || 'btn btn-secondary btn-sm';
+      link.innerHTML = data.action.label || 'Ver';
+      if (data.action.target) link.target = data.action.target;
+      actionSlot.appendChild(link);
+    } else if (data.action.type === 'button') {
+      const btn = document.createElement('button');
+      btn.className = data.action.class || 'btn btn-primary btn-sm';
+      btn.innerHTML = data.action.label || 'Acción';
+      if (data.action.onClick && typeof data.action.onClick === 'function') {
+        // Limpiar listeners previos (evitar duplicados)
+        const oldBtn = actionSlot.querySelector('button');
+        if (oldBtn) {
+          oldBtn.replaceWith(btn);
+        } else {
+          actionSlot.appendChild(btn);
+        }
+        btn.addEventListener('click', data.action.onClick);
+      } else {
+        actionSlot.appendChild(btn);
+      }
     }
-  }
-
-  // Descripción
-  const descEl = el.querySelector('.dash-content p');
-  if (descEl && description) {
-    descEl.textContent = description;
-  }
-
-  // Servicios / badges
-  const serviciosEl = el.querySelector('.servicios-detail');
-  if (serviciosEl) {
-    serviciosEl.innerHTML = servicios
-      .map(s =>
-        `<span class="${s.estado === 'activo' ? 'badge-activo' : 'badge-pausado'}">
-          ${s.label}
-        </span>`
-      )
-      .join('');
-  }
-
-  // Acciones (botones)
-  const actionsEl = el.querySelector('.card-actions');
-  if (actionsEl) {
-    actionsEl.innerHTML = actions
-      .map(a =>
-        `<button class="btn ${a.class || ''}">${a.label}</button>`
-      )
-      .join('');
   }
 }
