@@ -1,22 +1,13 @@
-export function renderCard(props = {}) {
-  const {
-    id = '',
-    highlight = false
-  } = props;
-
+// /src/skeleton/components/card/render.js
+export function renderCard() {
   return `
-    <div class="dash-card${highlight ? ' highlight' : ''}" ${id ? `data-id="${id}"` : ''}>
-      <div class="dash-icon"></div>
-
+    <div class="dash-card">
+      <div class="dash-icon"><i class="fas"></i></div>
       <div class="dash-content">
         <h3></h3>
-        <p></p>
-
-        <div class="servicios-detail"></div>
+        <div class="card-body"></div>
       </div>
-
-      <div class="card-actions"></div>
+      <div class="card-action-slot"></div>
     </div>
   `;
 }
-
