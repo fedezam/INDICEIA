@@ -1,84 +1,176 @@
-// src/pages/skeletonTest.js
-console.log('🧪 skeletonTest.js iniciado');
+// ============================================
+// usuario-test.js
+// Página de test Skeleton con datos reales
+// ============================================
 
-import { runSkeleton } from '../skeleton/skeleton.js';
-import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-import { Card } from '../skeleton/components/card/index.js'; // ← Ya incluye CSS y lógica
+// Flow
+import { runFlowController } from '@/controllers/flowController.js';
 
-/* ---------------------------
-   TEST PAGE
----------------------------- */
+// Skeleton core
+import { renderLayout } from '@/skeleton/layout/renderLayout.js';
 
-const testPage = {
-  async load(context) {
-    console.group('📦 PAGE.load(context)');
-    console.log('Contexto recibido:', context);
-    this._context = context;
-    console.groupEnd();
-  },
+// Skeleton components
+import { createPageHeader } from '@/skeleton/components/page-header';
+import { createFormField } from '@/skeleton/components/form-field';
+import { createButton } from '@/skeleton/components/button';
+import { showToast, showLoading, hideLoading } from '@/skeleton/components/toast';
 
-  render() {
-    console.group('🎨 PAGE.render()');
+// Adapter
+import { createFirebaseAdapter } from '@/skeleton/adapters/firebaseAdapter';
 
-    const page = document.getElementById('skeleton-page');
-    if (!page) {
-      console.error('❌ skeleton-page no existe');
-      return;
-    }
+// Firebase
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/firebase.js';
 
-    // Contenido base del test (NO tocamos header/footer)
-    page.innerHTML = `
-      <h2>🦴 Skeleton Test</h2>
-      <p>✔ Skeleton inicializado</p>
-      <p>✔ Firebase adapter conectado</p>
-      <p>▶ Probando componente Card...</p>
-    `;
+/* =========================================================
+   INIT FLOW (NO REDIRIGE, SOLO AUTORIZA)
+   ========================================================= */
 
-    try {
-      console.log('🔍 Intentando crear Card con datos de prueba...');
+runFlowController();
 
-      // ✅ USO CORRECTO: Card(data) devuelve un HTMLElement listo
-      const cardElement = Card({
-        title: "Servicios",
-        content: [
-          "3 total",
-          '<span class="badge-activo">🟢 2 activos</span> <span class="badge-pausado">🔴 1 pausado</span>'
-        ],
-        icon: "concierge-bell",
-        highlight: true,
-        action: {
-          type: "link",
-          url: "#test",
-          label: '<i class="fas fa-edit"></i> Editar',
-          class: "btn btn-secondary btn-sm"
-        }
-      });
+/* =========================================================
+   PAGE BOOT
+   ========================================================= */
 
-      console.log('✅ Card creada exitosamente:', cardElement);
-      console.log('📄 HTML generado:', cardElement.outerHTML);
+const app = document.getElementById('app');
 
-      // Añadir al contenedor
-      page.appendChild(cardElement);
+const context = await createFirebaseAdapter();
 
-      console.log('🎉 Card insertada en el DOM');
-    } catch (err) {
-      console.error('💥 ERROR al crear o insertar la Card:', err);
-      page.innerHTML += `<p style="color:red;">❌ Error: ${err.message}</p>`;
-    }
+/* =========================================================
+   LAYOUT
+   ========================================================= */
 
-    console.groupEnd();
-  }
-};
+renderLayout(app);
 
-/* ---------------------------
-   RUN SKELETON
----------------------------- */
+/* =========================================================
+   HEADER
+   ========================================================= */
 
-runSkeleton({
-  page: testPage,
-  adapter: createFirebaseAdapter,
-  options: {
-    loadingMessage: '🧪 Probando Skeleton + Card',
-    debug: true
+const header = createPageHeader({
+  content: {
+    icon: 'fa-user',
+    title: 'Datos personales (TEST)',
+    subtitle: 'Página de prueba Skeleton'
   }
 });
+
+app.appendChild(header);
+
+/* =========================================================
+   FORM FIELDS
+   ========================================================= */
+
+const fields = {
+  nombre: createFormField({
+    content: { label: 'Nombre', id: 'nombre' },
+    flags: { required: true }
+  }),
+
+  apellido: createFormField({
+    content: { label: 'Apellido', id: 'apellido' },
+    flags: { required: true }
+  }),
+
+  mail: createFormField({
+    content: { label: 'Email', id: 'mail' },
+    flags: { disabled: true }
+  }),
+
+  telefono: createFormField({
+    content: { label: 'Teléfono', id: 'telefono' },
+    flags: { required: true }
+  })
+};
+
+Object.values(fields).forEach(f => app.appendChild(f.el));
+
+/* =========================================================
+   BUTTON
+   ========================================================= */
+
+const btnGuardar = createButton({
+  content: { text: 'Guardar' },
+  flags: { variant: 'primary', disabled: true },
+  actions: { onClick: save }
+});
+
+app.appendChild(btnGuardar);
+
+/* =========================================================
+   DATA LOAD
+   ========================================================= */
+
+async function loadUser() {
+  const uid = context.user?.uid;
+  if (!uid) return;
+
+  const ref = doc(db, 'usuarios', uid);
+  const snap = await getDoc(ref);
+  const data = snap.exists() ? snap.data() : {};
+
+  fields.nombre.setValue(data.nombre || '');
+  fields.apellido.setValue(data.apellido || '');
+  fields.mail.setValue(data.mail || context.user.email || '');
+  fields.telefono.setValue(data.telefono || '');
+
+  validate();
+}
+
+/* =========================================================
+   VALIDATION
+   ========================================================= */
+
+function validate() {
+  const valid =
+    fields.nombre.getValue() &&
+    fields.apellido.getValue() &&
+    fields.telefono.getValue();
+
+  btnGuardar.setDisabled(!valid);
+}
+
+Object.values(fields).forEach(f =>
+  f.onChange(validate)
+);
+
+/* =========================================================
+   SAVE
+   ========================================================= */
+
+async function save() {
+  const uid = context.user?.uid;
+  if (!uid) return;
+
+  showLoading('Guardando datos…');
+
+  try {
+    await setDoc(
+      doc(db, 'usuarios', uid),
+      {
+        nombre: fields.nombre.getValue(),
+        apellido: fields.apellido.getValue(),
+        mail: fields.mail.getValue(),
+        telefono: fields.telefono.getValue(),
+        onboardingSteps: { usuario: true }
+      },
+      { merge: true }
+    );
+
+    hideLoading();
+    showToast('Datos guardados', 'success');
+
+    // siempre dashboard → flow decide
+    window.location.href = '/dashboard.html';
+
+  } catch (err) {
+    console.error(err);
+    hideLoading();
+    showToast('Error al guardar', 'error');
+  }
+}
+
+/* =========================================================
+   START
+   ========================================================= */
+
+loadUser();
