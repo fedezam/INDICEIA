@@ -3,8 +3,8 @@ import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 import { Card } from '../skeleton/components/card/index.js';
 import { createFormField } from '../skeleton/components/form-field/index.js';
-import { Button } from '../skeleton/components/button/index.js';
-import { Toast } from '../skeleton/components/toast/index.js';
+import { createButton } from '../skeleton/components/button/index.js';
+import { showToast } from '../skeleton/components/toast/index.js';
 import { showLoading, hideLoading } from '../skeleton/components/loading/index.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 
@@ -82,7 +82,7 @@ const pageTest = {
        BUTTON
     ============================ */
     console.group('🔘 Button');
-    const btnGuardar = Button({
+    const btnGuardar = createButton({
       label: 'Guardar',
       variant: 'primary',
       onClick: () => {
@@ -90,7 +90,7 @@ const pageTest = {
         showLoading('Guardando datos...');
         setTimeout(() => {
           hideLoading();
-          Toast({ message: 'Datos guardados correctamente', type: 'success' });
+          showToast('Éxito', 'Datos guardados correctamente', 'success');
         }, 1200);
       }
     });
