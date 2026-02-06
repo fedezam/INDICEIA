@@ -2,7 +2,7 @@ console.log('🧪 skeletonUsuarioComponentsTest iniciado');
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 import { Card } from '../skeleton/components/card/index.js';
-import { FormField } from '../skeleton/components/form-field/index.js';
+import { createFormField } from '../skeleton/components/form-field/index.js';
 import { Button } from '../skeleton/components/button/index.js';
 import { Toast } from '../skeleton/components/toast/index.js';
 import { showLoading, hideLoading } from '../skeleton/components/loading/index.js';
@@ -27,26 +27,26 @@ const pageTest = {
        FORM
     ============================ */
     console.group('📝 FormFields');
-    const nombre = FormField({
+    const nombre = createFormField({
       label: 'Nombre',
       name: 'nombre',
       required: true,
       value: this.ctx.userData?.nombre || ''
     });
-    const apellido = FormField({
+    const apellido = createFormField({
       label: 'Apellido',
       name: 'apellido',
       required: true,
       value: this.ctx.userData?.apellido || ''
     });
-    const email = FormField({
+    const email = createFormField({
       label: 'Email',
       type: 'email',
       name: 'mail',
       disabled: true,
       value: this.ctx.user?.email || ''
     });
-    const provincia = FormField({
+    const provincia = createFormField({
       label: 'Provincia',
       type: 'select',
       name: 'provincia',
