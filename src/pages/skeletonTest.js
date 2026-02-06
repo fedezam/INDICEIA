@@ -2,9 +2,9 @@ console.log('🧪 skeletonUsuarioComponentsTest iniciado');
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 import { Card } from '../skeleton/components/card/index.js';
-import FormField from '../skeleton/components/form-field/index.js';
-import Button from '../skeleton/components/button/index.js';
-import Toast from '../skeleton/components/toast/index.js';
+import { FormField } from '../skeleton/components/form-field/index.js';
+import { Button } from '../skeleton/components/button/index.js';
+import { Toast } from '../skeleton/components/toast/index.js';
 import { showLoading, hideLoading } from '../skeleton/components/loading/index.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 
@@ -90,7 +90,7 @@ const pageTest = {
         showLoading('Guardando datos...');
         setTimeout(() => {
           hideLoading();
-          showToast('Datos guardados correctamente', 'success');
+          Toast({ message: 'Datos guardados correctamente', type: 'success' });
         }, 1200);
       }
     });
