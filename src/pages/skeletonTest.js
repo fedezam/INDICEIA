@@ -5,7 +5,8 @@ import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 import { Card } from '../skeleton/components/card/index.js';
 import '../skeleton/components/card/card.css';
-import { Card } from '../skeleton/components/card/index.js'; // ← Ya incluye CSS y lógica
+
+
 
 /* ---------------------------
    TEST PAGE
