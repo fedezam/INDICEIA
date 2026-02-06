@@ -1,0 +1,58 @@
+/* styles.css */
+
+.s-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: #2d6cdf;
+  color: #fff;
+}
+
+.s-btn-icon {
+  display: inline-flex;
+}
+
+.s-btn-spinner {
+  display: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- variants ---- */
+
+.s-btn-primary { background: #2d6cdf; }
+.s-btn-secondary { background: #6c757d; }
+.s-btn-success { background: #2fb344; }
+.s-btn-danger { background: #d63939; }
+.s-btn-warning { background: #f59f00; color: #000; }
+
+/* ---- sizes ---- */
+
+.s-btn-sm { font-size: 0.8rem; padding: 6px 10px; }
+.s-btn-md { font-size: 0.95rem; padding: 10px 14px; }
+.s-btn-lg { font-size: 1.05rem; padding: 14px 18px; }
+
+/* ---- states ---- */
+
+.s-btn.is-disabled,
+.s-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.s-btn.is-loading {
+  cursor: wait;
+}
