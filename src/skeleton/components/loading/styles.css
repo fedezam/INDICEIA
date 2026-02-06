@@ -1,0 +1,36 @@
+.s-loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.s-loading-box {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  text-align: center;
+  min-width: 220px;
+}
+
+.s-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #ddd;
+  border-top-color: #2d6cdf;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.s-loading-text {
+  font-size: 0.9rem;
+  color: #333;
+}
