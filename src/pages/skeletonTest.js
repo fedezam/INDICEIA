@@ -1,24 +1,26 @@
-// src/pages/skeletonTest.js
-console.log('🧪 skeletonTest.js iniciado');
+console.log('🧪 skeletonUsuarioComponentsTest iniciado');
 
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
+
 import { Card } from '../skeleton/components/card/index.js';
+import { FormField } from '../skeleton/components/formField/index.js';
+import { Button } from '../skeleton/components/button/index.js';
+import { showToast } from '../skeleton/components/toast/index.js';
+import { showLoading, hideLoading } from '../skeleton/components/loading/index.js';
 
-/* ---------------------------
-   TEST PAGE
----------------------------- */
+import { fillProvinciaSelector } from '../shared/provincias.js';
 
-const testPage = {
+const pageTest = {
   async load(context) {
-    console.group('📦 PAGE.load(context)');
-    console.log('Contexto recibido:', context);
-    this._context = context;
+    console.group('📦 load(context)');
+    console.log(context);
+    this.ctx = context;
     console.groupEnd();
   },
 
   render() {
-    console.group('🎨 PAGE.render()');
+    console.group('🎨 render()');
 
     const page = document.getElementById('skeleton-page');
     if (!page) {
@@ -26,52 +28,113 @@ const testPage = {
       return;
     }
 
-    page.innerHTML = `
-      <h2>🦴 Skeleton Test</h2>
-      <p>✔ Skeleton inicializado</p>
-      <p>✔ Firebase adapter conectado</p>
-      <p>▶ Probando componente Card...</p>
-    `;
+    page.innerHTML = `<h2>🧪 Usuario – Componentes</h2>`;
 
-    try {
-      const card = Card({
-        title: "Servicios",
-        content: [
-          "3 total",
-          '<span class="badge-activo">🟢 2 activos</span> <span class="badge-pausado">🔴 1 pausado</span>'
-        ],
-        icon: "concierge-bell",
-        highlight: true,
-        action: {
-          type: "link",
-          url: "#test",
-          label: '<i class="fas fa-edit"></i> Editar',
-          class: "btn btn-secondary btn-sm"
-        }
-      });
+    /* ============================
+       FORM
+    ============================ */
 
-      page.appendChild(card);
-      console.log('🎉 Card renderizada correctamente');
+    console.group('📝 FormFields');
 
-    } catch (err) {
-      console.error('💥 ERROR creando Card:', err);
-      page.innerHTML += `<p style="color:red;">❌ Error: ${err.message}</p>`;
-    }
+    const nombre = FormField({
+      label: 'Nombre',
+      name: 'nombre',
+      required: true,
+      value: this.ctx.userData?.nombre || ''
+    });
+
+    const apellido = FormField({
+      label: 'Apellido',
+      name: 'apellido',
+      required: true,
+      value: this.ctx.userData?.apellido || ''
+    });
+
+    const email = FormField({
+      label: 'Email',
+      type: 'email',
+      name: 'mail',
+      disabled: true,
+      value: this.ctx.user?.email || ''
+    });
+
+    const provincia = FormField({
+      label: 'Provincia',
+      type: 'select',
+      name: 'provincia',
+      required: true
+    });
+
+    page.append(
+      nombre,
+      apellido,
+      email,
+      provincia
+    );
+
+    console.log('✔ FormFields renderizados');
+
+    // 🔑 HIDRATACIÓN EXTERNA (CLAVE)
+    const provinciaSelect =
+      provincia.input || provincia.querySelector('select');
+
+    console.log('🌎 Hidratando provincias...');
+    fillProvinciaSelector('Argentina', provinciaSelect);
+
+    console.groupEnd();
+
+    /* ============================
+       CARD
+    ============================ */
+
+    console.group('🧱 Card');
+
+    const card = Card({
+      title: 'Datos personales',
+      content: 'Completá tu información básica',
+      icon: 'user',
+      highlight: true
+    });
+
+    page.appendChild(card);
+    console.log('✔ Card OK');
+    console.groupEnd();
+
+    /* ============================
+       BUTTON
+    ============================ */
+
+    console.group('🔘 Button');
+
+    const btnGuardar = Button({
+      label: 'Guardar',
+      variant: 'primary',
+      onClick: () => {
+        console.log('💾 Click Guardar');
+        showLoading('Guardando datos...');
+
+        setTimeout(() => {
+          hideLoading();
+          showToast('Datos guardados correctamente', 'success');
+        }, 1200);
+      }
+    });
+
+    page.appendChild(btnGuardar);
+    console.log('✔ Button OK');
+    console.groupEnd();
 
     console.groupEnd();
   }
 };
 
-/* ---------------------------
-   RUN SKELETON
----------------------------- */
-
 runSkeleton({
-  page: testPage,
+  page: pageTest,
   adapter: createFirebaseAdapter,
   options: {
-    loadingMessage: '🧪 Probando Skeleton + Card',
-    debug: true
+    debug: true,
+    loadingMessage: '🧪 Cargando test usuario'
   }
 });
+
 
