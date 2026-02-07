@@ -1,5 +1,6 @@
-import { renderFormField } from './render';
-import { updateFormField } from './update';
+// src/skeleton/components/form-field/index.js
+import { renderFormField } from './render.js';
+import { updateFormField } from './update.js';
 
 /**
  * Crea un campo de formulario con label, input y validación
@@ -13,8 +14,9 @@ import { updateFormField } from './update';
  * @param {boolean} [config.disabled=false] - Si está deshabilitado
  * @param {Array<{value: string, label: string}>} [config.options] - Opciones (solo para type='select')
  * @param {number} [config.rows] - Cantidad de filas (solo para type='textarea')
- * @returns {HTMLElement & {getValue: Function, setValue: Function, setInvalid: Function, isInvalid: Function, disable: Function, enable: Function, getId: Function}}
+ * @returns {HTMLElement & {input: HTMLElement, getValue: Function, setValue: Function, setInvalid: Function, isInvalid: Function, disable: Function, enable: Function, getId: Function}}
  * Elemento con métodos adicionales:
+ * - input - Referencia directa al elemento input/select/textarea
  * - getValue() - Obtiene el valor actual
  * - setValue(value) - Establece un nuevo valor
  * - setInvalid(state: boolean) - Marca como inválido
@@ -27,6 +29,9 @@ export function createFormField(config = {}) {
   const dom = renderFormField();
   const input = updateFormField(dom, config);
   const el = dom.wrapper;
+  
+  // ---- Exponer el input directamente ----
+  el.input = input;
   
   // ---- API pública ----
   el.getValue = () => input.value;
