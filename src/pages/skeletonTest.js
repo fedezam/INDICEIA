@@ -117,9 +117,17 @@ const usuarioPage = {
 
     // Hidratación provincias
     const provinciaSelect =
-      this.provincia.input || this.provincia.querySelector('select');
-    fillProvinciaSelector('Argentina', provinciaSelect);
-    provinciaSelect.value = this.userData.provincia || '';
+  this.provincia.input || this.provincia.querySelector('select');
+
+fillProvinciaSelector('Argentina', provinciaSelect);
+
+// ⚠️ esperar a que existan los option
+if (this.userData.provincia) {
+  setTimeout(() => {
+    provinciaSelect.value = this.userData.provincia;
+  }, 0);
+}
+
 
     /* ============================
        BOTÓN
