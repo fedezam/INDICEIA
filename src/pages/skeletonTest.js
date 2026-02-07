@@ -1,111 +1,218 @@
-console.log('🧪 skeletonUsuarioComponentsTest iniciado');
+// src/pages/usuario.js
+
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-import { Card } from '../skeleton/components/card/index.js';
+
 import { createFormField } from '../skeleton/components/form-field/index.js';
 import { createButton } from '../skeleton/components/button/index.js';
 import { showToast } from '../skeleton/components/toast/index.js';
 import { showLoading, hideLoading } from '../skeleton/components/loading/index.js';
+
 import { fillProvinciaSelector } from '../shared/provincias.js';
 
-const pageTest = {
-  async load(context) {
-    console.group('📦 load(context)');
-    console.log(context);
-    this.ctx = context;
+const usuarioPage = {
+  async load(ctx) {
+    console.group('📦 usuario.load');
+    this.ctx = ctx;
+
+    // Datos previos del usuario (si existen)
+    this.userData = ctx.userData || {};
+    console.log(this.userData);
+
     console.groupEnd();
   },
+
   render() {
-    console.group('🎨 render()');
+    console.group('🎨 usuario.render');
+
     const page = document.getElementById('skeleton-page');
     if (!page) {
       console.error('❌ skeleton-page no existe');
       return;
     }
-    page.innerHTML = `<h2>🧪 Usuario – Componentes</h2>`;
+
+    page.innerHTML = `<h2>Datos personales</h2>`;
+
     /* ============================
-       FORM
+       CAMPOS
     ============================ */
-    console.group('📝 FormFields');
-    const nombre = createFormField({
+
+    this.nombre = createFormField({
       label: 'Nombre',
       name: 'nombre',
       required: true,
-      value: this.ctx.userData?.nombre || ''
+      value: this.userData.nombre || ''
     });
-    const apellido = createFormField({
+
+    this.apellido = createFormField({
       label: 'Apellido',
       name: 'apellido',
       required: true,
-      value: this.ctx.userData?.apellido || ''
+      value: this.userData.apellido || ''
     });
-    const email = createFormField({
+
+    this.mail = createFormField({
       label: 'Email',
       type: 'email',
       name: 'mail',
       disabled: true,
-      value: this.ctx.user?.email || ''
+      value: this.userData.mail || this.ctx.user?.email || ''
     });
-    const provincia = createFormField({
+
+    this.fechaNacimiento = createFormField({
+      label: 'Fecha de nacimiento',
+      name: 'fechaNacimiento',
+      placeholder: 'DD/MM/AAAA',
+      required: true,
+      value: this.userData.fechaNacimiento
+        ? isoToFecha(this.userData.fechaNacimiento)
+        : ''
+    });
+
+    this.telefono = createFormField({
+      label: 'Teléfono',
+      name: 'telefono',
+      required: true,
+      value: this.userData.telefono || ''
+    });
+
+    this.provincia = createFormField({
       label: 'Provincia',
       type: 'select',
       name: 'provincia',
       required: true
     });
-    page.append(
-      nombre,
-      apellido,
-      email,
-      provincia
-    );
-    console.log('✔ FormFields renderizados');
-    // 🔑 HIDRATACIÓN EXTERNA (CLAVE)
-    const provinciaSelect =
-      provincia.input || provincia.querySelector('select');
-    console.log('🌎 Hidratando provincias...');
-    fillProvinciaSelector('Argentina', provinciaSelect);
-    console.groupEnd();
-    /* ============================
-       CARD
-    ============================ */
-    console.group('🧱 Card');
-    const card = Card({
-      title: 'Datos personales',
-      content: 'Completá tu información básica',
-      icon: 'user',
-      highlight: true
+
+    this.localidad = createFormField({
+      label: 'Localidad',
+      name: 'localidad',
+      required: true,
+      value: this.userData.localidad || ''
     });
-    page.appendChild(card);
-    console.log('✔ Card OK');
-    console.groupEnd();
+
+    this.barrio = createFormField({
+      label: 'Barrio',
+      name: 'barrio',
+      value: this.userData.barrio || ''
+    });
+
+    this.direccion = createFormField({
+      label: 'Dirección',
+      name: 'direccion',
+      required: true,
+      value: this.userData.direccion || ''
+    });
+
+    page.append(
+      this.nombre,
+      this.apellido,
+      this.mail,
+      this.fechaNacimiento,
+      this.telefono,
+      this.provincia,
+      this.localidad,
+      this.barrio,
+      this.direccion
+    );
+
+    // Hidratación provincias
+    const provinciaSelect =
+      this.provincia.input || this.provincia.querySelector('select');
+    fillProvinciaSelector('Argentina', provinciaSelect);
+    provinciaSelect.value = this.userData.provincia || '';
+
     /* ============================
-       BUTTON
+       BOTÓN
     ============================ */
-    console.group('🔘 Button');
-    const btnGuardar = createButton({
+
+    this.btnGuardar = createButton({
       label: 'Guardar',
       variant: 'primary',
-      onClick: () => {
-        console.log('💾 Click Guardar');
-        showLoading('Guardando datos...');
-        setTimeout(() => {
-          hideLoading();
-          showToast('Éxito', 'Datos guardados correctamente', 'success');
-        }, 1200);
-      }
+      onClick: () => this.guardar()
     });
-    page.appendChild(btnGuardar);
-    console.log('✔ Button OK');
+
+    page.appendChild(this.btnGuardar);
+
     console.groupEnd();
+  },
+
+  async guardar() {
+    console.group('💾 Guardar usuario');
+
+    const uid = this.ctx.user?.uid;
+    if (!uid) {
+      showToast('No autenticado', 'error');
+      return;
+    }
+
+    const fechaISO = fechaToISO(this.fechaNacimiento.value);
+    if (!fechaISO) {
+      showToast('Fecha inválida', 'error');
+      return;
+    }
+
+    showLoading('Guardando...');
+    this.btnGuardar.disabled = true;
+
+    try {
+      await this.ctx.adapter.saveUserData(uid, {
+        nombre: this.nombre.value.trim(),
+        apellido: this.apellido.value.trim(),
+        mail: this.mail.value.trim(),
+        fechaNacimiento: fechaISO,
+        telefono: this.telefono.value.trim(),
+        pais: 'Argentina',
+        provincia: this.provincia.value.trim(),
+        localidad: this.localidad.value.trim(),
+        barrio: this.barrio.value.trim() || null,
+        direccion: this.direccion.value.trim(),
+        onboardingSteps: {
+          usuario: true
+        }
+      });
+
+      hideLoading();
+      showToast('Datos guardados correctamente', 'success');
+
+      this.ctx.navigate('/dashboard');
+
+    } catch (err) {
+      console.error(err);
+      hideLoading();
+      showToast('Error al guardar', 'error');
+      this.btnGuardar.disabled = false;
+    }
+
     console.groupEnd();
   }
 };
 
+/* ============================
+   HELPERS
+============================ */
+
+function fechaToISO(s) {
+  if (!s || !s.includes('/')) return null;
+  const [d, m, y] = s.split('/');
+  if (!d || !m || !y || y.length !== 4) return null;
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
+
+function isoToFecha(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/* ============================
+   RUN
+============================ */
+
 runSkeleton({
-  page: pageTest,
+  page: usuarioPage,
   adapter: createFirebaseAdapter,
   options: {
     debug: true,
-    loadingMessage: '🧪 Cargando test usuario'
+    loadingMessage: 'Cargando datos de usuario...'
   }
 });
