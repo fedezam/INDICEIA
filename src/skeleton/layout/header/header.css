@@ -1,16 +1,23 @@
+/* src/skeleton/layout/header/header.css */
+/* Estilos específicos del header - usa variables de theme-variables.css */
+
 .header {
-  background: #343a40;
+  background: var(--s-dark);
   color: white;
   padding: 10px 0;
-  border-bottom: 3px solid #3c8dbc;
+  border-bottom: 3px solid var(--s-primary);
+  box-shadow: var(--s-box-shadow);
 }
 
-.container {
+.header .container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 15px;
 }
 
+/* ============================
+   ESTRUCTURA DE FILAS
+============================ */
 .header-top {
   display: flex;
   justify-content: space-between;
@@ -24,49 +31,143 @@
   align-items: center;
 }
 
-.header-left, .header-left-bottom {
+/* ============================
+   COLUMNAS
+============================ */
+.header-left,
+.header-left-bottom {
   display: flex;
   align-items: center;
   gap: 15px;
 }
 
-.header-right-top, .header-right-bottom {
+.header-right-top,
+.header-right-bottom {
   display: flex;
   align-items: center;
   gap: 15px;
 }
 
+/* ============================
+   LOGO
+============================ */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.logo h1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.5px;
+  color: white;
+}
+
+/* ============================
+   NOMBRE COMERCIO
+============================ */
+.commerce-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+}
+
+/* ============================
+   NOMBRE USUARIO
+============================ */
+.user-name {
+  font-size: 14px;
+  color: var(--s-gray);
+  font-weight: 400;
+}
+
+/* ============================
+   BADGE PLAN
+============================ */
+.plan-badge {
+  padding: 4px 10px;
+  border-radius: var(--s-radius);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plan-badge.trial {
+  background: var(--s-warning);
+  color: white;
+}
+
+.plan-badge.active {
+  background: var(--s-success);
+  color: white;
+}
+
+.plan-badge.expired {
+  background: var(--s-danger);
+  color: white;
+}
+
+/* ============================
+   BOTÓN LOGOUT
+============================ */
 .btn-logout {
   width: 50px;
-  height: 70px;  /* ocupa las dos filas */
-  background: rgba(255,255,255,0.1);
-  border: none;
-  border-radius: 4px;
+  height: 70px;  /* Ocupa las dos filas */
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--s-radius);
   color: white;
-  font-size: 24px;
+  font-size: 20px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-left: auto;
 }
 
 .btn-logout:hover {
-  background: #dd4b39;
+  background: var(--s-danger);
+  border-color: var(--s-danger);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.commerce-name {
-  font-size: 18px;
-  font-weight: bold;
+.btn-logout:active {
+  transform: translateY(0);
 }
 
-.user-name {
-  font-size: 14px;
-  color: #b8c7ce;
-}
+/* ============================
+   RESPONSIVE
+============================ */
+@media (max-width: 768px) {
+  .header {
+    padding: 8px 0;
+  }
 
-.plan-badge {
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: bold;
-  background: #605ca8;
+  .logo h1 {
+    font-size: 16px;
+  }
+
+  .commerce-name {
+    font-size: 14px;
+  }
+
+  .user-name {
+    font-size: 12px;
+  }
+
+  .btn-logout {
+    width: 40px;
+    height: 60px;
+    font-size: 18px;
+  }
 }
