@@ -1,5 +1,5 @@
 // src/skeleton/layout/header/render.js
-import './header.css';
+import './header.css';  // podemos dejarlo o quitarlo (ya se inyecta desde index.js)
 
 export function renderHeader() {
   console.log('🧱 renderHeader()');
@@ -7,7 +7,7 @@ export function renderHeader() {
   const header = document.getElementById('skeleton-header');
   if (!header) {
     console.error('❌ #skeleton-header no existe');
-    return;
+    return null;
   }
 
   header.className = 'header';
@@ -52,4 +52,6 @@ export function renderHeader() {
   `;
 
   console.log('✅ Header HTML renderizado con dos filas');
+
+  return header;  // ← importante: retornamos el elemento
 }
