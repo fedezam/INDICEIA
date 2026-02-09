@@ -1,8 +1,9 @@
 // src/skeleton/skeleton.js
+
 import { runLifecycle } from './lifecycle.js';
 import { initDirtyState } from './dirtyState.js';
 import { renderLayout } from './layout/renderLayout.js';
-import { mountLayout } from './layout/index.js';  // ← IMPORTANTE: agregá esta línea
+import { mountLayout } from './layout/index.js';
 
 /**
  * Skeleton canónico de ÍndiceIA
@@ -25,14 +26,16 @@ export async function runSkeleton({
     onReady: async (context) => {
       console.log('CONTEXT COMPLETO EN SKELETON onReady:', context);
 
-      // 📦 3. Página vive dentro del contexto
+      // 📦 3. Página carga datos
       await page.load(context);
-      page.render();
 
-      // Actualizamos el header con el contexto completo (aquí es donde faltaba)
+      // 🎨 4. PRIMERO: Actualizar header con datos reales
       mountLayout(context);
 
-      // 💾 4. Dirty / save logic (si aplica)
+      // 🖼️ 5. DESPUÉS: Renderizar contenido de página
+      page.render();
+
+      // 💾 6. Dirty / save logic (si aplica)
       if (page.getCurrentData && page.save) {
         initDirtyState({
           page,
