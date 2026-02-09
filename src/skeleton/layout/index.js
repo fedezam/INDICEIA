@@ -1,16 +1,22 @@
 // src/skeleton/layout/index.js
+
 import { renderLayout } from './renderLayout.js';
 import { updateHeader } from './header/update.js';
 
+/**
+ * Monta el layout (solo si no existe) y actualiza con datos
+ */
 export function mountLayout(context) {
-  renderLayout();  // crea estructura + renderiza header/banner/progress una sola vez
+  // ✅ Solo renderiza si no existe (idempotente)
+  if (!document.getElementById('skeleton-root')) {
+    renderLayout();
+  }
 
   // Extraemos SOLO lo que updateHeader necesita
   const { userData, comercioData } = context;
 
-  // Log temporal para confirmar que llegan los datos reales
-  console.log('mountLayout pasa a updateHeader → userData:', userData);
-  console.log('mountLayout pasa a updateHeader → comercioData:', comercioData);
+  console.log('📍 mountLayout → userData:', userData);
+  console.log('📍 mountLayout → comercioData:', comercioData);
 
   updateHeader({ userData, comercioData });
 }
