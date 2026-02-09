@@ -3,7 +3,7 @@
 import { renderHeader } from './render.js';
 import { updateHeader } from './update.js';
 
-// Inyectar CSS automáticamente la primera vez que se importa el módulo
+// Inyectar CSS automáticamente (patrón consistente con form-field)
 if (!document.getElementById('s-header-styles')) {
   const link = document.createElement('link');
   link.id = 's-header-styles';
@@ -14,35 +14,23 @@ if (!document.getElementById('s-header-styles')) {
 }
 
 /**
- * Crea y retorna el elemento header con API pública
+ * Crea el header con API pública
  * @returns {HTMLElement & {
  *   update: (data: { userData?: any, comercioData?: any }) => void,
  *   getElement: () => HTMLElement
  * }}
  */
 export function createHeader() {
-  // Renderiza el HTML si aún no existe
   const headerElement = renderHeader();
 
-  // API pública
   const api = {
-    // Actualiza contenido dinámico
     update: ({ userData, comercioData } = {}) => {
       updateHeader({ userData, comercioData });
     },
-
-    // Retorna el elemento DOM raíz
-    getElement: () => headerElement,
-
-    // Método opcional para destruir/limpiar (si lo necesitás en el futuro)
-    destroy: () => {
-      headerElement.innerHTML = '';
-    }
+    getElement: () => headerElement
   };
 
-  // Retornamos el elemento DOM + métodos adjuntos
   Object.assign(headerElement, api);
-
   console.log('[header] Creado con API pública');
 
   return headerElement;
