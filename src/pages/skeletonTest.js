@@ -24,7 +24,13 @@ const usuarioPage = {
       return;
     }
 
-    page.innerHTML = `<h2>Datos personales</h2>`;
+    // ✅ Limpiar solo el contenido, sin borrar todo con innerHTML
+    page.innerHTML = '';
+
+    // ✅ Crear título como elemento
+    const title = document.createElement('h2');
+    title.textContent = 'Datos personales';
+    page.appendChild(title);
 
     this.nombre = createFormField({
       label: 'Nombre',
