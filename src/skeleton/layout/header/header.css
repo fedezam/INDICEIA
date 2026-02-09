@@ -1,149 +1,72 @@
-/* src/skeleton/layout/header/header.css */
-/* Header estilo AdminLTE 3 - fondo oscuro, dos filas, botón logout alto a la derecha extrema */
-
 .header {
-  background: #343a40;           /* gris oscuro AdminLTE */
-  color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  border-bottom: 3px solid #3c8dbc; /* línea azul principal */
-  padding: 8px 0;
+  background: #343a40;
+  color: white;
+  padding: 10px 0;
+  border-bottom: 3px solid #3c8dbc;
 }
 
-/* Container general */
-.header .container {
+.container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 15px;
 }
 
-/* Fila superior */
 .header-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
-/* Izquierda superior: logo */
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.logo-icon {
-  width: 40px;
-  height: 40px;
-  background: #3c8dbc;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: bold;
-  color: white;
-}
-
-.logo h1 {
-  font-size: 22px;
-  font-weight: 600;
-  margin: 0;
-  color: white;
-}
-
-/* Derecha superior: nombre comercio */
-.commerce-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: #f8f9fa;
-  text-align: right;
-}
-
-/* Fila inferior */
 .header-bottom {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-/* Izquierda inferior: usuario */
-.user-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #b8c7ce;
-}
-
-/* Derecha inferior: plan + logout */
-.header-right-bottom {
+.header-left, .header-left-bottom {
   display: flex;
   align-items: center;
   gap: 15px;
 }
 
-.plan-badge {
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: white;
-  min-width: 70px;
-  text-align: center;
+.header-right-top, .header-right-bottom {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
-.plan-badge.trial { background: #605ca8; }
-.plan-badge.active { background: #00a65a; }
-.plan-badge.expired { background: #dd4b39; }
-
-/* Botón logout - alto, ocupa las dos filas */
 .btn-logout {
   width: 50px;
-  height: 68px;                    /* altura total de las dos filas */
-  background: rgba(255,255,255,0.12);
+  height: 70px;  /* ocupa las dos filas */
+  background: rgba(255,255,255,0.1);
   border: none;
   border-radius: 4px;
   color: white;
-  font-size: 22px;
+  font-size: 24px;
   cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: auto;               /* empuja todo a la extrema derecha */
+  transition: background 0.2s;
+  margin-left: auto;
 }
 
 .btn-logout:hover {
   background: #dd4b39;
 }
 
-/* Responsive */
-@media (max-width: 992px) {
-  .header-top,
-  .header-bottom {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .header-right-bottom {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .btn-logout {
-    height: 50px;  /* más chico en móvil */
-    width: 50px;
-  }
+.commerce-name {
+  font-size: 18px;
+  font-weight: bold;
 }
 
-@media (max-width: 576px) {
-  .logo h1 {
-    font-size: 18px;
-  }
+.user-name {
+  font-size: 14px;
+  color: #b8c7ce;
+}
+
+.plan-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  background: #605ca8;
 }
