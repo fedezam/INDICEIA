@@ -16,19 +16,15 @@ const usuarioPage = {
   },
 
   render() {
-    console.group('🎨 usuario.render - Inicio');
+    console.group('🎨 usuario.render');
 
     const page = document.getElementById('skeleton-page');
     if (!page) {
-      console.error('❌ No se encontró #skeleton-page en el DOM');
+      console.error('❌ No se encontró #skeleton-page');
       return;
     }
 
-    console.log('✅ #skeleton-page encontrado');
-
     page.innerHTML = `<h2>Datos personales</h2>`;
-
-    console.log('Creando campos de formulario...');
 
     this.nombre = createFormField({
       label: 'Nombre',
@@ -36,7 +32,6 @@ const usuarioPage = {
       required: true,
       value: this.userData.nombre || ''
     });
-    console.log('→ Nombre creado | wrapper classes:', this.nombre.className);
 
     this.apellido = createFormField({
       label: 'Apellido',
@@ -44,7 +39,6 @@ const usuarioPage = {
       required: true,
       value: this.userData.apellido || ''
     });
-    console.log('→ Apellido creado | wrapper classes:', this.apellido.className);
 
     this.mail = createFormField({
       label: 'Email',
@@ -53,7 +47,6 @@ const usuarioPage = {
       disabled: true,
       value: this.userData.mail || this.ctx.user?.email || ''
     });
-    console.log('→ Mail creado | disabled:', this.mail.input?.disabled, '| input classes:', this.mail.input?.className);
 
     this.fechaNacimiento = createFormField({
       label: 'Fecha de nacimiento',
@@ -64,7 +57,6 @@ const usuarioPage = {
         ? isoToFecha(this.userData.fechaNacimiento)
         : ''
     });
-    console.log('→ Fecha Nac. creada');
 
     this.telefono = createFormField({
       label: 'Teléfono',
@@ -72,7 +64,6 @@ const usuarioPage = {
       required: true,
       value: this.userData.telefono || ''
     });
-    console.log('→ Teléfono creado');
 
     this.provincia = createFormField({
       label: 'Provincia',
@@ -80,7 +71,6 @@ const usuarioPage = {
       name: 'provincia',
       required: true
     });
-    console.log('→ Provincia creada | tipo select');
 
     this.localidad = createFormField({
       label: 'Localidad',
@@ -88,14 +78,12 @@ const usuarioPage = {
       required: true,
       value: this.userData.localidad || ''
     });
-    console.log('→ Localidad creada');
 
     this.barrio = createFormField({
       label: 'Barrio',
       name: 'barrio',
       value: this.userData.barrio || ''
     });
-    console.log('→ Barrio creado');
 
     this.direccion = createFormField({
       label: 'Dirección',
@@ -103,9 +91,6 @@ const usuarioPage = {
       required: true,
       value: this.userData.direccion || ''
     });
-    console.log('→ Dirección creada');
-
-    console.log('Todos los campos creados. Appendando al DOM...');
 
     page.append(
       this.nombre,
@@ -119,55 +104,23 @@ const usuarioPage = {
       this.direccion
     );
 
-    // ──────────────────────────────────────────────
-    // DIAGNÓSTICO CSS - Input "Nombre"
-    // ──────────────────────────────────────────────
-    console.group('🔍 DIAGNÓSTICO CSS - Input "Nombre"');
-
-    if (this.nombre?.input) {
-      const input = this.nombre.input;
-      const computed = window.getComputedStyle(input);
-
-      console.log('Elemento input encontrado:', input.tagName, input.type);
-      console.log('Clases aplicadas:', input.className);
-      console.log('height:', computed.height);
-      console.log('min-height:', computed.minHeight);
-      console.log('padding:', computed.padding);
-      console.log('border:', computed.border);
-      console.log('border-color:', computed.borderColor);
-      console.log('border-radius:', computed.borderRadius);
-      console.log('background-color:', computed.backgroundColor);
-      console.log('font-size:', computed.fontSize);
-      console.log('color:', computed.color);
-      console.log('box-shadow:', computed.boxShadow);
-      console.log('transition:', computed.transition);
-    } else {
-      console.error('❌ No se encontró .input en el componente "Nombre"');
-    }
-    console.groupEnd();
-
     // Hidratación provincias
     const provinciaSelect = this.provincia.input || this.provincia.querySelector('select');
     if (provinciaSelect) {
-      console.log('Select de provincia encontrado → hidratando...');
       fillProvinciaSelector('Argentina', provinciaSelect);
       if (this.userData.provincia) {
         setTimeout(() => {
           provinciaSelect.value = this.userData.provincia;
-          console.log('Valor provincia seteado:', provinciaSelect.value);
         }, 0);
       }
-    } else {
-      console.warn('No se encontró select en provincia');
     }
 
-    // Botón
     this.btnGuardar = createButton({
       label: 'Guardar',
       variant: 'primary',
       onClick: () => this.guardar()
     });
-    console.log('Botón Guardar creado | variant: primary');
+
     page.appendChild(this.btnGuardar);
 
     console.groupEnd();
@@ -180,13 +133,16 @@ const usuarioPage = {
       showToast('No autenticado', 'error');
       return;
     }
+
     const fechaISO = fechaToISO(this.fechaNacimiento.value);
     if (!fechaISO) {
       showToast('Fecha inválida', 'error');
       return;
     }
+
     showLoading('Guardando...');
     this.btnGuardar.disabled = true;
+
     try {
       await this.ctx.adapter.saveUserData(uid, {
         nombre: this.nombre.value.trim(),
@@ -203,6 +159,7 @@ const usuarioPage = {
           usuario: true
         }
       });
+
       hideLoading();
       showToast('Datos guardados correctamente', 'success');
       this.ctx.navigate('/dashboard');
@@ -212,6 +169,7 @@ const usuarioPage = {
       showToast('Error al guardar', 'error');
       this.btnGuardar.disabled = false;
     }
+
     console.groupEnd();
   }
 };
