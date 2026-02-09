@@ -1,7 +1,7 @@
 // src/skeleton/layout/header/render.js
 
 export function renderHeader() {
-  console.log('🧱 renderHeader()');
+  console.log('🧱 renderHeader() - Versión corregida');
 
   const header = document.getElementById('skeleton-header');
   if (!header) {
@@ -13,7 +13,6 @@ export function renderHeader() {
 
   header.innerHTML = `
     <div class="container">
-      <!-- Fila superior -->
       <div class="header-top">
         <div class="header-left">
           <div class="logo">
@@ -29,7 +28,6 @@ export function renderHeader() {
         </div>
       </div>
 
-      <!-- Fila inferior -->
       <div class="header-bottom">
         <div class="header-left-bottom">
           <div id="headerUserName" class="user-name">
@@ -50,7 +48,7 @@ export function renderHeader() {
     </div>
   `;
 
-  console.log('✅ Header renderizado con dos filas');
+  console.log('✅ Header renderizado con dos filas - IDs preservados');
 
   return header;
 }
