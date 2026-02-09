@@ -6,6 +6,16 @@ import { renderBanner } from './banner/render.js';
 import { renderProgress } from './progress/render.js';
 import { renderFooter } from '../components/footer/render.js';
 
+// ✅ INYECTAR CSS GLOBAL DEL LAYOUT (antes que todo)
+if (!document.getElementById('s-layout-styles')) {
+  const link = document.createElement('link');
+  link.id = 's-layout-styles';
+  link.rel = 'stylesheet';
+  link.href = new URL('./layout.css', import.meta.url).href;
+  document.head.appendChild(link);
+  console.log('[layout] CSS base inyectado automáticamente');
+}
+
 export function renderLayout() {
   const body = document.body;
 
@@ -33,7 +43,7 @@ export function renderLayout() {
   body.insertAdjacentHTML('afterbegin', layoutHTML);
   console.log('🦴 Skeleton layout base renderizado');
 
-  // ✅ USAR API PÚBLICA (auto-inyecta CSS)
+  // ✅ USAR API PÚBLICA (auto-inyecta CSS de cada componente)
   createHeader();
   
   renderBanner();
