@@ -1,5 +1,4 @@
 // src/skeleton/layout/header/render.js
-import './header.css';  // podemos dejarlo o quitarlo (ya se inyecta desde index.js)
 
 export function renderHeader() {
   console.log('🧱 renderHeader()');
@@ -14,7 +13,7 @@ export function renderHeader() {
 
   header.innerHTML = `
     <div class="container">
-      <!-- Fila superior: logo izquierda – comercio + logout derecha -->
+      <!-- Fila superior -->
       <div class="header-top">
         <div class="header-left">
           <div class="logo">
@@ -27,31 +26,31 @@ export function renderHeader() {
           <div id="headerCommerceName" class="commerce-name">
             Mi Comercio
           </div>
-
-          <button
-            id="headerLogoutBtn"
-            class="btn-logout"
-            title="Cerrar sesión"
-          >
-            <i class="fas fa-sign-out-alt"></i>
-          </button>
         </div>
       </div>
 
-      <!-- Fila inferior: usuario izquierda – plan derecha -->
+      <!-- Fila inferior -->
       <div class="header-bottom">
-        <div id="headerUserName" class="user-name">
-          Usuario
+        <div class="header-left-bottom">
+          <div id="headerUserName" class="user-name">
+            Usuario
+          </div>
         </div>
 
-        <div id="headerPlan" class="plan-badge trial">
-          TRIAL
+        <div class="header-right-bottom">
+          <div id="headerPlan" class="plan-badge trial">
+            TRIAL
+          </div>
+
+          <button id="headerLogoutBtn" class="btn-logout" title="Cerrar sesión">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
         </div>
       </div>
     </div>
   `;
 
-  console.log('✅ Header HTML renderizado con dos filas');
+  console.log('✅ Header renderizado con dos filas');
 
-  return header;  // ← importante: retornamos el elemento
+  return header;
 }
