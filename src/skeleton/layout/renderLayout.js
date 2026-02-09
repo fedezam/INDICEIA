@@ -1,7 +1,7 @@
 // src/skeleton/layout/renderLayout.js
 // Render base del layout skeleton (estructura pura)
 
-import { renderHeader } from './header/render.js';
+import { createHeader } from './header/index.js';  // ✅ API pública (inyecta CSS)
 import { renderBanner } from './banner/render.js';
 import { renderProgress } from './progress/render.js';
 import { renderFooter } from '../components/footer/render.js';
@@ -17,31 +17,25 @@ export function renderLayout() {
 
   const layoutHTML = `
     <div id="skeleton-root">
-
       <!-- HEADER SLOT -->
       <header id="skeleton-header"></header>
-
       <!-- BANNER SLOT -->
       <section id="skeleton-banner"></section>
-
       <!-- PROGRESS SLOT -->
       <section id="skeleton-progress"></section>
-
       <!-- PAGE CONTENT -->
       <main id="skeleton-page"></main>
-
       <!-- FOOTER SLOT -->
       <footer id="skeleton-footer"></footer>
-
     </div>
   `;
 
   body.insertAdjacentHTML('afterbegin', layoutHTML);
-
   console.log('🦴 Skeleton layout base renderizado');
 
-  // Renderizar todos los componentes
-  renderHeader();
+  // ✅ USAR API PÚBLICA (auto-inyecta CSS)
+  createHeader();
+  
   renderBanner();
   renderProgress();
   renderFooter();
