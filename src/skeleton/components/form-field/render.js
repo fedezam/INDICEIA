@@ -1,4 +1,7 @@
 // render.js
+import './styles.css';
+
+
 export function renderFormField() {
   const wrapper = document.createElement('div');
   wrapper.className = 's-form-field';
