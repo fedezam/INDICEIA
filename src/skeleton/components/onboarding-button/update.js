@@ -2,14 +2,18 @@
 
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../../firebase.js";
-import { resolveTarget } from "../../onboarding/resolveTarget.js";
+import { resolveTarget } from "../../onboarding/onboarding-config.js";
 
 export function attachBehavior(button, config) {
   console.group("🟦 [onboarding-button] init");
 
   const { stepName, getData, validate } = config;
 
-  console.log("Config recibida:", { stepName, hasGetData: !!getData, hasValidate: !!validate });
+  console.log("Config recibida:", { 
+    stepName, 
+    hasGetData: !!getData, 
+    hasValidate: !!validate 
+  });
 
   if (!stepName || !getData || !validate) {
     console.error("❌ Configuración incompleta");
@@ -17,6 +21,7 @@ export function attachBehavior(button, config) {
     throw new Error("[onboarding-button] Configuración incompleta");
   }
 
+  // Función para actualizar el estado del botón
   const updateState = () => {
     let valid = false;
     try {
@@ -28,9 +33,14 @@ export function attachBehavior(button, config) {
     console.log("Estado botón:", valid ? "✅ habilitado" : "⛔ deshabilitado");
   };
 
+  // Escuchar cambios en inputs y selects
   document.addEventListener("input", updateState);
+  document.addEventListener("change", updateState);  // ← Para selects
+  
+  // Evaluar estado inicial
   updateState();
 
+  // Click handler
   button.addEventListener("click", async () => {
     console.group("🟩 [onboarding-button] click");
 
@@ -43,6 +53,11 @@ export function attachBehavior(button, config) {
     }
 
     console.log("UID:", user.uid);
+
+    // Deshabilitar botón mientras procesa
+    button.disabled = true;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
     try {
       console.log("📥 Llamando getData()");
@@ -75,11 +90,17 @@ export function attachBehavior(button, config) {
 
     } catch (err) {
       console.error("❌ Error en flujo onboarding-button", err);
+      
+      // Restaurar botón
+      button.innerHTML = originalText;
+      button.disabled = false;
+      
       alert("No se pudo guardar. Revisá los datos.");
     }
 
     console.groupEnd();
   });
 
+  console.log("✅ Comportamiento del botón configurado");
   console.groupEnd();
 }
