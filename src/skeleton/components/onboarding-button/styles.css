@@ -1,15 +1,42 @@
 /* src/skeleton/components/onboarding-button/styles.css */
 
 .onboarding-button {
-  min-width: 180px;
-  font-weight: 500;
-  opacity: 0.6;
+  min-width: 200px;
+  height: 44px;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 0 30px;
+  border: none;
+  border-radius: var(--s-radius);
+  background: var(--s-primary);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: var(--s-spacing-lg);
 }
 
-.onboarding-button:enabled {
-  opacity: 1;
+.onboarding-button:hover:not(:disabled) {
+  background: #3380a8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.onboarding-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .onboarding-button:disabled {
+  background: var(--s-gray);
   cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+/* Icono de guardado (opcional) */
+.onboarding-button i {
+  margin-right: 8px;
 }
