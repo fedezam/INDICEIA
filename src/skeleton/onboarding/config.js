@@ -1,4 +1,4 @@
-// src/skeleton/onboarding/onboarding-config.js
+// src/skeleton/onboarding/config.js
 
 /**
  * Configuración central de pasos de onboarding
