@@ -1,9 +1,83 @@
-body {
-  font-family: sans-serif;
-  background: #eee;
+/* pages/horarios/horarios.css */
+/* CSS MÍNIMO - Solo layout específico de horarios */
+
+/* ==================== PAGE HEADER ==================== */
+.page-header {
+  margin-bottom: 30px;
+  text-align: center;
 }
 
-#app {
-  padding: 16px;
-  background: white;
+.page-header h2 {
+  margin: 0 0 10px 0;
+  color: var(--s-dark, #343a40);
+  font-size: 28px;
+  font-weight: 600;
 }
+
+.page-header h2 i {
+  margin-right: 10px;
+  color: var(--s-primary, #3c8dbc);
+}
+
+.page-header p {
+  margin: 0;
+  color: var(--s-gray, #6c757d);
+  font-size: 16px;
+}
+
+/* ==================== HORARIOS GRID ==================== */
+.horarios-grid {
+  margin-bottom: 30px;
+}
+
+/* Los estilos del grid (display, columns, gap) están inline en JS */
+
+/* ==================== DAY CONTENT (dentro de cada card) ==================== */
+.day-content {
+  /* El contenido ya viene styled por los componentes */
+}
+
+.continuous-schedule h4,
+.split-schedule h4 {
+  margin: 0 0 15px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+}
+
+.period-section {
+  margin-bottom: 15px;
+}
+
+.period-section:last-child {
+  margin-bottom: 0;
+}
+
+/* ==================== QUICK ACTIONS ==================== */
+.quick-actions {
+  /* Flexbox styles están inline en JS */
+  justify-content: center;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  .horarios-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .page-header h2 {
+    font-size: 24px;
+  }
+  
+  .quick-actions {
+    flex-direction: column;
+  }
+}
+
+/* ==================== NOTAS ==================== */
+/*
+✅ Este CSS es MÍNIMO
+✅ Los componentes (card, form-field, button) traen sus propios estilos
+✅ Solo ajustamos layout específico de esta página
+✅ Responsive básico
+*/
