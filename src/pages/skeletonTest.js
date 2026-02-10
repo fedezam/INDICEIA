@@ -98,41 +98,43 @@ const usuarioPage = {
       stepName: 'usuario',
 
       getData: () => {
-        const fechaISO = fechaToISO(this.fechaNacimiento.input.value);
+        // ✅ Usar usuarioPage en vez de this
+        const fechaISO = fechaToISO(usuarioPage.fechaNacimiento.input.value);
         
         return {
-          nombre: this.nombre.input.value.trim(),
-          apellido: this.apellido.input.value.trim(),
+          nombre: usuarioPage.nombre.input.value.trim(),
+          apellido: usuarioPage.apellido.input.value.trim(),
           fechaNacimiento: fechaISO,
-          telefono: this.telefono.input.value.trim(),
-          provincia: this.provincia.input.value.trim(),
-          localidad: this.localidad.input.value.trim(),
-          direccion: this.direccion.input.value.trim(),
+          telefono: usuarioPage.telefono.input.value.trim(),
+          provincia: usuarioPage.provincia.input.value.trim(),
+          localidad: usuarioPage.localidad.input.value.trim(),
+          direccion: usuarioPage.direccion.input.value.trim(),
           pais: 'Argentina'
         };
       },
 
       validate: () => {
-        // ✅ VALIDACIÓN DEFENSIVA: Verificar que los inputs existan primero
-        if (!this.nombre?.input || 
-            !this.apellido?.input || 
-            !this.fechaNacimiento?.input || 
-            !this.telefono?.input || 
-            !this.provincia?.input || 
-            !this.localidad?.input || 
-            !this.direccion?.input) {
+        // ✅ Usar usuarioPage en vez de this
+        // Validación defensiva: Verificar que los inputs existan primero
+        if (!usuarioPage.nombre?.input || 
+            !usuarioPage.apellido?.input || 
+            !usuarioPage.fechaNacimiento?.input || 
+            !usuarioPage.telefono?.input || 
+            !usuarioPage.provincia?.input || 
+            !usuarioPage.localidad?.input || 
+            !usuarioPage.direccion?.input) {
           console.log('⏳ Inputs aún no inicializados');
           return false;
         }
 
         const valid = (
-          this.nombre.input.value.trim() !== '' &&
-          this.apellido.input.value.trim() !== '' &&
-          this.fechaNacimiento.input.value.trim() !== '' &&
-          this.telefono.input.value.trim() !== '' &&
-          this.provincia.input.value.trim() !== '' &&
-          this.localidad.input.value.trim() !== '' &&
-          this.direccion.input.value.trim() !== ''
+          usuarioPage.nombre.input.value.trim() !== '' &&
+          usuarioPage.apellido.input.value.trim() !== '' &&
+          usuarioPage.fechaNacimiento.input.value.trim() !== '' &&
+          usuarioPage.telefono.input.value.trim() !== '' &&
+          usuarioPage.provincia.input.value.trim() !== '' &&
+          usuarioPage.localidad.input.value.trim() !== '' &&
+          usuarioPage.direccion.input.value.trim() !== ''
         );
         
         console.log('🔍 Validación:', valid ? 'OK ✅' : 'FALTAN DATOS ❌');
