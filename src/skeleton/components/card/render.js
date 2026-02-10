@@ -1,13 +1,32 @@
-// /src/skeleton/components/card/render.js
+// skeleton/components/card/render.js
+import './styles.css';
+
 export function renderCard() {
-  return `
-    <div class="dash-card">
-      <div class="dash-icon"><i class="fas"></i></div>
-      <div class="dash-content">
-        <h3></h3>
-        <div class="card-body"></div>
-      </div>
-      <div class="card-action-slot"></div>
-    </div>
-  `;
+  const card = document.createElement('div');
+  card.className = 's-card';
+
+  const header = document.createElement('div');
+  header.className = 's-card-header';
+
+  const icon = document.createElement('div');
+  icon.className = 's-card-icon';
+  icon.innerHTML = '<i class="fas fa-cube"></i>';
+
+  const title = document.createElement('h3');
+  title.className = 's-card-title';
+
+  header.appendChild(icon);
+  header.appendChild(title);
+
+  const body = document.createElement('div');
+  body.className = 's-card-body';
+
+  const footer = document.createElement('div');
+  footer.className = 's-card-footer';
+
+  card.appendChild(header);
+  card.appendChild(body);
+  card.appendChild(footer);
+
+  return { card, icon, title, body, footer };
 }
