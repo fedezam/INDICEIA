@@ -1,7 +1,7 @@
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 import { createFormField } from '../skeleton/components/form-field/index.js';
-import { createOnboardingButton } from '../skeleton/components/onboarding-button/index.js';  // ← CORREGIDO
+import { createOnboardingButton } from '../skeleton/components/onboarding-button/index.js';
 import { showToast } from '../skeleton/components/toast/index.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
 
@@ -113,6 +113,18 @@ const usuarioPage = {
       },
 
       validate: () => {
+        // ✅ VALIDACIÓN DEFENSIVA: Verificar que los inputs existan primero
+        if (!this.nombre?.input || 
+            !this.apellido?.input || 
+            !this.fechaNacimiento?.input || 
+            !this.telefono?.input || 
+            !this.provincia?.input || 
+            !this.localidad?.input || 
+            !this.direccion?.input) {
+          console.log('⏳ Inputs aún no inicializados');
+          return false;
+        }
+
         const valid = (
           this.nombre.input.value.trim() !== '' &&
           this.apellido.input.value.trim() !== '' &&
@@ -123,7 +135,7 @@ const usuarioPage = {
           this.direccion.input.value.trim() !== ''
         );
         
-        console.log('🔍 Validación:', valid ? 'OK' : 'FALTAN DATOS');
+        console.log('🔍 Validación:', valid ? 'OK ✅' : 'FALTAN DATOS ❌');
         return valid;
       }
     });
