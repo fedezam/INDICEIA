@@ -1,48 +1,62 @@
-import './styles.css';
+// src/skeleton/onboarding/onboarding-config.js
 
-export const onboardingConfig = {
-  requiredFields: [
-    'nombre',
-    'apellido',
-    'fechaNacimiento',
-    'telefono',
-    'provincia',
-    'localidad',
-    'direccion'
-  ]
+/**
+ * Configuración central de pasos de onboarding
+ * Define dónde se guarda cada paso (usuarios o comercios)
+ */
+
+export const STEP_TARGETS = {
+  'usuario': { 
+    collection: 'usuarios', 
+    idField: 'uid' 
+  },
+  'crear-entidad': { 
+    collection: 'usuarios', 
+    idField: 'uid' 
+  },
+  'mi-comercio': { 
+    collection: 'comercios', 
+    idField: 'comercioId' 
+  },
+  'horarios': { 
+    collection: 'comercios', 
+    idField: 'comercioId' 
+  },
+  'servicios': { 
+    collection: 'comercios', 
+    idField: 'comercioId' 
+  },
+  'productos': { 
+    collection: 'comercios', 
+    idField: 'comercioId' 
+  },
+  'ia-config': { 
+    collection: 'comercios', 
+    idField: 'comercioId' 
+  }
 };
 
-export function validateOnboarding(fields = {}) {
-  console.group('🔍 [onboarding] validate');
-
-  try {
-    for (const key of onboardingConfig.requiredFields) {
-      const field = fields[key];
-
-      if (!field) {
-        console.warn(`⚠️ Campo inexistente: ${key}`);
-        console.groupEnd();
-        return false;
-      }
-
-      const value =
-        typeof field.value === 'string'
-          ? field.value.trim()
-          : '';
-
-      if (!value) {
-        console.warn(`⚠️ Campo vacío: ${key}`);
-        console.groupEnd();
-        return false;
-      }
-    }
-
-    console.log('✅ Validación OK');
-    console.groupEnd();
-    return true;
-  } catch (err) {
-    console.error('❌ Error en validateOnboarding', err);
-    console.groupEnd();
-    return false;
+/**
+ * Resuelve dónde guardar un paso específico
+ * @param {string} stepName - Nombre del paso (ej: 'usuario')
+ * @param {Object} context - Contexto con uid y comercioId
+ * @returns {{ collection: string, documentId: string }}
+ */
+export function resolveTarget(stepName, context) {
+  const target = STEP_TARGETS[stepName];
+  
+  if (!target) {
+    throw new Error(`Paso desconocido: ${stepName}`);
   }
+  
+  const documentId = context[target.idField];
+  
+  if (!documentId) {
+    throw new Error(`No se encontró ${target.idField} en el contexto para el paso ${stepName}`);
+  }
+  
+  return {
+    collection: target.collection,
+    documentId
+  };
 }
