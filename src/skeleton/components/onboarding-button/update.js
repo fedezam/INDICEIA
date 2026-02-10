@@ -2,7 +2,7 @@
 
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../../firebase.js";
-import { resolveTarget } from "../../onboarding/onboarding-config.js";
+import { resolveTarget } from "../../onboarding/config.js";
 
 export function attachBehavior(button, config) {
   console.group("🟦 [onboarding-button] init");
