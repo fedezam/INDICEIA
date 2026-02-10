@@ -1,10 +1,12 @@
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 import { createFormField } from '../skeleton/components/form-field/index.js';
-import { createButton } from '../skeleton/components/button/index.js';
-import { showToast } from '../skeleton/components/toast/index.js';
-import { showLoading, hideLoading } from '../skeleton/components/loading/index.js';
+import { createOnboardingButton } from '../skeleton/components/onboarding-button/index.js';
 import { fillProvinciaSelector } from '../shared/provincias.js';
+
+/* ============================
+   PAGE
+============================ */
 
 const usuarioPage = {
   async load(ctx) {
@@ -21,13 +23,12 @@ const usuarioPage = {
     const page = document.getElementById('skeleton-page');
     if (!page) {
       console.error('❌ No se encontró #skeleton-page');
+      console.groupEnd();
       return;
     }
 
-    // ✅ Limpiar solo el contenido, sin borrar todo con innerHTML
     page.innerHTML = '';
 
-    // ✅ Crear título como elemento
     const title = document.createElement('h2');
     title.textContent = 'Datos personales';
     page.appendChild(title);
@@ -110,8 +111,10 @@ const usuarioPage = {
       this.direccion
     );
 
-    // Hidratación provincias
-    const provinciaSelect = this.provincia.input || this.provincia.querySelector('select');
+    // 🔽 Provincias
+    const provinciaSelect =
+      this.provincia.input || this.provincia.querySelector('select');
+
     if (provinciaSelect) {
       fillProvinciaSelector('Argentina', provinciaSelect);
       if (this.userData.provincia) {
@@ -121,60 +124,45 @@ const usuarioPage = {
       }
     }
 
-    this.btnGuardar = createButton({
-      label: 'Guardar',
-      variant: 'primary',
-      onClick: () => this.guardar()
+    /* ============================
+       BOTÓN UNIVERSAL
+    ============================ */
+
+    this.btnGuardar = createOnboardingButton({
+      stepName: 'usuario',
+
+      getData: () => {
+        console.log('📤 usuario.getData()');
+        return {
+          nombre: this.nombre.value.trim(),
+          apellido: this.apellido.value.trim(),
+          mail: this.mail.value.trim(),
+          fechaNacimiento: fechaToISO(this.fechaNacimiento.value),
+          telefono: this.telefono.value.trim(),
+          pais: 'Argentina',
+          provincia: this.provincia.value.trim(),
+          localidad: this.localidad.value.trim(),
+          barrio: this.barrio.value.trim() || null,
+          direccion: this.direccion.value.trim()
+        };
+      },
+
+      validate: () => {
+        const ok =
+          this.nombre.value.trim() &&
+          this.apellido.value.trim() &&
+          this.fechaNacimiento.value.includes('/') &&
+          this.telefono.value.trim() &&
+          this.provincia.value.trim() &&
+          this.localidad.value.trim() &&
+          this.direccion.value.trim();
+
+        console.log('🧪 usuario.validate():', !!ok);
+        return !!ok;
+      }
     });
 
     page.appendChild(this.btnGuardar);
-
-    console.groupEnd();
-  },
-
-  async guardar() {
-    console.group('💾 Guardar usuario');
-    const uid = this.ctx.user?.uid;
-    if (!uid) {
-      showToast('No autenticado', 'error');
-      return;
-    }
-
-    const fechaISO = fechaToISO(this.fechaNacimiento.value);
-    if (!fechaISO) {
-      showToast('Fecha inválida', 'error');
-      return;
-    }
-
-    showLoading('Guardando...');
-    this.btnGuardar.disabled = true;
-
-    try {
-      await this.ctx.adapter.saveUserData(uid, {
-        nombre: this.nombre.value.trim(),
-        apellido: this.apellido.value.trim(),
-        mail: this.mail.value.trim(),
-        fechaNacimiento: fechaISO,
-        telefono: this.telefono.value.trim(),
-        pais: 'Argentina',
-        provincia: this.provincia.value.trim(),
-        localidad: this.localidad.value.trim(),
-        barrio: this.barrio.value.trim() || null,
-        direccion: this.direccion.value.trim(),
-        onboardingSteps: {
-          usuario: true
-        }
-      });
-
-      hideLoading();
-      showToast('Datos guardados correctamente', 'success');
-      this.ctx.navigate('/dashboard');
-    } catch (err) {
-      console.error(err);
-      hideLoading();
-      showToast('Error al guardar', 'error');
-      this.btnGuardar.disabled = false;
-    }
 
     console.groupEnd();
   }
@@ -183,6 +171,7 @@ const usuarioPage = {
 /* ============================
    HELPERS
 ============================ */
+
 function fechaToISO(s) {
   if (!s || !s.includes('/')) return null;
   const [d, m, y] = s.split('/');
@@ -199,6 +188,7 @@ function isoToFecha(s) {
 /* ============================
    RUN
 ============================ */
+
 runSkeleton({
   page: usuarioPage,
   adapter: createFirebaseAdapter,
