@@ -1,54 +1,65 @@
-// update.js
+// skeleton/components/button/update.js
+
 export function updateButton(dom, config = {}) {
   const {
-    content = {},
-    flags = {},
-    actions = {}
+    label = '',
+    variant = 'primary',
+    size = 'md',
+    icon = null,
+    onClick = null,
+    disabled = false,
+    loading = false,
+    type = 'button',
+    block = false
   } = config;
 
-  const { btn, icon, text, spinner } = dom;
+  const { btn, icon: iconEl, text, spinner } = dom;
 
-  // reset
+  // ==================== RESET ====================
   btn.className = 's-btn';
   btn.disabled = false;
-  spinner.style.display = 'none';
-  icon.style.display = 'none';
+  btn.onclick = null;
+  
+  iconEl.className = 's-btn-icon';
+  spinner.className = 's-btn-spinner';
 
-  /* ---------- variants ---------- */
-  if (flags.variant) btn.classList.add(`s-btn-${flags.variant}`);
-  if (flags.size) btn.classList.add(`s-btn-${flags.size}`);
+  // ==================== VARIANT & SIZE ====================
+  btn.classList.add(`s-btn-${variant}`);
+  btn.classList.add(`s-btn-${size}`);
 
-  /* ---------- states ---------- */
-  if (flags.disabled) {
+  if (block) {
+    btn.classList.add('s-btn-block');
+  }
+
+  // ==================== TYPE ====================
+  btn.type = type;
+
+  // ==================== CONTENT ====================
+  text.textContent = label;
+
+  // Icon
+  if (icon) {
+    iconEl.innerHTML = icon.startsWith('fa-') 
+      ? `<i class="fas ${icon}"></i>` 
+      : icon;
+    iconEl.classList.add('visible');
+  }
+
+  // ==================== STATES ====================
+  if (disabled) {
     btn.disabled = true;
     btn.classList.add('is-disabled');
   }
 
-  if (flags.loading) {
+  if (loading) {
     btn.disabled = true;
     btn.classList.add('is-loading');
-    spinner.style.display = 'inline-block';
+    spinner.classList.add('visible');
   }
 
-  /* ---------- content ---------- */
-  text.textContent = content.text || '';
-
-  if (content.icon) {
-    icon.innerHTML = content.icon.startsWith('fa-')
-      ? `<i class="fas ${content.icon}"></i>`
-      : content.icon;
-    icon.style.display = 'inline-flex';
-  }
-
-  /* ---------- actions ---------- */
-  btn.onclick = null;
-
-  if (actions.onClick && !flags.disabled && !flags.loading) {
-    btn.addEventListener('click', actions.onClick);
-  }
-
-  if (actions.type) {
-    btn.type = actions.type;
+  // ==================== EVENTS ====================
+  if (onClick && !disabled && !loading) {
+    btn.onclick = onClick;
   }
 
   return btn;
