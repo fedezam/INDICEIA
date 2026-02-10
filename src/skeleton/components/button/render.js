@@ -1,4 +1,6 @@
-// render.js
+// skeleton/components/button/render.js
+import './styles.css';
+
 export function renderButton() {
   const btn = document.createElement('button');
   btn.className = 's-btn';
@@ -12,6 +14,7 @@ export function renderButton() {
 
   const spinner = document.createElement('span');
   spinner.className = 's-btn-spinner';
+  spinner.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
   btn.appendChild(icon);
   btn.appendChild(text);
