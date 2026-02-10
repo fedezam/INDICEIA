@@ -1,52 +1,111 @@
-// /src/skeleton/components/card/update.js
-export function updateCard(el, data) {
-  const iconEl = el.querySelector('.dash-icon i');
-  const titleEl = el.querySelector('h3');
-  const bodyEl = el.querySelector('.card-body');
-  const actionSlot = el.querySelector('.card-action-slot');
+// skeleton/components/card/update.js
 
-  // Icono
-  iconEl.className = `fas fa-${data.icon || 'cube'}`;
+export function updateCard(dom, config = {}) {
+  const {
+    title = '',
+    content = '',
+    icon = 'fa-cube',
+    variant = null,
+    highlight = false,
+    selectable = false,
+    selected = false,
+    clickable = false,
+    compact = false,
+    flat = false,
+    noHeader = false,
+    action = null,
+    onClick = null
+  } = config;
 
-  // Título
-  titleEl.textContent = data.title || '';
+  const { card, icon: iconEl, title: titleEl, body, footer } = dom;
 
-  // Contenido: string simple o array de líneas
-  if (Array.isArray(data.content)) {
-    bodyEl.innerHTML = data.content.map(line => `<p>${line}</p>`).join('');
+  // ==================== RESET ====================
+  card.className = 's-card';
+  footer.innerHTML = '';
+
+  // ==================== ICON ====================
+  const iconClass = icon.startsWith('fa-') ? icon : `fa-${icon}`;
+  iconEl.innerHTML = `<i class="fas ${iconClass}"></i>`;
+
+  // ==================== TITLE ====================
+  titleEl.textContent = title;
+
+  // ==================== CONTENT ====================
+  if (Array.isArray(content)) {
+    body.innerHTML = content.map(line => `<p>${line}</p>`).join('');
+  } else if (typeof content === 'string') {
+    body.innerHTML = `<p>${content}</p>`;
   } else {
-    bodyEl.innerHTML = `<p>${data.content || ''}</p>`;
+    // Si es un elemento DOM o HTML
+    if (typeof content === 'object' && content.nodeType) {
+      body.innerHTML = '';
+      body.appendChild(content);
+    } else {
+      body.innerHTML = content;
+    }
   }
 
-  // Highlight
-  el.classList.toggle('highlight', !!data.highlight);
+  // ==================== VARIANTS ====================
+  if (variant) {
+    card.classList.add(variant);
+  }
 
-  // Acción (link o botón)
-  actionSlot.innerHTML = '';
-  if (data.action) {
-    if (data.action.type === 'link') {
+  // ==================== MODIFIERS ====================
+  if (highlight) card.classList.add('highlight');
+  if (selectable) card.classList.add('selectable');
+  if (selected) card.classList.add('selected');
+  if (clickable) card.classList.add('clickable');
+  if (compact) card.classList.add('compact');
+  if (flat) card.classList.add('flat');
+  if (noHeader) card.classList.add('no-header');
+
+  // ==================== ACTION (Footer) ====================
+  if (action) {
+    if (action.type === 'link') {
       const link = document.createElement('a');
-      link.href = data.action.url;
-      link.className = data.action.class || 'btn btn-secondary btn-sm';
-      link.innerHTML = data.action.label || 'Ver';
-      if (data.action.target) link.target = data.action.target;
-      actionSlot.appendChild(link);
-    } else if (data.action.type === 'button') {
+      link.href = action.url || '#';
+      link.className = action.className || 's-btn s-btn-primary s-btn-sm';
+      link.textContent = action.label || 'Ver más';
+      if (action.target) link.target = action.target;
+      if (action.onClick) link.onclick = action.onClick;
+      footer.appendChild(link);
+    } else if (action.type === 'button') {
       const btn = document.createElement('button');
-      btn.className = data.action.class || 'btn btn-primary btn-sm';
-      btn.innerHTML = data.action.label || 'Acción';
-      if (data.action.onClick && typeof data.action.onClick === 'function') {
-        // Limpiar listeners previos (evitar duplicados)
-        const oldBtn = actionSlot.querySelector('button');
-        if (oldBtn) {
-          oldBtn.replaceWith(btn);
-        } else {
-          actionSlot.appendChild(btn);
-        }
-        btn.addEventListener('click', data.action.onClick);
-      } else {
-        actionSlot.appendChild(btn);
+      btn.className = action.className || 's-btn s-btn-primary s-btn-sm';
+      btn.textContent = action.label || 'Acción';
+      if (action.onClick) btn.onclick = action.onClick;
+      footer.appendChild(btn);
+    } else if (action.type === 'custom') {
+      // Permite insertar cualquier HTML personalizado
+      if (typeof action.content === 'string') {
+        footer.innerHTML = action.content;
+      } else if (action.content && action.content.nodeType) {
+        footer.appendChild(action.content);
       }
     }
   }
+
+  // ==================== CLICK HANDLER ====================
+  if (onClick) {
+    card.style.cursor = 'pointer';
+    card.onclick = onClick;
+  }
+
+  // ==================== SELECTABLE BEHAVIOR ====================
+  if (selectable && !onClick) {
+    card.onclick = () => {
+      card.classList.toggle('selected');
+      
+      // Emitir evento personalizado para que la página sepa
+      card.dispatchEvent(new CustomEvent('card-select', {
+        detail: { 
+          selected: card.classList.contains('selected'),
+          card: card 
+        },
+        bubbles: true
+      }));
+    };
+  }
+
+  return card;
 }
