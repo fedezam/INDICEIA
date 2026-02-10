@@ -1,0 +1,168 @@
+/* skeleton/components/category-selector/styles.css */
+
+/* ==================== CONTAINER ==================== */
+.s-category-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ==================== CONTROLS ==================== */
+.s-category-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.s-category-dropdown {
+  flex: 1;
+}
+
+.s-category-select {
+  width: 100%;
+  height: var(--s-input-height, 38px);
+  padding: 8px 12px;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 14px;
+  color: var(--s-dark, #343a40);
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.s-category-select:focus {
+  outline: none;
+  border-color: var(--s-primary, #3c8dbc);
+  box-shadow: 0 0 0 3px var(--s-focus-ring, rgba(60, 141, 188, 0.25));
+}
+
+/* ==================== CUSTOM INPUT ==================== */
+.s-category-custom {
+  display: flex;
+  gap: 8px;
+}
+
+.s-category-input {
+  flex: 1;
+  height: var(--s-input-height, 38px);
+  padding: 8px 12px;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 14px;
+  color: var(--s-dark, #343a40);
+  transition: border-color 0.15s ease;
+}
+
+.s-category-input:focus {
+  outline: none;
+  border-color: var(--s-primary, #3c8dbc);
+  box-shadow: 0 0 0 3px var(--s-focus-ring, rgba(60, 141, 188, 0.25));
+}
+
+.s-category-input::placeholder {
+  color: var(--s-gray, #999);
+}
+
+/* ==================== SELECTED AREA ==================== */
+.s-category-selected {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.s-category-header {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.s-category-header i {
+  color: var(--s-primary, #3c8dbc);
+}
+
+/* ==================== TAGS GRID ==================== */
+.s-category-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.s-category-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--s-primary, #3c8dbc);
+  color: white;
+  border-radius: var(--s-radius, 4px);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.s-category-tag:hover {
+  background: var(--s-primary-dark, #337ab7);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.s-category-tag-remove {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.s-category-tag-remove:hover {
+  opacity: 1;
+}
+
+/* ==================== EMPTY STATE ==================== */
+.s-category-empty {
+  color: var(--s-gray, #999);
+  font-size: 14px;
+  font-style: italic;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+  background: var(--s-light, #f8f9fa);
+  border-radius: var(--s-radius, 4px);
+  border: 1px dashed var(--s-border, #d2d6de);
+}
+
+.s-category-empty.hidden {
+  display: none;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (min-width: 768px) {
+  .s-category-controls {
+    flex-direction: row;
+  }
+  
+  .s-category-dropdown {
+    flex: 0 0 40%;
+  }
+  
+  .s-category-custom {
+    flex: 1;
+  }
+}
