@@ -1,0 +1,15 @@
+/* src/skeleton/components/onboarding-button/styles.css */
+
+.onboarding-button {
+  min-width: 180px;
+  font-weight: 500;
+  opacity: 0.6;
+}
+
+.onboarding-button:enabled {
+  opacity: 1;
+}
+
+.onboarding-button:disabled {
+  cursor: not-allowed;
+}
