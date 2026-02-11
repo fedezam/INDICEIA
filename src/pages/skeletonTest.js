@@ -18,18 +18,50 @@ import { doc, updateDoc } from 'firebase/firestore';
 
 const COGNITIVE_CAPABILITIES = {
   basico: [
-    { id: 'examples_simple', label: 'Ejemplos simples', description: 'Puede dar ejemplos básicos' },
-    { id: 'anticipate_common_questions', label: 'Anticipar preguntas', description: 'Responde preguntas frecuentes' }
+    { 
+      id: 'examples_simple', 
+      label: 'Dar ejemplos simples', 
+      description: 'Puede ilustrar conceptos con ejemplos sencillos y cotidianos' 
+    },
+    { 
+      id: 'anticipate_common_questions', 
+      label: 'Anticipar preguntas comunes', 
+      description: 'Responde dudas frecuentes antes de que el cliente las haga' 
+    }
   ],
   recomendado: [
-    { id: 'explain_implicit_services', label: 'Explicar servicios implícitos', description: 'Entiende servicios no mencionados' },
-    { id: 'domain_knowledge', label: 'Conocimiento de dominio', description: 'Conoce tu industria' },
-    { id: 'causal_explanations', label: 'Explicaciones causales', description: 'Explica el porqué de las cosas' }
+    { 
+      id: 'explain_implicit_services', 
+      label: 'Explicar servicios implícitos', 
+      description: 'Puede dar ejemplos, analogías y explicar beneficios aunque no estén escritos palabra por palabra' 
+    },
+    { 
+      id: 'domain_knowledge', 
+      label: 'Conocimiento del rubro', 
+      description: 'Entiende el contexto y particularidades de tu industria' 
+    },
+    { 
+      id: 'causal_explanations', 
+      label: 'Explicaciones causales', 
+      description: 'Puede explicar el porqué y justificar recomendaciones' 
+    }
   ],
   avanzado: [
-    { id: 'infer_missing_details', label: 'Inferir detalles', description: 'Completa info faltante' },
-    { id: 'contextual_adaptation', label: 'Adaptación contextual', description: 'Se adapta al contexto' },
-    { id: 'guided_suggestions', label: 'Sugerencias guiadas', description: 'Sugiere próximos pasos' }
+    { 
+      id: 'infer_missing_details', 
+      label: 'Inferir detalles faltantes', 
+      description: 'Puede deducir necesidades del cliente según lo que pregunta' 
+    },
+    { 
+      id: 'contextual_adaptation', 
+      label: 'Adaptación contextual', 
+      description: 'Se adapta al tono y momento de la conversación' 
+    },
+    { 
+      id: 'guided_suggestions', 
+      label: 'Sugerencias guiadas', 
+      description: 'Puede sugerir próximos pasos o alternativas lógicas' 
+    }
   ]
 };
 
@@ -42,10 +74,15 @@ const IDIOMAS = [
 ];
 
 const TONOS = [
-  { value: 'formal', label: 'Formal' },
+  { value: 'informal', label: 'Informal' },
+  { value: 'neutral', label: 'Neutral' },
+  { value: 'formal', label: 'Formal' }
+];
+
+const PERSONALIDADES = [
   { value: 'amigable', label: 'Amigable' },
-  { value: 'casual', label: 'Casual' },
-  { value: 'profesional', label: 'Profesional' }
+  { value: 'formal', label: 'Formal' },
+  { value: 'vendedor', label: 'Vendedor' }
 ];
 
 // ==================== HELPERS ====================
@@ -218,15 +255,18 @@ const iaConfigPage = {
     this.fields.aiPersonality = createFormField({
       label: 'Personalidad',
       name: 'aiPersonality',
-      type: 'textarea',
+      type: 'select',
       required: true,
-      rows: 3,
-      placeholder: 'Ej: Amable, servicial y con sentido del humor',
-      value: this.aiConfig.aiPersonality || ''
+      options: [
+        { value: '', label: 'Seleccionar' },
+        ...PERSONALIDADES
+      ]
     });
     
-    this.fields.aiPersonality.input.addEventListener('input', () => {
-      console.log('🔵 [INPUT] Personalidad:', this.fields.aiPersonality.input.value.substring(0, 30) + '...');
+    this.fields.aiPersonality.input.value = this.aiConfig.aiPersonality || '';
+    
+    this.fields.aiPersonality.input.addEventListener('change', () => {
+      console.log('🔵 [SELECT] Personalidad:', this.fields.aiPersonality.input.value);
       this.validateForm();
     });
     
@@ -236,10 +276,13 @@ const iaConfigPage = {
       name: 'aiTone',
       type: 'select',
       required: true,
-      options: TONOS
+      options: [
+        { value: '', label: 'Seleccionar' },
+        ...TONOS
+      ]
     });
     
-    this.fields.aiTone.input.value = this.aiConfig.aiTone || 'amigable';
+    this.fields.aiTone.input.value = this.aiConfig.aiTone || '';
     
     this.fields.aiTone.input.addEventListener('change', () => {
       console.log('🔵 [SELECT] Tono:', this.fields.aiTone.input.value);
@@ -311,66 +354,87 @@ const iaConfigPage = {
     const content = document.createElement('div');
     content.className = 'behaviors-section';
     
-    // Sin precio
-    this.fields.sinPrecio = createFormField({
-      label: 'Respuesta cuando no hay precio',
-      name: 'sinPrecio',
-      type: 'textarea',
-      rows: 2,
-      placeholder: 'Ej: Te contacto con ventas para cotizar',
-      value: this.aiConfig.sinPrecio || ''
-    });
-    
-    // Sin stock
-    this.fields.sinStock = createFormField({
-      label: 'Respuesta cuando no hay stock',
-      name: 'sinStock',
-      type: 'textarea',
-      rows: 2,
-      placeholder: 'Ej: Por el momento no tenemos stock disponible',
-      value: this.aiConfig.sinStock || ''
-    });
-    
-    // Local cerrado
-    this.fields.localCerrado = createFormField({
-      label: 'Respuesta cuando el local está cerrado',
-      name: 'localCerrado',
-      type: 'textarea',
-      rows: 2,
-      placeholder: 'Ej: Estamos cerrados ahora, volvemos mañana a las 9:00',
-      value: this.aiConfig.localCerrado || ''
-    });
-    
     // Proactividad
     this.fields.proactividad = createFormField({
       label: 'Nivel de proactividad',
       name: 'proactividad',
-      type: 'textarea',
-      rows: 2,
-      placeholder: 'Ej: Ofrecer productos relacionados, sugerir combos',
-      value: this.aiConfig.proactividad || ''
+      type: 'select',
+      options: [
+        { value: '', label: 'Seleccionar' },
+        { value: 'bajo', label: 'Bajo' },
+        { value: 'medio', label: 'Medio' },
+        { value: 'alto', label: 'Alto' }
+      ]
     });
+    
+    this.fields.proactividad.input.value = this.aiConfig.proactividad || '';
     
     // Formato respuestas
     this.fields.formatoRespuestas = createFormField({
       label: 'Formato de respuestas',
       name: 'formatoRespuestas',
-      type: 'textarea',
-      rows: 2,
-      placeholder: 'Ej: Respuestas cortas y directas',
-      value: this.aiConfig.formatoRespuestas || ''
+      type: 'select',
+      options: [
+        { value: '', label: 'Seleccionar' },
+        { value: 'cortas', label: 'Cortas' },
+        { value: 'detalladas', label: 'Detalladas' }
+      ]
     });
     
+    this.fields.formatoRespuestas.input.value = this.aiConfig.formatoRespuestas || '';
+    
+    // Sin precio
+    this.fields.sinPrecio = createFormField({
+      label: 'Si no hay precio',
+      name: 'sinPrecio',
+      type: 'select',
+      options: [
+        { value: '', label: 'Seleccionar' },
+        { value: 'informar', label: 'Informar' },
+        { value: 'consultar', label: 'Pedir consulta' }
+      ]
+    });
+    
+    this.fields.sinPrecio.input.value = this.aiConfig.sinPrecio || '';
+    
+    // Sin stock
+    this.fields.sinStock = createFormField({
+      label: 'Si no hay stock',
+      name: 'sinStock',
+      type: 'select',
+      options: [
+        { value: '', label: 'Seleccionar' },
+        { value: 'informar', label: 'Informar' },
+        { value: 'ofrecerAlternativa', label: 'Ofrecer alternativa' }
+      ]
+    });
+    
+    this.fields.sinStock.input.value = this.aiConfig.sinStock || '';
+    
+    // Local cerrado
+    this.fields.localCerrado = createFormField({
+      label: 'Si el local está cerrado',
+      name: 'localCerrado',
+      type: 'select',
+      options: [
+        { value: '', label: 'Seleccionar' },
+        { value: 'informar', label: 'Informar horario' },
+        { value: 'tomarMensaje', label: 'Tomar mensaje' }
+      ]
+    });
+    
+    this.fields.localCerrado.input.value = this.aiConfig.localCerrado || '';
+    
     content.append(
+      this.fields.proactividad,
+      this.fields.formatoRespuestas,
       this.fields.sinPrecio,
       this.fields.sinStock,
-      this.fields.localCerrado,
-      this.fields.proactividad,
-      this.fields.formatoRespuestas
+      this.fields.localCerrado
     );
     
     return createCard({
-      title: 'Comportamientos Especiales',
+      title: 'Comportamiento',
       icon: 'fa-cogs',
       content: content
     });
