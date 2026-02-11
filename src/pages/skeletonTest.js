@@ -1,9 +1,10 @@
-// pages/horarios/horarios.js
+// pages/horarios/skeletonTest.js
 // ==================== MIGRACIÓN AL SISTEMA SKELETON ====================
+
+import './horarios.css'; // ← IMPORTANTE: CSS custom de horarios
 
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-import { createFormField } from '../skeleton/components/form-field/index.js';
 import { createButton } from '../skeleton/components/button/index.js';
 import { createCard } from '../skeleton/components/card/index.js';
 import { showToast } from '../skeleton/components/toast/index.js';
@@ -76,17 +77,26 @@ const horariosPage = {
   horarios: {},
   
   async load(ctx) {
+    console.log('🔵 [LOAD] Iniciando carga de horarios...');
+    
     this.ctx = ctx;
     this.comercioData = ctx.comercioData || {};
     this.currentUser = ctx.currentUser;
     this.currentComercioId = ctx.currentComercioId;
     
+    console.log('🔵 [LOAD] Datos recibidos:', {
+      comercioId: this.currentComercioId,
+      horariosExisten: !!this.comercioData.horarios
+    });
+    
     this.horarios = ensureHorariosStructure(this.comercioData.horarios);
     
-    console.log('✅ Horarios cargados:', this.horarios);
+    console.log('✅ [LOAD] Horarios procesados:', this.horarios);
   },
   
   render() {
+    console.log('🎨 [RENDER] Iniciando render de página...');
+    
     const page = document.getElementById('skeleton-page');
     page.innerHTML = '';
     
@@ -98,31 +108,32 @@ const horariosPage = {
       <p>Configurá cuándo está abierto tu comercio</p>
     `;
     page.appendChild(header);
+    console.log('✅ [RENDER] Header creado');
     
     // ==================== AI HELPER CARD ====================
     const aiCard = this.renderAIHelper();
     page.appendChild(aiCard);
+    console.log('✅ [RENDER] AI Helper creado');
     
     // ==================== GRID DE DÍAS ====================
     const grid = document.createElement('div');
     grid.className = 'horarios-grid';
-    grid.style.display = 'grid';
-    grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(320px, 1fr))';
-    grid.style.gap = '20px';
-    grid.style.marginBottom = '30px';
     
     this.dayCards = [];
     DAYS.forEach(day => {
+      console.log(`🔵 [RENDER] Creando card para: ${day}`);
       const card = this.createDayCard(day);
       this.dayCards.push(card);
       grid.appendChild(card);
     });
     
     page.appendChild(grid);
+    console.log('✅ [RENDER] Grid de días creado');
     
     // ==================== QUICK ACTIONS ====================
     const actions = this.renderQuickActions();
     page.appendChild(actions);
+    console.log('✅ [RENDER] Quick actions creadas');
     
     // ==================== BOTÓN GUARDAR ====================
     this.guardarBtn = createButton({
@@ -138,9 +149,11 @@ const horariosPage = {
     btnContainer.style.marginTop = '30px';
     btnContainer.appendChild(this.guardarBtn);
     page.appendChild(btnContainer);
+    console.log('✅ [RENDER] Botón guardar creado');
     
     // Validar inicial
     this.validateForm();
+    console.log('✅ [RENDER] Render completo');
   },
   
   renderAIHelper() {
@@ -158,22 +171,70 @@ const horariosPage = {
     const schedule = this.horarios[day];
     const isOpen = !schedule.closed;
     
-    // Contenido dinámico
-    const content = this.buildDayContent(day);
-    
-    // Card con título dinámico
-    const card = createCard({
-      title: DAYS_LABELS[day],
-      icon: 'fa-calendar-day',
-      variant: isOpen ? 'success' : null,
-      content: content,
-      flat: false
+    console.log(`🔵 [CARD] Creando card para ${day}:`, {
+      closed: schedule.closed,
+      continuous: schedule.continuous,
+      isOpen
     });
     
-    // Guardar referencia al día en el DOM
+    // Contenido dinámico usando componentes CUSTOM
+    const content = this.buildDayContent(day);
+    
+    // Card con header custom
+    const card = document.createElement('div');
+    card.className = `day-card ${isOpen ? 'active' : ''}`;
     card.dataset.day = day;
     
+    // Header con toggle grande
+    const header = this.createDayHeader(day, isOpen);
+    card.appendChild(header);
+    
+    // Body con contenido
+    const body = document.createElement('div');
+    body.className = `day-body ${!isOpen ? 'disabled' : ''}`;
+    body.appendChild(content);
+    card.appendChild(body);
+    
+    console.log(`✅ [CARD] Card creada para ${day}`);
+    
     return card;
+  },
+  
+  createDayHeader(day, isOpen) {
+    const header = document.createElement('div');
+    header.className = 'day-header';
+    
+    // Toggle visual grande (custom, no componente genérico)
+    const toggle = document.createElement('div');
+    toggle.className = 'day-toggle';
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `toggle_${day}`;
+    checkbox.checked = isOpen;
+    checkbox.dataset.day = day;
+    
+    const label = document.createElement('label');
+    label.htmlFor = `toggle_${day}`;
+    label.innerHTML = `
+      <span class="day-name">${DAYS_LABELS[day]}</span>
+      <span class="status-badge">${isOpen ? 'Abierto' : 'Cerrado'}</span>
+    `;
+    
+    checkbox.addEventListener('change', (e) => {
+      const newState = e.target.checked;
+      console.log(`🔵 [TOGGLE] ${day} cambió a: ${newState ? 'ABIERTO' : 'CERRADO'}`);
+      
+      this.horarios[day].closed = !newState;
+      this.updateDayCard(day);
+      this.validateForm();
+    });
+    
+    toggle.appendChild(checkbox);
+    toggle.appendChild(label);
+    header.appendChild(toggle);
+    
+    return header;
   },
   
   buildDayContent(day) {
@@ -181,65 +242,70 @@ const horariosPage = {
     const container = document.createElement('div');
     container.className = 'day-content';
     
-    // ==================== TOGGLE ABIERTO/CERRADO ====================
-    const openToggle = createFormField({
-      label: 'Abierto',
-      type: 'checkbox',
-      name: `open_${day}`,
-      value: !schedule.closed
-    });
+    console.log(`🔵 [CONTENT] Construyendo contenido para ${day}:`, schedule);
     
-    openToggle.input.addEventListener('change', (e) => {
-      schedule.closed = !e.target.checked;
-      this.updateDayCard(day);
-      this.validateForm();
-    });
-    
-    container.appendChild(openToggle);
-    
-    // Si está cerrado, no mostrar más nada
+    // Si está cerrado, solo mostrar mensaje
     if (schedule.closed) {
       const closedMsg = document.createElement('p');
+      closedMsg.className = 'closed-message';
       closedMsg.textContent = 'Este día el comercio permanece cerrado';
-      closedMsg.style.color = 'var(--s-gray, #6c757d)';
-      closedMsg.style.fontSize = '14px';
-      closedMsg.style.marginTop = '10px';
       container.appendChild(closedMsg);
+      console.log(`⚪ [CONTENT] ${day} está cerrado, mostrando mensaje`);
       return container;
     }
     
     // ==================== TOGGLE CORRIDO/CORTADO ====================
-    const modeToggle = createFormField({
-      label: 'Horario corrido',
-      type: 'checkbox',
-      name: `continuous_${day}`,
-      value: schedule.continuous
-    });
-    
-    modeToggle.input.addEventListener('change', (e) => {
-      schedule.continuous = e.target.checked;
-      this.updateDayCard(day);
-    });
-    
+    const modeToggle = this.createModeToggle(day, schedule.continuous);
     container.appendChild(modeToggle);
     
-    // Separador visual
+    // Separador
     const separator = document.createElement('hr');
-    separator.style.margin = '15px 0';
-    separator.style.border = 'none';
-    separator.style.borderTop = '1px solid var(--s-border, #d2d6de)';
+    separator.className = 'content-separator';
     container.appendChild(separator);
     
     // ==================== RENDER CONDICIONAL ====================
+    console.log(`🔵 [CONTENT] ${day} modo: ${schedule.continuous ? 'CORRIDO' : 'CORTADO'}`);
+    
     if (schedule.continuous) {
-      // HORARIO CORRIDO - Un solo bloque
       container.appendChild(this.createContinuousSchedule(day));
+      console.log(`✅ [CONTENT] ${day} renderizado con horario CORRIDO`);
     } else {
-      // HORARIO CORTADO - Mañana + Tarde
       container.appendChild(this.createSplitSchedule(day));
+      console.log(`✅ [CONTENT] ${day} renderizado con horario CORTADO`);
     }
     
     return container;
+  },
+  
+  createModeToggle(day, isContinuous) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'schedule-type-toggle';
+    
+    const label = document.createElement('label');
+    label.className = 'schedule-type-label';
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `continuous_${day}`;
+    checkbox.checked = isContinuous;
+    checkbox.dataset.day = day;
+    
+    checkbox.addEventListener('change', (e) => {
+      const newMode = e.target.checked ? 'CORRIDO' : 'CORTADO';
+      console.log(`🔵 [MODE] ${day} cambió a modo: ${newMode}`);
+      
+      this.horarios[day].continuous = e.target.checked;
+      this.updateDayCard(day);
+    });
+    
+    const span = document.createElement('span');
+    span.textContent = 'Horario corrido';
+    
+    label.appendChild(checkbox);
+    label.appendChild(span);
+    wrapper.appendChild(label);
+    
+    return wrapper;
   },
   
   createContinuousSchedule(day) {
@@ -249,40 +315,36 @@ const horariosPage = {
     
     const title = document.createElement('h4');
     title.textContent = 'Horario de atención';
-    title.style.marginBottom = '15px';
-    title.style.fontSize = '14px';
-    title.style.fontWeight = '600';
-    title.style.color = 'var(--s-dark, #343a40)';
     wrapper.appendChild(title);
     
     const timeWrapper = document.createElement('div');
-    timeWrapper.style.display = 'grid';
-    timeWrapper.style.gridTemplateColumns = '1fr 1fr';
-    timeWrapper.style.gap = '15px';
+    timeWrapper.className = 'time-inputs';
     
-    const openInput = createFormField({
+    // Apertura
+    const openGroup = this.createTimeInput({
+      day,
+      field: 'open',
       label: 'Apertura',
-      type: 'time',
-      name: `open_${day}`,
-      value: schedule.open || '09:00'
+      value: schedule.open || '09:00',
+      onChange: (value) => {
+        console.log(`🔵 [TIME] ${day} apertura: ${value}`);
+        schedule.open = value;
+      }
     });
     
-    openInput.input.addEventListener('change', (e) => {
-      schedule.open = e.target.value;
-    });
-    
-    const closeInput = createFormField({
+    // Cierre
+    const closeGroup = this.createTimeInput({
+      day,
+      field: 'close',
       label: 'Cierre',
-      type: 'time',
-      name: `close_${day}`,
-      value: schedule.close || '18:00'
+      value: schedule.close || '18:00',
+      onChange: (value) => {
+        console.log(`🔵 [TIME] ${day} cierre: ${value}`);
+        schedule.close = value;
+      }
     });
     
-    closeInput.input.addEventListener('change', (e) => {
-      schedule.close = e.target.value;
-    });
-    
-    timeWrapper.append(openInput, closeInput);
+    timeWrapper.append(openGroup, closeGroup);
     wrapper.appendChild(timeWrapper);
     
     return wrapper;
@@ -292,6 +354,11 @@ const horariosPage = {
     const schedule = this.horarios[day];
     const wrapper = document.createElement('div');
     wrapper.className = 'split-schedule';
+    
+    console.log(`🔵 [SPLIT] ${day} horario cortado:`, {
+      morningEnabled: schedule.morning.enabled,
+      afternoonEnabled: schedule.afternoon.enabled
+    });
     
     // ==================== MAÑANA ====================
     const morningSection = this.createPeriodSection({
@@ -325,74 +392,107 @@ const horariosPage = {
   
   createPeriodSection({ day, period, label, icon, data }) {
     const section = document.createElement('div');
-    section.className = 'period-section';
+    section.className = 'schedule-period';
     
-    // Toggle habilitar/deshabilitar período
-    const periodToggle = createFormField({
-      label: `${label}`,
-      type: 'checkbox',
-      name: `${period}_enabled_${day}`,
-      value: data.enabled
-    });
+    // Header con toggle
+    const header = document.createElement('div');
+    header.className = 'period-header';
     
-    // Agregar ícono al label
-    const labelEl = periodToggle.querySelector('.s-label');
-    labelEl.innerHTML = `<i class="fas ${icon}"></i> ${label}`;
+    const toggleLabel = document.createElement('label');
+    toggleLabel.className = 'period-toggle';
     
-    periodToggle.input.addEventListener('change', (e) => {
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `${period}_enabled_${day}`;
+    checkbox.checked = data.enabled;
+    checkbox.dataset.day = day;
+    checkbox.dataset.period = period;
+    
+    checkbox.addEventListener('change', (e) => {
+      const newState = e.target.checked ? 'HABILITADO' : 'DESHABILITADO';
+      console.log(`🔵 [PERIOD] ${day} ${period}: ${newState}`);
+      
       data.enabled = e.target.checked;
       this.updateDayCard(day);
     });
     
-    section.appendChild(periodToggle);
+    const span = document.createElement('span');
+    span.innerHTML = `<i class="fas ${icon}"></i> ${label}`;
     
-    // Si está deshabilitado, no mostrar inputs
+    toggleLabel.appendChild(checkbox);
+    toggleLabel.appendChild(span);
+    header.appendChild(toggleLabel);
+    section.appendChild(header);
+    
+    // Si está deshabilitado, mostrar mensaje
     if (!data.enabled) {
       const disabledMsg = document.createElement('p');
+      disabledMsg.className = 'period-disabled';
       disabledMsg.textContent = `${label} cerrado`;
-      disabledMsg.style.color = 'var(--s-gray, #6c757d)';
-      disabledMsg.style.fontSize = '13px';
-      disabledMsg.style.marginTop = '5px';
       section.appendChild(disabledMsg);
+      console.log(`⚪ [PERIOD] ${day} ${period} deshabilitado`);
       return section;
     }
     
     // Inputs de horario
     const timeWrapper = document.createElement('div');
-    timeWrapper.style.display = 'grid';
-    timeWrapper.style.gridTemplateColumns = '1fr 1fr';
-    timeWrapper.style.gap = '15px';
-    timeWrapper.style.marginTop = '10px';
+    timeWrapper.className = 'time-inputs';
     
-    const openInput = createFormField({
+    const openGroup = this.createTimeInput({
+      day,
+      field: `${period}_open`,
       label: 'Apertura',
-      type: 'time',
-      name: `${period}_open_${day}`,
-      value: data.open || '08:00'
+      value: data.open || '08:00',
+      onChange: (value) => {
+        console.log(`🔵 [TIME] ${day} ${period} apertura: ${value}`);
+        data.open = value;
+      }
     });
     
-    openInput.input.addEventListener('change', (e) => {
-      data.open = e.target.value;
-    });
-    
-    const closeInput = createFormField({
+    const closeGroup = this.createTimeInput({
+      day,
+      field: `${period}_close`,
       label: 'Cierre',
-      type: 'time',
-      name: `${period}_close_${day}`,
-      value: data.close || '13:00'
+      value: data.close || '13:00',
+      onChange: (value) => {
+        console.log(`🔵 [TIME] ${day} ${period} cierre: ${value}`);
+        data.close = value;
+      }
     });
     
-    closeInput.input.addEventListener('change', (e) => {
-      data.close = e.target.value;
-    });
-    
-    timeWrapper.append(openInput, closeInput);
+    timeWrapper.append(openGroup, closeGroup);
     section.appendChild(timeWrapper);
     
     return section;
   },
   
+  createTimeInput({ day, field, label, value, onChange }) {
+    const group = document.createElement('div');
+    group.className = 'time-group';
+    
+    const labelEl = document.createElement('label');
+    labelEl.textContent = label;
+    
+    const input = document.createElement('input');
+    input.type = 'time';
+    input.id = `${field}_${day}`;
+    input.value = value;
+    input.dataset.day = day;
+    input.dataset.field = field;
+    
+    input.addEventListener('change', (e) => {
+      onChange(e.target.value);
+    });
+    
+    group.appendChild(labelEl);
+    group.appendChild(input);
+    
+    return group;
+  },
+  
   updateDayCard(day) {
+    console.log(`🔄 [UPDATE] Actualizando card de ${day}`);
+    
     // Encontrar la card antigua
     const index = DAYS.indexOf(day);
     const oldCard = this.dayCards[index];
@@ -403,15 +503,13 @@ const horariosPage = {
     // Reemplazar
     oldCard.replaceWith(newCard);
     this.dayCards[index] = newCard;
+    
+    console.log(`✅ [UPDATE] Card de ${day} actualizada`);
   },
   
   renderQuickActions() {
     const container = document.createElement('div');
     container.className = 'quick-actions';
-    container.style.display = 'flex';
-    container.style.gap = '15px';
-    container.style.marginBottom = '20px';
-    container.style.flexWrap = 'wrap';
     
     const copiarBtn = createButton({
       label: 'Copiar lunes a todos',
@@ -433,11 +531,14 @@ const horariosPage = {
   },
   
   copiarLunesATodos() {
+    console.log('🔵 [ACTION] Copiando lunes a todos...');
+    
     const lunes = structuredClone(this.horarios.lunes);
     
     DAYS.forEach(day => {
       if (day !== 'lunes') {
         this.horarios[day] = structuredClone(lunes);
+        console.log(`✅ [ACTION] ${day} copiado desde lunes`);
       }
     });
     
@@ -452,8 +553,11 @@ const horariosPage = {
   },
   
   cerrarTodos() {
+    console.log('🔵 [ACTION] Cerrando todos los días...');
+    
     DAYS.forEach(day => {
       this.horarios[day].closed = true;
+      console.log(`✅ [ACTION] ${day} cerrado`);
     });
     
     // Re-render completo
@@ -467,14 +571,20 @@ const horariosPage = {
   },
   
   validateForm() {
-    // Al menos un día debe estar abierto
     const alMenosUnDiaAbierto = DAYS.some(day => !this.horarios[day].closed);
+    
+    console.log('🔵 [VALIDATE] Validando formulario:', {
+      alMenosUnDiaAbierto,
+      diasAbiertos: DAYS.filter(d => !this.horarios[d].closed)
+    });
     
     if (this.guardarBtn) {
       if (alMenosUnDiaAbierto) {
         this.guardarBtn.enable();
+        console.log('✅ [VALIDATE] Formulario válido - botón habilitado');
       } else {
         this.guardarBtn.disable();
+        console.log('❌ [VALIDATE] Formulario inválido - botón deshabilitado');
       }
     }
     
@@ -482,7 +592,10 @@ const horariosPage = {
   },
   
   async handleGuardar() {
+    console.log('💾 [SAVE] Intentando guardar horarios...');
+    
     if (!this.validateForm()) {
+      console.log('❌ [SAVE] Validación fallida');
       showToast({
         title: 'Faltan datos',
         message: 'Configurá al menos un día como abierto',
@@ -492,6 +605,7 @@ const horariosPage = {
     }
     
     this.guardarBtn.setLoading(true);
+    console.log('🔵 [SAVE] Guardando en Firebase...');
     
     try {
       const updates = {
@@ -500,7 +614,11 @@ const horariosPage = {
         fechaActualizacion: new Date()
       };
       
+      console.log('🔵 [SAVE] Datos a guardar:', updates);
+      
       await updateDoc(doc(db, 'comercios', this.currentComercioId), updates);
+      
+      console.log('✅ [SAVE] Guardado exitoso en Firebase');
       
       showToast({
         title: 'Guardado',
@@ -510,10 +628,11 @@ const horariosPage = {
       
       await new Promise(resolve => setTimeout(resolve, 500));
       
+      console.log('🔵 [SAVE] Redirigiendo a dashboard...');
       window.location.href = "/dashboard.html";
       
     } catch (error) {
-      console.error('❌ Error guardando:', error);
+      console.error('❌ [SAVE] Error guardando:', error);
       showToast({
         title: 'Error',
         message: 'No se pudo guardar: ' + error.message,
@@ -526,6 +645,8 @@ const horariosPage = {
 };
 
 // ==================== RUN ====================
+console.log('🚀 Iniciando página de horarios con Skeleton...');
+
 runSkeleton({
   page: horariosPage,
   adapter: createFirebaseAdapter,
