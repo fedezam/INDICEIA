@@ -1,10 +1,11 @@
-// pages/horarios/skeletonTest.js
+// pages/ia-config/ia-config.js
 // ==================== MIGRACIÓN AL SISTEMA SKELETON ====================
 
-import './horarios.css'; // ← IMPORTANTE: CSS custom de horarios
+import './ia-config.css'; // ← CSS custom de la página
 
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
+import { createFormField } from '../skeleton/components/form-field/index.js';
 import { createButton } from '../skeleton/components/button/index.js';
 import { createCard } from '../skeleton/components/card/index.js';
 import { showToast } from '../skeleton/components/toast/index.js';
@@ -14,88 +15,95 @@ import { db } from '../firebase.js';
 import { doc, updateDoc } from 'firebase/firestore';
 
 // ==================== DATOS ESTÁTICOS ====================
-const DAYS = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
-const DAYS_LABELS = {
-  lunes: "Lunes",
-  martes: "Martes",
-  miercoles: "Miércoles",
-  jueves: "Jueves",
-  viernes: "Viernes",
-  sabado: "Sábado",
-  domingo: "Domingo"
+
+const COGNITIVE_CAPABILITIES = {
+  basico: [
+    { id: 'examples_simple', label: 'Ejemplos simples', description: 'Puede dar ejemplos básicos' },
+    { id: 'anticipate_common_questions', label: 'Anticipar preguntas', description: 'Responde preguntas frecuentes' }
+  ],
+  recomendado: [
+    { id: 'explain_implicit_services', label: 'Explicar servicios implícitos', description: 'Entiende servicios no mencionados' },
+    { id: 'domain_knowledge', label: 'Conocimiento de dominio', description: 'Conoce tu industria' },
+    { id: 'causal_explanations', label: 'Explicaciones causales', description: 'Explica el porqué de las cosas' }
+  ],
+  avanzado: [
+    { id: 'infer_missing_details', label: 'Inferir detalles', description: 'Completa info faltante' },
+    { id: 'contextual_adaptation', label: 'Adaptación contextual', description: 'Se adapta al contexto' },
+    { id: 'guided_suggestions', label: 'Sugerencias guiadas', description: 'Sugiere próximos pasos' }
+  ]
 };
 
+const IDIOMAS = [
+  { value: 'es-AR', label: 'Español (Argentina)' },
+  { value: 'es-ES', label: 'Español (España)' },
+  { value: 'es-MX', label: 'Español (México)' },
+  { value: 'en-US', label: 'English (US)' },
+  { value: 'pt-BR', label: 'Português (Brasil)' }
+];
+
+const TONOS = [
+  { value: 'formal', label: 'Formal' },
+  { value: 'amigable', label: 'Amigable' },
+  { value: 'casual', label: 'Casual' },
+  { value: 'profesional', label: 'Profesional' }
+];
+
 // ==================== HELPERS ====================
-function getDefaultDaySchedule() {
+
+function getDefaultAIConfig() {
   return {
-    closed: false,
-    continuous: true,
-    open: "09:00",
-    close: "18:00",
-    morning: {
-      enabled: true,
-      open: "08:00",
-      close: "13:00"
-    },
-    afternoon: {
-      enabled: true,
-      open: "16:00",
-      close: "21:00"
-    }
+    aiName: '',
+    aiLanguage: 'es-AR',
+    aiPersonality: '',
+    aiTone: 'amigable',
+    aiGreeting: '',
+    sinPrecio: '',
+    sinStock: '',
+    localCerrado: '',
+    proactividad: '',
+    formatoRespuestas: ''
   };
 }
 
-function ensureHorariosStructure(horariosData) {
-  const result = horariosData || {};
-  
-  DAYS.forEach(day => {
-    if (!result[day]) {
-      result[day] = getDefaultDaySchedule();
-    } else {
-      if (!result[day].morning) {
-        result[day].morning = { enabled: true, open: "08:00", close: "13:00" };
-      }
-      if (!result[day].afternoon) {
-        result[day].afternoon = { enabled: true, open: "16:00", close: "21:00" };
-      }
-      if (result[day].continuous === undefined) {
-        result[day].continuous = true;
-      }
-    }
-  });
-  
-  return result;
+function getDefaultAICognition() {
+  return {
+    level: 'basico',
+    capabilities: {}
+  };
 }
 
 // ==================== PÁGINA ====================
-const horariosPage = {
+const iaConfigPage = {
   // Referencias
-  dayCards: [],
+  fields: {},
+  levelCards: [],
+  capabilityCheckboxes: {},
+  greetingPreview: null,
   guardarBtn: null,
   
   // Estado
-  horarios: {},
+  aiConfig: {},
+  aiCognition: {},
   
   async load(ctx) {
-    console.log('🔵 [LOAD] Iniciando carga de horarios...');
+    console.log('🔵 [LOAD] Iniciando carga de IA Config...');
     
     this.ctx = ctx;
     this.comercioData = ctx.comercioData || {};
     this.currentUser = ctx.currentUser;
     this.currentComercioId = ctx.currentComercioId;
     
-    console.log('🔵 [LOAD] Datos recibidos:', {
-      comercioId: this.currentComercioId,
-      horariosExisten: !!this.comercioData.horarios
+    this.aiConfig = this.comercioData.aiConfig || getDefaultAIConfig();
+    this.aiCognition = this.comercioData.aiCognition || getDefaultAICognition();
+    
+    console.log('✅ [LOAD] Configuración cargada:', {
+      aiConfig: this.aiConfig,
+      aiCognition: this.aiCognition
     });
-    
-    this.horarios = ensureHorariosStructure(this.comercioData.horarios);
-    
-    console.log('✅ [LOAD] Horarios procesados:', this.horarios);
   },
   
   render() {
-    console.log('🎨 [RENDER] Iniciando render de página...');
+    console.log('🎨 [RENDER] Iniciando render...');
     
     const page = document.getElementById('skeleton-page');
     page.innerHTML = '';
@@ -104,8 +112,8 @@ const horariosPage = {
     const header = document.createElement('div');
     header.className = 'page-header';
     header.innerHTML = `
-      <h2><i class="fas fa-clock"></i> Horarios de Atención</h2>
-      <p>Configurá cuándo está abierto tu comercio</p>
+      <h2><i class="fas fa-robot"></i> Configuración de IA</h2>
+      <p>Personalizá cómo piensa y se comporta tu asistente</p>
     `;
     page.appendChild(header);
     console.log('✅ [RENDER] Header creado');
@@ -115,29 +123,34 @@ const horariosPage = {
     page.appendChild(aiCard);
     console.log('✅ [RENDER] AI Helper creado');
     
-    // ==================== GRID DE DÍAS ====================
-    const grid = document.createElement('div');
-    grid.className = 'horarios-grid';
+    // ==================== SECCIÓN: CONFIGURACIÓN BÁSICA ====================
+    const basicCard = this.renderBasicConfig();
+    page.appendChild(basicCard);
+    console.log('✅ [RENDER] Config básica creada');
     
-    this.dayCards = [];
-    DAYS.forEach(day => {
-      console.log(`🔵 [RENDER] Creando card para: ${day}`);
-      const card = this.createDayCard(day);
-      this.dayCards.push(card);
-      grid.appendChild(card);
-    });
+    // ==================== SECCIÓN: SALUDO ====================
+    const greetingCard = this.renderGreeting();
+    page.appendChild(greetingCard);
+    console.log('✅ [RENDER] Saludo creado');
     
-    page.appendChild(grid);
-    console.log('✅ [RENDER] Grid de días creado');
+    // ==================== SECCIÓN: COMPORTAMIENTOS ====================
+    const behaviorsCard = this.renderBehaviors();
+    page.appendChild(behaviorsCard);
+    console.log('✅ [RENDER] Comportamientos creados');
     
-    // ==================== QUICK ACTIONS ====================
-    const actions = this.renderQuickActions();
-    page.appendChild(actions);
-    console.log('✅ [RENDER] Quick actions creadas');
+    // ==================== SECCIÓN: NIVEL COGNITIVO ====================
+    const levelCard = this.renderCognitiveLevel();
+    page.appendChild(levelCard);
+    console.log('✅ [RENDER] Nivel cognitivo creado');
+    
+    // ==================== SECCIÓN: CAPACIDADES ====================
+    const capabilitiesCard = this.renderCapabilities();
+    page.appendChild(capabilitiesCard);
+    console.log('✅ [RENDER] Capacidades creadas');
     
     // ==================== BOTÓN GUARDAR ====================
     this.guardarBtn = createButton({
-      label: 'Guardar Horarios',
+      label: 'Guardar Configuración',
       icon: 'fa-save',
       variant: 'success',
       size: 'lg',
@@ -158,447 +171,462 @@ const horariosPage = {
   
   renderAIHelper() {
     return createCard({
-      title: '¡Tu IA conocerá tus horarios!',
-      icon: 'fa-robot',
+      title: 'Cómo piensa tu IA',
+      icon: 'fa-brain',
       variant: 'info',
       highlight: true,
-      content: 'Configurando tus horarios, tu asistente sabrá cuándo puede atender clientes y gestionar pedidos automáticamente. Esto evita confusiones y mejora la experiencia.',
+      content: 'Elegí qué tan inteligente querés que sea tu asistente. A mayor nivel cognitivo, mejor entenderá a tus clientes.',
       compact: true
     });
   },
   
-  createDayCard(day) {
-    const schedule = this.horarios[day];
-    const isOpen = !schedule.closed;
+  renderBasicConfig() {
+    const content = document.createElement('div');
+    content.className = 'config-section';
     
-    console.log(`🔵 [CARD] Creando card para ${day}:`, {
-      closed: schedule.closed,
-      continuous: schedule.continuous,
-      isOpen
+    // Nombre
+    this.fields.aiName = createFormField({
+      label: 'Nombre de la IA',
+      name: 'aiName',
+      type: 'text',
+      required: true,
+      placeholder: 'Ej: Asistente Virtual',
+      value: this.aiConfig.aiName || ''
     });
     
-    // Contenido dinámico usando componentes CUSTOM
-    const content = this.buildDayContent(day);
-    
-    // Card con header custom
-    const card = document.createElement('div');
-    card.className = `day-card ${isOpen ? 'active' : ''}`;
-    card.dataset.day = day;
-    
-    // Header con toggle grande
-    const header = this.createDayHeader(day, isOpen);
-    card.appendChild(header);
-    
-    // Body con contenido
-    const body = document.createElement('div');
-    body.className = `day-body ${!isOpen ? 'disabled' : ''}`;
-    body.appendChild(content);
-    card.appendChild(body);
-    
-    console.log(`✅ [CARD] Card creada para ${day}`);
-    
-    return card;
-  },
-  
-  createDayHeader(day, isOpen) {
-    const header = document.createElement('div');
-    header.className = 'day-header';
-    
-    // Toggle visual grande (custom, no componente genérico)
-    const toggle = document.createElement('div');
-    toggle.className = 'day-toggle';
-    
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.id = `toggle_${day}`;
-    checkbox.checked = isOpen;
-    checkbox.dataset.day = day;
-    
-    const label = document.createElement('label');
-    label.htmlFor = `toggle_${day}`;
-    label.innerHTML = `
-      <span class="day-name">${DAYS_LABELS[day]}</span>
-      <span class="status-badge">${isOpen ? 'Abierto' : 'Cerrado'}</span>
-    `;
-    
-    checkbox.addEventListener('change', (e) => {
-      const newState = e.target.checked;
-      console.log(`🔵 [TOGGLE] ${day} cambió a: ${newState ? 'ABIERTO' : 'CERRADO'}`);
-      
-      this.horarios[day].closed = !newState;
-      this.updateDayCard(day);
+    this.fields.aiName.input.addEventListener('input', () => {
+      console.log('🔵 [INPUT] Nombre IA:', this.fields.aiName.input.value);
       this.validateForm();
     });
     
-    toggle.appendChild(checkbox);
-    toggle.appendChild(label);
-    header.appendChild(toggle);
+    // Idioma
+    this.fields.aiLanguage = createFormField({
+      label: 'Idioma',
+      name: 'aiLanguage',
+      type: 'select',
+      required: true,
+      options: IDIOMAS
+    });
     
-    return header;
+    this.fields.aiLanguage.input.value = this.aiConfig.aiLanguage || 'es-AR';
+    
+    this.fields.aiLanguage.input.addEventListener('change', () => {
+      console.log('🔵 [SELECT] Idioma:', this.fields.aiLanguage.input.value);
+    });
+    
+    // Personalidad
+    this.fields.aiPersonality = createFormField({
+      label: 'Personalidad',
+      name: 'aiPersonality',
+      type: 'textarea',
+      required: true,
+      rows: 3,
+      placeholder: 'Ej: Amable, servicial y con sentido del humor',
+      value: this.aiConfig.aiPersonality || ''
+    });
+    
+    this.fields.aiPersonality.input.addEventListener('input', () => {
+      console.log('🔵 [INPUT] Personalidad:', this.fields.aiPersonality.input.value.substring(0, 30) + '...');
+      this.validateForm();
+    });
+    
+    // Tono
+    this.fields.aiTone = createFormField({
+      label: 'Tono de comunicación',
+      name: 'aiTone',
+      type: 'select',
+      required: true,
+      options: TONOS
+    });
+    
+    this.fields.aiTone.input.value = this.aiConfig.aiTone || 'amigable';
+    
+    this.fields.aiTone.input.addEventListener('change', () => {
+      console.log('🔵 [SELECT] Tono:', this.fields.aiTone.input.value);
+    });
+    
+    content.append(
+      this.fields.aiName,
+      this.fields.aiLanguage,
+      this.fields.aiPersonality,
+      this.fields.aiTone
+    );
+    
+    return createCard({
+      title: 'Configuración Básica',
+      icon: 'fa-sliders-h',
+      content: content
+    });
   },
   
-  buildDayContent(day) {
-    const schedule = this.horarios[day];
-    const container = document.createElement('div');
-    container.className = 'day-content';
+  renderGreeting() {
+    const content = document.createElement('div');
+    content.className = 'greeting-section';
     
-    console.log(`🔵 [CONTENT] Construyendo contenido para ${day}:`, schedule);
+    // Campo de saludo
+    this.fields.aiGreeting = createFormField({
+      label: 'Saludo inicial',
+      name: 'aiGreeting',
+      type: 'textarea',
+      required: true,
+      rows: 3,
+      placeholder: 'Ej: ¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte?',
+      value: this.aiConfig.aiGreeting || ''
+    });
     
-    // Si está cerrado, solo mostrar mensaje
-    if (schedule.closed) {
-      const closedMsg = document.createElement('p');
-      closedMsg.className = 'closed-message';
-      closedMsg.textContent = 'Este día el comercio permanece cerrado';
-      container.appendChild(closedMsg);
-      console.log(`⚪ [CONTENT] ${day} está cerrado, mostrando mensaje`);
-      return container;
-    }
+    // Preview en tiempo real
+    const previewWrapper = document.createElement('div');
+    previewWrapper.className = 'greeting-preview-wrapper';
     
-    // ==================== TOGGLE CORRIDO/CORTADO ====================
-    const modeToggle = this.createModeToggle(day, schedule.continuous);
-    container.appendChild(modeToggle);
+    const previewLabel = document.createElement('label');
+    previewLabel.className = 'preview-label';
+    previewLabel.textContent = 'Vista previa:';
     
-    // Separador
-    const separator = document.createElement('hr');
-    separator.className = 'content-separator';
-    container.appendChild(separator);
+    this.greetingPreview = document.createElement('div');
+    this.greetingPreview.className = 'greeting-preview';
+    this.greetingPreview.textContent = this.aiConfig.aiGreeting || 'Tu saludo aparecerá aquí...';
     
-    // ==================== RENDER CONDICIONAL ====================
-    console.log(`🔵 [CONTENT] ${day} modo: ${schedule.continuous ? 'CORRIDO' : 'CORTADO'}`);
+    previewWrapper.appendChild(previewLabel);
+    previewWrapper.appendChild(this.greetingPreview);
     
-    if (schedule.continuous) {
-      container.appendChild(this.createContinuousSchedule(day));
-      console.log(`✅ [CONTENT] ${day} renderizado con horario CORRIDO`);
-    } else {
-      container.appendChild(this.createSplitSchedule(day));
-      console.log(`✅ [CONTENT] ${day} renderizado con horario CORTADO`);
-    }
+    // Event listener para actualizar preview
+    this.fields.aiGreeting.input.addEventListener('input', () => {
+      const value = this.fields.aiGreeting.input.value.trim();
+      this.greetingPreview.textContent = value || 'Tu saludo aparecerá aquí...';
+      console.log('🔵 [PREVIEW] Saludo actualizado');
+      this.validateForm();
+    });
     
-    return container;
+    content.appendChild(this.fields.aiGreeting);
+    content.appendChild(previewWrapper);
+    
+    return createCard({
+      title: 'Saludo',
+      icon: 'fa-comment-dots',
+      content: content
+    });
   },
   
-  createModeToggle(day, isContinuous) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'schedule-type-toggle';
+  renderBehaviors() {
+    const content = document.createElement('div');
+    content.className = 'behaviors-section';
     
-    const label = document.createElement('label');
-    label.className = 'schedule-type-label';
+    // Sin precio
+    this.fields.sinPrecio = createFormField({
+      label: 'Respuesta cuando no hay precio',
+      name: 'sinPrecio',
+      type: 'textarea',
+      rows: 2,
+      placeholder: 'Ej: Te contacto con ventas para cotizar',
+      value: this.aiConfig.sinPrecio || ''
+    });
     
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.id = `continuous_${day}`;
-    checkbox.checked = isContinuous;
-    checkbox.dataset.day = day;
+    // Sin stock
+    this.fields.sinStock = createFormField({
+      label: 'Respuesta cuando no hay stock',
+      name: 'sinStock',
+      type: 'textarea',
+      rows: 2,
+      placeholder: 'Ej: Por el momento no tenemos stock disponible',
+      value: this.aiConfig.sinStock || ''
+    });
     
-    checkbox.addEventListener('change', (e) => {
-      const newMode = e.target.checked ? 'CORRIDO' : 'CORTADO';
-      console.log(`🔵 [MODE] ${day} cambió a modo: ${newMode}`);
+    // Local cerrado
+    this.fields.localCerrado = createFormField({
+      label: 'Respuesta cuando el local está cerrado',
+      name: 'localCerrado',
+      type: 'textarea',
+      rows: 2,
+      placeholder: 'Ej: Estamos cerrados ahora, volvemos mañana a las 9:00',
+      value: this.aiConfig.localCerrado || ''
+    });
+    
+    // Proactividad
+    this.fields.proactividad = createFormField({
+      label: 'Nivel de proactividad',
+      name: 'proactividad',
+      type: 'textarea',
+      rows: 2,
+      placeholder: 'Ej: Ofrecer productos relacionados, sugerir combos',
+      value: this.aiConfig.proactividad || ''
+    });
+    
+    // Formato respuestas
+    this.fields.formatoRespuestas = createFormField({
+      label: 'Formato de respuestas',
+      name: 'formatoRespuestas',
+      type: 'textarea',
+      rows: 2,
+      placeholder: 'Ej: Respuestas cortas y directas',
+      value: this.aiConfig.formatoRespuestas || ''
+    });
+    
+    content.append(
+      this.fields.sinPrecio,
+      this.fields.sinStock,
+      this.fields.localCerrado,
+      this.fields.proactividad,
+      this.fields.formatoRespuestas
+    );
+    
+    return createCard({
+      title: 'Comportamientos Especiales',
+      icon: 'fa-cogs',
+      content: content
+    });
+  },
+  
+  renderCognitiveLevel() {
+    const content = document.createElement('div');
+    content.className = 'cognitive-level-section';
+    
+    const description = document.createElement('p');
+    description.className = 'level-description';
+    description.textContent = 'Seleccioná el nivel de inteligencia de tu asistente:';
+    content.appendChild(description);
+    
+    const levelsGrid = document.createElement('div');
+    levelsGrid.className = 'levels-grid';
+    
+    const levels = [
+      { 
+        id: 'basico', 
+        label: 'Básico', 
+        icon: 'fa-star',
+        description: 'Respuestas simples y directas',
+        capabilities: 2
+      },
+      { 
+        id: 'recomendado', 
+        label: 'Recomendado', 
+        icon: 'fa-star-half-alt',
+        description: 'Entiende contexto y anticipa necesidades',
+        capabilities: 3,
+        recommended: true
+      },
+      { 
+        id: 'avanzado', 
+        label: 'Avanzado', 
+        icon: 'fa-brain',
+        description: 'Máxima inteligencia y adaptación',
+        capabilities: 3
+      }
+    ];
+    
+    this.levelCards = [];
+    
+    levels.forEach(level => {
+      console.log(`🔵 [LEVEL] Creando card para nivel: ${level.id}`);
       
-      this.horarios[day].continuous = e.target.checked;
-      this.updateDayCard(day);
-    });
-    
-    const span = document.createElement('span');
-    span.textContent = 'Horario corrido';
-    
-    label.appendChild(checkbox);
-    label.appendChild(span);
-    wrapper.appendChild(label);
-    
-    return wrapper;
-  },
-  
-  createContinuousSchedule(day) {
-    const schedule = this.horarios[day];
-    const wrapper = document.createElement('div');
-    wrapper.className = 'continuous-schedule';
-    
-    const title = document.createElement('h4');
-    title.textContent = 'Horario de atención';
-    wrapper.appendChild(title);
-    
-    const timeWrapper = document.createElement('div');
-    timeWrapper.className = 'time-inputs';
-    
-    // Apertura
-    const openGroup = this.createTimeInput({
-      day,
-      field: 'open',
-      label: 'Apertura',
-      value: schedule.open || '09:00',
-      onChange: (value) => {
-        console.log(`🔵 [TIME] ${day} apertura: ${value}`);
-        schedule.open = value;
-      }
-    });
-    
-    // Cierre
-    const closeGroup = this.createTimeInput({
-      day,
-      field: 'close',
-      label: 'Cierre',
-      value: schedule.close || '18:00',
-      onChange: (value) => {
-        console.log(`🔵 [TIME] ${day} cierre: ${value}`);
-        schedule.close = value;
-      }
-    });
-    
-    timeWrapper.append(openGroup, closeGroup);
-    wrapper.appendChild(timeWrapper);
-    
-    return wrapper;
-  },
-  
-  createSplitSchedule(day) {
-    const schedule = this.horarios[day];
-    const wrapper = document.createElement('div');
-    wrapper.className = 'split-schedule';
-    
-    console.log(`🔵 [SPLIT] ${day} horario cortado:`, {
-      morningEnabled: schedule.morning.enabled,
-      afternoonEnabled: schedule.afternoon.enabled
-    });
-    
-    // ==================== MAÑANA ====================
-    const morningSection = this.createPeriodSection({
-      day,
-      period: 'morning',
-      label: 'Mañana',
-      icon: 'fa-sun',
-      data: schedule.morning
-    });
-    
-    wrapper.appendChild(morningSection);
-    
-    // Separador
-    const separator = document.createElement('div');
-    separator.style.height = '20px';
-    wrapper.appendChild(separator);
-    
-    // ==================== TARDE ====================
-    const afternoonSection = this.createPeriodSection({
-      day,
-      period: 'afternoon',
-      label: 'Tarde',
-      icon: 'fa-moon',
-      data: schedule.afternoon
-    });
-    
-    wrapper.appendChild(afternoonSection);
-    
-    return wrapper;
-  },
-  
-  createPeriodSection({ day, period, label, icon, data }) {
-    const section = document.createElement('div');
-    section.className = 'schedule-period';
-    
-    // Header con toggle
-    const header = document.createElement('div');
-    header.className = 'period-header';
-    
-    const toggleLabel = document.createElement('label');
-    toggleLabel.className = 'period-toggle';
-    
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.id = `${period}_enabled_${day}`;
-    checkbox.checked = data.enabled;
-    checkbox.dataset.day = day;
-    checkbox.dataset.period = period;
-    
-    checkbox.addEventListener('change', (e) => {
-      const newState = e.target.checked ? 'HABILITADO' : 'DESHABILITADO';
-      console.log(`🔵 [PERIOD] ${day} ${period}: ${newState}`);
+      const levelContent = document.createElement('div');
+      levelContent.innerHTML = `
+        <div class="level-info">
+          <p class="level-desc">${level.description}</p>
+          <small class="level-caps">${level.capabilities} capacidades</small>
+          ${level.recommended ? '<span class="recommended-badge">⭐ Recomendado</span>' : ''}
+        </div>
+      `;
       
-      data.enabled = e.target.checked;
-      this.updateDayCard(day);
+      const card = createCard({
+        title: level.label,
+        icon: level.icon,
+        content: levelContent,
+        selectable: true,
+        selected: this.aiCognition.level === level.id,
+        compact: true,
+        variant: level.recommended ? 'success' : null
+      });
+      
+      card.dataset.level = level.id;
+      
+      card.addEventListener('card-select', (e) => {
+        if (e.detail.selected) {
+          console.log(`🔵 [LEVEL] Nivel seleccionado: ${level.id}`);
+          
+          this.aiCognition.level = level.id;
+          
+          // Deseleccionar otras cards
+          this.levelCards.forEach(c => {
+            if (c !== card) {
+              c.deselect();
+            }
+          });
+          
+          // Actualizar capacidades mostradas
+          this.updateCapabilitiesVisibility();
+        }
+      });
+      
+      this.levelCards.push(card);
+      levelsGrid.appendChild(card);
     });
     
-    const span = document.createElement('span');
-    span.innerHTML = `<i class="fas ${icon}"></i> ${label}`;
+    content.appendChild(levelsGrid);
     
-    toggleLabel.appendChild(checkbox);
-    toggleLabel.appendChild(span);
-    header.appendChild(toggleLabel);
-    section.appendChild(header);
-    
-    // Si está deshabilitado, mostrar mensaje
-    if (!data.enabled) {
-      const disabledMsg = document.createElement('p');
-      disabledMsg.className = 'period-disabled';
-      disabledMsg.textContent = `${label} cerrado`;
-      section.appendChild(disabledMsg);
-      console.log(`⚪ [PERIOD] ${day} ${period} deshabilitado`);
-      return section;
-    }
-    
-    // Inputs de horario
-    const timeWrapper = document.createElement('div');
-    timeWrapper.className = 'time-inputs';
-    
-    const openGroup = this.createTimeInput({
-      day,
-      field: `${period}_open`,
-      label: 'Apertura',
-      value: data.open || '08:00',
-      onChange: (value) => {
-        console.log(`🔵 [TIME] ${day} ${period} apertura: ${value}`);
-        data.open = value;
-      }
+    return createCard({
+      title: 'Nivel Cognitivo',
+      icon: 'fa-graduation-cap',
+      content: content,
+      highlight: true
     });
-    
-    const closeGroup = this.createTimeInput({
-      day,
-      field: `${period}_close`,
-      label: 'Cierre',
-      value: data.close || '13:00',
-      onChange: (value) => {
-        console.log(`🔵 [TIME] ${day} ${period} cierre: ${value}`);
-        data.close = value;
-      }
-    });
-    
-    timeWrapper.append(openGroup, closeGroup);
-    section.appendChild(timeWrapper);
-    
-    return section;
   },
   
-  createTimeInput({ day, field, label, value, onChange }) {
+  renderCapabilities() {
+    const content = document.createElement('div');
+    content.className = 'capabilities-section';
+    
+    const description = document.createElement('p');
+    description.className = 'capabilities-description';
+    description.textContent = 'Activá las capacidades específicas que querés que tenga tu IA:';
+    content.appendChild(description);
+    
+    // Crear grupo por cada nivel
+    Object.entries(COGNITIVE_CAPABILITIES).forEach(([level, capabilities]) => {
+      const group = this.createCapabilityGroup(level, capabilities);
+      content.appendChild(group);
+    });
+    
+    return createCard({
+      title: 'Capacidades Cognitivas',
+      icon: 'fa-puzzle-piece',
+      content: content
+    });
+  },
+  
+  createCapabilityGroup(level, capabilities) {
     const group = document.createElement('div');
-    group.className = 'time-group';
+    group.className = `capability-group capability-${level}`;
+    group.dataset.level = level;
     
-    const labelEl = document.createElement('label');
-    labelEl.textContent = label;
+    // Header del grupo
+    const header = document.createElement('div');
+    header.className = 'group-header';
     
-    const input = document.createElement('input');
-    input.type = 'time';
-    input.id = `${field}_${day}`;
-    input.value = value;
-    input.dataset.day = day;
-    input.dataset.field = field;
+    const icons = {
+      basico: 'fa-star',
+      recomendado: 'fa-star-half-alt',
+      avanzado: 'fa-brain'
+    };
     
-    input.addEventListener('change', (e) => {
-      onChange(e.target.value);
+    const labels = {
+      basico: 'Básico',
+      recomendado: 'Recomendado',
+      avanzado: 'Avanzado'
+    };
+    
+    header.innerHTML = `
+      <i class="fas ${icons[level]}"></i>
+      <span>${labels[level]}</span>
+    `;
+    
+    group.appendChild(header);
+    
+    // Checkboxes
+    const checksWrapper = document.createElement('div');
+    checksWrapper.className = 'capabilities-list';
+    
+    capabilities.forEach(cap => {
+      const isEnabled = this.aiCognition.capabilities && this.aiCognition.capabilities[cap.id];
+      
+      const wrapper = document.createElement('div');
+      wrapper.className = 'capability-item';
+      
+      const checkbox = createFormField({
+        label: cap.label,
+        name: `cap_${cap.id}`,
+        type: 'checkbox',
+        value: isEnabled
+      });
+      
+      const description = document.createElement('small');
+      description.className = 'capability-description';
+      description.textContent = cap.description;
+      
+      checkbox.input.addEventListener('change', (e) => {
+        console.log(`🔵 [CAPABILITY] ${cap.id}: ${e.target.checked ? 'HABILITADO' : 'DESHABILITADO'}`);
+        
+        if (!this.aiCognition.capabilities) {
+          this.aiCognition.capabilities = {};
+        }
+        
+        if (e.target.checked) {
+          this.aiCognition.capabilities[cap.id] = true;
+        } else {
+          delete this.aiCognition.capabilities[cap.id];
+        }
+      });
+      
+      wrapper.appendChild(checkbox);
+      wrapper.appendChild(description);
+      
+      checksWrapper.appendChild(wrapper);
+      
+      // Guardar referencia
+      if (!this.capabilityCheckboxes[level]) {
+        this.capabilityCheckboxes[level] = [];
+      }
+      this.capabilityCheckboxes[level].push(checkbox);
     });
     
-    group.appendChild(labelEl);
-    group.appendChild(input);
+    group.appendChild(checksWrapper);
+    
+    // Mostrar/ocultar según nivel seleccionado
+    if (this.aiCognition.level !== level) {
+      group.style.display = 'none';
+    }
     
     return group;
   },
   
-  updateDayCard(day) {
-    console.log(`🔄 [UPDATE] Actualizando card de ${day}`);
+  updateCapabilitiesVisibility() {
+    console.log('🔄 [UPDATE] Actualizando visibilidad de capacidades para nivel:', this.aiCognition.level);
     
-    // Encontrar la card antigua
-    const index = DAYS.indexOf(day);
-    const oldCard = this.dayCards[index];
-    
-    // Crear nueva card
-    const newCard = this.createDayCard(day);
-    
-    // Reemplazar
-    oldCard.replaceWith(newCard);
-    this.dayCards[index] = newCard;
-    
-    console.log(`✅ [UPDATE] Card de ${day} actualizada`);
-  },
-  
-  renderQuickActions() {
-    const container = document.createElement('div');
-    container.className = 'quick-actions';
-    
-    const copiarBtn = createButton({
-      label: 'Copiar lunes a todos',
-      icon: 'fa-copy',
-      variant: 'secondary',
-      onClick: () => this.copiarLunesATodos()
-    });
-    
-    const cerrarBtn = createButton({
-      label: 'Cerrar todos',
-      icon: 'fa-times-circle',
-      variant: 'secondary',
-      onClick: () => this.cerrarTodos()
-    });
-    
-    container.append(copiarBtn, cerrarBtn);
-    
-    return container;
-  },
-  
-  copiarLunesATodos() {
-    console.log('🔵 [ACTION] Copiando lunes a todos...');
-    
-    const lunes = structuredClone(this.horarios.lunes);
-    
-    DAYS.forEach(day => {
-      if (day !== 'lunes') {
-        this.horarios[day] = structuredClone(lunes);
-        console.log(`✅ [ACTION] ${day} copiado desde lunes`);
+    const groups = document.querySelectorAll('.capability-group');
+    groups.forEach(group => {
+      const groupLevel = group.dataset.level;
+      if (groupLevel === this.aiCognition.level) {
+        group.style.display = '';
+      } else {
+        group.style.display = 'none';
       }
-    });
-    
-    // Re-render completo
-    this.render();
-    
-    showToast({
-      title: 'Copiado',
-      message: 'Horarios de lunes aplicados a todos los días',
-      variant: 'success'
-    });
-  },
-  
-  cerrarTodos() {
-    console.log('🔵 [ACTION] Cerrando todos los días...');
-    
-    DAYS.forEach(day => {
-      this.horarios[day].closed = true;
-      console.log(`✅ [ACTION] ${day} cerrado`);
-    });
-    
-    // Re-render completo
-    this.render();
-    
-    showToast({
-      title: 'Cerrado',
-      message: 'Todos los días marcados como cerrado',
-      variant: 'info'
     });
   },
   
   validateForm() {
-    const alMenosUnDiaAbierto = DAYS.some(day => !this.horarios[day].closed);
+    const hasName = this.fields.aiName?.input.value.trim();
+    const hasPersonality = this.fields.aiPersonality?.input.value.trim();
+    const hasTone = this.fields.aiTone?.input.value.trim();
+    const hasGreeting = this.fields.aiGreeting?.input.value.trim();
+    
+    const isValid = hasName && hasPersonality && hasTone && hasGreeting;
     
     console.log('🔵 [VALIDATE] Validando formulario:', {
-      alMenosUnDiaAbierto,
-      diasAbiertos: DAYS.filter(d => !this.horarios[d].closed)
+      hasName: !!hasName,
+      hasPersonality: !!hasPersonality,
+      hasTone: !!hasTone,
+      hasGreeting: !!hasGreeting,
+      isValid
     });
     
     if (this.guardarBtn) {
-      if (alMenosUnDiaAbierto) {
+      if (isValid) {
         this.guardarBtn.enable();
-        console.log('✅ [VALIDATE] Formulario válido - botón habilitado');
       } else {
         this.guardarBtn.disable();
-        console.log('❌ [VALIDATE] Formulario inválido - botón deshabilitado');
       }
     }
     
-    return alMenosUnDiaAbierto;
+    return isValid;
   },
   
   async handleGuardar() {
-    console.log('💾 [SAVE] Intentando guardar horarios...');
+    console.log('💾 [SAVE] Intentando guardar configuración...');
     
     if (!this.validateForm()) {
       console.log('❌ [SAVE] Validación fallida');
       showToast({
         title: 'Faltan datos',
-        message: 'Configurá al menos un día como abierto',
+        message: 'Completá todos los campos requeridos',
         variant: 'warning'
       });
       return;
@@ -608,9 +636,23 @@ const horariosPage = {
     console.log('🔵 [SAVE] Guardando en Firebase...');
     
     try {
+      const aiConfig = {
+        aiName: this.fields.aiName.input.value.trim(),
+        aiLanguage: this.fields.aiLanguage.input.value,
+        aiPersonality: this.fields.aiPersonality.input.value.trim(),
+        aiTone: this.fields.aiTone.input.value,
+        aiGreeting: this.fields.aiGreeting.input.value.trim(),
+        sinPrecio: this.fields.sinPrecio.input.value.trim(),
+        sinStock: this.fields.sinStock.input.value.trim(),
+        localCerrado: this.fields.localCerrado.input.value.trim(),
+        proactividad: this.fields.proactividad.input.value.trim(),
+        formatoRespuestas: this.fields.formatoRespuestas.input.value.trim()
+      };
+      
       const updates = {
-        horarios: this.horarios,
-        'onboardingSteps.horarios': true,
+        aiConfig,
+        aiCognition: this.aiCognition,
+        'onboardingSteps.ia-config': true,
         fechaActualizacion: new Date()
       };
       
@@ -618,11 +660,11 @@ const horariosPage = {
       
       await updateDoc(doc(db, 'comercios', this.currentComercioId), updates);
       
-      console.log('✅ [SAVE] Guardado exitoso en Firebase');
+      console.log('✅ [SAVE] Guardado exitoso');
       
       showToast({
         title: 'Guardado',
-        message: 'Horarios actualizados correctamente',
+        message: 'Configuración actualizada correctamente',
         variant: 'success'
       });
       
@@ -645,13 +687,13 @@ const horariosPage = {
 };
 
 // ==================== RUN ====================
-console.log('🚀 Iniciando página de horarios con Skeleton...');
+console.log('🚀 Iniciando página de IA Config con Skeleton...');
 
 runSkeleton({
-  page: horariosPage,
+  page: iaConfigPage,
   adapter: createFirebaseAdapter,
   options: {
     debug: true,
-    loadingMessage: 'Cargando horarios...'
+    loadingMessage: 'Cargando configuración de IA...'
   }
 });
