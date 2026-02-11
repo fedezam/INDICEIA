@@ -1,34 +1,34 @@
 /* pages/ia-config/ia-config.css */
-/* Estilos CUSTOM solo para esta página – inspirados en AdminLTE */
+/* Estilos CUSTOM solo para esta página – inspirados en AdminLTE + mejoras visuales */
 
-/* ==================== PAGE HEADER ==================== */
 .page-header {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   text-align: center;
   padding: 0 15px;
 }
 .page-header h2 {
-  margin: 0 0 8px 0;
-  color: var(--s-dark, #343a40);
-  font-size: 26px;
-  font-weight: 600;
+  margin: 0 0 10px 0;
+  color: #343a40;
+  font-size: 28px;
+  font-weight: 700;
 }
 .page-header h2 i {
-  margin-right: 10px;
-  color: var(--s-primary, #3c8dbc);
+  margin-right: 12px;
+  color: #3c8dbc;
 }
 .page-header p {
   margin: 0;
-  color: var(--s-gray, #6c757d);
+  color: #6c757d;
   font-size: 15px;
+  font-weight: 400;
 }
 
-/* ==================== GREETING PREVIEW ==================== */
+/* Greeting Preview */
 .greeting-preview-wrapper {
   margin-top: 16px;
   padding: 16px;
   background: #f8f9fa;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 2px dashed #d2d6de;
 }
 .preview-label {
@@ -36,7 +36,7 @@
   margin-bottom: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--s-dark, #343a40);
+  color: #343a40;
 }
 .greeting-preview {
   background: white;
@@ -44,108 +44,124 @@
   border-radius: 6px;
   border: 1px solid #d2d6de;
   font-size: 14px;
-  color: var(--s-text, #495057);
-  line-height: 1.55;
-  min-height: 70px;
+  color: #495057;
+  line-height: 1.6;
+  min-height: 80px;
   font-style: italic;
 }
 .greeting-preview:empty::before {
   content: 'Tu saludo aparecerá aquí...';
-  color: var(--s-gray, #999);
+  color: #adb5bd;
 }
 
-/* ==================== CAPABILITIES SECTION ==================== */
+/* Capacidades – versión mejorada y linda */
 .capabilities-description {
-  margin-bottom: 20px;
-  font-size: 14.5px;
-  color: var(--s-text, #495057);
-  line-height: 1.5;
+  margin-bottom: 24px;
+  font-size: 15px;
+  color: #495057;
+  line-height: 1.6;
 }
+
 .capability-group {
-  margin-bottom: 28px;
-  padding: 20px;
-  background: #fff;
-  border-radius: 6px;
-  border: 1px solid #e0e0e0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  margin: 32px 0;
+  padding: 24px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
   transition: all 0.25s ease;
 }
 .capability-group:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+  transform: translateY(-3px);
 }
+
 .group-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--s-dark, #343a40);
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #e2e8f0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #343a40;
 }
 .group-header i {
-  font-size: 20px;
-  color: var(--s-primary, #3c8dbc);
+  font-size: 26px;
+  color: #3c8dbc;
 }
-.capability-group.recomendado .group-header i {
-  color: #00a65a;
+.group-header .recommended-badge {
+  background: #00a65a;
+  color: white;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-left: 12px;
 }
-.capability-group.avanzado .group-header i {
-  color: #605ca8;
-}
+
 .capabilities-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
+
 .capability-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: background 0.2s;
 }
-.capability-item label {
-  flex: 1;
-  cursor: pointer;
-  user-select: none;
-}
-.capability-title {
-  font-weight: 600;
-  margin-bottom: 4px;
-  display: block;
-}
-.capability-description {
-  font-size: 13.5px;
-  color: var(--s-gray, #6c757d);
-  line-height: 1.45;
+.capability-item:hover {
+  background: #f8fafc;
 }
 
-/* Badge recomendado */
-.recommended-badge {
-  display: inline-block;
-  background: #00a65a;
-  color: white;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 11.5px;
+.capability-item input[type="checkbox"] {
+  margin-top: 5px;
+  width: 20px;
+  height: 20px;
+  accent-color: #3c8dbc;
+  cursor: pointer;
+}
+
+.capability-title {
+  font-size: 15px;
   font-weight: 600;
-  margin-left: 10px;
-  vertical-align: middle;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #343a40;
+}
+.capability-title i {
+  color: #64748b;
+  font-size: 17px;
+}
+
+.capability-description {
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.6;
 }
 
 /* Nota final */
 .capabilities-note {
-  margin-top: 24px;
-  padding: 12px 16px;
+  margin-top: 32px;
+  padding: 16px;
   background: #e8f4fd;
-  border-left: 4px solid var(--s-primary, #3c8dbc);
-  border-radius: 4px;
+  border-left: 5px solid #3c8dbc;
+  border-radius: 6px;
   font-size: 14px;
   color: #495057;
+  line-height: 1.55;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .page-header h2 { font-size: 22px; }
-  .group-header { font-size: 16px; }
-  .group-header i { font-size: 18px; }
+  .page-header h2 { font-size: 24px; }
+  .group-header { font-size: 18px; }
+  .group-header i { font-size: 22px; }
+  .capability-group { padding: 18px; }
 }
