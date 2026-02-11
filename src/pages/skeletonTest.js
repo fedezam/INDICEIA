@@ -105,23 +105,13 @@ function getDefaultAIConfig() {
   };
 }
 
-function getDefaultAICognition() {
-  return {
-    level: 'basico',
-    capabilities: {}
-  };
-}
-
 // ==================== PÁGINA ====================
 const iaConfigPage = {
   fields: {},
-  levelCards: [],
-  capabilityCheckboxes: {},
   greetingPreview: null,
   guardarBtn: null,
 
   aiConfig: {},
-  aiCognition: {},
 
   async load(ctx) {
     this.ctx = ctx;
@@ -130,7 +120,6 @@ const iaConfigPage = {
     this.currentComercioId = ctx.currentComercioId;
 
     this.aiConfig = this.comercioData.aiConfig || getDefaultAIConfig();
-    this.aiCognition = this.comercioData.aiCognition || getDefaultAICognition();
   },
 
   render() {
@@ -142,12 +131,19 @@ const iaConfigPage = {
     header.className = 'page-header';
     header.innerHTML = `
       <h2><i class="fas fa-robot"></i> Configuración de IA</h2>
-      <p>Personalizá cómo piensa y se comporta tu asistente</p>
+      <p>Personalizá el nombre, personalidad, saludo y reglas de comportamiento de tu asistente</p>
     `;
     page.appendChild(header);
 
-    // AI Helper Card
-    page.appendChild(this.renderAIHelper());
+    // AI Helper
+    page.appendChild(createCard({
+      title: 'Tu asistente virtual',
+      icon: 'fa-brain',
+      variant: 'info',
+      highlight: true,
+      content: 'Acá definís qué dice, cómo habla y cómo reacciona en situaciones comunes. Todo para que suene natural y ayude a vender mejor.',
+      compact: true
+    }));
 
     // Config Básica
     page.appendChild(this.renderBasicConfig());
@@ -158,10 +154,7 @@ const iaConfigPage = {
     // Comportamiento
     page.appendChild(this.renderBehaviors());
 
-    // Nivel Cognitivo
-    page.appendChild(this.renderCognitiveLevel());
-
-    // Capacidades (siempre visibles las 3 secciones)
+    // Capacidades
     page.appendChild(this.renderCapabilities());
 
     // Botón Guardar
@@ -175,23 +168,11 @@ const iaConfigPage = {
     });
 
     const btnContainer = document.createElement('div');
-    btnContainer.style.marginTop = '40px';
-    btnContainer.style.padding = '0 15px';
+    btnContainer.style.margin = '40px 15px 20px';
     btnContainer.appendChild(this.guardarBtn);
     page.appendChild(btnContainer);
 
     this.validateForm();
-  },
-
-  renderAIHelper() {
-    return createCard({
-      title: 'Cómo piensa tu IA',
-      icon: 'fa-brain',
-      variant: 'info',
-      highlight: true,
-      content: 'Elegí qué tan inteligente querés que sea tu asistente. A mayor nivel cognitivo, mejor entenderá y ayudará a tus clientes.',
-      compact: true
-    });
   },
 
   renderBasicConfig() {
@@ -202,7 +183,7 @@ const iaConfigPage = {
       name: 'aiName',
       type: 'text',
       required: true,
-      placeholder: 'Ej: Asistente Virtual',
+      placeholder: 'Ej: JuancaBot, Sofi Asistente, etc.',
       value: this.aiConfig.aiName || ''
     });
 
@@ -257,12 +238,12 @@ const iaConfigPage = {
     const content = document.createElement('div');
 
     this.fields.aiGreeting = createFormField({
-      label: 'Saludo inicial',
+      label: 'Saludo inicial (primer mensaje)',
       name: 'aiGreeting',
       type: 'textarea',
       required: true,
       rows: 4,
-      placeholder: 'Ej: ¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy? 😊',
+      placeholder: 'Ej: ¡Hola! Soy JuancaBot, estoy acá para ayudarte con lo que necesites 😊 ¿En qué te puedo ayudar hoy?',
       value: this.aiConfig.aiGreeting || ''
     });
 
@@ -288,7 +269,7 @@ const iaConfigPage = {
     content.append(this.fields.aiGreeting, previewWrapper);
 
     return createCard({
-      title: 'Saludo',
+      title: 'Saludo Inicial',
       icon: 'fa-comment-dots',
       content
     });
@@ -307,9 +288,9 @@ const iaConfigPage = {
         { value: 'medio', label: 'Medio' },
         { value: 'alto', label: 'Alto' }
       ],
-      helpText: 'Define cuánto toma la iniciativa la IA sin que el cliente lo pida explícitamente.'
+      helpText: 'Define cuánto toma la iniciativa la IA sin que el cliente lo pida explícitamente (sugerencias, upsell, etc.).',
+      value: this.aiConfig.proactividad || ''
     });
-    this.fields.proactividad.input.value = this.aiConfig.proactividad || '';
 
     this.fields.formatoRespuestas = createFormField({
       label: 'Formato de respuestas',
@@ -320,22 +301,22 @@ const iaConfigPage = {
         { value: 'cortas', label: 'Cortas' },
         { value: 'detalladas', label: 'Detalladas' }
       ],
-      helpText: 'Elige si preferís respuestas rápidas y directas o más completas y detalladas.'
+      helpText: 'Elige si preferís respuestas rápidas y directas o más completas y explicativas.',
+      value: this.aiConfig.formatoRespuestas || ''
     });
-    this.fields.formatoRespuestas.input.value = this.aiConfig.formatoRespuestas || '';
 
     this.fields.sinPrecio = createFormField({
-      label: 'Si no hay precio',
+      label: 'Si no hay precio cargado',
       name: 'sinPrecio',
       type: 'select',
       options: [
         { value: '', label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'informar', label: 'Informar' },
-        { value: 'consultar', label: 'Pedir consulta' }
+        { value: 'informar', label: 'Informar que no hay precio' },
+        { value: 'consultar', label: 'Pedir consulta al dueño' }
       ],
-      helpText: 'Qué debe hacer la IA cuando un cliente pregunta por un precio que no está cargado.'
+      helpText: 'Qué debe responder cuando un cliente pregunta por un precio que no está en el catálogo.',
+      value: this.aiConfig.sinPrecio || ''
     });
-    this.fields.sinPrecio.input.value = this.aiConfig.sinPrecio || '';
 
     this.fields.sinStock = createFormField({
       label: 'Si no hay stock',
@@ -343,12 +324,12 @@ const iaConfigPage = {
       type: 'select',
       options: [
         { value: '', label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'informar', label: 'Informar' },
-        { value: 'ofrecerAlternativa', label: 'Ofrecer alternativa' }
+        { value: 'informar', label: 'Informar que no hay stock' },
+        { value: 'ofrecerAlternativa', label: 'Ofrecer alternativa similar' }
       ],
-      helpText: 'Cómo reaccionar cuando un producto está sin stock en el momento de la consulta.'
+      helpText: 'Cómo reaccionar cuando un producto está sin stock en el momento de la consulta.',
+      value: this.aiConfig.sinStock || ''
     });
-    this.fields.sinStock.input.value = this.aiConfig.sinStock || '';
 
     this.fields.localCerrado = createFormField({
       label: 'Si el local está cerrado',
@@ -356,12 +337,12 @@ const iaConfigPage = {
       type: 'select',
       options: [
         { value: '', label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'informar', label: 'Informar horario' },
-        { value: 'tomarMensaje', label: 'Tomar mensaje' }
+        { value: 'informar', label: 'Informar horario de atención' },
+        { value: 'tomarMensaje', label: 'Tomar mensaje para el dueño' }
       ],
-      helpText: 'Qué responder cuando el cliente quiere comprar fuera del horario de atención.'
+      helpText: 'Qué responder cuando el cliente quiere comprar o visitar fuera del horario.',
+      value: this.aiConfig.localCerrado || ''
     });
-    this.fields.localCerrado.input.value = this.aiConfig.localCerrado || '';
 
     content.append(
       this.fields.proactividad,
@@ -372,67 +353,9 @@ const iaConfigPage = {
     );
 
     return createCard({
-      title: 'Comportamiento',
+      title: 'Comportamiento y reglas',
       icon: 'fa-cogs',
       content
-    });
-  },
-
-  renderCognitiveLevel() {
-    const content = document.createElement('div');
-
-    const desc = document.createElement('p');
-    desc.className = 'capabilities-description';
-    desc.textContent = 'Seleccioná el nivel de inteligencia base de tu asistente (esto guía las recomendaciones, pero podés activar capacidades de cualquier nivel):';
-    content.appendChild(desc);
-
-    const grid = document.createElement('div');
-    grid.className = 'levels-grid'; // asumiendo que tenés grid en css skeleton o agregás
-
-    const levels = [
-      { id: 'basico', label: 'Básico', icon: 'fa-star', desc: 'Respuestas simples y directas', caps: 2 },
-      { id: 'recomendado', label: 'Recomendado', icon: 'fa-star-half-alt', desc: 'Entiende contexto y anticipa necesidades', caps: 3, recommended: true },
-      { id: 'avanzado', label: 'Avanzado', icon: 'fa-brain', desc: 'Máxima inteligencia y adaptación', caps: 3 }
-    ];
-
-    levels.forEach(lvl => {
-      const cardContent = document.createElement('div');
-      cardContent.innerHTML = `
-        <p>${lvl.desc}</p>
-        <small>${lvl.caps} capacidades</small>
-        ${lvl.recommended ? '<span class="recommended-badge">⭐ Recomendado</span>' : ''}
-      `;
-
-      const card = createCard({
-        title: lvl.label,
-        icon: lvl.icon,
-        content: cardContent,
-        selectable: true,
-        selected: this.aiCognition.level === lvl.id,
-        compact: true,
-        variant: lvl.recommended ? 'success' : null
-      });
-
-      card.dataset.level = lvl.id;
-
-      card.addEventListener('card-select', e => {
-        if (e.detail.selected) {
-          this.aiCognition.level = lvl.id;
-          this.levelCards.forEach(c => { if (c !== card) c.deselect(); });
-        }
-      });
-
-      this.levelCards.push(card);
-      grid.appendChild(card);
-    });
-
-    content.appendChild(grid);
-
-    return createCard({
-      title: 'Nivel Cognitivo',
-      icon: 'fa-graduation-cap',
-      content,
-      highlight: true
     });
   },
 
@@ -441,7 +364,7 @@ const iaConfigPage = {
 
     const desc = document.createElement('p');
     desc.className = 'capabilities-description';
-    desc.textContent = 'Activá las que querés que tu asistente use para entender mejor a tus clientes y ayudar más. No cambian lo que vendés, solo cómo lo explica y sugiere.';
+    desc.textContent = 'Activá las capacidades que querés que tu asistente use para entender mejor a tus clientes y ayudar más. No cambian lo que vendés, solo cómo lo explica y sugiere.';
     content.appendChild(desc);
 
     Object.entries(COGNITIVE_CAPABILITIES).forEach(([level, caps]) => {
@@ -451,15 +374,15 @@ const iaConfigPage = {
       const header = document.createElement('div');
       header.className = 'group-header';
 
-      const icons = {
-        basico: 'fa-star',
-        recomendado: 'fa-star-half-alt',
-        avanzado: 'fa-brain'
+      const levelNames = {
+        basico: 'Básico',
+        recomendado: 'Recomendado',
+        avanzado: 'Avanzado'
       };
 
       header.innerHTML = `
-        <i class="fas ${icons[level]}"></i>
-        <span>Nivel ${level.charAt(0).toUpperCase() + level.slice(1)}</span>
+        <i class="fas fa-star${level === 'basico' ? '' : level === 'recomendado' ? '-half-alt' : ''}"></i>
+        <span>Nivel ${levelNames[level]}</span>
         ${level === 'recomendado' ? '<span class="recommended-badge">Recomendado</span>' : ''}
       `;
 
@@ -473,27 +396,32 @@ const iaConfigPage = {
         item.className = 'capability-item';
 
         const checkbox = createFormField({
-          label: '', // label vacío porque lo ponemos manual
           name: `cap_${cap.id}`,
           type: 'checkbox',
-          value: !!this.aiCognition.capabilities?.[cap.id]
+          value: !!this.aiConfig.capabilities?.[cap.id] // si ya guardaste algo antes
         });
 
-        const labelWrap = document.createElement('label');
-        labelWrap.innerHTML = `
-          <span class="capability-title"><i class="fas ${cap.icon}"></i> ${cap.title}</span>
-          <span class="capability-description">${cap.description}</span>
+        const textWrap = document.createElement('div');
+        textWrap.innerHTML = `
+          <div class="capability-title">
+            <i class="fas ${cap.icon}"></i>
+            ${cap.title}
+          </div>
+          <div class="capability-description">
+            ${cap.description}
+          </div>
         `;
 
-        item.append(checkbox, labelWrap);
+        item.appendChild(checkbox);
+        item.appendChild(textWrap);
         list.appendChild(item);
 
         checkbox.input.addEventListener('change', e => {
-          if (!this.aiCognition.capabilities) this.aiCognition.capabilities = {};
+          if (!this.aiConfig.capabilities) this.aiConfig.capabilities = {};
           if (e.target.checked) {
-            this.aiCognition.capabilities[cap.id] = true;
+            this.aiConfig.capabilities[cap.id] = true;
           } else {
-            delete this.aiCognition.capabilities[cap.id];
+            delete this.aiConfig.capabilities[cap.id];
           }
         });
       });
@@ -543,21 +471,19 @@ const iaConfigPage = {
         sinStock: this.fields.sinStock.input.value,
         localCerrado: this.fields.localCerrado.input.value,
         proactividad: this.fields.proactividad.input.value,
-        formatoRespuestas: this.fields.formatoRespuestas.input.value
+        formatoRespuestas: this.fields.formatoRespuestas.input.value,
+        capabilities: this.aiConfig.capabilities || {}  // guardamos las capacidades activadas
       };
 
       await updateDoc(doc(db, 'comercios', this.currentComercioId), {
         aiConfig,
-        aiCognition: this.aiCognition,
         'onboardingSteps.ia-config': true,
         fechaActualizacion: new Date()
       });
 
-      showToast({ title: 'Guardado', message: 'Configuración actualizada', variant: 'success' });
+      showToast({ title: 'Guardado', message: 'Configuración actualizada correctamente', variant: 'success' });
 
-      setTimeout(() => {
-        window.location.href = "/dashboard.html";
-      }, 800);
+      setTimeout(() => window.location.href = "/dashboard.html", 800);
 
     } catch (err) {
       console.error(err);
@@ -568,7 +494,7 @@ const iaConfigPage = {
   }
 };
 
-// ==================== RUN ====================
+// RUN
 runSkeleton({
   page: iaConfigPage,
   adapter: createFirebaseAdapter,
