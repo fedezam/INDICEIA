@@ -52,6 +52,18 @@ export function updateFormField(dom, config = {}) {
         const option = document.createElement('option');
         option.value = opt.value;
         option.textContent = opt.label || opt.value;
+
+        // Soporte para atributos adicionales en opciones (nuevo)
+        if (opt.disabled === true) {
+          option.disabled = true;
+        }
+        if (opt.hidden === true) {
+          option.hidden = true;
+        }
+        if (opt.selected === true) {
+          option.selected = true;
+        }
+
         input.appendChild(option);
       });
     }
