@@ -1,225 +1,151 @@
 /* pages/ia-config/ia-config.css */
-/* CSS CUSTOM para configuración de IA */
+/* Estilos CUSTOM solo para esta página – inspirados en AdminLTE */
 
 /* ==================== PAGE HEADER ==================== */
 .page-header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   text-align: center;
+  padding: 0 15px;
 }
-
 .page-header h2 {
   margin: 0 0 8px 0;
   color: var(--s-dark, #343a40);
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 600;
 }
-
 .page-header h2 i {
-  margin-right: 8px;
+  margin-right: 10px;
   color: var(--s-primary, #3c8dbc);
 }
-
 .page-header p {
   margin: 0;
   color: var(--s-gray, #6c757d);
-  font-size: 14px;
-}
-
-/* ==================== SECTIONS ==================== */
-.config-section,
-.greeting-section,
-.behaviors-section,
-.cognitive-level-section,
-.capabilities-section {
-  /* Los form-fields ya traen sus estilos */
+  font-size: 15px;
 }
 
 /* ==================== GREETING PREVIEW ==================== */
 .greeting-preview-wrapper {
-  margin-top: 20px;
-  padding: 15px;
+  margin-top: 16px;
+  padding: 16px;
   background: #f8f9fa;
-  border-radius: 8px;
+  border-radius: 6px;
   border: 2px dashed #d2d6de;
 }
-
 .preview-label {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   font-size: 13px;
   font-weight: 600;
   color: var(--s-dark, #343a40);
 }
-
 .greeting-preview {
   background: white;
-  padding: 15px;
-  border-radius: 8px;
+  padding: 14px;
+  border-radius: 6px;
   border: 1px solid #d2d6de;
   font-size: 14px;
   color: var(--s-text, #495057);
-  line-height: 1.6;
-  min-height: 60px;
+  line-height: 1.55;
+  min-height: 70px;
   font-style: italic;
 }
-
 .greeting-preview:empty::before {
   content: 'Tu saludo aparecerá aquí...';
   color: var(--s-gray, #999);
 }
 
-/* ==================== COGNITIVE LEVEL ==================== */
-.level-description {
-  margin-bottom: 20px;
-  font-size: 14px;
-  color: var(--s-text, #495057);
-}
-
-.levels-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-}
-
-.level-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.level-desc {
-  margin: 0;
-  font-size: 13px;
-  color: var(--s-text, #495057);
-  line-height: 1.4;
-}
-
-.level-caps {
-  font-size: 12px;
-  color: var(--s-gray, #6c757d);
-  font-weight: 600;
-}
-
-.recommended-badge {
-  display: inline-block;
-  background: linear-gradient(135deg, #00c853 0%, #00a65a 100%);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-/* ==================== CAPABILITIES ==================== */
+/* ==================== CAPABILITIES SECTION ==================== */
 .capabilities-description {
   margin-bottom: 20px;
-  font-size: 14px;
+  font-size: 14.5px;
   color: var(--s-text, #495057);
+  line-height: 1.5;
 }
-
 .capability-group {
-  margin-bottom: 25px;
+  margin-bottom: 28px;
   padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  transition: all 0.3s ease;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  transition: all 0.25s ease;
 }
-
-.capability-group.capability-basico {
-  border-color: #e0e0e0;
+.capability-group:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
 }
-
-.capability-group.capability-recomendado {
-  border-color: #00c853;
-  background: linear-gradient(135deg, rgba(0, 200, 83, 0.03) 0%, rgba(0, 200, 83, 0.08) 100%);
-}
-
-.capability-group.capability-avanzado {
-  border-color: #3c8dbc;
-  background: linear-gradient(135deg, rgba(60, 141, 188, 0.03) 0%, rgba(60, 141, 188, 0.08) 100%);
-}
-
 .group-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-  font-size: 16px;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--s-dark, #343a40);
 }
-
 .group-header i {
-  font-size: 18px;
+  font-size: 20px;
   color: var(--s-primary, #3c8dbc);
 }
-
-.capability-group.capability-recomendado .group-header i {
-  color: #00c853;
+.capability-group.recomendado .group-header i {
+  color: #00a65a;
 }
-
-.capability-group.capability-avanzado .group-header i {
-  color: #3c8dbc;
+.capability-group.avanzado .group-header i {
+  color: #605ca8;
 }
-
 .capabilities-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
-
 .capability-item {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 12px;
 }
-
+.capability-item label {
+  flex: 1;
+  cursor: pointer;
+  user-select: none;
+}
+.capability-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
 .capability-description {
-  margin-left: 28px;
+  font-size: 13.5px;
   color: var(--s-gray, #6c757d);
-  font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
-/* ==================== RESPONSIVE ==================== */
+/* Badge recomendado */
+.recommended-badge {
+  display: inline-block;
+  background: #00a65a;
+  color: white;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+/* Nota final */
+.capabilities-note {
+  margin-top: 24px;
+  padding: 12px 16px;
+  background: #e8f4fd;
+  border-left: 4px solid var(--s-primary, #3c8dbc);
+  border-radius: 4px;
+  font-size: 14px;
+  color: #495057;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .levels-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .page-header h2 {
-    font-size: 20px;
-  }
-}
-
-/* ==================== SPACING ADJUSTMENTS ==================== */
-.s-card {
-  margin-bottom: 20px;
-}
-
-.s-card:last-child {
-  margin-bottom: 0;
-}
-
-/* ==================== ANIMATIONS ==================== */
-.capability-group {
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* ==================== SELECTED LEVEL CARD ==================== */
-.s-card.selectable.selected {
-  transform: scale(1.02);
+  .page-header h2 { font-size: 22px; }
+  .group-header { font-size: 16px; }
+  .group-header i { font-size: 18px; }
 }
