@@ -42,7 +42,7 @@ const hasData = (value) => {
   return value !== undefined && value !== null;
 };
 
-// ===== COGNITION BUILDER (declarativo desde schema) =====
+// ===== COGNITION BUILDER (LER-compliant) =====
 function buildCognitivePermissionsFromSchema(aiConfig, schemaPath) {
   if (!aiConfig?.cognitive_permissions) return null;
 
@@ -62,6 +62,7 @@ function buildCognitivePermissionsFromSchema(aiConfig, schemaPath) {
     };
   }
 
+  // Solo devolver si hay al menos un permiso habilitado
   return hasAnyEnabled ? result : null;
 }
 
@@ -183,7 +184,7 @@ export async function buildEntity({ comercioId }) {
       .replace(/{{REFERRAL_URL}}/g, `https://indiceia.app/guia?ref=${referralCode}`)
   );
 
-  // ---- cognition (desde cognitive_permissions.schema.json)
+  // ---- cognition (solo si hay al menos un permiso habilitado)
   let cognitivePermissions = null;
   try {
     const cognitiveSchemaPath = resolve(__dirname, 'base/cognitive_permissions.schema.json');
@@ -191,9 +192,12 @@ export async function buildEntity({ comercioId }) {
   } catch (err) {
     console.warn('⚠️ No se pudo cargar cognitive_permissions.schema.json', err);
   }
-  if (cognitivePermissions) {
+
+  // ✅ LER compliance: solo inyectar si hay al menos uno enabled:true
+  if (cognitivePermissions && Object.values(cognitivePermissions).some(p => p.enabled)) {
     mindProcessed.cognitive_permissions = cognitivePermissions;
   }
+  // ❌ Si no, NO se escribe NADA → el campo no existe
 
   // ===== CAPABILITIES (ex-Block D) =====
   if (capabilities?.availableChannels && context.contacto) {
