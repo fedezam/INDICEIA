@@ -1,9 +1,13 @@
-import { renderCognition } from "./cognition.render.js";
-import { cognitionState } from "./cognition.state.js";
-import { bindCognitionSave } from "./cognition.save.js";
+// src/pages/skeleton/index.js
 
-export function mountCognition(container) {
-  container.innerHTML = "";
-  container.appendChild(renderCognition(cognitionState));
-  bindCognitionSave(container, cognitionState);
+import { renderCognitionPage } from './render'
+import { loadCognition, saveCognition } from './update'
+
+export async function mountCognitionPage({ container, comercioId, onSave }) {
+  renderCognitionPage(container)
+  await loadCognition(comercioId, container)
+
+  onSave(async () => {
+    await saveCognition(comercioId, container)
+  })
 }
