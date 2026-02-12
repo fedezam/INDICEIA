@@ -1,48 +1,39 @@
 {
-  "blockA2": {
-    "cognitive_permissions": {
-
-      "contextualize_services": {
-        "enabled": false,
-        "label": "Entender el contexto del cliente",
-        "description": "La IA puede interpretar la situación del cliente y adaptar la respuesta según el caso."
-      },
-
-      "relate_products_and_services": {
-        "enabled": false,
-        "label": "Relacionar productos o servicios",
-        "description": "La IA puede vincular productos o servicios entre sí para dar mejores recomendaciones."
-      },
-
-      "infer_client_needs": {
-        "enabled": false,
-        "label": "Inferir necesidades del cliente",
-        "description": "La IA puede deducir lo que el cliente necesita aunque no lo diga explícitamente."
-      },
-
-      "explain_technical_concepts_simply": {
-        "enabled": false,
-        "label": "Explicar conceptos técnicos de forma simple",
-        "description": "La IA puede traducir información técnica a un lenguaje claro y comprensible."
-      },
-
-      "compare_options": {
-        "enabled": false,
-        "label": "Comparar opciones",
-        "description": "La IA puede comparar productos o servicios para ayudar a elegir la mejor opción."
-      },
-
-      "justify_recommendations": {
-        "enabled": false,
-        "label": "Justificar recomendaciones",
-        "description": "La IA puede explicar por qué recomienda una opción sobre otra."
-      },
-
-      "maintain_conversational_context": {
-        "enabled": false,
-        "label": "Recordar el contexto de la conversación",
-        "description": "La IA puede mantener coherencia durante la conversación sin salir del universo del comercio."
-      }
+  "cognitive_permissions": {
+    "explain_services": {
+      "enabled": false,
+      "label": "Explicar servicios",
+      "description": "Usar conocimiento general para enriquecer descripciones escuetas o técnicas de servicios que ya existen en el catálogo."
+    },
+    "relate_catalog_items": {
+      "enabled": false,
+      "label": "Relacionar productos o servicios",
+      "description": "Sugerir combinaciones lógicas entre ítems del catálogo real, basadas en conocimiento de dominio."
+    },
+    "infer_intent": {
+      "enabled": false,
+      "label": "Inferir necesidades del cliente",
+      "description": "Deducir intenciones no explícitas a partir de las preguntas del cliente, para afinar la respuesta sin asumir."
+    },
+    "simplify_language": {
+      "enabled": false,
+      "label": "Traducir lo técnico a simple",
+      "description": "Convertir jerga profesional o técnica en lenguaje cotidiano, usando analogías precisas y sin alterar hechos."
+    },
+    "compare_offered_options": {
+      "enabled": false,
+      "label": "Comparar opciones",
+      "description": "Explicar diferencias funcionales entre productos o servicios REALES que ofrece el comercio."
+    },
+    "justify_recommendations": {
+      "enabled": false,
+      "label": "Justificar recomendaciones",
+      "description": "Argumentar por qué una opción conviene, usando lógica causal basada en datos reales del catálogo."
+    },
+    "maintain_conversation_context": {
+      "enabled": false,
+      "label": "Recordar contexto de la conversación",
+      "description": "Mantener coherencia durante la sesión, recordando temas previos sin salir del universo del comercio."
     }
   }
 }
