@@ -42,19 +42,27 @@ const hasData = (value) => {
   return value !== undefined && value !== null;
 };
 
-// ===== COGNITION BUILDER =====
-function buildCognitivePermissions(aiConfig) {
+// ===== COGNITION BUILDER (declarativo desde schema) =====
+function buildCognitivePermissionsFromSchema(aiConfig, schemaPath) {
   if (!aiConfig?.cognitive_permissions) return null;
 
-  const enabled = {};
+  const rawSchema = readFileSync(schemaPath, 'utf-8');
+  const schema = JSON.parse(rawSchema).cognitive_permissions;
 
-  Object.entries(aiConfig.cognitive_permissions).forEach(([key, value]) => {
-    if (value === true) {
-      enabled[key] = true;
-    }
-  });
+  const result = {};
+  let hasAnyEnabled = false;
 
-  return Object.keys(enabled).length > 0 ? enabled : null;
+  for (const [key, config] of Object.entries(schema)) {
+    const enabled = Boolean(aiConfig.cognitive_permissions[key]);
+    if (enabled) hasAnyEnabled = true;
+    result[key] = {
+      enabled,
+      label: config.label,
+      description: config.description
+    };
+  }
+
+  return hasAnyEnabled ? result : null;
 }
 
 // ===== ENTITY BUILDER =====
@@ -171,12 +179,18 @@ export async function buildEntity({ comercioId }) {
 
   const mindProcessed = JSON.parse(
     JSON.stringify(mind)
-      .replace(/\{\{LIVE_ENABLED\}\}/g, liveEnabled.toString())
-      .replace(/\{\{REFERRAL_URL\}\}/g, `https://indiceia.app/guia?ref=${referralCode}`)
+      .replace(/{{LIVE_ENABLED}}/g, liveEnabled.toString())
+      .replace(/{{REFERRAL_URL}}/g, `https://indiceia.app/guia?ref=${referralCode}`)
   );
 
-  // ---- cognition (ex-blockA2 - cognitive permissions)
-  const cognitivePermissions = buildCognitivePermissions(data.aiConfig);
+  // ---- cognition (desde cognitive_permissions.schema.json)
+  let cognitivePermissions = null;
+  try {
+    const cognitiveSchemaPath = resolve(__dirname, 'base/cognitive_permissions.schema.json');
+    cognitivePermissions = buildCognitivePermissionsFromSchema(data.aiConfig, cognitiveSchemaPath);
+  } catch (err) {
+    console.warn('⚠️ No se pudo cargar cognitive_permissions.schema.json', err);
+  }
   if (cognitivePermissions) {
     mindProcessed.cognitive_permissions = cognitivePermissions;
   }
