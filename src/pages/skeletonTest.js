@@ -1,68 +1,67 @@
-// pages/ia-config/ia-config.js
 import './skeletonTest.css';
+
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-import { createFormField } from '../skeleton/components/form-field/index.js';
-import { createButton } from '../skeleton/components/button/index.js';
 import { createCard } from '../skeleton/components/card/index.js';
+import { createButton } from '../skeleton/components/button/index.js';
 import { showToast } from '../skeleton/components/toast/index.js';
 
-// Firebase
 import { db } from '../firebase.js';
 import { doc, updateDoc } from 'firebase/firestore';
 
-// ==================== DATOS ESTÁTICOS ====================
-const IDIOMAS = [
-  { value: 'es-AR', label: 'Español (Argentina)' },
-  { value: 'es-ES', label: 'Español (España)' },
-  { value: 'es-MX', label: 'Español (México)' },
-  { value: 'en-US', label: 'English (US)' },
-  { value: 'pt-BR', label: 'Português (Brasil)' }
-];
-
-const TONOS = [
-  { value: 'informal', label: 'Informal' },
-  { value: 'neutral', label: 'Neutral' },
-  { value: 'formal', label: 'Formal' }
-];
-
-const PERSONALIDADES = [
-  { value: 'amigable', label: 'Amigable' },
-  { value: 'formal', label: 'Formal' },
-  { value: 'vendedor', label: 'Vendedor' }
-];
-
-// ==================== HELPERS ====================
-function getDefaultAIConfig() {
-  return {
-    aiName: '',
-    aiLanguage: 'es-AR',
-    aiPersonality: '',
-    aiTone: '',
-    aiGreeting: '',
-    sinPrecio: '',
-    sinStock: '',
-    localCerrado: '',
-    proactividad: '',
-    formatoRespuestas: ''
-  };
-}
+// ==================== DEFINICIÓN CANÓNICA ====================
+// MATCH EXACTO con cognitive_permissions.schema.json
+const COGNITIVE_PERMISSIONS = {
+  explain_services: {
+    label: 'Explicar servicios',
+    description:
+      'Usar conocimiento general para enriquecer descripciones escuetas o técnicas de servicios que ya existen en el catálogo.'
+  },
+  relate_catalog_items: {
+    label: 'Relacionar productos o servicios',
+    description:
+      'Sugerir combinaciones lógicas entre ítems del catálogo real, basadas en conocimiento de dominio.'
+  },
+  infer_intent: {
+    label: 'Inferir necesidades del cliente',
+    description:
+      'Deducir intenciones no explícitas a partir de las preguntas del cliente, para afinar la respuesta sin asumir.'
+  },
+  simplify_language: {
+    label: 'Traducir lo técnico a simple',
+    description:
+      'Convertir jerga profesional o técnica en lenguaje cotidiano, usando analogías precisas y sin alterar hechos.'
+  },
+  compare_offered_options: {
+    label: 'Comparar opciones',
+    description:
+      'Explicar diferencias funcionales entre productos o servicios REALES que ofrece el comercio.'
+  },
+  justify_recommendations: {
+    label: 'Justificar recomendaciones',
+    description:
+      'Argumentar por qué una opción conviene, usando lógica causal basada en datos reales del catálogo.'
+  },
+  maintain_conversation_context: {
+    label: 'Recordar contexto de la conversación',
+    description:
+      'Mantener coherencia durante la sesión, recordando temas previos sin salir del universo del comercio.'
+  }
+};
 
 // ==================== PÁGINA ====================
-const iaConfigPage = {
-  fields: {},
-  greetingPreview: null,
-  guardarBtn: null,
-
-  aiConfig: {},
+const cognitionPage = {
+  cognitiveState: {},
+  checkboxes: {},
 
   async load(ctx) {
     this.ctx = ctx;
-    this.comercioData = ctx.comercioData || {};
-    this.currentUser = ctx.currentUser;
     this.currentComercioId = ctx.currentComercioId;
+    this.comercioData = ctx.comercioData || {};
 
-    this.aiConfig = this.comercioData.aiConfig || getDefaultAIConfig();
+    // Universo LER: solo lo existente
+    this.cognitiveState =
+      this.comercioData.cognitive_permissions || {};
   },
 
   render() {
@@ -73,34 +72,23 @@ const iaConfigPage = {
     const header = document.createElement('div');
     header.className = 'page-header';
     header.innerHTML = `
-      <h2><i class="fas fa-robot"></i> Configuración de IA</h2>
-      <p>Personalizá el nombre, personalidad, saludo y reglas básicas de comportamiento</p>
+      <h2><i class="fas fa-brain"></i> Estado Cognitivo</h2>
+      <p>Activá o desactivá las capacidades cognitivas de la entidad</p>
     `;
     page.appendChild(header);
 
-    // Intro
-    page.appendChild(createCard({
-      title: 'Tu asistente virtual',
-      icon: 'fa-brain',
-      variant: 'info',
-      highlight: true,
-      content:
-        'Acá definís quién es tu asistente y cómo se comunica. La inteligencia avanzada y la forma en que toma decisiones se configuran más adelante.',
-      compact: true
-    }));
+    // Card principal
+    page.appendChild(
+      createCard({
+        title: 'Capacidades cognitivas',
+        icon: 'fa-brain',
+        content: this.renderCheckboxes()
+      })
+    );
 
-    // Config básica
-    page.appendChild(this.renderBasicConfig());
-
-    // Saludo
-    page.appendChild(this.renderGreeting());
-
-    // Comportamiento
-    page.appendChild(this.renderBehaviors());
-
-    // Botón Guardar
-    this.guardarBtn = createButton({
-      label: 'Guardar Configuración',
+    // Botón guardar
+    const guardarBtn = createButton({
+      label: 'Guardar estado cognitivo',
       icon: 'fa-save',
       variant: 'success',
       size: 'lg',
@@ -108,259 +96,81 @@ const iaConfigPage = {
       onClick: () => this.handleGuardar()
     });
 
-    const btnContainer = document.createElement('div');
-    btnContainer.style.margin = '40px 15px 20px';
-    btnContainer.appendChild(this.guardarBtn);
-    page.appendChild(btnContainer);
+    const btnWrap = document.createElement('div');
+    btnWrap.className = 'cognition-save';
+    btnWrap.appendChild(guardarBtn);
 
-    this.validateForm();
+    page.appendChild(btnWrap);
   },
 
-  renderBasicConfig() {
-    const content = document.createElement('div');
+  renderCheckboxes() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'cognition-list';
 
-    this.fields.aiName = createFormField({
-      label: 'Nombre de la IA',
-      name: 'aiName',
-      type: 'text',
-      required: true,
-      placeholder: 'Ej: JuancaBot, Sofi Asistente',
-      value: this.aiConfig.aiName || ''
+    Object.entries(COGNITIVE_PERMISSIONS).forEach(([key, def]) => {
+      const row = document.createElement('label');
+      row.className = 'cognition-item';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = !!this.cognitiveState[key]?.enabled;
+
+      this.checkboxes[key] = checkbox;
+
+      const text = document.createElement('div');
+      text.className = 'cognition-text';
+      text.innerHTML = `
+        <strong>${def.label}</strong>
+        <span>${def.description}</span>
+      `;
+
+      row.append(checkbox, text);
+      wrapper.appendChild(row);
     });
 
-    this.fields.aiLanguage = createFormField({
-      label: 'Idioma',
-      name: 'aiLanguage',
-      type: 'select',
-      required: true,
-      options: IDIOMAS
-    });
-    this.fields.aiLanguage.input.value = this.aiConfig.aiLanguage || 'es-AR';
-
-    this.fields.aiPersonality = createFormField({
-      label: 'Personalidad',
-      name: 'aiPersonality',
-      type: 'select',
-      required: true,
-      options: [
-        { value: '', label: 'Seleccionar', disabled: true, hidden: true },
-        ...PERSONALIDADES
-      ]
-    });
-    this.fields.aiPersonality.input.value = this.aiConfig.aiPersonality || '';
-
-    this.fields.aiTone = createFormField({
-      label: 'Tono de comunicación',
-      name: 'aiTone',
-      type: 'select',
-      required: true,
-      options: [
-        { value: '', label: 'Seleccionar', disabled: true, hidden: true },
-        ...TONOS
-      ]
-    });
-    this.fields.aiTone.input.value = this.aiConfig.aiTone || '';
-
-    content.append(
-      this.fields.aiName,
-      this.fields.aiLanguage,
-      this.fields.aiPersonality,
-      this.fields.aiTone
-    );
-
-    return createCard({
-      title: 'Configuración Básica',
-      icon: 'fa-sliders-h',
-      content
-    });
-  },
-
-  renderGreeting() {
-    const content = document.createElement('div');
-
-    this.fields.aiGreeting = createFormField({
-      label: 'Saludo inicial',
-      name: 'aiGreeting',
-      type: 'textarea',
-      required: true,
-      rows: 4,
-      placeholder: 'Ej: ¡Hola! Soy JuancaBot, ¿en qué te puedo ayudar?',
-      value: this.aiConfig.aiGreeting || ''
-    });
-
-    const previewWrapper = document.createElement('div');
-    previewWrapper.className = 'greeting-preview-wrapper';
-
-    const previewLabel = document.createElement('span');
-    previewLabel.className = 'preview-label';
-    previewLabel.textContent = 'Vista previa:';
-
-    this.greetingPreview = document.createElement('div');
-    this.greetingPreview.className = 'greeting-preview';
-    this.greetingPreview.textContent = this.aiConfig.aiGreeting || '';
-
-    previewWrapper.append(previewLabel, this.greetingPreview);
-
-    this.fields.aiGreeting.input.addEventListener('input', () => {
-      const val = this.fields.aiGreeting.input.value.trim();
-      this.greetingPreview.textContent = val || 'Tu saludo aparecerá aquí...';
-      this.validateForm();
-    });
-
-    content.append(this.fields.aiGreeting, previewWrapper);
-
-    return createCard({
-      title: 'Saludo Inicial',
-      icon: 'fa-comment-dots',
-      content
-    });
-  },
-
-  renderBehaviors() {
-    const content = document.createElement('div');
-
-    this.fields.proactividad = createFormField({
-      label: 'Nivel de proactividad',
-      name: 'proactividad',
-      type: 'select',
-      options: [
-        { value: '', label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'bajo', label: 'Bajo' },
-        { value: 'medio', label: 'Medio' },
-        { value: 'alto', label: 'Alto' }
-      ],
-      helpText:
-        'Define cuánto toma la iniciativa la IA (sugerencias, recordatorios, etc.).',
-      value: this.aiConfig.proactividad || ''
-    });
-
-    this.fields.formatoRespuestas = createFormField({
-      label: 'Formato de respuestas',
-      name: 'formatoRespuestas',
-      type: 'select',
-      options: [
-        { value: '', label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'cortas', label: 'Cortas' },
-        { value: 'detalladas', label: 'Detalladas' }
-      ],
-      helpText:
-        'Elegí si preferís respuestas breves o más explicativas.',
-      value: this.aiConfig.formatoRespuestas || ''
-    });
-
-    this.fields.sinPrecio = createFormField({
-      label: 'Si no hay precio',
-      name: 'sinPrecio',
-      type: 'select',
-      options: [
-        { value: '', label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'informar', label: 'Informar que no hay precio' },
-        { value: 'consultar', label: 'Pedir consulta al dueño' }
-      ],
-      value: this.aiConfig.sinPrecio || ''
-    });
-
-    this.fields.sinStock = createFormField({
-      label: 'Si no hay stock',
-      name: 'sinStock',
-      type: 'select',
-      options: [
-        { value: '', label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'informar', label: 'Informar que no hay stock' },
-        { value: 'ofrecerAlternativa', label: 'Ofrecer alternativa similar' }
-      ],
-      value: this.aiConfig.sinStock || ''
-    });
-
-    this.fields.localCerrado = createFormField({
-      label: 'Si el local está cerrado',
-      name: 'localCerrado',
-      type: 'select',
-      options: [
-        { value: '', label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'informar', label: 'Informar horario' },
-        { value: 'tomarMensaje', label: 'Tomar mensaje' }
-      ],
-      value: this.aiConfig.localCerrado || ''
-    });
-
-    content.append(
-      this.fields.proactividad,
-      this.fields.formatoRespuestas,
-      this.fields.sinPrecio,
-      this.fields.sinStock,
-      this.fields.localCerrado
-    );
-
-    return createCard({
-      title: 'Comportamiento básico',
-      icon: 'fa-cogs',
-      content
-    });
-  },
-
-  validateForm() {
-    const required = ['aiName', 'aiPersonality', 'aiTone', 'aiGreeting'];
-    const valid = required.every(id => this.fields[id]?.input.value.trim());
-    if (this.guardarBtn) valid ? this.guardarBtn.enable() : this.guardarBtn.disable();
-    return valid;
+    return wrapper;
   },
 
   async handleGuardar() {
-    if (!this.validateForm()) {
-      showToast({
-        title: 'Faltan datos',
-        message: 'Completá los campos requeridos',
-        variant: 'warning'
-      });
-      return;
-    }
+    const cognitive_permissions = {};
 
-    this.guardarBtn.setLoading(true);
+    Object.entries(COGNITIVE_PERMISSIONS).forEach(([key, def]) => {
+      if (this.checkboxes[key].checked) {
+        cognitive_permissions[key] = {
+          enabled: true,
+          label: def.label,
+          description: def.description
+        };
+      }
+    });
 
     try {
-      const aiConfig = {
-        aiName: this.fields.aiName.input.value.trim(),
-        aiLanguage: this.fields.aiLanguage.input.value,
-        aiPersonality: this.fields.aiPersonality.input.value,
-        aiTone: this.fields.aiTone.input.value,
-        aiGreeting: this.fields.aiGreeting.input.value.trim(),
-        sinPrecio: this.fields.sinPrecio.input.value,
-        sinStock: this.fields.sinStock.input.value,
-        localCerrado: this.fields.localCerrado.input.value,
-        proactividad: this.fields.proactividad.input.value,
-        formatoRespuestas: this.fields.formatoRespuestas.input.value
-      };
-
-      await updateDoc(doc(db, 'comercios', this.currentComercioId), {
-        aiConfig,
-        'onboardingSteps.ia-config': true,
-        fechaActualizacion: new Date()
-      });
+      await updateDoc(
+        doc(db, 'comercios', this.currentComercioId),
+        {
+          cognitive_permissions,
+          fechaActualizacion: new Date()
+        }
+      );
 
       showToast({
         title: 'Guardado',
-        message: 'Configuración actualizada correctamente',
+        message: 'Estado cognitivo actualizado',
         variant: 'success'
       });
-
-      setTimeout(() => (window.location.href = '/dashboard.html'), 800);
     } catch (err) {
       console.error(err);
       showToast({
         title: 'Error',
-        message: 'No se pudo guardar: ' + err.message,
+        message: err.message,
         variant: 'error'
       });
-    } finally {
-      this.guardarBtn.setLoading(false);
     }
   }
 };
 
 // RUN
 runSkeleton({
-  page: iaConfigPage,
-  adapter: createFirebaseAdapter,
-  options: { debug: true }
+  page: cognitionPage,
+  adapter: createFirebaseAdapter
 });
