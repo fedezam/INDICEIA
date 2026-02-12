@@ -1,4 +1,4 @@
-// src/skeleton/index.js
+// src/skeleton/cognition/index.js
 
 import { renderCognitionPage } from './render'
 import { loadCognition, saveCognition } from './update'
