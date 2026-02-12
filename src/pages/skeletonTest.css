@@ -1,5 +1,5 @@
 /* pages/ia-config/ia-config.css */
-/* Estilos CUSTOM solo para esta página – inspirados en AdminLTE + mejoras visuales */
+/* Estilos CUSTOM solo para esta página — inspirados en AdminLTE + mejoras visuales */
 
 .page-header {
   margin-bottom: 28px;
@@ -8,13 +8,13 @@
 }
 .page-header h2 {
   margin: 0 0 10px 0;
-  color: #343a40;
+  color: var(--s-dark);
   font-size: 28px;
   font-weight: 700;
 }
 .page-header h2 i {
   margin-right: 12px;
-  color: #3c8dbc;
+  color: var(--s-primary);
 }
 .page-header p {
   margin: 0;
@@ -27,22 +27,22 @@
 .greeting-preview-wrapper {
   margin-top: 16px;
   padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 2px dashed #d2d6de;
+  background: var(--s-light);
+  border-radius: var(--s-radius);
+  border: 2px dashed var(--s-border);
 }
 .preview-label {
   display: block;
   margin-bottom: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #343a40;
+  color: var(--s-dark);
 }
 .greeting-preview {
   background: white;
   padding: 14px;
-  border-radius: 6px;
-  border: 1px solid #d2d6de;
+  border-radius: var(--s-radius);
+  border: 1px solid var(--s-border);
   font-size: 14px;
   color: #495057;
   line-height: 1.6;
@@ -51,117 +51,195 @@
 }
 .greeting-preview:empty::before {
   content: 'Tu saludo aparecerá aquí...';
-  color: #adb5bd;
+  color: var(--s-gray);
 }
 
-/* Capacidades – versión mejorada y linda */
+/* ==================== CAPACIDADES (ESTILO ADMINLTE) ==================== */
+
 .capabilities-description {
-  margin-bottom: 24px;
-  font-size: 15px;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #e8f4fd;
+  border-left: 4px solid var(--s-primary);
+  border-radius: var(--s-radius);
+  font-size: 14px;
   color: #495057;
   line-height: 1.6;
 }
 
 .capability-group {
-  margin: 32px 0;
-  padding: 24px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  transition: all 0.25s ease;
-}
-.capability-group:hover {
-  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-  transform: translateY(-3px);
+  margin: 24px 0;
+  background: white;
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius);
+  overflow: hidden;
+  box-shadow: var(--s-box-shadow);
 }
 
+/* Header del grupo */
 .group-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
-  padding-bottom: 14px;
-  border-bottom: 2px solid #e2e8f0;
-  font-size: 20px;
-  font-weight: 700;
-  color: #343a40;
-}
-.group-header i {
-  font-size: 26px;
-  color: #3c8dbc;
-}
-.group-header .recommended-badge {
-  background: #00a65a;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--s-dark);
   color: white;
-  font-size: 12px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  margin-left: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  border-bottom: 3px solid var(--s-primary);
 }
 
+.group-header i {
+  font-size: 18px;
+  color: var(--s-primary);
+}
+
+.group-header .recommended-badge {
+  background: var(--s-success);
+  color: white;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-left: auto;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Lista de capacidades */
 .capabilities-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  padding: 0;
+  margin: 0;
 }
 
+/* Item individual - Estilo AdminLTE checkbox */
 .capability-item {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 12px 16px;
-  border-radius: 8px;
+  gap: 0;
+  padding: 0;
+  border-bottom: 1px solid #f0f0f0;
   transition: background 0.2s;
-}
-.capability-item:hover {
-  background: #f8fafc;
+  cursor: pointer;
 }
 
-.capability-item input[type="checkbox"] {
-  margin-top: 5px;
-  width: 20px;
-  height: 20px;
-  accent-color: #3c8dbc;
+.capability-item:last-child {
+  border-bottom: none;
+}
+
+.capability-item:hover {
+  background: #f8f9fa;
+}
+
+/* Label que ocupa todo el ancho */
+.capability-item label {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  width: 100%;
   cursor: pointer;
+  margin: 0;
+}
+
+/* Checkbox personalizado estilo AdminLTE */
+.capability-item input[type="checkbox"] {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  accent-color: var(--s-primary);
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.capability-item input[type="checkbox"]:checked {
+  background: var(--s-primary);
+}
+
+/* Contenedor del texto */
+.capability-content {
+  flex: 1;
 }
 
 .capability-title {
   font-size: 15px;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #343a40;
+  gap: 8px;
+  color: var(--s-dark);
 }
+
 .capability-title i {
-  color: #64748b;
-  font-size: 17px;
+  color: var(--s-primary);
+  font-size: 14px;
 }
 
 .capability-description {
-  font-size: 13.5px;
-  color: #64748b;
-  line-height: 1.6;
+  font-size: 13px;
+  color: #6c757d;
+  line-height: 1.5;
+  margin: 0;
 }
 
 /* Nota final */
 .capabilities-note {
-  margin-top: 32px;
-  padding: 16px;
+  margin-top: 24px;
+  padding: 14px 16px;
+  background: #fff3cd;
+  border-left: 4px solid var(--s-warning);
+  border-radius: var(--s-radius);
+  font-size: 13px;
+  color: #856404;
+  line-height: 1.6;
+}
+
+.capabilities-note i {
+  margin-right: 8px;
+  color: var(--s-warning);
+}
+
+/* Estado activo/seleccionado */
+.capability-item:has(input:checked) {
   background: #e8f4fd;
-  border-left: 5px solid #3c8dbc;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #495057;
-  line-height: 1.55;
+}
+
+.capability-item:has(input:checked) .capability-title {
+  color: var(--s-primary);
+  font-weight: 700;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .page-header h2 { font-size: 24px; }
-  .group-header { font-size: 18px; }
-  .group-header i { font-size: 22px; }
-  .capability-group { padding: 18px; }
+  .page-header h2 { 
+    font-size: 24px; 
+  }
+  
+  .group-header { 
+    font-size: 15px;
+    padding: 12px 14px;
+  }
+  
+  .group-header i { 
+    font-size: 16px; 
+  }
+  
+  .capability-item label {
+    padding: 14px;
+  }
+  
+  .capability-title {
+    font-size: 14px;
+  }
+  
+  .capability-description {
+    font-size: 12px;
+  }
+  
+  .group-header .recommended-badge {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
 }
