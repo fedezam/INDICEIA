@@ -1,0 +1,47 @@
+/* src/skeleton/cognition/styles.css */
+
+.cognition-wrapper {
+  max-width: 900px;
+}
+
+.cognition-card {
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 20px;
+}
+
+.cognition-card h1 {
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.cognition-card p {
+  color: #6c757d;
+  margin-bottom: 20px;
+}
+
+.cognition-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.cognition-item:last-child {
+  border-bottom: none;
+}
+
+.cognition-item label {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cognition-item small {
+  display: block;
+  color: #6c757d;
+  margin-left: 24px;
+  margin-top: 4px;
+}
+
+.cognition-item input[type='checkbox'] {
+  margin-right: 8px;
+}
