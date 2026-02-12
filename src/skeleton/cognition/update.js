@@ -1,4 +1,4 @@
-// src/pages/skeleton/update.js
+// src/skeleton/cognition/update.js
 
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/firebase'
