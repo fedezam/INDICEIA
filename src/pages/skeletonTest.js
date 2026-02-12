@@ -1,5 +1,5 @@
 // pages/ia-config/ia-config.js
-import './ia-config.css';
+import './skeletonTest.css';
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 import { createFormField } from '../skeleton/components/form-field/index.js';
