@@ -1,46 +1,95 @@
-.page-header {
-  margin-bottom: 20px;
+/* ===============================
+   DASHBOARD – PAGE STYLES
+   =============================== */
+
+.dashboard-section {
+  margin-bottom: 48px;
 }
 
-.cognition-list {
+.dashboard-section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #1f2937; /* gris oscuro */
+}
+
+/* ===============================
+   GRID DE CARDS
+   =============================== */
+
+.dashboard-section {
+  display: block;
+}
+
+.dashboard-section > .s-card {
+  margin-bottom: 16px;
+}
+
+/* Grid automático para cards */
+.dashboard-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+/* ===============================
+   AJUSTES FINOS DE CARDS
+   =============================== */
+
+/* Cards de acción principal */
+.s-card.highlight {
+  border-left: 4px solid #0070f3;
+}
+
+/* Cards deshabilitadas (ej: link público antes de generar) */
+.s-card.flat {
+  opacity: 0.6;
+}
+
+.s-card.flat .s-btn {
+  pointer-events: auto;
+}
+
+/* Cursor claro cuando es clickable */
+.s-card.clickable {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.s-card.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+/* ===============================
+   ICONOS
+   =============================== */
+
+.s-card-icon {
+  font-size: 20px;
+  color: #2563eb;
+}
+
+/* Éxito */
+.s-card.success .s-card-icon {
+  color: #16a34a;
+}
+
+/* ===============================
+   FOOTER (BOTONES)
+   =============================== */
+
+.s-card-footer {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
-.cognition-item {
-  display: flex;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  cursor: pointer;
-  background: #fff;
-}
+/* ===============================
+   RESPONSIVE
+   =============================== */
 
-.cognition-item:hover {
-  background: #f9fafb;
-}
-
-.cognition-item input {
-  margin-top: 4px;
-}
-
-.cognition-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.cognition-text strong {
-  font-size: 14px;
-  color: #333;
-}
-
-.cognition-text span {
-  font-size: 13px;
-  color: #666;
-}
-
-.cognition-save {
-  margin: 40px 15px 20px;
+@media (max-width: 640px) {
+  .dashboard-section {
+    grid-template-columns: 1fr;
+  }
 }
