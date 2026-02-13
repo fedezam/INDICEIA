@@ -1,95 +1,168 @@
-/* ===============================
-   DASHBOARD – PAGE STYLES
-   =============================== */
+/* src/pages/dashboard.css */
+/* Dashboard - Estilo AdminLTE con grid de cards */
 
-.dashboard-section {
-  margin-bottom: 48px;
+.page-header {
+  margin-bottom: 28px;
+  text-align: center;
+  padding: 0 15px;
 }
 
-.dashboard-section h2 {
+.page-header h1 {
+  margin: 0 0 10px 0;
+  color: var(--s-dark);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.page-header h1 i {
+  margin-right: 12px;
+  color: var(--s-primary);
+}
+
+.page-header p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+/* ==================== GRID DE CARDS ==================== */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+/* ==================== DASH CARD ==================== */
+
+.dash-card {
+  background: white;
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--s-box-shadow);
+  transition: all 0.2s ease;
+}
+
+.dash-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dash-card.highlight {
+  border-left: 4px solid var(--s-primary);
+}
+
+.dash-card.plan-card {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+}
+
+.dash-card.plan-card .dash-content h3,
+.dash-card.plan-card .dash-content p,
+.dash-card.plan-card .dash-content strong {
+  color: white;
+}
+
+/* ==================== DASH ICON ==================== */
+
+.dash-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--s-radius);
+  background: var(--s-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.plan-card .dash-icon {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ==================== DASH CONTENT ==================== */
+
+.dash-content {
+  flex: 1;
+}
+
+.dash-content h3 {
+  margin: 0 0 8px 0;
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 16px;
-  color: #1f2937; /* gris oscuro */
+  color: var(--s-dark);
 }
 
-/* ===============================
-   GRID DE CARDS
-   =============================== */
-
-.dashboard-section {
-  display: block;
+.dash-content p {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  color: #6c757d;
+  line-height: 1.5;
 }
 
-.dashboard-section > .s-card {
-  margin-bottom: 16px;
+.dash-content p strong {
+  color: var(--s-dark);
 }
 
-/* Grid automático para cards */
-.dashboard-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+/* ==================== BADGES ==================== */
+
+.badge-optional {
+  background: var(--s-warning);
+  color: white;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-left: 8px;
 }
 
-/* ===============================
-   AJUSTES FINOS DE CARDS
-   =============================== */
-
-/* Cards de acción principal */
-.s-card.highlight {
-  border-left: 4px solid #0070f3;
+.badge-activo,
+.badge-pausado {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
 }
 
-/* Cards deshabilitadas (ej: link público antes de generar) */
-.s-card.flat {
-  opacity: 0.6;
+.badge-activo {
+  background: #d4edda;
+  color: #155724;
 }
 
-.s-card.flat .s-btn {
-  pointer-events: auto;
+.badge-pausado {
+  background: #f8d7da;
+  color: #721c24;
 }
 
-/* Cursor claro cuando es clickable */
-.s-card.clickable {
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.s-card.clickable:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-}
-
-/* ===============================
-   ICONOS
-   =============================== */
-
-.s-card-icon {
-  font-size: 20px;
-  color: #2563eb;
-}
-
-/* Éxito */
-.s-card.success .s-card-icon {
-  color: #16a34a;
-}
-
-/* ===============================
-   FOOTER (BOTONES)
-   =============================== */
-
-.s-card-footer {
+.servicios-detail {
   display: flex;
-  justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
 }
 
-/* ===============================
-   RESPONSIVE
-   =============================== */
+/* ==================== RESPONSIVE ==================== */
 
-@media (max-width: 640px) {
-  .dashboard-section {
+@media (max-width: 768px) {
+  .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .dash-card {
+    padding: 16px;
   }
 }
