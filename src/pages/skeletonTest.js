@@ -1,14 +1,12 @@
-import './skeletonTest.css';
-
-// src/pages/dashboard/dashboard.js
+// src/pages/dashboard.js
 // Dashboard en formato skeleton (sin imports de Firebase directo)
 
-import './dashboard.css';
+import './skeletonTest';
 
-import { runSkeleton } from '../../skeleton/skeleton.js';
-import { createFirebaseAdapter } from '../../skeleton/adapters/firebaseAdapter.js';
-import { createCard } from '../../skeleton/components/card/index.js';
-import { showToast } from '../../skeleton/components/toast/index.js';
+import { runSkeleton } from '../skeleton/skeleton.js';
+import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
+import { createCard } from '../skeleton/components/card/index.js';
+import { showToast } from '../skeleton/components/toast/index.js';
 
 const dashboardPage = {
   async load(ctx) {
