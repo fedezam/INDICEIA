@@ -1,176 +1,226 @@
 import './skeletonTest.css';
 
-import { runSkeleton } from '../skeleton/skeleton.js';
-import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-import { createCard } from '../skeleton/components/card/index.js';
-import { createButton } from '../skeleton/components/button/index.js';
-import { showToast } from '../skeleton/components/toast/index.js';
+import { auth, db } from '../../firebase.js';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
-import { db } from '../firebase.js';
-import { doc, updateDoc } from 'firebase/firestore';
+import { renderLayout } from '../../skeleton/layout/renderLayout.js';
+import { createCard } from '../../skeleton/components/card/index.js';
 
-// ==================== DEFINICIÓN CANÓNICA ====================
-// MATCH EXACTO con cognitive_permissions.schema.json
-const COGNITIVE_PERMISSIONS = {
-  explain_services: {
-    label: 'Explicar servicios',
-    description:
-      'Usar conocimiento general para enriquecer descripciones escuetas o técnicas de servicios que ya existen en el catálogo.'
-  },
-  relate_catalog_items: {
-    label: 'Relacionar productos o servicios',
-    description:
-      'Sugerir combinaciones lógicas entre ítems del catálogo real, basadas en conocimiento de dominio.'
-  },
-  infer_intent: {
-    label: 'Inferir necesidades del cliente',
-    description:
-      'Deducir intenciones no explícitas a partir de las preguntas del cliente, para afinar la respuesta sin asumir.'
-  },
-  simplify_language: {
-    label: 'Traducir lo técnico a simple',
-    description:
-      'Convertir jerga profesional o técnica en lenguaje cotidiano, usando analogías precisas y sin alterar hechos.'
-  },
-  compare_offered_options: {
-    label: 'Comparar opciones',
-    description:
-      'Explicar diferencias funcionales entre productos o servicios REALES que ofrece el comercio.'
-  },
-  justify_recommendations: {
-    label: 'Justificar recomendaciones',
-    description:
-      'Argumentar por qué una opción conviene, usando lógica causal basada en datos reales del catálogo.'
-  },
-  maintain_conversation_context: {
-    label: 'Recordar contexto de la conversación',
-    description:
-      'Mantener coherencia durante la sesión, recordando temas previos sin salir del universo del comercio.'
+import { showToast, showLoading, hideLoading } from '../../shared/utils.js';
+
+let currentUser = null;
+let comercioId = null;
+let comercioData = null;
+
+// ==================== AUTH ====================
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+  currentUser = user;
+  await initDashboard();
+});
+
+// ==================== INIT ====================
+async function initDashboard() {
+  showLoading('Cargando dashboard...');
+  renderLayout();
+
+  try {
+    const userSnap = await getDoc(doc(db, 'usuarios', currentUser.uid));
+    if (!userSnap.exists()) throw new Error('Usuario no existe');
+
+    comercioId = userSnap.data().comercioId;
+
+    const comercioSnap = await getDoc(doc(db, 'comercios', comercioId));
+    comercioData = comercioSnap.exists() ? comercioSnap.data() : {};
+
+    renderDashboard();
+  } catch (err) {
+    console.error(err);
+    showToast('Error cargando dashboard', 'error');
+  } finally {
+    hideLoading();
   }
-};
+}
 
-// ==================== PÁGINA ====================
-const cognitionPage = {
-  cognitiveState: {},
-  checkboxes: {},
+// ==================== RENDER ====================
+function renderDashboard() {
+  const root = document.getElementById('pageContent');
+  root.innerHTML = '';
 
-  async load(ctx) {
-    this.ctx = ctx;
-    this.currentComercioId = ctx.currentComercioId;
-    this.comercioData = ctx.comercioData || {};
+  // ===== SECCIÓN CONFIGURACIÓN =====
+  const configSection = document.createElement('section');
+  configSection.className = 'dashboard-section';
+  configSection.innerHTML = `<h2>Configuración</h2>`;
 
-    // Universo LER: solo lo existente
-    this.cognitiveState =
-      this.comercioData.cognitive_permissions || {};
-  },
+  configSection.append(
+    createCard({
+      title: 'Usuario',
+      content: 'Datos de acceso y contacto',
+      icon: 'fa-user',
+      clickable: true,
+      onClick: () => location.href = '/usuario.html'
+    }),
+    createCard({
+      title: 'Mi comercio',
+      content: 'Información general del comercio',
+      icon: 'fa-store',
+      clickable: true,
+      onClick: () => location.href = '/mi-comercio.html'
+    }),
+    createCard({
+      title: 'Horarios',
+      content: 'Días y horarios de atención',
+      icon: 'fa-clock',
+      clickable: true,
+      onClick: () => location.href = '/horarios.html'
+    }),
+    createCard({
+      title: 'Servicios',
+      content: 'Servicios ofrecidos',
+      icon: 'fa-concierge-bell',
+      clickable: true,
+      onClick: () => location.href = '/servicios.html'
+    }),
+    createCard({
+      title: 'Productos',
+      content: 'Productos publicados',
+      icon: 'fa-box',
+      clickable: true,
+      onClick: () => location.href = '/productos.html'
+    }),
+    createCard({
+      title: 'Estado cognitivo',
+      content: 'Capacidades mentales de la entidad',
+      icon: 'fa-brain',
+      clickable: true,
+      onClick: () => location.href = '/estado-cognitivo.html'
+    })
+  );
 
-  render() {
-    const page = document.getElementById('skeleton-page');
-    page.innerHTML = '';
+  // ===== SECCIÓN PUBLICACIÓN =====
+  const publishSection = document.createElement('section');
+  publishSection.className = 'dashboard-section';
+  publishSection.innerHTML = `<h2>Publicación</h2>`;
 
-    // Header
-    const header = document.createElement('div');
-    header.className = 'page-header';
-    header.innerHTML = `
-      <h2><i class="fas fa-brain"></i> Estado Cognitivo</h2>
-      <p>Activá o desactivá las capacidades cognitivas de la entidad</p>
-    `;
-    page.appendChild(header);
+  const hasEntity = !!comercioData.entityPublicUrl;
 
-    // Card principal
-    page.appendChild(
-      createCard({
-        title: 'Capacidades cognitivas',
-        icon: 'fa-brain',
-        content: this.renderCheckboxes()
-      })
-    );
+  const generateEntityCard = createCard({
+    title: hasEntity ? 'Entidad generada' : 'Generar entidad',
+    content: hasEntity
+      ? 'Tu entidad ya está publicada y sincronizada'
+      : 'Publica la entidad con la configuración actual',
+    icon: hasEntity ? 'fa-check' : 'fa-magic',
+    variant: hasEntity ? 'success' : null,
+    highlight: !hasEntity,
+    action: hasEntity
+      ? null
+      : {
+          type: 'button',
+          label: 'Generar',
+          onClick: () => generateEntity(generateEntityCard, publicLinkCard)
+        }
+  });
 
-    // Botón guardar
-    const guardarBtn = createButton({
-      label: 'Guardar estado cognitivo',
-      icon: 'fa-save',
+  const publicLinkCard = createCard({
+    title: 'Link público',
+    content: hasEntity
+      ? 'Accedé al link y QR de tu entidad'
+      : 'Disponible una vez generada la entidad',
+    icon: 'fa-link',
+    clickable: hasEntity,
+    flat: !hasEntity,
+    action: hasEntity
+      ? {
+          type: 'link',
+          label: 'Ver link',
+          url: comercioData.entityPublicUrl,
+          target: '_blank'
+        }
+      : {
+          type: 'button',
+          label: 'No disponible',
+          onClick: () =>
+            showToast('Primero generá la entidad', 'info')
+        }
+  });
+
+  publishSection.append(generateEntityCard, publicLinkCard);
+
+  // ===== SECCIÓN SISTEMA =====
+  const systemSection = document.createElement('section');
+  systemSection.className = 'dashboard-section';
+  systemSection.innerHTML = `<h2>Sistema</h2>`;
+
+  systemSection.append(
+    createCard({
+      title: 'Visual Builder',
+      content: 'Personalización visual (opcional)',
+      icon: 'fa-palette',
+      clickable: true,
+      onClick: () => location.href = '/visual.html'
+    }),
+    createCard({
+      title: 'Estadísticas',
+      content: 'Visitas y conversiones',
+      icon: 'fa-chart-bar',
+      clickable: true,
+      onClick: () => location.href = '/stats.html'
+    })
+  );
+
+  root.append(configSection, publishSection, systemSection);
+}
+
+// ==================== ACTIONS ====================
+async function generateEntity(generateCard, linkCard) {
+  try {
+    generateCard.update({
+      title: 'Generando entidad…',
+      content: 'Publicando entidad',
+      icon: 'fa-spinner',
+      flat: true,
+      action: null
+    });
+
+    const res = await fetch('/api/generate-and-upload-entity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comercioId })
+    });
+
+    const data = await res.json();
+    if (!data.ok) throw new Error();
+
+    showToast('Entidad generada con éxito', 'success');
+
+    // Estado local
+    comercioData.entityPublicUrl = true;
+
+    // Actualizar cards
+    generateCard.update({
+      title: 'Entidad generada',
+      content: 'Tu entidad está publicada y sincronizada',
+      icon: 'fa-check',
       variant: 'success',
-      size: 'lg',
-      block: true,
-      onClick: () => this.handleGuardar()
+      highlight: false
     });
 
-    const btnWrap = document.createElement('div');
-    btnWrap.className = 'cognition-save';
-    btnWrap.appendChild(guardarBtn);
-
-    page.appendChild(btnWrap);
-  },
-
-  renderCheckboxes() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'cognition-list';
-
-    Object.entries(COGNITIVE_PERMISSIONS).forEach(([key, def]) => {
-      const row = document.createElement('label');
-      row.className = 'cognition-item';
-
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = !!this.cognitiveState[key]?.enabled;
-
-      this.checkboxes[key] = checkbox;
-
-      const text = document.createElement('div');
-      text.className = 'cognition-text';
-      text.innerHTML = `
-        <strong>${def.label}</strong>
-        <span>${def.description}</span>
-      `;
-
-      row.append(checkbox, text);
-      wrapper.appendChild(row);
-    });
-
-    return wrapper;
-  },
-
-  async handleGuardar() {
-    const cognitive_permissions = {};
-
-    Object.entries(COGNITIVE_PERMISSIONS).forEach(([key, def]) => {
-      if (this.checkboxes[key].checked) {
-        cognitive_permissions[key] = {
-          enabled: true,
-          label: def.label,
-          description: def.description
-        };
+    linkCard.update({
+      content: 'Accedé al link y QR de tu entidad',
+      clickable: true,
+      flat: false,
+      action: {
+        type: 'link',
+        label: 'Ver link',
+        url: comercioData.entityPublicUrl,
+        target: '_blank'
       }
     });
 
-    try {
-      await updateDoc(
-        doc(db, 'comercios', this.currentComercioId),
-        {
-          cognitive_permissions,
-          fechaActualizacion: new Date()
-        }
-      );
-
-      showToast({
-        title: 'Guardado',
-        message: 'Estado cognitivo actualizado',
-        variant: 'success'
-      });
-    } catch (err) {
-      console.error(err);
-      showToast({
-        title: 'Error',
-        message: err.message,
-        variant: 'error'
-      });
-    }
+  } catch (err) {
+    console.error(err);
+    showToast('Error al generar entidad', 'error');
   }
-};
+}
 
-// RUN
-runSkeleton({
-  page: cognitionPage,
-  adapter: createFirebaseAdapter
-});
