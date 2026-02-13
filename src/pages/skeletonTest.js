@@ -1,5 +1,4 @@
-// src/pages/dashboard.js
-// Dashboard en formato skeleton (sin imports de Firebase directo)
+// Dashboard en formato skeleton - Refactorizado con s-card
 
 import './skeletonTest.css';
 
@@ -7,6 +6,7 @@ import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
 import { showToast, showLoading, hideLoading } from '../shared/utils.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, hasLiveAccess, isHighValuePlan } from '../shared/plans.js';
+import { createCard } from '../skeleton/components/card/index.js';
 
 const dashboardPage = {
   async load(ctx) {
@@ -50,184 +50,190 @@ const dashboardPage = {
     grid.appendChild(this.createPlanCard());
 
     // ===== CONFIGURACIÓN =====
-    grid.appendChild(this.createCard({
-      icon: 'fa-user',
+    grid.appendChild(createCard({
       title: 'Usuario',
-      description: 'Datos de acceso y contacto',
-      href: '/usuario.html?edit=true',
-      buttonLabel: 'Editar'
+      content: 'Datos de acceso y contacto',
+      icon: 'fa-user',
+      action: {
+        type: 'link',
+        label: 'Editar',
+        url: '/usuario.html?edit=true'
+      }
     }));
 
-    grid.appendChild(this.createCard({
-      icon: 'fa-store',
+    grid.appendChild(createCard({
       title: 'Mi Comercio',
-      description: 'Información general del comercio',
-      href: '/mi-comercio.html?edit=true',
-      buttonLabel: 'Editar'
+      content: 'Información general del comercio',
+      icon: 'fa-store',
+      action: {
+        type: 'link',
+        label: 'Editar',
+        url: '/mi-comercio.html?edit=true'
+      }
     }));
 
-    grid.appendChild(this.createCard({
-      icon: 'fa-clock',
+    grid.appendChild(createCard({
       title: 'Horarios',
-      description: this.comercioData.onboardingSteps?.horarios ? 'Configurados ✓' : 'No configurados',
-      href: '/horarios.html?edit=true',
-      buttonLabel: 'Editar'
+      content: this.comercioData.onboardingSteps?.horarios ? 'Configurados ✓' : 'No configurados',
+      icon: 'fa-clock',
+      action: {
+        type: 'link',
+        label: 'Editar',
+        url: '/horarios.html?edit=true'
+      }
     }));
 
-    grid.appendChild(this.createCard({
-      icon: 'fa-concierge-bell',
+    grid.appendChild(createCard({
       title: 'Servicios',
-      description: this.getServiciosDescription(),
-      href: '/servicios.html?edit=true',
-      buttonLabel: 'Editar'
+      content: this.getServiciosDescription(),
+      icon: 'fa-concierge-bell',
+      action: {
+        type: 'link',
+        label: 'Editar',
+        url: '/servicios.html?edit=true'
+      }
     }));
 
-    grid.appendChild(this.createCard({
-      icon: 'fa-box',
+    grid.appendChild(createCard({
       title: 'Productos',
-      description: `${this.comercioData.cantidadProductos || 0} producto${this.comercioData.cantidadProductos !== 1 ? 's' : ''}`,
-      href: '/productos.html?edit=true',
-      buttonLabel: 'Editar'
+      content: `${this.comercioData.cantidadProductos || 0} producto${this.comercioData.cantidadProductos !== 1 ? 's' : ''}`,
+      icon: 'fa-box',
+      action: {
+        type: 'link',
+        label: 'Editar',
+        url: '/productos.html?edit=true'
+      }
     }));
 
-    grid.appendChild(this.createCard({
-      icon: 'fa-robot',
+    grid.appendChild(createCard({
       title: 'Configuración IA',
-      description: 'Estado mental y capacidades',
-      href: '/ia-config.html?edit=true',
-      buttonLabel: 'Editar'
+      content: 'Estado mental y capacidades',
+      icon: 'fa-robot',
+      action: {
+        type: 'link',
+        label: 'Editar',
+        url: '/ia-config.html?edit=true'
+      }
     }));
 
     // ===== PUBLICACIÓN =====
-    grid.appendChild(this.createCard({
-      icon: 'fa-palette',
+    grid.appendChild(createCard({
       title: 'Visual Builder',
-      description: 'Personaliza la apariencia de tu IA',
-      badge: 'Opcional',
-      href: '/visual.html',
-      buttonLabel: 'Acceder',
-      highlight: true
+      content: 'Personaliza la apariencia de tu IA',
+      icon: 'fa-palette',
+      highlight: true,
+      action: {
+        type: 'link',
+        label: 'Acceder',
+        url: '/visual.html'
+      }
     }));
 
-    grid.appendChild(this.createCard({
-      icon: 'fa-chart-bar',
+    grid.appendChild(createCard({
       title: 'Estadísticas',
-      description: 'Visitas y conversiones de tu landing',
-      href: '/stats.html',
-      buttonLabel: 'Ver',
-      highlight: true
+      content: 'Visitas y conversiones de tu landing',
+      icon: 'fa-chart-bar',
+      highlight: true,
+      action: {
+        type: 'link',
+        label: 'Ver',
+        url: '/stats.html'
+      }
     }));
 
-    grid.appendChild(this.createGenerateEntityCard());
+    // Card especial: Generar Entidad
+    const generateCard = createCard({
+      title: 'Generar Entidad',
+      content: 'Publica tu menú, horarios y configuración IA al instante',
+      icon: 'fa-cogs',
+      highlight: true,
+      action: {
+        type: 'button',
+        label: 'Generar',
+        className: 'btn btn-primary btn-sm',
+        onClick: () => this.generateEntity()
+      }
+    });
+    // Aseguramos el ícono mágico
+    const footer = generateCard.querySelector('.s-card-footer');
+    if (footer && footer.firstChild) {
+      footer.firstChild.innerHTML = '<i class="fas fa-magic"></i> Generar';
+    }
+    grid.appendChild(generateCard);
 
-    grid.appendChild(this.createCard({
-      icon: 'fa-link',
+    grid.appendChild(createCard({
       title: 'Mi Link Público',
-      description: 'URL permanente y QR personalizado para compartir con clientes',
-      href: '/link-publico.html',
-      buttonLabel: 'Ver link y QR',
-      highlight: true
+      content: 'URL permanente y QR personalizado para compartir con clientes',
+      icon: 'fa-link',
+      highlight: true,
+      action: {
+        type: 'link',
+        label: 'Ver link y QR',
+        url: '/link-publico.html'
+      }
     }));
 
     page.appendChild(grid);
     
-    console.log('✅ Dashboard renderizado');
+    console.log('✅ Dashboard renderizado con skeleton cards');
   },
 
   createPlanCard() {
     const planId = this.comercioData.plan || 'trial';
     const planActual = PLANS[planId] || PLANS['trial'];
     
-    const card = document.createElement('div');
-    card.className = 'dash-card highlight plan-card';
-    
-    let liveStatus = '';
-    if (hasLiveAccess(planId, this.comercioData.liveEnabled)) {
-      liveStatus = '<p><strong>Interacción continua:</strong> Activada ✓</p>';
-    } else {
-      liveStatus = '<p><strong>Interacción continua:</strong> No disponible</p>';
-    }
+    let liveStatus = hasLiveAccess(planId, this.comercioData.liveEnabled) 
+      ? '<p><strong>Interacción continua:</strong> Activada ✓</p>'
+      : '<p><strong>Interacción continua:</strong> No disponible</p>';
 
     let highValueSection = '';
     if (isHighValuePlan(planId)) {
-      highValueSection = '<p style="color:#28a745;font-weight:bold;">Plan High Value activo · Comisión por ventas comprobadas</p>';
+      highValueSection = '<p style="color:#28a745;font-weight:bold;margin-top:12px;">Plan High Value activo · Comisión por ventas comprobadas</p>';
     } else {
       highValueSection = `
-        <div style="margin-top:24px;padding:16px;background:#f0f8ff;border-left:4px solid #0070f3;border-radius:8px;">
-          <h4 style="margin:0 0 8px;">💼 Plan High Value (Gratis)</h4>
-          <p style="font-size:14px;margin:0 0 12px;">
-            Para autos, inmuebles, maquinaria, industria.<br>
-            Productos ilimitados · Interacción continua incluida · Comisión 5% solo por ventas comprobadas
-          </p>
-          <button id="activateHighValue" class="btn btn-outline-primary btn-sm">
+        <div style="margin-top:16px;padding:12px;background:#f0f8ff;border-left:3px solid #0070f3;border-radius:6px;font-size:13px;">
+          <strong>💼 Plan High Value (Gratis)</strong><br>
+          Para autos, inmuebles, maquinaria, industria.<br>
+          Productos ilimitados · Interacción continua incluida · Comisión 5% solo por ventas comprobadas
+          <button id="activateHighValue" class="btn btn-outline-primary btn-sm" style="margin-top:8px;font-size:12px;padding:4px 8px;">
             Activar High Value
           </button>
         </div>
       `;
     }
 
-    card.innerHTML = `
-      <div class="dash-icon"><i class="fas fa-crown"></i></div>
-      <div class="dash-content">
-        <h3>Tu Plan Actual</h3>
-        <p><strong>${planActual.nombre}</strong></p>
-        <p>${planActual.descripcion}</p>
-        ${liveStatus}
-        ${highValueSection}
-      </div>
-      <a href="/plans.html" class="btn btn-primary btn-sm">
-        <i class="fas fa-arrow-right"></i> Ver planes
-      </a>
+    const content = `
+      <p><strong>${planActual.nombre}</strong></p>
+      <p>${planActual.descripcion}</p>
+      ${liveStatus}
+      ${highValueSection}
     `;
 
-    // Evento para activar High Value
+    const card = createCard({
+      title: 'Tu Plan Actual',
+      content: content,
+      icon: 'fa-crown',
+      highlight: true
+    });
+
+    // Añadir clase personalizada para el fondo gradient
+    card.classList.add('plan-card');
+
+    // Añadir botón "Ver planes"
+    const footer = card.querySelector('.s-card-footer');
+    if (footer) {
+      const viewPlansBtn = document.createElement('a');
+      viewPlansBtn.href = '/plans.html';
+      viewPlansBtn.className = 'btn btn-primary btn-sm';
+      viewPlansBtn.innerHTML = '<i class="fas fa-arrow-right"></i> Ver planes';
+      footer.appendChild(viewPlansBtn);
+    }
+
+    // Evento para activar High Value (delegado)
     setTimeout(() => {
-      const activateBtn = document.getElementById('activateHighValue');
+      const activateBtn = card.querySelector('#activateHighValue');
       if (activateBtn) {
         activateBtn.addEventListener('click', () => this.openHighValueModal());
-      }
-    }, 0);
-
-    return card;
-  },
-
-  createCard({ icon, title, description, href, buttonLabel, highlight = false, badge = null }) {
-    const card = document.createElement('div');
-    card.className = `dash-card${highlight ? ' highlight' : ''}`;
-    
-    card.innerHTML = `
-      <div class="dash-icon"><i class="fas ${icon}"></i></div>
-      <div class="dash-content">
-        <h3>${title} ${badge ? `<span class="badge-optional">${badge}</span>` : ''}</h3>
-        <p>${description}</p>
-      </div>
-      <a href="${href}" class="btn ${highlight ? 'btn-primary' : 'btn-secondary'} btn-sm">
-        <i class="fas fa-${buttonLabel === 'Editar' ? 'edit' : 'arrow-right'}"></i> ${buttonLabel}
-      </a>
-    `;
-
-    return card;
-  },
-
-  createGenerateEntityCard() {
-    const card = document.createElement('div');
-    card.className = 'dash-card highlight';
-    
-    card.innerHTML = `
-      <div class="dash-icon"><i class="fas fa-cogs"></i></div>
-      <div class="dash-content">
-        <h3>Generar Entidad</h3>
-        <p>Publica tu menú, horarios y configuración IA al instante</p>
-      </div>
-      <button id="btnGenerateEntity" class="btn btn-primary btn-sm">
-        <i class="fas fa-magic"></i> Generar
-      </button>
-    `;
-
-    setTimeout(() => {
-      const btn = document.getElementById('btnGenerateEntity');
-      if (btn) {
-        btn.addEventListener('click', () => this.generateEntity());
       }
     }, 0);
 
@@ -249,7 +255,7 @@ const dashboardPage = {
   },
 
   async generateEntity() {
-    const btn = document.getElementById('btnGenerateEntity');
+    const btn = document.querySelector('#skeleton-page button.btn-primary');
     if (!btn || btn.disabled) return;
 
     btn.disabled = true;
@@ -317,8 +323,6 @@ const dashboardPage = {
 
     confirmBtn.addEventListener('click', async () => {
       try {
-        // Aquí faltaría importar updateDoc de Firestore
-        // Por ahora usamos fetch a una API
         const response = await fetch('/api/activate-high-value', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
