@@ -16,7 +16,16 @@ function isEditMode() {
   return params.get("edit") === "true";
 }
 
+/**
+ * Páginas públicas (no requieren auth)
+ */
 const PUBLIC_PAGES = ["login", "registro", "index", ""];
+
+/**
+ * Páginas neutras (requieren auth pero NO participan del flujo)
+ * Ej: sandbox, pruebas de skeleton, debug visual
+ */
+const NEUTRAL_PAGES = ["skeletonTest"];
 
 /* =========================================================
    PIPELINE BUILDER
@@ -65,6 +74,14 @@ export async function runFlowController(uid) {
       return;
     }
 
+    // ====================
+    // 🟢 PÁGINAS NEUTRAS
+    // ====================
+    if (NEUTRAL_PAGES.includes(currentPage)) {
+      console.log(`🧪 FlowController: página neutral (${currentPage})`);
+      return;
+    }
+
     const userData = userSnap.data();
     const userSteps = userData.onboardingSteps || {};
 
@@ -92,7 +109,6 @@ export async function runFlowController(uid) {
       if (currentPage !== "mi-comercio") {
         window.location.href = "/mi-comercio.html";
       }
-      // ⛔ NO SE EVALÚA NADA MÁS
       return;
     }
 
@@ -159,3 +175,4 @@ export function redirectAfterSave(nextStep) {
     window.location.href = `/${nextStep}.html`;
   }
 }
+
