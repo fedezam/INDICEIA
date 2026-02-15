@@ -1,8 +1,10 @@
 /* src/pages/dashboard.css */
-/* Dashboard - Solo layout y composición específica */
+/* Dashboard con 3 secciones y estados de cards */
+
+/* ==================== PAGE HEADER ==================== */
 
 .page-header {
-  margin-bottom: 28px;
+  margin-bottom: 32px;
   text-align: center;
   padding: 0 15px;
 }
@@ -23,60 +25,247 @@
   margin: 0;
   color: #6c757d;
   font-size: 15px;
-  font-weight: 400;
 }
 
-/* ==================== GRID DE CARDS ==================== */
+/* ==================== PLAN CARD (arriba de todo) ==================== */
+
+.plan-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: var(--s-radius-lg);
+  padding: 32px;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+}
+
+.plan-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--s-radius);
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.plan-content {
+  flex: 1;
+}
+
+.plan-content h2 {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+}
+
+.plan-name {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 8px 0;
+  color: white;
+}
+
+.plan-desc {
+  font-size: 14px;
+  opacity: 0.9;
+  margin: 4px 0 12px 0;
+}
+
+.plan-content p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: white;
+}
+
+.plan-content strong {
+  font-weight: 600;
+}
+
+.high-value-active {
+  color: #90EE90 !important;
+  font-weight: 700 !important;
+  margin-top: 12px !important;
+}
+
+.high-value-promo {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border-left: 4px solid white;
+  border-radius: var(--s-radius);
+}
+
+.high-value-promo h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: white;
+}
+
+.high-value-promo p {
+  font-size: 13px;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.plan-card .btn-light {
+  background: white;
+  color: #667eea;
+  border: none;
+  font-weight: 600;
+}
+
+.plan-card .btn-light:hover {
+  background: #f0f0f0;
+}
+
+/* ==================== SECCIONES ==================== */
+
+.dashboard-section {
+  margin-bottom: 48px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--s-dark);
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--s-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-title i {
+  color: var(--s-primary);
+  font-size: 18px;
+}
+
+/* ==================== GRID ==================== */
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-  margin-top: 24px;
 }
 
-/* Estilos específicos para la plan card */
-.plan-card {
-  grid-column: 1 / -1;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+/* ==================== DASH CARDS ==================== */
+
+.dash-card {
+  background: white;
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--s-box-shadow);
+  transition: all 0.2s ease;
 }
 
-.plan-card .s-card-header,
-.plan-card .s-card-body,
-.plan-card .s-card-title,
-.plan-card .s-card-content,
-.plan-card .s-card-content p,
-.plan-card .s-card-content strong {
-  color: white;
+.dash-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-.plan-card .s-card-icon {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
+.dash-card.highlight {
+  border-left: 4px solid var(--s-primary);
 }
 
-/* BADGES personalizados (específicos del dashboard) */
-.badge-optional {
-  background: var(--s-warning);
+/* Iconos */
+.dash-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--s-radius);
+  background: var(--s-primary);
   color: white;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+/* Contenido */
+.dash-content {
+  flex: 1;
+}
+
+.dash-content h3 {
+  margin: 0 0 8px 0;
+  font-size: 17px;
   font-weight: 600;
-  text-transform: uppercase;
-  margin-left: 8px;
-  vertical-align: middle;
+  color: var(--s-dark);
 }
+
+.dash-content p {
+  margin: 0;
+  font-size: 13px;
+  color: #6c757d;
+  line-height: 1.5;
+}
+
+/* ==================== CARD PARA AGREGAR (no configurada) ==================== */
+
+.add-card {
+  border: 2px dashed var(--s-border);
+  background: #f8f9fa;
+}
+
+.add-card:hover {
+  border-color: var(--s-primary);
+  background: #f0f8ff;
+}
+
+.add-icon {
+  background: transparent;
+  border: 2px dashed var(--s-primary);
+  color: var(--s-primary);
+}
+
+.add-card .dash-content h3 {
+  color: var(--s-primary);
+}
+
+.add-card .dash-content p {
+  color: #6c757d;
+}
+
+/* ==================== CARD DISABLED (entidad no generada) ==================== */
+
+.disabled-card {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.disabled-card:hover {
+  transform: none;
+  box-shadow: var(--s-box-shadow);
+}
+
+.disabled-icon {
+  background: var(--s-gray);
+}
+
+.disabled-card .dash-content h3 {
+  color: #6c757d;
+}
+
+/* ==================== BADGES ==================== */
 
 .badge-activo,
 .badge-pausado {
-  font-size: 12px;
-  padding: 2px 8px;
+  font-size: 11px;
+  padding: 3px 8px;
   border-radius: 4px;
-  font-weight: 500;
+  font-weight: 600;
   display: inline-block;
-  vertical-align: middle;
+  margin-top: 4px;
 }
 
 .badge-activo {
@@ -89,13 +278,112 @@
   color: #721c24;
 }
 
-/* RESPONSIVE */
+/* ==================== MODAL ==================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: var(--s-radius-lg);
+  padding: 32px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h3 {
+  margin: 0 0 16px 0;
+  color: var(--s-dark);
+  font-size: 22px;
+}
+
+.modal-content p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #495057;
+}
+
+.modal-content ul {
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 16px 0;
+  padding-left: 24px;
+  color: #495057;
+}
+
+.modal-warning {
+  background: #fff3cd;
+  border-left: 4px solid var(--s-warning);
+  padding: 12px;
+  border-radius: var(--s-radius);
+  font-size: 13px !important;
+  margin: 16px 0 !important;
+}
+
+.modal-checkbox {
+  display: block;
+  margin: 24px 0 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.modal-checkbox input {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+/* ==================== RESPONSIVE ==================== */
+
 @media (max-width: 768px) {
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .plan-card {
+    flex-direction: column;
+    padding: 24px;
+  }
+
+  .plan-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+
+  .plan-name {
+    font-size: 20px;
+  }
+
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
 
-  .page-header h1 {
-    font-size: 24px;
+  .dash-card {
+    padding: 16px;
+  }
+
+  .section-title {
+    font-size: 18px;
+  }
+
+  .modal-content {
+    padding: 24px;
   }
 }
