@@ -4,9 +4,8 @@ import './skeletonTest.css';
 
 import { runSkeleton } from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, hasLiveAccess, isHighValuePlan } from '../shared/plans.js';
-import { createCard } from '../skeleton/components/card/index.js';
+import { showToast } from '../skeleton/components/toast/index.js';
+import { PLANS, hasLiveAccess, isHighValuePlan } from '../shared/plans.js';
 
 const dashboardPage = {
   async load(ctx) {
@@ -15,13 +14,15 @@ const dashboardPage = {
     this.comercioData = ctx.comercioData || {};
     this.comercioId = ctx.comercioId;
     this.userData = ctx.userData || {};
+    this.offerType = this.userData.offerType || {};
     
     // Asegurar que existe plan
     if (!this.comercioData.plan) {
       this.comercioData.plan = 'trial';
     }
     
-    console.log('Comercio Data:', this.comercioData);
+    console.log('📊 Offer Type:', this.offerType);
+    console.log('🏢 Comercio Data:', this.comercioData);
   },
 
   render() {
@@ -42,196 +43,71 @@ const dashboardPage = {
     `;
     page.appendChild(pageHeader);
 
-    // Grid principal
-    const grid = document.createElement('section');
-    grid.className = 'dashboard-grid';
+    // ===== CARD DEL PLAN (arriba de todo) =====
+    page.appendChild(this.createPlanCard());
 
-    // ===== TU PLAN ACTUAL =====
-    grid.appendChild(this.createPlanCard());
+    // ===== SECCIÓN 1: CONFIGURACIÓN =====
+    page.appendChild(this.createConfigSection());
 
-    // ===== CONFIGURACIÓN =====
-    grid.appendChild(createCard({
-      title: 'Usuario',
-      content: 'Datos de acceso y contacto',
-      icon: 'fa-user',
-      action: {
-        type: 'link',
-        label: 'Editar',
-        url: '/usuario.html?edit=true'
-      }
-    }));
+    // ===== SECCIÓN 2: PUBLICACIÓN =====
+    page.appendChild(this.createPublishSection());
 
-    grid.appendChild(createCard({
-      title: 'Mi Comercio',
-      content: 'Información general del comercio',
-      icon: 'fa-store',
-      action: {
-        type: 'link',
-        label: 'Editar',
-        url: '/mi-comercio.html?edit=true'
-      }
-    }));
-
-    grid.appendChild(createCard({
-      title: 'Horarios',
-      content: this.comercioData.onboardingSteps?.horarios ? 'Configurados ✓' : 'No configurados',
-      icon: 'fa-clock',
-      action: {
-        type: 'link',
-        label: 'Editar',
-        url: '/horarios.html?edit=true'
-      }
-    }));
-
-    grid.appendChild(createCard({
-      title: 'Servicios',
-      content: this.getServiciosDescription(),
-      icon: 'fa-concierge-bell',
-      action: {
-        type: 'link',
-        label: 'Editar',
-        url: '/servicios.html?edit=true'
-      }
-    }));
-
-    grid.appendChild(createCard({
-      title: 'Productos',
-      content: `${this.comercioData.cantidadProductos || 0} producto${this.comercioData.cantidadProductos !== 1 ? 's' : ''}`,
-      icon: 'fa-box',
-      action: {
-        type: 'link',
-        label: 'Editar',
-        url: '/productos.html?edit=true'
-      }
-    }));
-
-    grid.appendChild(createCard({
-      title: 'Configuración IA',
-      content: 'Estado mental y capacidades',
-      icon: 'fa-robot',
-      action: {
-        type: 'link',
-        label: 'Editar',
-        url: '/ia-config.html?edit=true'
-      }
-    }));
-
-    // ===== PUBLICACIÓN =====
-    grid.appendChild(createCard({
-      title: 'Visual Builder',
-      content: 'Personaliza la apariencia de tu IA',
-      icon: 'fa-palette',
-      highlight: true,
-      action: {
-        type: 'link',
-        label: 'Acceder',
-        url: '/visual.html'
-      }
-    }));
-
-    grid.appendChild(createCard({
-      title: 'Estadísticas',
-      content: 'Visitas y conversiones de tu landing',
-      icon: 'fa-chart-bar',
-      highlight: true,
-      action: {
-        type: 'link',
-        label: 'Ver',
-        url: '/stats.html'
-      }
-    }));
-
-    // Card especial: Generar Entidad
-    const generateCard = createCard({
-      title: 'Generar Entidad',
-      content: 'Publica tu menú, horarios y configuración IA al instante',
-      icon: 'fa-cogs',
-      highlight: true,
-      action: {
-        type: 'button',
-        label: 'Generar',
-        className: 'btn btn-primary btn-sm',
-        onClick: () => this.generateEntity()
-      }
-    });
-    // Aseguramos el ícono mágico
-    const footer = generateCard.querySelector('.s-card-footer');
-    if (footer && footer.firstChild) {
-      footer.firstChild.innerHTML = '<i class="fas fa-magic"></i> Generar';
-    }
-    grid.appendChild(generateCard);
-
-    grid.appendChild(createCard({
-      title: 'Mi Link Público',
-      content: 'URL permanente y QR personalizado para compartir con clientes',
-      icon: 'fa-link',
-      highlight: true,
-      action: {
-        type: 'link',
-        label: 'Ver link y QR',
-        url: '/link-publico.html'
-      }
-    }));
-
-    page.appendChild(grid);
+    // ===== SECCIÓN 3: ESTADÍSTICAS =====
+    page.appendChild(this.createStatsSection());
     
-    console.log('✅ Dashboard renderizado con skeleton cards');
+    console.log('✅ Dashboard renderizado');
   },
 
+  // ==================== CARD DEL PLAN ====================
   createPlanCard() {
     const planId = this.comercioData.plan || 'trial';
     const planActual = PLANS[planId] || PLANS['trial'];
     
-    let liveStatus = hasLiveAccess(planId, this.comercioData.liveEnabled) 
-      ? '<p><strong>Interacción continua:</strong> Activada ✓</p>'
-      : '<p><strong>Interacción continua:</strong> No disponible</p>';
+    const card = document.createElement('div');
+    card.className = 'plan-card';
+    
+    let liveStatus = '';
+    if (hasLiveAccess(planId, this.comercioData.liveEnabled)) {
+      liveStatus = '<p><strong>Interacción continua:</strong> Activada ✓</p>';
+    } else {
+      liveStatus = '<p><strong>Interacción continua:</strong> No disponible</p>';
+    }
 
     let highValueSection = '';
     if (isHighValuePlan(planId)) {
-      highValueSection = '<p style="color:#28a745;font-weight:bold;margin-top:12px;">Plan High Value activo · Comisión por ventas comprobadas</p>';
+      highValueSection = '<p class="high-value-active">Plan High Value activo · Comisión por ventas comprobadas</p>';
     } else {
       highValueSection = `
-        <div style="margin-top:16px;padding:12px;background:#f0f8ff;border-left:3px solid #0070f3;border-radius:6px;font-size:13px;">
-          <strong>💼 Plan High Value (Gratis)</strong><br>
-          Para autos, inmuebles, maquinaria, industria.<br>
-          Productos ilimitados · Interacción continua incluida · Comisión 5% solo por ventas comprobadas
-          <button id="activateHighValue" class="btn btn-outline-primary btn-sm" style="margin-top:8px;font-size:12px;padding:4px 8px;">
+        <div class="high-value-promo">
+          <h4>💼 Plan High Value (Gratis)</h4>
+          <p>
+            Para autos, inmuebles, maquinaria, industria.<br>
+            Productos ilimitados · Interacción continua incluida · Comisión 5% solo por ventas comprobadas
+          </p>
+          <button id="activateHighValue" class="btn btn-outline-primary btn-sm">
             Activar High Value
           </button>
         </div>
       `;
     }
 
-    const content = `
-      <p><strong>${planActual.nombre}</strong></p>
-      <p>${planActual.descripcion}</p>
-      ${liveStatus}
-      ${highValueSection}
+    card.innerHTML = `
+      <div class="plan-icon"><i class="fas fa-crown"></i></div>
+      <div class="plan-content">
+        <h2>Tu Plan Actual</h2>
+        <p class="plan-name">${planActual.nombre}</p>
+        <p class="plan-desc">${planActual.descripcion}</p>
+        ${liveStatus}
+        ${highValueSection}
+      </div>
+      <a href="/plans.html" class="btn btn-light btn-sm">
+        <i class="fas fa-arrow-right"></i> Ver planes
+      </a>
     `;
 
-    const card = createCard({
-      title: 'Tu Plan Actual',
-      content: content,
-      icon: 'fa-crown',
-      highlight: true
-    });
-
-    // Añadir clase personalizada para el fondo gradient
-    card.classList.add('plan-card');
-
-    // Añadir botón "Ver planes"
-    const footer = card.querySelector('.s-card-footer');
-    if (footer) {
-      const viewPlansBtn = document.createElement('a');
-      viewPlansBtn.href = '/plans.html';
-      viewPlansBtn.className = 'btn btn-primary btn-sm';
-      viewPlansBtn.innerHTML = '<i class="fas fa-arrow-right"></i> Ver planes';
-      footer.appendChild(viewPlansBtn);
-    }
-
-    // Evento para activar High Value (delegado)
+    // Evento para activar High Value
     setTimeout(() => {
-      const activateBtn = card.querySelector('#activateHighValue');
+      const activateBtn = document.getElementById('activateHighValue');
       if (activateBtn) {
         activateBtn.addEventListener('click', () => this.openHighValueModal());
       }
@@ -240,22 +116,289 @@ const dashboardPage = {
     return card;
   },
 
-  getServiciosDescription() {
-    const stats = this.comercioData.serviciosStats || { activos: 0, pausados: 0, total: 0 };
-    let desc = `${stats.total} total${stats.total !== 1 ? 'es' : ''}`;
+  // ==================== SECCIÓN 1: CONFIGURACIÓN ====================
+  createConfigSection() {
+    const section = document.createElement('section');
+    section.className = 'dashboard-section';
     
-    if (stats.total > 0) {
-      desc += `<br><span class="badge-activo">🟢 ${stats.activos} activo${stats.activos !== 1 ? 's' : ''}</span>`;
-      if (stats.pausados > 0) {
-        desc += ` <span class="badge-pausado">🔴 ${stats.pausados} pausado${stats.pausados !== 1 ? 's' : ''}</span>`;
-      }
+    const header = document.createElement('h2');
+    header.className = 'section-title';
+    header.innerHTML = '<i class="fas fa-cog"></i> Configuración';
+    section.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'dashboard-grid';
+
+    // Cards siempre visibles
+    grid.appendChild(this.createCard({
+      icon: 'fa-user',
+      title: 'Usuario',
+      description: 'Datos de acceso y contacto',
+      href: '/usuario.html?edit=true',
+      buttonLabel: 'Editar',
+      buttonIcon: 'edit'
+    }));
+
+    grid.appendChild(this.createCard({
+      icon: 'fa-store',
+      title: 'Mi Comercio',
+      description: 'Información general del comercio',
+      href: '/mi-comercio.html?edit=true',
+      buttonLabel: 'Editar',
+      buttonIcon: 'edit'
+    }));
+
+    grid.appendChild(this.createCard({
+      icon: 'fa-clock',
+      title: 'Horarios',
+      description: this.comercioData.onboardingSteps?.horarios ? 'Configurados ✓' : 'No configurados',
+      href: '/horarios.html?edit=true',
+      buttonLabel: 'Editar',
+      buttonIcon: 'edit'
+    }));
+
+    // SERVICIOS - Condicional
+    if (this.offerType.servicios) {
+      // Configurado
+      grid.appendChild(this.createCard({
+        icon: 'fa-concierge-bell',
+        title: 'Servicios',
+        description: this.getServiciosDescription(),
+        href: '/servicios.html?edit=true',
+        buttonLabel: 'Editar',
+        buttonIcon: 'edit'
+      }));
+    } else {
+      // No configurado - Agregar
+      grid.appendChild(this.createAddCard({
+        icon: 'fa-concierge-bell',
+        title: 'Servicios',
+        description: 'Agregá servicios a tu oferta',
+        href: '/crear-entidad.html'
+      }));
     }
-    
-    return desc;
+
+    // PRODUCTOS - Condicional
+    if (this.offerType.productos) {
+      // Configurado
+      grid.appendChild(this.createCard({
+        icon: 'fa-box',
+        title: 'Productos',
+        description: `${this.comercioData.cantidadProductos || 0} producto${this.comercioData.cantidadProductos !== 1 ? 's' : ''}`,
+        href: '/productos.html?edit=true',
+        buttonLabel: 'Editar',
+        buttonIcon: 'edit'
+      }));
+    } else {
+      // No configurado - Agregar
+      grid.appendChild(this.createAddCard({
+        icon: 'fa-box',
+        title: 'Productos',
+        description: 'Agregá productos a tu oferta',
+        href: '/crear-entidad.html'
+      }));
+    }
+
+    grid.appendChild(this.createCard({
+      icon: 'fa-robot',
+      title: 'Configuración IA',
+      description: 'Personalidad y comportamiento',
+      href: '/ia-config.html?edit=true',
+      buttonLabel: 'Editar',
+      buttonIcon: 'edit'
+    }));
+
+    grid.appendChild(this.createCard({
+      icon: 'fa-palette',
+      title: 'Visual Builder',
+      description: 'Personalización visual de la IA',
+      href: '/visual.html',
+      buttonLabel: 'Acceder',
+      buttonIcon: 'arrow-right'
+    }));
+
+    section.appendChild(grid);
+    return section;
   },
 
+  // ==================== SECCIÓN 2: PUBLICACIÓN ====================
+  createPublishSection() {
+    const section = document.createElement('section');
+    section.className = 'dashboard-section';
+    
+    const header = document.createElement('h2');
+    header.className = 'section-title';
+    header.innerHTML = '<i class="fas fa-rocket"></i> Publicación';
+    section.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'dashboard-grid';
+
+    // Generar Entidad (siempre activa)
+    grid.appendChild(this.createGenerateEntityCard());
+
+    // Mi Link Público (condicional)
+    const hasEntity = !!this.comercioData.entityPublicUrl;
+    
+    if (hasEntity) {
+      // Entidad generada - Card activa
+      grid.appendChild(this.createCard({
+        icon: 'fa-link',
+        title: 'Mi Link Público',
+        description: 'URL y QR para compartir con clientes',
+        href: '/link-publico.html',
+        buttonLabel: 'Ver link y QR',
+        buttonIcon: 'qrcode',
+        highlight: true
+      }));
+    } else {
+      // Entidad NO generada - Card disabled
+      grid.appendChild(this.createDisabledCard({
+        icon: 'fa-link',
+        title: 'Mi Link Público',
+        description: 'Disponible después de generar la entidad'
+      }));
+    }
+
+    section.appendChild(grid);
+    return section;
+  },
+
+  // ==================== SECCIÓN 3: ESTADÍSTICAS ====================
+  createStatsSection() {
+    const section = document.createElement('section');
+    section.className = 'dashboard-section';
+    
+    const header = document.createElement('h2');
+    header.className = 'section-title';
+    header.innerHTML = '<i class="fas fa-chart-line"></i> Estadísticas';
+    section.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'dashboard-grid';
+
+    grid.appendChild(this.createCard({
+      icon: 'fa-chart-bar',
+      title: 'Estadísticas',
+      description: 'Visitas, conversiones y métricas',
+      href: '/stats.html',
+      buttonLabel: 'Ver estadísticas',
+      buttonIcon: 'arrow-right',
+      highlight: true
+    }));
+
+    section.appendChild(grid);
+    return section;
+  },
+
+  // ==================== HELPERS DE CARDS ====================
+
+  // Card normal (configurada)
+  createCard({ icon, title, description, href, buttonLabel, buttonIcon, highlight = false }) {
+    const card = document.createElement('div');
+    card.className = `dash-card${highlight ? ' highlight' : ''}`;
+    
+    card.innerHTML = `
+      <div class="dash-icon"><i class="fas ${icon}"></i></div>
+      <div class="dash-content">
+        <h3>${title}</h3>
+        <p>${description}</p>
+      </div>
+      <a href="${href}" class="btn btn-secondary btn-sm">
+        <i class="fas fa-${buttonIcon}"></i> ${buttonLabel}
+      </a>
+    `;
+
+    return card;
+  },
+
+  // Card para agregar (no configurada)
+  createAddCard({ icon, title, description, href }) {
+    const card = document.createElement('div');
+    card.className = 'dash-card add-card';
+    
+    card.innerHTML = `
+      <div class="dash-icon add-icon"><i class="fas ${icon}"></i></div>
+      <div class="dash-content">
+        <h3>${title}</h3>
+        <p>${description}</p>
+      </div>
+      <a href="${href}" class="btn btn-outline-primary btn-sm">
+        <i class="fas fa-plus"></i> Agregar
+      </a>
+    `;
+
+    return card;
+  },
+
+  // Card disabled (entidad no generada)
+  createDisabledCard({ icon, title, description }) {
+    const card = document.createElement('div');
+    card.className = 'dash-card disabled-card';
+    
+    card.innerHTML = `
+      <div class="dash-icon disabled-icon"><i class="fas ${icon}"></i></div>
+      <div class="dash-content">
+        <h3>${title}</h3>
+        <p>${description}</p>
+      </div>
+      <button class="btn btn-secondary btn-sm" disabled>
+        <i class="fas fa-lock"></i> No disponible
+      </button>
+    `;
+
+    return card;
+  },
+
+  // Card Generar Entidad
+  createGenerateEntityCard() {
+    const card = document.createElement('div');
+    card.className = 'dash-card highlight';
+    
+    card.innerHTML = `
+      <div class="dash-icon"><i class="fas fa-magic"></i></div>
+      <div class="dash-content">
+        <h3>Generar Entidad</h3>
+        <p>Publica tu configuración al instante</p>
+      </div>
+      <button id="btnGenerateEntity" class="btn btn-primary btn-sm">
+        <i class="fas fa-magic"></i> Generar
+      </button>
+    `;
+
+    setTimeout(() => {
+      const btn = document.getElementById('btnGenerateEntity');
+      if (btn) {
+        btn.addEventListener('click', () => this.generateEntity());
+      }
+    }, 0);
+
+    return card;
+  },
+
+  // ==================== HELPERS ====================
+
+  getServiciosDescription() {
+    const stats = this.comercioData.serviciosStats || { activos: 0, pausados: 0, total: 0 };
+    
+    if (stats.total === 0) {
+      return 'Sin servicios configurados';
+    }
+    
+    let html = `${stats.total} servicio${stats.total !== 1 ? 's' : ''}<br>`;
+    html += `<span class="badge-activo">🟢 ${stats.activos} activo${stats.activos !== 1 ? 's' : ''}</span>`;
+    
+    if (stats.pausados > 0) {
+      html += ` <span class="badge-pausado">🔴 ${stats.pausados} pausado${stats.pausados !== 1 ? 's' : ''}</span>`;
+    }
+    
+    return html;
+  },
+
+  // ==================== ACCIONES ====================
+
   async generateEntity() {
-    const btn = document.querySelector('#skeleton-page button.btn-primary');
+    const btn = document.getElementById('btnGenerateEntity');
     if (!btn || btn.disabled) return;
 
     btn.disabled = true;
@@ -273,13 +416,15 @@ const dashboardPage = {
 
       if (data.ok) {
         showToast('¡Entidad generada y publicada con éxito!', 'success');
+        
+        // Recargar para actualizar el estado de "Mi Link Público"
+        setTimeout(() => location.reload(), 1500);
       } else {
-        throw new Error(data.error || 'Error desconocido del servidor');
+        throw new Error(data.error || 'Error desconocido');
       }
     } catch (err) {
       console.error('Error al generar entidad:', err);
-      showToast('Error: ' + (err.message || 'No se pudo completar la operación'), 'error');
-    } finally {
+      showToast('Error: ' + (err.message || 'No se pudo completar'), 'error');
       btn.disabled = false;
       btn.innerHTML = originalText;
     }
@@ -287,26 +432,25 @@ const dashboardPage = {
 
   async openHighValueModal() {
     const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
     modal.innerHTML = `
-      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;">
-        <div style="background:white;border-radius:12px;padding:32px;max-width:500px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.2);">
-          <h3 style="margin-top:0;">Activar Plan High Value (Gratis)</h3>
-          <p>Ideal para ventas de alto valor: autos, inmuebles, maquinaria, industria.</p>
-          <ul style="text-align:left;font-size:14px;line-height:1.5;">
-            <li>Productos ilimitados</li>
-            <li>Interacción continua incluida</li>
-            <li>Sin costo mensual</li>
-            <li>Comisión del 5% solo sobre ventas comprobadas mediante el sistema</li>
-          </ul>
-          <p style="font-size:14px;"><strong>Importante:</strong> El ocultamiento deliberado de ventas comprobadas resultará en la desactivación permanente del servicio.</p>
-          <label style="display:block;margin:24px 0 16px;">
-            <input type="checkbox" id="acceptHVTerms">
-            Acepto los términos del plan High Value
-          </label>
-          <div style="text-align:right;">
-            <button id="cancelHV" class="btn btn-secondary btn-sm" style="margin-right:8px;">Cancelar</button>
-            <button id="confirmHV" class="btn btn-primary btn-sm" disabled>Activar</button>
-          </div>
+      <div class="modal-content">
+        <h3>Activar Plan High Value (Gratis)</h3>
+        <p>Ideal para ventas de alto valor: autos, inmuebles, maquinaria, industria.</p>
+        <ul>
+          <li>Productos ilimitados</li>
+          <li>Interacción continua incluida</li>
+          <li>Sin costo mensual</li>
+          <li>Comisión del 5% solo sobre ventas comprobadas mediante el sistema</li>
+        </ul>
+        <p class="modal-warning"><strong>Importante:</strong> El ocultamiento deliberado de ventas comprobadas resultará en la desactivación permanente del servicio.</p>
+        <label class="modal-checkbox">
+          <input type="checkbox" id="acceptHVTerms">
+          Acepto los términos del plan High Value
+        </label>
+        <div class="modal-actions">
+          <button id="cancelHV" class="btn btn-secondary btn-sm">Cancelar</button>
+          <button id="confirmHV" class="btn btn-primary btn-sm" disabled>Activar</button>
         </div>
       </div>
     `;
@@ -332,7 +476,7 @@ const dashboardPage = {
         if (response.ok) {
           showToast('Plan High Value activado con éxito', 'success');
           modal.remove();
-          location.reload();
+          setTimeout(() => location.reload(), 1000);
         } else {
           throw new Error('Error al activar');
         }
@@ -343,7 +487,7 @@ const dashboardPage = {
 
     cancelBtn.addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => {
-      if (e.target === modal.firstElementChild) modal.remove();
+      if (e.target === modal) modal.remove();
     });
   }
 };
