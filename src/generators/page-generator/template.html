@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <!-- @llm:page.meta -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <!-- @llm:page.identity -->
+  <title>{{PAGE_TITLE}} - ÍndiceIA</title>
+  <meta name="description" content="{{PAGE_DESCRIPTION}}" />
+
+  <!-- @llm:page.brand -->
+  <meta name="theme-color" content="#3c8dbc" />
+  <meta name="author" content="ÍndiceIA" />
+
+  <!-- @llm:page.social -->
+  <meta property="og:title" content="{{PAGE_TITLE}} - ÍndiceIA" />
+  <meta property="og:description" content="{{PAGE_DESCRIPTION}}" />
+  <meta property="og:type" content="website" />
+
+  <!-- @llm:page.assets -->
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="/src/skeleton/theme-variables.css" />
+  <link rel="stylesheet" href="./{{PAGE_NAME}}.css" />
+</head>
+
+<body>
+  <!-- @llm:page.mount -->
+  <div id="app"></div>
+
+  <!-- @llm:page.entry -->
+  <script type="module" src="./{{PAGE_NAME}}.js"></script>
+</body>
+</html>
