@@ -1,0 +1,9 @@
+{
+  "@llm:page.meta": "Metadatos técnicos y viewport",
+  "@llm:page.identity": "Nombre y propósito de la página",
+  "@llm:page.brand": "Identidad visual y autoría",
+  "@llm:page.social": "Representación social / SEO",
+  "@llm:page.assets": "Recursos estáticos requeridos",
+  "@llm:page.mount": "Nodo de montaje del skeleton",
+  "@llm:page.entry": "Punto de entrada JS"
+}
