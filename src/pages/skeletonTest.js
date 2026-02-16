@@ -1,5 +1,7 @@
 // Dashboard en formato skeleton - Refactorizado con s-card
 
+// Dashboard en formato skeleton - Refactorizado con s-card
+
 import './skeletonTest.css';
 
 import { runSkeleton } from '../skeleton/skeleton.js';
@@ -16,13 +18,17 @@ const dashboardPage = {
     this.userData = ctx.userData || {};
     this.offerType = this.userData.offerType || {};
     
-    // Asegurar que existe plan
+    // ✅ Asegurar que plan sea un string (no un objeto)
     if (!this.comercioData.plan) {
       this.comercioData.plan = 'trial';
+    } else if (typeof this.comercioData.plan === 'object') {
+      // Si viene como objeto, extraer el ID
+      this.comercioData.plan = this.comercioData.plan.id || 'trial';
     }
     
     console.log('📊 Offer Type:', this.offerType);
     console.log('🏢 Comercio Data:', this.comercioData);
+    console.log('🎫 Plan (normalizado):', this.comercioData.plan);
   },
 
   render() {
@@ -485,7 +491,7 @@ const dashboardPage = {
       }
     });
 
-    cancelBtn.addEventListener('click', () => modal.remove());
+    cancelBtn.addEventListener('click', () => modal.remove();
     modal.addEventListener('click', (e) => {
       if (e.target === modal) modal.remove();
     });
