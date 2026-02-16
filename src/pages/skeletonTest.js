@@ -1,7 +1,5 @@
 // Dashboard en formato skeleton - Refactorizado con s-card
 
-// Dashboard en formato skeleton - Refactorizado con s-card
-
 import './skeletonTest.css';
 
 import { runSkeleton } from '../skeleton/skeleton.js';
@@ -491,7 +489,7 @@ const dashboardPage = {
       }
     });
 
-    cancelBtn.addEventListener('click', () => modal.remove();
+    cancelBtn.addEventListener('click', () => modal.remove());
     modal.addEventListener('click', (e) => {
       if (e.target === modal) modal.remove();
     });
