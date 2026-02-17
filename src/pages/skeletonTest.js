@@ -11,7 +11,7 @@ import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js
 import { mountLayout }           from '/src/skeleton/layout/index.js';
 
 // ==================== ESTILOS ====================
-import './usuario.css';
+import './skeletonTest.css';
 
 // ==================== COMPONENTES ====================
 import { createFormField }        from '/src/skeleton/components/form-field/index.js';
