@@ -264,8 +264,18 @@ function renderSeccionUbicacion(state, refs) {
 
   section.append(refs.fields.pais, refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion);
 
-  // Llenar provincias
-  fillProvinciaSelector(refs.fields.provincia.input, state.comercioData.provincia);
+  // ✅ FIX: orden correcto de parámetros
+  fillProvinciaSelector('Argentina', refs.fields.provincia.input);
+
+  // ✅ Pre-seleccionar la provincia guardada en Firestore
+  const provinciaSaved = state.comercioData.provincia || null;
+  if (provinciaSaved) {
+    refs.fields.provincia.input.value = provinciaSaved;
+    console.log('✅ Provincia cargada desde DB:', provinciaSaved);
+    console.log('✅ Valor actual del select:', refs.fields.provincia.input.value);
+  } else {
+    console.log('ℹ️ No hay provincia guardada en DB, select vacío');
+  }
 
   // Validación
   [refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion].forEach(field => {
@@ -274,6 +284,7 @@ function renderSeccionUbicacion(state, refs) {
 
   return section;
 }
+
 
 function renderSeccionContacto(state, refs) {
   const section = document.createElement('div');
