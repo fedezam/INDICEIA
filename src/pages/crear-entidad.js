@@ -1,156 +1,189 @@
-// =======================================================
-// crear-entidad.js — Definición de capacidades de la entidad
-// =======================================================
+// ============================================================
+// src/pages/crear-entidad/crear-entidad.js
+// ============================================================
+// 🧠 CONTRATO ctx:
+//   ctx.user.uid           → uid del usuario autenticado
+//   ctx.userData           → doc /usuarios/{uid}
+//   ctx.userData.offerType → { productos: bool, servicios: bool }
+// ============================================================
 
-// CSS
-import '../styles/base.css';
-import '../styles/layout.css';
-import '../styles/components.css';
-import '../styles/forms.css';
-import './crear-entidad.css';
+// ==================== SKELETON CORE ====================
+import { runLifecycle }          from '/src/skeleton/lifecycle.js';
+import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
+import { mountLayout }           from '/src/skeleton/layout/index.js';
 
-// Firebase
-import { auth, db } from "../firebase.js";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+// ==================== FIREBASE ====================
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db }                  from '/src/services/firebase/firebase.js';
 
-// Layout / Utils
-import { renderLayout, updateHeaderInfo } from "../shared/layout.js";
-import { showToast, showLoading, hideLoading } from "../shared/utils.js";
+// ==================== FLOW ====================
+import { runFlowController } from '/src/controllers/flowController.js';
+import { redirectAfterSave } from '/src/controllers/flowController.js';
 
-// Flow
-import { bootFlow } from "../controllers/boot/flowBoot.js";
-import { redirectAfterSave } from "../controllers/flowController.js";
+// ==================== COMPONENTES ====================
+import { createCard }   from '/src/skeleton/components/card/index.js';
+import { createButton } from '/src/skeleton/components/button/index.js';
+import { showToast }    from '/src/shared/utils.js';
 
-bootFlow();
+// ==================== ADAPTER ====================
+const adapter = (options) => createFirebaseAdapter(options);
 
-/* =======================================================
-   DOM
-   ======================================================= */
+// ==================== LIFECYCLE ====================
+runLifecycle({
+  adapter,
+  options: {
+    loadingMessage: 'Cargando...',
+  },
 
-const chkProductos = document.getElementById("opt-productos");
-const chkServicios = document.getElementById("opt-servicios");
-const btnContinuar = document.getElementById("btnContinuar");
-const errorBox = document.getElementById("errorBox");
+  async onReady(ctx) {
+    // 1️⃣ FLOW — verifica onboarding antes de renderizar
+    await runFlowController(ctx.user.uid);
 
-/* =======================================================
-   VALIDACIÓN
-   ======================================================= */
+    // 2️⃣ LAYOUT
+    mountLayout(ctx);
 
-function validarSeleccion() {
-  const valido = chkProductos.checked || chkServicios.checked;
-  btnContinuar.disabled = !valido;
+    // 3️⃣ LOAD
+    const state = await load(ctx);
 
-  if (valido && errorBox) {
-    errorBox.style.display = "none";
+    // 4️⃣ RENDER
+    render(ctx, state);
   }
+});
+
+// ============================================================
+// LOAD — solo datos, sin tocar el DOM
+// ============================================================
+async function load(ctx) {
+  const offerType = ctx.userData?.offerType || {};
+
+  return {
+    productos: offerType.productos === true,
+    servicios: offerType.servicios === true,
+  };
 }
 
-chkProductos.addEventListener("change", validarSeleccion);
-chkServicios.addEventListener("change", validarSeleccion);
+// ============================================================
+// RENDER — solo DOM, sin lógica de negocio
+// ============================================================
+function render(ctx, state) {
+  const page = document.getElementById('skeleton-page');
+  page.innerHTML = '';
 
-/* =======================================================
-   CARGA ESTADO PREVIO (refresh / edit)
-   ======================================================= */
+  // ==================== TÍTULO ====================
+  const header = document.createElement('div');
+  header.className = 'page-content';
+  header.innerHTML = `
+    <h1>¿Qué ofrece tu comercio?</h1>
+    <p>Seleccioná una o ambas opciones para continuar.</p>
+  `;
+  page.appendChild(header);
 
-async function cargarEstadoPrevio(uid) {
-  try {
-    const ref = doc(db, "usuarios", uid);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return;
+  // ==================== CARDS ====================
+  const cardsContainer = document.createElement('div');
+  cardsContainer.className = 'cards-container';
+  page.appendChild(cardsContainer);
 
-    const data = snap.data();
-    const offerType = data.offerType || {};
-
-    chkProductos.checked = offerType.productos === true;
-    chkServicios.checked = offerType.servicios === true;
-
-    validarSeleccion();
-  } catch (err) {
-    console.error("❌ Error cargando crear-entidad:", err);
-  }
-}
-
-/* =======================================================
-   GUARDAR
-   ======================================================= */
-
-async function guardarConfiguracion(uid) {
-  const productos = chkProductos.checked;
-  const servicios = chkServicios.checked;
-
-  if (!productos && !servicios) {
-    if (errorBox) {
-      errorBox.textContent = "Seleccioná al menos una opción para continuar.";
-      errorBox.style.display = "block";
+  const cardProductos = createCard({
+    title: 'Productos',
+    content: 'Vendés artículos físicos o digitales.',
+    icon: 'fa-box',
+    variant: 'primary',
+    selectable: true,
+    selected: state.productos,
+    clickable: true,
+    onClick: () => {
+      cardProductos.toggle();
+      validar();
     }
+  });
+
+  const cardServicios = createCard({
+    title: 'Servicios',
+    content: 'Ofrecés servicios con turnos o por hora.',
+    icon: 'fa-concierge-bell',
+    variant: 'info',
+    selectable: true,
+    selected: state.servicios,
+    clickable: true,
+    onClick: () => {
+      cardServicios.toggle();
+      validar();
+    }
+  });
+
+  cardsContainer.appendChild(cardProductos);
+  cardsContainer.appendChild(cardServicios);
+
+  // ==================== ERROR ====================
+  const errorBox = document.createElement('p');
+  errorBox.className = 'error-message';
+  errorBox.style.display = 'none';
+  page.appendChild(errorBox);
+
+  // ==================== BOTÓN CONTINUAR ====================
+  const continueButton = createButton({
+    label: 'Continuar',
+    variant: 'primary',
+    icon: 'fa-arrow-right',
+    disabled: !state.productos && !state.servicios,
+    onClick: async () => {
+      await guardar(ctx, {
+        productos: cardProductos.isSelected(),
+        servicios: cardServicios.isSelected(),
+      }, continueButton, errorBox);
+    }
+  });
+  page.appendChild(continueButton);
+
+  // ==================== VALIDACIÓN LOCAL ====================
+  function validar() {
+    const alguno = cardProductos.isSelected() || cardServicios.isSelected();
+    if (alguno) {
+      continueButton.enable();
+      errorBox.style.display = 'none';
+    } else {
+      continueButton.disable();
+    }
+  }
+}
+
+// ============================================================
+// GUARDAR — lógica de negocio, separada del render
+// ============================================================
+async function guardar(ctx, { productos, servicios }, btn, errorBox) {
+  if (!productos && !servicios) {
+    errorBox.textContent = 'Seleccioná al menos una opción para continuar.';
+    errorBox.style.display = 'block';
     return;
   }
 
-  showLoading("Guardando configuración...");
-  btnContinuar.disabled = true;
+  btn.setLoading(true);
 
   try {
-    const ref = doc(db, "usuarios", uid);
+    const ref = doc(db, 'usuarios', ctx.user.uid);
     const snap = await getDoc(ref);
+    const prevSteps = snap.exists() ? snap.data().onboardingSteps || {} : {};
 
-    const prevSteps = snap.exists()
-      ? snap.data().onboardingSteps || {}
-      : {};
-
-    await setDoc(
-      ref,
-      {
-        offerType: {
-          productos,
-          servicios
-        },
-        onboardingSteps: {
-          ...prevSteps,
-          "crear-entidad": true
-        },
-        updatedAt: new Date().toISOString()
+    await setDoc(ref, {
+      offerType: { productos, servicios },
+      onboardingSteps: {
+        ...prevSteps,
+        'crear-entidad': true,
       },
-      { merge: true }
-    );
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
 
-    hideLoading();
-    showToast("Configuración guardada", "success");
+    showToast('Configuración guardada', 'success');
 
-    // ⏳ Esperar a que Firestore propague los cambios
+    // ⏳ Esperar propagación Firestore
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    // 🔑 Redirigir al dashboard para que flow controller decida el siguiente paso
     redirectAfterSave();
 
   } catch (err) {
-    console.error("❌ Error guardando crear-entidad:", err);
-    hideLoading();
-    showToast("Error al guardar la configuración", "error");
-    btnContinuar.disabled = false;
+    console.error(err);
+    showToast('Error al guardar la configuración', 'error');
+  } finally {
+    btn.setLoading(false);
   }
 }
-
-btnContinuar.addEventListener("click", () => {
-  const user = auth.currentUser;
-  if (!user) {
-    showToast("Usuario no autenticado", "error");
-    return;
-  }
-  guardarConfiguracion(user.uid);
-});
-
-/* =======================================================
-   INIT
-   ======================================================= */
-
-renderLayout();
-
-auth.onAuthStateChanged((user) => {
-  if (!user) return;
-
-  updateHeaderInfo(user.displayName || "Usuario", {
-    nombre: "Trial"
-  });
-
-  cargarEstadoPrevio(user.uid);
-});
