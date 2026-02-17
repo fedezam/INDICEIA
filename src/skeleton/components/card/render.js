@@ -15,8 +15,13 @@ export function renderCard() {
   const title = document.createElement('h3');
   title.className = 's-card-title';
 
+  const check = document.createElement('div');
+  check.className = 's-card-check';
+  check.innerHTML = '<i class="fas fa-check-circle"></i>';
+
   header.appendChild(icon);
   header.appendChild(title);
+  header.appendChild(check);
 
   const body = document.createElement('div');
   body.className = 's-card-body';
