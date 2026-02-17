@@ -1,375 +1,119 @@
-/* mi-comercio.css – Versión PRO PULIDA 2025 */
-#planSelector {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2.8rem;
-  padding: 5rem 2rem 4rem;
-  max-width: 1700px;
-  margin: 0 auto;
-  justify-content: center;
-}
-
-@media (max-width: 1200px) {
-  #planSelector {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  #planSelector {
-    grid-template-columns: 1fr;
-    padding: 4rem 1rem 3rem;
-    gap: 2.2rem;
-  }
-}
-
-/* ------------------------------
-   PLAN CARD — versión profesional
-   ------------------------------ */
-#planSelector .plan-card {
-  max-width: 380px;
-  margin: 0 auto;
-  border-radius: 28px;
-  padding: 2.8rem 2.4rem;
-  
-  background: rgba(255,255,255,0.58);
-  backdrop-filter: blur(22px) saturate(170%);
-  
-  border: 1.5px solid rgba(255,255,255,0.45);
-  
-  --shadow-base: 0 12px 40px rgba(0,0,0,0.10), 
-                 0 26px 70px rgba(99,102,241,0.12);
-  box-shadow: var(--shadow-base);
-
-  transition: transform .35s cubic-bezier(.21,1,.33,1),
-              box-shadow .35s cubic-bezier(.21,1,.33,1),
-              border-color .25s ease;
-
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-#planSelector .plan-card:hover {
-  transform: translateY(-14px) scale(1.04);
-  box-shadow: 
-      0 28px 70px rgba(99,102,241,0.35),
-      0 42px 110px rgba(0,0,0,0.15);
-  border-color: var(--primary);
-}
-
-/* Estado seleccionado */
-#planSelector .plan-card.selected {
-  background: linear-gradient(
-    145deg,
-    rgba(99,102,241,0.32),
-    rgba(118,75,162,0.40)
-  );
-  
-  border: 2.5px solid var(--primary);
-
-  box-shadow:
-    0 34px 80px rgba(99,102,241,0.50),
-    0 40px 90px rgba(0,0,0,0.14);
-
-  transform: translateY(-16px) scale(1.07);
-}
-
-#planSelector .plan-card.selected::after {
-  content: "Seleccionado";
-  position: absolute;
-  top: 20px;
-  right: 20px;
-
-  background: var(--primary);
-  color: white;
-
-  padding: 0.6rem 1.2rem;
-  border-radius: 14px;
-  font-weight: 700;
-  font-size: 0.75rem;
-
-  letter-spacing: 0.4px;
-}
-
-/* Recomendado */
-#planSelector .plan-card.recommended::before {
-  content: "Recomendado";
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  transform: translateX(-50%);
-
-  background: #fbbf24;
-  color: #1f2937;
-
-  padding: 0.75rem 1.9rem;
-  border-radius: 18px;
-  font-weight: 800;
-  font-size: 0.78rem;
-
-  box-shadow: 0 8px 22px rgba(0,0,0,0.15);
-  letter-spacing: 0.3px;
-}
 /* ============================================================
-   MÉTODOS DE PAGO — BLOQUE NUEVO
+   mi-comercio.css
+   Layout y estilos propios de la página
    ============================================================ */
 
-#metodosPago {
+/* ==================== TÍTULO ====================  */
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  margin-bottom: 2rem;
+}
+
+/* ==================== SECCIONES ====================  */
+.form-section {
+  background: white;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.form-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  margin: 0 0 1.25rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--s-border, #d2d6de);
+}
+
+.form-help {
+  font-size: 0.875rem;
+  color: var(--s-gray, #6c757d);
+  margin: 0 0 1rem 0;
+  font-style: italic;
+}
+
+/* ==================== GRID MÉTODOS DE PAGO ====================  */
+.payment-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-  padding: 2rem 1rem 3rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
 }
 
-@media (max-width: 1100px) {
-  #metodosPago {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  #metodosPago {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Tarjeta básica para cada método */
-.metodo-pago-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  padding: 1.6rem 1.8rem;
-
-  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
-  transition: background .2s ease, border-color .2s ease;
-}
-
-.metodo-pago-card:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-}
-
-.metodo-pago-card h3 {
-  margin-bottom: 0.8rem;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.metodo-pago-card p {
-  margin: 0;
-  font-size: 0.92rem;
-  color: #4b5563;
-}
-
-.metodo-pago-icon {
-  width: 44px;
-  height: 44px;
-  margin-bottom: 1rem;
-}
-/* MÉTODOS DE PAGO */
-.payment-methods-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.payment-method-card {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    padding: 14px 16px;
-    background: #fff;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    transition: 0.25s ease;
-    position: relative;
-}
-
-.payment-method-card:hover {
-    border-color: #3b82f6;
-    box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
-}
-
-.payment-method-card input {
-    margin-right: 12px;
-    accent-color: #3b82f6;
-    width: 18px;
-    height: 18px;
-}
-
-.payment-method-content {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 15px;
-    color: #222;
-}
-
-.payment-method-content i {
-    font-size: 20px;
-    color: #3b82f6;
-}
-
-/* ========================================
-   SLUG INPUT - Estilo Gmail/Instagram
-   ======================================== */
-
-.slug-input-wrapper {
+/* ==================== SLUG INPUT ====================  */
+.slug-container {
   display: flex;
   align-items: center;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  overflow: hidden;
   background: white;
-  transition: all 0.2s ease;
-}
-
-.slug-input-wrapper:focus-within {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
 }
 
 .slug-prefix {
-  padding: 0.75rem 1rem;
-  background: #f5f5f5;
-  color: #666;
-  font-size: 0.95rem;
-  font-weight: 500;
+  background: var(--s-light, #f8f9fa);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--s-gray, #6c757d);
+  border-right: 1px solid var(--s-border, #d2d6de);
   white-space: nowrap;
-  border-right: 1px solid #e0e0e0;
 }
 
-.slug-input-wrapper input {
+.slug-input {
   flex: 1;
-  border: none !important;
-  padding: 0.75rem 1rem;
-  font-size: 0.95rem;
-  outline: none !important;
-  box-shadow: none !important;
-  font-family: 'Courier New', monospace;
-  color: #333;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  outline: none;
+  font-family: monospace;
 }
 
-.slug-input-wrapper input::placeholder {
-  color: #999;
+.slug-input:focus {
+  background: rgba(60, 141, 188, 0.05);
 }
 
-/* ========================================
-   SLUG STATUS - Feedback visual
-   ======================================== */
-
+/* ==================== SLUG STATUS ====================  */
 .slug-status {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  margin-top: 0.5rem;
-  border-radius: 6px;
+  padding: 0.5rem;
   font-size: 0.875rem;
-  transition: all 0.2s ease;
+  min-height: 2rem;
 }
 
-.slug-status:empty {
-  display: none;
-}
-
-.slug-status span:first-child {
+.slug-icon {
   font-size: 1rem;
 }
 
-/* Estados del slug */
-.slug-status.checking {
-  background: #f0f0f0;
-  color: #666;
+.slug-text {
+  color: var(--s-text, #495057);
 }
 
-.slug-status.available {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+/* ==================== BOTÓN CONTAINER ====================  */
+.btn-container {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--s-border, #d2d6de);
 }
 
-.slug-status.available i {
-  color: #28a745;
-}
-
-.slug-status.suggestion {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
-}
-
-.slug-status.suggestion i {
-  color: #ffc107;
-}
-
-.slug-status.taken {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.slug-status.taken i {
-  color: #dc3545;
-}
-
-.slug-status.error {
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeaa7;
-}
-
-.slug-status.error i {
-  color: #ffc107;
-}
-
-.slug-status.empty {
-  background: transparent;
-  color: #999;
-  padding: 0.25rem 0;
-  font-size: 0.8rem;
-}
-
-/* ========================================
-   ANIMACIONES
-   ======================================== */
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
+/* ==================== RESPONSIVE ====================  */
+@media (max-width: 768px) {
+  .payment-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-.slug-status {
-  animation: fadeIn 0.2s ease;
-}
-
-/* ========================================
-   RESPONSIVE
-   ======================================== */
-
-@media (max-width: 640px) {
   .slug-prefix {
-    font-size: 0.8rem;
-    padding: 0.6rem 0.75rem;
+    font-size: 0.75rem;
+    padding: 0.5rem;
   }
 
-  .slug-input-wrapper input {
-    font-size: 0.85rem;
-    padding: 0.6rem 0.75rem;
-  }
-
-  .slug-status {
-    font-size: 0.8rem;
+  .form-section {
+    padding: 1rem;
   }
 }
