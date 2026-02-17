@@ -1,61 +1,41 @@
-/* ============================= */
-/* usuario.css - Producción       */
-/* ============================= */
+/* ============================================================
+   src/pages/usuario/usuario.css
+   Solo layout y espaciado - los componentes ya tienen sus estilos
+   ============================================================ */
 
-.main-content {
-  max-width: 500px;
-  margin: 2rem auto;
-  padding: 1.5rem;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.05);
+#skeleton-page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--s-spacing-lg, 24px);
 }
 
-h1 {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1rem;
-}
-
-label {
-  margin-bottom: 0.5rem;
+/* Título de la página */
+#skeleton-page h2 {
+  margin: 0 0 var(--s-spacing-xl, 32px) 0;
+  font-size: 24px;
   font-weight: 600;
+  color: var(--s-dark, #343a40);
 }
 
-input, select {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 1rem;
-  background-color: #fff;
-  color: #333;
+/* Espaciado entre campos de formulario */
+#skeleton-page > *:not(:last-child) {
+  margin-bottom: var(--s-spacing-md, 16px);
 }
 
-input:disabled {
-  background-color: #f2f2f2;
-  color: #555;
-}
-
-button.btn {
+/* Botón onboarding al final */
+.onboarding-button {
   width: 100%;
-  padding: 0.75rem;
-  font-size: 1.1rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+  margin-top: var(--s-spacing-xl, 32px);
 }
 
-button.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* Responsive */
+@media (max-width: 768px) {
+  #skeleton-page {
+    padding: var(--s-spacing-md, 16px);
+  }
 
-button.btn-primary {
-  background-color: #007bff;
-  color: #fff;
+  #skeleton-page h2 {
+    font-size: 20px;
+    margin-bottom: var(--s-spacing-lg, 24px);
+  }
 }
