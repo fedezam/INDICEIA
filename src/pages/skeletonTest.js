@@ -1,9 +1,10 @@
 // ============================================================
-// src/pages/link-publico/link-publico.js
+// src/pages/crear-entidad/crear-entidad.js
 // ============================================================
 // 🧠 CONTRATO ctx:
-//   ctx.comercioData.slug  → slug del comercio
-//   ctx.comercioId         → ID del comercio
+//   ctx.user.uid           → uid del usuario autenticado
+//   ctx.userData           → doc /usuarios/{uid}
+//   ctx.userData.offerType → { productos: bool, servicios: bool }
 // ============================================================
 
 // ==================== SKELETON CORE ====================
@@ -11,20 +12,18 @@ import { runLifecycle }          from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }           from '/src/skeleton/layout/index.js';
 
+// ==================== FIREBASE ====================
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db }                  from '/src/services/firebase/firebase.js';
+
+// ==================== FLOW ====================
+import { runFlowController } from '/src/controllers/flowController.js';
+import { redirectAfterSave } from '/src/controllers/flowController.js';
+
 // ==================== COMPONENTES ====================
+import { createCard }   from '/src/skeleton/components/card/index.js';
 import { createButton } from '/src/skeleton/components/button/index.js';
 import { showToast }    from '/src/shared/utils.js';
-
-// ==================== API CARTEL (cerrada) ====================
-import {
-  generateQR,
-  renderPreview,
-  getExportFormats,
-  exportCartel,
-} from '/lib/cartel/index.js';
-
-// ==================== CONSTANTE ÚNICA ====================
-const PUBLIC_BASE_URL = 'https://indiceia-public.vercel.app';
 
 // ==================== ADAPTER ====================
 const adapter = (options) => createFirebaseAdapter(options);
@@ -33,17 +32,20 @@ const adapter = (options) => createFirebaseAdapter(options);
 runLifecycle({
   adapter,
   options: {
-    loadingMessage: 'Cargando link público...',
+    loadingMessage: 'Cargando...',
   },
 
   async onReady(ctx) {
-    // 1️⃣ LAYOUT
+    // 1️⃣ FLOW — verifica onboarding antes de renderizar
+    await runFlowController(ctx.user.uid);
+
+    // 2️⃣ LAYOUT
     mountLayout(ctx);
 
-    // 2️⃣ LOAD
+    // 3️⃣ LOAD
     const state = await load(ctx);
 
-    // 3️⃣ RENDER
+    // 4️⃣ RENDER
     render(ctx, state);
   }
 });
@@ -52,21 +54,11 @@ runLifecycle({
 // LOAD — solo datos, sin tocar el DOM
 // ============================================================
 async function load(ctx) {
-  const { slug } = ctx.comercioData;
-
-  if (!slug) {
-    showToast('Este comercio no tiene slug', 'error');
-    throw new Error('Slug no encontrado');
-  }
-
-  const publicUrl = `${PUBLIC_BASE_URL}/c/${slug}`;
-
-  // QR se genera acá: es dato, no DOM
-  const qrCanvas = await generateQR(publicUrl);
+  const offerType = ctx.userData?.offerType || {};
 
   return {
-    publicUrl,
-    qrCanvas,
+    productos: offerType.productos === true,
+    servicios: offerType.servicios === true,
   };
 }
 
@@ -74,86 +66,124 @@ async function load(ctx) {
 // RENDER — solo DOM, sin lógica de negocio
 // ============================================================
 function render(ctx, state) {
-  const { publicUrl, qrCanvas } = state;
-
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
-  // ==================== LINK PÚBLICO ====================
-  const linkSection = document.createElement('div');
-  linkSection.className = 'page-content';
-  linkSection.innerHTML = `
-    <h1>Tu link público</h1>
-    <p id="publicUrl" class="public-url">${publicUrl}</p>
+  // ==================== TÍTULO ====================
+  const header = document.createElement('div');
+  header.className = 'page-content';
+  header.innerHTML = `
+    <h1>¿Qué ofrece tu comercio?</h1>
+    <p>Seleccioná una o ambas opciones para continuar.</p>
   `;
-  page.appendChild(linkSection);
+  page.appendChild(header);
 
-  // Botón copiar link
-  const copyButton = createButton({
-    label: 'Copiar link',
-    variant: 'outline-primary',
-    icon: 'fa-copy',
+  // ==================== CARDS ====================
+  const cardsContainer = document.createElement('div');
+  cardsContainer.className = 'cards-container';
+  page.appendChild(cardsContainer);
+
+  const cardProductos = createCard({
+    title: 'Productos',
+    content: 'Vendés artículos físicos o digitales.',
+    icon: 'fa-box',
+    variant: 'primary',
+    selectable: true,
+    selected: state.productos,
+    clickable: true,
     onClick: () => {
-      navigator.clipboard.writeText(publicUrl);
-      showToast('Link copiado', 'success');
+      cardProductos.toggle();
+      validar();
     }
   });
-  page.appendChild(copyButton);
 
-  // ==================== PREVIEW CARTEL ====================
-  const previewContainer = document.createElement('div');
-  previewContainer.id = 'cartel-preview';
-  page.appendChild(previewContainer);
-
-  // requestAnimationFrame: garantiza que el canvas esté en el DOM
-  requestAnimationFrame(() => {
-    const previewCanvas = renderPreview({ qrCanvas });
-    previewCanvas.style.maxWidth = '100%';
-    previewCanvas.style.height = 'auto';
-    previewCanvas.style.display = 'block';
-    previewContainer.appendChild(previewCanvas);
-  });
-
-  // ==================== BOTONES DESCARGA ====================
-  const cartelesContainer = document.createElement('div');
-  cartelesContainer.id = 'carteles';
-  page.appendChild(cartelesContainer);
-
-  const formats = getExportFormats();
-
-  formats.forEach((format) => {
-    const downloadBtn = createButton({
-      label: `Descargar ${format.label}`,
-      variant: 'secondary',
-      icon: 'fa-download',
-      onClick: async () => {
-        downloadBtn.setLoading(true);
-        try {
-          const result = exportCartel({
-            formatId: format.id,
-            qrCanvas,
-          });
-          result.download({ name: `indiceia-${format.id}` });
-          showToast('Cartel descargado', 'success');
-        } catch (err) {
-          console.error(err);
-          showToast('Error al generar cartel', 'error');
-        } finally {
-          downloadBtn.setLoading(false);
-        }
-      }
-    });
-    cartelesContainer.appendChild(downloadBtn);
-  });
-
-  // ==================== BOTÓN VOLVER ====================
-  const backButton = createButton({
-    label: 'Volver al dashboard',
-    variant: 'outline-secondary',
-    icon: 'fa-arrow-left',
+  const cardServicios = createCard({
+    title: 'Servicios',
+    content: 'Ofrecés servicios con turnos o por hora.',
+    icon: 'fa-concierge-bell',
+    variant: 'info',
+    selectable: true,
+    selected: state.servicios,
+    clickable: true,
     onClick: () => {
-      window.location.href = '/src/pages/dashboard.html';
+      cardServicios.toggle();
+      validar();
     }
   });
-  page.appendChild(backButton);
+
+  cardsContainer.appendChild(cardProductos);
+  cardsContainer.appendChild(cardServicios);
+
+  // ==================== ERROR ====================
+  const errorBox = document.createElement('p');
+  errorBox.className = 'error-message';
+  errorBox.style.display = 'none';
+  page.appendChild(errorBox);
+
+  // ==================== BOTÓN CONTINUAR ====================
+  const continueButton = createButton({
+    label: 'Continuar',
+    variant: 'primary',
+    icon: 'fa-arrow-right',
+    disabled: !state.productos && !state.servicios,
+    onClick: async () => {
+      await guardar(ctx, {
+        productos: cardProductos.isSelected(),
+        servicios: cardServicios.isSelected(),
+      }, continueButton, errorBox);
+    }
+  });
+  page.appendChild(continueButton);
+
+  // ==================== VALIDACIÓN LOCAL ====================
+  function validar() {
+    const alguno = cardProductos.isSelected() || cardServicios.isSelected();
+    if (alguno) {
+      continueButton.enable();
+      errorBox.style.display = 'none';
+    } else {
+      continueButton.disable();
+    }
+  }
+}
+
+// ============================================================
+// GUARDAR — lógica de negocio, separada del render
+// ============================================================
+async function guardar(ctx, { productos, servicios }, btn, errorBox) {
+  if (!productos && !servicios) {
+    errorBox.textContent = 'Seleccioná al menos una opción para continuar.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  btn.setLoading(true);
+
+  try {
+    const ref = doc(db, 'usuarios', ctx.user.uid);
+    const snap = await getDoc(ref);
+    const prevSteps = snap.exists() ? snap.data().onboardingSteps || {} : {};
+
+    await setDoc(ref, {
+      offerType: { productos, servicios },
+      onboardingSteps: {
+        ...prevSteps,
+        'crear-entidad': true,
+      },
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+
+    showToast('Configuración guardada', 'success');
+
+    // ⏳ Esperar propagación Firestore
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    redirectAfterSave();
+
+  } catch (err) {
+    console.error(err);
+    showToast('Error al guardar la configuración', 'error');
+  } finally {
+    btn.setLoading(false);
+  }
 }
