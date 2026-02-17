@@ -1,187 +1,225 @@
 /* skeleton/components/card/styles.css */
 
-/* ==================== SKELETON CARD - Estilo AdminLTE v3 ==================== */
-
-.skeleton-card {
-  background: #fff;
-  border-radius: 0.5rem;
-  box-shadow: 
-    0 0 1px rgba(0, 0, 0, 0.125),
-    0 1px 3px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(0, 0, 0, 0.125);
+/* ==================== BASE CARD ==================== */
+.s-card {
+  background: white;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
-  min-height: 140px;
-  transition: 
-    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
   overflow: hidden;
 }
 
-/* ===== HOVER STATES ===== */
-.skeleton-card:hover,
-.skeleton-card:focus-within {
-  transform: translateY(-2px);
-  box-shadow: 
-    0 0 1px rgba(0, 0, 0, 0.125),
-    0 2px 6px rgba(0, 0, 0, 0.15);
+.s-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* ===== HIGHLIGHT MODE (borde izquierdo coloreado) ===== */
-.skeleton-card.highlight {
-  border-left-width: 3px;
-  border-left-style: solid;
-  border-color: transparent;
-}
-
-/* Variantes de color para highlight */
-.skeleton-card.highlight.variant-success { border-left-color: #28a745; }
-.skeleton-card.highlight.variant-danger { border-left-color: #dc3545; }
-.skeleton-card.highlight.variant-warning { border-left-color: #ffc107; }
-.skeleton-card.highlight.variant-info { border-left-color: #17a2b8; }
-.skeleton-card.highlight.variant-primary { border-left-color: var(--s-primary); }
-
-/* ===== CARD HEADER ===== */
-.skeleton-card-header {
+/* ==================== HEADER ==================== */
+.s-card-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 16px 12px 16px;
-  margin-bottom: 0;
+  padding: 15px 20px;
+  background: var(--s-light, #f8f9fa);
+  border-bottom: 1px solid var(--s-border, #d2d6de);
 }
 
-.skeleton-card-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: rgba(var(--s-primary-rgb), 0.1);
-  color: var(--s-primary);
+/* ==================== ICON ==================== */
+.s-card-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--s-primary, #3c8dbc);
+  color: white;
+  border-radius: var(--s-radius, 4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 
-/* Variantes de icono por color */
-.skeleton-card.variant-success .skeleton-card-icon { background: rgba(40, 167, 69, 0.1); color: #28a745; }
-.skeleton-card.variant-danger .skeleton-card-icon { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
-.skeleton-card.variant-warning .skeleton-card-icon { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
-.skeleton-card.variant-info .skeleton-card-icon { background: rgba(23, 162, 184, 0.1); color: #17a2b8; }
+.s-card-icon i {
+  margin: 0;
+}
 
-.skeleton-card-title {
+/* ==================== TITLE ==================== */
+.s-card-title {
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #343a40;
-  margin: 0;
-  line-height: 1.3;
+  color: var(--s-dark, #343a40);
   flex: 1;
 }
 
-/* ===== CARD BODY ===== */
-.skeleton-card-body {
-  padding: 0 16px 16px 16px;
+/* ==================== BODY ==================== */
+.s-card-body {
+  padding: 20px;
   flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.skeleton-card-content {
+  color: var(--s-text, #495057);
   font-size: 14px;
-  color: #6c757d;
-  line-height: 1.5;
-  margin: 0;
-  flex: 1;
+  line-height: 1.6;
 }
 
-/* ===== CARD FOOTER ===== */
-.skeleton-card-footer {
-  padding: 0 16px 16px 16px;
-  margin-top: auto;
+.s-card-body p {
+  margin: 0 0 12px 0;
 }
 
-/* ===== BADGES ===== */
-.skeleton-card-badge {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin-left: 8px;
-  vertical-align: middle;
+.s-card-body p:last-child {
+  margin-bottom: 0;
 }
 
-.badge-optional {
-  background: #ffc107;
-  color: #212529;
+/* ==================== FOOTER ==================== */
+.s-card-footer {
+  padding: 15px 20px;
+  background: var(--s-light, #f8f9fa);
+  border-top: 1px solid var(--s-border, #d2d6de);
 }
 
-/* ===== ACCIONES (botones/links) ===== */
-.skeleton-card-action {
-  display: inline-flex;
+.s-card-footer:empty {
+  display: none;
+}
+
+/* ==================== VARIANTS ==================== */
+
+/* Highlight - Destacada */
+.s-card.highlight {
+  border-color: var(--s-primary, #3c8dbc);
+  border-width: 2px;
+}
+
+.s-card.highlight .s-card-header {
+  background: linear-gradient(135deg, 
+    rgba(60, 141, 188, 0.05) 0%, 
+    rgba(60, 141, 188, 0.1) 100%
+  );
+}
+
+.s-card.highlight:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(60, 141, 188, 0.2);
+}
+
+/* Success */
+.s-card.success .s-card-icon {
+  background: var(--s-success, #00a65a);
+}
+
+.s-card.success.highlight {
+  border-color: var(--s-success, #00a65a);
+}
+
+/* Danger */
+.s-card.danger .s-card-icon {
+  background: var(--s-danger, #dd4b39);
+}
+
+.s-card.danger.highlight {
+  border-color: var(--s-danger, #dd4b39);
+}
+
+/* Warning */
+.s-card.warning .s-card-icon {
+  background: var(--s-warning, #f39c12);
+}
+
+.s-card.warning.highlight {
+  border-color: var(--s-warning, #f39c12);
+}
+
+/* Info */
+.s-card.info .s-card-icon {
+  background: var(--s-info, #00c0ef);
+}
+
+.s-card.info.highlight {
+  border-color: var(--s-info, #00c0ef);
+}
+
+/* ==================== SELECTABLE ==================== */
+.s-card.selectable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.s-card.selectable:active {
+  transform: scale(0.98);
+}
+
+/* Check — oculto por defecto */
+.s-card-check {
+  display: none;
+  margin-left: auto;
+  font-size: 1.25rem;
+  color: var(--s-primary, #3c8dbc);
+  flex-shrink: 0;
+  transition: opacity .2s ease;
+}
+
+.s-card.selectable.selected {
+  border-color: var(--s-primary, #3c8dbc);
+  border-width: 2px;
+  background: rgba(60, 141, 188, 0.02);
+}
+
+.s-card.selectable.selected .s-card-header {
+  background: rgba(60, 141, 188, 0.1);
+}
+
+/* Check — visible cuando está seleccionada */
+.s-card.selectable.selected .s-card-check {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 0.375rem;
-  transition: all 0.15s ease;
+}
+
+/* ==================== CLICKABLE ==================== */
+.s-card.clickable {
   cursor: pointer;
 }
 
-.skeleton-card-action i {
-  font-size: 12px;
+.s-card.clickable:hover {
+  border-color: var(--s-primary, #3c8dbc);
+  transform: translateY(-2px);
 }
 
-/* Estilos de botón según variantes */
-.skeleton-card-action.btn-primary {
-  background: var(--s-primary);
-  color: white;
-  border: 1px solid var(--s-primary);
-}
-.skeleton-card-action.btn-primary:hover {
-  background: var(--s-primary-dark);
-  border-color: var(--s-primary-dark);
+.s-card.clickable:active {
+  transform: translateY(0);
 }
 
-.skeleton-card-action.btn-secondary {
-  background: #6c757d;
-  color: white;
-  border: 1px solid #6c757d;
-}
-.skeleton-card-action.btn-secondary:hover {
-  background: #5a6268;
-  border-color: #545b62;
+/* ==================== COMPACT ==================== */
+.s-card.compact .s-card-header {
+  padding: 10px 15px;
 }
 
-/* ===== ESTADOS ESPECIALES ===== */
-.skeleton-card.compact {
-  min-height: auto;
+.s-card.compact .s-card-body {
+  padding: 15px;
 }
 
-.skeleton-card.clickable {
-  cursor: pointer;
+.s-card.compact .s-card-footer {
+  padding: 10px 15px;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .skeleton-card {
-    border-radius: 0.375rem;
-  }
-  
-  .skeleton-card-icon {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
-  }
-  
-  .skeleton-card-title {
-    font-size: 15px;
-  }
-  
-  .skeleton-card-content {
-    font-size: 13px;
-  }
+.s-card.compact .s-card-icon {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+}
+
+.s-card.compact .s-card-title {
+  font-size: 14px;
+}
+
+/* ==================== NO HEADER ==================== */
+.s-card.no-header .s-card-header {
+  display: none;
+}
+
+/* ==================== FLAT (sin sombra) ==================== */
+.s-card.flat {
+  box-shadow: none;
+}
+
+.s-card.flat:hover {
+  box-shadow: none;
 }
