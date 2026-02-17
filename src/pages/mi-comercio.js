@@ -1,28 +1,55 @@
-// src/pages/mi-comercio.js
-// ==================== VERSIÓN REFACTORIZADA ====================
-// Usa miComercioInit.js - Página especial que CREA el comercio
+// ============================================================
+// src/pages/mi-comercio/mi-comercio.js
+// ============================================================
+// 🧠 CONTRATO ctx:
+//   ctx.user.uid           → uid del usuario autenticado
+//   ctx.userData           → doc /usuarios/{uid}
+//   ctx.comercioData       → doc /comercios/{id} (puede ser null si es nuevo)
+//   ctx.comercioId         → ID del comercio
+// ============================================================
 
-// ==================== ESTILOS ====================
-import '../styles/base.css';
-import '../styles/layout.css';
-import '../styles/components.css';
-import '../styles/forms.css';
-import '../styles/forms-premium.css';
-import './mi-comercio.css';
+// ==================== SKELETON CORE ====================
+import { runLifecycle }          from '/src/skeleton/lifecycle.js';
+import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
+import { mountLayout }           from '/src/skeleton/layout/index.js';
 
 // ==================== FIREBASE ====================
-import { db } from '../firebase.js';
-import { doc, getDoc, updateDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { db } from '/src/services/firebase/firebase.js';
 
+// ==================== FLOW ====================
+import { runFlowController } from '/src/controllers/flowController.js';
 
-// ==================== UTILS ====================
-import { showToast, showLoading, hideLoading } from '../shared/utils.js';
-import { fillProvinciaSelector } from '../shared/provincias.js';
+// ==================== COMPONENTES ====================
+import { createFormField }       from '/src/skeleton/components/form-field/index.js';
+import { createButton }          from '/src/skeleton/components/button/index.js';
+import { createCard }            from '/src/skeleton/components/card/index.js';
+import { createCategorySelector } from '/src/skeleton/components/category-selector/index.js';
+import { showToast }             from '/src/skeleton/components/toast/index.js';
 
-// ==================== SKELETON ESPECIAL ====================
-import { runMiComercioPage } from '../shared/miComercioInit.js';
+// ==================== SHARED ====================
+import { fillProvinciaSelector } from '/src/shared/provincias.js';
 
-// ==================== SLUG UTILS ====================
+import './mi-comercio.css';
+
+// ==================== DATOS ESTÁTICOS ====================
+const CATEGORIAS_COMUNES = [
+  "Panadería", "Carnicería", "Verdulería", "Kiosco", "Supermercado", "Restaurante",
+  "Cafetería", "Pizzería", "Heladería", "Bar", "Ropa", "Zapatería", "Belleza",
+  "Peluquería", "Gimnasio", "Farmacia", "Ferretería", "Librería", "Juguetería",
+  "Electrónica", "Mascotas", "Óptica", "Limpieza", "Regalería", "Tienda de deportes"
+];
+
+const METODOS_PAGO = [
+  { id: 'efectivo', nombre: 'Efectivo', icon: 'fa-money-bill' },
+  { id: 'tarjeta_debito', nombre: 'Tarjeta Débito', icon: 'fa-credit-card' },
+  { id: 'tarjeta_credito', nombre: 'Tarjeta Crédito', icon: 'fa-credit-card' },
+  { id: 'transferencia', nombre: 'Transferencia', icon: 'fa-exchange-alt' },
+  { id: 'mercadopago', nombre: 'Mercado Pago', icon: 'fa-wallet' },
+  { id: 'qr', nombre: 'QR', icon: 'fa-qrcode' }
+];
+
+// ==================== HELPERS ====================
 function slugify(text) {
   return text
     .toLowerCase()
@@ -35,627 +62,663 @@ function slugify(text) {
     .replace(/^-+|-+$/g, '');
 }
 
-// ==================== DATOS ESTÁTICOS ====================
-const CATEGORIAS_COMUNES = [
-  "Panadería", "Carnicería", "Verdulería", "Kiosco", "Supermercado", "Restaurante",
-  "Cafetería", "Pizzería", "Heladería", "Bar", "Ropa", "Zapatería", "Belleza",
-  "Peluquería", "Gimnasio", "Farmacia", "Ferretería", "Librería", "Juguetería",
-  "Electrónica", "Mascotas", "Óptica", "Limpieza", "Regalería", "Tienda de deportes"
-];
+// ==================== ADAPTER ====================
+const adapter = (options) => createFirebaseAdapter(options);
 
-// ==================== ESTADO LOCAL ====================
-let comercioData = {};
-let selectedCategories = [];
-let comercioSlug = null;
-let slugDisponible = false;
-let slugValidationTimer = null;
-
-// Variables del contexto de inicialización
-let isNewComercio = false;
-let currentUser = null;
-let currentComercioId = null;
-
-// ==================== MÓDULO EXPORTADO ====================
-const miComercioModule = {
-  // 1️⃣ LOAD - Cargar datos desde Firebase
-  async load({ currentComercioId: comercioId, comercioData: comercio, isNewComercio: isNew, currentUser: user }) {
-    // Guardar contexto
-    currentComercioId = comercioId;
-    comercioData = comercio;
-    isNewComercio = isNew;
-    currentUser = user;
-
-    selectedCategories = comercioData.categories || [];
-
-    // Cargar slug desde landing si existe
-    if (comercioData.landing && comercioData.landing.slug) {
-      comercioSlug = comercioData.landing.slug;
-      slugDisponible = true;
-    } else {
-      comercioSlug = null;
-      slugDisponible = false;
-    }
-
-    console.log('✅ Datos del comercio cargados:', { isNewComercio, comercioId });
+// ==================== LIFECYCLE ====================
+runLifecycle({
+  adapter,
+  options: {
+    loadingMessage: 'Cargando datos del comercio...',
   },
 
-  // 2️⃣ RENDER - Dibujar UI específica
-  render() {
-    // Verificar que DOM esté listo
-    const form = document.getElementById('miComercioForm');
-    if (!form) {
-      console.error('❌ DOM no está listo, reintentando...');
-      setTimeout(() => this.render(), 100);
+  async onReady(ctx) {
+    // 1️⃣ FLOW
+    await runFlowController(ctx.user.uid);
+
+    // 2️⃣ LAYOUT
+    mountLayout(ctx);
+
+    // 3️⃣ LOAD
+    const state = await load(ctx);
+
+    // 4️⃣ RENDER
+    render(ctx, state);
+  }
+});
+
+// ============================================================
+// LOAD — solo datos, sin tocar el DOM
+// ============================================================
+async function load(ctx) {
+  const isNewComercio = !ctx.comercioData || !ctx.comercioData.nombreComercio;
+  const comercioData = ctx.comercioData || {};
+
+  // Slug actual
+  const comercioSlug = comercioData.landing?.slug || null;
+  const slugDisponible = !!comercioSlug;
+
+  // Métodos de pago seleccionados
+  const selectedPaymentMethods = comercioData.paymentMethods || [];
+
+  return {
+    isNewComercio,
+    comercioData,
+    comercioSlug,
+    slugDisponible,
+    selectedPaymentMethods,
+  };
+}
+
+// ============================================================
+// RENDER — solo DOM, sin lógica de negocio
+// ============================================================
+function render(ctx, state) {
+  const page = document.getElementById('skeleton-page');
+  page.innerHTML = '';
+
+  // Referencias a componentes (closures compartidas)
+  const refs = {
+    fields: {},
+    categorySelector: null,
+    paymentCards: [],
+    slugInput: null,
+    slugStatus: null,
+    guardarBtn: null,
+    slugValidationTimer: null,
+  };
+
+  // Estado mutable local (solo UI)
+  const uiState = {
+    comercioSlug: state.comercioSlug,
+    slugDisponible: state.slugDisponible,
+    selectedPaymentMethods: [...state.selectedPaymentMethods],
+  };
+
+  // ==================== TÍTULO ====================
+  const title = document.createElement('h2');
+  title.textContent = state.isNewComercio ? 'Crear Mi Comercio' : 'Editar Mi Comercio';
+  title.className = 'page-title';
+  page.appendChild(title);
+
+  // ==================== SECCIONES ====================
+  page.appendChild(renderSeccionBasicos(state, refs, uiState));
+  page.appendChild(renderSeccionUbicacion(state, refs));
+  page.appendChild(renderSeccionContacto(state, refs));
+  page.appendChild(renderSeccionRedes(state, refs));
+  page.appendChild(renderSeccionCategorias(state, refs));
+  page.appendChild(renderSeccionPagos(state, refs, uiState));
+
+  // Solo mostrar slug si es nuevo o no tiene
+  if (!state.comercioData.landing?.slug) {
+    page.appendChild(renderSeccionSlug(state, refs, uiState));
+  }
+
+  // ==================== BOTÓN GUARDAR ====================
+  refs.guardarBtn = createButton({
+    label: 'Guardar Comercio',
+    icon: 'fa-save',
+    variant: 'success',
+    size: 'lg',
+    block: true,
+    onClick: () => handleGuardar(ctx, state, refs, uiState)
+  });
+
+  const btnContainer = document.createElement('div');
+  btnContainer.className = 'btn-container';
+  btnContainer.appendChild(refs.guardarBtn);
+  page.appendChild(btnContainer);
+
+  // Validar formulario inicial
+  validateForm(state, refs, uiState);
+}
+
+// ============================================================
+// SECCIONES
+// ============================================================
+function renderSeccionBasicos(state, refs, uiState) {
+  const section = document.createElement('div');
+  section.className = 'form-section';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Datos Básicos';
+  section.appendChild(h3);
+
+  refs.fields.nombreComercio = createFormField({
+    label: 'Nombre del Comercio',
+    name: 'nombreComercio',
+    required: true,
+    value: state.comercioData.nombreComercio || ''
+  });
+
+  refs.fields.descripcion = createFormField({
+    label: 'Descripción',
+    name: 'descripcion',
+    type: 'textarea',
+    required: true,
+    placeholder: 'Contanos sobre tu comercio...',
+    value: state.comercioData.descripcion || ''
+  });
+
+  section.append(refs.fields.nombreComercio, refs.fields.descripcion);
+
+  // Auto-generar slug desde nombre (solo para nuevos)
+  if (!uiState.comercioSlug) {
+    refs.fields.nombreComercio.input.addEventListener('input', () => {
+      clearTimeout(refs.slugValidationTimer);
+      const nombre = refs.fields.nombreComercio.input.value.trim();
+
+      if (nombre.length >= 3 && refs.slugInput) {
+        refs.slugValidationTimer = setTimeout(async () => {
+          const newSlug = slugify(nombre);
+          refs.slugInput.value = newSlug;
+          await validarSlug(newSlug, refs, uiState, true);
+        }, 500);
+      }
+    });
+  }
+
+  // Validación
+  [refs.fields.nombreComercio, refs.fields.descripcion].forEach(field => {
+    field.input.addEventListener('input', () => validateForm(state, refs, uiState));
+  });
+
+  return section;
+}
+
+function renderSeccionUbicacion(state, refs) {
+  const section = document.createElement('div');
+  section.className = 'form-section';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Ubicación';
+  section.appendChild(h3);
+
+  refs.fields.pais = createFormField({
+    label: 'País',
+    name: 'pais',
+    value: 'Argentina',
+    disabled: true
+  });
+
+  refs.fields.provincia = createFormField({
+    label: 'Provincia',
+    name: 'provincia',
+    type: 'select',
+    required: true
+  });
+
+  refs.fields.ciudad = createFormField({
+    label: 'Ciudad',
+    name: 'ciudad',
+    required: true,
+    value: state.comercioData.ciudad || ''
+  });
+
+  refs.fields.direccion = createFormField({
+    label: 'Dirección',
+    name: 'direccion',
+    required: true,
+    value: state.comercioData.direccion || ''
+  });
+
+  section.append(refs.fields.pais, refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion);
+
+  // Llenar provincias
+  fillProvinciaSelector(refs.fields.provincia.input, state.comercioData.provincia);
+
+  // Validación
+  [refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion].forEach(field => {
+    field.input.addEventListener('input', () => validateForm(state, refs, uiState));
+  });
+
+  return section;
+}
+
+function renderSeccionContacto(state, refs) {
+  const section = document.createElement('div');
+  section.className = 'form-section';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Contacto';
+  section.appendChild(h3);
+
+  refs.fields.telefono = createFormField({
+    label: 'Teléfono',
+    name: 'telefono',
+    type: 'tel',
+    required: true,
+    placeholder: '+54 9 11 1234-5678',
+    value: state.comercioData.telefono || ''
+  });
+
+  refs.fields.email = createFormField({
+    label: 'Email',
+    name: 'email',
+    type: 'email',
+    required: true,
+    placeholder: 'contacto@ejemplo.com',
+    value: state.comercioData.email || ''
+  });
+
+  section.append(refs.fields.telefono, refs.fields.email);
+
+  [refs.fields.telefono, refs.fields.email].forEach(field => {
+    field.input.addEventListener('input', () => validateForm(state, refs, uiState));
+  });
+
+  return section;
+}
+
+function renderSeccionRedes(state, refs) {
+  const section = document.createElement('div');
+  section.className = 'form-section';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Redes Sociales';
+  section.appendChild(h3);
+
+  const help = document.createElement('p');
+  help.className = 'form-help';
+  help.textContent = 'Al menos una red social es obligatoria';
+  section.appendChild(help);
+
+  refs.fields.website = createFormField({
+    label: 'Sitio Web',
+    name: 'website',
+    type: 'url',
+    placeholder: 'https://...',
+    value: state.comercioData.website || ''
+  });
+
+  refs.fields.instagram = createFormField({
+    label: 'Instagram',
+    name: 'instagram',
+    placeholder: '@usuario',
+    value: state.comercioData.instagram || ''
+  });
+
+  refs.fields.facebook = createFormField({
+    label: 'Facebook',
+    name: 'facebook',
+    placeholder: 'facebook.com/usuario',
+    value: state.comercioData.facebook || ''
+  });
+
+  refs.fields.whatsapp = createFormField({
+    label: 'WhatsApp',
+    name: 'whatsapp',
+    type: 'tel',
+    placeholder: '+54 9 11 1234-5678',
+    value: state.comercioData.whatsapp || ''
+  });
+
+  section.append(refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp);
+
+  [refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp].forEach(field => {
+    field.input.addEventListener('input', () => validateForm(state, refs, uiState));
+  });
+
+  return section;
+}
+
+function renderSeccionCategorias(state, refs) {
+  const section = document.createElement('div');
+  section.className = 'form-section';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Categorías';
+  section.appendChild(h3);
+
+  refs.categorySelector = createCategorySelector({
+    categories: CATEGORIAS_COMUNES,
+    selected: state.comercioData.categories || [],
+    onChange: () => validateForm(state, refs, uiState)
+  });
+
+  section.appendChild(refs.categorySelector);
+  return section;
+}
+
+function renderSeccionPagos(state, refs, uiState) {
+  const section = document.createElement('div');
+  section.className = 'form-section';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Métodos de Pago';
+  section.appendChild(h3);
+
+  const grid = document.createElement('div');
+  grid.className = 'payment-grid';
+  section.appendChild(grid);
+
+  METODOS_PAGO.forEach(metodo => {
+    const isSelected = uiState.selectedPaymentMethods.includes(metodo.id);
+
+    const card = createCard({
+      title: metodo.nombre,
+      icon: metodo.icon,
+      variant: 'info',
+      selectable: true,
+      selected: isSelected,
+      clickable: true,
+      compact: true,
+      onClick: () => {
+        card.toggle();
+        const selected = card.isSelected();
+        if (selected) {
+          if (!uiState.selectedPaymentMethods.includes(metodo.id)) {
+            uiState.selectedPaymentMethods.push(metodo.id);
+          }
+        } else {
+          uiState.selectedPaymentMethods = uiState.selectedPaymentMethods.filter(id => id !== metodo.id);
+        }
+        validateForm(state, refs, uiState);
+      }
+    });
+
+    refs.paymentCards.push(card);
+    grid.appendChild(card);
+  });
+
+  return section;
+}
+
+function renderSeccionSlug(state, refs, uiState) {
+  const section = document.createElement('div');
+  section.className = 'form-section';
+
+  const h3 = document.createElement('h3');
+  h3.textContent = 'Link Público';
+  section.appendChild(h3);
+
+  const help = document.createElement('p');
+  help.className = 'form-help';
+  help.textContent = 'Este será tu link público: indiceia.com/tu-comercio';
+  section.appendChild(help);
+
+  const slugContainer = document.createElement('div');
+  slugContainer.className = 'slug-container';
+
+  const slugPrefix = document.createElement('span');
+  slugPrefix.className = 'slug-prefix';
+  slugPrefix.textContent = 'indiceia.com/';
+
+  refs.slugInput = document.createElement('input');
+  refs.slugInput.type = 'text';
+  refs.slugInput.className = 'slug-input';
+  refs.slugInput.placeholder = 'mi-comercio';
+  refs.slugInput.value = uiState.comercioSlug || '';
+
+  slugContainer.append(slugPrefix, refs.slugInput);
+  section.appendChild(slugContainer);
+
+  refs.slugStatus = document.createElement('div');
+  refs.slugStatus.className = 'slug-status';
+  refs.slugStatus.innerHTML = `
+    <span class="slug-icon"></span>
+    <span class="slug-text"></span>
+  `;
+  section.appendChild(refs.slugStatus);
+
+  // Validación al escribir
+  refs.slugInput.addEventListener('input', () => {
+    clearTimeout(refs.slugValidationTimer);
+    const slug = refs.slugInput.value.trim();
+
+    if (slug.length < 3) {
+      updateSlugStatus(refs, 'empty', '');
+      uiState.slugDisponible = false;
+      uiState.comercioSlug = null;
+      validateForm(state, refs, uiState);
       return;
     }
 
-    console.log('🎨 Renderizando UI de mi-comercio...');
-
-    renderCategoriesSection();
-    renderPaymentMethods();
-    fillForm();
-    
-    const provinciaEl = document.getElementById('provincia');
-    if (provinciaEl) fillProvinciaSelector('Argentina', provinciaEl);
-
-    setupEvents();
-    insertAIHelperCard();
-
-    console.log('✅ UI renderizada correctamente');
-  },
-
-  // 3️⃣ GET CURRENT DATA - Snapshot para dirty detection
-  getCurrentData() {
-    const form = document.getElementById('miComercioForm');
-    if (!form) return { comercioData: {}, selectedCategories: [] };
-
-    const formData = new FormData(form);
-    const updates = {};
-    for (let [k, v] of formData) updates[k] = v.trim();
-
-    return {
-      comercioData: updates,
-      selectedCategories: [...selectedCategories],
-      comercioSlug
-    };
-  },
-
-  // 4️⃣ SAVE - Guardar cambios
-  async save() {
-    const form = document.getElementById('miComercioForm');
-    if (!form) {
-      showToast('Error', 'Formulario no encontrado', 'error');
-      throw new Error('Formulario no encontrado');
-    }
-
-    // Validaciones
-    const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
-    let missing = [];
-    required.forEach(id => {
-      const el = document.getElementById(id);
-      if (!el || !el.value.trim()) missing.push(id);
-    });
-
-    const socialFields = ['website', 'instagram', 'facebook', 'tiktok', 'whatsapp'];
-    const hasSocial = socialFields.some(id => {
-      const el = document.getElementById(id);
-      return el && el.value.trim();
-    });
-    if (!hasSocial) missing.push('al menos una red social o web');
-
-    if (selectedCategories.length === 0) missing.push('categorías');
-
-    if (missing.length > 0) {
-      showToast('Faltan datos', 'Completá: ' + missing.join(', '), 'warning');
-      throw new Error('Validación fallida');
-    }
-
-    // Validar slug si es nuevo comercio
-    const originalHasLanding = comercioData.landing && comercioData.landing.slug;
-    if (!originalHasLanding && (!comercioSlug || !slugDisponible)) {
-      showToast('Link público', 'Elegí un nombre disponible para tu link público', 'warning');
-      throw new Error('Slug inválido');
-    }
-
-    showLoading('Guardando comercio...');
-
-    try {
-      const formData = new FormData(form);
-      const updates = {};
-      for (let [k, v] of formData) updates[k] = v.trim();
-
-      updates.categories = selectedCategories;
-      updates.paymentMethods = Array.from(document.querySelectorAll('input[name="metodos_pago"]:checked')).map(i => i.value);
-
-      // Guardar landing dentro del comercio
-      if (!originalHasLanding) {
-        updates.landing = {
-          activo: true,
-          nombre: updates.nombreComercio,
-          slug: comercioSlug,
-          tipo: 'default',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-      } else {
-        updates.landing = {
-          ...comercioData.landing,
-          nombre: updates.nombreComercio,
-          updatedAt: new Date()
-        };
-      }
-
-      // ========================================
-      // LÓGICA DIFERENCIADA: NUEVO vs EXISTENTE
-      // ========================================
-
-      if (isNewComercio) {
-        // 🆕 CREAR COMERCIO NUEVO
-        console.log('🆕 Creando comercio nuevo...');
-
-        const nuevoComercio = {
-          ...updates,
-          duenoId: currentUser.uid,
-          fechaCreacion: new Date(),
-          fechaActualizacion: new Date(),
-          onboardingSteps: {
-            'mi-comercio': true
-          }
-        };
-
-        // 1️⃣ crear comercio SIN plan
-        await setDoc(doc(db, 'comercios', currentComercioId), nuevoComercio);
-        console.log('✅ Documento de comercio creado:', currentComercioId);
-
-        // ================================
-        // PLAN — TRIAL 30 DÍAS (CANÓNICO)
-        // ================================
-        const now = Timestamp.now();
-        const expiresAt = Timestamp.fromDate(
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        );
-        await updateDoc(doc(db, 'comercios', currentComercioId), {
-          plan: {
-            type: 'trial',
-            active: true,
-            trial: true,
-            startedAt: now,
-            expiresAt: expiresAt,
-            createdAt: now,
-            updatedAt: now,
-            source: 'system'
-          },
-          fechaActualizacion: new Date()
-        });
-        console.log('✅ Plan TRIAL 30 días aplicado');
-
-        // Crear índice en landings
-        const landingRef = doc(db, 'landings', comercioSlug);
-        await setDoc(landingRef, {
-          slug: comercioSlug,
-          comercioId: currentComercioId,
-          nombre: updates.nombreComercio,
-          activo: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-        console.log('✅ Índice de landing creado:', comercioSlug);
-
-        // 🔑 GUARDAR comercioId EN EL USUARIO
-        await updateDoc(doc(db, 'usuarios', currentUser.uid), {
-          comercioId: currentComercioId,
-          'onboardingSteps.mi-comercio': true
-        });
-        console.log('✅ comercioId guardado en usuario:', currentComercioId);
-
-      } else {
-        // ✏️ ACTUALIZAR COMERCIO EXISTENTE
-        console.log('✏️ Actualizando comercio existente...');
-
-        updates['onboardingSteps.mi-comercio'] = true;
-        updates.fechaActualizacion = new Date();
-
-        // Actualizar comercio
-        await updateDoc(doc(db, 'comercios', currentComercioId), updates);
-        console.log('✅ Comercio actualizado');
-
-        // Crear índice en landings SOLO si es nuevo
-        if (!originalHasLanding) {
-          const landingRef = doc(db, 'landings', comercioSlug);
-          await setDoc(landingRef, {
-            slug: comercioSlug,
-            comercioId: currentComercioId,
-            nombre: updates.nombreComercio,
-            activo: true,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
-          console.log('✅ Índice de landing creado:', comercioSlug);
-        }
-      }
-
-      // Actualizar estado local
-      comercioData = { ...comercioData, ...updates };
-      
-      hideLoading();
-      console.log('✅ Guardado completado exitosamente');
-      showToast('Comercio guardado correctamente', 'success');
-      
-      // Esperar a que Firestore propague
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Redirigir para que flow controller decida el siguiente paso
-      window.location.href = "/dashboard.html";
-
-    } catch (error) {
-      hideLoading();
-      console.error('❌ Error guardando:', error);
-      showToast('Error', 'No se pudo guardar: ' + error.message, 'error');
-      throw error;
-    }
-  },
-
-  // 5️⃣ VALIDACIÓN - ¿Puede avanzar?
-  isFormValid() {
-    const form = document.getElementById('miComercioForm');
-    if (!form) return false;
-
-    // Validar campos requeridos
-    const required = ['nombreComercio', 'provincia', 'ciudad', 'direccion', 'descripcion', 'telefono', 'email'];
-    const allFilled = required.every(id => {
-      const el = document.getElementById(id);
-      return el && el.value.trim();
-    });
-
-    if (!allFilled) return false;
-
-    // Validar al menos una red social
-    const socialFields = ['website', 'instagram', 'facebook', 'tiktok', 'whatsapp'];
-    const hasSocial = socialFields.some(id => {
-      const el = document.getElementById(id);
-      return el && el.value.trim();
-    });
-
-    if (!hasSocial) return false;
-
-    // Validar categorías
-    if (selectedCategories.length === 0) return false;
-
-    // Validar slug si es nuevo comercio
-    const originalHasLanding = comercioData.landing && comercioData.landing.slug;
-    if (!originalHasLanding && !slugDisponible) return false;
-
-    return true;
-  }
-};
-
-// ==================== UI RENDERING ====================
-
-function renderCategoriesSection() {
-  const container = document.getElementById('categoriesGrid');
-  if (!container) {
-    console.warn('⚠️ #categoriesGrid no encontrado');
-    return;
-  }
-
-  container.innerHTML = `
-    <div class="categories-selector">
-      <div class="category-dropdown">
-        <select id="categorySelect" class="category-select">
-          <option value="">Seleccionar categoría común...</option>
-          ${CATEGORIAS_COMUNES.map(c => `<option value="${c}">${c}</option>`).join('')}
-        </select>
-      </div>
-      <div class="custom-category">
-        <input type="text" id="customCatInput" placeholder="O agregá una personalizada...">
-        <button type="button" id="addCustomBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Añadir</button>
-      </div>
-    </div>
-    <div class="selected-categories">
-      <h4><i class="fas fa-tags"></i> Categorías seleccionadas (${selectedCategories.length})</h4>
-      <div class="selected-categories-grid" id="selectedTags"></div>
-      ${selectedCategories.length === 0 ? '<p class="empty-categories">Aún no seleccionaste ninguna categoría</p>' : ''}
-    </div>
-  `;
-
-  renderSelectedTags();
-
-  const selectEl = document.getElementById('categorySelect');
-  if (selectEl) {
-    selectEl.addEventListener('change', (e) => {
-      const val = e.target.value.trim();
-      if (val && !selectedCategories.includes(val)) {
-        selectedCategories.push(val);
-        e.target.value = '';
-        renderSelectedTags();
-      }
-    });
-  }
-
-  const addBtn = document.getElementById('addCustomBtn');
-  const customInput = document.getElementById('customCatInput');
-  if (addBtn && customInput) {
-    addBtn.onclick = () => {
-      const val = customInput.value.trim();
-      if (val && !selectedCategories.includes(val)) {
-        selectedCategories.push(val);
-        customInput.value = '';
-        renderSelectedTags();
-      }
-    };
-
-    customInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addBtn.click();
-      }
-    });
-  }
-}
-
-function renderSelectedTags() {
-  const grid = document.getElementById('selectedTags');
-  if (!grid) return;
-
-  // Renderizar las tarjetas de categorías
-  grid.innerHTML = selectedCategories.map(cat => `
-    <div class="selected-category-tag">
-      ${cat}
-      <button type="button" class="remove-btn" data-cat="${cat}">×</button>
-    </div>
-  `).join('');
-
-  grid.querySelectorAll('.remove-btn').forEach(btn => {
-    btn.onclick = () => {
-      selectedCategories = selectedCategories.filter(c => c !== btn.dataset.cat);
-      renderSelectedTags();
-    };
+    updateSlugStatus(refs, 'checking', 'Verificando disponibilidad...');
+    refs.slugValidationTimer = setTimeout(() => validarSlug(slug, refs, uiState, false), 800);
   });
 
-  // 🔥 ACTUALIZAR el mensaje de "Aún no seleccionaste"
-  const emptyMsg = document.querySelector('.empty-categories');
-  if (emptyMsg) {
-    emptyMsg.style.display = selectedCategories.length === 0 ? 'block' : 'none';
-  }
-
-  // 🔥 ACTUALIZAR el contador en el título
-  const titleH4 = document.querySelector('.selected-categories h4');
-  if (titleH4) {
-    titleH4.innerHTML = `<i class="fas fa-tags"></i> Categorías seleccionadas (${selectedCategories.length})`;
-  }
-}
-function renderPaymentMethods() {
-  const container = document.getElementById('metodosPagoContainer');
-  if (!container) {
-    console.warn('⚠️ #metodosPagoContainer no encontrado');
-    return;
-  }
-
-  const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-  checkboxes.forEach(checkbox => {
-    const isChecked = comercioData.paymentMethods?.includes(checkbox.value) || false;
-    checkbox.checked = isChecked;
-    const card = checkbox.closest('.payment-method-card');
-    if (card) card.classList.toggle('selected', isChecked);
-  });
-
-  container.addEventListener('click', (e) => {
-    const card = e.target.closest('.payment-method-card');
-    if (card && e.target.type !== 'checkbox') {
-      const checkbox = card.querySelector('input[type="checkbox"]');
-      if (checkbox) {
-        checkbox.checked = !checkbox.checked;
-        card.classList.toggle('selected', checkbox.checked);
-      }
-    }
-  });
-
-  container.addEventListener('change', (e) => {
-    if (e.target.type === 'checkbox') {
-      const card = e.target.closest('.payment-method-card');
-      if (card) {
-        card.classList.toggle('selected', e.target.checked);
-      }
-    }
-  });
+  return section;
 }
 
-function fillForm() {
-  const form = document.getElementById('miComercioForm');
-  if (!form) {
-    console.warn('⚠️ #miComercioForm no encontrado');
-    return;
-  }
-
-  Object.entries(comercioData).forEach(([key, value]) => {
-    const field = form.elements[key];
-    if (field && value !== undefined && value !== null) field.value = value;
-  });
-
-  const slugInput = document.getElementById('comercioSlug');
-  if (slugInput) {
-    if (comercioSlug) {
-      slugInput.value = comercioSlug;
-      slugInput.disabled = true;
-      slugInput.classList.add('readonly');
-      updateSlugStatus('available', `✓ indiceia.com/${comercioSlug}`);
-    } else {
-      slugInput.value = '';
-      slugInput.disabled = false;
-      slugInput.classList.remove('readonly');
-      updateSlugStatus('empty', 'Elegí un nombre para tu link público');
-    }
-  }
-}
-
-function setupEvents() {
-  const nombreInput = document.getElementById('nombreComercio');
-  const slugInput = document.getElementById('comercioSlug');
-
-  if (nombreInput && slugInput) {
-    if (comercioSlug) {
-      // Ya existe landing → bloqueado
-      slugInput.disabled = true;
-      slugInput.classList.add('readonly');
-      console.log('✅ Slug existente, campo deshabilitado:', comercioSlug);
-    } else {
-      // Comercio nuevo → auto-generar slug
-      console.log('✅ Usuario nuevo, activando auto-generación de slug');
-
-      nombreInput.addEventListener('input', () => {
-        clearTimeout(slugValidationTimer);
-        const nombre = nombreInput.value.trim();
-
-        if (nombre.length < 3) {
-          slugInput.value = '';
-          updateSlugStatus('empty', 'Mínimo 3 caracteres');
-          slugDisponible = false;
-          return;
-        }
-
-        slugValidationTimer = setTimeout(async () => {
-          const newSlug = slugify(nombre);
-          slugInput.value = newSlug;
-          await validarSlug(newSlug, true);
-        }, 500);
-      });
-
-      slugInput.addEventListener('input', (e) => {
-        clearTimeout(slugValidationTimer);
-        let value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-        e.target.value = value;
-
-        if (value.length < 3) {
-          updateSlugStatus('empty', 'Mínimo 3 caracteres');
-          slugDisponible = false;
-          return;
-        }
-
-        slugValidationTimer = setTimeout(async () => {
-          await validarSlug(value, false);
-        }, 500);
-      });
-    }
-  }
-}
-
-// ==================== VALIDACIÓN DE SLUG ====================
-
-async function validarSlug(slug, showSuggestions = false) {
-  // Si ya existe landing, no validar más
-  if (comercioData.landing && comercioData.landing.slug) {
-    return;
-  }
-
+// ============================================================
+// VALIDACIÓN SLUG
+// ============================================================
+async function validarSlug(slug, refs, uiState, autoGenerated) {
   if (!slug || slug.length < 3) {
-    updateSlugStatus('empty', 'El nombre debe tener al menos 3 caracteres');
-    slugDisponible = false;
+    updateSlugStatus(refs, 'empty', '');
+    uiState.slugDisponible = false;
+    uiState.comercioSlug = null;
+    validateForm(null, refs, uiState);
     return;
   }
-
-  updateSlugStatus('checking', 'Verificando disponibilidad...');
 
   try {
-    const landingRef = doc(db, 'landings', slug);
-    const landingSnap = await getDoc(landingRef);
+    const landingSnap = await getDoc(doc(db, 'landings', slug));
 
-    // Si no existe o es mío, está disponible
-    if (!landingSnap.exists() || landingSnap.data().comercioId === comercioData.id) {
-      comercioSlug = slug;
-      slugDisponible = true;
-      updateSlugStatus('available', `✓ indiceia.com/${slug}`);
+    if (!landingSnap.exists()) {
+      uiState.comercioSlug = slug;
+      uiState.slugDisponible = true;
+      updateSlugStatus(refs, 'available', `✓ Disponible: indiceia.com/${slug}`);
+      validateForm(null, refs, uiState);
       return;
     }
 
-    // Está ocupado - buscar alternativas
-    if (showSuggestions) {
-      for (let i = 2; i <= 5; i++) {
+    // Ya existe
+    if (autoGenerated) {
+      // Sugerir alternativas
+      for (let i = 1; i <= 3; i++) {
         const alt = `${slug}-${i}`;
-        const altRef = doc(db, 'landings', alt);
-        const altSnap = await getDoc(altRef);
-
+        const altSnap = await getDoc(doc(db, 'landings', alt));
         if (!altSnap.exists()) {
-          comercioSlug = alt;
-          slugDisponible = true;
-          updateSlugStatus('suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`, alt);
-          const slugInput = document.getElementById('comercioSlug');
-          if (slugInput) slugInput.value = alt;
+          uiState.comercioSlug = alt;
+          uiState.slugDisponible = true;
+          updateSlugStatus(refs, 'suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`);
+          refs.slugInput.value = alt;
+          validateForm(null, refs, uiState);
           return;
         }
       }
     }
 
-    slugDisponible = false;
-    comercioSlug = null;
-    updateSlugStatus('taken', 'Este nombre ya está en uso. Probá con otro.');
+    uiState.slugDisponible = false;
+    uiState.comercioSlug = null;
+    updateSlugStatus(refs, 'taken', 'Este nombre ya está en uso. Probá con otro.');
+    validateForm(null, refs, uiState);
 
   } catch (err) {
     console.error('Error validando slug:', err);
-    slugDisponible = false;
-    comercioSlug = null;
-    updateSlugStatus('error', 'Error al validar. Intentá de nuevo.');
+    uiState.slugDisponible = false;
+    uiState.comercioSlug = null;
+    updateSlugStatus(refs, 'error', 'Error al validar. Intentá de nuevo.');
+    validateForm(null, refs, uiState);
   }
 }
 
-function updateSlugStatus(status, message, suggestion = null) {
-  const statusEl = document.getElementById('slugStatus');
-  const iconEl = document.getElementById('slugStatusIcon');
-  const textEl = document.getElementById('slugStatusText');
+function updateSlugStatus(refs, status, message) {
+  if (!refs.slugStatus) return;
 
-  if (!statusEl || !iconEl || !textEl) return;
+  const icon = refs.slugStatus.querySelector('.slug-icon');
+  const text = refs.slugStatus.querySelector('.slug-text');
 
-  statusEl.className = 'slug-status';
+  const icons = {
+    checking: '<i class="fas fa-spinner fa-spin"></i>',
+    available: '<i class="fas fa-check-circle" style="color: var(--s-success)"></i>',
+    suggestion: '<i class="fas fa-info-circle" style="color: var(--s-info)"></i>',
+    taken: '<i class="fas fa-times-circle" style="color: var(--s-danger)"></i>',
+    error: '<i class="fas fa-exclamation-triangle" style="color: var(--s-warning)"></i>',
+    empty: ''
+  };
 
-  switch (status) {
-    case 'checking':
-      statusEl.classList.add('checking');
-      iconEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      textEl.textContent = message;
-      break;
-    case 'available':
-      statusEl.classList.add('available');
-      iconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
-      textEl.textContent = message;
-      break;
-    case 'suggestion':
-      statusEl.classList.add('suggestion');
-      iconEl.innerHTML = '<i class="fas fa-info-circle"></i>';
-      textEl.textContent = message;
-      break;
-    case 'taken':
-      statusEl.classList.add('taken');
-      iconEl.innerHTML = '<i class="fas fa-times-circle"></i>';
-      textEl.textContent = message;
-      break;
-    case 'error':
-      statusEl.classList.add('error');
-      iconEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
-      textEl.textContent = message;
-      break;
-    case 'empty':
-      statusEl.classList.add('empty');
-      iconEl.innerHTML = '';
-      textEl.textContent = message;
-      break;
+  icon.innerHTML = icons[status] || '';
+  text.textContent = message;
+}
+
+// ============================================================
+// VALIDACIÓN FORMULARIO
+// ============================================================
+function validateForm(state, refs, uiState) {
+  const camposBasicosValidos =
+    refs.fields.nombreComercio?.input.value.trim() &&
+    refs.fields.descripcion?.input.value.trim() &&
+    refs.fields.provincia?.input.value.trim() &&
+    refs.fields.ciudad?.input.value.trim() &&
+    refs.fields.direccion?.input.value.trim() &&
+    refs.fields.telefono?.input.value.trim() &&
+    refs.fields.email?.input.value.trim();
+
+  const tieneRedSocial =
+    refs.fields.website?.input.value.trim() ||
+    refs.fields.instagram?.input.value.trim() ||
+    refs.fields.facebook?.input.value.trim() ||
+    refs.fields.whatsapp?.input.value.trim();
+
+  const tieneCategorias = refs.categorySelector?.getSelected().length > 0;
+
+  const originalHasLanding = state?.comercioData?.landing?.slug;
+  const slugValido = originalHasLanding || uiState.slugDisponible;
+
+  const formularioValido =
+    camposBasicosValidos &&
+    tieneRedSocial &&
+    tieneCategorias &&
+    slugValido;
+
+  if (refs.guardarBtn) {
+    formularioValido ? refs.guardarBtn.enable() : refs.guardarBtn.disable();
+  }
+
+  return formularioValido;
+}
+
+// ============================================================
+// GUARDAR
+// ============================================================
+async function handleGuardar(ctx, state, refs, uiState) {
+  if (!validateForm(state, refs, uiState)) {
+    showToast('Completá todos los campos requeridos', 'warning');
+    return;
+  }
+
+  refs.guardarBtn.setLoading(true);
+
+  try {
+    const updates = {
+      nombreComercio: refs.fields.nombreComercio.input.value.trim(),
+      descripcion: refs.fields.descripcion.input.value.trim(),
+      pais: 'Argentina',
+      provincia: refs.fields.provincia.input.value.trim(),
+      ciudad: refs.fields.ciudad.input.value.trim(),
+      direccion: refs.fields.direccion.input.value.trim(),
+      telefono: refs.fields.telefono.input.value.trim(),
+      email: refs.fields.email.input.value.trim(),
+      website: refs.fields.website.input.value.trim() || null,
+      instagram: refs.fields.instagram.input.value.trim() || null,
+      facebook: refs.fields.facebook.input.value.trim() || null,
+      whatsapp: refs.fields.whatsapp.input.value.trim() || null,
+      categories: refs.categorySelector.getSelected(),
+      paymentMethods: uiState.selectedPaymentMethods
+    };
+
+    const originalHasLanding = state.comercioData.landing?.slug;
+
+    // Landing
+    if (!originalHasLanding) {
+      updates.landing = {
+        activo: true,
+        nombre: updates.nombreComercio,
+        slug: uiState.comercioSlug,
+        tipo: 'default',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    } else {
+      updates.landing = {
+        ...state.comercioData.landing,
+        nombre: updates.nombreComercio,
+        updatedAt: new Date()
+      };
+    }
+
+    // ==================== CREAR vs ACTUALIZAR ====================
+    if (state.isNewComercio) {
+      console.log('🆕 Creando comercio nuevo...');
+
+      const nuevoComercio = {
+        ...updates,
+        duenoId: ctx.user.uid,
+        fechaCreacion: new Date(),
+        fechaActualizacion: new Date(),
+        onboardingSteps: {
+          'mi-comercio': true
+        }
+      };
+
+      await setDoc(doc(db, 'comercios', ctx.comercioId), nuevoComercio);
+
+      // PLAN TRIAL 30 DÍAS
+      const now = Timestamp.now();
+      const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+
+      await updateDoc(doc(db, 'comercios', ctx.comercioId), {
+        plan: {
+          type: 'trial',
+          active: true,
+          trial: true,
+          startedAt: now,
+          expiresAt: expiresAt,
+          createdAt: now,
+          updatedAt: now,
+          source: 'system'
+        },
+        fechaActualizacion: new Date()
+      });
+
+      // Crear índice landing
+      await setDoc(doc(db, 'landings', uiState.comercioSlug), {
+        slug: uiState.comercioSlug,
+        comercioId: ctx.comercioId,
+        nombre: updates.nombreComercio,
+        activo: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      // Guardar comercioId en usuario
+      await updateDoc(doc(db, 'usuarios', ctx.user.uid), {
+        comercioId: ctx.comercioId,
+        'onboardingSteps.mi-comercio': true
+      });
+
+    } else {
+      console.log('✏️ Actualizando comercio existente...');
+
+      updates['onboardingSteps.mi-comercio'] = true;
+      updates.fechaActualizacion = new Date();
+
+      await updateDoc(doc(db, 'comercios', ctx.comercioId), updates);
+
+      // Crear landing si no existía
+      if (!originalHasLanding) {
+        await setDoc(doc(db, 'landings', uiState.comercioSlug), {
+          slug: uiState.comercioSlug,
+          comercioId: ctx.comercioId,
+          nombre: updates.nombreComercio,
+          activo: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+    }
+
+    showToast('Comercio guardado correctamente', 'success');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    window.location.href = '/src/pages/dashboard/dashboard.html';
+
+  } catch (error) {
+    console.error('❌ Error guardando:', error);
+    showToast('Error al guardar: ' + error.message, 'error');
+  } finally {
+    refs.guardarBtn.setLoading(false);
   }
 }
-
-function insertAIHelperCard() {
-  const container = document.querySelector('main .container');
-  if (!container || document.querySelector('.ai-helper-card')) return;
-
-  const card = document.createElement('div');
-  card.className = 'ai-helper-card';
-  card.innerHTML = `
-    <div class="ai-helper-icon">AI</div>
-    <div class="ai-helper-content">
-      <h4>¡Tu IA está tomando forma!</h4>
-      <p>Con esta información crearé un asistente inteligente que conozca tu negocio al detalle y convierta más ventas.</p>
-      <small>Cuanto más completes, mejor será tu IA</small>
-    </div>
-  `;
-  container.insertBefore(card, container.firstChild);
-}
-
-// ==================== BOOT ====================
-runMiComercioPage(miComercioModule);
