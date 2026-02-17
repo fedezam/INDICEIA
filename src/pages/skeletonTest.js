@@ -25,6 +25,8 @@ import { createCard }   from '/src/skeleton/components/card/index.js';
 import { createButton } from '/src/skeleton/components/button/index.js';
 import { showToast }    from '/src/shared/utils.js';
 
+import './crear-entidad.css';
+
 // ==================== ADAPTER ====================
 const adapter = (options) => createFirebaseAdapter(options);
 
