@@ -2,72 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Completa tu perfil</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Skeleton Test</title>
+  
+  <!-- ✅ CRÍTICO: Cargar variables del theme PRIMERO -->
+  <link rel="stylesheet" href="/src/skeleton/theme-variables.css">
+  
+  <!-- Font Awesome para iconos (opcional pero recomendado) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-
-  <div class="container">
-    <h1>Completa tu información</h1>
-    <p>Obligatorio para continuar</p>
-
-    <form id="profileForm">
-      <div class="form-group">
-        <label>Nombre</label>
-        <input type="text" id="nombre">
-      </div>
-
-      <div class="form-group">
-        <label>Apellido</label>
-        <input type="text" id="apellido">
-      </div>
-
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="mail" disabled>
-      </div>
-
-      <div class="form-group">
-        <label>Fecha de nacimiento (DD/MM/AAAA)</label>
-        <input type="text" id="fechaNacimiento" placeholder="DD/MM/AAAA">
-      </div>
-
-      <div class="form-group">
-        <label>Teléfono</label>
-        <input type="tel" id="telefono">
-      </div>
-
-      <div class="form-group">
-        <label>País</label>
-        <input type="text" id="pais" value="Argentina" disabled>
-      </div>
-
-      <div class="form-group">
-        <label>Provincia</label>
-        <select id="provincia">
-          <option value="">Selecciona una provincia</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label>Localidad</label>
-        <input type="text" id="localidad">
-      </div>
-
-      <div class="form-group">
-        <label>Dirección</label>
-        <input type="text" id="direccion">
-      </div>
-
-      <div class="form-group">
-        <label>Barrio (opcional)</label>
-        <input type="text" id="barrio">
-      </div>
-
-      <button type="button" id="saveUserData" disabled>Guardar y continuar</button>
-    </form>
-  </div>
-
-  <script type="module" src="./usuario.js"></script>
+  <div id="app"></div>
+  <script type="module" src="./skeletonTest.js"></script>
 </body>
 </html>
