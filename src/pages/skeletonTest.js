@@ -1,10 +1,8 @@
 // ============================================================
-// src/pages/crear-entidad/crear-entidad.js
+// src/pages/usuario/usuario.js
 // ============================================================
-// 🧠 CONTRATO ctx:
-//   ctx.user.uid           → uid del usuario autenticado
-//   ctx.userData           → doc /usuarios/{uid}
-//   ctx.userData.offerType → { productos: bool, servicios: bool }
+// 🧠 CONTRATO DE CONTEXTO (ctx)
+//   ctx.userData  → doc de Firestore: /usuarios/{uid}
 // ============================================================
 
 // ==================== SKELETON CORE ====================
@@ -12,20 +10,16 @@ import { runLifecycle }          from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }           from '/src/skeleton/layout/index.js';
 
-// ==================== FIREBASE ====================
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db }                  from '/src/services/firebase/firebase.js';
-
-// ==================== FLOW ====================
-import { runFlowController } from '/src/controllers/flowController.js';
-import { redirectAfterSave } from '/src/controllers/flowController.js';
+// ==================== ESTILOS ====================
+import './usuario.css';
 
 // ==================== COMPONENTES ====================
-import { createCard }   from '/src/skeleton/components/card/index.js';
-import { createButton } from '/src/skeleton/components/button/index.js';
-import { showToast }    from '/src/shared/utils.js';
+import { createFormField }        from '/src/skeleton/components/form-field/index.js';
+import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
+import { showToast }              from '/src/skeleton/components/toast/index.js';
 
-import './skeletonTest.css';
+// ==================== SHARED ====================
+import { fillProvinciaSelector } from '/src/shared/provincias.js';
 
 // ==================== ADAPTER ====================
 const adapter = (options) => createFirebaseAdapter(options);
@@ -34,20 +28,17 @@ const adapter = (options) => createFirebaseAdapter(options);
 runLifecycle({
   adapter,
   options: {
-    loadingMessage: 'Cargando...',
+    loadingMessage: 'Cargando datos de usuario...',
   },
 
   async onReady(ctx) {
-    // 1️⃣ FLOW — verifica onboarding antes de renderizar
-    await runFlowController(ctx.user.uid);
-
-    // 2️⃣ LAYOUT
+    // 1️⃣ LAYOUT
     mountLayout(ctx);
 
-    // 3️⃣ LOAD
+    // 2️⃣ LOAD
     const state = await load(ctx);
 
-    // 4️⃣ RENDER
+    // 3️⃣ RENDER
     render(ctx, state);
   }
 });
@@ -56,136 +47,141 @@ runLifecycle({
 // LOAD — solo datos, sin tocar el DOM
 // ============================================================
 async function load(ctx) {
-  const offerType = ctx.userData?.offerType || {};
-
-  return {
-    productos: offerType.productos === true,
-    servicios: offerType.servicios === true,
-  };
+  const userData = ctx.userData || {};
+  console.log('📦 Usuario cargado:', userData);
+  return { userData };
 }
 
 // ============================================================
 // RENDER — solo DOM, sin lógica de negocio
 // ============================================================
 function render(ctx, state) {
+  const { userData } = state;
+
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
   // ==================== TÍTULO ====================
-  const header = document.createElement('div');
-  header.className = 'page-content';
-  header.innerHTML = `
-    <h1>¿Qué ofrece tu comercio?</h1>
-    <p>Seleccioná una o ambas opciones para continuar.</p>
-  `;
-  page.appendChild(header);
+  const title = document.createElement('h2');
+  title.textContent = 'Datos personales';
+  page.appendChild(title);
 
-  // ==================== CARDS ====================
-  const cardsContainer = document.createElement('div');
-  cardsContainer.className = 'cards-container';
-  page.appendChild(cardsContainer);
-
-  const cardProductos = createCard({
-    title: 'Productos',
-    content: 'Vendés artículos físicos o digitales.',
-    icon: 'fa-box',
-    variant: 'primary',
-    selectable: true,
-    selected: state.productos,
-    clickable: true,
-    onClick: () => {
-      cardProductos.toggle();
-      validar();
-    }
+  // ==================== CAMPOS ====================
+  const nombre = createFormField({
+    label: 'Nombre',
+    name: 'nombre',
+    required: true,
+    value: userData.nombre || ''
   });
 
-  const cardServicios = createCard({
-    title: 'Servicios',
-    content: 'Ofrecés servicios con turnos o por hora.',
-    icon: 'fa-concierge-bell',
-    variant: 'info',
-    selectable: true,
-    selected: state.servicios,
-    clickable: true,
-    onClick: () => {
-      cardServicios.toggle();
-      validar();
-    }
+  const apellido = createFormField({
+    label: 'Apellido',
+    name: 'apellido',
+    required: true,
+    value: userData.apellido || ''
   });
 
-  cardsContainer.appendChild(cardProductos);
-  cardsContainer.appendChild(cardServicios);
-
-  // ==================== ERROR ====================
-  const errorBox = document.createElement('p');
-  errorBox.className = 'error-message';
-  errorBox.style.display = 'none';
-  page.appendChild(errorBox);
-
-  // ==================== BOTÓN CONTINUAR ====================
-  const continueButton = createButton({
-    label: 'Continuar',
-    variant: 'primary',
-    icon: 'fa-arrow-right',
-    disabled: !state.productos && !state.servicios,
-    onClick: async () => {
-      await guardar(ctx, {
-        productos: cardProductos.isSelected(),
-        servicios: cardServicios.isSelected(),
-      }, continueButton, errorBox);
-    }
+  const fechaNacimiento = createFormField({
+    label: 'Fecha de nacimiento',
+    name: 'fechaNacimiento',
+    placeholder: 'DD/MM/AAAA',
+    required: true,
+    value: userData.fechaNacimiento ? isoToFecha(userData.fechaNacimiento) : ''
   });
-  page.appendChild(continueButton);
 
-  // ==================== VALIDACIÓN LOCAL ====================
-  function validar() {
-    const alguno = cardProductos.isSelected() || cardServicios.isSelected();
-    if (alguno) {
-      continueButton.enable();
-      errorBox.style.display = 'none';
-    } else {
-      continueButton.disable();
-    }
+  const telefono = createFormField({
+    label: 'Teléfono',
+    name: 'telefono',
+    required: true,
+    value: userData.telefono || ''
+  });
+
+  const provincia = createFormField({
+    label: 'Provincia',
+    type: 'select',
+    name: 'provincia',
+    required: true
+  });
+
+  const localidad = createFormField({
+    label: 'Localidad',
+    name: 'localidad',
+    required: true,
+    value: userData.localidad || ''
+  });
+
+  const direccion = createFormField({
+    label: 'Dirección',
+    name: 'direccion',
+    required: true,
+    value: userData.direccion || ''
+  });
+
+  page.append(nombre, apellido, fechaNacimiento, telefono, provincia, localidad, direccion);
+
+  // Llenar provincias
+  fillProvinciaSelector('Argentina', provincia.input);
+
+  // Restaurar valor si existe
+  if (userData.provincia) {
+    setTimeout(() => {
+      provincia.input.value = userData.provincia;
+    }, 0);
   }
+
+  // ==================== BOTÓN ONBOARDING ====================
+  const btnGuardar = createOnboardingButton({
+    stepName: 'usuario',
+
+    getData: () => ({
+      nombre:          nombre.input.value.trim(),
+      apellido:        apellido.input.value.trim(),
+      fechaNacimiento: fechaToISO(fechaNacimiento.input.value),
+      telefono:        telefono.input.value.trim(),
+      provincia:       provincia.input.value.trim(),
+      localidad:       localidad.input.value.trim(),
+      direccion:       direccion.input.value.trim(),
+      pais:            'Argentina'
+    }),
+
+    validate: () => {
+      if (!nombre?.input || !apellido?.input || !fechaNacimiento?.input ||
+          !telefono?.input || !provincia?.input || !localidad?.input || !direccion?.input) {
+        console.log('⏳ Inputs aún no inicializados');
+        return false;
+      }
+
+      const valid = (
+        nombre.input.value.trim()          !== '' &&
+        apellido.input.value.trim()        !== '' &&
+        fechaNacimiento.input.value.trim() !== '' &&
+        telefono.input.value.trim()        !== '' &&
+        provincia.input.value.trim()       !== '' &&
+        localidad.input.value.trim()       !== '' &&
+        direccion.input.value.trim()       !== ''
+      );
+
+      console.log('🔍 Validación:', valid ? 'OK ✅' : 'FALTAN DATOS ❌');
+      return valid;
+    }
+  });
+
+  page.appendChild(btnGuardar);
+  console.log('✅ Página usuario renderizada');
 }
 
 // ============================================================
-// GUARDAR — lógica de negocio, separada del render
+// HELPERS
 // ============================================================
-async function guardar(ctx, { productos, servicios }, btn, errorBox) {
-  if (!productos && !servicios) {
-    errorBox.textContent = 'Seleccioná al menos una opción para continuar.';
-    errorBox.style.display = 'block';
-    return;
-  }
+function fechaToISO(s) {
+  if (!s || !s.includes('/')) return null;
+  const [d, m, y] = s.split('/');
+  if (!d || !m || !y || y.length !== 4) return null;
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
 
-  btn.setLoading(true);
-
-  try {
-    const ref = doc(db, 'usuarios', ctx.user.uid);
-    const snap = await getDoc(ref);
-    const prevSteps = snap.exists() ? snap.data().onboardingSteps || {} : {};
-
-    await setDoc(ref, {
-      offerType: { productos, servicios },
-      onboardingSteps: {
-        ...prevSteps,
-        'crear-entidad': true,
-      },
-      updatedAt: new Date().toISOString(),
-    }, { merge: true });
-
-    showToast('Configuración guardada', 'success');
-
-    // ⏳ Esperar propagación Firestore
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    redirectAfterSave();
-
-  } catch (err) {
-    console.error(err);
-    showToast('Error al guardar la configuración', 'error');
-  } finally {
-    btn.setLoading(false);
-  }
+function isoToFecha(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  return `${d}/${m}/${y}`;
 }
