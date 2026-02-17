@@ -1,261 +1,31 @@
-/* ===============================
-   DASHBOARD PAGE
-   =============================== */
+/* ============================================================
+   crear-entidad.css
+   Solo layout propio de la página.
+   Visual de cards → skeleton/components/card/styles.css
+   ============================================================ */
 
-.page-header {
-  margin-bottom: 24px;
-}
-
-.page-header h1 {
-  font-size: 26px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.page-header p {
-  color: #6c757d;
-  font-size: 14px;
-}
-
-
-/* ===============================
-   SECTIONS
-   =============================== */
-
-.dashboard-section {
-  margin-bottom: 32px;
-}
-
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
+/* ==================== LAYOUT CARDS ==================== */
+.cards-container {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
 }
 
-
-/* ===============================
-   GRID
-   =============================== */
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
+.cards-container .s-card {
+  flex: 1;
+  min-height: 180px;
 }
 
-
-/* ===============================
-   CARDS BASE
-   =============================== */
-
-.dash-card {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border: 1px solid #e5e7eb;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+/* ==================== ERROR ==================== */
+.error-message {
+  color: var(--s-danger, #dd4b39);
+  font-size: .875rem;
+  margin: .5rem 0 1rem;
 }
 
-.dash-card:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  transform: translateY(-1px);
-}
-
-.dash-icon {
-  font-size: 22px;
-  color: #3b82f6;
-  margin-bottom: 8px;
-}
-
-.dash-content h3 {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.dash-content p {
-  font-size: 13px;
-  color: #6c757d;
-  margin-bottom: 12px;
-}
-
-
-/* ===============================
-   HIGHLIGHT CARD
-   =============================== */
-
-.dash-card.highlight {
-  border: 1px solid #3b82f6;
-  background: linear-gradient(180deg, #f8fbff, #ffffff);
-}
-
-.dash-card.highlight .dash-icon {
-  color: #2563eb;
-}
-
-
-/* ===============================
-   ADD CARD
-   =============================== */
-
-.add-card {
-  border-style: dashed;
-  background: #fafafa;
-}
-
-.add-icon {
-  color: #10b981;
-}
-
-
-/* ===============================
-   DISABLED CARD
-   =============================== */
-
-.disabled-card {
-  opacity: 0.6;
-  background: #f9fafb;
-}
-
-.disabled-icon {
-  color: #9ca3af;
-}
-
-
-/* ===============================
-   PLAN CARD
-   =============================== */
-
-.plan-card {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 16px;
-  align-items: center;
-  background: linear-gradient(135deg, #1e293b, #0f172a);
-  color: #ffffff;
-  border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 32px;
-}
-
-.plan-icon {
-  font-size: 28px;
-  color: #facc15;
-}
-
-.plan-content h2 {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.plan-name {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.plan-desc {
-  font-size: 13px;
-  opacity: 0.85;
-  margin-bottom: 8px;
-}
-
-.plan-card .btn {
-  white-space: nowrap;
-}
-
-
-/* ===============================
-   HIGH VALUE
-   =============================== */
-
-.high-value-promo {
-  margin-top: 12px;
-  padding: 12px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 6px;
-}
-
-.high-value-promo h4 {
-  font-size: 14px;
-  margin-bottom: 6px;
-}
-
-.high-value-active {
-  margin-top: 8px;
-  color: #22c55e;
-  font-weight: 500;
-}
-
-
-/* ===============================
-   BADGES
-   =============================== */
-
-.badge-activo {
-  color: #16a34a;
-  font-size: 12px;
-}
-
-.badge-pausado {
-  color: #dc2626;
-  font-size: 12px;
-}
-
-
-/* ===============================
-   MODAL (High Value)
-   =============================== */
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 24px;
-  width: 100%;
-  max-width: 460px;
-}
-
-.modal-content h3 {
-  margin-bottom: 12px;
-}
-
-.modal-content ul {
-  margin: 12px 0;
-  padding-left: 18px;
-  font-size: 14px;
-}
-
-.modal-warning {
-  font-size: 13px;
-  color: #b91c1c;
-  margin-top: 12px;
-}
-
-.modal-checkbox {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 20px;
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 600px) {
+  .cards-container {
+    flex-direction: column;
+  }
 }
