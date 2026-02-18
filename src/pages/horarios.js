@@ -7,17 +7,14 @@ import { runLifecycle }          from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }           from '/src/skeleton/layout/index.js';
 
-// ==================== FIREBASE ====================
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '/src/services/firebase/firebase.js';
-
 // ==================== FLOW ====================
 import { runFlowController } from '/src/controllers/flowController.js';
 
 // ==================== COMPONENTES ====================
-import { createButton } from '/src/skeleton/components/button/index.js';
-import { createCard }   from '/src/skeleton/components/card/index.js';
-import { showToast }    from '/src/skeleton/components/toast/index.js';
+import { createButton }            from '/src/skeleton/components/button/index.js';
+import { createCard }              from '/src/skeleton/components/card/index.js';
+import { showToast }               from '/src/skeleton/components/toast/index.js';
+import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
 
 import './horarios.css';
 
@@ -74,7 +71,6 @@ function ensureHorariosStructure(horariosData) {
     if (!existing) {
       result[day] = getDefaultDaySchedule();
     } else {
-      // ✅ Preservar TODOS los valores que vienen de DB
       result[day] = {
         closed:     existing.closed     ?? false,
         continuous: existing.continuous ?? true,
@@ -94,7 +90,6 @@ function ensureHorariosStructure(horariosData) {
     }
   });
 
-  console.log('✅ [LOAD] Horarios desde DB:', result);
   return result;
 }
 
@@ -103,6 +98,7 @@ function ensureHorariosStructure(horariosData) {
 // ============================================================
 async function load(ctx) {
   const horarios = ensureHorariosStructure(ctx.comercioData?.horarios);
+  console.log('✅ [LOAD] Horarios desde DB:', horarios);
   return { horarios };
 }
 
@@ -157,7 +153,7 @@ function render(ctx, state) {
   const quickActions = document.createElement('div');
   quickActions.className = 'quick-actions';
 
-  const copiarBtn = createButton({
+  quickActions.appendChild(createButton({
     label: 'Copiar lunes a todos',
     icon: 'fa-copy',
     variant: 'secondary',
@@ -166,48 +162,42 @@ function render(ctx, state) {
       DAYS.forEach(day => {
         if (day !== 'lunes') uiState.horarios[day] = structuredClone(lunes);
       });
-      // ✅ Re-render solo el grid, no toda la página
       rebuildGrid(grid, uiState, refs);
-      validateForm(uiState, refs);
       showToast('Horarios de lunes aplicados a todos los días', 'success');
     }
-  });
+  }));
 
-  const cerrarBtn = createButton({
+  quickActions.appendChild(createButton({
     label: 'Cerrar todos',
     icon: 'fa-times-circle',
     variant: 'secondary',
     onClick: () => {
       DAYS.forEach(day => { uiState.horarios[day].closed = true; });
       rebuildGrid(grid, uiState, refs);
-      validateForm(uiState, refs);
       showToast('Todos los días marcados como cerrado', 'info');
     }
-  });
+  }));
 
-  quickActions.append(copiarBtn, cerrarBtn);
   page.appendChild(quickActions);
 
-  // ==================== BOTÓN GUARDAR ====================
-  refs.guardarBtn = createButton({
-    label: 'Guardar Horarios',
-    icon: 'fa-save',
-    variant: 'success',
-    size: 'lg',
-    block: true,
-    onClick: () => handleGuardar(ctx, uiState, refs)
+  // ==================== BOTÓN GUARDAR (onboarding-button canónico) ====================
+  refs.guardarBtn = createOnboardingButton({
+    stepName: 'horarios',
+    getData: () => ({
+      horarios: uiState.horarios,
+      comercioId: ctx.comercioId,
+    }),
+    validate: () => DAYS.some(day => !uiState.horarios[day].closed),
   });
 
   const btnContainer = document.createElement('div');
   btnContainer.style.marginTop = '30px';
   btnContainer.appendChild(refs.guardarBtn);
   page.appendChild(btnContainer);
-
-  validateForm(uiState, refs);
 }
 
 // ============================================================
-// REBUILD GRID (para quick actions — no re-renderiza toda la página)
+// REBUILD GRID
 // ============================================================
 function rebuildGrid(grid, uiState, refs) {
   grid.innerHTML = '';
@@ -262,7 +252,6 @@ function createDayHeader(day, isOpen, uiState, refs) {
   checkbox.addEventListener('change', (e) => {
     uiState.horarios[day].closed = !e.target.checked;
     updateDayCard(day, uiState, refs);
-    validateForm(uiState, refs);
   });
 
   toggle.appendChild(checkbox);
@@ -465,45 +454,4 @@ function updateDayCard(day, uiState, refs) {
   const newCard = createDayCard(day, uiState, refs);
   oldCard.replaceWith(newCard);
   refs.dayCards[index] = newCard;
-}
-
-// ============================================================
-// VALIDACIÓN
-// ============================================================
-function validateForm(uiState, refs) {
-  const valido = DAYS.some(day => !uiState.horarios[day].closed);
-  if (refs.guardarBtn) {
-    valido ? refs.guardarBtn.enable() : refs.guardarBtn.disable();
-  }
-  return valido;
-}
-
-// ============================================================
-// GUARDAR
-// ============================================================
-async function handleGuardar(ctx, uiState, refs) {
-  if (!validateForm(uiState, refs)) {
-    showToast('Configurá al menos un día como abierto', 'warning');
-    return;
-  }
-
-  refs.guardarBtn.setLoading(true);
-
-  try {
-    await updateDoc(doc(db, 'comercios', ctx.comercioId), {
-      horarios: uiState.horarios,
-      'onboardingSteps.horarios': true,
-      fechaActualizacion: new Date()
-    });
-
-    showToast('Horarios actualizados correctamente', 'success');
-    await new Promise(resolve => setTimeout(resolve, 500));
-    window.location.href = '/src/pages/dashboard/dashboard.html';
-
-  } catch (error) {
-    console.error('❌ Error guardando horarios:', error);
-    showToast('Error al guardar: ' + error.message, 'error');
-  } finally {
-    refs.guardarBtn.setLoading(false);
-  }
 }
