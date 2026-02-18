@@ -1,5 +1,5 @@
 // ============================================================
-// src/pages/horarios.js
+// src/pages/horarios/horarios.js
 // ============================================================
 
 // ==================== SKELETON CORE ====================
@@ -44,16 +44,9 @@ runLifecycle({
   },
 
   async onReady(ctx) {
-    // 1️⃣ FLOW
     await runFlowController(ctx.user.uid);
-
-    // 2️⃣ LAYOUT
     mountLayout(ctx);
-
-    // 3️⃣ LOAD
     const state = await load(ctx);
-
-    // 4️⃣ RENDER
     render(ctx, state);
   }
 });
@@ -67,62 +60,64 @@ function getDefaultDaySchedule() {
     continuous: true,
     open: "09:00",
     close: "18:00",
-    morning: {
-      enabled: true,
-      open: "08:00",
-      close: "13:00"
-    },
-    afternoon: {
-      enabled: true,
-      open: "16:00",
-      close: "21:00"
-    }
+    morning:   { enabled: true, open: "08:00", close: "13:00" },
+    afternoon: { enabled: true, open: "16:00", close: "21:00" }
   };
 }
 
 function ensureHorariosStructure(horariosData) {
-  const result = horariosData || {};
+  const result = {};
 
   DAYS.forEach(day => {
-    if (!result[day]) {
+    const existing = horariosData?.[day];
+
+    if (!existing) {
       result[day] = getDefaultDaySchedule();
     } else {
-      if (!result[day].morning)
-        result[day].morning = { enabled: true, open: "08:00", close: "13:00" };
-      if (!result[day].afternoon)
-        result[day].afternoon = { enabled: true, open: "16:00", close: "21:00" };
-      if (result[day].continuous === undefined)
-        result[day].continuous = true;
+      // ✅ Preservar TODOS los valores que vienen de DB
+      result[day] = {
+        closed:     existing.closed     ?? false,
+        continuous: existing.continuous ?? true,
+        open:       existing.open       || "09:00",
+        close:      existing.close      || "18:00",
+        morning: {
+          enabled: existing.morning?.enabled ?? true,
+          open:    existing.morning?.open    || "08:00",
+          close:   existing.morning?.close   || "13:00"
+        },
+        afternoon: {
+          enabled: existing.afternoon?.enabled ?? true,
+          open:    existing.afternoon?.open    || "16:00",
+          close:   existing.afternoon?.close   || "21:00"
+        }
+      };
     }
   });
 
+  console.log('✅ [LOAD] Horarios desde DB:', result);
   return result;
 }
 
 // ============================================================
-// LOAD — solo datos, sin tocar el DOM
+// LOAD
 // ============================================================
 async function load(ctx) {
   const horarios = ensureHorariosStructure(ctx.comercioData?.horarios);
-  console.log('✅ [LOAD] Horarios procesados:', horarios);
-
   return { horarios };
 }
 
 // ============================================================
-// RENDER — solo DOM, sin lógica de negocio
+// RENDER
 // ============================================================
 function render(ctx, state) {
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
-  // Referencias mutables compartidas entre funciones
   const refs = {
     dayCards: [],
     guardarBtn: null,
   };
 
-  // Estado mutable local (solo UI)
   const uiState = {
     horarios: state.horarios,
   };
@@ -136,7 +131,7 @@ function render(ctx, state) {
   `;
   page.appendChild(header);
 
-  // ==================== AI HELPER CARD ====================
+  // ==================== AI CARD ====================
   page.appendChild(createCard({
     title: '¡Tu IA conocerá tus horarios!',
     icon: 'fa-robot',
@@ -151,7 +146,7 @@ function render(ctx, state) {
   grid.className = 'horarios-grid';
 
   DAYS.forEach(day => {
-    const card = createDayCard(day, uiState, refs, ctx, state);
+    const card = createDayCard(day, uiState, refs);
     refs.dayCards.push(card);
     grid.appendChild(card);
   });
@@ -159,7 +154,39 @@ function render(ctx, state) {
   page.appendChild(grid);
 
   // ==================== QUICK ACTIONS ====================
-  page.appendChild(renderQuickActions(uiState, refs, ctx, state, page));
+  const quickActions = document.createElement('div');
+  quickActions.className = 'quick-actions';
+
+  const copiarBtn = createButton({
+    label: 'Copiar lunes a todos',
+    icon: 'fa-copy',
+    variant: 'secondary',
+    onClick: () => {
+      const lunes = structuredClone(uiState.horarios.lunes);
+      DAYS.forEach(day => {
+        if (day !== 'lunes') uiState.horarios[day] = structuredClone(lunes);
+      });
+      // ✅ Re-render solo el grid, no toda la página
+      rebuildGrid(grid, uiState, refs);
+      validateForm(uiState, refs);
+      showToast('Horarios de lunes aplicados a todos los días', 'success');
+    }
+  });
+
+  const cerrarBtn = createButton({
+    label: 'Cerrar todos',
+    icon: 'fa-times-circle',
+    variant: 'secondary',
+    onClick: () => {
+      DAYS.forEach(day => { uiState.horarios[day].closed = true; });
+      rebuildGrid(grid, uiState, refs);
+      validateForm(uiState, refs);
+      showToast('Todos los días marcados como cerrado', 'info');
+    }
+  });
+
+  quickActions.append(copiarBtn, cerrarBtn);
+  page.appendChild(quickActions);
 
   // ==================== BOTÓN GUARDAR ====================
   refs.guardarBtn = createButton({
@@ -180,9 +207,22 @@ function render(ctx, state) {
 }
 
 // ============================================================
+// REBUILD GRID (para quick actions — no re-renderiza toda la página)
+// ============================================================
+function rebuildGrid(grid, uiState, refs) {
+  grid.innerHTML = '';
+  refs.dayCards = [];
+  DAYS.forEach(day => {
+    const card = createDayCard(day, uiState, refs);
+    refs.dayCards.push(card);
+    grid.appendChild(card);
+  });
+}
+
+// ============================================================
 // DAY CARD
 // ============================================================
-function createDayCard(day, uiState, refs, ctx, state) {
+function createDayCard(day, uiState, refs) {
   const schedule = uiState.horarios[day];
   const isOpen = !schedule.closed;
 
@@ -190,17 +230,17 @@ function createDayCard(day, uiState, refs, ctx, state) {
   card.className = `day-card ${isOpen ? 'active' : ''}`;
   card.dataset.day = day;
 
-  card.appendChild(createDayHeader(day, isOpen, uiState, refs, ctx, state));
+  card.appendChild(createDayHeader(day, isOpen, uiState, refs));
 
   const body = document.createElement('div');
   body.className = `day-body ${!isOpen ? 'disabled' : ''}`;
-  body.appendChild(buildDayContent(day, uiState, refs, ctx, state));
+  body.appendChild(buildDayContent(day, uiState, refs));
   card.appendChild(body);
 
   return card;
 }
 
-function createDayHeader(day, isOpen, uiState, refs, ctx, state) {
+function createDayHeader(day, isOpen, uiState, refs) {
   const header = document.createElement('div');
   header.className = 'day-header';
 
@@ -221,7 +261,7 @@ function createDayHeader(day, isOpen, uiState, refs, ctx, state) {
 
   checkbox.addEventListener('change', (e) => {
     uiState.horarios[day].closed = !e.target.checked;
-    updateDayCard(day, uiState, refs, ctx, state);
+    updateDayCard(day, uiState, refs);
     validateForm(uiState, refs);
   });
 
@@ -232,7 +272,7 @@ function createDayHeader(day, isOpen, uiState, refs, ctx, state) {
   return header;
 }
 
-function buildDayContent(day, uiState, refs, ctx, state) {
+function buildDayContent(day, uiState, refs) {
   const schedule = uiState.horarios[day];
   const container = document.createElement('div');
   container.className = 'day-content';
@@ -245,8 +285,7 @@ function buildDayContent(day, uiState, refs, ctx, state) {
     return container;
   }
 
-  // Toggle corrido / cortado
-  container.appendChild(createModeToggle(day, schedule.continuous, uiState, refs, ctx, state));
+  container.appendChild(createModeToggle(day, schedule.continuous, uiState, refs));
 
   const separator = document.createElement('hr');
   separator.className = 'content-separator';
@@ -255,13 +294,13 @@ function buildDayContent(day, uiState, refs, ctx, state) {
   if (schedule.continuous) {
     container.appendChild(createContinuousSchedule(day, uiState));
   } else {
-    container.appendChild(createSplitSchedule(day, uiState, refs, ctx, state));
+    container.appendChild(createSplitSchedule(day, uiState, refs));
   }
 
   return container;
 }
 
-function createModeToggle(day, isContinuous, uiState, refs, ctx, state) {
+function createModeToggle(day, isContinuous, uiState, refs) {
   const wrapper = document.createElement('div');
   wrapper.className = 'schedule-type-toggle';
 
@@ -275,7 +314,7 @@ function createModeToggle(day, isContinuous, uiState, refs, ctx, state) {
 
   checkbox.addEventListener('change', (e) => {
     uiState.horarios[day].continuous = e.target.checked;
-    updateDayCard(day, uiState, refs, ctx, state);
+    updateDayCard(day, uiState, refs);
   });
 
   const span = document.createElement('span');
@@ -303,29 +342,29 @@ function createContinuousSchedule(day, uiState) {
   timeWrapper.appendChild(createTimeInput({
     id: `open_${day}`,
     label: 'Apertura',
-    value: schedule.open || '09:00',
-    onChange: (value) => { schedule.open = value; }
+    value: schedule.open,
+    onChange: (v) => { schedule.open = v; }
   }));
 
   timeWrapper.appendChild(createTimeInput({
     id: `close_${day}`,
     label: 'Cierre',
-    value: schedule.close || '18:00',
-    onChange: (value) => { schedule.close = value; }
+    value: schedule.close,
+    onChange: (v) => { schedule.close = v; }
   }));
 
   wrapper.appendChild(timeWrapper);
   return wrapper;
 }
 
-function createSplitSchedule(day, uiState, refs, ctx, state) {
+function createSplitSchedule(day, uiState, refs) {
   const schedule = uiState.horarios[day];
   const wrapper = document.createElement('div');
   wrapper.className = 'split-schedule';
 
   wrapper.appendChild(createPeriodSection({
     day, period: 'morning', label: 'Mañana', icon: 'fa-sun',
-    data: schedule.morning, uiState, refs, ctx, state
+    data: schedule.morning, uiState, refs
   }));
 
   const spacer = document.createElement('div');
@@ -334,13 +373,13 @@ function createSplitSchedule(day, uiState, refs, ctx, state) {
 
   wrapper.appendChild(createPeriodSection({
     day, period: 'afternoon', label: 'Tarde', icon: 'fa-moon',
-    data: schedule.afternoon, uiState, refs, ctx, state
+    data: schedule.afternoon, uiState, refs
   }));
 
   return wrapper;
 }
 
-function createPeriodSection({ day, period, label, icon, data, uiState, refs, ctx, state }) {
+function createPeriodSection({ day, period, label, icon, data, uiState, refs }) {
   const section = document.createElement('div');
   section.className = 'schedule-period';
 
@@ -357,7 +396,7 @@ function createPeriodSection({ day, period, label, icon, data, uiState, refs, ct
 
   checkbox.addEventListener('change', (e) => {
     data.enabled = e.target.checked;
-    updateDayCard(day, uiState, refs, ctx, state);
+    updateDayCard(day, uiState, refs);
   });
 
   const span = document.createElement('span');
@@ -382,15 +421,15 @@ function createPeriodSection({ day, period, label, icon, data, uiState, refs, ct
   timeWrapper.appendChild(createTimeInput({
     id: `${period}_open_${day}`,
     label: 'Apertura',
-    value: data.open || '08:00',
-    onChange: (value) => { data.open = value; }
+    value: data.open,
+    onChange: (v) => { data.open = v; }
   }));
 
   timeWrapper.appendChild(createTimeInput({
     id: `${period}_close_${day}`,
     label: 'Cierre',
-    value: data.close || '13:00',
-    onChange: (value) => { data.close = value; }
+    value: data.close,
+    onChange: (v) => { data.close = v; }
   }));
 
   section.appendChild(timeWrapper);
@@ -420,48 +459,12 @@ function createTimeInput({ id, label, value, onChange }) {
 // ============================================================
 // UPDATE DAY CARD
 // ============================================================
-function updateDayCard(day, uiState, refs, ctx, state) {
+function updateDayCard(day, uiState, refs) {
   const index = DAYS.indexOf(day);
   const oldCard = refs.dayCards[index];
-  const newCard = createDayCard(day, uiState, refs, ctx, state);
+  const newCard = createDayCard(day, uiState, refs);
   oldCard.replaceWith(newCard);
   refs.dayCards[index] = newCard;
-}
-
-// ============================================================
-// QUICK ACTIONS
-// ============================================================
-function renderQuickActions(uiState, refs, ctx, state, page) {
-  const container = document.createElement('div');
-  container.className = 'quick-actions';
-
-  const copiarBtn = createButton({
-    label: 'Copiar lunes a todos',
-    icon: 'fa-copy',
-    variant: 'secondary',
-    onClick: () => {
-      const lunes = structuredClone(uiState.horarios.lunes);
-      DAYS.forEach(day => {
-        if (day !== 'lunes') uiState.horarios[day] = structuredClone(lunes);
-      });
-      render(ctx, { horarios: uiState.horarios });
-      showToast('Horarios de lunes aplicados a todos los días', 'success');
-    }
-  });
-
-  const cerrarBtn = createButton({
-    label: 'Cerrar todos',
-    icon: 'fa-times-circle',
-    variant: 'secondary',
-    onClick: () => {
-      DAYS.forEach(day => { uiState.horarios[day].closed = true; });
-      render(ctx, { horarios: uiState.horarios });
-      showToast('Todos los días marcados como cerrado', 'info');
-    }
-  });
-
-  container.append(copiarBtn, cerrarBtn);
-  return container;
 }
 
 // ============================================================
@@ -469,11 +472,9 @@ function renderQuickActions(uiState, refs, ctx, state, page) {
 // ============================================================
 function validateForm(uiState, refs) {
   const valido = DAYS.some(day => !uiState.horarios[day].closed);
-
   if (refs.guardarBtn) {
     valido ? refs.guardarBtn.enable() : refs.guardarBtn.disable();
   }
-
   return valido;
 }
 
