@@ -1,615 +1,205 @@
 // src/pages/servicios.js
-// ==================== SERVICIOS ====================
-// Lógica de acumulación · sin campos vacíos · núcleo obligatorio
 
-// ==================== ESTILOS ====================
-import '../styles/base.css';
-import '../styles/layout.css';
-import '../styles/components.css';
-import '../styles/forms.css';
-import '../styles/forms-premium.css';
+
 import './servicios.css';
 
-// ==================== FIREBASE ====================
-import { db } from '../firebase.js';
-import {
-  collection,
-  writeBatch,
-  doc,
-  getDocs
-} from 'firebase/firestore';
+import { runLifecycle } from '@/skeleton/core/lifecycle';
+import { createFormField } from '@/skeleton/components/form-field';
+import { createCheckboxGroup } from '@/skeleton/components/checkbox-group';
+import { createCard } from '@/skeleton/components/card';
+import { createButton } from '@/skeleton/components/button';
+import { createOnboardingButton } from '@/skeleton/components/onboarding-button';
 
-// ==================== UTILS ====================
-import { showToast, showLoading, hideLoading } from '../shared/utils.js';
+export default runLifecycle({
+  mount(container) {
 
-// ==================== SKELETON ====================
-import { runDataPage } from '../shared/dataPageSkeleton.js';
+    const page = document.createElement('div');
+    page.className = 'servicios-page';
 
-// ==================== ESTADO ====================
-let currentComercioId = null;
-let serviciosAcumulados = []; // Array temporal para acumular servicios antes de guardar
-let draft = createEmptyDraft();
+    /*
+    |--------------------------------------------------------------------------
+    | FORMULARIO
+    |--------------------------------------------------------------------------
+    */
 
-// ==================== DRAFT ====================
-function createEmptyDraft() {
-  return {};
-}
-
-// ==================== LOAD ====================
-async function load({ currentComercioId: comercioId }) {
-  currentComercioId = comercioId;
-
-  if (!currentComercioId) {
-    serviciosAcumulados = [];
-    draft = createEmptyDraft();
-    return;
-  }
-
-  // Cargar servicios existentes de la DB
-  try {
-    const snap = await getDocs(
-      collection(db, 'comercios', currentComercioId, 'servicios')
-    );
-
-    serviciosAcumulados = snap.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    }));
-  } catch (err) {
-    // Si es error de permisos, probablemente no hay servicios aún (colección vacía)
-    // Esto es normal en la primera carga
-    if (err.code === 'permission-denied') {
-      console.log('No hay servicios previos o permisos insuficientes. Iniciando con lista vacía.');
-      serviciosAcumulados = [];
-    } else {
-      console.error('Error cargando servicios:', err);
-      serviciosAcumulados = [];
-    }
-  }
-
-  draft = createEmptyDraft();
-}
-
-// ==================== RENDER ====================
-function render() {
-  renderServiciosAcumulados();
-}
-
-// ==================== VALIDACIÓN ====================
-
-// Validar NÚCLEO obligatorio del draft actual
-function isDraftValid() {
-  return Boolean(
-    draft.nombre &&
-    draft.nombre.trim().length > 0 &&
-    draft.modalidad &&
-    draft.disponibilidad
-  );
-}
-
-// Validar si hay servicios para guardar en DB
-function isFormValid() {
-  return serviciosAcumulados.length > 0;
-}
-
-// ==================== DATA ====================
-function getCurrentData() {
-  return { serviciosAcumulados: structuredClone(serviciosAcumulados) };
-}
-
-// ==================== MUTADORES (REGLAS) ====================
-
-// ---- Nombre ----
-function setNombre(value) {
-  if (!value || !value.trim()) {
-    delete draft.nombre;
-    return;
-  }
-  draft.nombre = value.trim();
-}
-
-// ---- Descripción ----
-function setDescripcion(value) {
-  if (!value || !value.trim()) {
-    delete draft.descripcion;
-    return;
-  }
-  draft.descripcion = value.trim();
-}
-
-// ---- Modalidad ----
-function setModalidadesSeleccionadas(values) {
-  if (!Array.isArray(values) || values.length === 0) {
-    delete draft.modalidad;
-    delete draft.modalidades;
-    return;
-  }
-
-  if (values.length === 1) {
-    draft.modalidad = values[0];
-    delete draft.modalidades;
-    return;
-  }
-
-  draft.modalidad = 'mixto';
-  draft.modalidades = values;
-}
-
-// ---- Precio ----
-function setPrecioConsultar() {
-  delete draft.precio;
-}
-
-function setPrecioFijo(valor) {
-  const num = Number(valor);
-  if (!num || num <= 0) {
-    delete draft.precio;
-    return;
-  }
-
-  draft.precio = {
-    tipo: 'fijo',
-    valor: num
-  };
-}
-
-// ---- Disponibilidad ----
-function setDisponibilidad(tipo) {
-  if (!tipo || !['inmediata', 'a_coordinar'].includes(tipo)) {
-    delete draft.disponibilidad;
-    return;
-  }
-
-  draft.disponibilidad = tipo;
-}
-
-// ---- Duración ----
-function setDuracion(minutos) {
-  const num = Number(minutos);
-  if (!num || num <= 0) {
-    delete draft.duracion_minutos;
-    return;
-  }
-
-  draft.duracion_minutos = num;
-}
-
-// ---- Variantes ----
-function setVariantes(texto) {
-  if (!texto || !texto.trim()) {
-    delete draft.variantes;
-    return;
-  }
-
-  // Split por saltos de línea y filtrar vacíos
-  const lineas = texto
-    .split('\n')
-    .map(l => l.trim())
-    .filter(l => l.length > 0);
-
-  if (lineas.length === 0) {
-    delete draft.variantes;
-    return;
-  }
-
-  draft.variantes = lineas;
-}
-
-// ---- Notas ----
-function setNotas(value) {
-  if (!value || !value.trim()) {
-    delete draft.notas;
-    return;
-  }
-  draft.notas = value.trim();
-}
-
-// ==================== AGREGAR SERVICIO ====================
-function agregarServicio() {
-  if (!isDraftValid()) {
-    showToast(
-      'Campos obligatorios',
-      'Completá: Nombre, Modalidad y Disponibilidad',
-      'warning'
-    );
-    return;
-  }
-
-  // Agregar campo activo si no existe (por default true)
-  if (draft.activo === undefined) {
-    draft.activo = true;
-  }
-
-  // Clonar draft y agregarlo al array
-  serviciosAcumulados.push(structuredClone(draft));
-
-  // Limpiar formulario
-  draft = createEmptyDraft();
-  limpiarFormulario();
-
-  // Actualizar vista
-  renderServiciosAcumulados();
-
-  showToast(
-    '✅ Servicio agregado',
-    'Podés crear otro servicio o guardar cuando termines.',
-    'success'
-  );
-}
-
-// ==================== ELIMINAR SERVICIO ====================
-function eliminarServicio(index) {
-  if (index < 0 || index >= serviciosAcumulados.length) return;
-
-  serviciosAcumulados.splice(index, 1);
-  renderServiciosAcumulados();
-
-  showToast('Eliminado', 'Servicio eliminado de la lista', 'info');
-}
-
-// ==================== EDITAR SERVICIO ====================
-function editarServicio(index) {
-  if (index < 0 || index >= serviciosAcumulados.length) return;
-
-  const servicio = serviciosAcumulados[index];
-
-  // Cargar datos en el draft
-  draft = structuredClone(servicio);
-
-  // Llenar el formulario
-  cargarServicioEnFormulario(servicio);
-
-  // Eliminar de la lista (se volverá a agregar al guardar)
-  serviciosAcumulados.splice(index, 1);
-  renderServiciosAcumulados();
-
-  // Scroll al formulario
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  showToast('Edición', 'Modificá los campos y agregá el servicio nuevamente', 'info');
-}
-
-// ==================== TOGGLE ACTIVAR/PAUSAR ====================
-function toggleActivarServicio(index) {
-  if (index < 0 || index >= serviciosAcumulados.length) return;
-
-  const servicio = serviciosAcumulados[index];
-  servicio.activo = !servicio.activo;
-
-  renderServiciosAcumulados();
-
-  const estado = servicio.activo ? 'activado' : 'pausado';
-  showToast('Estado actualizado', `Servicio ${estado}`, 'success');
-}
-
-// ==================== CARGAR SERVICIO EN FORMULARIO ====================
-function cargarServicioEnFormulario(servicio) {
-  // Nombre
-  const inputNombre = document.querySelector('input[placeholder*="Masaje"]');
-  if (inputNombre) inputNombre.value = servicio.nombre || '';
-
-  // Descripción
-  const textareaDesc = document.querySelector('textarea[placeholder*="Explicá"]');
-  if (textareaDesc) textareaDesc.value = servicio.descripcion || '';
-
-  // Modalidades (checkboxes)
-  document.querySelectorAll('input[value="presencial"], input[value="a_domicilio"], input[value="remoto"]').forEach(cb => {
-    cb.checked = false;
-  });
-  
-  if (servicio.modalidades && Array.isArray(servicio.modalidades)) {
-    servicio.modalidades.forEach(m => {
-      const cb = document.querySelector(`input[value="${m}"]`);
-      if (cb) cb.checked = true;
+    const formCard = createCard({
+      title: 'Nuevo Servicio'
     });
-  } else if (servicio.modalidad) {
-    const cb = document.querySelector(`input[value="${servicio.modalidad}"]`);
-    if (cb) cb.checked = true;
-  }
 
-  // Precio
-  if (servicio.precio && servicio.precio.tipo === 'fijo') {
-    const radioFijo = document.querySelector('input[name="precio"][value="fijo"]');
-    if (radioFijo) {
-      radioFijo.checked = true;
-      const inputPrecio = document.getElementById('precioFijoInput');
-      if (inputPrecio) {
-        inputPrecio.disabled = false;
-        inputPrecio.value = servicio.precio.valor || '';
-      }
-    }
-  } else {
-    const radioConsultar = document.querySelector('input[name="precio"][value="consultar"]');
-    if (radioConsultar) radioConsultar.checked = true;
-  }
+    const formContainer = document.createElement('div');
+    formContainer.className = 'servicios-form';
 
-  // Disponibilidad
-  document.querySelectorAll('input[name="disponibilidad"]').forEach(cb => {
-    cb.checked = false;
-  });
-  if (servicio.disponibilidad) {
-    const cbDisp = document.querySelector(`input[name="disponibilidad"][value="${servicio.disponibilidad}"]`);
-    if (cbDisp) cbDisp.checked = true;
-  }
+    const nombreField = createFormField({
+      label: 'Nombre del servicio',
+      name: 'nombre',
+      required: true
+    });
 
-  // Duración
-  const inputDuracion = document.querySelector('input[placeholder*="60 (minutos)"]');
-  if (inputDuracion) inputDuracion.value = servicio.duracion_minutos || '';
+    const precioField = createFormField({
+      label: 'Precio',
+      name: 'precio',
+      type: 'number',
+      required: true
+    });
 
-  // Variantes
-  const textareaVariantes = document.querySelector('textarea[placeholder*="Básico 30min"]');
-  if (textareaVariantes && servicio.variantes) {
-    textareaVariantes.value = servicio.variantes.join('\n');
-  }
+    const duracionField = createFormField({
+      label: 'Duración (minutos)',
+      name: 'duracion',
+      type: 'number',
+      required: true
+    });
 
-  // Notas
-  const textareaNotas = document.querySelector('textarea[placeholder*="información importante"]');
-  if (textareaNotas) textareaNotas.value = servicio.notas || '';
-}
+    const descripcionField = createFormField({
+      label: 'Descripción',
+      name: 'descripcion',
+      type: 'textarea',
+      rows: 3
+    });
 
-// ==================== RENDER LISTA ====================
-function renderServiciosAcumulados() {
-  const container = document.getElementById('serviciosAcumuladosContainer');
-  if (!container) return;
+    const modalidadesField = createCheckboxGroup({
+      label: 'Modalidades',
+      name: 'modalidades',
+      required: true,
+      orientation: 'horizontal',
+      options: [
+        { value: 'presencial', label: 'Presencial' },
+        { value: 'virtual', label: 'Virtual' },
+        { value: 'domicilio', label: 'A domicilio' }
+      ]
+    });
 
-  if (serviciosAcumulados.length === 0) {
-    container.innerHTML = '<p class="lista-vacia">No hay servicios agregados aún</p>';
-    return;
-  }
+    const actionsRow = document.createElement('div');
+    actionsRow.className = 'servicios-form__actions';
 
-  const html = serviciosAcumulados
-    .map((s, idx) => {
-      // Modalidad
-      let modalidadTexto = '';
-      if (s.modalidades && s.modalidades.length > 0) {
-        modalidadTexto = s.modalidades.join(' + ');
-      } else if (s.modalidad) {
-        modalidadTexto = s.modalidad;
-      }
+    const addButton = createButton({
+      label: 'Agregar servicio',
+      variant: 'primary'
+    });
 
-      // Disponibilidad
-      const disponibilidadTexto = s.disponibilidad === 'inmediata' 
-        ? 'Inmediata (sin turno)' 
-        : 'A coordinar (con turno)';
+    actionsRow.appendChild(addButton);
 
-      // Precio
-      const precioTexto = s.precio
-        ? `$${s.precio.valor}`
-        : 'A consultar';
+    formContainer.append(
+      nombreField,
+      precioField,
+      duracionField,
+      descripcionField,
+      modalidadesField,
+      actionsRow
+    );
 
-      // Duración
-      const duracionTexto = s.duracion_minutos
-        ? `${s.duracion_minutos} minutos`
-        : null;
+    formCard.appendChild(formContainer);
 
-      // Descripción
-      const descripcionTexto = s.descripcion || null;
+    /*
+    |--------------------------------------------------------------------------
+    | LISTA DE SERVICIOS
+    |--------------------------------------------------------------------------
+    */
 
-      // Estado (activo/pausado)
-      const activo = s.activo !== false; // Por default true si no existe
-      const estadoClass = activo ? 'estado-activo' : 'estado-pausado';
-      const estadoTexto = activo ? '🟢 Activo' : '🔴 Pausado';
-      const botonActivarTexto = activo ? '⏸️ Pausar' : '▶️ Activar';
+    const listContainer = document.createElement('div');
+    listContainer.className = 'servicios-list';
 
-      // Variantes
-      const variantesHtml = s.variantes && s.variantes.length > 0
-        ? `<div class="servicio-variantes">
-             <strong>Variantes:</strong>
-             <ul>
-               ${s.variantes.map(v => `<li>${v}</li>`).join('')}
-             </ul>
-           </div>`
-        : '';
+    const renderServicio = (data) => {
+      const card = createCard({
+        title: data.nombre
+      });
 
-      // Notas
-      const notasHtml = s.notas
-        ? `<div class="servicio-notas">
-             <strong>Notas:</strong>
-             <p>${s.notas}</p>
-           </div>`
-        : '';
+      const body = document.createElement('div');
+      body.className = 'servicio-item';
 
-      return `
-        <div class="servicio-item ${activo ? '' : 'servicio-pausado'}">
-          <div class="servicio-header">
-            <div class="servicio-titulo-estado">
-              <h3>${s.nombre}</h3>
-              <span class="badge-estado ${estadoClass}">${estadoTexto}</span>
-            </div>
-            <div class="servicio-acciones">
-              <button
-                class="btn-editar"
-                onclick="page.editarServicio(${idx})"
-              >
-                ✏️ Editar
-              </button>
-              <button
-                class="btn-toggle-activo"
-                onclick="page.toggleActivarServicio(${idx})"
-              >
-                ${botonActivarTexto}
-              </button>
-              <button
-                class="btn-eliminar"
-                onclick="page.eliminarServicio(${idx})"
-              >
-                🗑️ Eliminar
-              </button>
-            </div>
-          </div>
-          
-          ${descripcionTexto ? `<p class="servicio-descripcion">${descripcionTexto}</p>` : ''}
-          
-          <div class="servicio-detalles">
-            <div class="detalle-item">
-              <span class="detalle-label">Modalidad:</span>
-              <span class="detalle-valor">${modalidadTexto}</span>
-            </div>
-            <div class="detalle-item">
-              <span class="detalle-label">Disponibilidad:</span>
-              <span class="detalle-valor">${disponibilidadTexto}</span>
-            </div>
-            <div class="detalle-item">
-              <span class="detalle-label">Precio:</span>
-              <span class="detalle-valor">${precioTexto}</span>
-            </div>
-            ${duracionTexto ? `
-              <div class="detalle-item">
-                <span class="detalle-label">Duración:</span>
-                <span class="detalle-valor">${duracionTexto}</span>
-              </div>
-            ` : ''}
-          </div>
-          
-          ${variantesHtml}
-          ${notasHtml}
+      body.innerHTML = `
+        <div class="servicio-item__meta">
+          <span class="servicio-item__price">$${data.precio}</span>
+          <span class="servicio-item__duration">${data.duracion} min</span>
+        </div>
+        <div class="servicio-item__description">
+          ${data.descripcion || ''}
+        </div>
+        <div class="servicio-item__modalidades">
+          ${data.modalidades.map(m => `<span class="servicio-badge">${m}</span>`).join('')}
         </div>
       `;
-    })
-    .join('');
 
-  container.innerHTML = html;
-}
+      const footer = document.createElement('div');
+      footer.className = 'servicio-item__actions';
 
-// ==================== LIMPIAR FORMULARIO ====================
-function limpiarFormulario() {
-  // Inputs de texto
-  document.querySelectorAll('input[type="text"], textarea, input[type="number"]').forEach(input => {
-    input.value = '';
-  });
+      const editBtn = createButton({
+        label: 'Editar',
+        variant: 'secondary'
+      });
 
-  // Checkboxes (modalidad y disponibilidad)
-  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-    cb.checked = false;
-  });
+      const deleteBtn = createButton({
+        label: 'Eliminar',
+        variant: 'danger'
+      });
 
-  // Radios de precio
-  const radioConsultar = document.querySelector('input[name="precio"][value="consultar"]');
-  if (radioConsultar) radioConsultar.checked = true;
+      footer.append(editBtn, deleteBtn);
 
-  const inputPrecioFijo = document.getElementById('precioFijoInput');
-  if (inputPrecioFijo) {
-    inputPrecioFijo.disabled = true;
-    inputPrecioFijo.value = '';
-  }
-}
+      card.append(body, footer);
 
-// ==================== SAVE ====================
-async function save() {
-  if (!currentComercioId) return;
-  if (serviciosAcumulados.length === 0) {
-    showToast('Error', 'Agregá al menos un servicio', 'warning');
-    return;
-  }
+      return card;
+    };
 
-  showLoading('Guardando servicios...');
+    /*
+    |--------------------------------------------------------------------------
+    | EVENTO AGREGAR
+    |--------------------------------------------------------------------------
+    */
 
-  try {
-    // 1. Obtener todos los servicios actuales de la DB
-    const snap = await getDocs(
-      collection(db, 'comercios', currentComercioId, 'servicios')
-    );
+    addButton.addEventListener('click', () => {
 
-    const batch = writeBatch(db);
+      const isNombreValid = !!nombreField.getValue();
+      const isPrecioValid = !!precioField.getValue();
+      const isDuracionValid = !!duracionField.getValue();
+      const isModalidadesValid = modalidadesField.validate();
 
-    // 2. Borrar todos los servicios viejos
-    snap.docs.forEach(docSnap => {
-      batch.delete(docSnap.ref);
-    });
+      nombreField.setInvalid(!isNombreValid);
+      precioField.setInvalid(!isPrecioValid);
+      duracionField.setInvalid(!isDuracionValid);
 
-    // 3. Escribir todos los servicios del array (nuevos y editados)
-    serviciosAcumulados.forEach(servicio => {
-      // Remover el id temporal si existe (Firebase genera uno nuevo)
-      const { id, ...servicioData } = servicio;
-      
-      const docRef = doc(collection(db, 'comercios', currentComercioId, 'servicios'));
-      batch.set(docRef, servicioData);
-    });
-
-    // 4. Marcar onboardingStep como completado
-    const comercioRef = doc(db, 'comercios', currentComercioId);
-    batch.set(
-      comercioRef,
-      {
-       onboardingSteps: {
-         servicios: true
+      if (!isNombreValid || !isPrecioValid || !isDuracionValid || !isModalidadesValid) {
+        return;
       }
-      },
-      { merge: true }
+
+      const data = {
+        nombre: nombreField.getValue(),
+        precio: precioField.getValue(),
+        duracion: duracionField.getValue(),
+        descripcion: descripcionField.getValue(),
+        modalidades: modalidadesField.getValue()
+      };
+
+      const servicioCard = renderServicio(data);
+      listContainer.appendChild(servicioCard);
+
+      nombreField.setValue('');
+      precioField.setValue('');
+      duracionField.setValue('');
+      descripcionField.setValue('');
+      modalidadesField.setValue([]);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | BOTÓN GLOBAL (ONBOARDING)
+    |--------------------------------------------------------------------------
+    */
+
+    const onboardingButton = createOnboardingButton({
+      label: 'Guardar y continuar'
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | ENSAMBLADO FINAL
+    |--------------------------------------------------------------------------
+    */
+
+    page.append(
+      formCard,
+      listContainer,
+      onboardingButton
     );
 
-    await batch.commit();
-
-    hideLoading();
-    
-    showToast(
-      '💾 Servicios guardados',
-      `Se guardaron ${serviciosAcumulados.length} servicio(s) correctamente.`,
-      'success'
-    );
-
-    // Esperar 1.5 segundos para que el usuario vea el toast antes de redirigir
-    setTimeout(() => {
-      // El skeleton se encarga del redirect automáticamente
-    }, 1500);
-    
-  } catch (err) {
-    console.error(err);
-    hideLoading();
-    showToast('Error', err.message, 'error');
+    container.appendChild(page);
   }
-}
-
-// ==================== EXPORT ====================
-export {
-  // Funciones del ciclo de vida
-  load,
-  render,
-  save,
-  isFormValid,
-  getCurrentData,
-  
-  // Mutadores expuestos para el HTML
-  setNombre,
-  setDescripcion,
-  setModalidadesSeleccionadas,
-  setPrecioConsultar,
-  setPrecioFijo,
-  setDisponibilidad,
-  setDuracion,
-  setVariantes,
-  setNotas,
-  
-  // Acciones
-  agregarServicio,
-  eliminarServicio,
-  editarServicio,
-  toggleActivarServicio
-};
-
-runDataPage({
-  // ciclo de vida
-  load,
-  render,
-  save,
-  isFormValid,
-  getCurrentData,
-
-  // mutadores
-  setNombre,
-  setDescripcion,
-  setModalidadesSeleccionadas,
-  setPrecioConsultar,
-  setPrecioFijo,
-  setDisponibilidad,
-  setDuracion,
-  setVariantes,
-  setNotas,
-
-  // acciones
-  agregarServicio,
-  eliminarServicio,
-  editarServicio,
-  toggleActivarServicio
 });
-
