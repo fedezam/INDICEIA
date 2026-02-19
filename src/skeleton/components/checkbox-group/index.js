@@ -1,5 +1,6 @@
 // src/skeleton/components/checkbox-group/index.js
 
+import './styles.css';
 import { renderCheckboxGroup } from './render.js';
 import { updateCheckboxGroup } from './update.js';
 
