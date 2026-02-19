@@ -1,84 +1,189 @@
-/* src/pages/servicios.css */
+/* ============================================================
+   src/pages/servicios/servicios.css
+   Ajustes específicos - los componentes ya vienen estilados
+   ============================================================ */
 
-.servicios-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+#skeleton-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--s-spacing-lg, 24px);
 }
 
-/*
-|--------------------------------------------------------------------------
-| FORM
-|--------------------------------------------------------------------------
-*/
-
-.servicios-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.page-hint {
+  color: var(--s-secondary, #6c757d);
+  font-size: 1.05rem;
+  margin-bottom: var(--s-spacing-xl, 32px);
+  line-height: 1.5;
 }
 
-.servicios-form__actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
+/* Campos compuestos */
+.campo-compuesto {
+  margin-bottom: var(--s-spacing-md, 16px);
 }
 
-/*
-|--------------------------------------------------------------------------
-| LISTA
-|--------------------------------------------------------------------------
-*/
-
-.servicios-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.campo-obligatorio .s-label::after {
+  content: " *";
+  color: var(--s-danger, #dd4b39);
+  font-weight: bold;
 }
 
-.servicio-item {
+/* Checkboxes y radios custom */
+.checkbox-con-explicacion {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-start;
   gap: 0.75rem;
-  font-size: 0.9rem;
-  color: #495057;
+  padding: 0.75rem;
+  border: 2px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.servicio-item__meta {
+.checkbox-con-explicacion:hover {
+  border-color: var(--s-primary, #3c8dbc);
+  background: var(--s-light, #f8f9fa);
+}
+
+.checkbox-con-explicacion input {
+  margin-top: 0.25rem;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.checkbox-con-explicacion strong {
+  display: block;
+  font-size: 1rem;
+  color: var(--s-dark, #343a40);
+  margin-bottom: 0.25rem;
+}
+
+.checkbox-con-explicacion span {
+  font-size: 0.85rem;
+  color: var(--s-secondary, #6c757d);
+}
+
+.radio-option {
+  composes: checkbox-con-explicacion;
+}
+
+.radio-option input {
+  border-radius: 50%;
+}
+
+/* Lista de servicios */
+#lista-servicios-container {
   display: flex;
-  gap: 1rem;
+  flex-direction: column;
+  gap: var(--s-spacing-md, 16px);
+}
+
+.lista-vacia {
+  text-align: center;
+  color: var(--s-gray, #adb5bd);
+  padding: 2rem;
+  font-style: italic;
+}
+
+/* Detalles de servicio en card */
+.servicio-detalles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.detalle-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background: var(--s-light, #f8f9fa);
+  border-radius: var(--s-radius, 4px);
+}
+
+.detalle-label {
+  font-size: 0.75rem;
   font-weight: 600;
+  color: var(--s-secondary, #6c757d);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.servicio-item__price {
-  color: #28a745; /* AdminLTE success */
+.detalle-valor {
+  font-size: 0.9rem;
+  color: var(--s-dark, #343a40);
+  font-weight: 500;
 }
 
-.servicio-item__duration {
-  color: #6c757d;
+.servicio-descripcion {
+  color: var(--s-secondary, #6c757d);
+  font-style: italic;
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
 }
 
-.servicio-item__description {
-  color: #6c757d;
+.servicio-extra {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #fff9e6;
+  border-left: 3px solid var(--s-warning, #f39c12);
+  border-radius: var(--s-radius, 4px);
+  font-size: 0.9rem;
+}
+
+.servicio-extra strong {
+  display: block;
+  color: var(--s-dark, #343a40);
+  margin-bottom: 0.5rem;
   font-size: 0.85rem;
 }
 
-.servicio-item__modalidades {
+.servicio-extra ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.servicio-extra li {
+  color: var(--s-secondary, #6c757d);
+  margin-bottom: 0.25rem;
+}
+
+.servicio-extra p {
+  margin: 0;
+  color: var(--s-secondary, #6c757d);
+  white-space: pre-wrap;
+}
+
+/* Acciones de servicio */
+.servicio-acciones {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--s-border, #d2d6de);
 }
 
-.servicio-badge {
-  background-color: #e9ecef;
-  color: #343a40;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 12px;
-}
-
-.servicio-item__actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
+/* Responsive */
+@media (max-width: 768px) {
+  #skeleton-page {
+    padding: var(--s-spacing-md, 16px);
+  }
+  
+  .servicio-detalles {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .servicio-acciones {
+    width: 100%;
+  }
+  
+  .servicio-acciones button {
+    flex: 1;
+    min-width: 0;
+  }
 }
