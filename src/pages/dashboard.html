@@ -1,39 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - INDICEIA</title>
+  <title>Dashboard</title>
+  
+  <!-- Theme variables primero -->
+  <link rel="stylesheet" href="/src/skeleton/theme-variables.css">
   
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Loading Overlay -->
-  <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">Cargando...</div>
-  </div>
-
-  <!-- Toast Container -->
-  <div class="toast-container" id="toastContainer"></div>
-
-  <!-- Layout se renderiza por layout.js -->
-  <div id="layoutRoot"></div>
-
-  <!-- Main Content -->
-  <main class="main-content">
-    <div id="dashboardContainer">
-      <!-- Se renderiza desde dashboard.js -->
-    </div>
-  </main>
-
-  <!-- Script carga el módulo JS -->
-  <script type="module" src="/src/pages/dashboard.js"></script>
+  <!-- El skeleton crea #skeleton-root automáticamente -->
+  <script type="module" src="./dashboard.js"></script>
 </body>
 </html>
