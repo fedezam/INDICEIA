@@ -1,415 +1,779 @@
+// ============================================================
 // src/pages/servicios/servicios.js
 // ============================================================
-// MIGRADO A SKELETON
+// Página de servicios usando skeleton COMPLETO con onboarding-button extendido
+// Patrón: Draft local + Lista acumulada + onSave custom para batch de subcolección
 // ============================================================
 
-import { runSkeleton }           from '/src/skeleton/skeleton.js';
-import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
-import { showToast }             from '/src/shared/utils.js';
-import { getServicios, saveServicios } from '/src/services/firebase/db.js';
+// ==================== SKELETON CORE ====================
+import { runSkeleton }             from '/src/skeleton/skeleton.js';
+import { createFirebaseAdapter }   from '/src/skeleton/adapters/firebaseAdapter.js';
 
+// ==================== COMPONENTES ====================
+import { createFormField }        from '/src/skeleton/components/form-field/index.js';
+import { createButton }           from '/src/skeleton/components/button/index.js';
+import { createCard }             from '/src/skeleton/components/card/index.js';
+import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
+import { showToast }              from '/src/skeleton/components/toast/index.js';
+
+// ==================== FIREBASE ====================
+import { db }                     from '/src/services/firebase/firebase.js';
+import { 
+  writeBatch, 
+  doc, 
+  collection, 
+  getDocs,
+  serverTimestamp 
+} from 'firebase/firestore';
+
+// ==================== ESTILOS ====================
 import './servicios.css';
-
-// ============================================================
-// ESTADO INTERNO
-// ============================================================
-let serviciosAcumulados = [];
-let draft = {};
-let _ctx = null;
-
-function resetDraft() { draft = {}; }
 
 // ============================================================
 // MÓDULO DE PÁGINA
 // ============================================================
 const page = {
+  _data: {
+    serviciosAcumulados: [],
+    draft: {}
+  },
 
+  // ──────────────────────────────────────────────────────────
+  // LOAD — solo datos
+  // ──────────────────────────────────────────────────────────
   async load(ctx) {
-    _ctx = ctx;
-    serviciosAcumulados = [];
-    resetDraft();
+    const comercioId = ctx.comercioId;
+    
+    if (!comercioId) {
+      this._data.serviciosAcumulados = [];
+      this._data.draft = {};
+      return;
+    }
 
     try {
-      serviciosAcumulados = await getServicios();
+      // Cargar servicios existentes de la subcolección
+      const serviciosRef = collection(db, 'comercios', comercioId, 'servicios');
+      const snapshot = await getDocs(serviciosRef);
+      
+      this._data.serviciosAcumulados = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
     } catch (err) {
       if (err.code === 'permission-denied') {
         console.log('Sin servicios previos, iniciando vacío.');
+        this._data.serviciosAcumulados = [];
       } else {
         console.error('Error cargando servicios:', err);
+        this._data.serviciosAcumulados = [];
       }
-      serviciosAcumulados = [];
     }
+    
+    this._data.draft = {};
   },
 
+  // ──────────────────────────────────────────────────────────
+  // RENDER — solo DOM, usando componentes
+  // ──────────────────────────────────────────────────────────
   render() {
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
 
-    const header = document.createElement('div');
-    header.className = 'page-header';
-    header.innerHTML = `
-      <h1>Servicios</h1>
-      <p class="page-hint">
-        Definí todos los servicios que ofrecés. Podés crear varios
-        y después guardarlos todos juntos.
-      </p>
-    `;
-    root.appendChild(header);
-    root.appendChild(this._renderFormulario());
-    root.appendChild(this._renderListaWrapper());
-    this._refreshLista();
+    // Título
+    const title = document.createElement('h2');
+    title.textContent = 'Servicios';
+    root.appendChild(title);
+
+    // Hint
+    const hint = document.createElement('p');
+    hint.className = 'page-hint';
+    hint.textContent = 'Definí todos los servicios que ofrecés. Podés crear varios y después guardarlos todos juntos.';
+    root.appendChild(hint);
+
+    // Card del formulario
+    const formCard = createCard({
+      title: 'Crear nuevo servicio',
+      variant: 'primary',
+      noHeader: false,
+      content: this._renderFormContent()
+    });
+    root.appendChild(formCard);
+
+    // Card de la lista
+    const listaCard = createCard({
+      title: 'Servicios agregados',
+      variant: 'warning',
+      content: this._renderListaContent()
+    });
+    root.appendChild(listaCard);
+
+    // Botón onboarding (MODO CUSTOM con onSave)
+    const saveBtn = this._renderSaveButton();
+    root.appendChild(saveBtn);
   },
 
   // ──────────────────────────────────────────────────────────
-  // FORMULARIO
+  // FORM CONTENT — composición de campos
   // ──────────────────────────────────────────────────────────
-  _renderFormulario() {
-    const card = document.createElement('div');
-    card.className = 'box box-primary';
-    card.innerHTML = `
-      <div class="box-header with-border">
-        <h3 class="box-title">Crear nuevo servicio</h3>
-      </div>
-      <div class="box-body">
+  _renderFormContent() {
+    const container = document.createElement('div');
+    container.className = 'form-content';
 
-        <div class="form-group required">
-          <label class="control-label">¿Qué servicio ofrecés?</label>
-          <p class="help-block">El nombre tal como lo conocen tus clientes.<br>
-            <em>Ej: "Corte de pelo", "Consulta médica"</em></p>
-          <input id="svc-nombre" type="text" class="form-control"
-            placeholder="Ej: Masaje descontracturante" />
-        </div>
-
-        <div class="form-group">
-          <label class="control-label">Descripción <span class="text-muted">(opcional)</span></label>
-          <p class="help-block">Agregá detalles que ayuden a entender mejor el servicio.</p>
-          <textarea id="svc-descripcion" class="form-control" rows="3"
-            placeholder="Explicá brevemente en qué consiste el servicio"></textarea>
-        </div>
-
-        <div class="form-group required">
-          <label class="control-label">¿Cómo se presta este servicio?</label>
-          <p class="help-block">Podés marcar más de una opción.</p>
-          <div class="checkbox-card">
-            <label><input type="checkbox" class="svc-modalidad" value="presencial" />
-              <strong>Presencial</strong> — El cliente viene a tu local</label>
-          </div>
-          <div class="checkbox-card">
-            <label><input type="checkbox" class="svc-modalidad" value="a_domicilio" />
-              <strong>A domicilio</strong> — Vos vas al domicilio del cliente</label>
-          </div>
-          <div class="checkbox-card">
-            <label><input type="checkbox" class="svc-modalidad" value="remoto" />
-              <strong>Remoto (online)</strong> — Por videollamada o internet</label>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="control-label">Precio</label>
-          <p class="help-block">Si tenés un precio fijo, indicalo. Si varía, dejá "A consultar".</p>
-          <div class="radio-card">
-            <label><input type="radio" name="svc-precio" value="consultar" checked />
-              <strong>A consultar</strong> — El precio se define con cada cliente</label>
-          </div>
-          <div class="radio-card">
-            <label><input type="radio" name="svc-precio" value="fijo" />
-              <strong>Precio fijo</strong> — Siempre tiene el mismo precio</label>
-          </div>
-          <input id="svc-precio-valor" type="number" class="form-control"
-            placeholder="Ej: 5000" disabled
-            style="margin-top:.5rem; max-width:200px;" />
-        </div>
-
-        <div class="form-group required">
-          <label class="control-label">¿Cuándo está disponible?</label>
-          <p class="help-block">Seleccioná solo <strong>una</strong> opción.</p>
-          <div class="checkbox-card">
-            <label><input type="checkbox" class="svc-disponibilidad" value="inmediata" />
-              <strong>Inmediata</strong> — Sin turno, por orden de llegada</label>
-          </div>
-          <div class="checkbox-card">
-            <label><input type="checkbox" class="svc-disponibilidad" value="a_coordinar" />
-              <strong>A coordinar</strong> — Requiere turno o agenda previa</label>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="control-label">Duración aproximada <span class="text-muted">(opcional)</span></label>
-          <p class="help-block">En minutos. Si no podés estimarla, dejalo vacío.</p>
-          <input id="svc-duracion" type="number" class="form-control"
-            placeholder="Ej: 60 (minutos)" style="max-width:200px;" />
-        </div>
-
-        <div class="form-group">
-          <label class="control-label">Variantes <span class="text-muted">(opcional)</span></label>
-          <p class="help-block">Una por línea. <em>Ej: Básico 30min $500</em></p>
-          <textarea id="svc-variantes" class="form-control" rows="4"
-            placeholder="Escribí cada variante en una línea&#10;Ej: Básico 30min $500&#10;Ej: Premium 60min $1200"></textarea>
-        </div>
-
-        <div class="form-group">
-          <label class="control-label">Notas adicionales <span class="text-muted">(opcional)</span></label>
-          <p class="help-block">Requisitos, URLs, direcciones, horarios especiales, etc.</p>
-          <textarea id="svc-notas" class="form-control" rows="4"
-            placeholder="Agregá toda la información que consideres importante"></textarea>
-        </div>
-
-        <button id="btn-agregar-servicio" class="btn btn-success btn-block">
-          <i class="fa fa-plus"></i> Agregar este servicio
-        </button>
-
-      </div>
-    `;
-
-    const q = sel => card.querySelector(sel);
-
-    q('#svc-nombre').addEventListener('input', e => {
-      const v = e.target.value.trim();
-      v ? (draft.nombre = v) : delete draft.nombre;
-    });
-
-    q('#svc-descripcion').addEventListener('input', e => {
-      const v = e.target.value.trim();
-      v ? (draft.descripcion = v) : delete draft.descripcion;
-    });
-
-    card.querySelectorAll('.svc-modalidad').forEach(cb => {
-      cb.addEventListener('change', () => {
-        const vals = [...card.querySelectorAll('.svc-modalidad:checked')].map(c => c.value);
-        if (vals.length === 0)      { delete draft.modalidad; delete draft.modalidades; }
-        else if (vals.length === 1) { draft.modalidad = vals[0]; delete draft.modalidades; }
-        else                        { draft.modalidad = 'mixto'; draft.modalidades = vals; }
-      });
-    });
-
-    card.querySelectorAll('input[name="svc-precio"]').forEach(radio => {
-      radio.addEventListener('change', () => {
-        const precioInput = q('#svc-precio-valor');
-        if (radio.value === 'fijo') {
-          precioInput.disabled = false;
-        } else {
-          precioInput.disabled = true;
-          precioInput.value = '';
-          delete draft.precio;
+    // Nombre (obligatorio)
+    const nombre = createFormField({
+      id: 'svc-nombre',
+      label: '¿Qué servicio ofrecés? *',
+      helpText: 'El nombre tal como lo conocen tus clientes. Ej: "Corte de pelo", "Consulta médica"',
+      required: true,
+      actions: {
+        onChange: (v) => {
+          const trimmed = v.trim();
+          trimmed ? (this._data.draft.nombre = trimmed) : delete this._data.draft.nombre;
         }
-      });
+      }
     });
 
-    q('#svc-precio-valor').addEventListener('input', e => {
-      const num = Number(e.target.value);
-      num > 0 ? (draft.precio = { tipo: 'fijo', valor: num }) : delete draft.precio;
+    // Descripción (opcional)
+    const descripcion = createFormField({
+      id: 'svc-descripcion',
+      label: 'Descripción',
+      type: 'textarea',
+      rows: 3,
+      helpText: 'Agregá detalles que ayuden a entender mejor el servicio',
+      actions: {
+        onChange: (v) => {
+          const trimmed = v.trim();
+          trimmed ? (this._data.draft.descripcion = trimmed) : delete this._data.draft.descripcion;
+        }
+      }
     });
 
-    card.querySelectorAll('.svc-disponibilidad').forEach(cb => {
-      cb.addEventListener('change', () => {
-        card.querySelectorAll('.svc-disponibilidad').forEach(o => {
-          if (o !== cb) o.checked = false;
-        });
-        cb.checked ? (draft.disponibilidad = cb.value) : delete draft.disponibilidad;
-      });
+    // Modalidad (obligatorio) - campo compuesto
+    const modalidad = this._renderModalidadField();
+
+    // Precio (opcional) - campo compuesto
+    const precio = this._renderPrecioField();
+
+    // Disponibilidad (obligatorio) - campo compuesto
+    const disponibilidad = this._renderDisponibilidadField();
+
+    // Duración (opcional)
+    const duracion = createFormField({
+      id: 'svc-duracion',
+      label: 'Duración aproximada (minutos)',
+      type: 'number',
+      helpText: 'Si no podés estimarla, dejalo vacío',
+      actions: {
+        onChange: (v) => {
+          const num = Number(v);
+          num > 0 ? (this._data.draft.duracion_minutos = num) : delete this._data.draft.duracion_minutos;
+        }
+      }
     });
 
-    q('#svc-duracion').addEventListener('input', e => {
-      const num = Number(e.target.value);
-      num > 0 ? (draft.duracion_minutos = num) : delete draft.duracion_minutos;
+    // Variantes (opcional)
+    const variantes = createFormField({
+      id: 'svc-variantes',
+      label: 'Variantes del servicio',
+      type: 'textarea',
+      rows: 4,
+      helpText: 'Una por línea. Ej: Básico 30min $500',
+      actions: {
+        onChange: (v) => {
+          const lineas = v.split('\n').map(l => l.trim()).filter(Boolean);
+          lineas.length > 0 ? (this._data.draft.variantes = lineas) : delete this._data.draft.variantes;
+        }
+      }
     });
 
-    q('#svc-variantes').addEventListener('input', e => {
-      const lineas = e.target.value.split('\n').map(l => l.trim()).filter(Boolean);
-      lineas.length > 0 ? (draft.variantes = lineas) : delete draft.variantes;
+    // Notas (opcional)
+    const notas = createFormField({
+      id: 'svc-notas',
+      label: 'Notas adicionales',
+      type: 'textarea',
+      rows: 4,
+      helpText: 'Requisitos, URLs, direcciones, horarios especiales, etc.',
+      actions: {
+        onChange: (v) => {
+          const trimmed = v.trim();
+          trimmed ? (this._data.draft.notas = trimmed) : delete this._data.draft.notas;
+        }
+      }
     });
 
-    q('#svc-notas').addEventListener('input', e => {
-      const v = e.target.value.trim();
-      v ? (draft.notas = v) : delete draft.notas;
+    // Botón agregar (genérico, no guarda en DB)
+    const btnAgregar = createButton({
+      label: 'Agregar este servicio',
+      variant: 'success',
+      icon: 'fa-plus',
+      block: true,
+      onClick: () => this._agregarServicio()
     });
 
-    q('#btn-agregar-servicio').addEventListener('click', () => this._agregarServicio(card));
-
-    this._formCard = card;
-    return card;
+    container.append(nombre, descripcion, modalidad, precio, disponibilidad, duracion, variantes, notas, btnAgregar);
+    
+    // Guardar refs para edición
+    this._formRefs = { nombre, descripcion, duracion, variantes, notas };
+    
+    return container;
   },
 
   // ──────────────────────────────────────────────────────────
-  // LISTA
+  // CAMPOS COMPUESTOS (no hay componente nativo en skeleton)
   // ──────────────────────────────────────────────────────────
-  _renderListaWrapper() {
+  _renderModalidadField() {
     const wrapper = document.createElement('div');
-    wrapper.className = 'box box-warning';
-    wrapper.innerHTML = `
-      <div class="box-header with-border">
-        <h3 class="box-title">Servicios agregados</h3>
-      </div>
-      <div class="box-body">
-        <p class="callout callout-warning" style="margin-bottom:1rem;">
-          Estos servicios se guardarán cuando hagas click en "Guardar y continuar".
-        </p>
-        <div id="lista-servicios-container"></div>
-      </div>
-    `;
-    this._listaContainer = wrapper.querySelector('#lista-servicios-container');
+    wrapper.className = 's-form-field campo-compuesto';
+    
+    const label = document.createElement('label');
+    label.className = 's-label';
+    label.textContent = '¿Cómo se presta este servicio? *';
+    wrapper.appendChild(label);
+    
+    const help = document.createElement('small');
+    help.className = 's-help';
+    help.textContent = 'Podés marcar más de una opción';
+    wrapper.appendChild(help);
+
+    const opciones = [
+      { value: 'presencial', label: 'Presencial', help: 'El cliente viene a tu local' },
+      { value: 'a_domicilio', label: 'A domicilio', help: 'Vos vas al domicilio del cliente' },
+      { value: 'remoto', label: 'Remoto (online)', help: 'Por videollamada o internet' }
+    ];
+
+    this._modalidadCheckboxes = [];
+
+    opciones.forEach(opt => {
+      const row = document.createElement('label');
+      row.className = 'checkbox-con-explicacion';
+      row.innerHTML = `
+        <input type="checkbox" value="${opt.value}">
+        <div>
+          <strong>${opt.label}</strong>
+          <span>${opt.help}</span>
+        </div>
+      `;
+      const cb = row.querySelector('input');
+      this._modalidadCheckboxes.push(cb);
+      cb.addEventListener('change', () => this._updateModalidad());
+      wrapper.appendChild(row);
+    });
+
     return wrapper;
   },
 
-  _refreshLista() {
-    const c = this._listaContainer;
-    if (!c) return;
-    if (serviciosAcumulados.length === 0) {
-      c.innerHTML = '<p class="text-muted text-center" style="padding:2rem;font-style:italic;">No hay servicios agregados aún</p>';
-      return;
+  _updateModalidad() {
+    const vals = this._modalidadCheckboxes
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+    
+    if (vals.length === 0) {
+      delete this._data.draft.modalidad;
+      delete this._data.draft.modalidades;
+    } else if (vals.length === 1) {
+      this._data.draft.modalidad = vals[0];
+      delete this._data.draft.modalidades;
+    } else {
+      this._data.draft.modalidad = 'mixto';
+      this._data.draft.modalidades = vals;
     }
-    c.innerHTML = '';
-    serviciosAcumulados.forEach((s, idx) => c.appendChild(this._renderServicioItem(s, idx)));
   },
 
-  _renderServicioItem(s, idx) {
-    const activo = s.activo !== false;
-    const modalidadTexto = s.modalidades?.length > 0 ? s.modalidades.join(' + ') : (s.modalidad || '—');
-    const disponibilidadTexto = s.disponibilidad === 'inmediata' ? 'Inmediata (sin turno)' : 'A coordinar (con turno)';
-    const precioTexto = s.precio ? `$${s.precio.valor}` : 'A consultar';
-    const duracionTexto = s.duracion_minutos ? `${s.duracion_minutos} min` : null;
+  _renderPrecioField() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 's-form-field campo-compuesto';
+    
+    const label = document.createElement('label');
+    label.className = 's-label';
+    label.textContent = 'Precio';
+    wrapper.appendChild(label);
 
-    const item = document.createElement('div');
-    item.className = `servicio-item${activo ? '' : ' servicio-pausado'}`;
-    item.innerHTML = `
-      <div class="servicio-header">
-        <div class="servicio-titulo-estado">
-          <h4>${s.nombre}</h4>
-          <span class="label ${activo ? 'label-success' : 'label-danger'}">
-            ${activo ? 'Activo' : 'Pausado'}
-          </span>
-        </div>
-        <div class="servicio-acciones">
-          <button class="btn btn-xs btn-primary btn-editar"><i class="fa fa-pencil"></i> Editar</button>
-          <button class="btn btn-xs btn-warning btn-toggle">
-            <i class="fa fa-${activo ? 'pause' : 'play'}"></i> ${activo ? 'Pausar' : 'Activar'}
-          </button>
-          <button class="btn btn-xs btn-danger btn-eliminar"><i class="fa fa-trash"></i> Eliminar</button>
-        </div>
+    // Radio "A consultar"
+    const radioConsultarWrapper = document.createElement('label');
+    radioConsultarWrapper.className = 'radio-option';
+    radioConsultarWrapper.innerHTML = `
+      <input type="radio" name="svc-precio" value="consultar" checked>
+      <div>
+        <strong>A consultar</strong>
+        <span>El precio se define con cada cliente</span>
       </div>
-      ${s.descripcion ? `<p class="servicio-descripcion">${s.descripcion}</p>` : ''}
+    `;
+    const radioConsultar = radioConsultarWrapper.querySelector('input');
+    
+    // Radio "Precio fijo"
+    const radioFijoWrapper = document.createElement('label');
+    radioFijoWrapper.className = 'radio-option';
+    radioFijoWrapper.innerHTML = `
+      <input type="radio" name="svc-precio" value="fijo">
+      <div>
+        <strong>Precio fijo</strong>
+        <span>Siempre tiene el mismo precio</span>
+      </div>
+    `;
+    const radioFijo = radioFijoWrapper.querySelector('input');
+
+    // Input de precio (desactivado por defecto)
+    const inputPrecio = createFormField({
+      id: 'svc-precio-valor',
+      type: 'number',
+      placeholder: 'Ej: 5000',
+      actions: {
+        onChange: (v) => {
+          const num = Number(v);
+          if (num > 0 && this._data.draft.precio?.tipo === 'fijo') {
+            this._data.draft.precio.valor = num;
+          }
+        }
+      }
+    });
+    inputPrecio.disable();
+
+    // Eventos de radio
+    radioConsultar.addEventListener('change', () => {
+      if (radioConsultar.checked) {
+        delete this._data.draft.precio;
+        inputPrecio.setValue('');
+        inputPrecio.disable();
+      }
+    });
+    
+    radioFijo.addEventListener('change', () => {
+      if (radioFijo.checked) {
+        this._data.draft.precio = { tipo: 'fijo', valor: 0 };
+        inputPrecio.enable();
+        const val = inputPrecio.getValue();
+        if (val) this._data.draft.precio.valor = Number(val);
+      }
+    });
+
+    wrapper.append(radioConsultarWrapper, radioFijoWrapper, inputPrecio);
+    
+    this._precioRefs = { radioConsultar, radioFijo, inputPrecio };
+    
+    return wrapper;
+  },
+
+  _renderDisponibilidadField() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 's-form-field campo-compuesto campo-obligatorio';
+    
+    const label = document.createElement('label');
+    label.className = 's-label';
+    label.textContent = '¿Cuándo está disponible? *';
+    wrapper.appendChild(label);
+    
+    const help = document.createElement('small');
+    help.className = 's-help';
+    help.textContent = 'Seleccioná solo UNA opción';
+    wrapper.appendChild(help);
+
+    const opciones = [
+      { value: 'inmediata', label: 'Inmediata', help: 'Sin turno, por orden de llegada' },
+      { value: 'a_coordinar', label: 'A coordinar', help: 'Requiere turno o agenda previa' }
+    ];
+
+    this._disponibilidadCheckboxes = [];
+
+    opciones.forEach(opt => {
+      const row = document.createElement('label');
+      row.className = 'checkbox-con-explicacion';
+      row.innerHTML = `
+        <input type="checkbox" name="disponibilidad" value="${opt.value}">
+        <div>
+          <strong>${opt.label}</strong>
+          <span>${opt.help}</span>
+        </div>
+      `;
+      const cb = row.querySelector('input');
+      this._disponibilidadCheckboxes.push(cb);
+      
+      cb.addEventListener('change', (e) => {
+        // Solo uno puede estar marcado (radio-like behavior con checkboxes)
+        this._disponibilidadCheckboxes.forEach(other => {
+          if (other !== e.target) other.checked = false;
+        });
+        
+        if (e.target.checked) {
+          this._data.draft.disponibilidad = e.target.value;
+        } else {
+          delete this._data.draft.disponibilidad;
+        }
+      });
+      
+      wrapper.appendChild(row);
+    });
+
+    return wrapper;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // LISTA CONTENT — servicios acumulados
+  // ──────────────────────────────────────────────────────────
+  _renderListaContent() {
+    const container = document.createElement('div');
+    container.id = 'lista-servicios-container';
+
+    if (this._data.serviciosAcumulados.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'lista-vacia';
+      empty.textContent = 'No hay servicios agregados aún';
+      container.appendChild(empty);
+      return container;
+    }
+
+    this._data.serviciosAcumulados.forEach((servicio, index) => {
+      const item = this._renderServicioCard(servicio, index);
+      container.appendChild(item);
+    });
+
+    return container;
+  },
+
+  _renderServicioCard(servicio, index) {
+    const activo = servicio.activo !== false;
+    const modalidadTexto = servicio.modalidades?.join(' + ') || servicio.modalidad || '—';
+    const disponibilidadTexto = servicio.disponibilidad === 'inmediata' 
+      ? 'Inmediata (sin turno)' 
+      : 'A coordinar (con turno)';
+    const precioTexto = servicio.precio ? `$${servicio.precio.valor}` : 'A consultar';
+    const duracionTexto = servicio.duracion_minutos ? `${servicio.duracion_minutos} min` : null;
+
+    // Construir contenido HTML para la card
+    let contentHtml = `
       <div class="servicio-detalles">
-        <span class="detalle-item"><strong>Modalidad:</strong> ${modalidadTexto}</span>
-        <span class="detalle-item"><strong>Disponibilidad:</strong> ${disponibilidadTexto}</span>
-        <span class="detalle-item"><strong>Precio:</strong> ${precioTexto}</span>
-        ${duracionTexto ? `<span class="detalle-item"><strong>Duración:</strong> ${duracionTexto}</span>` : ''}
+        <div class="detalle-item">
+          <span class="detalle-label">Modalidad:</span>
+          <span class="detalle-valor">${modalidadTexto}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Disponibilidad:</span>
+          <span class="detalle-valor">${disponibilidadTexto}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Precio:</span>
+          <span class="detalle-valor">${precioTexto}</span>
+        </div>
+        ${duracionTexto ? `
+          <div class="detalle-item">
+            <span class="detalle-label">Duración:</span>
+            <span class="detalle-valor">${duracionTexto}</span>
+          </div>
+        ` : ''}
       </div>
-      ${s.variantes?.length > 0 ? `
-        <div class="callout callout-warning servicio-extra">
-          <strong>Variantes:</strong>
-          <ul>${s.variantes.map(v => `<li>${v}</li>`).join('')}</ul>
-        </div>` : ''}
-      ${s.notas ? `
-        <div class="callout callout-warning servicio-extra">
-          <strong>Notas:</strong><p>${s.notas}</p>
-        </div>` : ''}
     `;
 
-    item.querySelector('.btn-editar').addEventListener('click', () => this._editarServicio(idx));
-    item.querySelector('.btn-toggle').addEventListener('click', () => this._toggleServicio(idx));
-    item.querySelector('.btn-eliminar').addEventListener('click', () => this._eliminarServicio(idx));
-    return item;
+    if (servicio.descripcion) {
+      contentHtml += `<p class="servicio-descripcion">${servicio.descripcion}</p>`;
+    }
+
+    if (servicio.variantes?.length > 0) {
+      contentHtml += `
+        <div class="servicio-extra">
+          <strong>Variantes:</strong>
+          <ul>${servicio.variantes.map(v => `<li>${v}</li>`).join('')}</ul>
+        </div>
+      `;
+    }
+
+    if (servicio.notas) {
+      contentHtml += `
+        <div class="servicio-extra">
+          <strong>Notas:</strong>
+          <p>${servicio.notas}</p>
+        </div>
+      `;
+    }
+
+    // Crear wrapper para acciones (no es string, es DOM)
+    const actionsWrapper = document.createElement('div');
+    actionsWrapper.className = 'servicio-acciones';
+
+    const btnEditar = createButton({
+      label: 'Editar',
+      variant: 'primary',
+      size: 'sm',
+      icon: 'fa-pencil',
+      onClick: () => this._editarServicio(index)
+    });
+
+    const btnToggle = createButton({
+      label: activo ? 'Pausar' : 'Activar',
+      variant: activo ? 'warning' : 'success',
+      size: 'sm',
+      icon: activo ? 'fa-pause' : 'fa-play',
+      onClick: () => this._toggleServicio(index)
+    });
+
+    const btnEliminar = createButton({
+      label: 'Eliminar',
+      variant: 'danger',
+      size: 'sm',
+      icon: 'fa-trash',
+      onClick: () => this._eliminarServicio(index)
+    });
+
+    actionsWrapper.append(btnEditar, btnToggle, btnEliminar);
+
+    // Usar content como elemento DOM para poder appendear acciones después
+    const contentDiv = document.createElement('div');
+    contentDiv.innerHTML = contentHtml;
+    contentDiv.appendChild(actionsWrapper);
+
+    const card = createCard({
+      title: `${servicio.nombre} ${activo ? '' : '(Pausado)'}`,
+      variant: activo ? 'success' : 'secondary',
+      compact: true,
+      content: contentDiv
+    });
+
+    return card;
   },
 
   // ──────────────────────────────────────────────────────────
   // ACCIONES
   // ──────────────────────────────────────────────────────────
-  _agregarServicio(card) {
-    if (!draft.nombre?.trim() || !draft.modalidad || !draft.disponibilidad) {
+  _agregarServicio() {
+    if (!this._isDraftValid()) {
       showToast('Campos obligatorios', 'Completá: Nombre, Modalidad y Disponibilidad', 'warning');
       return;
     }
-    if (draft.activo === undefined) draft.activo = true;
-    serviciosAcumulados.push(structuredClone(draft));
-    resetDraft();
-    this._limpiarFormulario(card);
+
+    // Default activo
+    if (this._data.draft.activo === undefined) {
+      this._data.draft.activo = true;
+    }
+
+    // Agregar a lista
+    this._data.serviciosAcumulados.push(structuredClone(this._data.draft));
+    
+    // Limpiar draft y formulario
+    this._data.draft = {};
+    this._limpiarFormulario();
+    
+    // Re-renderizar solo la lista (optimización: no todo el page)
     this._refreshLista();
-    showToast('✅ Servicio agregado', 'Podés crear otro o guardar cuando termines.', 'success');
+    
+    showToast('✅ Servicio agregado', 'Podés crear otro o guardar cuando termines', 'success');
   },
 
-  _editarServicio(idx) {
-    draft = structuredClone(serviciosAcumulados[idx]);
-    this._cargarEnFormulario(serviciosAcumulados[idx]);
-    serviciosAcumulados.splice(idx, 1);
+  _isDraftValid() {
+    return !!(
+      this._data.draft.nombre?.trim() && 
+      this._data.draft.modalidad && 
+      this._data.draft.disponibilidad
+    );
+  },
+
+  _limpiarFormulario() {
+    // Limpiar form-fields
+    if (this._formRefs) {
+      Object.values(this._formRefs).forEach(field => {
+        if (field && field.setValue) field.setValue('');
+      });
+    }
+    
+    // Limpiar checkboxes modalidad
+    if (this._modalidadCheckboxes) {
+      this._modalidadCheckboxes.forEach(cb => cb.checked = false);
+    }
+    
+    // Reset precio
+    if (this._precioRefs) {
+      this._precioRefs.radioConsultar.checked = true;
+      this._precioRefs.radioFijo.checked = false;
+      this._precioRefs.inputPrecio.setValue('');
+      this._precioRefs.inputPrecio.disable();
+    }
+    
+    // Limpiar disponibilidad
+    if (this._disponibilidadCheckboxes) {
+      this._disponibilidadCheckboxes.forEach(cb => cb.checked = false);
+    }
+  },
+
+  _editarServicio(index) {
+    const servicio = this._data.serviciosAcumulados[index];
+    
+    // Cargar en draft
+    this._data.draft = structuredClone(servicio);
+    
+    // Cargar en formulario
+    this._cargarDraftEnFormulario();
+    
+    // Eliminar de lista temporalmente
+    this._data.serviciosAcumulados.splice(index, 1);
     this._refreshLista();
+    
+    // Scroll arriba
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast('Edición', 'Modificá los campos y agregá el servicio nuevamente', 'info');
+    
+    showToast('Modo edición', 'Modificá los campos y agregá el servicio nuevamente', 'info');
   },
 
-  _eliminarServicio(idx) {
-    serviciosAcumulados.splice(idx, 1);
+  _cargarDraftEnFormulario() {
+    const d = this._data.draft;
+    
+    // Campos simples
+    if (this._formRefs.nombre) this._formRefs.nombre.setValue(d.nombre || '');
+    if (this._formRefs.descripcion) this._formRefs.descripcion.setValue(d.descripcion || '');
+    if (this._formRefs.duracion) this._formRefs.duracion.setValue(d.duracion_minutos || '');
+    if (this._formRefs.variantes) this._formRefs.variantes.setValue(d.variantes?.join('\n') || '');
+    if (this._formRefs.notas) this._formRefs.notas.setValue(d.notas || '');
+    
+    // Modalidad
+    if (this._modalidadCheckboxes) {
+      const vals = d.modalidades || [d.modalidad].filter(Boolean);
+      this._modalidadCheckboxes.forEach(cb => {
+        cb.checked = vals.includes(cb.value);
+      });
+    }
+    
+    // Precio
+    if (d.precio?.tipo === 'fijo' && this._precioRefs) {
+      this._precioRefs.radioFijo.checked = true;
+      this._precioRefs.radioConsultar.checked = false;
+      this._precioRefs.inputPrecio.setValue(d.precio.valor);
+      this._precioRefs.inputPrecio.enable();
+    }
+    
+    // Disponibilidad
+    if (this._disponibilidadCheckboxes && d.disponibilidad) {
+      this._disponibilidadCheckboxes.forEach(cb => {
+        cb.checked = cb.value === d.disponibilidad;
+      });
+    }
+  },
+
+  _toggleServicio(index) {
+    this._data.serviciosAcumulados[index].activo = !this._data.serviciosAcumulados[index].activo;
+    this._refreshLista();
+  },
+
+  _eliminarServicio(index) {
+    this._data.serviciosAcumulados.splice(index, 1);
     this._refreshLista();
     showToast('Eliminado', 'Servicio eliminado de la lista', 'info');
   },
 
-  _toggleServicio(idx) {
-    serviciosAcumulados[idx].activo = !serviciosAcumulados[idx].activo;
-    this._refreshLista();
-    const estado = serviciosAcumulados[idx].activo ? 'activado' : 'pausado';
-    showToast('Estado actualizado', `Servicio ${estado}`, 'success');
+  _refreshLista() {
+    // Re-renderizar solo la card de lista
+    const root = document.getElementById('skeleton-page');
+    const oldLista = root.querySelector('#lista-servicios-container').parentElement;
+    
+    const newLista = createCard({
+      title: 'Servicios agregados',
+      variant: 'warning',
+      content: this._renderListaContentReal()
+    });
+    
+    oldLista.replaceWith(newLista);
   },
 
-  _limpiarFormulario(card) {
-    card.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(el => el.value = '');
-    card.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
-    const radioConsultar = card.querySelector('input[name="svc-precio"][value="consultar"]');
-    if (radioConsultar) radioConsultar.checked = true;
-    const precioValor = card.querySelector('#svc-precio-valor');
-    if (precioValor) { precioValor.disabled = true; precioValor.value = ''; }
-  },
+  _renderListaContentReal() {
+    // Versión que retorna el div container, no lo appendea
+    const container = document.createElement('div');
+    container.id = 'lista-servicios-container';
 
-  _cargarEnFormulario(s) {
-    const card = this._formCard;
-    if (!card) return;
-    const q = sel => card.querySelector(sel);
-
-    const nombre = q('#svc-nombre');       if (nombre)    nombre.value    = s.nombre || '';
-    const desc   = q('#svc-descripcion');  if (desc)      desc.value      = s.descripcion || '';
-    const dur    = q('#svc-duracion');     if (dur)       dur.value       = s.duracion_minutos || '';
-    const vars   = q('#svc-variantes');    if (vars)      vars.value      = s.variantes?.join('\n') || '';
-    const notas  = q('#svc-notas');        if (notas)     notas.value     = s.notas || '';
-
-    const vals = s.modalidades || (s.modalidad ? [s.modalidad] : []);
-    card.querySelectorAll('.svc-modalidad').forEach(cb => cb.checked = vals.includes(cb.value));
-
-    card.querySelectorAll('.svc-disponibilidad').forEach(cb => cb.checked = cb.value === s.disponibilidad);
-
-    if (s.precio?.tipo === 'fijo') {
-      const radioFijo = q('input[name="svc-precio"][value="fijo"]');
-      if (radioFijo) radioFijo.checked = true;
-      const precioValor = q('#svc-precio-valor');
-      if (precioValor) { precioValor.disabled = false; precioValor.value = s.precio.valor || ''; }
-    } else {
-      const radioConsultar = q('input[name="svc-precio"][value="consultar"]');
-      if (radioConsultar) radioConsultar.checked = true;
+    if (this._data.serviciosAcumulados.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'lista-vacia';
+      empty.textContent = 'No hay servicios agregados aún';
+      container.appendChild(empty);
+      return container;
     }
+
+    this._data.serviciosAcumulados.forEach((servicio, index) => {
+      const item = this._renderServicioCard(servicio, index);
+      container.appendChild(item);
+    });
+
+    return container;
   },
 
   // ──────────────────────────────────────────────────────────
-  // DIRTY STATE CONTRACT
+  // SAVE BUTTON — onboarding-button con onSave custom
+  // ──────────────────────────────────────────────────────────
+  _renderSaveButton() {
+    return createOnboardingButton({
+      stepName: 'servicios',
+      
+      validate: () => {
+        const valid = this._data.serviciosAcumulados.length > 0;
+        if (!valid) {
+          showToast('Error', 'Agregá al menos un servicio', 'warning');
+        }
+        return valid;
+      },
+      
+      // MODO CUSTOM: batch write de subcolección
+      onSave: async ({ uid, comercioId }) => {
+        if (!comercioId) {
+          throw new Error('No hay comercioId para guardar servicios');
+        }
+        
+        if (this._data.serviciosAcumulados.length === 0) {
+          throw new Error('No hay servicios para guardar');
+        }
+
+        const batch = writeBatch(db);
+        const comercioRef = doc(db, 'comercios', comercioId);
+
+        // 1. Obtener y borrar servicios existentes
+        const serviciosRef = collection(db, 'comercios', comercioId, 'servicios');
+        const existentes = await getDocs(serviciosRef);
+        
+        existentes.docs.forEach(docSnap => {
+          batch.delete(docSnap.ref);
+        });
+
+        // 2. Crear nuevos servicios (sin IDs, Firestore genera nuevos)
+        this._data.serviciosAcumulados.forEach(servicio => {
+          // Limpiar ID temporal si existe
+          const { id, ...servicioData } = servicio;
+          
+          const nuevoRef = doc(collection(db, 'comercios', comercioId, 'servicios'));
+          batch.set(nuevoRef, {
+            ...servicioData,
+            fechaActualizacion: serverTimestamp()
+          });
+        });
+
+        // 3. Marcar paso en comercio (onboarding-button también lo haría, pero redundancia no daña)
+        batch.update(comercioRef, {
+          ['onboardingSteps.servicios']: true,
+          fechaActualizacion: serverTimestamp()
+        });
+
+        // 4. Commit
+        await batch.commit();
+        
+        console.log(`✅ Guardados ${this._data.serviciosAcumulados.length} servicios`);
+        return true; // Éxito
+      },
+      
+      onSuccess: () => {
+        showToast('💾 Servicios guardados', 'Redirigiendo...', 'success');
+      },
+      
+      onError: (err) => {
+        console.error('Error guardando servicios:', err);
+        showToast('Error al guardar', err.message, 'error');
+      }
+    });
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // DIRTY STATE CONTRACT (opcional - para integración con skeleton)
   // ──────────────────────────────────────────────────────────
   getCurrentData() {
-    return { serviciosAcumulados: structuredClone(serviciosAcumulados) };
+    return { 
+      serviciosAcumulados: structuredClone(this._data.serviciosAcumulados),
+      draft: structuredClone(this._data.draft)
+    };
   },
 
   isFormValid() {
-    return serviciosAcumulados.length > 0;
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // SAVE — usa helper de db.js, sin imports directos de Firebase
-  // ──────────────────────────────────────────────────────────
-  async save() {
-    if (!_ctx?.comercioId) return;
-    if (serviciosAcumulados.length === 0) {
-      showToast('Error', 'Agregá al menos un servicio', 'warning');
-      return;
-    }
-
-    await saveServicios(_ctx.comercioId, serviciosAcumulados);
-
-    showToast('💾 Servicios guardados', `Se guardaron ${serviciosAcumulados.length} servicio(s).`, 'success');
-    setTimeout(() => { window.location.href = '/src/pages/dashboard.html'; }, 1500);
+    return this._data.serviciosAcumulados.length > 0;
   }
 };
 
@@ -421,4 +785,3 @@ runSkeleton({
   adapter: createFirebaseAdapter,
   options: { loadingMessage: 'Cargando servicios...' }
 });
-
