@@ -1,27 +1,31 @@
 // src/skeleton/components/onboarding-button/update.js
 
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, writeBatch, getDocs, collection } from "firebase/firestore";
 import { auth, db } from "../../../firebase.js";
 import { resolveTarget } from "../../onboarding/config.js";
 
 export function attachBehavior(button, config) {
   console.group("🟦 [onboarding-button] init");
 
-  const { stepName, getData, validate } = config;
+  const { 
+    stepName, 
+    getData, 
+    validate, 
+    onSave,           // ← NUEVO
+    onSuccess,        // ← NUEVO
+    onError,          // ← NUEVO
+    redirectTo = '/dashboard.html'  // ← NUEVO (configurable)
+  } = config;
 
-  console.log("Config recibida:", { 
+  console.log("Config:", { 
     stepName, 
     hasGetData: !!getData, 
-    hasValidate: !!validate 
+    hasValidate: !!validate,
+    hasOnSave: !!onSave,
+    mode: onSave ? 'CUSTOM' : 'SIMPLE'
   });
 
-  if (!stepName || !getData || !validate) {
-    console.error("❌ Configuración incompleta");
-    console.groupEnd();
-    throw new Error("[onboarding-button] Configuración incompleta");
-  }
-
-  // Función para actualizar el estado del botón
+  // ─── ESTADO DEL BOTÓN ───
   const updateState = () => {
     let valid = false;
     try {
@@ -30,23 +34,20 @@ export function attachBehavior(button, config) {
       console.error("❌ Error en validate()", e);
     }
     button.disabled = !valid;
-    console.log("Estado botón:", valid ? "✅ habilitado" : "⛔ deshabilitado");
+    console.log("Estado:", valid ? "✅ habilitado" : "⛔ deshabilitado");
   };
 
-  // Escuchar cambios en inputs y selects
   document.addEventListener("input", updateState);
-  document.addEventListener("change", updateState);  // ← Para selects
-  
-  // Evaluar estado inicial
+  document.addEventListener("change", updateState);
   updateState();
 
-  // Click handler
+  // ─── CLICK HANDLER ───
   button.addEventListener("click", async () => {
     console.group("🟩 [onboarding-button] click");
 
     const user = auth.currentUser;
     if (!user) {
-      console.error("❌ Usuario no autenticado");
+      console.error("❌ No autenticado");
       window.location.href = "/login.html";
       console.groupEnd();
       return;
@@ -54,53 +55,144 @@ export function attachBehavior(button, config) {
 
     console.log("UID:", user.uid);
 
-    // Deshabilitar botón mientras procesa
+    // UI: loading
     button.disabled = true;
     const originalText = button.innerHTML;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
     try {
-      console.log("📥 Llamando getData()");
-      const data = getData();
-      console.log("Datos obtenidos:", data);
+      let saveSuccess = false;
 
-      const context = {
-        uid: user.uid,
-        comercioId: data?.comercioId
-      };
+      // ═══════════════════════════════════════════════════════
+      // MODO CUSTOM: onSave proporcionado por la página
+      // ═══════════════════════════════════════════════════════
+      if (onSave) {
+        console.log("🔧 Modo CUSTOM: ejecutando onSave()");
+        
+        // Obtener contexto
+        let data = null;
+        if (getData) {
+          data = getData();
+          console.log("Datos extra de getData:", data);
+        }
 
-      console.log("Contexto resolveTarget:", context);
+        // Detectar comercioId de los datos o del contexto
+        const comercioId = data?.comercioId || data?.comercio?.id || null;
 
-      const target = resolveTarget(stepName, context);
-      console.log("Target resuelto:", target);
+        const context = {
+          uid: user.uid,
+          comercioId,
+          data,
+          stepName
+        };
 
-      const ref = doc(db, target.collection, target.documentId);
+        console.log("Contexto onSave:", context);
 
-      console.log("📡 updateDoc →", target.collection, target.documentId);
+        // Ejecutar save custom
+        const result = await onSave(context);
+        saveSuccess = result !== false; // true, void, undefined = éxito
+        
+        if (saveSuccess) {
+          console.log("✅ onSave() exitoso");
+          
+          // Marcar paso como completado (si onSave no lo hizo)
+          // Nota: onSave puede optar por marcarlo manualmente o dejar que lo hagamos aquí
+          // Por defecto, lo marcamos nosotros si onSave no lo hizo
+          if (comercioId && !data?.skipAutoMarkStep) {
+            await markStepCompleted(comercioId, stepName);
+          }
+        }
 
-      await updateDoc(ref, {
-        ...data,
-        [`onboardingSteps.${stepName}`]: true
-      });
+      // ═══════════════════════════════════════════════════════
+      // MODO SIMPLE: updateDoc directo (comportamiento anterior)
+      // ═══════════════════════════════════════════════════════
+      } else {
+        console.log("📦 Modo SIMPLE: updateDoc directo");
+        
+        const data = getData();
+        console.log("Datos:", data);
 
-      console.log("✅ Guardado exitoso");
-      console.log("➡️ Redirect a /dashboard.html");
+        const context = {
+          uid: user.uid,
+          comercioId: data?.comercioId
+        };
 
-      window.location.href = "/dashboard.html";
+        const target = resolveTarget(stepName, context);
+        console.log("Target:", target);
+
+        const ref = doc(db, target.collection, target.documentId);
+
+        await updateDoc(ref, {
+          ...data,
+          [`onboardingSteps.${stepName}`]: true
+        });
+
+        saveSuccess = true;
+        console.log("✅ updateDoc exitoso");
+      }
+
+      // ─── POST-SAVE ───
+      if (saveSuccess) {
+        console.log("🎉 Guardado completado");
+        
+        // Hook onSuccess
+        if (onSuccess) {
+          console.log("🚀 Ejecutando onSuccess()");
+          try {
+            await onSuccess();
+          } catch (e) {
+            console.warn("⚠️ onSuccess error (no crítico):", e);
+          }
+        }
+
+        // Redirect
+        console.log("➡️ Redirect a:", redirectTo);
+        window.location.href = redirectTo;
+      }
 
     } catch (err) {
-      console.error("❌ Error en flujo onboarding-button", err);
+      console.error("❌ Error en guardado:", err);
       
+      // Hook onError
+      if (onError) {
+        try {
+          onError(err);
+        } catch (e) {
+          console.error("❌ onError también falló:", e);
+        }
+      } else {
+        // Default: alert simple
+        alert("No se pudo guardar. Revisá los datos.");
+      }
+
       // Restaurar botón
       button.innerHTML = originalText;
       button.disabled = false;
-      
-      alert("No se pudo guardar. Revisá los datos.");
     }
 
     console.groupEnd();
   });
 
-  console.log("✅ Comportamiento del botón configurado");
+  console.log("✅ Comportamiento configurado");
   console.groupEnd();
 }
+
+// ─── HELPER: Marcar paso completado ───
+async function markStepCompleted(comercioId, stepName) {
+  if (!comercioId || !stepName) return;
+  
+  try {
+    const ref = doc(db, 'comercios', comercioId);
+    await updateDoc(ref, {
+      [`onboardingSteps.${stepName}`]: true,
+      fechaActualizacion: serverTimestamp()
+    });
+    console.log(`✅ Paso ${stepName} marcado en comercio`);
+  } catch (err) {
+    console.error(`❌ Error marcando paso ${stepName}:`, err);
+    // No crítico, no throw
+  }
+}
+
+
+  
