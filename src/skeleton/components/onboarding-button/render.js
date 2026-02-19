@@ -1,5 +1,4 @@
 // src/skeleton/components/onboarding-button/render.js
-import './styles.css';
 
 export function renderButton() {
   const button = document.createElement("button");
