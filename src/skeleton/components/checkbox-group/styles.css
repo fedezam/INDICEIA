@@ -1,0 +1,65 @@
+/* src/skeleton/components/checkbox-group/styles.css */
+
+.sk-checkbox-group {
+  border: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+}
+
+.sk-checkbox-group__legend {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #343a40;
+}
+
+.sk-checkbox-group.is-required .sk-checkbox-group__legend::after {
+  content: " *";
+  color: #dc3545;
+}
+
+.sk-checkbox-group__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sk-checkbox-group.is-horizontal .sk-checkbox-group__options {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.sk-checkbox-group__option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sk-checkbox-group__input {
+  width: 16px;
+  height: 16px;
+  accent-color: #007bff; /* AdminLTE primary */
+  cursor: pointer;
+}
+
+.sk-checkbox-group__label {
+  cursor: pointer;
+  color: #495057;
+}
+
+.sk-checkbox-group__error {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #dc3545;
+  min-height: 1em;
+}
+
+.sk-checkbox-group.is-invalid .sk-checkbox-group__legend {
+  color: #dc3545;
+}
+
+.sk-checkbox-group.is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
