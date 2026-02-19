@@ -1,14 +1,13 @@
 // src/pages/servicios.js
 
-
 import './servicios.css';
 
-import { runLifecycle } from '@/skeleton/core/lifecycle';
-import { createFormField } from '@/skeleton/components/form-field';
-import { createCheckboxGroup } from '@/skeleton/components/checkbox-group';
-import { createCard } from '@/skeleton/components/card';
-import { createButton } from '@/skeleton/components/button';
-import { createOnboardingButton } from '@/skeleton/components/onboarding-button';
+import { runLifecycle } from '../skeleton/lifecycle.js';
+import { createFormField } from '../skeleton/components/form-field/index.js';
+import { createCheckboxGroup } from '../skeleton/components/checkbox-group/index.js';
+import { createCard } from '../skeleton/components/card/index.js';
+import { createButton } from '../skeleton/components/button/index.js';
+import { createOnboardingButton } from '../skeleton/components/onboarding-button/index.js';
 
 export default runLifecycle({
   mount(container) {
@@ -16,18 +15,14 @@ export default runLifecycle({
     const page = document.createElement('div');
     page.className = 'servicios-page';
 
-    /*
-    |--------------------------------------------------------------------------
-    | FORMULARIO
-    |--------------------------------------------------------------------------
-    */
+    /* =========================
+       FORMULARIO
+    ========================== */
 
-    const formCard = createCard({
-      title: 'Nuevo Servicio'
-    });
+    const formCard = createCard({ title: 'Nuevo Servicio' });
 
-    const formContainer = document.createElement('div');
-    formContainer.className = 'servicios-form';
+    const formWrapper = document.createElement('div');
+    formWrapper.className = 'servicios-form';
 
     const nombreField = createFormField({
       label: 'Nombre del servicio',
@@ -68,40 +63,37 @@ export default runLifecycle({
       ]
     });
 
-    const actionsRow = document.createElement('div');
-    actionsRow.className = 'servicios-form__actions';
+    const actions = document.createElement('div');
+    actions.className = 'servicios-form__actions';
 
     const addButton = createButton({
       label: 'Agregar servicio',
       variant: 'primary'
     });
 
-    actionsRow.appendChild(addButton);
+    actions.appendChild(addButton);
 
-    formContainer.append(
+    formWrapper.append(
       nombreField,
       precioField,
       duracionField,
       descripcionField,
       modalidadesField,
-      actionsRow
+      actions
     );
 
-    formCard.appendChild(formContainer);
+    formCard.appendChild(formWrapper);
 
-    /*
-    |--------------------------------------------------------------------------
-    | LISTA DE SERVICIOS
-    |--------------------------------------------------------------------------
-    */
+    /* =========================
+       LISTA
+    ========================== */
 
     const listContainer = document.createElement('div');
     listContainer.className = 'servicios-list';
 
     const renderServicio = (data) => {
-      const card = createCard({
-        title: data.nombre
-      });
+
+      const card = createCard({ title: data.nombre });
 
       const body = document.createElement('div');
       body.className = 'servicio-item';
@@ -133,32 +125,28 @@ export default runLifecycle({
       });
 
       footer.append(editBtn, deleteBtn);
-
       card.append(body, footer);
 
       return card;
     };
 
-    /*
-    |--------------------------------------------------------------------------
-    | EVENTO AGREGAR
-    |--------------------------------------------------------------------------
-    */
+    /* =========================
+       EVENTO AGREGAR
+    ========================== */
 
     addButton.addEventListener('click', () => {
 
-      const isNombreValid = !!nombreField.getValue();
-      const isPrecioValid = !!precioField.getValue();
-      const isDuracionValid = !!duracionField.getValue();
-      const isModalidadesValid = modalidadesField.validate();
+      const valid =
+        nombreField.getValue() &&
+        precioField.getValue() &&
+        duracionField.getValue() &&
+        modalidadesField.validate();
 
-      nombreField.setInvalid(!isNombreValid);
-      precioField.setInvalid(!isPrecioValid);
-      duracionField.setInvalid(!isDuracionValid);
+      nombreField.setInvalid(!nombreField.getValue());
+      precioField.setInvalid(!precioField.getValue());
+      duracionField.setInvalid(!duracionField.getValue());
 
-      if (!isNombreValid || !isPrecioValid || !isDuracionValid || !isModalidadesValid) {
-        return;
-      }
+      if (!valid) return;
 
       const data = {
         nombre: nombreField.getValue(),
@@ -168,8 +156,7 @@ export default runLifecycle({
         modalidades: modalidadesField.getValue()
       };
 
-      const servicioCard = renderServicio(data);
-      listContainer.appendChild(servicioCard);
+      listContainer.appendChild(renderServicio(data));
 
       nombreField.setValue('');
       precioField.setValue('');
@@ -178,28 +165,16 @@ export default runLifecycle({
       modalidadesField.setValue([]);
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | BOTÓN GLOBAL (ONBOARDING)
-    |--------------------------------------------------------------------------
-    */
+    /* =========================
+       ONBOARDING BUTTON
+    ========================== */
 
     const onboardingButton = createOnboardingButton({
       label: 'Guardar y continuar'
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | ENSAMBLADO FINAL
-    |--------------------------------------------------------------------------
-    */
-
-    page.append(
-      formCard,
-      listContainer,
-      onboardingButton
-    );
-
+    page.append(formCard, listContainer, onboardingButton);
     container.appendChild(page);
   }
 });
+
