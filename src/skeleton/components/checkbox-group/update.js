@@ -1,67 +1,105 @@
-// src/skeleton/components/checkbox-group/update.js
+/* src/skeleton/components/checkbox-group/styles.css */
 
-let idCounter = 0;
+.sk-checkbox-group {
+  border: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+}
 
-export function updateCheckboxGroup(dom, config = {}) {
-  const {
-    label = '',
-    name = '',
-    options = [],
-    value = [],
-    required = false,
-    disabled = false,
-    orientation = 'vertical' // vertical | horizontal
-  } = config;
+.sk-checkbox-group__legend {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--s-dark, #343a40);
+}
 
-  const fieldId = `sk-checkbox-group-${++idCounter}`;
-  dom.wrapper.dataset.fieldId = fieldId;
+.sk-checkbox-group.is-required .sk-checkbox-group__legend::after {
+  content: " *";
+  color: var(--s-danger, #dc3545);
+}
 
-  dom.legend.textContent = label;
-  dom.wrapper.classList.toggle('is-required', required);
-  dom.wrapper.classList.toggle('is-horizontal', orientation === 'horizontal');
+/* ── Opciones ─────────────────────────────────────────────── */
+.sk-checkbox-group__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 
-  dom.optionsContainer.innerHTML = '';
+.sk-checkbox-group.is-horizontal .sk-checkbox-group__options {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
 
-  options.forEach((opt, index) => {
-    const optionId = `${fieldId}-${index}`;
+.sk-checkbox-group__option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: var(--s-spacing-sm, 12px) var(--s-spacing, 16px);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  transition: border-color 0.2s, background 0.2s;
+}
 
-    const optionWrapper = document.createElement('div');
-    optionWrapper.className = 'sk-checkbox-group__option';
+.sk-checkbox-group__option:hover {
+  background: var(--s-light, #f8f9fa);
+  border-color: var(--s-primary, #3c8dbc);
+}
 
-    const input = document.createElement('input');
-    input.type      = 'checkbox';
-    input.name      = name;
-    input.value     = opt.value;
-    input.id        = optionId;
-    input.checked   = value.includes(opt.value);
-    input.disabled  = disabled;
-    input.className = 'sk-checkbox-group__input';
+.sk-checkbox-group__option:has(input:checked) {
+  border-color: var(--s-primary, #3c8dbc);
+  background: rgba(60, 141, 188, 0.04);
+}
 
-    const labelEl = document.createElement('label');
-    labelEl.className = 'sk-checkbox-group__label';
-    labelEl.setAttribute('for', optionId);
+/* ── Input ────────────────────────────────────────────────── */
+.sk-checkbox-group__input {
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  accent-color: var(--s-primary, #3c8dbc);
+  cursor: pointer;
+  flex-shrink: 0;
+}
 
-    // Si tiene description → renderiza título + descripción
-    // Si no              → label simple (comportamiento original)
-    if (opt.description) {
-      const title = document.createElement('strong');
-      title.className   = 'sk-checkbox-group__label-title';
-      title.textContent = opt.label;
+/* ── Label ────────────────────────────────────────────────── */
+.sk-checkbox-group__label {
+  cursor: pointer;
+  color: var(--s-dark, #495057);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
 
-      const desc = document.createElement('span');
-      desc.className   = 'sk-checkbox-group__label-desc';
-      desc.textContent = opt.description;
+/* Con description: título en negrita + descripción secundaria */
+.sk-checkbox-group__label-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  display: block;
+}
 
-      labelEl.appendChild(title);
-      labelEl.appendChild(desc);
-    } else {
-      labelEl.textContent = opt.label;
-    }
+.sk-checkbox-group__label-desc {
+  font-size: 0.8rem;
+  color: var(--s-secondary, #6c757d);
+  line-height: 1.4;
+  display: block;
+}
 
-    optionWrapper.appendChild(input);
-    optionWrapper.appendChild(labelEl);
-    dom.optionsContainer.appendChild(optionWrapper);
-  });
+/* ── Error ────────────────────────────────────────────────── */
+.sk-checkbox-group__error {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--s-danger, #dc3545);
+  min-height: 1em;
+}
 
-  return dom.wrapper;
+.sk-checkbox-group.is-invalid .sk-checkbox-group__legend {
+  color: var(--s-danger, #dc3545);
+}
+
+/* ── Disabled ─────────────────────────────────────────────── */
+.sk-checkbox-group.is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
 }
