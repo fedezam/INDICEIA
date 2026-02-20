@@ -3,44 +3,30 @@
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../../firebase.js";
 import { resolveTarget } from "../../onboarding/config.js";
-import { 
+import {
   getCurrentUserId,
   getCurrentComercioId,
-  isEditMode,
-  requireComercioId
+  isEditMode
 } from "../../runtime.js";
 
 /**
- * Adjunta comportamiento al botón de onboarding
- * 
- * Contexto (del runtime):
- * - uid, comercioId, isEditMode: automáticos vía runtime
- * - data: opcional vía getData()
+ * Adjunta comportamiento al botón de onboarding.
+ * Validación de config ya fue hecha en index.js — no se repite acá.
  */
 export function attachBehavior(button, config) {
-  const { 
-    stepName, 
-    getData, 
-    validate, 
-    onSave, 
-    onSuccess, 
-    onError, 
-    redirectTo = '/dashboard.html' 
+  const {
+    stepName,
+    getData,
+    validate,
+    onSave,
+    onSuccess,
+    onError,
+    redirectTo = '/dashboard.html'
   } = config;
 
-  // Validación de config
-  if (!stepName || !validate) {
-    throw new Error("[onboarding-button] stepName y validate son obligatorios");
-  }
-
-  const hasSimpleMode = !!getData;
   const hasCustomMode = !!onSave;
 
-  if (!hasSimpleMode && !hasCustomMode) {
-    throw new Error("[onboarding-button] Requiere getData (modo simple) o onSave (modo custom)");
-  }
-
-  // Estado del botón
+  // ─── Estado del botón ───────────────────────────────────────
   const updateState = () => {
     let valid = false;
     try {
@@ -49,17 +35,26 @@ export function attachBehavior(button, config) {
       console.error("[onboarding-button] Error en validate():", e);
     }
     button.disabled = !valid;
-    console.log("[onboarding-button] Estado:", valid ? "✅ habilitado" : "⛔ deshabilitado");
   };
 
-  // Escuchar cambios en el DOM
+  // FIX #1: Los listeners se auto-limpian cuando el botón sale del DOM.
+  // El original acumulaba 2 listeners nuevos por cada render() de la página.
   document.addEventListener("input", updateState);
   document.addEventListener("change", updateState);
-  
-  // Evaluar estado inicial (con delay para que el DOM se estabilice)
+
+  const observer = new MutationObserver(() => {
+    if (!document.contains(button)) {
+      document.removeEventListener("input", updateState);
+      document.removeEventListener("change", updateState);
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Estado inicial
   setTimeout(updateState, 0);
 
-  // Click handler
+  // ─── Click handler ──────────────────────────────────────────
   button.addEventListener("click", async () => {
     console.group("🟩 [onboarding-button] click");
 
@@ -71,61 +66,54 @@ export function attachBehavior(button, config) {
       return;
     }
 
-    // UI: loading
     button.disabled = true;
     const originalText = button.innerHTML;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
     try {
-      // ✅ CONTEXTO DEL RUNTIME (ADR-001)
-      // No depende de getData, siempre disponible
       const runtimeContext = {
         uid: getCurrentUserId(),
         comercioId: getCurrentComercioId(),
         isEditMode: isEditMode()
       };
 
-      console.log("[onboarding-button] Runtime context:", runtimeContext);
-
       let saveSuccess = false;
+      // FIX #2: el flag indica si onSave ya marcó el paso,
+      // para no hacer un segundo write a Firestore.
+      let stepAlreadyMarked = false;
 
-      // ═══════════════════════════════════════════════════════
-      // MODO CUSTOM: onSave proporcionado por la página
-      // ═══════════════════════════════════════════════════════
-      if (onSave) {
+      // ═══ MODO CUSTOM ════════════════════════════════════════
+      if (hasCustomMode) {
         console.log("[onboarding-button] Modo CUSTOM");
 
-        // Datos extra opcionales de la página
         const data = getData ? getData() : null;
+        const context = { ...runtimeContext, data, stepName };
 
-        const context = {
-          ...runtimeContext,  // ← siempre presente
-          data,               // ← opcional
-          stepName
-        };
-
-        console.log("[onboarding-button] Contexto completo:", context);
-
-        // Ejecutar save custom
         const result = await onSave(context);
-        saveSuccess = result !== false;
 
-        // Marcar paso si onSave no lo hizo
-        if (saveSuccess && runtimeContext.comercioId) {
+        // onSave puede retornar:
+        //   true / void          → éxito, marcar paso acá
+        //   { success, stepMarked } → éxito, stepMarked indica si ya lo marcó
+        //   false                → falló sin throw
+        if (result === false) {
+          saveSuccess = false;
+        } else if (result && typeof result === 'object') {
+          saveSuccess = result.success !== false;
+          stepAlreadyMarked = result.stepMarked === true;
+        } else {
+          saveSuccess = true;
+        }
+
+        if (saveSuccess && runtimeContext.comercioId && !stepAlreadyMarked) {
           await markStepCompleted(runtimeContext.comercioId, stepName);
         }
 
-      // ═══════════════════════════════════════════════════════
-      // MODO SIMPLE: updateDoc directo
-      // ═══════════════════════════════════════════════════════
+      // ═══ MODO SIMPLE ════════════════════════════════════════
       } else {
         console.log("[onboarding-button] Modo SIMPLE");
 
         const data = getData();
         const target = resolveTarget(stepName, runtimeContext);
-
-        console.log("[onboarding-button] Target:", target);
-
         const ref = doc(db, target.collection, target.documentId);
 
         await updateDoc(ref, {
@@ -135,21 +123,15 @@ export function attachBehavior(button, config) {
         });
 
         saveSuccess = true;
-        console.log("[onboarding-button] updateDoc exitoso");
       }
 
-      // ─── POST-SAVE ───
+      // ─── Post-save ─────────────────────────────────────────
       if (saveSuccess) {
-        console.log("[onboarding-button] ✅ Guardado completado");
-
         if (onSuccess) {
-          try {
-            await onSuccess();
-          } catch (e) {
+          try { await onSuccess(); } catch (e) {
             console.warn("[onboarding-button] onSuccess error (no crítico):", e);
           }
         }
-
         console.log("[onboarding-button] ➡️ Redirect a:", redirectTo);
         window.location.href = redirectTo;
       }
@@ -158,16 +140,13 @@ export function attachBehavior(button, config) {
       console.error("[onboarding-button] ❌ Error:", err);
 
       if (onError) {
-        try {
-          onError(err);
-        } catch (e) {
+        try { onError(err); } catch (e) {
           console.error("[onboarding-button] onError también falló:", e);
         }
       } else {
         alert("No se pudo guardar. Revisá los datos.");
       }
 
-      // Restaurar botón
       button.innerHTML = originalText;
       button.disabled = false;
     }
@@ -177,11 +156,11 @@ export function attachBehavior(button, config) {
 }
 
 /**
- * Marca paso de onboarding como completado
+ * Marca paso de onboarding como completado.
+ * Solo se llama si onSave no lo hizo (stepAlreadyMarked === false).
  */
 async function markStepCompleted(comercioId, stepName) {
   if (!comercioId || !stepName) return;
-
   try {
     const ref = doc(db, 'comercios', comercioId);
     await updateDoc(ref, {
@@ -194,5 +173,3 @@ async function markStepCompleted(comercioId, stepName) {
     // No crítico, no throw
   }
 }
-
-  
