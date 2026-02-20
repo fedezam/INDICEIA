@@ -29,22 +29,37 @@ export function updateCheckboxGroup(dom, config = {}) {
     optionWrapper.className = 'sk-checkbox-group__option';
 
     const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.name = name;
-    input.value = opt.value;
-    input.id = optionId;
-    input.checked = value.includes(opt.value);
-    input.disabled = disabled;
+    input.type      = 'checkbox';
+    input.name      = name;
+    input.value     = opt.value;
+    input.id        = optionId;
+    input.checked   = value.includes(opt.value);
+    input.disabled  = disabled;
     input.className = 'sk-checkbox-group__input';
 
     const labelEl = document.createElement('label');
     labelEl.className = 'sk-checkbox-group__label';
     labelEl.setAttribute('for', optionId);
-    labelEl.textContent = opt.label;
+
+    // Si tiene description → renderiza título + descripción
+    // Si no              → label simple (comportamiento original)
+    if (opt.description) {
+      const title = document.createElement('strong');
+      title.className   = 'sk-checkbox-group__label-title';
+      title.textContent = opt.label;
+
+      const desc = document.createElement('span');
+      desc.className   = 'sk-checkbox-group__label-desc';
+      desc.textContent = opt.description;
+
+      labelEl.appendChild(title);
+      labelEl.appendChild(desc);
+    } else {
+      labelEl.textContent = opt.label;
+    }
 
     optionWrapper.appendChild(input);
     optionWrapper.appendChild(labelEl);
-
     dom.optionsContainer.appendChild(optionWrapper);
   });
 
