@@ -118,7 +118,7 @@ const page = {
         }
         <div class="visual-thumbnail-overlay">
           <i class="fas fa-mouse-pointer"></i>
-          Seleccionar
+          ${isActive ? 'Deseleccionar' : 'Seleccionar'}
         </div>
       </div>
 
@@ -133,6 +133,17 @@ const page = {
           </div>
         ` : ''}
       </div>
+
+      ${template.visual?.iframe_url ? `
+        <div class="visual-preview">
+          <iframe
+            src="${template.visual.iframe_url}"
+            loading="lazy"
+            title="Preview de ${template.name}"
+            scrolling="no"
+          ></iframe>
+        </div>
+      ` : ''}
     `;
 
     card.addEventListener('click', () => this._selectTemplate(template.id));
@@ -140,13 +151,15 @@ const page = {
   },
 
   _selectTemplate(templateId) {
-    this._data.selectedTemplateId = templateId;
+    // FIX: si clickeás el que ya está activo, se deselecciona
+    const isSame = this._data.selectedTemplateId === templateId;
+    this._data.selectedTemplateId = isSame ? null : templateId;
 
-    // Actualizar UI sin re-render completo
     document.querySelectorAll('.visual-card').forEach(card => {
-      const isSelected = card.dataset.id === templateId;
+      const isSelected = card.dataset.id === templateId && !isSame;
       card.classList.toggle('active', isSelected);
 
+      // Badge
       const badge = card.querySelector('.visual-badge');
       if (isSelected && !badge) {
         const b = document.createElement('div');
@@ -156,10 +169,18 @@ const page = {
       } else if (!isSelected && badge) {
         badge.remove();
       }
+
+      // Texto del overlay
+      const overlay = card.querySelector('.visual-thumbnail-overlay');
+      if (overlay) {
+        overlay.innerHTML = `<i class="fas fa-mouse-pointer"></i> ${isSelected ? 'Deseleccionar' : 'Seleccionar'}`;
+      }
     });
 
-    const t = this._data.templates.find(t => t.id === templateId);
-    if (t) showToast('Template seleccionado', `${t.name} listo para aplicar`, 'success');
+    if (!isSame) {
+      const t = this._data.templates.find(t => t.id === templateId);
+      if (t) showToast('Template seleccionado', `${t.name} listo para aplicar`, 'success');
+    }
   },
 
   // ──────────────────────────────────────────────────────────
