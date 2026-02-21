@@ -8,6 +8,7 @@ import {
   getCurrentComercioId,
   isEditMode
 } from "../../runtime.js";
+import { cleanPayload } from "../../utils/cleanPayload.js";
 
 /**
  * Adjunta comportamiento al botón de onboarding.
@@ -38,7 +39,6 @@ export function attachBehavior(button, config) {
   };
 
   // FIX #1: Los listeners se auto-limpian cuando el botón sale del DOM.
-  // El original acumulaba 2 listeners nuevos por cada render() de la página.
   document.addEventListener("input", updateState);
   document.addEventListener("change", updateState);
 
@@ -72,33 +72,31 @@ export function attachBehavior(button, config) {
 
     try {
       const runtimeContext = {
-        uid: getCurrentUserId(),
+        uid:        getCurrentUserId(),
         comercioId: getCurrentComercioId(),
         isEditMode: isEditMode()
       };
 
-      let saveSuccess = false;
-      // FIX #2: el flag indica si onSave ya marcó el paso,
-      // para no hacer un segundo write a Firestore.
+      let saveSuccess      = false;
       let stepAlreadyMarked = false;
 
       // ═══ MODO CUSTOM ════════════════════════════════════════
       if (hasCustomMode) {
         console.log("[onboarding-button] Modo CUSTOM");
 
-        const data = getData ? getData() : null;
+        const data    = getData ? getData() : null;
         const context = { ...runtimeContext, data, stepName };
 
         const result = await onSave(context);
 
         // onSave puede retornar:
-        //   true / void          → éxito, marcar paso acá
+        //   true / void             → éxito, marcar paso acá
         //   { success, stepMarked } → éxito, stepMarked indica si ya lo marcó
-        //   false                → falló sin throw
+        //   false                   → falló sin throw
         if (result === false) {
           saveSuccess = false;
         } else if (result && typeof result === 'object') {
-          saveSuccess = result.success !== false;
+          saveSuccess       = result.success !== false;
           stepAlreadyMarked = result.stepMarked === true;
         } else {
           saveSuccess = true;
@@ -112,12 +110,17 @@ export function attachBehavior(button, config) {
       } else {
         console.log("[onboarding-button] Modo SIMPLE");
 
-        const data = getData();
-        const target = resolveTarget(stepName, runtimeContext);
-        const ref = doc(db, target.collection, target.documentId);
+        const rawData = getData();
+        const target  = resolveTarget(stepName, runtimeContext);
+        const ref     = doc(db, target.collection, target.documentId);
+
+        // cleanPayload elimina ruido técnico ('', null, undefined, [], {})
+        // antes de persistir. La página es responsable de no incluir
+        // campos cuyo dominio no existe.
+        const cleanData = cleanPayload(rawData) || {};
 
         await updateDoc(ref, {
-          ...data,
+          ...cleanData,
           [`onboardingSteps.${stepName}`]: true,
           fechaActualizacion: serverTimestamp()
         });
@@ -148,7 +151,7 @@ export function attachBehavior(button, config) {
       }
 
       button.innerHTML = originalText;
-      button.disabled = false;
+      button.disabled  = false;
     }
 
     console.groupEnd();
