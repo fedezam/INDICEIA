@@ -119,7 +119,7 @@ export function attachBehavior(button, config) {
         console.log('[onboarding-button] Modo CUSTOM');
 
         const data = typeof getData === 'function' ? getData() : null;
-        const context = { uid: user.uid, comercioId, isEditMode, data, stepName };
+        const context = { uid: user.uid, comercioId, isEditMode, data, stepName, persistence };
 
         const result = await onSave(context);
 
