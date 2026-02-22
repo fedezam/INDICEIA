@@ -7,8 +7,6 @@ import { createFirebaseAdapter }  from '/src/skeleton/adapters/firebaseAdapter.j
 import { createCard }             from '/src/skeleton/components/card/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
-import { db }                     from '/src/services/firebase/firebase.js';
-import { doc, updateDoc }         from 'firebase/firestore';
 import './visual.css';
 
 // ============================================================
@@ -17,11 +15,13 @@ import './visual.css';
 const page = {
   _data: {
     templates: [],
-    selectedTemplateId: null
+    selectedTemplateId: null,
+    originalTemplateId: null   // snapshot al momento de load
   },
 
   async load(ctx) {
     this._data.selectedTemplateId = ctx.comercioData?.templateId || null;
+    this._data.originalTemplateId = this._data.selectedTemplateId; // snapshot
 
     try {
       const res = await fetch('/templates/registry.visual.json?t=' + Date.now());
@@ -155,21 +155,32 @@ const page = {
   },
 
   _renderSaveButton() {
+    const self = this;
+
     return createOnboardingButton({
       stepName: 'visual',
 
-      // Siempre activo — seleccionar template es opcional
+      // Siempre habilitado — no seleccionar template es una decisión válida
       validate: () => true,
 
-      onSave: async ({ comercioId }) => {
-        if (!comercioId) throw new Error('No hay comercioId');
+      onSave: async ({ persistence }) => {
+        const current  = self._data.selectedTemplateId;
+        const original = self._data.originalTemplateId;
 
-        // Solo guarda si el usuario seleccionó un template
-        if (this._data.selectedTemplateId) {
-          await updateDoc(doc(db, 'comercios', comercioId), {
-            templateId: this._data.selectedTemplateId,
+        // Sin cambios → redirect directo sin escribir nada
+        if (current === original) {
+          return { success: true, stepMarked: false };
+        }
+
+        if (current) {
+          // update — eligió un template
+          await persistence.updateData({
+            templateId: current,
             templateUpdatedAt: new Date().toISOString()
           });
+        } else {
+          // delete — tenía uno y lo quitó
+          await persistence.deleteFields(['templateId', 'templateUpdatedAt']);
         }
 
         return { success: true, stepMarked: false };
