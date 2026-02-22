@@ -8,7 +8,7 @@ import { resolveFirebaseContext } from '../../services/firebase/context.js';
 import {
   updateComercioData,
   markOnboardingStep
-} from '../../services/firebase/firebaseDB.js';
+} from '../../services/firebase/db.js';
 
 /**
  * NORMALIZA comercioData
