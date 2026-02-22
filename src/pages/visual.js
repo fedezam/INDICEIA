@@ -190,7 +190,7 @@ const page = {
     return createOnboardingButton({
       stepName: 'visual',
 
-      validate: () => {
+      // El botón siempre está activo — elegir template es opcional
         const valid = !!this._data.selectedTemplateId;
         if (!valid) showToast('Error', 'Seleccioná un template primero', 'warning');
         return valid;
