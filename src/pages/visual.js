@@ -21,7 +21,7 @@ const page = {
 
   async load(ctx) {
     this._data.selectedTemplateId = ctx.comercioData?.templateId || null;
-    this._data.originalTemplateId = this._data.selectedTemplateId; // snapshot
+    this._data.originalTemplateId = this._data.selectedTemplateId;
 
     try {
       const res = await fetch('/templates/registry.visual.json?t=' + Date.now());
@@ -157,17 +157,32 @@ const page = {
   _renderSaveButton() {
     const self = this;
 
+    // dirtyController manual — el estado cambia por click, no por inputs DOM
+    const dirtyController = {
+      hasUnsavedChanges: () =>
+        self._data.selectedTemplateId !== self._data.originalTemplateId,
+      markSaved: () => {
+        self._data.originalTemplateId = self._data.selectedTemplateId;
+      }
+    };
+
     return createOnboardingButton({
       stepName: 'visual',
 
-      // Siempre habilitado — no seleccionar template es una decisión válida
       validate: () => true,
+
+      dirtyController,
+
+      getLabel: () =>
+        dirtyController.hasUnsavedChanges()
+          ? 'Guardar cambios'
+          : 'Volver al dashboard',
 
       onSave: async ({ persistence }) => {
         const current  = self._data.selectedTemplateId;
         const original = self._data.originalTemplateId;
 
-        // Sin cambios → redirect directo sin escribir nada
+        // Sin cambios → redirect directo, sin escribir nada
         if (current === original) {
           return { success: true, stepMarked: false };
         }
