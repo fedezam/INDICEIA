@@ -20,9 +20,6 @@ const page = {
     selectedTemplateId: null
   },
 
-  // ──────────────────────────────────────────────────────────
-  // LOAD
-  // ──────────────────────────────────────────────────────────
   async load(ctx) {
     this._data.selectedTemplateId = ctx.comercioData?.templateId || null;
 
@@ -38,14 +35,10 @@ const page = {
     }
   },
 
-  // ──────────────────────────────────────────────────────────
-  // RENDER
-  // ──────────────────────────────────────────────────────────
   render() {
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
 
-    // Header
     const header = document.createElement('div');
     header.className = 'page-header';
     header.innerHTML = `
@@ -54,7 +47,6 @@ const page = {
     `;
     root.appendChild(header);
 
-    // Info card — componente card del skeleton, variante info
     root.appendChild(createCard({
       icon: 'fa-info-circle',
       variant: 'info',
@@ -63,16 +55,10 @@ const page = {
       flat: true
     }));
 
-    // Templates
     root.appendChild(this._renderTemplatesCard());
-
-    // Botón guardar
     root.appendChild(this._renderSaveButton());
   },
 
-  // ──────────────────────────────────────────────────────────
-  // TEMPLATES CARD
-  // ──────────────────────────────────────────────────────────
   _renderTemplatesCard() {
     const container = document.createElement('div');
 
@@ -86,19 +72,13 @@ const page = {
     } else {
       const grid = document.createElement('div');
       grid.className = 'visual-grid';
-
       this._data.templates.forEach(template => {
         grid.appendChild(this._renderTemplateCard(template));
       });
-
       container.appendChild(grid);
     }
 
-    return createCard({
-      title: 'Templates disponibles',
-      icon: 'fa-swatchbook',
-      content: container
-    });
+    return createCard({ title: 'Templates disponibles', icon: 'fa-swatchbook', content: container });
   },
 
   _renderTemplateCard(template) {
@@ -126,7 +106,6 @@ const page = {
         <h3>${template.name || 'Sin nombre'}</h3>
         <span class="visual-version">v${template.version || '1.0'} · ${template.tier || 'free'}</span>
         <p class="visual-description">${template.description || 'Sin descripción.'}</p>
-
         ${template.ideal_for?.length ? `
           <div class="visual-tags">
             ${template.ideal_for.map(t => `<span class="visual-tag">${t}</span>`).join('')}
@@ -136,12 +115,7 @@ const page = {
 
       ${template.visual?.iframe_url ? `
         <div class="visual-preview">
-          <iframe
-            src="${template.visual.iframe_url}"
-            loading="lazy"
-            title="Preview de ${template.name}"
-            scrolling="no"
-          ></iframe>
+          <iframe src="${template.visual.iframe_url}" loading="lazy" title="Preview de ${template.name}" scrolling="no"></iframe>
         </div>
       ` : ''}
     `;
@@ -151,7 +125,6 @@ const page = {
   },
 
   _selectTemplate(templateId) {
-    // FIX: si clickeás el que ya está activo, se deselecciona
     const isSame = this._data.selectedTemplateId === templateId;
     this._data.selectedTemplateId = isSame ? null : templateId;
 
@@ -159,7 +132,6 @@ const page = {
       const isSelected = card.dataset.id === templateId && !isSame;
       card.classList.toggle('active', isSelected);
 
-      // Badge
       const badge = card.querySelector('.visual-badge');
       if (isSelected && !badge) {
         const b = document.createElement('div');
@@ -170,7 +142,6 @@ const page = {
         badge.remove();
       }
 
-      // Texto del overlay
       const overlay = card.querySelector('.visual-thumbnail-overlay');
       if (overlay) {
         overlay.innerHTML = `<i class="fas fa-mouse-pointer"></i> ${isSelected ? 'Deseleccionar' : 'Seleccionar'}`;
@@ -183,26 +154,23 @@ const page = {
     }
   },
 
-  // ──────────────────────────────────────────────────────────
-  // SAVE BUTTON
-  // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
     return createOnboardingButton({
       stepName: 'visual',
 
-      // El botón siempre está activo — elegir template es opcional
-        const valid = !!this._data.selectedTemplateId;
-        if (!valid) showToast('Error', 'Seleccioná un template primero', 'warning');
-        return valid;
-      },
+      // Siempre activo — seleccionar template es opcional
+      validate: () => true,
 
       onSave: async ({ comercioId }) => {
         if (!comercioId) throw new Error('No hay comercioId');
 
-        await updateDoc(doc(db, 'comercios', comercioId), {
-          templateId: this._data.selectedTemplateId,
-          templateUpdatedAt: new Date().toISOString()
-        });
+        // Solo guarda si el usuario seleccionó un template
+        if (this._data.selectedTemplateId) {
+          await updateDoc(doc(db, 'comercios', comercioId), {
+            templateId: this._data.selectedTemplateId,
+            templateUpdatedAt: new Date().toISOString()
+          });
+        }
 
         return { success: true, stepMarked: false };
       },
