@@ -5,6 +5,11 @@
 
 import { resolveFirebaseContext } from '../../services/firebase/context.js';
 
+import {
+  updateComercioData,
+  markOnboardingStep
+} from '../../services/firebase/firebaseDB.js';
+
 /**
  * NORMALIZA comercioData
  * 👉 garantiza contratos estables para TODAS las páginas
@@ -12,7 +17,6 @@ import { resolveFirebaseContext } from '../../services/firebase/context.js';
 function normalizeComercioData(raw = {}) {
   const data = { ...raw };
 
-  // 🔑 NORMALIZACIÓN DE PLAN (CRÍTICA)
   if (!data.plan) {
     data.plan = 'trial';
   } else if (typeof data.plan === 'object') {
@@ -25,8 +29,10 @@ function normalizeComercioData(raw = {}) {
 }
 
 /**
- * Adapter para el skeleton
- * Resuelve el contexto Firebase y lo devuelve normalizado
+ * Adapter Firebase completo:
+ * - Resuelve contexto
+ * - Normaliza datos
+ * - Expone persistencia
  */
 export function createFirebaseAdapter(options = {}) {
   return new Promise((resolve, reject) => {
@@ -39,11 +45,23 @@ export function createFirebaseAdapter(options = {}) {
           const context = {
             ...baseContext,
 
-            // 🔧 NORMALIZACIÓN CENTRAL
+            // 🔧 Normalización central
             comercioData: normalizeComercioData(baseContext.comercioData),
 
             isEditMode,
             currentComercioId: baseContext.comercioId,
+
+            // 🔥 Persistencia integrada
+            persistence: {
+              async updateData(data) {
+                await updateComercioData(data);
+              },
+
+              async markStepCompleted(stepName) {
+                await markOnboardingStep(stepName, true);
+              }
+            },
+
             ...options
           };
 
