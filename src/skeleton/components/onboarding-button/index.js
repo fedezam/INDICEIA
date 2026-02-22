@@ -1,5 +1,6 @@
 // src/skeleton/components/onboarding-button/index.js
 
+import './styles.css';
 import { renderButton } from "./render.js";
 import { attachBehavior } from "./update.js";
 
