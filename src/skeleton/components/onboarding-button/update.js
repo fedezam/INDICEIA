@@ -1,20 +1,9 @@
 // src/skeleton/components/onboarding-button/update.js
 
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../../../firebase.js";
-import { resolveTarget } from "../../onboarding/config.js";
-import {
-  getCurrentUserId,
-  getCurrentComercioId,
-  isEditMode
-} from "../../runtime.js";
 import { cleanPayload } from "../../utils/cleanPayload.js";
 
-/**
- * Adjunta comportamiento al botón de onboarding.
- * Validación de config ya fue hecha en index.js — no se repite acá.
- */
-export function attachBehavior(button, config) {
+export function attachBehavior(button, config, context) {
+
   const {
     stepName,
     getData,
@@ -22,157 +11,111 @@ export function attachBehavior(button, config) {
     onSave,
     onSuccess,
     onError,
-    redirectTo = '/dashboard.html'
+    redirectTo = "/dashboard.html",
+    dirtyController,
+    getLabel,
+    getChangeType
   } = config;
 
+  if (!context?.persistence) {
+    throw new Error("[onboarding-button] context.persistence no definido");
+  }
+
+  const persistence = context.persistence;
   const hasCustomMode = !!onSave;
 
-  // ─── Estado del botón ───────────────────────────────────────
   const updateState = () => {
     let valid = false;
-    try {
-      valid = validate();
-    } catch (e) {
-      console.error("[onboarding-button] Error en validate():", e);
-    }
+    try { valid = validate(); }
+    catch (e) { console.error(e); }
+
     button.disabled = !valid;
+
+    if (dirtyController) {
+      const hasChanges = dirtyController.hasUnsavedChanges();
+      button.classList.toggle("is-dirty", hasChanges);
+      button.classList.toggle("is-clean", !hasChanges);
+
+      if (getChangeType && hasChanges) {
+        const type = getChangeType();
+        button.classList.toggle("is-delete", type === "delete");
+        button.classList.toggle("is-update", type === "update");
+      } else {
+        button.classList.remove("is-delete", "is-update");
+      }
+    }
+
+    if (getLabel) {
+      try { button.innerHTML = getLabel(); }
+      catch (e) { console.error(e); }
+    }
   };
 
-  // FIX #1: Los listeners se auto-limpian cuando el botón sale del DOM.
   document.addEventListener("input", updateState);
   document.addEventListener("change", updateState);
-
-  const observer = new MutationObserver(() => {
-    if (!document.contains(button)) {
-      document.removeEventListener("input", updateState);
-      document.removeEventListener("change", updateState);
-      observer.disconnect();
-    }
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-
-  // Estado inicial
   setTimeout(updateState, 0);
 
-  // ─── Click handler ──────────────────────────────────────────
   button.addEventListener("click", async () => {
-    console.group("🟩 [onboarding-button] click");
 
-    const user = auth.currentUser;
-    if (!user) {
-      console.error("[onboarding-button] Usuario no autenticado");
-      window.location.href = "/login.html";
-      console.groupEnd();
+    if (dirtyController && !dirtyController.hasUnsavedChanges()) {
+      window.location.href = redirectTo;
       return;
     }
 
     button.disabled = true;
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    const original = button.innerHTML;
+    button.innerHTML = "Guardando...";
 
     try {
-      const runtimeContext = {
-        uid:        getCurrentUserId(),
-        comercioId: getCurrentComercioId(),
-        isEditMode: isEditMode()
-      };
 
-      let saveSuccess      = false;
-      let stepAlreadyMarked = false;
+      let success = false;
 
-      // ═══ MODO CUSTOM ════════════════════════════════════════
+      // ═══ CUSTOM ═══════════════════════
       if (hasCustomMode) {
-        console.log("[onboarding-button] Modo CUSTOM");
 
-        const data    = getData ? getData() : null;
-        const context = { ...runtimeContext, data, stepName };
+        const data = getData ? getData() : null;
 
-        const result = await onSave(context);
-
-        // onSave puede retornar:
-        //   true / void             → éxito, marcar paso acá
-        //   { success, stepMarked } → éxito, stepMarked indica si ya lo marcó
-        //   false                   → falló sin throw
-        if (result === false) {
-          saveSuccess = false;
-        } else if (result && typeof result === 'object') {
-          saveSuccess       = result.success !== false;
-          stepAlreadyMarked = result.stepMarked === true;
-        } else {
-          saveSuccess = true;
-        }
-
-        if (saveSuccess && runtimeContext.comercioId && !stepAlreadyMarked) {
-          await markStepCompleted(runtimeContext.comercioId, stepName);
-        }
-
-      // ═══ MODO SIMPLE ════════════════════════════════════════
-      } else {
-        console.log("[onboarding-button] Modo SIMPLE");
-
-        const rawData = getData();
-        const target  = resolveTarget(stepName, runtimeContext);
-        const ref     = doc(db, target.collection, target.documentId);
-
-        // cleanPayload elimina ruido técnico ('', null, undefined, [], {})
-        // antes de persistir. La página es responsable de no incluir
-        // campos cuyo dominio no existe.
-        const cleanData = cleanPayload(rawData) || {};
-
-        await updateDoc(ref, {
-          ...cleanData,
-          [`onboardingSteps.${stepName}`]: true,
-          fechaActualizacion: serverTimestamp()
+        const result = await onSave({
+          ...context,
+          data
         });
 
-        saveSuccess = true;
+        success = result !== false;
+
+      // ═══ SIMPLE ═══════════════════════
+      } else {
+
+        const rawData = getData();
+        const cleanData = cleanPayload(rawData);
+
+        await persistence.updateData(cleanData);
+        await persistence.markStepCompleted(stepName);
+
+        success = true;
       }
 
-      // ─── Post-save ─────────────────────────────────────────
-      if (saveSuccess) {
-        if (onSuccess) {
-          try { await onSuccess(); } catch (e) {
-            console.warn("[onboarding-button] onSuccess error (no crítico):", e);
-          }
+      if (success) {
+
+        if (dirtyController) {
+          dirtyController.markSaved();
         }
-        console.log("[onboarding-button] ➡️ Redirect a:", redirectTo);
+
+        if (onSuccess) {
+          await onSuccess();
+        }
+
         window.location.href = redirectTo;
       }
 
     } catch (err) {
-      console.error("[onboarding-button] ❌ Error:", err);
 
-      if (onError) {
-        try { onError(err); } catch (e) {
-          console.error("[onboarding-button] onError también falló:", e);
-        }
-      } else {
-        alert("No se pudo guardar. Revisá los datos.");
-      }
+      console.error(err);
 
-      button.innerHTML = originalText;
-      button.disabled  = false;
+      if (onError) onError(err);
+
+      button.innerHTML = original;
+      button.disabled = false;
     }
 
-    console.groupEnd();
   });
-}
-
-/**
- * Marca paso de onboarding como completado.
- * Solo se llama si onSave no lo hizo (stepAlreadyMarked === false).
- */
-async function markStepCompleted(comercioId, stepName) {
-  if (!comercioId || !stepName) return;
-  try {
-    const ref = doc(db, 'comercios', comercioId);
-    await updateDoc(ref, {
-      [`onboardingSteps.${stepName}`]: true,
-      fechaActualizacion: serverTimestamp()
-    });
-    console.log(`[onboarding-button] Paso ${stepName} marcado`);
-  } catch (err) {
-    console.error(`[onboarding-button] Error marcando paso:`, err);
-    // No crítico, no throw
-  }
 }
