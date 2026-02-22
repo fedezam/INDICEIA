@@ -4,10 +4,10 @@
 // ============================================
 
 import { resolveFirebaseContext } from '../../services/firebase/context.js';
-
 import {
   updateComercioData,
-  markOnboardingStep
+  markOnboardingStep,
+  deleteComercioFields
 } from '../../services/firebase/db.js';
 
 /**
@@ -16,7 +16,6 @@ import {
  */
 function normalizeComercioData(raw = {}) {
   const data = { ...raw };
-
   if (!data.plan) {
     data.plan = 'trial';
   } else if (typeof data.plan === 'object') {
@@ -24,7 +23,6 @@ function normalizeComercioData(raw = {}) {
   } else {
     data.plan = String(data.plan);
   }
-
   return data;
 }
 
@@ -44,24 +42,22 @@ export function createFirebaseAdapter(options = {}) {
 
           const context = {
             ...baseContext,
-
             // 🔧 Normalización central
             comercioData: normalizeComercioData(baseContext.comercioData),
-
             isEditMode,
             currentComercioId: baseContext.comercioId,
-
             // 🔥 Persistencia integrada
             persistence: {
               async updateData(data) {
                 await updateComercioData(data);
               },
-
               async markStepCompleted(stepName) {
                 await markOnboardingStep(stepName, true);
+              },
+              async deleteFields(fieldNames) {
+                await deleteComercioFields(fieldNames);
               }
             },
-
             ...options
           };
 
