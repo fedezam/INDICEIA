@@ -148,6 +148,9 @@ const page = {
       }
     });
 
+    // Notificar al botón que el estado cambió para actualizar el label
+    document.dispatchEvent(new Event('change'));
+
     if (!isSame) {
       const t = this._data.templates.find(t => t.id === templateId);
       if (t) showToast('Template seleccionado', `${t.name} listo para aplicar`, 'success');
