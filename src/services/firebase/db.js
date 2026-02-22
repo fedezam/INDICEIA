@@ -10,6 +10,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   collection,
   getDocs,
   addDoc,
@@ -128,6 +129,27 @@ export async function saveComercioData(data) {
     ...data,
     fechaActualizacion: serverTimestamp()
   }, { merge: true });
+}
+
+/**
+ * Eliminar campos específicos del documento del comercio.
+ * Usa FieldValue.delete() — el campo desaparece del documento, no queda null.
+ * @param {string[]} fieldNames - Nombres de campos a eliminar (ej: ['templateId', 'templateUpdatedAt'])
+ */
+export async function deleteComercioFields(fieldNames) {
+  if (!fieldNames?.length) return;
+
+  const comercioId = await getComercioId();
+  const comercioRef = doc(db, 'comercios', comercioId);
+
+  const updates = Object.fromEntries(
+    fieldNames.map(f => [f, deleteField()])
+  );
+
+  await updateDoc(comercioRef, {
+    ...updates,
+    fechaActualizacion: serverTimestamp()
+  });
 }
 
 // ==================== PRODUCTOS ====================
