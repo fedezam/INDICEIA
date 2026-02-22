@@ -1,121 +1,188 @@
 // src/skeleton/components/onboarding-button/update.js
 
-import { cleanPayload } from "../../utils/cleanPayload.js";
+import { createFirebaseAdapter } from '../../adapters/firebaseAdapter.js';
+import { cleanPayload } from '../../utils/cleanPayload.js';
 
-export function attachBehavior(button, config, context) {
+/**
+ * Contexto resuelto lazy — una sola vez por instancia de botón.
+ * Se cachea en el closure para no resolver en cada click.
+ */
+function createContextResolver() {
+  let cached = null;
+  return async function resolveContext() {
+    if (!cached) {
+      cached = await createFirebaseAdapter();
+    }
+    return cached;
+  };
+}
 
+export function attachBehavior(button, config) {
   const {
     stepName,
     getData,
-    validate,
     onSave,
-    onSuccess,
-    onError,
-    redirectTo = "/dashboard.html",
+    validate,
     dirtyController,
     getLabel,
-    getChangeType
+    getChangeType,
+    onSuccess,
+    onError,
+    redirectTo = '/dashboard.html'
   } = config;
 
-  if (!context?.persistence) {
-    throw new Error("[onboarding-button] context.persistence no definido");
-  }
-
-  const persistence = context.persistence;
   const hasCustomMode = !!onSave;
+  const resolveContext = createContextResolver();
 
+  // ─── updateState ───────────────────────────────────────────
+  // Evalúa validate(), actualiza disabled, label y clase semántica.
   const updateState = () => {
+    // Validate
     let valid = false;
-    try { valid = validate(); }
-    catch (e) { console.error(e); }
-
+    try { valid = validate(); } catch (e) {
+      console.error('[onboarding-button] Error en validate():', e);
+    }
     button.disabled = !valid;
 
-    if (dirtyController) {
-      const hasChanges = dirtyController.hasUnsavedChanges();
-      button.classList.toggle("is-dirty", hasChanges);
-      button.classList.toggle("is-clean", !hasChanges);
-
-      if (getChangeType && hasChanges) {
-        const type = getChangeType();
-        button.classList.toggle("is-delete", type === "delete");
-        button.classList.toggle("is-update", type === "update");
-      } else {
-        button.classList.remove("is-delete", "is-update");
+    // Label dinámico
+    if (typeof getLabel === 'function') {
+      try {
+        const label = getLabel();
+        if (label) button.innerHTML = `<i class="fas fa-arrow-right"></i> ${label}`;
+      } catch (e) {
+        console.error('[onboarding-button] Error en getLabel():', e);
       }
     }
 
-    if (getLabel) {
-      try { button.innerHTML = getLabel(); }
-      catch (e) { console.error(e); }
+    // Clase semántica de tipo de mutación
+    if (typeof getChangeType === 'function') {
+      try {
+        const type = getChangeType();
+        button.classList.toggle('is-update', type === 'update');
+        button.classList.toggle('is-delete', type === 'delete');
+      } catch (e) {
+        console.error('[onboarding-button] Error en getChangeType():', e);
+      }
     }
   };
 
-  document.addEventListener("input", updateState);
-  document.addEventListener("change", updateState);
+  // Listeners con cleanup automático al salir del DOM
+  document.addEventListener('input', updateState);
+  document.addEventListener('change', updateState);
+
+  const observer = new MutationObserver(() => {
+    if (!document.contains(button)) {
+      document.removeEventListener('input', updateState);
+      document.removeEventListener('change', updateState);
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  // Estado inicial (diferido para que el DOM esté listo)
   setTimeout(updateState, 0);
 
-  button.addEventListener("click", async () => {
+  // ─── Click handler ──────────────────────────────────────────
+  button.addEventListener('click', async () => {
+    console.group('🟩 [onboarding-button] click');
 
-    if (dirtyController && !dirtyController.hasUnsavedChanges()) {
-      window.location.href = redirectTo;
-      return;
-    }
-
+    const originalHTML = button.innerHTML;
     button.disabled = true;
-    const original = button.innerHTML;
-    button.innerHTML = "Guardando...";
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
     try {
+      // Resolver contexto (lazy, cacheado)
+      const ctx = await resolveContext();
 
-      let success = false;
+      if (!ctx?.user) {
+        console.error('[onboarding-button] Usuario no autenticado');
+        window.location.href = '/login.html';
+        console.groupEnd();
+        return;
+      }
 
-      // ═══ CUSTOM ═══════════════════════
+      const { persistence, user, comercioId, isEditMode } = ctx;
+
+      // ─── Dirty check: si no hay cambios, redirect directo ───
+      if (dirtyController && !dirtyController.hasUnsavedChanges()) {
+        console.log('[onboarding-button] Sin cambios → redirect directo');
+        window.location.href = redirectTo;
+        console.groupEnd();
+        return;
+      }
+
+      let saveSuccess = false;
+      let stepAlreadyMarked = false;
+
+      // ═══ MODO CUSTOM ════════════════════════════════════════
       if (hasCustomMode) {
+        console.log('[onboarding-button] Modo CUSTOM');
 
-        const data = getData ? getData() : null;
+        const data = typeof getData === 'function' ? getData() : null;
+        const context = { uid: user.uid, comercioId, isEditMode, data, stepName };
 
-        const result = await onSave({
-          ...context,
-          data
-        });
+        const result = await onSave(context);
 
-        success = result !== false;
+        if (result === false) {
+          saveSuccess = false;
+        } else if (result && typeof result === 'object') {
+          saveSuccess       = result.success !== false;
+          stepAlreadyMarked = result.stepMarked === true;
+        } else {
+          saveSuccess = true;
+        }
 
-      // ═══ SIMPLE ═══════════════════════
+        // Marcar paso si onSave no lo hizo
+        if (saveSuccess && !stepAlreadyMarked) {
+          await persistence.markStepCompleted(stepName);
+        }
+
+      // ═══ MODO SIMPLE ════════════════════════════════════════
       } else {
+        console.log('[onboarding-button] Modo SIMPLE');
 
         const rawData = getData();
-        const cleanData = cleanPayload(rawData);
+        const cleanData = cleanPayload(rawData) || {};
 
         await persistence.updateData(cleanData);
         await persistence.markStepCompleted(stepName);
 
-        success = true;
+        saveSuccess = true;
       }
 
-      if (success) {
+      // ─── Post-save ──────────────────────────────────────────
+      if (saveSuccess) {
+        dirtyController?.markSaved();
 
-        if (dirtyController) {
-          dirtyController.markSaved();
+        if (typeof onSuccess === 'function') {
+          try { await onSuccess(); } catch (e) {
+            console.warn('[onboarding-button] onSuccess error (no crítico):', e);
+          }
         }
 
-        if (onSuccess) {
-          await onSuccess();
-        }
-
+        console.log('[onboarding-button] ➡️ Redirect a:', redirectTo);
         window.location.href = redirectTo;
+      } else {
+        // onSave retornó false sin throw — restaurar botón
+        button.innerHTML = originalHTML;
+        button.disabled = false;
       }
 
     } catch (err) {
+      console.error('[onboarding-button] ❌ Error:', err);
 
-      console.error(err);
+      if (typeof onError === 'function') {
+        try { onError(err); } catch (e) {
+          console.error('[onboarding-button] onError también falló:', e);
+        }
+      } else {
+        alert('No se pudo guardar. Revisá los datos.');
+      }
 
-      if (onError) onError(err);
-
-      button.innerHTML = original;
+      button.innerHTML = originalHTML;
       button.disabled = false;
     }
 
+    console.groupEnd();
   });
 }
