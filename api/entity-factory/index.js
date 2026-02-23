@@ -43,26 +43,28 @@ const hasData = (value) => {
 };
 
 // ===== COGNITION BUILDER (LER-compliant) =====
-function buildCognitivePermissionsFromSchema(aiConfig, schemaPath) {
+function buildCognitivePermissionsFromSkeleton(aiConfig, skeletonPath) {
   if (!aiConfig?.cognitive_permissions) return null;
 
-  const rawSchema = readFileSync(schemaPath, 'utf-8');
-  const schema = JSON.parse(rawSchema).cognitive_permissions;
+  const raw = readFileSync(skeletonPath, 'utf-8');
+  const skeleton = JSON.parse(raw).cognitive_permissions;
 
   const result = {};
   let hasAnyEnabled = false;
 
-  for (const [key, config] of Object.entries(schema)) {
+  for (const [key, config] of Object.entries(skeleton)) {
     const enabled = Boolean(aiConfig.cognitive_permissions[key]);
-    if (enabled) hasAnyEnabled = true;
-    result[key] = {
-      enabled,
-      label: config.label,
-      description: config.description
-    };
+
+    if (enabled) {
+      hasAnyEnabled = true;
+      result[key] = {
+        enabled: true,
+        label: config.label,
+        description: config.description
+      };
+    }
   }
 
-  // Solo devolver si hay al menos un permiso habilitado
   return hasAnyEnabled ? result : null;
 }
 
@@ -187,8 +189,8 @@ export async function buildEntity({ comercioId }) {
   // ---- cognition (solo si hay al menos un permiso habilitado)
   let cognitivePermissions = null;
   try {
-    const cognitiveSchemaPath = resolve(__dirname, 'base/cognitive_permissions.schema.json');
-    cognitivePermissions = buildCognitivePermissionsFromSchema(data.aiConfig, cognitiveSchemaPath);
+    const cognitiveSkeletonPath = resolve(__dirname, 'base/cognition.skeleton.json');
+    cognitivePermissions = buildCognitivePermissionsFromSkeleton(data.aiConfig, cognitiveSkeletonPath);
   } catch (err) {
     console.warn('⚠️ No se pudo cargar cognitive_permissions.schema.json', err);
   }
