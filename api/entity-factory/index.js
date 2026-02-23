@@ -53,7 +53,7 @@ function buildCognitivePermissionsFromSkeleton(aiConfig, skeletonPath) {
   let hasAnyEnabled = false;
 
   for (const [key, config] of Object.entries(skeleton)) {
-    const enabled = Boolean(aiConfig.cognitive_permissions[key]);
+    const enabled = aiConfig.cognitive_permissions[key]?.enabled === true;
 
     if (enabled) {
       hasAnyEnabled = true;
