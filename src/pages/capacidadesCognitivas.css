@@ -1,0 +1,32 @@
+/* src/pages/capacidadesCognitivas.css */
+/* Solo ajustes de layout propios de la página — los componentes traen su propio CSS */
+
+/* ─── Header ───────────────────────────────────────────────── */
+.ec-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--s-border, #d2d6de);
+}
+
+.ec-header h2 {
+  margin: 0 0 4px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+}
+
+.ec-header h2 i {
+  margin-right: 8px;
+  color: var(--s-primary, #3c8dbc);
+}
+
+.ec-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--s-secondary, #6c757d);
+}
+
+/* ─── Botón guardar ─────────────────────────────────────────── */
+.ec-save {
+  margin-top: 24px;
+}
