@@ -29,6 +29,7 @@ export default defineConfig({
         stats: resolve(__dirname, "src/pages/stats.html"),
         "link-publico": resolve(__dirname, "src/pages/link-publico.html"),
         skeletonTest: resolve(__dirname, "src/pages/skeletonTest.html"),
+        "capacidades-cognitivas": resolve(__dirname, "src/pages/capacidadesCognitivas.html"),
 
         // Planes
         plans: resolve(__dirname, "src/pages/plans.html"),
