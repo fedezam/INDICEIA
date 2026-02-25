@@ -7,7 +7,6 @@ import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js
 import { createCard }            from '/src/skeleton/components/card/index.js';
 import { createButton }          from '/src/skeleton/components/button/index.js';
 import { showToast }             from '/src/skeleton/components/toast/index.js';
-import { getComercioData }       from '/src/services/firebase/db.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, hasLiveAccess, isHighValuePlan } from '/src/shared/plans.js';
 import './dashboard.css';
 
@@ -28,16 +27,20 @@ const page = {
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
-    this._data.user     = ctx.user;
-    this._data.userData = ctx.userData || {};
-    this._data.offerType = ctx.userData?.offerType || {};
+    console.group('[dashboard] load()');
+    console.log('ctx.user:', ctx.user?.uid);
+    console.log('ctx.userData:', ctx.userData);
+    console.log('ctx.comercioId:', ctx.comercioId);
+    console.log('ctx.comercioData:', ctx.comercioData);
 
-    try {
-      this._data.comercio = await getComercioData();
-    } catch (err) {
-      console.error('[dashboard] Error cargando comercio:', err);
-      this._data.comercio = {};
-    }
+    this._data.user      = ctx.user;
+    this._data.userData  = ctx.userData || {};
+    this._data.offerType = ctx.userData?.offerType || {};
+    this._data.comercio  = ctx.comercioData || {};
+
+    console.log('entityLastGeneratedAt (raw):', this._data.comercio.entityLastGeneratedAt);
+    console.log('lastConfigUpdateAt (raw):', this._data.comercio.lastConfigUpdateAt);
+    console.groupEnd();
 
     await this._loadServiciosStats();
     this._data.productosCount = this._data.comercio.cantidadProductos || 0;
@@ -45,31 +48,52 @@ const page = {
   },
 
   _calculateEntityState() {
+    console.group('[dashboard] _calculateEntityState()');
     const c          = this._data.comercio;
     const lastGen    = c.entityLastGeneratedAt?.toDate?.() || null;
     const lastUpdate = c.lastConfigUpdateAt?.toDate?.()    || null;
 
-    if (!lastGen) { this._data.entityState = 'never'; return; }
+    console.log('lastGen:', lastGen);
+    console.log('lastUpdate:', lastUpdate);
+
+    if (!lastGen) {
+      this._data.entityState = 'never';
+      console.log('entityState → never (no hay lastGen)');
+      console.groupEnd();
+      return;
+    }
 
     this._data.entityState = (lastUpdate && lastUpdate > lastGen)
       ? 'outdated'
       : 'updated';
+
+    console.log('entityState →', this._data.entityState);
+    console.groupEnd();
   },
 
   async _loadServiciosStats() {
+    console.group('[dashboard] _loadServiciosStats()');
     try {
       const { getDocs, collection, db } = await import('firebase/firestore');
+      const comercioId = this._data.comercio.id;
+      console.log('comercioId:', comercioId);
+
       const snapshot = await getDocs(
-        collection(db, 'comercios', this._data.comercio.id, 'servicios')
+        collection(db, 'comercios', comercioId, 'servicios')
       );
+
       let activos = 0, pausados = 0;
       snapshot.docs.forEach(d => {
         d.data().activo === false ? pausados++ : activos++;
       });
+
       this._data.serviciosStats = { activos, pausados, total: activos + pausados };
-    } catch {
+      console.log('serviciosStats:', this._data.serviciosStats);
+    } catch (err) {
+      console.error('Error cargando servicios:', err);
       this._data.serviciosStats = { activos: 0, pausados: 0, total: 0 };
     }
+    console.groupEnd();
   },
 
   // ──────────────────────────────────────────────────────────
