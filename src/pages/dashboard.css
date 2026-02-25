@@ -1,162 +1,299 @@
-/* ============================================================
-   src/pages/dashboard/dashboard.css
-   Estilos específicos del dashboard
-   ============================================================ */
+/* src/pages/dashboard/dashboard.css */
+/* Estética AdminLTE — solo layout propio de la página */
 
-#skeleton-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: var(--s-spacing-lg, 24px);
+/* ──────────────────────────────────────────────────────────
+   ZONA SUPERIOR: Plan (70%) + Usuario (30%)
+────────────────────────────────────────────────────────── */
+.dashboard-top {
+  display: grid;
+  grid-template-columns: 70% 30%;
+  gap: 16px;
+  margin-bottom: 28px;
+  align-items: start;
 }
 
-/* Header de página */
-.page-header {
-  margin-bottom: var(--s-spacing-xl, 32px);
+/* ──────────────────────────────────────────────────────────
+   SECCIONES
+────────────────────────────────────────────────────────── */
+.dashboard-seccion {
+  margin-bottom: 32px;
 }
 
-.page-header h1 {
-  margin: 0 0 var(--s-spacing-sm, 12px) 0;
-  font-size: 28px;
-  font-weight: 600;
+.seccion-header {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--s-border, #d2d6de);
+}
+
+.seccion-titulo {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--s-dark, #343a40);
 }
 
-.page-header h1 i {
-  color: var(--s-primary, #3c8dbc);
-  margin-right: 12px;
-}
-
-.page-header p {
+.seccion-descripcion {
   margin: 0;
+  font-size: 0.85rem;
   color: var(--s-secondary, #6c757d);
-  font-size: 16px;
 }
 
-/* Grid de cards */
+/* ──────────────────────────────────────────────────────────
+   GRID DE CARDS
+────────────────────────────────────────────────────────── */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: var(--s-spacing-lg, 24px);
-  margin-top: var(--s-spacing-xl, 32px);
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
-/* Badges */
-.badge-activo {
-  color: #155724;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.badge-pausado {
-  color: #721c24;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.badge-optional {
-  display: inline-block;
-  background: var(--s-info, #00c0ef);
-  color: white;
-  font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: 12px;
-  margin-left: 8px;
-  font-weight: 600;
-}
-
-/* Card inactiva (no habilitada) */
-.s-card.flat {
-  background: #f8f9fa;
-  border: 2px dashed var(--s-border, #d2d6de);
-  box-shadow: none;
-}
-
-.s-card.flat:hover {
-  border-color: var(--s-primary, #3c8dbc);
-  background: #fff;
-}
-
-.inactive-text {
-  color: var(--s-danger, #dd4b39);
-  font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
-/* Detalles de servicios */
-.servicios-detail {
+/* ──────────────────────────────────────────────────────────
+   BANNERS DE ENTIDAD
+────────────────────────────────────────────────────────── */
+.entity-banner {
   display: flex;
+  align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-radius: var(--s-radius, 4px);
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.entity-banner i {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.entity-banner.warning {
+  background: #fff8e1;
+  border-left: 4px solid var(--s-warning, #f39c12);
+  color: #7d5a00;
+}
+
+.entity-banner.danger {
+  background: #fdecea;
+  border-left: 4px solid var(--s-danger, #dd4b39);
+  color: #7d1c0e;
+}
+
+/* ──────────────────────────────────────────────────────────
+   BADGES DE ENTIDAD
+────────────────────────────────────────────────────────── */
+.entity-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
   margin-top: 8px;
 }
 
-/* Modal */
+.entity-badge.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.entity-badge.warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.entity-badge.danger {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* ──────────────────────────────────────────────────────────
+   PLAN CARD
+────────────────────────────────────────────────────────── */
+.plan-nombre {
+  font-size: 1rem;
+  margin: 0 0 4px 0;
+}
+
+.plan-descripcion {
+  color: var(--s-secondary, #6c757d);
+  font-size: 0.875rem;
+  margin: 0 0 8px 0;
+}
+
+.plan-estado {
+  font-size: 0.875rem;
+  margin: 0 0 4px 0;
+}
+
+.plan-live {
+  font-size: 0.8rem;
+  color: var(--s-secondary, #6c757d);
+  margin: 0 0 12px 0;
+}
+
+.highvalue-promo {
+  margin-top: 14px;
+  padding: 12px;
+  background: #f0f8ff;
+  border-left: 3px solid var(--s-primary, #3c8dbc);
+  border-radius: var(--s-radius, 4px);
+  font-size: 0.85rem;
+}
+
+.highvalue-promo strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.highvalue-promo p {
+  margin: 0 0 10px 0;
+  color: var(--s-secondary, #6c757d);
+}
+
+/* ──────────────────────────────────────────────────────────
+   USUARIO CARD
+────────────────────────────────────────────────────────── */
+.usuario-nombre {
+  margin: 0 0 4px 0;
+  font-size: 0.95rem;
+}
+
+.usuario-email {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--s-secondary, #6c757d);
+  word-break: break-all;
+}
+
+/* ──────────────────────────────────────────────────────────
+   CAPACIDADES COGNITIVAS LIST
+────────────────────────────────────────────────────────── */
+.capacidades-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.capacidades-list li {
+  font-size: 0.85rem;
+  color: var(--s-dark, #343a40);
+  padding-left: 16px;
+  position: relative;
+}
+
+.capacidades-list li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--s-success, #00a65a);
+  font-weight: 700;
+}
+
+/* ──────────────────────────────────────────────────────────
+   INACTIVE TEXT
+────────────────────────────────────────────────────────── */
+.inactive-text {
+  color: var(--s-gray, #adb5bd);
+  font-style: italic;
+  margin: 0 0 4px 0;
+}
+
+/* ──────────────────────────────────────────────────────────
+   PULSE HIGHLIGHT (scroll to generar)
+────────────────────────────────────────────────────────── */
+@keyframes pulseHighlight {
+  0%   { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.6); }
+  70%  { box-shadow: 0 0 0 12px rgba(243, 156, 18, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
+}
+
+.pulse-highlight {
+  animation: pulseHighlight 0.8s ease-out 2;
+}
+
+/* ──────────────────────────────────────────────────────────
+   MODAL HIGH VALUE
+────────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 20px;
+  z-index: 9999;
 }
 
 .modal-content {
   background: white;
-  border-radius: 12px;
-  padding: 32px;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  border-radius: var(--s-radius-lg, 6px);
+  padding: 28px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: var(--s-box-shadow);
 }
 
 .modal-content h3 {
-  margin-top: 0;
+  margin: 0 0 12px 0;
+  font-size: 1.1rem;
+  color: var(--s-dark, #343a40);
 }
 
 .modal-content ul {
-  text-align: left;
-  font-size: 14px;
-  line-height: 1.6;
   padding-left: 20px;
+  margin: 12px 0;
 }
 
-.modal-content .warning {
-  font-size: 13px;
+.modal-content li {
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.modal-warning {
+  font-size: 0.8rem;
   color: var(--s-danger, #dd4b39);
-  margin: 16px 0;
+  margin: 12px 0;
 }
 
-.modal-content label {
+.modal-checkbox {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 24px 0 16px;
+  font-size: 0.875rem;
   cursor: pointer;
+  margin: 16px 0;
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-/* Responsive */
+/* ──────────────────────────────────────────────────────────
+   BADGES SERVICIOS
+────────────────────────────────────────────────────────── */
+.badge-activo,
+.badge-pausado {
+  font-size: 0.8rem;
+}
+
+/* ──────────────────────────────────────────────────────────
+   RESPONSIVE — Mobile 1 columna
+────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  #skeleton-page {
-    padding: var(--s-spacing-md, 16px);
+  .dashboard-top {
+    grid-template-columns: 1fr;
   }
 
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
 
-  .page-header h1 {
-    font-size: 24px;
+  .entity-banner {
+    flex-wrap: wrap;
   }
 }
