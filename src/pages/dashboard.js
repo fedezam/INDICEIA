@@ -2,7 +2,7 @@
 // src/pages/dashboard/dashboard.js
 // ============================================================
 
-import { runSkeleton }           from '/src/skeleton/skeleton.js';
+import { runSkeleton }           from '../skeleton/skeleton.js';
 import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
 import { createCard }            from '/src/skeleton/components/card/index.js';
 import { createButton }          from '/src/skeleton/components/button/index.js';
