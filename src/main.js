@@ -49,12 +49,8 @@ onAuthStateChanged(auth, async (user) => {
     }
     
     // ✅ REDIRECCIÓN CON FLOW CONTROLLER
-    const isLoginPage = window.location.pathname === '/' || 
-                        window.location.pathname.endsWith('index.html');
-    
-    if (isLoginPage) {
-      console.log('Login detectado - ejecutando flow controller...');
-      runFlowController(user.uid);
+    console.log('Login detectado - ejecutando flow controller...');
+    runFlowController(user.uid);
     }
   } else {
     console.log('No hay usuario logueado');
