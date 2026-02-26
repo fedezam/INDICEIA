@@ -1,5 +1,5 @@
 /* ============================================================
-   crear-entidad.css
+   modelo-negocio.css
    Solo layout propio de la página.
    Visual de cards → skeleton/components/card/styles.css
    ============================================================ */
@@ -16,17 +16,9 @@
   min-height: 180px;
 }
 
-/* ==================== ERROR ==================== */
-.error-message {
-  color: var(--s-danger, #dd4b39);
-  font-size: .875rem;
-  margin: .5rem 0 1rem;
-}
-
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 600px) {
   .cards-container {
     flex-direction: column;
   }
 }
-
