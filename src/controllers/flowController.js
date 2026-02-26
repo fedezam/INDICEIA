@@ -16,15 +16,7 @@ function isEditMode() {
   return params.get("edit") === "true";
 }
 
-/**
- * Páginas públicas (no requieren auth)
- */
 const PUBLIC_PAGES = ["login", "registro", "index", ""];
-
-/**
- * Páginas neutras (requieren auth pero NO participan del flujo)
- * Ej: sandbox, pruebas de skeleton, debug visual
- */
 const NEUTRAL_PAGES = ["skeletonTest"];
 
 /* =========================================================
@@ -32,17 +24,17 @@ const NEUTRAL_PAGES = ["skeletonTest"];
    ========================================================= */
 
 function buildPipeline(offerType = {}) {
-  const steps = ["usuario", "crear-entidad", "mi-comercio"];
-
   const { productos, servicios } = offerType;
 
-  if (productos && servicios) {
-    steps.push("horarios", "servicios", "productos");
-  } else if (servicios) {
-    steps.push("servicios", "horarios");
-  } else if (productos) {
-    steps.push("horarios", "productos");
-  }
+  const steps = [
+    "usuario",
+    "mi-comercio",
+    "modelo-negocio",
+    "horarios",         // siempre fijo, es info del comercio
+  ];
+
+  if (servicios) steps.push("servicios");
+  if (productos) steps.push("productos");
 
   steps.push("ia-config");
   return steps;
@@ -59,101 +51,78 @@ function getFirstIncompleteStep(pipeline, completedSteps = {}) {
 export async function runFlowController(uid) {
   const currentPage = getCurrentPage();
 
-  // ⛔ ESPERAR AUTH — NO REDIRIGIR TODAVÍA
   if (!uid) return;
+
+  // Páginas públicas: no hacer nada
+  if (PUBLIC_PAGES.includes(currentPage)) return;
+
+  // Páginas neutras: no participan del flujo
+  if (NEUTRAL_PAGES.includes(currentPage)) {
+    console.log(`🧪 FlowController: página neutral (${currentPage})`);
+    return;
+  }
 
   const editMode = isEditMode();
   window.isEditMode = editMode;
 
   try {
-    const userRef = doc(db, "usuarios", uid);
-    const userSnap = await getDoc(userRef);
+    const userSnap = await getDoc(doc(db, "usuarios", uid));
 
     if (!userSnap.exists()) {
       window.location.href = "/login.html";
       return;
     }
 
-    // ====================
-    // 🟢 PÁGINAS NEUTRAS
-    // ====================
-    if (NEUTRAL_PAGES.includes(currentPage)) {
-      console.log(`🧪 FlowController: página neutral (${currentPage})`);
-      return;
-    }
-
     const userData = userSnap.data();
     const userSteps = userData.onboardingSteps || {};
 
-    /* ---------- USUARIO ---------- */
-
+    // ---------- PASO 1: usuario ----------
     if (!userSteps.usuario) {
-      if (currentPage !== "usuario") {
-        window.location.href = "/usuario.html";
-      }
+      if (currentPage !== "usuario") window.location.href = "/usuario.html";
       return;
     }
 
-    /* ---------- CREAR ENTIDAD ---------- */
-
-    if (!userSteps["crear-entidad"] || !userData.offerType) {
-      if (currentPage !== "crear-entidad") {
-        window.location.href = "/crear-entidad.html";
-      }
-      return;
-    }
-
-    /* ---------- CREACIÓN DE COMERCIO (ZONA PROTEGIDA) ---------- */
-
+    // ---------- PASO 2: mi-comercio ----------
     if (!userData.comercioId) {
-      if (currentPage !== "mi-comercio") {
-        window.location.href = "/mi-comercio.html";
-      }
+      if (currentPage !== "mi-comercio") window.location.href = "/mi-comercio.html";
       return;
     }
 
-    /* ---------- COMERCIO EXISTE ---------- */
+    // ---------- PASO 3: modelo-negocio ----------
+    if (!userSteps["modelo-negocio"] || !userData.offerType) {
+      if (currentPage !== "modelo-negocio") window.location.href = "/modelo-negocio.html";
+      return;
+    }
 
-    const comercioSnap = await getDoc(
-      doc(db, "comercios", userData.comercioId)
-    );
-
+    // ---------- A partir de acá, el comercio existe ----------
+    const comercioSnap = await getDoc(doc(db, "comercios", userData.comercioId));
     const comercioSteps = comercioSnap.exists()
       ? comercioSnap.data().onboardingSteps || {}
       : {};
 
     const pipeline = buildPipeline(userData.offerType);
+    const allSteps = { ...userSteps, ...comercioSteps };
 
-    /* ---------- MODO EDICIÓN ---------- */
-
+    // ---------- MODO EDICIÓN ----------
     if (editMode) {
-      if (
-        currentPage !== "dashboard" &&
-        pipeline.includes(currentPage)
-      ) {
-        return;
-      }
+      // En edición, puede estar en cualquier página del pipeline
+      if (pipeline.includes(currentPage)) return;
+      // Si no es una página del pipeline, va a dashboard
+      if (currentPage !== "dashboard") window.location.href = "/dashboard.html";
+      return;
+    }
 
-      if (currentPage !== "dashboard") {
-        window.location.href = "/dashboard.html";
+    // ---------- ONBOARDING NORMAL ----------
+    const firstIncomplete = getFirstIncompleteStep(pipeline, allSteps);
+
+    if (firstIncomplete) {
+      if (currentPage !== firstIncomplete) {
+        window.location.href = `/${firstIncomplete}.html`;
       }
       return;
     }
 
-    /* ---------- ONBOARDING NORMAL ---------- */
-
-    const firstIncomplete = getFirstIncompleteStep(
-      pipeline,
-      { ...userSteps, ...comercioSteps }
-    );
-
-    if (firstIncomplete && currentPage !== firstIncomplete) {
-      window.location.href = `/${firstIncomplete}.html`;
-      return;
-    }
-
-    /* ---------- TODO COMPLETO ---------- */
-
+    // ---------- TODO COMPLETO → dashboard ----------
     if (currentPage !== "dashboard") {
       window.location.href = "/dashboard.html";
     }
@@ -175,4 +144,3 @@ export function redirectAfterSave(nextStep) {
     window.location.href = `/${nextStep}.html`;
   }
 }
-
