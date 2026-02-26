@@ -1,60 +1,64 @@
-// src/skeleton/skeleton.js
+import { showLoading, hideLoading, showToast } from '../shared/utils.js';
 
-import { runLifecycle }      from './lifecycle.js';
-import { initDirtyState }    from './dirtyState.js';
-import { renderLayout }      from './layout/renderLayout.js';
-import { mountLayout }       from './layout/index.js';
-import { initializeRuntime } from './runtime.js';
-import { runFlowController } from '../controllers/flowController.js';
-import { auth }              from '../services/firebase/firebase.js';
-import { onAuthStateChanged } from 'firebase/auth';
+// Errores que indican problema de sesión/flujo, no errores técnicos
+const AUTH_FLOW_ERRORS = [
+  'No authenticated user',
+  'Usuario no encontrado'
+];
 
 /**
- * Skeleton canónico de ÍndiceIA
+ * Lifecycle canónico del Skeleton
+ * Maneja:
+ *  - loading
+ *  - errores
+ *  - resolución de contexto vía adapter
  *
- * Capas:
- * 1. Adapter     → resuelve contexto (auth, datos)
- * 2. Runtime     → almacena contexto (estado global)
- * 3. Page        → consume contexto (load, render)
- * 4. Components  → consultan runtime (selectores)
+ * @param {Object}   config
+ * @param {Function} config.adapter
+ * @param {Object}   config.options
+ * @param {Function} config.onReady
+ * @param {Function} [config.onAuthError]  - Handler inyectable para errores de sesión/flujo.
+ *                                           Si no se pasa, redirige a '/' como fallback.
  */
-export async function runSkeleton({ page, adapter, options = {} }) {
+export async function runLifecycle({
+  adapter,
+  options = {},
+  onReady,
+  onAuthError
+}) {
+  try {
+    showLoading(options.loadingMessage || 'Cargando...');
 
-  // 🦴 1. Layout base
-  renderLayout();
-
-  // 🧬 2. Ciclo de vida
-  await runLifecycle({
-    adapter,
-    options,
-    onAuthError: () => {
-      console.log('[skeleton] onAuthError disparado');
-      onAuthStateChanged(auth, (user) => {
-        console.log('[skeleton] onAuthStateChanged user:', user?.uid || null);
-        runFlowController(user?.uid || null);
-      });
-    },
-    onReady: async (context) => {
-
-      // 🎯 3. Runtime — single source of truth
-      initializeRuntime(context);
-
-      // 📦 4. Página carga datos
-      await page.load(context);
-
-      // 🎨 5. Layout con datos reales
-      mountLayout(context);
-
-      // 🖼️ 6. Contenido de página
-      page.render();
-
-      // 💾 7. Dirty state
-      if (
-        typeof page.getCurrentData === 'function' &&
-        typeof page.isFormValid   === 'function'
-      ) {
-        initDirtyState({ page, context, options });
-      }
+    if (typeof adapter !== 'function') {
+      throw new Error('Skeleton lifecycle requiere un adapter válido');
     }
-  });
+
+    const context = await adapter(options);
+
+    if (!context) {
+      throw new Error('Adapter no devolvió contexto');
+    }
+
+    if (typeof onReady === 'function') {
+      await onReady(context);
+    }
+
+    hideLoading();
+
+  } catch (err) {
+    console.error('[Skeleton lifecycle]', err);
+    hideLoading();
+
+    if (AUTH_FLOW_ERRORS.includes(err.message)) {
+      if (typeof onAuthError === 'function') {
+        onAuthError(err);
+      } else {
+        // Fallback: sin handler inyectado, va al inicio
+        window.location.href = '/';
+      }
+      return;
+    }
+
+    showToast('Error', err.message || 'Error inesperado', 'error');
+  }
 }
