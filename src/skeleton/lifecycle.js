@@ -1,7 +1,4 @@
 import { showLoading, hideLoading, showToast } from '../shared/utils.js';
-import { runFlowController } from '../../controllers/flowController.js';
-import { auth } from '../../services/firebase/firebase.js';
-import { onAuthStateChanged } from 'firebase/auth';
 
 // Errores que indican problema de sesión/flujo, no errores técnicos
 const AUTH_FLOW_ERRORS = [
@@ -15,11 +12,19 @@ const AUTH_FLOW_ERRORS = [
  *  - loading
  *  - errores
  *  - resolución de contexto vía adapter
+ *
+ * @param {Object}   config
+ * @param {Function} config.adapter
+ * @param {Object}   config.options
+ * @param {Function} config.onReady
+ * @param {Function} [config.onAuthError]  - Handler inyectable para errores de sesión/flujo.
+ *                                           Si no se pasa, redirige a '/' como fallback.
  */
 export async function runLifecycle({
   adapter,
   options = {},
-  onReady
+  onReady,
+  onAuthError
 }) {
   try {
     showLoading(options.loadingMessage || 'Cargando...');
@@ -28,14 +33,12 @@ export async function runLifecycle({
       throw new Error('Skeleton lifecycle requiere un adapter válido');
     }
 
-    // El adapter RESUELVE el contexto (auth, datos base, flags, etc)
     const context = await adapter(options);
 
     if (!context) {
       throw new Error('Adapter no devolvió contexto');
     }
 
-    // Hook principal
     if (typeof onReady === 'function') {
       await onReady(context);
     }
@@ -46,12 +49,13 @@ export async function runLifecycle({
     console.error('[Skeleton lifecycle]', err);
     hideLoading();
 
-    // Sin sesión o usuario sin doc → flowController decide a dónde ir
-    // Respeta el contrato: context.js NO navega, lifecycle SÍ reacciona
     if (AUTH_FLOW_ERRORS.includes(err.message)) {
-      onAuthStateChanged(auth, (user) => {
-        runFlowController(user?.uid || null);
-      });
+      if (typeof onAuthError === 'function') {
+        onAuthError(err);
+      } else {
+        // Fallback: sin handler inyectado, va al inicio
+        window.location.href = '/';
+      }
       return;
     }
 
