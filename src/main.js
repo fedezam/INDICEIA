@@ -48,10 +48,10 @@ onAuthStateChanged(auth, async (user) => {
       console.error("❌ Error al guardar usuario:", error);
     }
     
-    // ✅ REDIRECCIÓN CON FLOW CONTROLLER
-    console.log('Login detectado - ejecutando flow controller...');
+    // ✅ REDIRECCIÓN CON FLOW CONTROLLER (siempre, en cualquier página)
+    console.log('Usuario detectado - ejecutando flow controller...');
     runFlowController(user.uid);
-    }
+
   } else {
     console.log('No hay usuario logueado');
     const isProtectedPage = window.location.pathname.includes('/pages/');
