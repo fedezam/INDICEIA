@@ -564,7 +564,17 @@ const page = {
         body: JSON.stringify({ comercioId: this._data.comercio.id })
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      console.log('[dashboard] API status:', response.status);
+      console.log('[dashboard] API response raw:', text);
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`API no devolvió JSON válido (status ${response.status}): ${text.substring(0, 200)}`);
+      }
+
       if (!data.ok) throw new Error(data.error);
 
       console.log('[dashboard] Entidad generada OK, actualizando timestamp...');
