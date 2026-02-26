@@ -288,7 +288,7 @@ const page = {
       title: 'Modelo de Negocio',
       icon: 'fa-sitemap',
       content: '<p>Qué ofrecés: productos, servicios o ambos</p>',
-      action: { type: 'link', url: '/crear-entidad.html?edit=true', label: 'Editar', className: 's-btn s-btn-secondary s-btn-sm' }
+      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Editar', className: 's-btn s-btn-secondary s-btn-sm' }
     });
   },
 
@@ -310,7 +310,7 @@ const page = {
       icon: 'fa-box',
       flat: true,
       content: '<p class="inactive-text">No habilitado</p><p>Vendé artículos físicos o digitales</p>',
-      action: { type: 'link', url: '/crear-entidad.html?edit=true', label: 'Habilitar', className: 's-btn s-btn-outline-primary s-btn-sm' }
+      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Habilitar', className: 's-btn s-btn-outline-primary s-btn-sm' }
     });
   },
 
