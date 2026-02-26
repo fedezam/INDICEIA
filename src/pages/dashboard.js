@@ -577,20 +577,24 @@ const page = {
 
       if (!data.ok) throw new Error(data.error);
 
-      console.log('[dashboard] Entidad generada OK, actualizando timestamp...');
+      console.log('[dashboard] Entidad generada OK, guardando timestamp...');
 
-      // ✅ Sin Firebase directo — persistence del context
-      // Guardamos como ISO string para consistencia con el campo existente
-      // En futuras generaciones quedará como string normalizado
-      const now = new Date();
-      await this._data.ctx.persistence.updateData({
-        entityGeneratedAt: now.toISOString()
+      // ✅ serverTimestamp() — mismo origen que fechaActualizacion
+      // No usamos persistence.updateData() porque ese método
+      // actualiza fechaActualizacion causando outdated en el reload
+      const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+      const { db } = await import('/src/services/firebase/firebase.js');
+
+      const comercioRef = doc(db, 'comercios', this._data.comercio.id);
+      await updateDoc(comercioRef, {
+        entityGeneratedAt: serverTimestamp()
       });
 
-      console.log('[dashboard] Timestamp guardado:', now.toISOString());
+      console.log('[dashboard] Timestamp guardado con serverTimestamp');
 
-      // Actualizar estado local y re-render
-      this._data.comercio.entityGeneratedAt = now.toISOString();
+      // Actualizar estado local con aproximación para el re-render inmediato
+      this._data.comercio.entityGeneratedAt = new Date().toISOString();
+      this._data.comercio.fechaActualizacion = { toDate: () => new Date(Date.now() - 100) };
       this._calculateEntityState();
       this.render();
 
