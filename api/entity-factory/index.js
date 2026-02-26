@@ -1,138 +1,273 @@
-// src/pages/capacidadesCognitivas/capacidadesCognitivas.js
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { fileURLToPath } from 'url';
+import admin from 'firebase-admin';
 
-import './capacidadesCognitivas.css';
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
-import { runSkeleton }          from '../skeleton/skeleton.js';
-import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-import { createCard }            from '../skeleton/components/card/index.js';
-import { createCheckboxGroup }   from '../skeleton/components/checkbox-group/index.js';
-import { createButton }          from '../skeleton/components/button/index.js';
-import { showToast }             from '../skeleton/components/toast/index.js';
+// ----- Template Registry (visual)
+const templateRegistryPath = resolve(__dirname, 'templates/registry.entity.json');
+let templateRegistry = { templates: {} };
 
-// ─── DEFINICIÓN CANÓNICA ────────────────────────────────────
-const COGNITIVE_PERMISSIONS = {
-  explain_services: {
-    label: 'Explicar servicios',
-    description: 'Usar conocimiento general para enriquecer descripciones escuetas o técnicas de servicios que ya existen en el catálogo.'
-  },
-  relate_catalog_items: {
-    label: 'Relacionar productos o servicios',
-    description: 'Sugerir combinaciones lógicas entre ítems del catálogo real, basadas en conocimiento de dominio.'
-  },
-  infer_intent: {
-    label: 'Inferir necesidades del cliente',
-    description: 'Deducir intenciones no explícitas a partir de las preguntas del cliente, para afinar la respuesta sin asumir.'
-  },
-  simplify_language: {
-    label: 'Traducir lo técnico a simple',
-    description: 'Convertir jerga profesional o técnica en lenguaje cotidiano, usando analogías precisas y sin alterar hechos.'
-  },
-  compare_offered_options: {
-    label: 'Comparar opciones',
-    description: 'Explicar diferencias funcionales entre productos o servicios REALES que ofrece el comercio.'
-  },
-  justify_recommendations: {
-    label: 'Justificar recomendaciones',
-    description: 'Argumentar por qué una opción conviene, usando lógica causal basada en datos reales del catálogo.'
-  },
-  maintain_conversation_context: {
-    label: 'Recordar contexto de la conversación',
-    description: 'Mantener coherencia durante la sesión, recordando temas previos sin salir del universo del comercio.'
+try {
+  const raw = readFileSync(templateRegistryPath, 'utf-8');
+  const parsed = JSON.parse(raw);
+  if (parsed?.templates && typeof parsed.templates === 'object') {
+    templateRegistry.templates = parsed.templates;
+    console.log(`✅ Registry entity cargado: ${Object.keys(templateRegistry.templates).length} template(s)`);
   }
+} catch {
+  console.warn('⚠️ Registry entity no disponible. visual inactivo.');
+}
+
+// ----- Firebase Admin
+if (!admin.apps.length) {
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+    throw new Error('Falta FIREBASE_SERVICE_ACCOUNT');
+  }
+  admin.initializeApp({
+    credential: admin.credential.cert(
+      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    ),
+  });
+}
+const db = admin.firestore();
+
+// ----- Utils
+const hasData = (value) => {
+  if (typeof value === 'boolean') return true;
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
+  return value !== undefined && value !== null;
 };
 
-// ─── PÁGINA ─────────────────────────────────────────────────
-const page = {
-
-  async load(ctx) {
-    this.ctx = ctx;
-    this.cognitiveState = ctx.comercioData?.cognitive_permissions || {};
-  },
-
-  render() {
-    const root = document.getElementById('skeleton-page');
-    root.innerHTML = '';
-
-    // ── Header ──
-    const header = document.createElement('div');
-    header.className = 'ec-header';
-    header.innerHTML = `
-      <h2><i class="fas fa-brain"></i> Capacidades Cognitivas</h2>
-      <p class="ec-subtitle">Activá o desactivá las capacidades cognitivas de la entidad</p>
-    `;
-    root.appendChild(header);
-
-    // ── Checkbox group ──
-    this.checkboxGroup = createCheckboxGroup({
-      name: 'cognitive_permissions',
-      value: Object.keys(this.cognitiveState).filter(k => this.cognitiveState[k]?.enabled),
-      options: Object.entries(COGNITIVE_PERMISSIONS).map(([key, def]) => ({
-        value: key,
-        label: def.label,
-        description: def.description
-      }))
-    });
-
-    // ── Card contenedora ──
-    const card = createCard({
-      title: 'Capacidades cognitivas',
-      icon: 'fa-brain',
-      content: this.checkboxGroup
-    });
-    root.appendChild(card);
-
-    // ── Botón guardar ──
-    const btn = createButton({
-      label: 'Guardar capacidades cognitivas',
-      icon: 'fa-save',
-      variant: 'success',
-      size: 'lg',
-      block: true,
-      onClick: () => this.handleGuardar()
-    });
-
-    const btnWrap = document.createElement('div');
-    btnWrap.className = 'ec-save';
-    btnWrap.appendChild(btn);
-    root.appendChild(btnWrap);
-  },
-
-  async handleGuardar() {
-    const selectedKeys = this.checkboxGroup.getValue();
-
-    const cognitive_permissions = {};
-    selectedKeys.forEach(key => {
-      const def = COGNITIVE_PERMISSIONS[key];
-      if (def) {
-        cognitive_permissions[key] = {
-          enabled: true,
-          label: def.label,
-          description: def.description
-        };
-      }
-    });
-
-    try {
-      await this.ctx.persistence.updateData({ cognitive_permissions });
-
-      showToast({
-        title: 'Guardado',
-        message: 'Capacidades cognitivas actualizadas',
-        variant: 'success'
-      });
-    } catch (err) {
-      console.error('[capacidadesCognitivas] Error al guardar:', err);
-      showToast({
-        title: 'Error',
-        message: err.message,
-        variant: 'error'
-      });
+// ===== COGNITION BUILDER =====
+function buildCognitivePermissions(aiConfig = {}) {
+  const result = {};
+  for (const [key, value] of Object.entries(aiConfig.cognitive_permissions || {})) {
+    if (value?.enabled === true) {
+      result[key] = value;
     }
   }
-};
+  return result;
+}
 
-// ─── BOOT ───────────────────────────────────────────────────
-runSkeleton({
-  page,
-  adapter: createFirebaseAdapter
-});
+// ===== ENTITY BUILDER =====
+export async function buildEntity({ comercioId }) {
+  if (!comercioId) throw new Error('Falta comercioId');
+
+  // mind y capabilities (base)
+  const mind = JSON.parse(
+    readFileSync(resolve(__dirname, 'base/mind.json'), 'utf-8')
+  );
+  const capabilities = JSON.parse(
+    readFileSync(resolve(__dirname, 'base/capabilities.json'), 'utf-8')
+  );
+
+  // Firestore
+  const comercioRef = db.collection('comercios').doc(comercioId);
+  const snap = await comercioRef.get();
+  if (!snap.exists) {
+    throw new Error(`Comercio ${comercioId} no encontrado`);
+  }
+  const data = snap.data();
+
+  // ===== CONTEXT (ex-Block B sin catálogo) =====
+  const context = { id: comercioId };
+
+  if (hasData(data.nombreComercio)) context.nombre = data.nombreComercio;
+  if (hasData(data.descripcion)) context.descripcion = data.descripcion;
+
+  const ubicacion = {};
+  ['direccion', 'ciudad', 'provincia', 'pais'].forEach(k => {
+    if (hasData(data[k])) ubicacion[k] = data[k];
+  });
+  if (hasData(ubicacion)) context.ubicacion = ubicacion;
+
+  const contacto = {};
+  ['telefono', 'whatsapp', 'email', 'website', 'instagram', 'facebook', 'tiktok']
+    .forEach(k => {
+      if (hasData(data[k])) contacto[k] = data[k];
+    });
+  if (hasData(contacto)) context.contacto = contacto;
+
+  if (hasData(data.horarios)) context.horarios = data.horarios;
+  if (hasData(data.plan)) context.plan = data.plan;
+  if (hasData(data.templateId)) context.templateId = data.templateId;
+  if (hasData(data.categories)) context.categorias = data.categories;
+
+  // IA config → context
+  if (hasData(data.aiConfig)) {
+    const ai = data.aiConfig;
+    context.ia = {};
+
+    if (hasData(ai.aiName)) context.ia.nombre = ai.aiName;
+    if (hasData(ai.aiGreeting)) context.ia.saludo = ai.aiGreeting;
+    if (hasData(ai.aiLanguage)) context.ia.idioma = ai.aiLanguage;
+    if (hasData(ai.aiPersonality)) context.ia.personalidad = ai.aiPersonality;
+    if (hasData(ai.aiTone)) context.ia.tono = ai.aiTone;
+    if (hasData(ai.formatoRespuestas)) context.ia.formatoRespuestas = ai.formatoRespuestas;
+    if (hasData(ai.proactividad)) context.ia.proactividad = ai.proactividad;
+
+    if (!hasData(context.ia)) delete context.ia;
+  }
+
+  // ===== GOODS (ex-catálogo de Block B) =====
+  let goods = { enabled: false };
+  
+  try {
+    const ps = await comercioRef.collection('productos').get();
+    const productos = ps.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    if (productos.length) {
+      goods = {
+        enabled: true,
+        moneda: data.moneda || 'ARS',
+        secciones: [{
+          id: 'principal',
+          titulo: data.nombreComercio || 'Catálogo',
+          tipo: 'grid',
+          prioridad: 1,
+          items: productos.map(p => ({
+            id: p.id,
+            nombre: p.nombre,
+            precio_final: p.precio_final,
+            paused: p.paused ?? false,
+            ...(hasData(p.codigo) && { codigo: p.codigo }),
+            ...(hasData(p.descripcion) && { descripcion: p.descripcion }),
+            ...(hasData(p.stock) && { stock: p.stock })
+          }))
+        }]
+      };
+    }
+  } catch (err) {
+    console.warn('⚠️ No se pudieron cargar productos (goods)', err);
+  }
+
+  // Referral
+  let referralCode = comercioId.substring(0, 8).toUpperCase();
+  if (data.duenoId) {
+    const ownerSnap = await db.collection('usuarios').doc(data.duenoId).get();
+    if (ownerSnap.exists && ownerSnap.data()?.referralId) {
+      referralCode = ownerSnap.data().referralId;
+    }
+  }
+
+  context.referral = {
+    code: referralCode,
+    shareMessage: `¿Querés tu IA? Visitá https://indiceia.app/r/${referralCode}`
+  };
+
+  context.updatedAt = new Date().toISOString();
+  Object.freeze(context);
+
+  // ===== MIND (ex-Block A con cognition integrado) =====
+  const liveEnabled = ['trial', 'pro', 'highvalue', 'premium'].includes(data.plan);
+
+  const mindProcessed = JSON.parse(
+    JSON.stringify(mind)
+      .replace(/{{LIVE_ENABLED}}/g, liveEnabled.toString())
+      .replace(/{{REFERRAL_URL}}/g, `https://indiceia.app/guia?ref=${referralCode}`)
+  );
+
+  // ---- cognition (solo si hay al menos un permiso habilitado)
+  const cognitivePermissions = buildCognitivePermissions(data.aiConfig);
+  if (Object.keys(cognitivePermissions).length > 0) {
+    mindProcessed.cognitive_permissions = cognitivePermissions;
+  }
+  // ❌ Si no, NO se escribe NADA → el campo no existe
+
+  // ===== CAPABILITIES (ex-Block D) =====
+  if (capabilities?.availableChannels && context.contacto) {
+    Object.entries(capabilities.availableChannels).forEach(([ch, cfg]) => {
+      if (typeof cfg === 'object') {
+        cfg.enabled = hasData(context.contacto[ch]);
+      }
+    });
+  }
+  Object.freeze(capabilities);
+
+  // ===== VISUAL (ex-Block C) =====
+  let visual = {};
+  try {
+    visual = JSON.parse(
+      readFileSync(resolve(__dirname, 'base/visual.json'), 'utf-8')
+    ).C;
+
+    if (hasData(context.templateId)) {
+      const t = templateRegistry.templates[context.templateId];
+      if (t) {
+        visual.visual = {
+          available: true,
+          mode: 'iframe',
+          runtime: {
+            iframe_url: `https://indiceia-templates.vercel.app${t.paths.runtime_html}`,
+            input: {
+              binding: 'bloque_B_contexto_comercial',
+              strategy: 'postMessage'
+            }
+          }
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ No se pudo cargar visual.json, visual inhabilitado', err);
+    visual = {};
+  }
+
+  // ===== SERVICES (ex-Block E) =====
+  let services = { enabled: false };
+
+  try {
+    const ss = await comercioRef.collection('servicios').get();
+
+    const servicios = ss.docs.map(d => {
+      const s = d.data();
+      return {
+        id: d.id,
+        titulo: s.nombre || '',
+        que: s.descripcion || '',
+        como: s.modalidad || '',
+        cuando: s.disponibilidad || '',
+        prestacion: s.prestacion || 'variable',
+        activo: s.activo === true,
+        ...(hasData(s.precio) && { precio: s.precio }),
+        ...(hasData(s.notas) && { notas: s.notas })
+      };
+    });
+
+    if (servicios.length > 0) {
+      services = { enabled: true, servicios };
+    }
+  } catch (err) {
+    console.warn('⚠️ No se pudieron cargar servicios (services)', err);
+    services = { enabled: false };
+  }
+
+  Object.freeze(services);
+
+  // ===== FINAL ENTITY =====
+  return {
+    meta: {
+      version: mindProcessed?.meta?.version || '1.0.0',
+      tipo: 'entidad_comercial_indiceIA',
+      comercioId,
+      generatedAt: new Date().toISOString(),
+      mode: 'production'
+    },
+    contracts: {
+      context: { role: 'identity', mutable: false },
+      goods: { role: 'products_catalog', optional: true },
+      services: { role: 'services_catalog', optional: true },
+      visual: { role: 'visual_only', optional: true },
+      capabilities: { role: 'interaction_protocols', mutable: false }
+    },
+    mind: mindProcessed,
+    context,
+    goods,
+    services,
+    visual,
+    capabilities
+  };
+}
