@@ -1,10 +1,13 @@
 // src/skeleton/skeleton.js
 
-import { runLifecycle }     from './lifecycle.js';
-import { initDirtyState }   from './dirtyState.js';
-import { renderLayout }     from './layout/renderLayout.js';
-import { mountLayout }      from './layout/index.js';
+import { runLifecycle }      from './lifecycle.js';
+import { initDirtyState }    from './dirtyState.js';
+import { renderLayout }      from './layout/renderLayout.js';
+import { mountLayout }       from './layout/index.js';
 import { initializeRuntime } from './runtime.js';
+import { runFlowController } from '../controllers/flowController.js';
+import { auth }              from '../services/firebase/firebase.js';
+import { onAuthStateChanged } from 'firebase/auth';
 
 /**
  * Skeleton canónico de ÍndiceIA
@@ -24,6 +27,12 @@ export async function runSkeleton({ page, adapter, options = {} }) {
   await runLifecycle({
     adapter,
     options,
+    onAuthError: () => {
+      // Sin sesión o usuario sin doc → flowController decide
+      onAuthStateChanged(auth, (user) => {
+        runFlowController(user?.uid || null);
+      });
+    },
     onReady: async (context) => {
 
       // 🎯 3. Runtime — single source of truth
@@ -39,8 +48,6 @@ export async function runSkeleton({ page, adapter, options = {} }) {
       page.render();
 
       // 💾 7. Dirty state
-      // FIX: la condición original chequeaba page.save que no existe en ninguna página.
-      // La API real del dirty state es getCurrentData + isFormValid (ver dirtyState.js).
       if (
         typeof page.getCurrentData === 'function' &&
         typeof page.isFormValid   === 'function'
