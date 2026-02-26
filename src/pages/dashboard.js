@@ -7,6 +7,7 @@ import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js
 import { createCard }            from '/src/skeleton/components/card/index.js';
 import { createButton }          from '/src/skeleton/components/button/index.js';
 import { showToast }             from '/src/skeleton/components/toast/index.js';
+import { getServicios } from '/src/services/firebase/db.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, hasLiveAccess, isHighValuePlan } from '/src/shared/plans.js';
 import './dashboard.css';
 
@@ -33,6 +34,7 @@ const page = {
     console.log('ctx.comercioId:', ctx.comercioId);
     console.log('ctx.comercioData:', ctx.comercioData);
 
+    this._data.ctx       = ctx;                        // ← para persistence
     this._data.user      = ctx.user;
     this._data.userData  = ctx.userData || {};
     this._data.offerType = ctx.userData?.offerType || {};
@@ -49,16 +51,27 @@ const page = {
 
   _calculateEntityState() {
     console.group('[dashboard] _calculateEntityState()');
-    const c          = this._data.comercio;
-    const lastGen    = c.entityLastGeneratedAt?.toDate?.() || null;
-    const lastUpdate = c.lastConfigUpdateAt?.toDate?.()    || null;
+    const c = this._data.comercio;
 
-    console.log('lastGen:', lastGen);
-    console.log('lastUpdate:', lastUpdate);
+    // entityGeneratedAt puede ser Timestamp (nuevo) o string ISO (legacy)
+    let lastGen = null;
+    if (c.entityGeneratedAt) {
+      lastGen = typeof c.entityGeneratedAt === 'string'
+        ? new Date(c.entityGeneratedAt)
+        : c.entityGeneratedAt?.toDate?.() || null;
+    }
+
+    // fechaActualizacion es siempre Timestamp
+    const lastUpdate = c.fechaActualizacion?.toDate?.() || null;
+
+    console.log('entityGeneratedAt (raw):', c.entityGeneratedAt);
+    console.log('lastGen (parsed):', lastGen);
+    console.log('fechaActualizacion (raw):', c.fechaActualizacion);
+    console.log('lastUpdate (parsed):', lastUpdate);
 
     if (!lastGen) {
       this._data.entityState = 'never';
-      console.log('entityState → never (no hay lastGen)');
+      console.log('entityState → never');
       console.groupEnd();
       return;
     }
@@ -74,19 +87,11 @@ const page = {
   async _loadServiciosStats() {
     console.group('[dashboard] _loadServiciosStats()');
     try {
-      const { getDocs, collection, db } = await import('firebase/firestore');
-      const comercioId = this._data.comercio.id;
-      console.log('comercioId:', comercioId);
-
-      const snapshot = await getDocs(
-        collection(db, 'comercios', comercioId, 'servicios')
-      );
-
+      const servicios = await getServicios();
       let activos = 0, pausados = 0;
-      snapshot.docs.forEach(d => {
-        d.data().activo === false ? pausados++ : activos++;
+      servicios.forEach(s => {
+        s.activo === false ? pausados++ : activos++;
       });
-
       this._data.serviciosStats = { activos, pausados, total: activos + pausados };
       console.log('serviciosStats:', this._data.serviciosStats);
     } catch (err) {
@@ -551,6 +556,8 @@ const page = {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
 
     try {
+      console.log('[dashboard] Generando entidad para:', this._data.comercio.id);
+
       const response = await fetch('/api/generate-and-upload-entity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -560,16 +567,24 @@ const page = {
       const data = await response.json();
       if (!data.ok) throw new Error(data.error);
 
-      showToast('Entidad publicada correctamente', 'success');
+      console.log('[dashboard] Entidad generada OK, actualizando timestamp...');
 
-      const { updateDoc, doc, db, serverTimestamp } = await import('firebase/firestore');
-      await updateDoc(doc(db, 'comercios', this._data.comercio.id), {
-        entityLastGeneratedAt: serverTimestamp()
+      // ✅ Sin Firebase directo — persistence del context
+      // Guardamos como ISO string para consistencia con el campo existente
+      // En futuras generaciones quedará como string normalizado
+      const now = new Date();
+      await this._data.ctx.persistence.updateData({
+        entityGeneratedAt: now.toISOString()
       });
 
-      this._data.comercio.entityLastGeneratedAt = new Date();
+      console.log('[dashboard] Timestamp guardado:', now.toISOString());
+
+      // Actualizar estado local y re-render
+      this._data.comercio.entityGeneratedAt = now.toISOString();
       this._calculateEntityState();
       this.render();
+
+      showToast('Entidad publicada correctamente', 'success');
 
     } catch (err) {
       console.error('[dashboard] Error generando entidad:', err);
