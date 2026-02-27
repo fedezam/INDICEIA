@@ -7,7 +7,8 @@ import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js
 import { createCard }            from '/src/skeleton/components/card/index.js';
 import { createButton }          from '/src/skeleton/components/button/index.js';
 import { showToast }             from '/src/skeleton/components/toast/index.js';
-import { getServicios } from '/src/services/firebase/db.js';
+import { getServicios }          from '/src/services/firebase/db.js';
+import { runFlowController }     from '/src/controllers/flowController.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, hasLiveAccess, isHighValuePlan } from '/src/shared/plans.js';
 import './dashboard.css';
 
@@ -28,13 +29,16 @@ const page = {
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
+    // 🔒 Verificar pipeline antes de renderizar
+    await runFlowController(ctx.user?.uid);
+
     console.group('[dashboard] load()');
     console.log('ctx.user:', ctx.user?.uid);
     console.log('ctx.userData:', ctx.userData);
     console.log('ctx.comercioId:', ctx.comercioId);
     console.log('ctx.comercioData:', ctx.comercioData);
 
-    this._data.ctx       = ctx;                        // ← para persistence
+    this._data.ctx       = ctx;
     this._data.user      = ctx.user;
     this._data.userData  = ctx.userData || {};
     this._data.offerType = ctx.userData?.offerType || {};
@@ -53,7 +57,6 @@ const page = {
     console.group('[dashboard] _calculateEntityState()');
     const c = this._data.comercio;
 
-    // entityGeneratedAt puede ser Timestamp (nuevo) o string ISO (legacy)
     let lastGen = null;
     if (c.entityGeneratedAt) {
       lastGen = typeof c.entityGeneratedAt === 'string'
@@ -61,7 +64,6 @@ const page = {
         : c.entityGeneratedAt?.toDate?.() || null;
     }
 
-    // fechaActualizacion es siempre Timestamp
     const lastUpdate = c.fechaActualizacion?.toDate?.() || null;
 
     console.log('entityGeneratedAt (raw):', c.entityGeneratedAt);
@@ -108,14 +110,11 @@ const page = {
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
 
-    // Zona superior: Plan + Usuario
     root.appendChild(this._renderZonaSuperior());
 
-    // Banner global (solo si hay problema con la entidad)
     if (this._data.entityState === 'outdated') root.appendChild(this._renderOutdatedBanner());
     if (this._data.entityState === 'never')    root.appendChild(this._renderNeverGeneratedBanner());
 
-    // Secciones
     root.appendChild(this._renderSeccion(
       '🏪 El Comercio',
       'Tu estructura base: qué ofrecés, cuándo y cómo.',
@@ -579,9 +578,6 @@ const page = {
 
       console.log('[dashboard] Entidad generada OK, guardando timestamp...');
 
-      // ✅ serverTimestamp() — mismo origen que fechaActualizacion
-      // No usamos persistence.updateData() porque ese método
-      // actualiza fechaActualizacion causando outdated en el reload
       const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
       const { db } = await import('/src/services/firebase/firebase.js');
 
@@ -592,7 +588,6 @@ const page = {
 
       console.log('[dashboard] Timestamp guardado con serverTimestamp');
 
-      // Actualizar estado local con aproximación para el re-render inmediato
       this._data.comercio.entityGeneratedAt = new Date().toISOString();
       this._data.comercio.fechaActualizacion = { toDate: () => new Date(Date.now() - 100) };
       this._calculateEntityState();
