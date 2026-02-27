@@ -1,12 +1,6 @@
 // ============================================================
 // src/pages/mi-comercio/mi-comercio.js
 // ============================================================
-// 🧠 CONTRATO ctx:
-//   ctx.user.uid           → uid del usuario autenticado
-//   ctx.userData           → doc /usuarios/{uid}
-//   ctx.comercioData       → doc /comercios/{id} (puede ser null si es nuevo)
-//   ctx.comercioId         → ID del comercio
-// ============================================================
 
 // ==================== SKELETON CORE ====================
 import { runLifecycle }          from '/src/skeleton/lifecycle.js';
@@ -21,11 +15,11 @@ import { db } from '/src/services/firebase/firebase.js';
 import { runFlowController } from '/src/controllers/flowController.js';
 
 // ==================== COMPONENTES ====================
-import { createFormField }       from '/src/skeleton/components/form-field/index.js';
-import { createButton }          from '/src/skeleton/components/button/index.js';
-import { createCard }            from '/src/skeleton/components/card/index.js';
+import { createFormField }        from '/src/skeleton/components/form-field/index.js';
+import { createButton }           from '/src/skeleton/components/button/index.js';
+import { createCard }             from '/src/skeleton/components/card/index.js';
 import { createCategorySelector } from '/src/skeleton/components/category-selector/index.js';
-import { showToast }             from '/src/skeleton/components/toast/index.js';
+import { showToast }              from '/src/skeleton/components/toast/index.js';
 
 // ==================== SHARED ====================
 import { fillProvinciaSelector } from '/src/shared/provincias.js';
@@ -88,17 +82,14 @@ runLifecycle({
 });
 
 // ============================================================
-// LOAD — solo datos, sin tocar el DOM
+// LOAD
 // ============================================================
 async function load(ctx) {
   const isNewComercio = !ctx.comercioData || !ctx.comercioData.nombreComercio;
   const comercioData = ctx.comercioData || {};
 
-  // Slug actual
   const comercioSlug = comercioData.landing?.slug || null;
   const slugDisponible = !!comercioSlug;
-
-  // Métodos de pago seleccionados
   const selectedPaymentMethods = comercioData.paymentMethods || [];
 
   return {
@@ -111,13 +102,12 @@ async function load(ctx) {
 }
 
 // ============================================================
-// RENDER — solo DOM, sin lógica de negocio
+// RENDER
 // ============================================================
 function render(ctx, state) {
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
-  // Referencias a componentes (closures compartidas)
   const refs = {
     fields: {},
     categorySelector: null,
@@ -128,33 +118,28 @@ function render(ctx, state) {
     slugValidationTimer: null,
   };
 
-  // Estado mutable local (solo UI)
   const uiState = {
     comercioSlug: state.comercioSlug,
     slugDisponible: state.slugDisponible,
     selectedPaymentMethods: [...state.selectedPaymentMethods],
   };
 
-  // ==================== TÍTULO ====================
   const title = document.createElement('h2');
   title.textContent = state.isNewComercio ? 'Crear Mi Comercio' : 'Editar Mi Comercio';
   title.className = 'page-title';
   page.appendChild(title);
 
-  // ==================== SECCIONES ====================
   page.appendChild(renderSeccionBasicos(state, refs, uiState));
-  page.appendChild(renderSeccionUbicacion(state, refs));
-  page.appendChild(renderSeccionContacto(state, refs));
-  page.appendChild(renderSeccionRedes(state, refs));
-  page.appendChild(renderSeccionCategorias(state, refs));
+  page.appendChild(renderSeccionUbicacion(state, refs, uiState));  // ← uiState agregado
+  page.appendChild(renderSeccionContacto(state, refs, uiState));
+  page.appendChild(renderSeccionRedes(state, refs, uiState));
+  page.appendChild(renderSeccionCategorias(state, refs, uiState));
   page.appendChild(renderSeccionPagos(state, refs, uiState));
 
-  // Solo mostrar slug si es nuevo o no tiene
   if (!state.comercioData.landing?.slug) {
     page.appendChild(renderSeccionSlug(state, refs, uiState));
   }
 
-  // ==================== BOTÓN GUARDAR ====================
   refs.guardarBtn = createButton({
     label: 'Guardar Comercio',
     icon: 'fa-save',
@@ -169,7 +154,6 @@ function render(ctx, state) {
   btnContainer.appendChild(refs.guardarBtn);
   page.appendChild(btnContainer);
 
-  // Validar formulario inicial
   validateForm(state, refs, uiState);
 }
 
@@ -202,12 +186,10 @@ function renderSeccionBasicos(state, refs, uiState) {
 
   section.append(refs.fields.nombreComercio, refs.fields.descripcion);
 
-  // Auto-generar slug desde nombre (solo para nuevos)
   if (!uiState.comercioSlug) {
     refs.fields.nombreComercio.input.addEventListener('input', () => {
       clearTimeout(refs.slugValidationTimer);
       const nombre = refs.fields.nombreComercio.input.value.trim();
-
       if (nombre.length >= 3 && refs.slugInput) {
         refs.slugValidationTimer = setTimeout(async () => {
           const newSlug = slugify(nombre);
@@ -218,7 +200,6 @@ function renderSeccionBasicos(state, refs, uiState) {
     });
   }
 
-  // Validación
   [refs.fields.nombreComercio, refs.fields.descripcion].forEach(field => {
     field.input.addEventListener('input', () => validateForm(state, refs, uiState));
   });
@@ -226,7 +207,7 @@ function renderSeccionBasicos(state, refs, uiState) {
   return section;
 }
 
-function renderSeccionUbicacion(state, refs) {
+function renderSeccionUbicacion(state, refs, uiState) {  // ← uiState agregado
   const section = document.createElement('div');
   section.className = 'form-section';
 
@@ -264,29 +245,24 @@ function renderSeccionUbicacion(state, refs) {
 
   section.append(refs.fields.pais, refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion);
 
-  // ✅ FIX: orden correcto de parámetros
   fillProvinciaSelector('Argentina', refs.fields.provincia.input);
 
-  // ✅ Pre-seleccionar la provincia guardada en Firestore
   const provinciaSaved = state.comercioData.provincia || null;
   if (provinciaSaved) {
     refs.fields.provincia.input.value = provinciaSaved;
     console.log('✅ Provincia cargada desde DB:', provinciaSaved);
-    console.log('✅ Valor actual del select:', refs.fields.provincia.input.value);
   } else {
     console.log('ℹ️ No hay provincia guardada en DB, select vacío');
   }
 
-  // Validación
   [refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion].forEach(field => {
-    field.input.addEventListener('input', () => validateForm(state, refs, uiState));
+    field.input.addEventListener('input', () => validateForm(state, refs, uiState));  // ← uiState ahora existe
   });
 
   return section;
 }
 
-
-function renderSeccionContacto(state, refs) {
+function renderSeccionContacto(state, refs, uiState) {
   const section = document.createElement('div');
   section.className = 'form-section';
 
@@ -321,7 +297,7 @@ function renderSeccionContacto(state, refs) {
   return section;
 }
 
-function renderSeccionRedes(state, refs) {
+function renderSeccionRedes(state, refs, uiState) {
   const section = document.createElement('div');
   section.className = 'form-section';
 
@@ -335,33 +311,23 @@ function renderSeccionRedes(state, refs) {
   section.appendChild(help);
 
   refs.fields.website = createFormField({
-    label: 'Sitio Web',
-    name: 'website',
-    type: 'url',
-    placeholder: 'https://...',
-    value: state.comercioData.website || ''
+    label: 'Sitio Web', name: 'website', type: 'url',
+    placeholder: 'https://...', value: state.comercioData.website || ''
   });
 
   refs.fields.instagram = createFormField({
-    label: 'Instagram',
-    name: 'instagram',
-    placeholder: '@usuario',
-    value: state.comercioData.instagram || ''
+    label: 'Instagram', name: 'instagram',
+    placeholder: '@usuario', value: state.comercioData.instagram || ''
   });
 
   refs.fields.facebook = createFormField({
-    label: 'Facebook',
-    name: 'facebook',
-    placeholder: 'facebook.com/usuario',
-    value: state.comercioData.facebook || ''
+    label: 'Facebook', name: 'facebook',
+    placeholder: 'facebook.com/usuario', value: state.comercioData.facebook || ''
   });
 
   refs.fields.whatsapp = createFormField({
-    label: 'WhatsApp',
-    name: 'whatsapp',
-    type: 'tel',
-    placeholder: '+54 9 11 1234-5678',
-    value: state.comercioData.whatsapp || ''
+    label: 'WhatsApp', name: 'whatsapp', type: 'tel',
+    placeholder: '+54 9 11 1234-5678', value: state.comercioData.whatsapp || ''
   });
 
   section.append(refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp);
@@ -373,7 +339,7 @@ function renderSeccionRedes(state, refs) {
   return section;
 }
 
-function renderSeccionCategorias(state, refs) {
+function renderSeccionCategorias(state, refs, uiState) {
   const section = document.createElement('div');
   section.className = 'form-section';
 
@@ -382,9 +348,13 @@ function renderSeccionCategorias(state, refs) {
   section.appendChild(h3);
 
   refs.categorySelector = createCategorySelector({
-    categories: CATEGORIAS_COMUNES,
+    options: CATEGORIAS_COMUNES,                      // ← 'options' no 'categories'
     selected: state.comercioData.categories || [],
-    onChange: () => validateForm(state, refs, uiState)
+  });
+
+  // ← evento correcto del componente
+  refs.categorySelector.addEventListener('categories-change', () => {
+    validateForm(state, refs, uiState);
   });
 
   section.appendChild(refs.categorySelector);
@@ -466,13 +436,9 @@ function renderSeccionSlug(state, refs, uiState) {
 
   refs.slugStatus = document.createElement('div');
   refs.slugStatus.className = 'slug-status';
-  refs.slugStatus.innerHTML = `
-    <span class="slug-icon"></span>
-    <span class="slug-text"></span>
-  `;
+  refs.slugStatus.innerHTML = `<span class="slug-icon"></span><span class="slug-text"></span>`;
   section.appendChild(refs.slugStatus);
 
-  // Validación al escribir
   refs.slugInput.addEventListener('input', () => {
     clearTimeout(refs.slugValidationTimer);
     const slug = refs.slugInput.value.trim();
@@ -515,9 +481,7 @@ async function validarSlug(slug, refs, uiState, autoGenerated) {
       return;
     }
 
-    // Ya existe
     if (autoGenerated) {
-      // Sugerir alternativas
       for (let i = 1; i <= 3; i++) {
         const alt = `${slug}-${i}`;
         const altSnap = await getDoc(doc(db, 'landings', alt));
@@ -553,12 +517,12 @@ function updateSlugStatus(refs, status, message) {
   const text = refs.slugStatus.querySelector('.slug-text');
 
   const icons = {
-    checking: '<i class="fas fa-spinner fa-spin"></i>',
-    available: '<i class="fas fa-check-circle" style="color: var(--s-success)"></i>',
+    checking:   '<i class="fas fa-spinner fa-spin"></i>',
+    available:  '<i class="fas fa-check-circle" style="color: var(--s-success)"></i>',
     suggestion: '<i class="fas fa-info-circle" style="color: var(--s-info)"></i>',
-    taken: '<i class="fas fa-times-circle" style="color: var(--s-danger)"></i>',
-    error: '<i class="fas fa-exclamation-triangle" style="color: var(--s-warning)"></i>',
-    empty: ''
+    taken:      '<i class="fas fa-times-circle" style="color: var(--s-danger)"></i>',
+    error:      '<i class="fas fa-exclamation-triangle" style="color: var(--s-warning)"></i>',
+    empty:      ''
   };
 
   icon.innerHTML = icons[status] || '';
@@ -616,24 +580,23 @@ async function handleGuardar(ctx, state, refs, uiState) {
   try {
     const updates = {
       nombreComercio: refs.fields.nombreComercio.input.value.trim(),
-      descripcion: refs.fields.descripcion.input.value.trim(),
-      pais: 'Argentina',
-      provincia: refs.fields.provincia.input.value.trim(),
-      ciudad: refs.fields.ciudad.input.value.trim(),
-      direccion: refs.fields.direccion.input.value.trim(),
-      telefono: refs.fields.telefono.input.value.trim(),
-      email: refs.fields.email.input.value.trim(),
-      website: refs.fields.website.input.value.trim() || null,
-      instagram: refs.fields.instagram.input.value.trim() || null,
-      facebook: refs.fields.facebook.input.value.trim() || null,
-      whatsapp: refs.fields.whatsapp.input.value.trim() || null,
-      categories: refs.categorySelector.getSelected(),
+      descripcion:    refs.fields.descripcion.input.value.trim(),
+      pais:           'Argentina',
+      provincia:      refs.fields.provincia.input.value.trim(),
+      ciudad:         refs.fields.ciudad.input.value.trim(),
+      direccion:      refs.fields.direccion.input.value.trim(),
+      telefono:       refs.fields.telefono.input.value.trim(),
+      email:          refs.fields.email.input.value.trim(),
+      website:        refs.fields.website.input.value.trim() || null,
+      instagram:      refs.fields.instagram.input.value.trim() || null,
+      facebook:       refs.fields.facebook.input.value.trim() || null,
+      whatsapp:       refs.fields.whatsapp.input.value.trim() || null,
+      categories:     refs.categorySelector.getSelected(),
       paymentMethods: uiState.selectedPaymentMethods
     };
 
     const originalHasLanding = state.comercioData.landing?.slug;
 
-    // Landing
     if (!originalHasLanding) {
       updates.landing = {
         activo: true,
@@ -651,7 +614,6 @@ async function handleGuardar(ctx, state, refs, uiState) {
       };
     }
 
-    // ==================== CREAR vs ACTUALIZAR ====================
     if (state.isNewComercio) {
       console.log('🆕 Creando comercio nuevo...');
 
@@ -660,32 +622,22 @@ async function handleGuardar(ctx, state, refs, uiState) {
         duenoId: ctx.user.uid,
         fechaCreacion: new Date(),
         fechaActualizacion: new Date(),
-        onboardingSteps: {
-          'mi-comercio': true
-        }
+        onboardingSteps: { 'mi-comercio': true }
       };
 
       await setDoc(doc(db, 'comercios', ctx.comercioId), nuevoComercio);
 
-      // PLAN TRIAL 30 DÍAS
       const now = Timestamp.now();
       const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 
       await updateDoc(doc(db, 'comercios', ctx.comercioId), {
         plan: {
-          type: 'trial',
-          active: true,
-          trial: true,
-          startedAt: now,
-          expiresAt: expiresAt,
-          createdAt: now,
-          updatedAt: now,
-          source: 'system'
+          type: 'trial', active: true, trial: true,
+          startedAt: now, expiresAt, createdAt: now, updatedAt: now, source: 'system'
         },
         fechaActualizacion: new Date()
       });
 
-      // Crear índice landing
       await setDoc(doc(db, 'landings', uiState.comercioSlug), {
         slug: uiState.comercioSlug,
         comercioId: ctx.comercioId,
@@ -695,7 +647,6 @@ async function handleGuardar(ctx, state, refs, uiState) {
         updatedAt: new Date()
       });
 
-      // Guardar comercioId en usuario
       await updateDoc(doc(db, 'usuarios', ctx.user.uid), {
         comercioId: ctx.comercioId,
         'onboardingSteps.mi-comercio': true
@@ -709,7 +660,6 @@ async function handleGuardar(ctx, state, refs, uiState) {
 
       await updateDoc(doc(db, 'comercios', ctx.comercioId), updates);
 
-      // Crear landing si no existía
       if (!originalHasLanding) {
         await setDoc(doc(db, 'landings', uiState.comercioSlug), {
           slug: uiState.comercioSlug,
