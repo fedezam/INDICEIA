@@ -17,6 +17,7 @@ console.log("auth.js cargado ✅");
 const googleBtn = document.getElementById("googleLogin");
 const form = document.getElementById("emailLogin");
 const toggleLink = document.getElementById("toggleModeLink");
+
 let isRegisterMode = false;
 
 // ===== LOGIN / REGISTER EMAIL =====
@@ -45,7 +46,8 @@ if (form) {
         await signInWithEmailAndPassword(auth, email, password);
         console.log("✅ Sesión iniciada:", email);
       }
-      window.location.href = "/src/pages/usuario.html";
+      // Email/password siempre va a dashboard, flow controller intercepta
+      window.location.href = "/src/pages/dashboard.html";
     } catch (err) {
       console.error("⚠️ Error en auth:", err);
       alert(err.message);
@@ -57,13 +59,11 @@ if (form) {
 if (googleBtn) {
   googleBtn.addEventListener("click", async () => {
     console.log("🌐 Login con Google iniciado...");
-    
     try {
-      // Solo hacer el login, main.js se encarga de guardar
       await signInWithPopup(auth, provider);
       console.log("✅ Login con Google exitoso");
-      // No redirigir aquí, lo hace main.js con onAuthStateChanged
-      
+      // Va a dashboard, flow controller intercepta y manda al paso correcto
+      window.location.href = "/src/pages/dashboard.html";
     } catch (err) {
       console.error("⚠️ Error en login con Google:", err);
       alert("Error al iniciar sesión con Google: " + err.message);
@@ -76,7 +76,7 @@ if (toggleLink) {
   toggleLink.addEventListener("click", e => {
     e.preventDefault();
     isRegisterMode = !isRegisterMode;
-    
+
     const repeatGroup = document.getElementById("repeatPasswordGroup");
     const btnText = document.getElementById("btnText");
     const subtitle = document.getElementById("loginSubtitle");
