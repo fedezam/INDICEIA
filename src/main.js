@@ -47,9 +47,18 @@ onAuthStateChanged(auth, async (user) => {
     } catch (error) {
       console.error("❌ Error al guardar usuario:", error);
     }
-    
-    // ✅ REDIRECCIÓN CON FLOW CONTROLLER (siempre, en cualquier página)
-    console.log('Usuario detectado - ejecutando flow controller...');
+
+    // Desde login/index → siempre a usuario.html, flow controller toma el control desde ahí
+    const isLoginPage = window.location.pathname === '/' || 
+                        window.location.pathname.endsWith('index.html');
+
+    if (isLoginPage) {
+      console.log('Login detectado → redirigiendo a usuario...');
+      window.location.href = '/src/pages/usuario.html';
+      return;
+    }
+
+    // En cualquier otra página → flow controller
     runFlowController(user.uid);
 
   } else {
