@@ -2,10 +2,10 @@
 // firebaseAdapter.js
 // Adapter entre skeleton y firebaseDB
 // ============================================
-
 import { resolveFirebaseContext } from '../../services/firebase/context.js';
 import {
   updateComercioData,
+  updateUserData,
   markOnboardingStep,
   deleteComercioFields
 } from '../../services/firebase/db.js';
@@ -39,7 +39,6 @@ export function createFirebaseAdapter(options = {}) {
         try {
           const isEditMode =
             new URLSearchParams(window.location.search).get('edit') === 'true';
-
           const context = {
             ...baseContext,
             // 🔧 Normalización central
@@ -48,9 +47,15 @@ export function createFirebaseAdapter(options = {}) {
             currentComercioId: baseContext.comercioId,
             // 🔥 Persistencia integrada
             persistence: {
+              // Para páginas de COMERCIO (horarios, servicios, productos, ia-config...)
               async updateData(data) {
                 await updateComercioData(data);
               },
+              // Para páginas de USUARIO (usuario, modelo-negocio)
+              async updateUserData(data) {
+                await updateUserData(data);
+              },
+              // Sabe solo dónde escribir el step según el nombre
               async markStepCompleted(stepName) {
                 await markOnboardingStep(stepName, true);
               },
@@ -60,7 +65,6 @@ export function createFirebaseAdapter(options = {}) {
             },
             ...options
           };
-
           resolve(context);
         } catch (err) {
           reject(err);
