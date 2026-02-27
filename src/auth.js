@@ -46,8 +46,7 @@ if (form) {
         await signInWithEmailAndPassword(auth, email, password);
         console.log("✅ Sesión iniciada:", email);
       }
-      // Email/password siempre va a dashboard, flow controller intercepta
-      window.location.href = "/src/pages/dashboard.html";
+      // main.js detecta el login y redirige a usuario.html
     } catch (err) {
       console.error("⚠️ Error en auth:", err);
       alert(err.message);
@@ -62,8 +61,7 @@ if (googleBtn) {
     try {
       await signInWithPopup(auth, provider);
       console.log("✅ Login con Google exitoso");
-      // Va a dashboard, flow controller intercepta y manda al paso correcto
-      window.location.href = "/src/pages/dashboard.html";
+      // main.js detecta el login vía onAuthStateChanged y redirige a usuario.html
     } catch (err) {
       console.error("⚠️ Error en login con Google:", err);
       alert("Error al iniciar sesión con Google: " + err.message);
