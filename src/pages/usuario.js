@@ -81,6 +81,15 @@ function render(ctx, state) {
     value: userData.apellido || ''
   });
 
+  const mail = createFormField({
+    label: 'Email',
+    name: 'mail',
+    type: 'email',
+    required: false,
+    value: userData.mail || '',
+    disabled: true   // solo lectura, viene de Google o del registro
+  });
+
   const fechaNacimiento = createFormField({
     label: 'Fecha de nacimiento',
     name: 'fechaNacimiento',
@@ -117,7 +126,7 @@ function render(ctx, state) {
     value: userData.direccion || ''
   });
 
-  page.append(nombre, apellido, fechaNacimiento, telefono, provincia, localidad, direccion);
+  page.append(nombre, apellido, mail, fechaNacimiento, telefono, provincia, localidad, direccion);
 
   // Llenar provincias
   fillProvinciaSelector('Argentina', provincia.input);
@@ -133,16 +142,22 @@ function render(ctx, state) {
   const btnGuardar = createOnboardingButton({
     stepName: 'usuario',
 
-    getData: () => ({
-      nombre:          nombre.input.value.trim(),
-      apellido:        apellido.input.value.trim(),
-      fechaNacimiento: fechaToISO(fechaNacimiento.input.value),
-      telefono:        telefono.input.value.trim(),
-      provincia:       provincia.input.value.trim(),
-      localidad:       localidad.input.value.trim(),
-      direccion:       direccion.input.value.trim(),
-      pais:            'Argentina'
-    }),
+    // Modo CUSTOM: guarda en doc de USUARIO, no de comercio
+    onSave: async ({ persistence }) => {
+      const data = {
+        nombre:          nombre.input.value.trim(),
+        apellido:        apellido.input.value.trim(),
+        fechaNacimiento: fechaToISO(fechaNacimiento.input.value),
+        telefono:        telefono.input.value.trim(),
+        provincia:       provincia.input.value.trim(),
+        localidad:       localidad.input.value.trim(),
+        direccion:       direccion.input.value.trim(),
+        pais:            'Argentina'
+      };
+
+      await persistence.updateUserData(data);
+      return true; // el botón se encarga de marcar el step
+    },
 
     validate: () => {
       if (!nombre?.input || !apellido?.input || !fechaNacimiento?.input ||
