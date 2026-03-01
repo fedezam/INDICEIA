@@ -1,14 +1,14 @@
 // ============================================================
 // src/pages/usuario/usuario.js
 // ============================================================
-// 🧠 CONTRATO DE CONTEXTO (ctx)
-//   ctx.userData  → doc de Firestore: /usuarios/{uid}
-// ============================================================
 
 // ==================== SKELETON CORE ====================
 import { runLifecycle }          from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }           from '/src/skeleton/layout/index.js';
+
+// ==================== FLOW ====================
+import { runFlowController } from '/src/controllers/flowController.js';
 
 // ==================== ESTILOS ====================
 import './usuario.css';
@@ -32,19 +32,22 @@ runLifecycle({
   },
 
   async onReady(ctx) {
-    // 1️⃣ LAYOUT
+    // 1️⃣ FLOW
+    await runFlowController(ctx.user.uid);
+
+    // 2️⃣ LAYOUT
     mountLayout(ctx);
 
-    // 2️⃣ LOAD
+    // 3️⃣ LOAD
     const state = await load(ctx);
 
-    // 3️⃣ RENDER
+    // 4️⃣ RENDER
     render(ctx, state);
   }
 });
 
 // ============================================================
-// LOAD — solo datos, sin tocar el DOM
+// LOAD
 // ============================================================
 async function load(ctx) {
   const userData = ctx.userData || {};
@@ -53,7 +56,7 @@ async function load(ctx) {
 }
 
 // ============================================================
-// RENDER — solo DOM, sin lógica de negocio
+// RENDER
 // ============================================================
 function render(ctx, state) {
   const { userData } = state;
@@ -61,88 +64,62 @@ function render(ctx, state) {
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
-  // ==================== TÍTULO ====================
   const title = document.createElement('h2');
   title.textContent = 'Datos personales';
   page.appendChild(title);
 
-  // ==================== CAMPOS ====================
   const nombre = createFormField({
-    label: 'Nombre',
-    name: 'nombre',
-    required: true,
+    label: 'Nombre', name: 'nombre', required: true,
     value: userData.nombre || ''
   });
 
   const apellido = createFormField({
-    label: 'Apellido',
-    name: 'apellido',
-    required: true,
+    label: 'Apellido', name: 'apellido', required: true,
     value: userData.apellido || ''
   });
 
   const mail = createFormField({
-    label: 'Email',
-    name: 'mail',
-    type: 'email',
-    required: false,
+    label: 'Email', name: 'mail', type: 'email', required: false,
     value: userData.mail || '',
-    disabled: true   // solo lectura, viene de Google o del registro
+    disabled: true
   });
 
   const fechaNacimiento = createFormField({
-    label: 'Fecha de nacimiento',
-    name: 'fechaNacimiento',
-    placeholder: 'DD/MM/AAAA',
-    required: true,
+    label: 'Fecha de nacimiento', name: 'fechaNacimiento',
+    placeholder: 'DD/MM/AAAA', required: true,
     value: userData.fechaNacimiento ? isoToFecha(userData.fechaNacimiento) : ''
   });
 
   const telefono = createFormField({
-    label: 'Teléfono',
-    name: 'telefono',
-    required: true,
+    label: 'Teléfono', name: 'telefono', required: true,
     value: userData.telefono || ''
   });
 
   const provincia = createFormField({
-    label: 'Provincia',
-    type: 'select',
-    name: 'provincia',
-    required: true
+    label: 'Provincia', type: 'select', name: 'provincia', required: true
   });
 
   const localidad = createFormField({
-    label: 'Localidad',
-    name: 'localidad',
-    required: true,
+    label: 'Localidad', name: 'localidad', required: true,
     value: userData.localidad || ''
   });
 
   const direccion = createFormField({
-    label: 'Dirección',
-    name: 'direccion',
-    required: true,
+    label: 'Dirección', name: 'direccion', required: true,
     value: userData.direccion || ''
   });
 
   page.append(nombre, apellido, mail, fechaNacimiento, telefono, provincia, localidad, direccion);
 
-  // Llenar provincias
   fillProvinciaSelector('Argentina', provincia.input);
 
-  // Restaurar valor si existe
   if (userData.provincia) {
-    setTimeout(() => {
-      provincia.input.value = userData.provincia;
-    }, 0);
+    setTimeout(() => { provincia.input.value = userData.provincia; }, 0);
   }
 
-  // ==================== BOTÓN ONBOARDING ====================
   const btnGuardar = createOnboardingButton({
     stepName: 'usuario',
 
-    // Modo CUSTOM: guarda en doc de USUARIO, no de comercio
     onSave: async ({ persistence }) => {
       const data = {
         nombre:          nombre.input.value.trim(),
@@ -154,9 +131,8 @@ function render(ctx, state) {
         direccion:       direccion.input.value.trim(),
         pais:            'Argentina'
       };
-
       await persistence.updateUserData(data);
-      return true; // el botón se encarga de marcar el step
+      return true;
     },
 
     validate: () => {
