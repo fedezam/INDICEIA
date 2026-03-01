@@ -8,7 +8,7 @@ import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js
 import { mountLayout }           from '/src/skeleton/layout/index.js';
 
 // ==================== FIREBASE ====================
-import { doc, getDoc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '/src/services/firebase/firebase.js';
 
 // ==================== FLOW ====================
@@ -87,18 +87,11 @@ runLifecycle({
 async function load(ctx) {
   const isNewComercio = !ctx.comercioData || !ctx.comercioData.nombreComercio;
   const comercioData = ctx.comercioData || {};
-
   const comercioSlug = comercioData.landing?.slug || null;
   const slugDisponible = !!comercioSlug;
   const selectedPaymentMethods = comercioData.paymentMethods || [];
 
-  return {
-    isNewComercio,
-    comercioData,
-    comercioSlug,
-    slugDisponible,
-    selectedPaymentMethods,
-  };
+  return { isNewComercio, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods };
 }
 
 // ============================================================
@@ -130,7 +123,7 @@ function render(ctx, state) {
   page.appendChild(title);
 
   page.appendChild(renderSeccionBasicos(state, refs, uiState));
-  page.appendChild(renderSeccionUbicacion(state, refs, uiState));  // ← uiState agregado
+  page.appendChild(renderSeccionUbicacion(state, refs, uiState));
   page.appendChild(renderSeccionContacto(state, refs, uiState));
   page.appendChild(renderSeccionRedes(state, refs, uiState));
   page.appendChild(renderSeccionCategorias(state, refs, uiState));
@@ -169,17 +162,12 @@ function renderSeccionBasicos(state, refs, uiState) {
   section.appendChild(h3);
 
   refs.fields.nombreComercio = createFormField({
-    label: 'Nombre del Comercio',
-    name: 'nombreComercio',
-    required: true,
+    label: 'Nombre del Comercio', name: 'nombreComercio', required: true,
     value: state.comercioData.nombreComercio || ''
   });
 
   refs.fields.descripcion = createFormField({
-    label: 'Descripción',
-    name: 'descripcion',
-    type: 'textarea',
-    required: true,
+    label: 'Descripción', name: 'descripcion', type: 'textarea', required: true,
     placeholder: 'Contanos sobre tu comercio...',
     value: state.comercioData.descripcion || ''
   });
@@ -207,7 +195,7 @@ function renderSeccionBasicos(state, refs, uiState) {
   return section;
 }
 
-function renderSeccionUbicacion(state, refs, uiState) {  // ← uiState agregado
+function renderSeccionUbicacion(state, refs, uiState) {
   const section = document.createElement('div');
   section.className = 'form-section';
 
@@ -215,31 +203,17 @@ function renderSeccionUbicacion(state, refs, uiState) {  // ← uiState agregado
   h3.textContent = 'Ubicación';
   section.appendChild(h3);
 
-  refs.fields.pais = createFormField({
-    label: 'País',
-    name: 'pais',
-    value: 'Argentina',
-    disabled: true
-  });
+  refs.fields.pais = createFormField({ label: 'País', name: 'pais', value: 'Argentina', disabled: true });
 
-  refs.fields.provincia = createFormField({
-    label: 'Provincia',
-    name: 'provincia',
-    type: 'select',
-    required: true
-  });
+  refs.fields.provincia = createFormField({ label: 'Provincia', name: 'provincia', type: 'select', required: true });
 
   refs.fields.ciudad = createFormField({
-    label: 'Ciudad',
-    name: 'ciudad',
-    required: true,
+    label: 'Ciudad', name: 'ciudad', required: true,
     value: state.comercioData.ciudad || ''
   });
 
   refs.fields.direccion = createFormField({
-    label: 'Dirección',
-    name: 'direccion',
-    required: true,
+    label: 'Dirección', name: 'direccion', required: true,
     value: state.comercioData.direccion || ''
   });
 
@@ -251,12 +225,10 @@ function renderSeccionUbicacion(state, refs, uiState) {  // ← uiState agregado
   if (provinciaSaved) {
     refs.fields.provincia.input.value = provinciaSaved;
     console.log('✅ Provincia cargada desde DB:', provinciaSaved);
-  } else {
-    console.log('ℹ️ No hay provincia guardada en DB, select vacío');
   }
 
   [refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion].forEach(field => {
-    field.input.addEventListener('input', () => validateForm(state, refs, uiState));  // ← uiState ahora existe
+    field.input.addEventListener('input', () => validateForm(state, refs, uiState));
   });
 
   return section;
@@ -271,21 +243,13 @@ function renderSeccionContacto(state, refs, uiState) {
   section.appendChild(h3);
 
   refs.fields.telefono = createFormField({
-    label: 'Teléfono',
-    name: 'telefono',
-    type: 'tel',
-    required: true,
-    placeholder: '+54 9 11 1234-5678',
-    value: state.comercioData.telefono || ''
+    label: 'Teléfono', name: 'telefono', type: 'tel', required: true,
+    placeholder: '+54 9 11 1234-5678', value: state.comercioData.telefono || ''
   });
 
   refs.fields.email = createFormField({
-    label: 'Email',
-    name: 'email',
-    type: 'email',
-    required: true,
-    placeholder: 'contacto@ejemplo.com',
-    value: state.comercioData.email || ''
+    label: 'Email', name: 'email', type: 'email', required: true,
+    placeholder: 'contacto@ejemplo.com', value: state.comercioData.email || ''
   });
 
   section.append(refs.fields.telefono, refs.fields.email);
@@ -310,25 +274,10 @@ function renderSeccionRedes(state, refs, uiState) {
   help.textContent = 'Al menos una red social es obligatoria';
   section.appendChild(help);
 
-  refs.fields.website = createFormField({
-    label: 'Sitio Web', name: 'website', type: 'url',
-    placeholder: 'https://...', value: state.comercioData.website || ''
-  });
-
-  refs.fields.instagram = createFormField({
-    label: 'Instagram', name: 'instagram',
-    placeholder: '@usuario', value: state.comercioData.instagram || ''
-  });
-
-  refs.fields.facebook = createFormField({
-    label: 'Facebook', name: 'facebook',
-    placeholder: 'facebook.com/usuario', value: state.comercioData.facebook || ''
-  });
-
-  refs.fields.whatsapp = createFormField({
-    label: 'WhatsApp', name: 'whatsapp', type: 'tel',
-    placeholder: '+54 9 11 1234-5678', value: state.comercioData.whatsapp || ''
-  });
+  refs.fields.website  = createFormField({ label: 'Sitio Web',  name: 'website',   type: 'url', placeholder: 'https://...',            value: state.comercioData.website   || '' });
+  refs.fields.instagram = createFormField({ label: 'Instagram', name: 'instagram',              placeholder: '@usuario',                value: state.comercioData.instagram || '' });
+  refs.fields.facebook  = createFormField({ label: 'Facebook',  name: 'facebook',               placeholder: 'facebook.com/usuario',    value: state.comercioData.facebook  || '' });
+  refs.fields.whatsapp  = createFormField({ label: 'WhatsApp',  name: 'whatsapp',  type: 'tel', placeholder: '+54 9 11 1234-5678',      value: state.comercioData.whatsapp  || '' });
 
   section.append(refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp);
 
@@ -348,11 +297,10 @@ function renderSeccionCategorias(state, refs, uiState) {
   section.appendChild(h3);
 
   refs.categorySelector = createCategorySelector({
-    options: CATEGORIAS_COMUNES,                      // ← 'options' no 'categories'
+    options: CATEGORIAS_COMUNES,
     selected: state.comercioData.categories || [],
   });
 
-  // ← evento correcto del componente
   refs.categorySelector.addEventListener('categories-change', () => {
     validateForm(state, refs, uiState);
   });
@@ -377,20 +325,13 @@ function renderSeccionPagos(state, refs, uiState) {
     const isSelected = uiState.selectedPaymentMethods.includes(metodo.id);
 
     const card = createCard({
-      title: metodo.nombre,
-      icon: metodo.icon,
-      variant: 'info',
-      selectable: true,
-      selected: isSelected,
-      clickable: true,
-      compact: true,
+      title: metodo.nombre, icon: metodo.icon, variant: 'info',
+      selectable: true, selected: isSelected, clickable: true, compact: true,
       onClick: () => {
         card.toggle();
-        const selected = card.isSelected();
-        if (selected) {
-          if (!uiState.selectedPaymentMethods.includes(metodo.id)) {
+        if (card.isSelected()) {
+          if (!uiState.selectedPaymentMethods.includes(metodo.id))
             uiState.selectedPaymentMethods.push(metodo.id);
-          }
         } else {
           uiState.selectedPaymentMethods = uiState.selectedPaymentMethods.filter(id => id !== metodo.id);
         }
@@ -442,7 +383,6 @@ function renderSeccionSlug(state, refs, uiState) {
   refs.slugInput.addEventListener('input', () => {
     clearTimeout(refs.slugValidationTimer);
     const slug = refs.slugInput.value.trim();
-
     if (slug.length < 3) {
       updateSlugStatus(refs, 'empty', '');
       uiState.slugDisponible = false;
@@ -450,7 +390,6 @@ function renderSeccionSlug(state, refs, uiState) {
       validateForm(state, refs, uiState);
       return;
     }
-
     updateSlugStatus(refs, 'checking', 'Verificando disponibilidad...');
     refs.slugValidationTimer = setTimeout(() => validarSlug(slug, refs, uiState, false), 800);
   });
@@ -512,10 +451,8 @@ async function validarSlug(slug, refs, uiState, autoGenerated) {
 
 function updateSlugStatus(refs, status, message) {
   if (!refs.slugStatus) return;
-
   const icon = refs.slugStatus.querySelector('.slug-icon');
   const text = refs.slugStatus.querySelector('.slug-text');
-
   const icons = {
     checking:   '<i class="fas fa-spinner fa-spin"></i>',
     available:  '<i class="fas fa-check-circle" style="color: var(--s-success)"></i>',
@@ -524,7 +461,6 @@ function updateSlugStatus(refs, status, message) {
     error:      '<i class="fas fa-exclamation-triangle" style="color: var(--s-warning)"></i>',
     empty:      ''
   };
-
   icon.innerHTML = icons[status] || '';
   text.textContent = message;
 }
@@ -549,15 +485,10 @@ function validateForm(state, refs, uiState) {
     refs.fields.whatsapp?.input.value.trim();
 
   const tieneCategorias = refs.categorySelector?.getSelected().length > 0;
-
   const originalHasLanding = state?.comercioData?.landing?.slug;
-  const slugValido = originalHasLanding || uiState.slugDisponible;
+  const slugValido = originalHasLanding || uiState?.slugDisponible;
 
-  const formularioValido =
-    camposBasicosValidos &&
-    tieneRedSocial &&
-    tieneCategorias &&
-    slugValido;
+  const formularioValido = camposBasicosValidos && tieneRedSocial && tieneCategorias && slugValido;
 
   if (refs.guardarBtn) {
     formularioValido ? refs.guardarBtn.enable() : refs.guardarBtn.disable();
@@ -599,23 +530,22 @@ async function handleGuardar(ctx, state, refs, uiState) {
 
     if (!originalHasLanding) {
       updates.landing = {
-        activo: true,
-        nombre: updates.nombreComercio,
-        slug: uiState.comercioSlug,
-        tipo: 'default',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        activo: true, nombre: updates.nombreComercio,
+        slug: uiState.comercioSlug, tipo: 'default',
+        createdAt: new Date(), updatedAt: new Date()
       };
     } else {
-      updates.landing = {
-        ...state.comercioData.landing,
-        nombre: updates.nombreComercio,
-        updatedAt: new Date()
-      };
+      updates.landing = { ...state.comercioData.landing, nombre: updates.nombreComercio, updatedAt: new Date() };
     }
 
     if (state.isNewComercio) {
       console.log('🆕 Creando comercio nuevo...');
+
+      // ✅ Generar nuevo ID si ctx.comercioId es null
+      const comercioRef = ctx.comercioId
+        ? doc(db, 'comercios', ctx.comercioId)
+        : doc(collection(db, 'comercios'));
+      const comercioId = comercioRef.id;
 
       const nuevoComercio = {
         ...updates,
@@ -625,12 +555,12 @@ async function handleGuardar(ctx, state, refs, uiState) {
         onboardingSteps: { 'mi-comercio': true }
       };
 
-      await setDoc(doc(db, 'comercios', ctx.comercioId), nuevoComercio);
+      await setDoc(comercioRef, nuevoComercio);
 
       const now = Timestamp.now();
       const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 
-      await updateDoc(doc(db, 'comercios', ctx.comercioId), {
+      await updateDoc(comercioRef, {
         plan: {
           type: 'trial', active: true, trial: true,
           startedAt: now, expiresAt, createdAt: now, updatedAt: now, source: 'system'
@@ -639,16 +569,14 @@ async function handleGuardar(ctx, state, refs, uiState) {
       });
 
       await setDoc(doc(db, 'landings', uiState.comercioSlug), {
-        slug: uiState.comercioSlug,
-        comercioId: ctx.comercioId,
-        nombre: updates.nombreComercio,
-        activo: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        slug: uiState.comercioSlug, comercioId,
+        nombre: updates.nombreComercio, activo: true,
+        createdAt: new Date(), updatedAt: new Date()
       });
 
+      // ✅ Guardar el nuevo comercioId en el doc del usuario
       await updateDoc(doc(db, 'usuarios', ctx.user.uid), {
-        comercioId: ctx.comercioId,
+        comercioId,
         'onboardingSteps.mi-comercio': true
       });
 
@@ -662,12 +590,9 @@ async function handleGuardar(ctx, state, refs, uiState) {
 
       if (!originalHasLanding) {
         await setDoc(doc(db, 'landings', uiState.comercioSlug), {
-          slug: uiState.comercioSlug,
-          comercioId: ctx.comercioId,
-          nombre: updates.nombreComercio,
-          activo: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          slug: uiState.comercioSlug, comercioId: ctx.comercioId,
+          nombre: updates.nombreComercio, activo: true,
+          createdAt: new Date(), updatedAt: new Date()
         });
       }
     }
