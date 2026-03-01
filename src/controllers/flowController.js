@@ -30,7 +30,7 @@ function buildPipeline(offerType = {}) {
     "usuario",
     "mi-comercio",
     "modelo-negocio",
-    "horarios",         // siempre fijo, es info del comercio
+    "horarios",
   ];
 
   if (servicios) steps.push("servicios");
@@ -53,10 +53,8 @@ export async function runFlowController(uid) {
 
   if (!uid) return;
 
-  // Páginas públicas: no hacer nada
   if (PUBLIC_PAGES.includes(currentPage)) return;
 
-  // Páginas neutras: no participan del flujo
   if (NEUTRAL_PAGES.includes(currentPage)) {
     console.log(`🧪 FlowController: página neutral (${currentPage})`);
     return;
@@ -76,20 +74,28 @@ export async function runFlowController(uid) {
     const userData = userSnap.data();
     const userSteps = userData.onboardingSteps || {};
 
+    // 🔍 DEBUG TEMPORAL
+    console.log('🔍 [FlowController] currentPage:', currentPage);
+    console.log('🔍 [FlowController] userSteps:', userSteps);
+    console.log('🔍 [FlowController] userData.comercioId:', userData.comercioId);
+
     // ---------- PASO 1: usuario ----------
     if (!userSteps.usuario) {
+      console.log('🔍 [FlowController] → redirige a usuario (step incompleto)');
       if (currentPage !== "usuario") window.location.href = "/usuario.html";
       return;
     }
 
     // ---------- PASO 2: mi-comercio ----------
     if (!userData.comercioId) {
+      console.log('🔍 [FlowController] → redirige a mi-comercio (sin comercioId)');
       if (currentPage !== "mi-comercio") window.location.href = "/mi-comercio.html";
       return;
     }
 
     // ---------- PASO 3: modelo-negocio ----------
     if (!userSteps["modelo-negocio"] || !userData.offerType) {
+      console.log('🔍 [FlowController] → redirige a modelo-negocio');
       if (currentPage !== "modelo-negocio") window.location.href = "/modelo-negocio.html";
       return;
     }
@@ -100,20 +106,21 @@ export async function runFlowController(uid) {
       ? comercioSnap.data().onboardingSteps || {}
       : {};
 
+    console.log('🔍 [FlowController] comercioSteps:', comercioSteps);
+
     const pipeline = buildPipeline(userData.offerType);
     const allSteps = { ...userSteps, ...comercioSteps };
 
     // ---------- MODO EDICIÓN ----------
     if (editMode) {
-      // En edición, puede estar en cualquier página del pipeline
       if (pipeline.includes(currentPage)) return;
-      // Si no es una página del pipeline, va a dashboard
       if (currentPage !== "dashboard") window.location.href = "/dashboard.html";
       return;
     }
 
     // ---------- ONBOARDING NORMAL ----------
     const firstIncomplete = getFirstIncompleteStep(pipeline, allSteps);
+    console.log('🔍 [FlowController] firstIncomplete:', firstIncomplete);
 
     if (firstIncomplete) {
       if (currentPage !== firstIncomplete) {
