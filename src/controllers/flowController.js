@@ -1,4 +1,7 @@
+// =========================================================
 // src/controllers/flowController.js
+// =========================================================
+
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
 
@@ -20,15 +23,13 @@ const PUBLIC_PAGES = ["login", "registro", "index", ""];
 const NEUTRAL_PAGES = ["skeletonTest"];
 
 /* =========================================================
-   PIPELINE BUILDER
+   PIPELINE BUILDER (SOLO COMERCIO)
    ========================================================= */
 
 function buildPipeline(offerType = {}) {
-  const { productos, servicios } = offerType;
+  const { productos, servicios } = offerType || {};
 
   const steps = [
-    "usuario",
-    "mi-comercio",
     "modelo-negocio",
     "horarios",
   ];
@@ -37,6 +38,7 @@ function buildPipeline(offerType = {}) {
   if (productos) steps.push("productos");
 
   steps.push("ia-config");
+
   return steps;
 }
 
@@ -50,7 +52,6 @@ function getFirstIncompleteStep(pipeline, completedSteps = {}) {
 
 export async function runFlowController(uid) {
   const currentPage = getCurrentPage();
-
   if (!uid) return;
 
   if (PUBLIC_PAGES.includes(currentPage)) return;
@@ -64,6 +65,10 @@ export async function runFlowController(uid) {
   window.isEditMode = editMode;
 
   try {
+    // =====================================================
+    // 1️⃣ VALIDAR USUARIO
+    // =====================================================
+
     const userSnap = await getDoc(doc(db, "usuarios", uid));
 
     if (!userSnap.exists()) {
@@ -74,53 +79,72 @@ export async function runFlowController(uid) {
     const userData = userSnap.data();
     const userSteps = userData.onboardingSteps || {};
 
-    // 🔍 DEBUG TEMPORAL
-    console.log('🔍 [FlowController] currentPage:', currentPage);
-    console.log('🔍 [FlowController] userSteps:', userSteps);
-    console.log('🔍 [FlowController] userData.comercioId:', userData.comercioId);
+    console.log("🔍 [FlowController] currentPage:", currentPage);
+    console.log("🔍 [FlowController] userSteps:", userSteps);
+    console.log("🔍 [FlowController] comercioId:", userData.comercioId);
 
-    // ---------- PASO 1: usuario ----------
+    // ---------- STEP: usuario ----------
     if (!userSteps.usuario) {
-      console.log('🔍 [FlowController] → redirige a usuario (step incompleto)');
-      if (currentPage !== "usuario") window.location.href = "/usuario.html";
+      if (currentPage !== "usuario") {
+        window.location.href = "/usuario.html";
+      }
       return;
     }
 
-    // ---------- PASO 2: mi-comercio ----------
+    // ---------- STEP: mi-comercio ----------
     if (!userData.comercioId) {
-      console.log('🔍 [FlowController] → redirige a mi-comercio (sin comercioId)');
-      if (currentPage !== "mi-comercio") window.location.href = "/mi-comercio.html";
+      if (currentPage !== "mi-comercio") {
+        window.location.href = "/mi-comercio.html";
+      }
       return;
     }
 
-    // ---------- PASO 3: modelo-negocio ----------
-    if (!userSteps["modelo-negocio"] || !userData.offerType) {
-      console.log('🔍 [FlowController] → redirige a modelo-negocio');
-      if (currentPage !== "modelo-negocio") window.location.href = "/modelo-negocio.html";
+    // =====================================================
+    // 2️⃣ DOMINIO COMERCIO
+    // =====================================================
+
+    const comercioSnap = await getDoc(
+      doc(db, "comercios", userData.comercioId)
+    );
+
+    if (!comercioSnap.exists()) {
+      // Si por alguna razón no existe el comercio,
+      // lo mandamos a recrearlo.
+      window.location.href = "/mi-comercio.html";
       return;
     }
 
-    // ---------- A partir de acá, el comercio existe ----------
-    const comercioSnap = await getDoc(doc(db, "comercios", userData.comercioId));
-    const comercioSteps = comercioSnap.exists()
-      ? comercioSnap.data().onboardingSteps || {}
-      : {};
+    const comercioData = comercioSnap.data();
+    const comercioSteps = comercioData.onboardingSteps || {};
 
-    console.log('🔍 [FlowController] comercioSteps:', comercioSteps);
+    console.log("🔍 [FlowController] comercioSteps:", comercioSteps);
+    console.log("🔍 [FlowController] offerType:", comercioData.offerType);
 
-    const pipeline = buildPipeline(userData.offerType);
-    const allSteps = { ...userSteps, ...comercioSteps };
+    const pipeline = buildPipeline(comercioData.offerType);
+    const firstIncomplete = getFirstIncompleteStep(
+      pipeline,
+      comercioSteps
+    );
 
-    // ---------- MODO EDICIÓN ----------
+    console.log("🔍 [FlowController] pipeline:", pipeline);
+    console.log("🔍 [FlowController] firstIncomplete:", firstIncomplete);
+
+    // =====================================================
+    // MODO EDICIÓN
+    // =====================================================
+
     if (editMode) {
       if (pipeline.includes(currentPage)) return;
-      if (currentPage !== "dashboard") window.location.href = "/dashboard.html";
+
+      if (currentPage !== "dashboard") {
+        window.location.href = "/dashboard.html";
+      }
       return;
     }
 
-    // ---------- ONBOARDING NORMAL ----------
-    const firstIncomplete = getFirstIncompleteStep(pipeline, allSteps);
-    console.log('🔍 [FlowController] firstIncomplete:', firstIncomplete);
+    // =====================================================
+    // ONBOARDING NORMAL
+    // =====================================================
 
     if (firstIncomplete) {
       if (currentPage !== firstIncomplete) {
@@ -129,7 +153,10 @@ export async function runFlowController(uid) {
       return;
     }
 
-    // ---------- TODO COMPLETO → dashboard ----------
+    // =====================================================
+    // TODO COMPLETO → DASHBOARD
+    // =====================================================
+
     if (currentPage !== "dashboard") {
       window.location.href = "/dashboard.html";
     }
@@ -141,7 +168,7 @@ export async function runFlowController(uid) {
 }
 
 /* =========================================================
-   HELPERS PÚBLICOS
+   HELPER POST SAVE
    ========================================================= */
 
 export function redirectAfterSave(nextStep) {
