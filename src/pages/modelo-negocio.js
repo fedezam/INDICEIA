@@ -2,16 +2,16 @@
 // src/pages/modelo-negocio.js
 // ============================================================
 
-import { doc, updateDoc }         from "firebase/firestore";
-import { db }                     from "/src/firebase.js";
+import { doc, updateDoc }        from "firebase/firestore";
+import { db }                    from "/src/firebase.js";
 
-import { runLifecycle }           from "/src/skeleton/lifecycle.js";
-import { createFirebaseAdapter }  from "/src/skeleton/adapters/firebaseAdapter.js";
-import { mountLayout }            from "/src/skeleton/layout/index.js";
+import { runLifecycle }          from "/src/skeleton/lifecycle.js";
+import { createFirebaseAdapter } from "/src/skeleton/adapters/firebaseAdapter.js";
+import { mountLayout }           from "/src/skeleton/layout/index.js";
 
-import { runFlowController, redirectAfterSave } from "/src/controllers/flowController.js";
-import { createCard }             from "/src/skeleton/components/card/index.js";
-import { showToast }              from "/src/skeleton/components/toast/index.js";
+import { runFlowController }     from "/src/controllers/flowController.js";
+import { createCard }            from "/src/skeleton/components/card/index.js";
+import { showToast }             from "/src/skeleton/components/toast/index.js";
 
 import "./modelo-negocio.css";
 
@@ -86,7 +86,7 @@ function render(ctx, state) {
   cardsContainer.appendChild(cardProductos);
   cardsContainer.appendChild(cardServicios);
 
-  // ==================== BOTÓN GUARDAR ====================
+  // ==================== BOTÓN CONTINUAR ====================
   const saveBtn = document.createElement("button");
   saveBtn.className = "btn-primary";
   saveBtn.textContent = "Continuar";
@@ -117,8 +117,9 @@ function render(ctx, state) {
 
       showToast("Configuración guardada correctamente", "success");
 
-      // Avanza al siguiente paso según el pipeline
-      redirectAfterSave("horarios");
+      // 🔥 Arquitectura dashboard-hub:
+      // Siempre volvemos a dashboard.
+      window.location.href = "/dashboard.html";
 
     } catch (error) {
       console.error("Error guardando modelo de negocio:", error);
