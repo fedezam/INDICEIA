@@ -599,7 +599,7 @@ async function handleGuardar(ctx, state, refs, uiState) {
 
     showToast('Comercio guardado correctamente', 'success');
     await new Promise(resolve => setTimeout(resolve, 500));
-    window.location.href = '/src/pages/dashboard/dashboard.html';
+    window.location.href = '/src/pages/dashboard.html';
 
   } catch (error) {
     console.error('❌ Error guardando:', error);
