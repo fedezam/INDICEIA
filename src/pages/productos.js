@@ -45,21 +45,28 @@ const page = {
     showImportPreview: false
   },
 
+  _isEditMode: false,
+  _originalSnapshot: [],
+
   // ──────────────────────────────────────────────────────────
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
+    this._isEditMode = ctx.isEditMode === true;
     const comercioId = ctx.comercioId;
     if (!comercioId) {
       this._data.productos = [];
+      this._originalSnapshot = [];
       return;
     }
     try {
       const snap = await getDocs(collection(db, 'comercios', comercioId, 'productos'));
       this._data.productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      this._originalSnapshot = structuredClone(this._data.productos);
     } catch (err) {
       console.error('Error cargando productos:', err);
       this._data.productos = [];
+      this._originalSnapshot = [];
     }
   },
 
@@ -624,15 +631,35 @@ const page = {
   // SAVE BUTTON
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
+    const dirtyController = {
+      hasUnsavedChanges: () => {
+        return JSON.stringify(this._data.productos) !==
+               JSON.stringify(this._originalSnapshot);
+      },
+      markSaved: () => {
+        this._originalSnapshot = structuredClone(this._data.productos);
+      }
+    };
+
     return createOnboardingButton({
       stepName: 'productos',
 
       validate: () => {
-        const activos = this._data.productos.filter(p => !p.paused);
-        const valid   = activos.length > 0;
-        if (!valid) showToast('Error', 'Necesitás al menos 1 producto activo', 'warning');
-        return valid;
+        const activos = this._data.productos.filter(p => !p.paused).length;
+        // En edit sin cambios → válido (el botón actúa como "Volver")
+        if (this._isEditMode && !dirtyController.hasUnsavedChanges()) return true;
+        // En cualquier otro caso necesita al menos un producto activo
+        return activos > 0;
       },
+
+      getLabel: () => {
+        const activos = this._data.productos.filter(p => !p.paused).length;
+        if (activos === 0) return 'Cargá al menos un producto';
+        if (this._isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
+        return 'Guardar productos';
+      },
+
+      dirtyController,
 
       onSave: async ({ uid, comercioId }) => {
         if (!comercioId) throw new Error('No hay comercioId');
@@ -665,8 +692,6 @@ const page = {
         const totalOps = toDelete.length + toUpdate.length + toAdd.length;
         if (totalOps === 0) {
           showToast('Sin cambios', 'No hay cambios para guardar', 'info');
-          // FIX: retornamos stepMarked: true para que update.js
-          // no haga un segundo write a Firestore innecesariamente
           return { success: true, stepMarked: false };
         }
 
@@ -695,7 +720,6 @@ const page = {
         await batch.commit();
         finishProgressOverlay('Catálogo sincronizado', 800);
 
-        // FIX: stepMarked: false → update.js llama markStepCompleted una sola vez
         return { success: true, stepMarked: false };
       },
 
@@ -708,21 +732,6 @@ const page = {
         showToast('Error al guardar', err.message, 'error');
       }
     });
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // DIRTY STATE
-  // ──────────────────────────────────────────────────────────
-  getCurrentData() {
-    return {
-      productos:   structuredClone(this._data.productos),
-      draftManual: structuredClone(this._data.draftManual),
-      draftImport: structuredClone(this._data.draftImport)
-    };
-  },
-
-  isFormValid() {
-    return this._data.productos.filter(p => !p.paused).length > 0;
   }
 };
 
