@@ -18,8 +18,8 @@ import {
 } from 'firebase/firestore';
 
 // ==================== STEPS POR COLECCIÓN ====================
-// Estos steps se guardan en el doc del USUARIO, no del comercio
-const USER_STEPS = ['usuario', 'modelo-negocio'];
+// 🔥 CORREGIDO: Solo 'usuario' pertenece al doc del usuario
+const USER_STEPS = ['usuario'];
 
 // ==================== OBTENER comercioId DEL USUARIO ACTUAL ====================
 export async function getComercioId() {
@@ -45,9 +45,6 @@ export async function getComercioId() {
 
 // ==================== USUARIOS ====================
 
-/**
- * Obtener datos del usuario actual
- */
 export async function getUserData() {
   const user = auth.currentUser;
   if (!user) throw new Error('Usuario no autenticado');
@@ -62,9 +59,6 @@ export async function getUserData() {
   return { id: user.uid, ...userDoc.data() };
 }
 
-/**
- * Actualizar datos del usuario
- */
 export async function updateUserData(updates) {
   const user = auth.currentUser;
   if (!user) throw new Error('Usuario no autenticado');
@@ -77,9 +71,6 @@ export async function updateUserData(updates) {
   });
 }
 
-/**
- * Guardar datos completos del usuario (merge)
- */
 export async function saveUserData(data) {
   const user = auth.currentUser;
   if (!user) throw new Error('Usuario no autenticado');
@@ -94,9 +85,6 @@ export async function saveUserData(data) {
 
 // ==================== COMERCIOS ====================
 
-/**
- * Obtener datos del comercio
- */
 export async function getComercioData() {
   const comercioId = await getComercioId();
   const comercioRef = doc(db, 'comercios', comercioId);
@@ -109,9 +97,6 @@ export async function getComercioData() {
   return { id: comercioId, ...comercioDoc.data() };
 }
 
-/**
- * Actualizar datos del comercio
- */
 export async function updateComercioData(updates) {
   const comercioId = await getComercioId();
   const comercioRef = doc(db, 'comercios', comercioId);
@@ -122,9 +107,6 @@ export async function updateComercioData(updates) {
   });
 }
 
-/**
- * Guardar datos completos del comercio (merge)
- */
 export async function saveComercioData(data) {
   const comercioId = await getComercioId();
   const comercioRef = doc(db, 'comercios', comercioId);
@@ -135,9 +117,6 @@ export async function saveComercioData(data) {
   }, { merge: true });
 }
 
-/**
- * Eliminar campos específicos del documento del comercio.
- */
 export async function deleteComercioFields(fieldNames) {
   if (!fieldNames?.length) return;
 
@@ -177,7 +156,10 @@ export async function addProduct(productData) {
 export async function updateProduct(productId, updates) {
   const comercioId = await getComercioId();
   const productRef = doc(db, 'comercios', comercioId, 'productos', productId);
-  await updateDoc(productRef, { ...updates, fechaActualizacion: serverTimestamp() });
+  await updateDoc(productRef, {
+    ...updates,
+    fechaActualizacion: serverTimestamp()
+  });
 }
 
 export async function deleteProduct(productId) {
@@ -209,7 +191,10 @@ export async function addServicio(servicioData) {
 export async function updateServicio(servicioId, updates) {
   const comercioId = await getComercioId();
   const servicioRef = doc(db, 'comercios', comercioId, 'servicios', servicioId);
-  await updateDoc(servicioRef, { ...updates, fechaActualizacion: serverTimestamp() });
+  await updateDoc(servicioRef, {
+    ...updates,
+    fechaActualizacion: serverTimestamp()
+  });
 }
 
 export async function deleteServicio(servicioId) {
@@ -234,42 +219,19 @@ export async function saveHorarios(horariosData) {
   });
 }
 
-// ==================== ESTADÍSTICAS ====================
-
-export async function getStats() {
-  const comercioId = await getComercioId();
-  const statsRef = collection(db, 'comercios', comercioId, 'stats');
-  const snapshot = await getDocs(statsRef);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-
-export async function addStatEvent(eventData) {
-  const comercioId = await getComercioId();
-  const statsRef = collection(db, 'comercios', comercioId, 'stats');
-  const docRef = await addDoc(statsRef, { ...eventData, timestamp: serverTimestamp() });
-  return docRef.id;
-}
-
 // ==================== ONBOARDING ====================
 
-/**
- * Marcar un paso del onboarding como completado.
- * - Steps de USUARIO ('usuario', 'modelo-negocio') → se guardan en doc de usuarios
- * - Resto de steps → se guardan en doc de comercios
- */
 export async function markOnboardingStep(stepName, completed = true) {
   const user = auth.currentUser;
   if (!user) throw new Error('Usuario no autenticado');
 
   if (USER_STEPS.includes(stepName)) {
-    // ✅ Escribe en doc del USUARIO
     const userRef = doc(db, 'usuarios', user.uid);
     await updateDoc(userRef, {
       [`onboardingSteps.${stepName}`]: completed,
       updatedAt: serverTimestamp()
     });
   } else {
-    // ✅ Escribe en doc del COMERCIO
     const comercioId = await getComercioId();
     const comercioRef = doc(db, 'comercios', comercioId);
     await updateDoc(comercioRef, {
@@ -282,55 +244,4 @@ export async function markOnboardingStep(stepName, completed = true) {
 export async function getOnboardingSteps() {
   const comercioData = await getComercioData();
   return comercioData.onboardingSteps || {};
-}
-
-// ==================== CONFIGURACIÓN IA ====================
-
-export async function saveAIConfig(aiConfig) {
-  const comercioId = await getComercioId();
-  const comercioRef = doc(db, 'comercios', comercioId);
-  await updateDoc(comercioRef, { aiConfig, fechaActualizacion: serverTimestamp() });
-}
-
-export async function getAIConfig() {
-  const comercioData = await getComercioData();
-  return comercioData.aiConfig || {};
-}
-
-export async function saveAICognition(aiCognition) {
-  const comercioId = await getComercioId();
-  const comercioRef = doc(db, 'comercios', comercioId);
-  await updateDoc(comercioRef, { aiCognition, fechaActualizacion: serverTimestamp() });
-}
-
-export async function getAICognition() {
-  const comercioData = await getComercioData();
-  return comercioData.aiCognition || {};
-}
-
-// ==================== HELPERS GENÉRICOS ====================
-
-export async function getDocument(collectionPath, docId) {
-  const docRef = doc(db, collectionPath, docId);
-  const docSnap = await getDoc(docRef);
-  if (!docSnap.exists()) {
-    throw new Error(`Documento ${docId} no encontrado en ${collectionPath}`);
-  }
-  return { id: docId, ...docSnap.data() };
-}
-
-export async function getCollection(collectionPath) {
-  const colRef = collection(db, collectionPath);
-  const snapshot = await getDocs(colRef);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-}
-
-export async function saveDocument(collectionPath, docId, data) {
-  const docRef = doc(db, collectionPath, docId);
-  await setDoc(docRef, { ...data, updatedAt: serverTimestamp() }, { merge: true });
-}
-
-export async function deleteDocument(collectionPath, docId) {
-  const docRef = doc(db, collectionPath, docId);
-  await deleteDoc(docRef);
 }
