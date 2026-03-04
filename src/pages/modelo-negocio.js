@@ -29,11 +29,13 @@ runLifecycle({
    LOAD
    ============================================================ */
 async function load(ctx) {
-  const offerType = ctx.comercioData?.offerType || {};
-  console.log('[modelo-negocio] load() offerType:', offerType);
+  const offerType  = ctx.comercioData?.offerType || {};
+  const isEditMode = ctx.isEditMode === true;
+  console.log('[modelo-negocio] load() offerType:', offerType, '| isEditMode:', isEditMode);
   return {
-    productos: offerType.productos === true,
-    servicios: offerType.servicios === true,
+    productos:  offerType.productos === true,
+    servicios:  offerType.servicios === true,
+    isEditMode,
   };
 }
 
@@ -59,25 +61,61 @@ function render(ctx, state) {
   page.appendChild(cardsContainer);
 
   const cardProductos = createCard({
-    title:     "Productos",
-    content:   "Vendés artículos físicos o digitales.",
-    icon:      "fa-box",
-    variant:   "primary",
+    title:      "Productos",
+    content:    "Vendés artículos físicos o digitales.",
+    icon:       "fa-box",
+    variant:    "primary",
     selectable: true,
-    selected:  state.productos,
+    selected:   state.productos,
   });
 
   const cardServicios = createCard({
-    title:     "Servicios",
-    content:   "Ofrecés servicios con turnos o por hora.",
-    icon:      "fa-concierge-bell",
-    variant:   "info",
+    title:      "Servicios",
+    content:    "Ofrecés servicios con turnos o por hora.",
+    icon:       "fa-concierge-bell",
+    variant:    "info",
     selectable: true,
-    selected:  state.servicios,
+    selected:   state.servicios,
   });
 
   cardsContainer.appendChild(cardProductos);
   cardsContainer.appendChild(cardServicios);
+
+  // ── Prevenir deselección total ───────────────────────────
+  // Si el usuario intenta quitar la última opción activa, la restauramos
+  cardsContainer.addEventListener('click', () => {
+    setTimeout(() => {
+      const productos = cardProductos.isSelected();
+      const servicios = cardServicios.isSelected();
+      if (!productos && !servicios) {
+        // Restauramos la que estaba activa antes
+        if (state.productos) cardProductos.select();
+        if (state.servicios) cardProductos.select();
+        showToast('Al menos una opción debe estar activa', 'warning');
+      }
+    }, 0);
+  });
+
+  // ── Snapshot inicial para dirty check ───────────────────
+  const snapshot = {
+    productos: state.productos,
+    servicios: state.servicios,
+  };
+
+  const dirtyController = {
+    hasUnsavedChanges: () => {
+      const dirty =
+        cardProductos.isSelected() !== snapshot.productos ||
+        cardServicios.isSelected() !== snapshot.servicios;
+      console.log('[modelo-negocio] hasUnsavedChanges():', dirty);
+      return dirty;
+    },
+    markSaved: () => {
+      snapshot.productos = cardProductos.isSelected();
+      snapshot.servicios = cardServicios.isSelected();
+      console.log('[modelo-negocio] markSaved() snapshot actualizado:', { ...snapshot });
+    }
+  };
 
   // ── Onboarding button ────────────────────────────────────
   const btn = createOnboardingButton({
@@ -92,9 +130,15 @@ function render(ctx, state) {
     getLabel: () => {
       const productos = cardProductos.isSelected();
       const servicios = cardServicios.isSelected();
+
       if (!productos && !servicios) return 'Seleccioná al menos una opción';
+      if (state.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
+      if (state.isEditMode) return 'Guardar y volver al dashboard';
       return 'Continuar';
     },
+
+    // En edit mode usamos dirtyController para que sin cambios redirija directo
+    dirtyController: state.isEditMode ? dirtyController : undefined,
 
     onSave: async ({ uid, comercioId }) => {
       const productos = cardProductos.isSelected();
@@ -107,9 +151,25 @@ function render(ctx, state) {
         'onboardingSteps.modelo-negocio': true,
       });
 
-      showToast('Configuración guardada correctamente', 'success');
+      // Toast descriptivo según qué cambió
+      const agregados = [];
+      if (productos && !snapshot.productos) agregados.push('Productos');
+      if (servicios && !snapshot.servicios) agregados.push('Servicios');
 
-      // Retornamos stepMarked: true porque ya escribimos onboardingSteps arriba
+      const removidos = [];
+      if (!productos && snapshot.productos) removidos.push('Productos');
+      if (!servicios && snapshot.servicios) removidos.push('Servicios');
+
+      if (agregados.length) {
+        showToast(`${agregados.join(' y ')} habilitado${agregados.length > 1 ? 's' : ''}`, 'success');
+      }
+      if (removidos.length) {
+        showToast(`${removidos.join(' y ')} deshabilitado${removidos.length > 1 ? 's' : ''}`, 'info');
+      }
+      if (!agregados.length && !removidos.length) {
+        showToast('Configuración guardada', 'success');
+      }
+
       return { success: true, stepMarked: true };
     },
 
