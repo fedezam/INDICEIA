@@ -10,6 +10,8 @@ import { showToast }             from '/src/skeleton/components/toast/index.js';
 import { getServicios }          from '/src/services/firebase/db.js';
 import { runFlowController }     from '/src/controllers/flowController.js';
 import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, hasLiveAccess, isHighValuePlan } from '/src/shared/plans.js';
+import { db }                    from '/src/services/firebase/firebase.js';
+import { collection, getDocs }   from 'firebase/firestore';
 import './dashboard.css';
 
 // ============================================================
@@ -21,38 +23,106 @@ const page = {
     userData:       null,
     offerType:      {},
     serviciosStats: { activos: 0, pausados: 0, total: 0 },
-    productosCount: 0,
-    entityState:    'never'   // never | updated | outdated
+    productosStats: { total: 0, activos: 0, pausados: 0, ultimaActualizacion: null },
+    entityState:    'never'
   },
 
   // ──────────────────────────────────────────────────────────
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
-    // 🔒 Verificar pipeline antes de renderizar
     await runFlowController(ctx.user?.uid);
 
     console.group('[dashboard] load()');
     console.log('ctx.user:', ctx.user?.uid);
     console.log('ctx.userData:', ctx.userData);
     console.log('ctx.comercioId:', ctx.comercioId);
-    console.log('ctx.comercioData:', ctx.comercioData);
+    console.log('ctx.comercioData completo:', ctx.comercioData);
 
     this._data.ctx       = ctx;
     this._data.user      = ctx.user;
     this._data.userData  = ctx.userData || {};
-    this._data.offerType = ctx.userData?.offerType || {};
+    this._data.offerType = ctx.comercioData?.offerType || {};
     this._data.comercio  = ctx.comercioData || {};
 
-    console.log('entityLastGeneratedAt (raw):', this._data.comercio.entityLastGeneratedAt);
-    console.log('lastConfigUpdateAt (raw):', this._data.comercio.lastConfigUpdateAt);
+    console.log('offerType leído:', this._data.offerType);
     console.groupEnd();
 
-    await this._loadServiciosStats();
-    this._data.productosCount = this._data.comercio.cantidadProductos || 0;
+    // Cargamos en paralelo servicios y productos
+    await Promise.all([
+      this._loadServiciosStats(),
+      this._loadProductosStats(ctx.comercioId)
+    ]);
+
     this._calculateEntityState();
   },
 
+  // ──────────────────────────────────────────────────────────
+  // STATS PRODUCTOS — lee la subcolección directo
+  // ──────────────────────────────────────────────────────────
+  async _loadProductosStats(comercioId) {
+    console.group('[dashboard] _loadProductosStats()');
+    if (!comercioId) {
+      console.warn('sin comercioId, productos vacíos');
+      console.groupEnd();
+      return;
+    }
+    try {
+      const snap = await getDocs(collection(db, 'comercios', comercioId, 'productos'));
+      let activos = 0, pausados = 0, ultimaActualizacion = null;
+
+      snap.docs.forEach(d => {
+        const data = d.data();
+        data.paused ? pausados++ : activos++;
+
+        // Rastreamos la fecha de actualización más reciente
+        const fecha = data.fechaActualizacion?.toDate?.();
+        if (fecha && (!ultimaActualizacion || fecha > ultimaActualizacion)) {
+          ultimaActualizacion = fecha;
+        }
+      });
+
+      this._data.productosStats = {
+        total: snap.docs.length,
+        activos,
+        pausados,
+        ultimaActualizacion
+      };
+
+      // Si hay productos cargados, marcamos offerType.productos como true
+      // aunque modelo-negocio no haya sido completado
+      if (snap.docs.length > 0) {
+        this._data.offerType.productos = true;
+      }
+
+      console.log('productosStats:', this._data.productosStats);
+    } catch (err) {
+      console.error('[dashboard] _loadProductosStats() ERROR:', err);
+    }
+    console.groupEnd();
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // STATS SERVICIOS
+  // ──────────────────────────────────────────────────────────
+  async _loadServiciosStats() {
+    console.group('[dashboard] _loadServiciosStats()');
+    try {
+      const servicios = await getServicios();
+      let activos = 0, pausados = 0;
+      servicios.forEach(s => { s.activo === false ? pausados++ : activos++; });
+      this._data.serviciosStats = { activos, pausados, total: activos + pausados };
+      console.log('serviciosStats:', this._data.serviciosStats);
+    } catch (err) {
+      console.error('[dashboard] _loadServiciosStats() ERROR:', err);
+      this._data.serviciosStats = { activos: 0, pausados: 0, total: 0 };
+    }
+    console.groupEnd();
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // ENTITY STATE
+  // ──────────────────────────────────────────────────────────
   _calculateEntityState() {
     console.group('[dashboard] _calculateEntityState()');
     const c = this._data.comercio;
@@ -66,10 +136,7 @@ const page = {
 
     const lastUpdate = c.fechaActualizacion?.toDate?.() || null;
 
-    console.log('entityGeneratedAt (raw):', c.entityGeneratedAt);
-    console.log('lastGen (parsed):', lastGen);
-    console.log('fechaActualizacion (raw):', c.fechaActualizacion);
-    console.log('lastUpdate (parsed):', lastUpdate);
+    console.log('lastGen:', lastGen, '| lastUpdate:', lastUpdate);
 
     if (!lastGen) {
       this._data.entityState = 'never';
@@ -78,28 +145,8 @@ const page = {
       return;
     }
 
-    this._data.entityState = (lastUpdate && lastUpdate > lastGen)
-      ? 'outdated'
-      : 'updated';
-
+    this._data.entityState = (lastUpdate && lastUpdate > lastGen) ? 'outdated' : 'updated';
     console.log('entityState →', this._data.entityState);
-    console.groupEnd();
-  },
-
-  async _loadServiciosStats() {
-    console.group('[dashboard] _loadServiciosStats()');
-    try {
-      const servicios = await getServicios();
-      let activos = 0, pausados = 0;
-      servicios.forEach(s => {
-        s.activo === false ? pausados++ : activos++;
-      });
-      this._data.serviciosStats = { activos, pausados, total: activos + pausados };
-      console.log('serviciosStats:', this._data.serviciosStats);
-    } catch (err) {
-      console.error('Error cargando servicios:', err);
-      this._data.serviciosStats = { activos: 0, pausados: 0, total: 0 };
-    }
     console.groupEnd();
   },
 
@@ -107,6 +154,8 @@ const page = {
   // RENDER
   // ──────────────────────────────────────────────────────────
   render() {
+    console.log('[dashboard] render() | offerType:', this._data.offerType, '| productosStats:', this._data.productosStats);
+
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
 
@@ -291,19 +340,46 @@ const page = {
     });
   },
 
+  // FIX: lee productosStats en lugar de cantidadProductos (que nunca se escribía)
   _renderProductosCard() {
     const hasProductos = this._data.offerType.productos === true;
-    const count        = this._data.productosCount;
+    const { total, activos, pausados, ultimaActualizacion } = this._data.productosStats;
 
     if (hasProductos) {
+      const content = document.createElement('div');
+
+      // Línea principal
+      const linea1 = document.createElement('p');
+      linea1.innerHTML = `<strong>${total}</strong> producto${total !== 1 ? 's' : ''} en catálogo`;
+      content.appendChild(linea1);
+
+      // Activos / pausados
+      if (total > 0) {
+        const linea2 = document.createElement('p');
+        linea2.innerHTML = `
+          <span class="badge-activo">🟢 ${activos} activo${activos !== 1 ? 's' : ''}</span>
+          ${pausados > 0 ? `<span class="badge-pausado"> · 🔴 ${pausados} pausado${pausados !== 1 ? 's' : ''}</span>` : ''}
+        `;
+        content.appendChild(linea2);
+      }
+
+      // Última actualización
+      if (ultimaActualizacion) {
+        const linea3 = document.createElement('p');
+        linea3.className = 'ultima-actualizacion';
+        linea3.textContent = `Última actualización: ${this._formatFecha(ultimaActualizacion)}`;
+        content.appendChild(linea3);
+      }
+
       return createCard({
         title: 'Productos',
         icon: 'fa-box',
-        content: `<p>${count} producto${count !== 1 ? 's' : ''} cargado${count !== 1 ? 's' : ''}</p>`,
+        content,
         action: { type: 'link', url: '/productos.html?edit=true', label: 'Editar', className: 's-btn s-btn-secondary s-btn-sm' }
       });
     }
 
+    // No habilitado
     return createCard({
       title: 'Productos',
       icon: 'fa-box',
@@ -313,6 +389,7 @@ const page = {
     });
   },
 
+  // FIX: botón "Habilitar" servicios va a modelo-negocio, no a crear-entidad
   _renderServiciosCard() {
     const hasServicios             = this._data.offerType.servicios === true;
     const { activos, pausados, total } = this._data.serviciosStats;
@@ -320,7 +397,7 @@ const page = {
     if (hasServicios) {
       const content = document.createElement('div');
       content.innerHTML = `
-        <p>${total} servicio${total !== 1 ? 's' : ''}</p>
+        <p><strong>${total}</strong> servicio${total !== 1 ? 's' : ''}</p>
         <p>
           <span class="badge-activo">🟢 ${activos} activo${activos !== 1 ? 's' : ''}</span>
           ${pausados > 0 ? `<span class="badge-pausado"> · 🔴 ${pausados} pausado${pausados !== 1 ? 's' : ''}</span>` : ''}
@@ -339,7 +416,8 @@ const page = {
       icon: 'fa-concierge-bell',
       flat: true,
       content: '<p class="inactive-text">No habilitado</p><p>Ofrecé turnos o atención por hora</p>',
-      action: { type: 'link', url: '/crear-entidad.html?edit=true', label: 'Habilitar', className: 's-btn s-btn-outline-primary s-btn-sm' }
+      // FIX: era /crear-entidad.html, ahora va a modelo-negocio donde se habilita
+      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Habilitar', className: 's-btn s-btn-outline-primary s-btn-sm' }
     });
   },
 
@@ -544,6 +622,20 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
+  // HELPERS
+  // ──────────────────────────────────────────────────────────
+  _formatFecha(date) {
+    if (!date) return '';
+    return new Intl.DateTimeFormat('es-AR', {
+      day:    '2-digit',
+      month:  '2-digit',
+      year:   'numeric',
+      hour:   '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  },
+
+  // ──────────────────────────────────────────────────────────
   // ACCIONES
   // ──────────────────────────────────────────────────────────
   async _generarEntidad() {
@@ -565,7 +657,6 @@ const page = {
 
       const text = await response.text();
       console.log('[dashboard] API status:', response.status);
-      console.log('[dashboard] API response raw:', text);
 
       let data;
       try {
@@ -576,17 +667,11 @@ const page = {
 
       if (!data.ok) throw new Error(data.error);
 
-      console.log('[dashboard] Entidad generada OK, guardando timestamp...');
-
       const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
       const { db } = await import('/src/services/firebase/firebase.js');
 
       const comercioRef = doc(db, 'comercios', this._data.comercio.id);
-      await updateDoc(comercioRef, {
-        entityGeneratedAt: serverTimestamp()
-      });
-
-      console.log('[dashboard] Timestamp guardado con serverTimestamp');
+      await updateDoc(comercioRef, { entityGeneratedAt: serverTimestamp() });
 
       this._data.comercio.entityGeneratedAt = new Date().toISOString();
       this._data.comercio.fechaActualizacion = { toDate: () => new Date(Date.now() - 100) };
