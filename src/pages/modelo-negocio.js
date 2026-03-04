@@ -1,18 +1,15 @@
 // ============================================================
 // src/pages/modelo-negocio.js
 // ============================================================
-
-import { doc, updateDoc }        from "firebase/firestore";
-import { db }                    from "/src/firebase.js";
-
-import { runLifecycle }          from "/src/skeleton/lifecycle.js";
-import { createFirebaseAdapter } from "/src/skeleton/adapters/firebaseAdapter.js";
-import { mountLayout }           from "/src/skeleton/layout/index.js";
-
-import { runFlowController }     from "/src/controllers/flowController.js";
-import { createCard }            from "/src/skeleton/components/card/index.js";
-import { showToast }             from "/src/skeleton/components/toast/index.js";
-
+import { doc, updateDoc }          from "firebase/firestore";
+import { db }                      from "/src/firebase.js";
+import { runLifecycle }            from "/src/skeleton/lifecycle.js";
+import { createFirebaseAdapter }   from "/src/skeleton/adapters/firebaseAdapter.js";
+import { mountLayout }             from "/src/skeleton/layout/index.js";
+import { runFlowController }       from "/src/controllers/flowController.js";
+import { createCard }              from "/src/skeleton/components/card/index.js";
+import { createOnboardingButton }  from "/src/skeleton/components/onboarding-button/index.js";
+import { showToast }               from "/src/skeleton/components/toast/index.js";
 import "./modelo-negocio.css";
 
 const adapter = (options) => createFirebaseAdapter(options);
@@ -20,11 +17,9 @@ const adapter = (options) => createFirebaseAdapter(options);
 runLifecycle({
   adapter,
   options: { loadingMessage: "Cargando..." },
-
   async onReady(ctx) {
     await runFlowController(ctx.user.uid);
     mountLayout(ctx);
-
     const state = await load(ctx);
     render(ctx, state);
   }
@@ -33,10 +28,9 @@ runLifecycle({
 /* ============================================================
    LOAD
    ============================================================ */
-
 async function load(ctx) {
   const offerType = ctx.comercioData?.offerType || {};
-
+  console.log('[modelo-negocio] load() offerType:', offerType);
   return {
     productos: offerType.productos === true,
     servicios: offerType.servicios === true,
@@ -46,12 +40,11 @@ async function load(ctx) {
 /* ============================================================
    RENDER
    ============================================================ */
-
 function render(ctx, state) {
   const page = document.getElementById("skeleton-page");
   page.innerHTML = "";
 
-  // ==================== HEADER ====================
+  // ── Header ──────────────────────────────────────────────
   const header = document.createElement("div");
   header.className = "page-content";
   header.innerHTML = `
@@ -60,70 +53,71 @@ function render(ctx, state) {
   `;
   page.appendChild(header);
 
-  // ==================== CARDS ====================
+  // ── Cards seleccionables ─────────────────────────────────
   const cardsContainer = document.createElement("div");
   cardsContainer.className = "cards-container";
   page.appendChild(cardsContainer);
 
   const cardProductos = createCard({
-    title: "Productos",
-    content: "Vendés artículos físicos o digitales.",
-    icon: "fa-box",
-    variant: "primary",
+    title:     "Productos",
+    content:   "Vendés artículos físicos o digitales.",
+    icon:      "fa-box",
+    variant:   "primary",
     selectable: true,
-    selected: state.productos,
+    selected:  state.productos,
   });
 
   const cardServicios = createCard({
-    title: "Servicios",
-    content: "Ofrecés servicios con turnos o por hora.",
-    icon: "fa-concierge-bell",
-    variant: "info",
+    title:     "Servicios",
+    content:   "Ofrecés servicios con turnos o por hora.",
+    icon:      "fa-concierge-bell",
+    variant:   "info",
     selectable: true,
-    selected: state.servicios,
+    selected:  state.servicios,
   });
 
   cardsContainer.appendChild(cardProductos);
   cardsContainer.appendChild(cardServicios);
 
-  // ==================== BOTÓN CONTINUAR ====================
-  const saveBtn = document.createElement("button");
-  saveBtn.className = "btn-primary";
-  saveBtn.textContent = "Continuar";
-  page.appendChild(saveBtn);
+  // ── Onboarding button ────────────────────────────────────
+  const btn = createOnboardingButton({
+    stepName: 'modelo-negocio',
 
-  saveBtn.addEventListener("click", async () => {
-    const productos = cardProductos.isSelected();
-    const servicios = cardServicios.isSelected();
+    validate: () => {
+      const ok = cardProductos.isSelected() || cardServicios.isSelected();
+      console.log('[modelo-negocio] validate():', ok);
+      return ok;
+    },
 
-    if (!productos && !servicios) {
-      showToast("Seleccioná al menos una opción", "warning");
-      return;
-    }
+    getLabel: () => {
+      const productos = cardProductos.isSelected();
+      const servicios = cardServicios.isSelected();
+      if (!productos && !servicios) return 'Seleccioná al menos una opción';
+      return 'Continuar';
+    },
 
-    try {
-      const comercioId = ctx.userData.comercioId;
+    onSave: async ({ uid, comercioId }) => {
+      const productos = cardProductos.isSelected();
+      const servicios = cardServicios.isSelected();
 
-      await updateDoc(
-        doc(db, "comercios", comercioId),
-        {
-          offerType: {
-            productos,
-            servicios,
-          },
-          "onboardingSteps.modelo-negocio": true,
-        }
-      );
+      console.log('[modelo-negocio] onSave() →', { productos, servicios, comercioId });
 
-      showToast("Configuración guardada correctamente", "success");
+      await updateDoc(doc(db, 'comercios', comercioId), {
+        offerType: { productos, servicios },
+        'onboardingSteps.modelo-negocio': true,
+      });
 
-      // 🔥 Arquitectura dashboard-hub:
-      // Siempre volvemos a dashboard.
-      window.location.href = "/dashboard.html";
+      showToast('Configuración guardada correctamente', 'success');
 
-    } catch (error) {
-      console.error("Error guardando modelo de negocio:", error);
-      showToast("Error al guardar la configuración", "error");
+      // Retornamos stepMarked: true porque ya escribimos onboardingSteps arriba
+      return { success: true, stepMarked: true };
+    },
+
+    onError: (err) => {
+      console.error('[modelo-negocio] onSave ERROR:', err);
+      showToast('Error al guardar la configuración', 'error');
     }
   });
+
+  page.appendChild(btn);
 }
