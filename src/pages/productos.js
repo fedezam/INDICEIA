@@ -32,40 +32,57 @@ const XLSX = window.XLSX;
 const page = {
   _data: {
     productos: [],
+    // FIX: draftManual ahora incluye todos los campos base para que sobrevivan el render()
     draftManual: {
-      atributos: [],
-      etiquetas: []
+      codigo:       '',
+      nombre:       '',
+      descripcion:  '',
+      precio:       '',
+      stock:        '',
+      categoria:    '',
+      subcategoria: '',
+      marca:        '',
+      imagen:       '',
+      disponibilidad: 'inmediata',
+      atributos:    [],
+      etiquetas:    []
     },
     draftImport: {
-      csvData: [],
+      csvData:    [],
       csvColumns: [],
-      mapping: {}
+      mapping:    {}
     },
-    showAdvanced: false,
+    showAdvanced:      false,
     showImportPreview: false
   },
 
-  _isEditMode: false,
-  _originalSnapshot: [],
+  _isEditMode:        false,
+  _originalSnapshot:  [],
 
   // ──────────────────────────────────────────────────────────
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
+    console.log('[productos] load() ctx:', ctx);
+
     this._isEditMode = ctx.isEditMode === true;
     const comercioId = ctx.comercioId;
+
     if (!comercioId) {
-      this._data.productos = [];
+      console.warn('[productos] load() → sin comercioId, productos vacíos');
+      this._data.productos   = [];
       this._originalSnapshot = [];
       return;
     }
+
     try {
       const snap = await getDocs(collection(db, 'comercios', comercioId, 'productos'));
-      this._data.productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      this._data.productos   = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       this._originalSnapshot = structuredClone(this._data.productos);
+      console.log(`[productos] load() → ${this._data.productos.length} productos cargados`);
     } catch (err) {
-      console.error('Error cargando productos:', err);
-      this._data.productos = [];
+      console.error('[productos] load() ERROR:', err);
+      this._data.productos   = [];
       this._originalSnapshot = [];
     }
   },
@@ -74,6 +91,8 @@ const page = {
   // RENDER
   // ──────────────────────────────────────────────────────────
   render() {
+    console.log('[productos] render() → productos:', this._data.productos.length, '| showAdvanced:', this._data.showAdvanced);
+
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
 
@@ -104,21 +123,45 @@ const page = {
   // FORM CARD
   // ──────────────────────────────────────────────────────────
   _renderFormCard() {
+    console.log('[productos] _renderFormCard() → draft base:', {
+      codigo:      this._data.draftManual.codigo,
+      nombre:      this._data.draftManual.nombre,
+      descripcion: this._data.draftManual.descripcion,
+      precio:      this._data.draftManual.precio,
+      stock:       this._data.draftManual.stock,
+      categoria:   this._data.draftManual.categoria
+    });
+
     const container = document.createElement('div');
 
-    const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',   placeholder: 'SKU123', helpText: 'Si no lo completás, se genera automáticamente' });
-    const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto', required: true, placeholder: 'Ej: Remera deportiva' });
-    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',          type: 'textarea', rows: 3, required: true, placeholder: 'Describe el producto...' });
-    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',               type: 'number', required: true, placeholder: '0.00' });
-    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                type: 'number', placeholder: '0' });
-    const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',            placeholder: 'Ej: Ropa' });
+    // FIX: Se pasa value: desde el draft para que los campos no se borren al re-renderizar
+    const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',    placeholder: 'SKU123',                   helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
+    const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto',  required: true, placeholder: 'Ej: Remera deportiva',  value: this._data.draftManual.nombre });
+    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',           type: 'textarea', rows: 3, required: true, placeholder: 'Describe el producto...', value: this._data.draftManual.descripcion });
+    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',                type: 'number', required: true, placeholder: '0.00', value: this._data.draftManual.precio });
+    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                 type: 'number', placeholder: '0',        value: this._data.draftManual.stock });
+    const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',             placeholder: 'Ej: Ropa',                 value: this._data.draftManual.categoria });
+
+    // Helper: persiste los campos base al draft ANTES de re-renderizar
+    const _saveBaseDraft = () => {
+      this._data.draftManual.codigo      = codigo.getValue();
+      this._data.draftManual.nombre      = nombre.getValue();
+      this._data.draftManual.descripcion = descripcion.getValue();
+      this._data.draftManual.precio      = precio.getValue();
+      this._data.draftManual.stock       = stock.getValue();
+      this._data.draftManual.categoria   = categoria.getValue();
+      console.log('[productos] _saveBaseDraft() guardado:', { ...this._data.draftManual });
+    };
 
     const toggleBtn = createButton({
-      label: this._data.showAdvanced ? 'Ocultar detalles' : 'Agregar más detalles',
+      label:   this._data.showAdvanced ? 'Ocultar detalles' : 'Agregar más detalles',
       variant: 'link',
-      icon: this._data.showAdvanced ? 'fa-chevron-up' : 'fa-chevron-down',
+      icon:    this._data.showAdvanced ? 'fa-chevron-up' : 'fa-chevron-down',
       onClick: () => {
+        // FIX: guardamos los valores ANTES de destruir el DOM con render()
+        _saveBaseDraft();
         this._data.showAdvanced = !this._data.showAdvanced;
+        console.log('[productos] toggleAdvanced → showAdvanced:', this._data.showAdvanced);
         this.render();
       }
     });
@@ -130,11 +173,15 @@ const page = {
     }
 
     const btnAgregar = createButton({
-      label: 'Agregar Producto',
+      label:   'Agregar Producto',
       variant: 'primary',
-      icon: 'fa-plus',
-      block: true,
-      onClick: () => this._handleManualSubmit({ codigo, nombre, descripcion, precio, stock, categoria })
+      icon:    'fa-plus',
+      block:   true,
+      onClick: () => {
+        // FIX: también guardamos antes de llamar al submit (por si acaso)
+        _saveBaseDraft();
+        this._handleManualSubmit({ codigo, nombre, descripcion, precio, stock, categoria });
+      }
     });
 
     container.appendChild(btnAgregar);
@@ -143,12 +190,19 @@ const page = {
   },
 
   _renderAdvancedFields() {
+    console.log('[productos] _renderAdvancedFields() → draft avanzado:', {
+      subcategoria:   this._data.draftManual.subcategoria,
+      marca:          this._data.draftManual.marca,
+      imagen:         this._data.draftManual.imagen,
+      disponibilidad: this._data.draftManual.disponibilidad
+    });
+
     const container = document.createElement('div');
     container.className = 'advanced-fields';
 
-    const subcategoria   = createFormField({ id: 'prod-subcategoria',   label: 'Subcategoría',    placeholder: 'Ej: Remeras' });
-    const marca          = createFormField({ id: 'prod-marca',           label: 'Marca',            placeholder: 'Ej: Nike' });
-    const imagen         = createFormField({ id: 'prod-imagen',          label: 'URL de imagen',    type: 'url', placeholder: 'https://...' });
+    const subcategoria   = createFormField({ id: 'prod-subcategoria',   label: 'Subcategoría',   placeholder: 'Ej: Remeras',  value: this._data.draftManual.subcategoria });
+    const marca          = createFormField({ id: 'prod-marca',           label: 'Marca',           placeholder: 'Ej: Nike',     value: this._data.draftManual.marca });
+    const imagen         = createFormField({ id: 'prod-imagen',          label: 'URL de imagen',   type: 'url', placeholder: 'https://...', value: this._data.draftManual.imagen });
     const disponibilidad = createFormField({
       id: 'prod-disponibilidad',
       label: 'Disponibilidad',
@@ -158,14 +212,17 @@ const page = {
         { value: 'bajo_pedido', label: 'Bajo pedido' },
         { value: 'sin_stock',   label: 'Sin stock' }
       ],
-      value: 'inmediata'
+      value: this._data.draftManual.disponibilidad || 'inmediata'
     });
 
     container.append(subcategoria, marca, imagen, disponibilidad);
     container.appendChild(this._renderAtributosSection());
     container.appendChild(this._renderEtiquetasSection());
 
+    // FIX: guardamos la referencia para poder leer los valores en _handleManualSubmit
+    // y también persistimos al draft cada vez que cambian
     this._advancedRefs = { subcategoria, marca, imagen, disponibilidad };
+
     return container;
   },
 
@@ -185,6 +242,7 @@ const page = {
       row.className = 'atributo-row';
       row.innerHTML = `<span><strong>${attr.key}:</strong> ${attr.value}</span><button type="button" class="btn-icon btn-sm"><i class="fas fa-times"></i></button>`;
       row.querySelector('button').addEventListener('click', () => {
+        console.log('[productos] atributo eliminado:', attr);
         this._data.draftManual.atributos.splice(index, 1);
         this.render();
       });
@@ -198,16 +256,19 @@ const page = {
     wrapper.appendChild(inputs);
 
     wrapper.appendChild(createButton({
-      label: 'Agregar atributo',
+      label:   'Agregar atributo',
       variant: 'secondary',
-      size: 'sm',
-      icon: 'fa-plus',
+      size:    'sm',
+      icon:    'fa-plus',
       onClick: () => {
         const key   = inputs.querySelector('#attr-key').value.trim();
         const value = inputs.querySelector('#attr-value').value.trim();
         if (key && value) {
+          console.log('[productos] atributo agregado:', { key, value });
           this._data.draftManual.atributos.push({ key, value });
           this.render();
+        } else {
+          console.warn('[productos] atributo incompleto → key:', key, '| value:', value);
         }
       }
     }));
@@ -231,6 +292,7 @@ const page = {
       tag.className = 'etiqueta-tag';
       tag.innerHTML = `${etiqueta}<button type="button">×</button>`;
       tag.querySelector('button').addEventListener('click', () => {
+        console.log('[productos] etiqueta eliminada:', etiqueta);
         this._data.draftManual.etiquetas.splice(index, 1);
         this.render();
       });
@@ -244,15 +306,18 @@ const page = {
     wrapper.appendChild(inputGroup);
 
     wrapper.appendChild(createButton({
-      label: 'Agregar etiqueta',
+      label:   'Agregar etiqueta',
       variant: 'secondary',
-      size: 'sm',
-      icon: 'fa-tag',
+      size:    'sm',
+      icon:    'fa-tag',
       onClick: () => {
         const value = inputGroup.querySelector('#etiqueta-input').value.trim();
         if (value && !this._data.draftManual.etiquetas.includes(value)) {
+          console.log('[productos] etiqueta agregada:', value);
           this._data.draftManual.etiquetas.push(value);
           this.render();
+        } else {
+          console.warn('[productos] etiqueta vacía o duplicada:', value);
         }
       }
     }));
@@ -262,9 +327,9 @@ const page = {
 
   _handleManualSubmit(refs) {
     const newProduct = {
-      codigo:      refs.codigo.getValue() || this._generateCodigo(),
-      nombre:      refs.nombre.getValue(),
-      descripcion: refs.descripcion.getValue(),
+      codigo:       refs.codigo.getValue() || this._generateCodigo(),
+      nombre:       refs.nombre.getValue(),
+      descripcion:  refs.descripcion.getValue(),
       precio_final: parseFloat(refs.precio.getValue()) || 0,
       stock:        parseInt(refs.stock.getValue()) || 0,
       categoria:    refs.categoria.getValue(),
@@ -284,15 +349,34 @@ const page = {
       newProduct.atributos[attr.key] = attr.value;
     });
 
+    console.log('[productos] _handleManualSubmit() producto a agregar:', newProduct);
+
     if (!newProduct.nombre || !newProduct.descripcion) {
+      console.warn('[productos] _handleManualSubmit() → faltan campos requeridos');
       showToast('Campos requeridos', 'Completá nombre y descripción', 'warning');
       return;
     }
 
     this._data.productos.push(newProduct);
-    this._data.draftManual = { atributos: [], etiquetas: [] };
+
+    // FIX: reset completo del draft incluyendo todos los campos
+    this._data.draftManual = {
+      codigo:       '',
+      nombre:       '',
+      descripcion:  '',
+      precio:       '',
+      stock:        '',
+      categoria:    '',
+      subcategoria: '',
+      marca:        '',
+      imagen:       '',
+      disponibilidad: 'inmediata',
+      atributos:    [],
+      etiquetas:    []
+    };
     this._data.showAdvanced = false;
 
+    console.log('[productos] producto agregado. Total:', this._data.productos.length);
     showToast('Producto agregado', 'Guardá para confirmar los cambios', 'success');
     this.render();
   },
@@ -317,13 +401,13 @@ const page = {
     `;
 
     const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx,.xls,.csv';
+    fileInput.type    = 'file';
+    fileInput.accept  = '.xlsx,.xls,.csv';
     fileInput.style.display = 'none';
 
-    uploadZone.addEventListener('click', () => fileInput.click());
-    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('click',     () => fileInput.click());
+    uploadZone.addEventListener('dragover',  e  => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', ()  => uploadZone.classList.remove('dragover'));
     uploadZone.addEventListener('drop', e => {
       e.preventDefault();
       uploadZone.classList.remove('dragover');
@@ -345,10 +429,14 @@ const page = {
   },
 
   _parseFile(file) {
+    console.log('[productos] _parseFile() archivo:', file.name, '| tipo:', file.type, '| tamaño:', file.size);
+
     if (!XLSX) {
+      console.error('[productos] _parseFile() → XLSX no disponible en window');
       showToast('Error', 'Librería XLSX no cargada', 'error');
       return;
     }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -356,7 +444,10 @@ const page = {
         const sheet    = wb.Sheets[wb.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
 
+        console.log('[productos] _parseFile() hojas:', wb.SheetNames, '| filas parseadas:', jsonData.length);
+
         if (jsonData.length === 0) {
+          console.warn('[productos] _parseFile() → archivo vacío');
           showToast('Error', 'El archivo está vacío', 'error');
           return;
         }
@@ -366,10 +457,13 @@ const page = {
         this._data.showImportPreview      = true;
         this._data.draftImport.mapping    = this._autoDetectMapping();
 
+        console.log('[productos] _parseFile() columnas detectadas:', this._data.draftImport.csvColumns);
+        console.log('[productos] _parseFile() mapeo auto:', this._data.draftImport.mapping);
+
         showToast('Archivo cargado', `${jsonData.length} filas detectadas`, 'success');
         this.render();
       } catch (err) {
-        console.error(err);
+        console.error('[productos] _parseFile() ERROR al parsear:', err);
         showToast('Error', 'No se pudo leer el archivo', 'error');
       }
     };
@@ -377,9 +471,9 @@ const page = {
   },
 
   _autoDetectMapping() {
-    const mapping  = {};
-    const columns  = this._data.draftImport.csvColumns;
-    const aliases  = {
+    const mapping = {};
+    const columns = this._data.draftImport.csvColumns;
+    const aliases = {
       codigo:       ['codigo', 'code', 'id', 'sku'],
       nombre:       ['nombre', 'articulo', 'producto', 'name', 'title'],
       descripcion:  ['descripcion', 'description'],
@@ -409,7 +503,6 @@ const page = {
     count.innerHTML = `<strong>${this._data.draftImport.csvData.length}</strong> filas detectadas`;
     container.appendChild(count);
 
-    // Tabla preview (primeras 5)
     const tableWrap = document.createElement('div');
     tableWrap.className = 'preview-table-container';
     const table = document.createElement('table');
@@ -423,7 +516,6 @@ const page = {
     tableWrap.appendChild(table);
     container.appendChild(tableWrap);
 
-    // Mapeo
     const mappingSection = document.createElement('div');
     mappingSection.className = 'mapping-section';
     mappingSection.innerHTML = '<h4>Mapeo de columnas</h4><p class="help-text">Indicá qué campo corresponde a cada columna:</p>';
@@ -442,7 +534,7 @@ const page = {
 
     this._data.draftImport.csvColumns.forEach(col => {
       const current = this._data.draftImport.mapping[col] || '';
-      const field = document.createElement('div');
+      const field   = document.createElement('div');
       field.className = 'mapping-field';
       field.innerHTML = `
         <label><strong>"${col}"</strong> →</label>
@@ -452,6 +544,7 @@ const page = {
         </select>
       `;
       field.querySelector('select').addEventListener('change', e => {
+        console.log('[productos] mapeo cambiado → columna:', col, '| campo:', e.target.value);
         this._data.draftImport.mapping[col] = e.target.value;
       });
       mappingSection.appendChild(field);
@@ -461,12 +554,18 @@ const page = {
 
     const actions = document.createElement('div');
     actions.className = 'form-actions';
-    actions.appendChild(createButton({ label: 'Importar productos', variant: 'primary', icon: 'fa-check', onClick: () => this._applyMapping() }));
     actions.appendChild(createButton({
-      label: 'Cancelar',
+      label:   'Importar productos',
+      variant: 'primary',
+      icon:    'fa-check',
+      onClick: () => this._applyMapping()
+    }));
+    actions.appendChild(createButton({
+      label:   'Cancelar',
       variant: 'secondary',
       onClick: () => {
-        this._data.draftImport      = { csvData: [], csvColumns: [], mapping: {} };
+        console.log('[productos] importación cancelada');
+        this._data.draftImport       = { csvData: [], csvColumns: [], mapping: {} };
         this._data.showImportPreview = false;
         this.render();
       }
@@ -478,14 +577,16 @@ const page = {
 
   _applyMapping() {
     const { csvData, mapping } = this._data.draftImport;
-    let added = 0, updated = 0;
+    let added = 0, updated = 0, skipped = 0;
 
-    csvData.forEach(row => {
+    console.log('[productos] _applyMapping() → filas:', csvData.length, '| mapping:', mapping);
+
+    csvData.forEach((row, rowIndex) => {
       const newProduct = { paused: false, atributos: {}, etiquetas: [] };
 
       Object.keys(row).forEach(col => {
         const target = mapping[col];
-        let value = row[col];
+        let value    = row[col];
         if (!target || value === '' || value == null) return;
 
         if (target.startsWith('__atributo__')) {
@@ -499,7 +600,11 @@ const page = {
         newProduct[target] = value;
       });
 
-      if (!newProduct.nombre) return;
+      if (!newProduct.nombre) {
+        console.warn(`[productos] _applyMapping() fila ${rowIndex} sin nombre → ignorada`, row);
+        skipped++;
+        return;
+      }
       if (!newProduct.codigo) newProduct.codigo = this._generateCodigo();
 
       const idx = this._data.productos.findIndex(p => p.codigo === newProduct.codigo);
@@ -515,7 +620,9 @@ const page = {
       }
     });
 
-    this._data.draftImport      = { csvData: [], csvColumns: [], mapping: {} };
+    console.log(`[productos] _applyMapping() resultado → nuevos: ${added} | actualizados: ${updated} | ignorados: ${skipped}`);
+
+    this._data.draftImport       = { csvData: [], csvColumns: [], mapping: {} };
     this._data.showImportPreview = false;
 
     showToast('Importación completa', `${added} nuevos, ${updated} actualizados`, 'success');
@@ -529,11 +636,14 @@ const page = {
     const parts = clean.split('.');
     if (parts.length > 2) clean = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
     const num = parseFloat(clean);
+    console.log('[productos] _parsePrecio()', value, '→', num);
     return isNaN(num) ? 0 : num;
   },
 
   _generateCodigo() {
-    return `PR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const codigo = `PR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    console.log('[productos] _generateCodigo():', codigo);
+    return codigo;
   },
 
   // ──────────────────────────────────────────────────────────
@@ -573,7 +683,7 @@ const page = {
 
     this._data.productos.forEach((p, index) => {
       const row = document.createElement('tr');
-      row.className   = p.paused ? 'paused-row' : '';
+      row.className     = p.paused ? 'paused-row' : '';
       row.dataset.index = index;
       row.innerHTML = `
         <td>${p.codigo || '-'}</td>
@@ -604,19 +714,23 @@ const page = {
   },
 
   _filterProducts(searchTerm) {
+    console.log('[productos] _filterProducts():', searchTerm);
     document.querySelectorAll('#products-tbody tr').forEach(row => {
       row.style.display = row.textContent.toLowerCase().includes(searchTerm.toLowerCase()) ? '' : 'none';
     });
   },
 
   _toggleProduct(index) {
-    this._data.productos[index].paused = !this._data.productos[index].paused;
+    const p = this._data.productos[index];
+    p.paused = !p.paused;
+    console.log(`[productos] _toggleProduct() index:${index} nombre:"${p.nombre}" paused:${p.paused}`);
     this.render();
   },
 
   _deleteProduct(index) {
     const nombre = this._data.productos[index].nombre || 'este producto';
     if (confirm(`¿Eliminar "${nombre}"?\n\nEsta acción no se puede deshacer.`)) {
+      console.log(`[productos] _deleteProduct() eliminado: "${nombre}" index:${index}`);
       this._data.productos.splice(index, 1);
       showToast('Producto eliminado', 'Guardá para confirmar', 'info');
       this.render();
@@ -633,11 +747,13 @@ const page = {
   _renderSaveButton() {
     const dirtyController = {
       hasUnsavedChanges: () => {
-        return JSON.stringify(this._data.productos) !==
-               JSON.stringify(this._originalSnapshot);
+        const dirty = JSON.stringify(this._data.productos) !== JSON.stringify(this._originalSnapshot);
+        console.log('[productos] hasUnsavedChanges():', dirty);
+        return dirty;
       },
       markSaved: () => {
         this._originalSnapshot = structuredClone(this._data.productos);
+        console.log('[productos] markSaved() snapshot actualizado');
       }
     };
 
@@ -646,10 +762,10 @@ const page = {
 
       validate: () => {
         const activos = this._data.productos.filter(p => !p.paused).length;
-        // En edit sin cambios → válido (el botón actúa como "Volver")
         if (this._isEditMode && !dirtyController.hasUnsavedChanges()) return true;
-        // En cualquier otro caso necesita al menos un producto activo
-        return activos > 0;
+        const valid = activos > 0;
+        console.log('[productos] validate() activos:', activos, '| válido:', valid);
+        return valid;
       },
 
       getLabel: () => {
@@ -662,13 +778,15 @@ const page = {
       dirtyController,
 
       onSave: async ({ uid, comercioId }) => {
+        console.log('[productos] onSave() uid:', uid, '| comercioId:', comercioId);
+
         if (!comercioId) throw new Error('No hay comercioId');
 
-        const productosRef  = collection(db, 'comercios', comercioId, 'productos');
-        const batch         = writeBatch(db);
-        const existentes    = await getDocs(productosRef);
-        const existingMap   = new Map(existentes.docs.map(d => [d.id, d.data()]));
-        const currentMap    = new Map(this._data.productos.filter(p => p.id).map(p => [p.id, p]));
+        const productosRef = collection(db, 'comercios', comercioId, 'productos');
+        const batch        = writeBatch(db);
+        const existentes   = await getDocs(productosRef);
+        const existingMap  = new Map(existentes.docs.map(d => [d.id, d.data()]));
+        const currentMap   = new Map(this._data.productos.filter(p => p.id).map(p => [p.id, p]));
 
         const toDelete = [];
         const toUpdate = [];
@@ -689,14 +807,17 @@ const page = {
           }
         });
 
+        console.log(`[productos] onSave() → eliminar:${toDelete.length} | actualizar:${toUpdate.length} | agregar:${toAdd.length}`);
+
         const totalOps = toDelete.length + toUpdate.length + toAdd.length;
         if (totalOps === 0) {
+          console.log('[productos] onSave() → sin cambios reales');
           showToast('Sin cambios', 'No hay cambios para guardar', 'info');
           return { success: true, stepMarked: false };
         }
 
         showProgressOverlay(totalOps, {
-          title: 'Sincronizando catálogo',
+          title:          'Sincronizando catálogo',
           initialMessage: `${toDelete.length} eliminados, ${toUpdate.length} actualizados, ${toAdd.length} nuevos`
         });
 
@@ -718,17 +839,19 @@ const page = {
         }
 
         await batch.commit();
+        console.log('[productos] onSave() batch committed OK');
         finishProgressOverlay('Catálogo sincronizado', 800);
 
         return { success: true, stepMarked: false };
       },
 
       onSuccess: () => {
+        console.log('[productos] onSuccess() guardado exitoso');
         showToast('Éxito', 'Productos guardados correctamente', 'success');
       },
 
       onError: (err) => {
-        console.error('Error guardando productos:', err);
+        console.error('[productos] onError():', err);
         showToast('Error al guardar', err.message, 'error');
       }
     });
