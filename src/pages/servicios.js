@@ -266,16 +266,12 @@ const page = {
     const vals = this._modalidadCheckboxes
       .filter(cb => cb.checked)
       .map(cb => cb.value);
-    
+
+    // Siempre array — el constructor y el schema esperan array
     if (vals.length === 0) {
       delete this._data.draft.modalidad;
-      delete this._data.draft.modalidades;
-    } else if (vals.length === 1) {
-      this._data.draft.modalidad = vals[0];
-      delete this._data.draft.modalidades;
     } else {
-      this._data.draft.modalidad = 'mixto';
-      this._data.draft.modalidades = vals;
+      this._data.draft.modalidad = vals;
     }
   },
 
@@ -558,8 +554,8 @@ const page = {
 
   _isDraftValid() {
     return !!(
-      this._data.draft.nombre?.trim() && 
-      this._data.draft.modalidad && 
+      this._data.draft.nombre?.trim() &&
+      this._data.draft.modalidad?.length > 0 &&
       this._data.draft.disponibilidad
     );
   },
@@ -620,9 +616,9 @@ const page = {
     if (this._formRefs.variantes) this._formRefs.variantes.setValue(d.variantes?.join('\n') || '');
     if (this._formRefs.notas) this._formRefs.notas.setValue(d.notas || '');
     
-    // Modalidad
+    // Modalidad — siempre array en draft
     if (this._modalidadCheckboxes) {
-      const vals = d.modalidades || [d.modalidad].filter(Boolean);
+      const vals = Array.isArray(d.modalidad) ? d.modalidad : (d.modalidad ? [d.modalidad] : []);
       this._modalidadCheckboxes.forEach(cb => {
         cb.checked = vals.includes(cb.value);
       });
@@ -697,22 +693,19 @@ const page = {
     return createOnboardingButton({
       stepName: 'servicios',
       
-      validate: () => {
-        const valid = this._data.serviciosAcumulados.length > 0;
-        if (!valid) {
-          showToast('Error', 'Agregá al menos un servicio', 'warning');
-        }
-        return valid;
+      validate: () => this._data.serviciosAcumulados.length > 0,
+
+      getLabel: () => {
+        const n = this._data.serviciosAcumulados.length;
+        if (n === 0) return 'Agregá al menos un servicio';
+        if (n === 1) return 'Guardar y continuar (1 servicio)';
+        return `Guardar y continuar (${n} servicios)`;
       },
-      
+
       // MODO CUSTOM: batch write de subcolección
       onSave: async ({ uid, comercioId }) => {
         if (!comercioId) {
           throw new Error('No hay comercioId para guardar servicios');
-        }
-        
-        if (this._data.serviciosAcumulados.length === 0) {
-          throw new Error('No hay servicios para guardar');
         }
 
         const batch = writeBatch(db);
