@@ -1,261 +1,177 @@
-// ============================================================
 // src/pages/link-publico.js
-// ============================================================
-import { runSkeleton }            from '/src/skeleton/skeleton.js';
-import { createFirebaseAdapter }  from '/src/skeleton/adapters/firebaseAdapter.js';
-import { createCard }             from '/src/skeleton/components/card/index.js';
-import { createButton }           from '/src/skeleton/components/button/index.js';
-import { showToast }              from '/src/skeleton/components/toast/index.js';
-import { getCarteles, buildCartelQR } from '/lib/cartel/index.js';
+import { auth, db }             from '../firebase.js';
+import { onAuthStateChanged }   from 'firebase/auth';
+import { doc, getDoc }          from 'firebase/firestore';
+import { showToast }            from '../shared/utils.js';
+
+// FIX: ruta corregida — relativa desde src/pages/ hacia lib/cartel/
+import {
+  generateQR,
+  renderPreview,
+  getExportFormats,
+  exportCartel,
+} from '../../lib/cartel/index.js';
 
 const PUBLIC_BASE_URL = 'https://indiceia-public.vercel.app';
 
-// ============================================================
-const page = {
+let publicUrl = null;
+let qrCanvas  = null;
 
-  _data: {
-    publicUrl: null,
-    slug:      null,
-    carteles:  []
-  },
+// ==================== AUTH ====================
+onAuthStateChanged(auth, async (user) => {
+  console.log('[link-publico] onAuthStateChanged user:', user?.uid);
 
-  // ──────────────────────────────────────────────────────────
-  // LOAD
-  // ──────────────────────────────────────────────────────────
-  async load(ctx) {
-    console.group('[link-publico] load()');
-    console.log('comercioData:', ctx.comercioData);
+  if (!user) {
+    window.location.href = '/index.html';
+    return;
+  }
 
-    const slug = ctx.comercioData?.slug;
+  try {
+    const userSnap = await getDoc(doc(db, 'usuarios', user.uid));
+    if (!userSnap.exists()) {
+      console.warn('[link-publico] usuario sin doc en Firestore');
+      return;
+    }
 
-    if (!slug) {
-      console.warn('[link-publico] sin slug en comercioData');
-      this._data.slug      = null;
-      this._data.publicUrl = null;
+    const { comercioId } = userSnap.data();
+    console.log('[link-publico] comercioId:', comercioId);
+
+    if (comercioId) initPage(comercioId);
+
+  } catch (err) {
+    console.error('[link-publico] error en auth flow:', err);
+    showToast('Error de autenticación', 'error');
+  }
+});
+
+// ==================== INIT ====================
+async function initPage(comercioId) {
+  console.group('[link-publico] initPage()');
+  try {
+    const comercioSnap = await getDoc(doc(db, 'comercios', comercioId));
+
+    if (!comercioSnap.exists()) {
+      console.warn('[link-publico] comercio no encontrado:', comercioId);
+      showToast('Comercio no encontrado', 'error');
       console.groupEnd();
       return;
     }
 
-    this._data.slug      = slug;
-    this._data.publicUrl = `${PUBLIC_BASE_URL}/c/${slug}`;
-    this._data.carteles  = getCarteles(this._data.publicUrl);
+    const data = comercioSnap.data();
+    console.log('comercioData:', data);
 
-    console.log('publicUrl:', this._data.publicUrl);
-    console.log('carteles disponibles:', this._data.carteles.map(c => c.id));
-    console.groupEnd();
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // RENDER
-  // ──────────────────────────────────────────────────────────
-  render() {
-    console.log('[link-publico] render() | publicUrl:', this._data.publicUrl);
-
-    const root = document.getElementById('skeleton-page');
-    root.innerHTML = '';
-
-    if (!this._data.publicUrl) {
-      root.appendChild(this._renderSinSlug());
+    const { slug } = data;
+    if (!slug) {
+      console.warn('[link-publico] comercio sin slug');
+      showToast('Este comercio no tiene slug', 'error');
+      console.groupEnd();
       return;
     }
 
-    root.appendChild(this._renderHeader());
-    root.appendChild(this._renderLinkCard());
-    root.appendChild(this._renderCartelesSection());
-  },
+    // ── Link público ──────────────────────────────────────
+    publicUrl = `${PUBLIC_BASE_URL}/c/${slug}`;
+    console.log('publicUrl:', publicUrl);
 
-  // ──────────────────────────────────────────────────────────
-  // SIN SLUG
-  // ──────────────────────────────────────────────────────────
-  _renderSinSlug() {
-    const container = document.createElement('div');
-    container.className = 'empty-state';
-    container.innerHTML = `
-      <i class="fas fa-exclamation-triangle"></i>
-      <h2>Tu comercio no tiene un link público todavía</h2>
-      <p>Generá la entidad desde el dashboard para obtener tu link y QR.</p>
-    `;
-    container.appendChild(createButton({
-      label:   'Ir al dashboard',
-      variant: 'primary',
-      icon:    'fa-arrow-left',
-      onClick: () => window.location.href = '/dashboard.html'
-    }));
-    return container;
-  },
+    document.getElementById('publicUrl').textContent = publicUrl;
+    document.getElementById('copyBtn').onclick = () => {
+      navigator.clipboard.writeText(publicUrl);
+      showToast('Link copiado', 'success');
+    };
 
-  // ──────────────────────────────────────────────────────────
-  // HEADER
-  // ──────────────────────────────────────────────────────────
-  _renderHeader() {
-    const header = document.createElement('div');
-    header.className = 'page-header';
-    header.innerHTML = `
-      <h1><i class="fas fa-link"></i> Mi Link Público</h1>
-      <p>Compartí este link o los carteles con tus clientes para que accedan a tu IA</p>
-    `;
-    return header;
-  },
+    // ── 1. Generar QR ─────────────────────────────────────
+    console.log('[link-publico] generando QR...');
+    qrCanvas = await generateQR(publicUrl);
+    console.log('[link-publico] QR generado:', qrCanvas);
 
-  // ──────────────────────────────────────────────────────────
-  // LINK CARD
-  // ──────────────────────────────────────────────────────────
-  _renderLinkCard() {
-    const container = document.createElement('div');
-
-    const urlBox = document.createElement('div');
-    urlBox.className = 'url-box';
-    urlBox.innerHTML = `<span class="url-text">${this._data.publicUrl}</span>`;
-
-    const btnCopiar = createButton({
-      label:   'Copiar link',
-      variant: 'primary',
-      icon:    'fa-copy',
-      onClick: () => {
-        navigator.clipboard.writeText(this._data.publicUrl);
-        showToast('Link copiado al portapapeles', 'success');
-        console.log('[link-publico] link copiado:', this._data.publicUrl);
-      }
+    // ── 2. Renderizar preview (esperamos un frame real) ───
+    requestAnimationFrame(() => {
+      renderCartelPreview();
     });
 
-    const btnAbrir = createButton({
-      label:   'Abrir link',
-      variant: 'secondary',
-      icon:    'fa-external-link-alt',
-      onClick: () => window.open(this._data.publicUrl, '_blank')
-    });
+    // ── 3. Botones de descarga ────────────────────────────
+    renderDownloadOptions();
 
-    const actions = document.createElement('div');
-    actions.className = 'link-actions';
-    actions.append(btnCopiar, btnAbrir);
-
-    container.append(urlBox, actions);
-
-    return createCard({
-      title:   'Tu Link Público',
-      icon:    'fa-link',
-      variant: 'primary',
-      highlight: true,
-      content: container
-    });
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // CARTELES
-  // ──────────────────────────────────────────────────────────
-  _renderCartelesSection() {
-    const section = document.createElement('div');
-    section.className = 'carteles-section';
-
-    const titulo = document.createElement('h2');
-    titulo.innerHTML = '<i class="fas fa-qrcode"></i> Carteles para imprimir o compartir';
-    section.appendChild(titulo);
-
-    const grid = document.createElement('div');
-    grid.className = 'carteles-grid';
-
-    this._data.carteles.forEach(cartel => {
-      grid.appendChild(this._renderCartelCard(cartel));
-    });
-
-    section.appendChild(grid);
-    return section;
-  },
-
-  _renderCartelCard(cartel) {
-    const container = document.createElement('div');
-
-    const descripcion = document.createElement('p');
-    descripcion.textContent = cartel.descripcion;
-    container.appendChild(descripcion);
-
-    // Área de preview — se rellena al hacer click en "Vista previa"
-    const previewArea = document.createElement('div');
-    previewArea.className = 'cartel-preview-area';
-    previewArea.style.display = 'none';
-    container.appendChild(previewArea);
-
-    const btnPreview = createButton({
-      label:   'Vista previa',
-      variant: 'secondary',
-      icon:    'fa-eye',
-      onClick: async () => {
-        console.log('[link-publico] generando preview cartel:', cartel.id);
-        btnPreview.disabled = true;
-        btnPreview.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
-        try {
-          const qrObj = await buildCartelQR(cartel, this._data.publicUrl);
-          previewArea.innerHTML = '';
-          qrObj.canvas.style.maxWidth = '100%';
-          qrObj.canvas.style.height   = 'auto';
-          qrObj.canvas.style.display  = 'block';
-          qrObj.canvas.style.margin   = '12px auto 0';
-          previewArea.appendChild(qrObj.canvas);
-          previewArea.style.display = 'block';
-          // Guardamos referencia para el botón de descarga
-          previewArea._qrObj = qrObj;
-          btnDescargar.disabled = false;
-          console.log('[link-publico] preview OK cartel:', cartel.id);
-        } catch (err) {
-          console.error('[link-publico] error generando preview:', err);
-          showToast('Error al generar la vista previa', 'error');
-        } finally {
-          btnPreview.disabled = false;
-          btnPreview.innerHTML = '<i class="fas fa-eye"></i> Vista previa';
-        }
-      }
-    });
-
-    const btnDescargar = createButton({
-      label:   'Descargar',
-      variant: 'primary',
-      icon:    'fa-download',
-      onClick: async () => {
-        console.log('[link-publico] descargando cartel:', cartel.id);
-        btnDescargar.disabled = true;
-        btnDescargar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
-        try {
-          // Si ya hay un preview generado, reutilizamos el objeto
-          const qrObj = previewArea._qrObj
-            ? previewArea._qrObj
-            : await buildCartelQR(cartel, this._data.publicUrl);
-
-          qrObj.download({
-            name:      `indiceia-${cartel.id}`,
-            extension: 'png'
-          });
-          showToast('Cartel descargado', 'success');
-          console.log('[link-publico] descarga OK cartel:', cartel.id);
-        } catch (err) {
-          console.error('[link-publico] error descarga cartel:', err);
-          showToast('Error al generar el cartel', 'error');
-        } finally {
-          btnDescargar.disabled = false;
-          btnDescargar.innerHTML = '<i class="fas fa-download"></i> Descargar';
-        }
-      }
-    });
-
-    // Descargar deshabilitado hasta que haya preview (o se genera solo al click)
-    // Lo dejamos habilitado — genera directo sin necesidad de preview previo
-    const actions = document.createElement('div');
-    actions.className = 'cartel-actions';
-    actions.append(btnPreview, btnDescargar);
-    container.appendChild(actions);
-
-    return createCard({
-      title:   cartel.titulo,
-      icon:    'fa-image',
-      content: container
-    });
+  } catch (err) {
+    console.error('[link-publico] error en initPage:', err);
+    showToast('Error al cargar la página', 'error');
   }
-};
+  console.groupEnd();
+}
 
-// ============================================================
-// ARRANQUE
-// ============================================================
-runSkeleton({
-  page,
-  adapter: createFirebaseAdapter,
-  options: { loadingMessage: 'Cargando tu link público...' }
-});
+// ==================== PREVIEW ====================
+function renderCartelPreview() {
+  console.log('[link-publico] renderCartelPreview() qrCanvas:', qrCanvas);
+
+  const container = document.getElementById('cartel-preview');
+  if (!container) {
+    console.warn('[link-publico] #cartel-preview no encontrado en el DOM');
+    return;
+  }
+  if (!qrCanvas) {
+    console.warn('[link-publico] qrCanvas es null, no se puede renderizar preview');
+    return;
+  }
+
+  container.innerHTML = '';
+
+  const previewCanvas = renderPreview({ qrCanvas });
+  previewCanvas.style.maxWidth = '100%';
+  previewCanvas.style.height   = 'auto';
+  previewCanvas.style.display  = 'block';
+  container.appendChild(previewCanvas);
+
+  console.log('[link-publico] preview renderizado OK');
+}
+
+// ==================== DESCARGAS ====================
+function renderDownloadOptions() {
+  console.log('[link-publico] renderDownloadOptions()');
+
+  const container = document.getElementById('carteles');
+  if (!container) {
+    console.warn('[link-publico] #carteles no encontrado en el DOM');
+    return;
+  }
+
+  container.innerHTML = '';
+
+  const formats = getExportFormats();
+  console.log('[link-publico] formatos disponibles:', formats.map(f => f.id));
+
+  formats.forEach((format) => {
+    const btn = document.createElement('button');
+    btn.className   = 'download-btn';
+    btn.textContent = `Descargar ${format.label}`;
+
+    btn.onclick = async () => {
+      if (!qrCanvas) {
+        console.warn('[link-publico] descarga abortada — qrCanvas null');
+        showToast('El QR todavía no está listo', 'warning');
+        return;
+      }
+
+      console.log('[link-publico] descargando formato:', format.id);
+      btn.disabled    = true;
+      btn.textContent = 'Generando…';
+
+      try {
+        const result = exportCartel({ formatId: format.id, qrCanvas });
+
+        result.download({ name: `indiceia-${format.id}` });
+
+        showToast('Cartel descargado', 'success');
+        console.log('[link-publico] descarga OK formato:', format.id);
+
+      } catch (err) {
+        console.error('[link-publico] error exportando cartel:', err);
+        showToast('Error al generar cartel', 'error');
+
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = `Descargar ${format.label}`;
+      }
+    };
+
+    container.appendChild(btn);
+  });
+}
