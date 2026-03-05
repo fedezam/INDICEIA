@@ -1,116 +1,41 @@
-/* ======================================================
-   LINK PÚBLICO · ÍNDICEIA
-   CSS AUTOSUFICIENTE (SIN GLOBAL)
-   ====================================================== */
+/* ============================================================
+   src/pages/link-publico/link-publico.css
+   Estilos propios — cards, botones y toast vienen del skeleton
+   ============================================================ */
 
-/* -----------------------
-   RESET BÁSICO
------------------------- */
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont,
-    'Segoe UI', Roboto, Inter, Helvetica, Arial, sans-serif;
-  background: #f3f4f6;
-  color: #111;
-  line-height: 1.5;
-}
-
-/* -----------------------
-   TIPOGRAFÍA
------------------------- */
-
-h1,
-h2 {
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-h1 {
-  font-size: 2rem;
-}
-
-h2 {
-  font-size: 1.25rem;
-}
-
-p {
-  margin: 0;
-  color: #555;
-}
-
-/* -----------------------
-   BOTONES
------------------------- */
-
-button {
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.btn {
-  padding: 12px 18px;
-  border-radius: 10px;
-  border: none;
-  font-size: 0.95rem;
-  transition: all 0.15s ease;
-}
-
-.btn.secondary {
-  background: #111;
-  color: #fff;
-}
-
-.btn.secondary:hover {
-  background: #222;
-}
-
-/* -----------------------
-   LAYOUT GENERAL
------------------------- */
-
-.page {
+/* ── Layout general ─────────────────────────────────────── */
+#skeleton-page {
   max-width: 960px;
   margin: 0 auto;
   padding: 32px 16px 64px;
 }
 
-.header {
+/* ── Header de página ───────────────────────────────────── */
+.page-header {
   margin-bottom: 32px;
 }
 
-.subtitle {
-  margin-top: 8px;
+.page-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--s-dark, #343a40);
 }
 
-/* -----------------------
-   CARDS
------------------------- */
-
-.card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+.page-header h1 i {
+  color: var(--s-primary, #3c8dbc);
+  margin-right: 10px;
 }
 
-/* -----------------------
-   LINK PÚBLICO
------------------------- */
+.page-header p {
+  margin: 0;
+  color: #555;
+  font-size: 15px;
+}
 
-.link-card .link-box {
+/* ── Link box ───────────────────────────────────────────── */
+.link-box {
   display: flex;
   gap: 12px;
   align-items: center;
@@ -129,18 +54,7 @@ button {
   color: #000;
 }
 
-/* -----------------------
-   CARTELES
------------------------- */
-
-.carteles-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-  margin-top: 16px;
-}
-
-/* Preview */
+/* ── Preview del cartel ─────────────────────────────────── */
 .cartel-preview {
   display: flex;
   justify-content: center;
@@ -149,17 +63,18 @@ button {
   background: #fafafa;
   border-radius: 14px;
   border: 1px dashed #ddd;
+  margin-top: 16px;
 }
 
 .cartel-preview canvas {
   max-width: 100%;
-  height: auto;
+  height: auto !important;
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
 }
 
-/* Acciones */
+/* ── Botones de descarga ────────────────────────────────── */
 .carteles-actions {
   display: flex;
   gap: 12px;
@@ -167,43 +82,64 @@ button {
   flex-wrap: wrap;
 }
 
-.carteles-actions .download-btn {
+/* Los botones vienen de createButton (skeleton) pero les damos
+   el look negro del original para mantener coherencia visual */
+.carteles-actions .s-btn {
   padding: 12px 20px;
   border-radius: 10px;
   border: none;
   background: #000;
   color: #fff;
   font-size: 0.95rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease,
-    background 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-.carteles-actions .download-btn:hover {
+.carteles-actions .s-btn:hover {
   background: #222;
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
 }
 
-.carteles-actions .download-btn:active {
+.carteles-actions .s-btn:active {
   transform: translateY(0);
   box-shadow: none;
 }
 
-/* -----------------------
-   RESPONSIVE
------------------------- */
+/* ── Estado vacío (sin slug) ────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: #555;
+}
 
+.empty-state i {
+  font-size: 48px;
+  color: var(--s-warning, #f39c12);
+  margin-bottom: 16px;
+  display: block;
+}
+
+.empty-state h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  font-size: 15px;
+  margin: 0 0 24px 0;
+  color: #555;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .page {
+  #skeleton-page {
     padding: 24px 12px 48px;
   }
 
-  h1 {
+  .page-header h1 {
     font-size: 1.6rem;
-  }
-
-  .card {
-    padding: 20px;
   }
 
   .cartel-preview {
@@ -214,8 +150,7 @@ button {
     flex-direction: column;
   }
 
-  .carteles-actions .download-btn {
+  .carteles-actions .s-btn {
     width: 100%;
   }
 }
-
