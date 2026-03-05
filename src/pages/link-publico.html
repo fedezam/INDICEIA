@@ -4,51 +4,12 @@
   <meta charset="UTF-8" />
   <title>Link público · ÍndiceIA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <link rel="stylesheet" href="/src/skeleton/theme-variables.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="./link-publico.css" />
 </head>
 <body>
-  <main class="page">
-
-    <!-- HEADER -->
-    <header class="header">
-      <h1>Link público</h1>
-      <p class="subtitle">
-        Este es el acceso directo a tu comercio en ÍndiceIA
-      </p>
-    </header>
-
-    <!-- LINK PÚBLICO -->
-    <section class="card link-card">
-      <div class="link-box">
-        <span id="publicUrl" class="public-url">—</span>
-        <button id="copyBtn" class="btn secondary">Copiar</button>
-      </div>
-    </section>
-
-    <!-- CARTEL PREVIEW -->
-    <section class="card">
-      <h2>Tu cartel con QR</h2>
-      <p>
-        Este es el cartel que pueden escanear tus clientes para acceder
-        directamente a tu comercio.
-      </p>
-
-      <div id="cartel-preview" class="cartel-preview"></div>
-    </section>
-
-    <!-- DESCARGAS -->
-    <section class="card">
-      <h2>Descargar cartel</h2>
-      <p>
-        Elegí el formato según dónde lo vayas a usar.
-      </p>
-
-      <div id="carteles" class="carteles-actions"></div>
-    </section>
-
-  </main>
-
+  <div id="app"></div>
   <script type="module" src="./link-publico.js"></script>
 </body>
 </html>
