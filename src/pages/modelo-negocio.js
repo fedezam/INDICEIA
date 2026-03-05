@@ -81,18 +81,24 @@ function render(ctx, state) {
   cardsContainer.appendChild(cardProductos);
   cardsContainer.appendChild(cardServicios);
 
-  // ── Prevenir deselección total ───────────────────────────
-  // Si el usuario intenta quitar la última opción activa, la restauramos
+  // ── Prevenir deselección total + forzar update del botón ─
+  // El skeleton escucha 'input' y 'change' para re-evaluar getLabel/validate.
+  // Las cards disparan CustomEvent('card-select'), no esos eventos estándar,
+  // por eso el botón no se actualizaba. Disparamos 'change' manualmente.
   cardsContainer.addEventListener('click', () => {
     setTimeout(() => {
       const productos = cardProductos.isSelected();
       const servicios = cardServicios.isSelected();
+
       if (!productos && !servicios) {
-        // Restauramos la que estaba activa antes
+        // Restauramos la que estaba activa en el snapshot
         if (state.productos) cardProductos.select();
-        if (state.servicios) cardProductos.select();
+        if (state.servicios) cardServicios.select();
         showToast('Al menos una opción debe estar activa', 'warning');
       }
+
+      // FIX: forzar re-evaluación de validate() y getLabel() en el botón
+      document.dispatchEvent(new Event('change'));
     }, 0);
   });
 
