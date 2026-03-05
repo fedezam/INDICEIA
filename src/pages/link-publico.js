@@ -1,177 +1,241 @@
+// ============================================================
 // src/pages/link-publico.js
-import { auth, db }             from '../firebase.js';
-import { onAuthStateChanged }   from 'firebase/auth';
-import { doc, getDoc }          from 'firebase/firestore';
-import { showToast }            from '../shared/utils.js';
-
-// FIX: ruta corregida — relativa desde src/pages/ hacia lib/cartel/
+// ============================================================
+import { runSkeleton }           from '/src/skeleton/skeleton.js';
+import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
+import { createCard }            from '/src/skeleton/components/card/index.js';
+import { createButton }          from '/src/skeleton/components/button/index.js';
+import { showToast }             from '/src/skeleton/components/toast/index.js';
 import {
   generateQR,
   renderPreview,
   getExportFormats,
   exportCartel,
 } from '../../lib/cartel/index.js';
+import './link-publico.css';
 
 const PUBLIC_BASE_URL = 'https://indiceia-public.vercel.app';
 
-let publicUrl = null;
-let qrCanvas  = null;
+// ============================================================
+const page = {
 
-// ==================== AUTH ====================
-onAuthStateChanged(auth, async (user) => {
-  console.log('[link-publico] onAuthStateChanged user:', user?.uid);
+  _data: {
+    publicUrl: null,
+    qrCanvas:  null,
+    formats:   []
+  },
 
-  if (!user) {
-    window.location.href = '/index.html';
-    return;
-  }
+  // ──────────────────────────────────────────────────────────
+  // LOAD
+  // ──────────────────────────────────────────────────────────
+  async load(ctx) {
+    console.group('[link-publico] load()');
+    console.log('comercioData:', ctx.comercioData);
 
-  try {
-    const userSnap = await getDoc(doc(db, 'usuarios', user.uid));
-    if (!userSnap.exists()) {
-      console.warn('[link-publico] usuario sin doc en Firestore');
-      return;
-    }
+    // FIX: el slug vive en landing.slug, no en la raíz
+    const slug = ctx.comercioData?.landing?.slug;
 
-    const { comercioId } = userSnap.data();
-    console.log('[link-publico] comercioId:', comercioId);
-
-    if (comercioId) initPage(comercioId);
-
-  } catch (err) {
-    console.error('[link-publico] error en auth flow:', err);
-    showToast('Error de autenticación', 'error');
-  }
-});
-
-// ==================== INIT ====================
-async function initPage(comercioId) {
-  console.group('[link-publico] initPage()');
-  try {
-    const comercioSnap = await getDoc(doc(db, 'comercios', comercioId));
-
-    if (!comercioSnap.exists()) {
-      console.warn('[link-publico] comercio no encontrado:', comercioId);
-      showToast('Comercio no encontrado', 'error');
-      console.groupEnd();
-      return;
-    }
-
-    const data = comercioSnap.data();
-    console.log('comercioData:', data);
-
-    const slug = data.landing?.slug;
     if (!slug) {
-      console.warn('[link-publico] comercio sin slug');
-      showToast('Este comercio no tiene slug', 'error');
+      console.warn('[link-publico] sin slug en landing');
       console.groupEnd();
       return;
     }
 
-    // ── Link público ──────────────────────────────────────
-    publicUrl = `${PUBLIC_BASE_URL}/c/${slug}`;
-    console.log('publicUrl:', publicUrl);
+    this._data.publicUrl = `${PUBLIC_BASE_URL}/c/${slug}`;
+    this._data.formats   = getExportFormats();
 
-    document.getElementById('publicUrl').textContent = publicUrl;
-    document.getElementById('copyBtn').onclick = () => {
-      navigator.clipboard.writeText(publicUrl);
-      showToast('Link copiado', 'success');
-    };
+    console.log('publicUrl:', this._data.publicUrl);
+    console.log('formatos:', this._data.formats.map(f => f.id));
 
-    // ── 1. Generar QR ─────────────────────────────────────
+    // Generamos el QR en load() para que esté listo al renderizar
     console.log('[link-publico] generando QR...');
-    qrCanvas = await generateQR(publicUrl);
-    console.log('[link-publico] QR generado:', qrCanvas);
+    this._data.qrCanvas = await generateQR(this._data.publicUrl);
+    console.log('[link-publico] QR generado:', this._data.qrCanvas);
 
-    // ── 2. Renderizar preview (esperamos un frame real) ───
-    requestAnimationFrame(() => {
-      renderCartelPreview();
+    console.groupEnd();
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // RENDER
+  // ──────────────────────────────────────────────────────────
+  render() {
+    console.log('[link-publico] render() | publicUrl:', this._data.publicUrl);
+
+    const root = document.getElementById('skeleton-page');
+    root.innerHTML = '';
+
+    if (!this._data.publicUrl) {
+      root.appendChild(this._renderSinSlug());
+      return;
+    }
+
+    root.appendChild(this._renderHeader());
+    root.appendChild(this._renderLinkCard());
+    root.appendChild(this._renderPreviewCard());
+    root.appendChild(this._renderDescargasCard());
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // SIN SLUG
+  // ──────────────────────────────────────────────────────────
+  _renderSinSlug() {
+    const container = document.createElement('div');
+    container.className = 'empty-state';
+    container.innerHTML = `
+      <i class="fas fa-exclamation-triangle"></i>
+      <h2>Tu comercio no tiene un link público todavía</h2>
+      <p>Generá la entidad desde el dashboard para obtener tu link y QR.</p>
+    `;
+    container.appendChild(createButton({
+      label:   'Ir al dashboard',
+      variant: 'primary',
+      icon:    'fa-arrow-left',
+      onClick: () => window.location.href = '/dashboard.html'
+    }));
+    return container;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // HEADER
+  // ──────────────────────────────────────────────────────────
+  _renderHeader() {
+    const header = document.createElement('div');
+    header.className = 'page-header';
+    header.innerHTML = `
+      <h1><i class="fas fa-link"></i> Link público</h1>
+      <p>Este es el acceso directo a tu comercio en ÍndiceIA</p>
+    `;
+    return header;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // LINK CARD
+  // ──────────────────────────────────────────────────────────
+  _renderLinkCard() {
+    const container = document.createElement('div');
+
+    const linkBox = document.createElement('div');
+    linkBox.className = 'link-box';
+    linkBox.innerHTML = `<span class="public-url">${this._data.publicUrl}</span>`;
+
+    const btnCopiar = createButton({
+      label:   'Copiar',
+      variant: 'secondary',
+      icon:    'fa-copy',
+      onClick: () => {
+        navigator.clipboard.writeText(this._data.publicUrl);
+        showToast('Link copiado', 'success');
+      }
     });
 
-    // ── 3. Botones de descarga ────────────────────────────
-    renderDownloadOptions();
+    linkBox.appendChild(btnCopiar);
+    container.appendChild(linkBox);
 
-  } catch (err) {
-    console.error('[link-publico] error en initPage:', err);
-    showToast('Error al cargar la página', 'error');
-  }
-  console.groupEnd();
-}
+    return createCard({
+      title:   'Link público',
+      icon:    'fa-link',
+      variant: 'primary',
+      highlight: true,
+      content: container
+    });
+  },
 
-// ==================== PREVIEW ====================
-function renderCartelPreview() {
-  console.log('[link-publico] renderCartelPreview() qrCanvas:', qrCanvas);
+  // ──────────────────────────────────────────────────────────
+  // PREVIEW CARD
+  // ──────────────────────────────────────────────────────────
+  _renderPreviewCard() {
+    const container = document.createElement('div');
 
-  const container = document.getElementById('cartel-preview');
-  if (!container) {
-    console.warn('[link-publico] #cartel-preview no encontrado en el DOM');
-    return;
-  }
-  if (!qrCanvas) {
-    console.warn('[link-publico] qrCanvas es null, no se puede renderizar preview');
-    return;
-  }
+    const descripcion = document.createElement('p');
+    descripcion.textContent = 'Este es el cartel que pueden escanear tus clientes para acceder directamente a tu comercio.';
+    container.appendChild(descripcion);
 
-  container.innerHTML = '';
+    const previewArea = document.createElement('div');
+    previewArea.className = 'cartel-preview';
+    container.appendChild(previewArea);
 
-  const previewCanvas = renderPreview({ qrCanvas });
-  previewCanvas.style.maxWidth = '100%';
-  previewCanvas.style.height   = 'auto';
-  previewCanvas.style.display  = 'block';
-  container.appendChild(previewCanvas);
-
-  console.log('[link-publico] preview renderizado OK');
-}
-
-// ==================== DESCARGAS ====================
-function renderDownloadOptions() {
-  console.log('[link-publico] renderDownloadOptions()');
-
-  const container = document.getElementById('carteles');
-  if (!container) {
-    console.warn('[link-publico] #carteles no encontrado en el DOM');
-    return;
-  }
-
-  container.innerHTML = '';
-
-  const formats = getExportFormats();
-  console.log('[link-publico] formatos disponibles:', formats.map(f => f.id));
-
-  formats.forEach((format) => {
-    const btn = document.createElement('button');
-    btn.className   = 'download-btn';
-    btn.textContent = `Descargar ${format.label}`;
-
-    btn.onclick = async () => {
-      if (!qrCanvas) {
-        console.warn('[link-publico] descarga abortada — qrCanvas null');
-        showToast('El QR todavía no está listo', 'warning');
+    // Renderizamos el preview en el próximo frame para que el DOM esté listo
+    requestAnimationFrame(() => {
+      if (!this._data.qrCanvas) {
+        console.warn('[link-publico] qrCanvas null al renderizar preview');
         return;
       }
+      const previewCanvas = renderPreview({ qrCanvas: this._data.qrCanvas });
+      previewCanvas.style.maxWidth = '100%';
+      previewCanvas.style.height   = 'auto';
+      previewCanvas.style.display  = 'block';
+      previewArea.appendChild(previewCanvas);
+      console.log('[link-publico] preview renderizado OK');
+    });
 
-      console.log('[link-publico] descargando formato:', format.id);
-      btn.disabled    = true;
-      btn.textContent = 'Generando…';
+    return createCard({
+      title:   'Tu cartel con QR',
+      icon:    'fa-qrcode',
+      content: container
+    });
+  },
 
-      try {
-        const result = exportCartel({ formatId: format.id, qrCanvas });
+  // ──────────────────────────────────────────────────────────
+  // DESCARGAS CARD
+  // ──────────────────────────────────────────────────────────
+  _renderDescargasCard() {
+    const container = document.createElement('div');
 
-        result.download({ name: `indiceia-${format.id}` });
+    const descripcion = document.createElement('p');
+    descripcion.textContent = 'Elegí el formato según dónde lo vayas a usar.';
+    container.appendChild(descripcion);
 
-        showToast('Cartel descargado', 'success');
-        console.log('[link-publico] descarga OK formato:', format.id);
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'carteles-actions';
 
-      } catch (err) {
-        console.error('[link-publico] error exportando cartel:', err);
-        showToast('Error al generar cartel', 'error');
+    this._data.formats.forEach((format) => {
+      const btn = createButton({
+        label:   `Descargar ${format.label}`,
+        variant: 'secondary',
+        icon:    'fa-download',
+        onClick: async () => {
+          if (!this._data.qrCanvas) {
+            showToast('El QR todavía no está listo', 'warning');
+            return;
+          }
 
-      } finally {
-        btn.disabled    = false;
-        btn.textContent = `Descargar ${format.label}`;
-      }
-    };
+          console.log('[link-publico] descargando formato:', format.id);
+          btn.disabled   = true;
+          btn.innerHTML  = '<i class="fas fa-spinner fa-spin"></i> Generando…';
 
-    container.appendChild(btn);
-  });
-}
+          try {
+            const result = exportCartel({ formatId: format.id, qrCanvas: this._data.qrCanvas });
+            result.download({ name: `indiceia-${format.id}` });
+            showToast('Cartel descargado', 'success');
+            console.log('[link-publico] descarga OK:', format.id);
+          } catch (err) {
+            console.error('[link-publico] error exportando:', err);
+            showToast('Error al generar cartel', 'error');
+          } finally {
+            btn.disabled  = false;
+            btn.innerHTML = `<i class="fas fa-download"></i> Descargar ${format.label}`;
+          }
+        }
+      });
+
+      actionsDiv.appendChild(btn);
+    });
+
+    container.appendChild(actionsDiv);
+
+    return createCard({
+      title:   'Descargar cartel',
+      icon:    'fa-file-image',
+      content: container
+    });
+  }
+};
+
+// ============================================================
+// ARRANQUE
+// ============================================================
+runSkeleton({
+  page,
+  adapter: createFirebaseAdapter,
+  options: { loadingMessage: 'Cargando tu link público...' }
+});
