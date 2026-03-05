@@ -60,7 +60,7 @@ async function initPage(comercioId) {
     const data = comercioSnap.data();
     console.log('comercioData:', data);
 
-    const { slug } = data;
+    const slug = data.landing?.slug;
     if (!slug) {
       console.warn('[link-publico] comercio sin slug');
       showToast('Este comercio no tiene slug', 'error');
