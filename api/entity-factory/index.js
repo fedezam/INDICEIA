@@ -3,12 +3,12 @@ import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
 
-import { buildContext }      from './builders/context.builder.js';
-import { buildMind }         from './builders/mind.builder.js';
-import { buildGoods }        from './builders/goods.builder.js';
-import { buildServices }     from './builders/services.builder.js';
-import { buildCapabilities } from './builders/capabilities.builder.js';
-import { buildVisual }       from './builders/visual.builder.js';
+import { buildContext }      from '../../lib/entity-factory/builders/context.builder.js';
+import { buildMind }         from '../../lib/entity-factory/builders/mind.builder.js';
+import { buildGoods }        from '../../lib/entity-factory/builders/goods.builder.js';
+import { buildServices }     from '../../lib/entity-factory/builders/services.builder.js';
+import { buildCapabilities } from '../../lib/entity-factory/builders/capabilities.builder.js';
+import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
