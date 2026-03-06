@@ -2,58 +2,80 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://indiceia.com/schemas/goods.schema.json",
   "title": "Goods – Catálogo de Productos",
-  "description": "Productos del comercio. Universo cerrado: si un producto no está aquí, no existe.",
+  "description": "Universo cerrado de productos. Estructura compatible con templates visuales via postMessage.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["enabled", "secciones"],
+  "required": ["bloque_B_contexto_comercial"],
   "properties": {
-    "enabled": { "type": "boolean" },
-    "moneda": {
-      "type": "string",
-      "enum": ["ARS", "USD", "EUR", "BRL", "CLP", "UYU", "PEN", "COP", "MXN"],
-      "default": "ARS"
-    },
-    "secciones": {
-      "type": "array",
-      "minItems": 1,
-      "items": { "$ref": "#/$defs/seccion" }
-    }
-  },
-  "$defs": {
-    "seccion": {
+    "bloque_B_contexto_comercial": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "titulo", "tipo", "prioridad", "items"],
+      "required": ["identity", "contacto", "catalogo"],
       "properties": {
-        "id":       { "type": "string" },
-        "titulo":   { "type": "string" },
-        "tipo":     { "type": "string", "enum": ["grid", "lista", "carousel"] },
-        "prioridad":{ "type": "number", "minimum": 1 },
-        "items":    { "type": "array", "items": { "$ref": "#/$defs/producto" } }
+
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nombre_comercio"],
+          "properties": {
+            "nombre_comercio": { "type": "string" }
+          }
+        },
+
+        "contacto": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "whatsapp_number": { "type": "string" }
+          }
+        },
+
+        "catalogo": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["categorias", "items"],
+          "properties": {
+
+            "categorias": {
+              "type": "array",
+              "description": "Derivado dinámicamente desde los items. Cada valor único de item.categoria.",
+              "items": { "type": "string" }
+            },
+
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/item" }
+            }
+          }
+        }
       }
-    },
-    "producto": {
+    }
+  },
+
+  "$defs": {
+    "item": {
       "type": "object",
       "additionalProperties": false,
       "required": ["id", "nombre", "precio_final"],
       "properties": {
-        "id":           { "type": "string" },
-        "nombre":       { "type": "string" },
-        "descripcion":  { "type": "string" },
-        "codigo":       { "type": "string" },
-        "categoria":    { "type": "string" },
-        "subcategoria": { "type": "string" },
-        "marca":        { "type": "string" },
-        "precio_final": { "type": "number", "minimum": 0 },
-        "stock":        { "type": "number", "minimum": 0 },
+        "id":          { "type": "string" },
+        "nombre":      { "type": "string" },
+        "precio_final":{ "type": "number", "minimum": 0 },
+        "descripcion": { "type": "string" },
+        "categoria":   { "type": "string" },
+        "subcategoria":{ "type": "string" },
+        "marca":       { "type": "string" },
+        "codigo":      { "type": "string" },
+        "imagen":      { "type": "string" },
+        "stock":       { "type": "number", "minimum": 0 },
         "disponibilidad": {
           "type": "string",
           "enum": ["inmediata", "bajo_pedido", "sin_stock"]
         },
-        "imagen":   { "type": "string", "format": "uri" },
-        "etiquetas":{ "type": "array", "items": { "type": "string" } },
-        "atributos":{ "type": "object", "additionalProperties": true },
-        "paused":   { "type": "boolean", "default": false }
+        "etiquetas":   { "type": "array", "items": { "type": "string" } },
+        "atributos":   { "type": "object", "additionalProperties": true },
+        "paused":      { "type": "boolean" }
       }
     }
   }

@@ -62,7 +62,7 @@ export async function buildEntity({ comercioId }) {
   // Construir bloques — cada builder sabe qué schema sigue
   const context      = buildContext(data, comercioId, referralCode);
   const mind         = buildMind(data, context, referralCode);
-  const goods        = await buildGoods(comercioRef, data);
+  const goods        = await buildGoods(comercioRef, context);
   const services     = await buildServices(comercioRef);
   const capabilities = buildCapabilities(context);
   const visual       = buildVisual(context, templateRegistry);
@@ -84,9 +84,9 @@ export async function buildEntity({ comercioId }) {
     },
     mind,
     context,
-    goods,
-    services,
-    visual,
+    ...(goods    && { goods }),
+    ...(services && { services }),
+    ...(visual   && { visual }),
     capabilities,
   };
 }
