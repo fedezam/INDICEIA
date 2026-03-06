@@ -1,124 +1,49 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://indiceia.com/schemas/blockE.schema.json",
-  "title": "Block E – Servicios Operables",
-  "description": "Definición declarativa de servicios para uso por LLMs y templates",
+  "$id": "https://indiceia.com/schemas/services.schema.json",
+  "title": "Services – Catálogo de Servicios",
+  "description": "Servicios que ofrece el comercio. Universo cerrado: si un servicio no está aquí, no existe.",
   "type": "object",
   "additionalProperties": false,
-
-  "required": ["habilitado", "servicios"],
-
+  "required": ["enabled", "servicios"],
   "properties": {
-    "habilitado": {
-      "type": "boolean",
-      "description": "Activa o desactiva completamente el bloque de servicios"
-    },
-
+    "enabled": { "type": "boolean" },
     "servicios": {
       "type": "array",
       "minItems": 1,
       "items": { "$ref": "#/$defs/servicio" }
     }
   },
-
   "$defs": {
     "servicio": {
       "type": "object",
       "additionalProperties": false,
-
-      "required": [
-        "id",
-        "titulo",
-        "que",
-        "como",
-        "cuando",
-        "activo"
-      ],
-
+      "required": ["id", "nombre", "modalidad", "disponibilidad", "activo"],
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Identificador único del servicio"
+        "id":          { "type": "string" },
+        "nombre":      { "type": "string" },
+        "descripcion": { "type": "string" },
+        "modalidad": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["presencial", "a_domicilio", "remoto"] },
+          "description": "Cómo se presta el servicio. Puede tener una o varias modalidades."
         },
-
-        "titulo": {
-          "type": "string",
-          "description": "Nombre corto y visible del servicio"
-        },
-
-        "que": {
-          "type": "string",
-          "description": "Qué es el servicio"
-        },
-
-        "como": {
-          "type": "string",
-          "description": "Cómo se presta el servicio (modalidad)"
-        },
-
-        "cuando": {
-          "type": "string",
-          "description": "Disponibilidad o forma de acceso"
-        },
-
-        "prestacion": {
-          "type": "string",
-          "enum": [
-            "local",
-            "domicilio_cliente",
-            "remoto",
-            "mixto",
-            "variable"
-          ],
-          "description": "Ámbito donde se presta el servicio"
-        },
-
-        "activo": {
-          "type": "boolean",
-          "description": "Indica si el servicio está disponible actualmente"
-        },
-
+        "disponibilidad": { "type": "string", "enum": ["inmediata", "a_coordinar"] },
+        "activo": { "type": "boolean" },
         "precio": {
           "type": "object",
           "additionalProperties": false,
+          "required": ["tipo"],
           "properties": {
-            "tipo": {
-              "type": "string",
-              "enum": ["fijo", "desde", "presupuesto", "consultar"]
-            },
-            "valor": {
-              "type": "number",
-              "minimum": 0
-            },
-            "moneda": {
-              "type": "string",
-              "default": "ARS"
-            },
-            "unidad": {
-              "type": "string"
-            }
+            "tipo":   { "type": "string", "enum": ["fijo", "desde", "presupuesto", "consultar"] },
+            "valor":  { "type": "number", "minimum": 0 },
+            "moneda": { "type": "string", "default": "ARS" }
           }
         },
-
-        "ui": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "presentacion": {
-              "type": "string",
-              "enum": ["card", "lista"],
-              "default": "card"
-            },
-            "accion_principal": {
-              "type": "string"
-            }
-          }
-        },
-
-        "notas": {
-          "type": "array",
-          "items": { "type": "string" }
-        }
+        "duracion_minutos": { "type": "number", "minimum": 1 },
+        "variantes": { "type": "array", "items": { "type": "string" } },
+        "notas":     { "type": "string" }
       }
     }
   }
