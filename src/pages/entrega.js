@@ -175,11 +175,6 @@ function render(ctx, state) {
       comercioId: ctx.comercioId,
     }),
     validate: () => Object.keys(uiState.entrega).length > 0,
-    getLabel: () => {
-      const n = Object.keys(uiState.entrega).length;
-      if (n === 0) return 'Seleccioná al menos una opción';
-      return `Guardar y continuar (${n} ${n === 1 ? 'modalidad' : 'modalidades'})`;
-    }
   }));
 
   page.appendChild(btnContainer);
