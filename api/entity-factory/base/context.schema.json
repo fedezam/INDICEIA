@@ -8,9 +8,9 @@
   "required": ["id", "nombre"],
   "properties": {
     "id":          { "type": "string" },
-    "nombre":      { "type": "string", "description": "Desde: nombreComercio" },
+    "nombre":      { "type": "string" },
     "descripcion": { "type": "string" },
-    "categorias":  { "type": "array", "items": { "type": "string" }, "description": "Desde: categories" },
+    "categorias":  { "type": "array", "items": { "type": "string" } },
     "ubicacion": {
       "type": "object",
       "additionalProperties": false,
@@ -38,14 +38,117 @@
       "type": "object",
       "additionalProperties": { "$ref": "#/$defs/diaHorario" }
     },
+
+    "entrega": {
+      "type": "object",
+      "description": "Modalidades de entrega disponibles. Solo presente si el comercio configuró al menos una. Cada clave es una modalidad activa.",
+      "additionalProperties": false,
+      "properties": {
+
+        "salon": {
+          "type": "object",
+          "description": "El cliente consume o retira en el local.",
+          "additionalProperties": false,
+          "properties": {}
+        },
+
+        "takeaway": {
+          "type": "object",
+          "description": "El cliente retira su pedido y se lo lleva.",
+          "additionalProperties": false,
+          "properties": {}
+        },
+
+        "delivery": {
+          "type": "object",
+          "description": "El comercio entrega a domicilio.",
+          "additionalProperties": false,
+          "properties": {
+            "zona": {
+              "type": "string",
+              "description": "Área de cobertura. Ej: 'radio 5km de Casilda', 'solo centro'."
+            },
+            "costo": { "$ref": "#/$defs/costo" }
+          }
+        },
+
+        "correo": {
+          "type": "object",
+          "description": "Envío por empresa de correo o mensajería.",
+          "additionalProperties": false,
+          "properties": {
+            "empresas": {
+              "type": "array",
+              "description": "Empresas de correo disponibles.",
+              "items": {
+                "type": "string",
+                "enum": ["OCA", "Andreani", "Correo Argentino", "Otra"]
+              }
+            }
+          }
+        },
+
+        "transporte": {
+          "type": "object",
+          "description": "Flete o transporte para productos de gran volumen o peso.",
+          "additionalProperties": false,
+          "properties": {
+            "descripcion": {
+              "type": "string",
+              "description": "Ej: 'flete propio para zona centro', 'coordinamos transporte con el cliente'."
+            },
+            "costo": { "$ref": "#/$defs/costo" }
+          }
+        },
+
+        "comisionista": {
+          "type": "object",
+          "description": "Distribución a través de un tercero o distribuidor.",
+          "additionalProperties": false,
+          "properties": {
+            "cobertura": {
+              "type": "string",
+              "description": "Ej: 'toda la provincia de Santa Fe', 'zona sur'."
+            }
+          }
+        },
+
+        "descarga": {
+          "type": "object",
+          "description": "Entrega digital — el cliente descarga el producto (software, archivos, diseños).",
+          "additionalProperties": false,
+          "properties": {}
+        },
+
+        "email": {
+          "type": "object",
+          "description": "Entrega por email — documentos, tickets, facturas, licencias.",
+          "additionalProperties": false,
+          "properties": {}
+        },
+
+        "a_coordinar": {
+          "type": "object",
+          "description": "El comercio y el cliente coordinan la entrega de forma personalizada.",
+          "additionalProperties": false,
+          "properties": {
+            "descripcion": {
+              "type": "string",
+              "description": "Explicación breve de cómo se coordina. Ej: 'acordamos día y lugar con el cliente por WhatsApp'."
+            }
+          }
+        }
+
+      }
+    },
+
     "pagos": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "metodosDisponibles": {
           "type": "array",
-          "items": { "type": "string" },
-          "description": "Desde: paymentMethods"
+          "items": { "type": "string" }
         }
       }
     },
@@ -53,11 +156,11 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "nombre":      { "type": "string", "description": "Desde: aiConfig.identidad.nombre" },
-        "saludo":      { "type": "string", "description": "Desde: aiConfig.identidad.saludo" },
-        "idioma":      { "type": "string", "description": "Desde: aiConfig.identidad.idioma" },
-        "personalidad":{ "type": "string", "enum": ["amigable", "formal", "vendedor"] },
-        "tono":        { "type": "string", "enum": ["informal", "neutral", "formal"] },
+        "nombre":       { "type": "string" },
+        "saludo":       { "type": "string" },
+        "idioma":       { "type": "string" },
+        "personalidad": { "type": "string", "enum": ["amigable", "formal", "vendedor"] },
+        "tono":         { "type": "string", "enum": ["informal", "neutral", "formal"] },
         "comportamiento": {
           "type": "object",
           "additionalProperties": false,
@@ -77,9 +180,9 @@
         }
       }
     },
-    "plan":               { "type": "string", "description": "Desde: plan.type" },
-    "templateId":         { "type": "string" },
-    "templateUpdatedAt":  { "type": "string", "format": "date-time" },
+    "plan":              { "type": "string" },
+    "templateId":        { "type": "string" },
+    "templateUpdatedAt": { "type": "string", "format": "date-time" },
     "referral": {
       "type": "object",
       "additionalProperties": false,
@@ -90,7 +193,24 @@
     },
     "updatedAt": { "type": "string", "format": "date-time" }
   },
+
   "$defs": {
+    "costo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tipo"],
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "enum": ["fijo", "estimado", "consultar"],
+          "description": "fijo: el LLM informa el valor exacto. estimado: el LLM dice 'aproximadamente $X'. consultar: el LLM dice que el local confirma al tomar el pedido."
+        },
+        "valor": {
+          "type": "number",
+          "description": "Solo presente si tipo es 'fijo' o 'estimado'."
+        }
+      }
+    },
     "diaHorario": {
       "type": "object",
       "additionalProperties": false,
