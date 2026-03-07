@@ -266,7 +266,9 @@ function buildCampos(m, uiState, container) {
   switch (m.campos) {
 
     case 'delivery': {
+      if (!uiState.entrega.delivery) uiState.entrega.delivery = {};
       const data = uiState.entrega.delivery;
+      if (!data.costo) data.costo = { tipo: 'consultar' };
 
       const zona = createFormField({
         label: 'Zona de cobertura',
@@ -284,7 +286,9 @@ function buildCampos(m, uiState, container) {
     }
 
     case 'correo': {
+      if (!uiState.entrega.correo) uiState.entrega.correo = {};
       const data = uiState.entrega.correo;
+      if (!data.empresas) data.empresas = [];
 
       const label = document.createElement('p');
       label.className = 'entrega-sublabel';
@@ -325,7 +329,9 @@ function buildCampos(m, uiState, container) {
     }
 
     case 'transporte': {
+      if (!uiState.entrega.transporte) uiState.entrega.transporte = {};
       const data = uiState.entrega.transporte;
+      if (!data.costo) data.costo = { tipo: 'consultar' };
 
       const desc = createFormField({
         label: 'Descripción',
@@ -342,6 +348,7 @@ function buildCampos(m, uiState, container) {
     }
 
     case 'comisionista': {
+      if (!uiState.entrega.comisionista) uiState.entrega.comisionista = {};
       const data = uiState.entrega.comisionista;
 
       const cobertura = createFormField({
@@ -357,6 +364,7 @@ function buildCampos(m, uiState, container) {
     }
 
     case 'a_coordinar': {
+      if (!uiState.entrega.a_coordinar) uiState.entrega.a_coordinar = {};
       const data = uiState.entrega.a_coordinar;
 
       const desc = createFormField({
