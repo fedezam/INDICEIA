@@ -1,0 +1,175 @@
+/* pages/entrega/entrega.css */
+
+.page-header {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.page-header h2 {
+  margin: 0 0 8px 0;
+  color: var(--s-dark, #343a40);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.page-header h2 i {
+  margin-right: 8px;
+  color: var(--s-primary, #3c8dbc);
+}
+
+.page-header p {
+  margin: 0;
+  color: var(--s-gray, #6c757d);
+  font-size: 14px;
+}
+
+/* ==================== SECCIÓN ==================== */
+.entrega-seccion {
+  margin-bottom: 20px;
+}
+
+.entrega-instruccion {
+  font-size: 14px;
+  color: var(--s-gray, #6c757d);
+  margin: 0 0 16px 0;
+}
+
+/* ==================== GRID ==================== */
+.entrega-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .entrega-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==================== ITEM ==================== */
+.entrega-item {
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.entrega-item.activa {
+  border-color: #00c853;
+  box-shadow: 0 2px 8px rgba(0, 200, 83, 0.15);
+}
+
+/* ==================== HEADER DEL ITEM ==================== */
+.entrega-item-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  cursor: pointer;
+  user-select: none;
+  background: #f9f9f9;
+}
+
+.entrega-item.activa .entrega-item-header {
+  background: linear-gradient(135deg, rgba(0, 200, 83, 0.04) 0%, rgba(0, 200, 83, 0.08) 100%);
+}
+
+.entrega-item-header input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: #00c853;
+}
+
+.entrega-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.entrega-item-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+}
+
+.entrega-item-label i {
+  margin-right: 6px;
+  color: var(--s-primary, #3c8dbc);
+}
+
+.entrega-item-desc {
+  font-size: 12px;
+  color: var(--s-gray, #6c757d);
+}
+
+/* ==================== CAMPOS ==================== */
+.entrega-campos {
+  padding: 16px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.entrega-campos.hidden {
+  display: none;
+}
+
+/* ==================== EMPRESAS CORREO ==================== */
+.entrega-sublabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--s-dark, #343a40);
+  margin: 0 0 8px 0;
+}
+
+.empresas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.empresa-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.empresa-item:hover {
+  background: #f5f5f5;
+}
+
+.empresa-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #00c853;
+}
+
+.entrega-nota {
+  font-size: 12px;
+  color: var(--s-gray, #6c757d);
+  font-style: italic;
+  margin: 4px 0 0 0;
+}
+
+/* ==================== COSTO ==================== */
+.costo-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ==================== HIDDEN ==================== */
+.hidden {
+  display: none !important;
+}
