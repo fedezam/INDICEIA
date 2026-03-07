@@ -24,7 +24,10 @@ import {
 } from '/src/shared/progressOverlay.js';
 import './productos.css';
 
-const XLSX = window.XLSX;
+const XLSX = window.XLSX; // solo para lectura del archivo subido
+
+// Firma que identifica el template oficial de ÍndiceIA
+const TEMPLATE_FIRMA = 'indiceia_template_v1';
 
 // ============================================================
 // PÁGINA
@@ -32,32 +35,25 @@ const XLSX = window.XLSX;
 const page = {
   _data: {
     productos: [],
-    // FIX: draftManual ahora incluye todos los campos base para que sobrevivan el render()
     draftManual: {
-      codigo:       '',
-      nombre:       '',
-      descripcion:  '',
-      precio:       '',
-      stock:        '',
-      categoria:    '',
-      subcategoria: '',
-      marca:        '',
-      imagen:       '',
+      codigo:         '',
+      nombre:         '',
+      descripcion:    '',
+      precio:         '',
+      stock:          '',
+      categoria:      '',
+      subcategoria:   '',
+      marca:          '',
+      imagen:         '',
       disponibilidad: 'inmediata',
-      atributos:    [],
-      etiquetas:    []
+      atributos:      [],
+      etiquetas:      []
     },
-    draftImport: {
-      csvData:    [],
-      csvColumns: [],
-      mapping:    {}
-    },
-    showAdvanced:      false,
-    showImportPreview: false
+    showAdvanced: false,
   },
 
-  _isEditMode:        false,
-  _originalSnapshot:  [],
+  _isEditMode:       false,
+  _originalSnapshot: [],
 
   // ──────────────────────────────────────────────────────────
   // LOAD
@@ -100,7 +96,7 @@ const page = {
     header.className = 'page-header';
     header.innerHTML = `
       <h1><i class="fas fa-box"></i> Catálogo de Productos</h1>
-      <p>Cargá tus productos manualmente o importá desde Excel/CSV</p>
+      <p>Cargá tus productos manualmente o importá desde Excel</p>
       <div class="product-stats">
         <span class="stat-badge">
           <i class="fas fa-boxes"></i>
@@ -109,6 +105,7 @@ const page = {
       </div>
     `;
     root.appendChild(header);
+    root.appendChild(this._renderTipsCard());
     root.appendChild(this._renderFormCard());
     root.appendChild(this._renderImportCard());
 
@@ -120,29 +117,86 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // FORM CARD
+  // TIPS CARD
   // ──────────────────────────────────────────────────────────
-  _renderFormCard() {
-    console.log('[productos] _renderFormCard() → draft base:', {
-      codigo:      this._data.draftManual.codigo,
-      nombre:      this._data.draftManual.nombre,
-      descripcion: this._data.draftManual.descripcion,
-      precio:      this._data.draftManual.precio,
-      stock:       this._data.draftManual.stock,
-      categoria:   this._data.draftManual.categoria
-    });
+  _renderTipsCard() {
+    const tips = [
+      {
+        icon: 'fa-tags',
+        titulo: 'Usá categorías',
+        texto: 'Asigná una categoría a cada producto (ej: Pizzas, Bebidas, Postres). Si usás un template visual, los productos se van a agrupar automáticamente y se va a ver mucho mejor.'
+      },
+      {
+        icon: 'fa-font',
+        titulo: 'Nombres consistentes',
+        texto: 'Usá siempre el mismo nombre para el mismo producto. El cliente lo ve tal cual lo escribís. Ej: "Pizza Muzzarella" — siempre igual, sin variantes de escritura.'
+      },
+      {
+        icon: 'fa-align-left',
+        titulo: 'Descripción corta',
+        texto: 'Una línea es suficiente. Ej: "Pizza con muzzarella y tomate, tamaño grande". No copies texto largo del menú.'
+      },
+      {
+        icon: 'fa-dollar-sign',
+        titulo: 'Precio sin símbolos',
+        texto: 'Escribí solo el número, sin puntos ni símbolos. Ej: 5500 — no $5.500 ni 5,500.'
+      },
+      {
+        icon: 'fa-image',
+        titulo: 'Imágenes',
+        texto: 'Pegá el link directo a la foto del producto (debe terminar en .jpg, .png, etc.). Si no tenés, dejalo vacío — se mostrará una imagen genérica.'
+      }
+    ];
 
     const container = document.createElement('div');
 
-    // FIX: Se pasa value: desde el draft para que los campos no se borren al re-renderizar
-    const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',    placeholder: 'SKU123',                   helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
-    const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto',  required: true, placeholder: 'Ej: Remera deportiva',  value: this._data.draftManual.nombre });
-    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',           type: 'textarea', rows: 3, required: true, placeholder: 'Describe el producto...', value: this._data.draftManual.descripcion });
-    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',                type: 'number', required: true, placeholder: '0.00', value: this._data.draftManual.precio });
-    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                 type: 'number', placeholder: '0',        value: this._data.draftManual.stock });
-    const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',             placeholder: 'Ej: Ropa',                 value: this._data.draftManual.categoria });
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'tips-toggle';
+    toggleBtn.innerHTML = `<i class="fas fa-lightbulb"></i> Consejos para cargar bien tus productos <i class="fas fa-chevron-down tips-chevron"></i>`;
 
-    // Helper: persiste los campos base al draft ANTES de re-renderizar
+    const tipsContent = document.createElement('div');
+    tipsContent.className = 'tips-content tips-hidden';
+
+    tips.forEach(tip => {
+      const item = document.createElement('div');
+      item.className = 'tip-item';
+      item.innerHTML = `
+        <div class="tip-icon"><i class="fas ${tip.icon}"></i></div>
+        <div class="tip-body">
+          <strong>${tip.titulo}</strong>
+          <p>${tip.texto}</p>
+        </div>
+      `;
+      tipsContent.appendChild(item);
+    });
+
+    toggleBtn.addEventListener('click', () => {
+      const isOpen = !tipsContent.classList.contains('tips-hidden');
+      tipsContent.classList.toggle('tips-hidden', isOpen);
+      toggleBtn.querySelector('.tips-chevron').className = `fas tips-chevron ${isOpen ? 'fa-chevron-down' : 'fa-chevron-up'}`;
+    });
+
+    container.appendChild(toggleBtn);
+    container.appendChild(tipsContent);
+
+    return container;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // FORM CARD
+  // ──────────────────────────────────────────────────────────
+  _renderFormCard() {
+    console.log('[productos] _renderFormCard()');
+
+    const container = document.createElement('div');
+
+    const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',   placeholder: 'SKU123', helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
+    const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto', required: true, placeholder: 'Ej: Pizza Muzzarella Grande', value: this._data.draftManual.nombre });
+    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',          type: 'textarea', rows: 2, required: true, placeholder: 'Una línea. Ej: Pizza con muzzarella y tomate, tamaño grande', value: this._data.draftManual.descripcion });
+    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',               type: 'number', required: true, placeholder: '5500', helpText: 'Solo el número, sin $ ni puntos', value: this._data.draftManual.precio });
+    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                type: 'number', placeholder: '0', value: this._data.draftManual.stock });
+    const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',            placeholder: 'Ej: Pizzas', helpText: 'Agregar categoría mejora la visualización', value: this._data.draftManual.categoria });
+
     const _saveBaseDraft = () => {
       this._data.draftManual.codigo      = codigo.getValue();
       this._data.draftManual.nombre      = nombre.getValue();
@@ -150,7 +204,6 @@ const page = {
       this._data.draftManual.precio      = precio.getValue();
       this._data.draftManual.stock       = stock.getValue();
       this._data.draftManual.categoria   = categoria.getValue();
-      console.log('[productos] _saveBaseDraft() guardado:', { ...this._data.draftManual });
     };
 
     const toggleBtn = createButton({
@@ -158,10 +211,8 @@ const page = {
       variant: 'link',
       icon:    this._data.showAdvanced ? 'fa-chevron-up' : 'fa-chevron-down',
       onClick: () => {
-        // FIX: guardamos los valores ANTES de destruir el DOM con render()
         _saveBaseDraft();
         this._data.showAdvanced = !this._data.showAdvanced;
-        console.log('[productos] toggleAdvanced → showAdvanced:', this._data.showAdvanced);
         this.render();
       }
     });
@@ -178,7 +229,6 @@ const page = {
       icon:    'fa-plus',
       block:   true,
       onClick: () => {
-        // FIX: también guardamos antes de llamar al submit (por si acaso)
         _saveBaseDraft();
         this._handleManualSubmit({ codigo, nombre, descripcion, precio, stock, categoria });
       }
@@ -190,19 +240,12 @@ const page = {
   },
 
   _renderAdvancedFields() {
-    console.log('[productos] _renderAdvancedFields() → draft avanzado:', {
-      subcategoria:   this._data.draftManual.subcategoria,
-      marca:          this._data.draftManual.marca,
-      imagen:         this._data.draftManual.imagen,
-      disponibilidad: this._data.draftManual.disponibilidad
-    });
-
     const container = document.createElement('div');
     container.className = 'advanced-fields';
 
-    const subcategoria   = createFormField({ id: 'prod-subcategoria',   label: 'Subcategoría',   placeholder: 'Ej: Remeras',  value: this._data.draftManual.subcategoria });
-    const marca          = createFormField({ id: 'prod-marca',           label: 'Marca',           placeholder: 'Ej: Nike',     value: this._data.draftManual.marca });
-    const imagen         = createFormField({ id: 'prod-imagen',          label: 'URL de imagen',   type: 'url', placeholder: 'https://...', value: this._data.draftManual.imagen });
+    const subcategoria   = createFormField({ id: 'prod-subcategoria',   label: 'Subcategoría',  placeholder: 'Ej: Especiales', value: this._data.draftManual.subcategoria });
+    const marca          = createFormField({ id: 'prod-marca',           label: 'Marca',          placeholder: 'Ej: Nike',       value: this._data.draftManual.marca });
+    const imagen         = createFormField({ id: 'prod-imagen',          label: 'URL de imagen',  type: 'url', placeholder: 'https://...', helpText: 'Link directo a la foto del producto', value: this._data.draftManual.imagen });
     const disponibilidad = createFormField({
       id: 'prod-disponibilidad',
       label: 'Disponibilidad',
@@ -219,8 +262,6 @@ const page = {
     container.appendChild(this._renderAtributosSection());
     container.appendChild(this._renderEtiquetasSection());
 
-    // FIX: guardamos la referencia para poder leer los valores en _handleManualSubmit
-    // y también persistimos al draft cada vez que cambian
     this._advancedRefs = { subcategoria, marca, imagen, disponibilidad };
 
     return container;
@@ -242,7 +283,6 @@ const page = {
       row.className = 'atributo-row';
       row.innerHTML = `<span><strong>${attr.key}:</strong> ${attr.value}</span><button type="button" class="btn-icon btn-sm"><i class="fas fa-times"></i></button>`;
       row.querySelector('button').addEventListener('click', () => {
-        console.log('[productos] atributo eliminado:', attr);
         this._data.draftManual.atributos.splice(index, 1);
         this.render();
       });
@@ -264,11 +304,8 @@ const page = {
         const key   = inputs.querySelector('#attr-key').value.trim();
         const value = inputs.querySelector('#attr-value').value.trim();
         if (key && value) {
-          console.log('[productos] atributo agregado:', { key, value });
           this._data.draftManual.atributos.push({ key, value });
           this.render();
-        } else {
-          console.warn('[productos] atributo incompleto → key:', key, '| value:', value);
         }
       }
     }));
@@ -292,7 +329,6 @@ const page = {
       tag.className = 'etiqueta-tag';
       tag.innerHTML = `${etiqueta}<button type="button">×</button>`;
       tag.querySelector('button').addEventListener('click', () => {
-        console.log('[productos] etiqueta eliminada:', etiqueta);
         this._data.draftManual.etiquetas.splice(index, 1);
         this.render();
       });
@@ -313,11 +349,8 @@ const page = {
       onClick: () => {
         const value = inputGroup.querySelector('#etiqueta-input').value.trim();
         if (value && !this._data.draftManual.etiquetas.includes(value)) {
-          console.log('[productos] etiqueta agregada:', value);
           this._data.draftManual.etiquetas.push(value);
           this.render();
-        } else {
-          console.warn('[productos] etiqueta vacía o duplicada:', value);
         }
       }
     }));
@@ -349,34 +382,20 @@ const page = {
       newProduct.atributos[attr.key] = attr.value;
     });
 
-    console.log('[productos] _handleManualSubmit() producto a agregar:', newProduct);
-
     if (!newProduct.nombre || !newProduct.descripcion) {
-      console.warn('[productos] _handleManualSubmit() → faltan campos requeridos');
       showToast('Campos requeridos', 'Completá nombre y descripción', 'warning');
       return;
     }
 
     this._data.productos.push(newProduct);
 
-    // FIX: reset completo del draft incluyendo todos los campos
     this._data.draftManual = {
-      codigo:       '',
-      nombre:       '',
-      descripcion:  '',
-      precio:       '',
-      stock:        '',
-      categoria:    '',
-      subcategoria: '',
-      marca:        '',
-      imagen:       '',
-      disponibilidad: 'inmediata',
-      atributos:    [],
-      etiquetas:    []
+      codigo: '', nombre: '', descripcion: '', precio: '', stock: '',
+      categoria: '', subcategoria: '', marca: '', imagen: '',
+      disponibilidad: 'inmediata', atributos: [], etiquetas: []
     };
     this._data.showAdvanced = false;
 
-    console.log('[productos] producto agregado. Total:', this._data.productos.length);
     showToast('Producto agregado', 'Guardá para confirmar los cambios', 'success');
     this.render();
   },
@@ -387,22 +406,49 @@ const page = {
   _renderImportCard() {
     const container = document.createElement('div');
 
+    // Instrucciones
+    const instrucciones = document.createElement('div');
+    instrucciones.className = 'import-instrucciones';
+    instrucciones.innerHTML = `
+      <p>Para cargar varios productos a la vez:</p>
+      <ol>
+        <li>Descargá la plantilla oficial de ÍndiceIA</li>
+        <li>Completá tus productos en el archivo</li>
+        <li>Subí el archivo completado</li>
+      </ol>
+    `;
+    container.appendChild(instrucciones);
+
+    // Botón descarga
+    const btnDescarga = createButton({
+      label:   'Descargar plantilla ÍndiceIA',
+      variant: 'secondary',
+      icon:    'fa-download',
+      onClick: () => this._downloadTemplate()
+    });
+    container.appendChild(btnDescarga);
+
+    // Separador
+    const sep = document.createElement('div');
+    sep.className = 'import-separator';
+    sep.innerHTML = '<span>Una vez completada, subí la plantilla acá</span>';
+    container.appendChild(sep);
+
+    // Upload zone
     const uploadZone = document.createElement('div');
     uploadZone.className = 'upload-zone';
     uploadZone.innerHTML = `
       <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-      <p class="upload-text"><strong>Arrastrá tu archivo aquí</strong></p>
+      <p class="upload-text"><strong>Arrastrá tu plantilla aquí</strong></p>
       <p class="upload-subtext">o hacé clic para seleccionar</p>
       <div class="upload-formats">
         <span class="format-badge">.xlsx</span>
-        <span class="format-badge">.xls</span>
-        <span class="format-badge">.csv</span>
       </div>
     `;
 
     const fileInput = document.createElement('input');
     fileInput.type    = 'file';
-    fileInput.accept  = '.xlsx,.xls,.csv';
+    fileInput.accept  = '.xlsx';
     fileInput.style.display = 'none';
 
     uploadZone.addEventListener('click',     () => fileInput.click());
@@ -421,18 +467,24 @@ const page = {
 
     container.append(uploadZone, fileInput);
 
-    if (this._data.showImportPreview && this._data.draftImport.csvData.length > 0) {
-      container.appendChild(this._renderImportPreview());
-    }
-
-    return createCard({ title: 'Importar desde Excel/CSV', icon: 'fa-file-excel', content: container });
+    return createCard({ title: 'Importar desde Plantilla', icon: 'fa-file-excel', content: container });
   },
 
+  // ──────────────────────────────────────────────────────────
+  // DOWNLOAD TEMPLATE
+  // ──────────────────────────────────────────────────────────
+  _downloadTemplate() {
+    console.log('[productos] _downloadTemplate() → descargando plantilla estática');
+    window.open('/plantilla_indiceia_productos.xlsx', '_blank');
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // PARSE FILE — verifica firma y carga en memoria
+  // ──────────────────────────────────────────────────────────
   _parseFile(file) {
-    console.log('[productos] _parseFile() archivo:', file.name, '| tipo:', file.type, '| tamaño:', file.size);
+    console.log('[productos] _parseFile() archivo:', file.name);
 
     if (!XLSX) {
-      console.error('[productos] _parseFile() → XLSX no disponible en window');
       showToast('Error', 'Librería XLSX no cargada', 'error');
       return;
     }
@@ -440,210 +492,102 @@ const page = {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const wb       = XLSX.read(e.target.result, { type: 'binary' });
-        const sheet    = wb.Sheets[wb.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        const wb = XLSX.read(e.target.result, { type: 'binary' });
 
-        console.log('[productos] _parseFile() hojas:', wb.SheetNames, '| filas parseadas:', jsonData.length);
-
-        if (jsonData.length === 0) {
-          console.warn('[productos] _parseFile() → archivo vacío');
-          showToast('Error', 'El archivo está vacío', 'error');
+        // Verificar firma
+        const metaSheet = wb.Sheets['_indiceia_meta'];
+        if (!metaSheet) {
+          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA. Descargala desde el botón de arriba.', 'error');
+          console.warn('[productos] _parseFile() → sin hoja _indiceia_meta');
+          return;
+        }
+        const firmaData = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
+        if (!firmaData?.[0]?.[0] || firmaData[0][0] !== TEMPLATE_FIRMA) {
+          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA. Descargala desde el botón de arriba.', 'error');
+          console.warn('[productos] _parseFile() → firma inválida:', firmaData?.[0]?.[0]);
           return;
         }
 
-        this._data.draftImport.csvData    = jsonData;
-        this._data.draftImport.csvColumns = Object.keys(jsonData[0]);
-        this._data.showImportPreview      = true;
-        this._data.draftImport.mapping    = this._autoDetectMapping();
+        // Parsear productos
+        const ws       = wb.Sheets['productos'];
+        const jsonData = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
-        console.log('[productos] _parseFile() columnas detectadas:', this._data.draftImport.csvColumns);
-        console.log('[productos] _parseFile() mapeo auto:', this._data.draftImport.mapping);
+        console.log('[productos] _parseFile() firma OK → filas:', jsonData.length);
 
-        showToast('Archivo cargado', `${jsonData.length} filas detectadas`, 'success');
+        if (jsonData.length === 0) {
+          showToast('Plantilla vacía', 'Completá al menos un producto en la plantilla', 'warning');
+          return;
+        }
+
+        // Campos base conocidos — todo lo demás va a atributos{}
+        const CAMPOS_BASE = ['codigo','nombre','descripcion','precio_final','categoria','stock','disponibilidad','imagen'];
+        let added = 0, skipped = 0;
+
+        jsonData.forEach((row, idx) => {
+          if (!row.nombre) {
+            console.warn(`[productos] fila ${idx + 2} sin nombre → ignorada`);
+            skipped++;
+            return;
+          }
+
+          const producto = {
+            codigo:         String(row.codigo || this._generateCodigo()),
+            nombre:         String(row.nombre).trim(),
+            descripcion:    String(row.descripcion || '').trim(),
+            precio_final:   this._parsePrecio(row.precio_final),
+            stock:          parseInt(row.stock) || 0,
+            categoria:      String(row.categoria || '').trim(),
+            imagen:         String(row.imagen || '').trim(),
+            disponibilidad: ['inmediata', 'bajo_pedido', 'sin_stock'].includes(row.disponibilidad)
+                              ? row.disponibilidad : 'inmediata',
+            paused:         false,
+            atributos:      {},
+            etiquetas:      []
+          };
+
+          // Columnas extras → atributos{}
+          Object.keys(row).forEach(col => {
+            if (!CAMPOS_BASE.includes(col) && row[col] !== '' && row[col] != null) {
+              producto.atributos[col] = String(row[col]).trim();
+            }
+          });
+
+          console.log(`[productos] fila ${idx + 2} atributos extras:`, Object.keys(producto.atributos));
+
+          // Actualizar si ya existe por código
+          const idx2 = this._data.productos.findIndex(p => p.codigo === producto.codigo);
+          if (idx2 >= 0) {
+            this._data.productos[idx2] = { ...this._data.productos[idx2], ...producto };
+          } else {
+            this._data.productos.push(producto);
+          }
+          added++;
+        });
+
+        console.log(`[productos] _parseFile() → cargados: ${added} | ignorados: ${skipped}`);
+        showToast('Plantilla cargada', `${added} productos listos para guardar`, 'success');
         this.render();
+
       } catch (err) {
-        console.error('[productos] _parseFile() ERROR al parsear:', err);
+        console.error('[productos] _parseFile() ERROR:', err);
         showToast('Error', 'No se pudo leer el archivo', 'error');
       }
     };
     reader.readAsBinaryString(file);
   },
 
-  _autoDetectMapping() {
-    const mapping = {};
-    const columns = this._data.draftImport.csvColumns;
-    const aliases = {
-      codigo:       ['codigo', 'code', 'id', 'sku'],
-      nombre:       ['nombre', 'articulo', 'producto', 'name', 'title'],
-      descripcion:  ['descripcion', 'description'],
-      precio_final: ['precio', 'price', 'pvp'],
-      stock:        ['stock', 'cantidad', 'qty'],
-      categoria:    ['categoria', 'category']
-    };
-
-    columns.forEach(col => {
-      const norm = col.toLowerCase().trim();
-      for (const [field, list] of Object.entries(aliases)) {
-        if (list.some(a => norm.includes(a))) {
-          mapping[col] = field;
-          break;
-        }
-      }
-    });
-
-    return mapping;
-  },
-
-  _renderImportPreview() {
-    const container = document.createElement('div');
-    container.className = 'import-preview';
-
-    const count = document.createElement('p');
-    count.innerHTML = `<strong>${this._data.draftImport.csvData.length}</strong> filas detectadas`;
-    container.appendChild(count);
-
-    const tableWrap = document.createElement('div');
-    tableWrap.className = 'preview-table-container';
-    const table = document.createElement('table');
-    table.className = 'preview-table';
-    table.innerHTML = `
-      <thead><tr>${this._data.draftImport.csvColumns.map(c => `<th>${c}</th>`).join('')}</tr></thead>
-      <tbody>${this._data.draftImport.csvData.slice(0, 5).map(row =>
-        `<tr>${this._data.draftImport.csvColumns.map(c => `<td>${row[c] || ''}</td>`).join('')}</tr>`
-      ).join('')}</tbody>
-    `;
-    tableWrap.appendChild(table);
-    container.appendChild(tableWrap);
-
-    const mappingSection = document.createElement('div');
-    mappingSection.className = 'mapping-section';
-    mappingSection.innerHTML = '<h4>Mapeo de columnas</h4><p class="help-text">Indicá qué campo corresponde a cada columna:</p>';
-
-    const camposBase = [
-      { value: '',             label: '-- Ignorar --' },
-      { value: 'codigo',       label: 'Código' },
-      { value: 'nombre',       label: 'Nombre' },
-      { value: 'descripcion',  label: 'Descripción' },
-      { value: 'precio_final', label: 'Precio' },
-      { value: 'stock',        label: 'Stock' },
-      { value: 'categoria',    label: 'Categoría' },
-      { value: 'subcategoria', label: 'Subcategoría' },
-      { value: 'marca',        label: 'Marca' }
-    ];
-
-    this._data.draftImport.csvColumns.forEach(col => {
-      const current = this._data.draftImport.mapping[col] || '';
-      const field   = document.createElement('div');
-      field.className = 'mapping-field';
-      field.innerHTML = `
-        <label><strong>"${col}"</strong> →</label>
-        <select data-column="${col}">
-          ${camposBase.map(c => `<option value="${c.value}" ${c.value === current ? 'selected' : ''}>${c.label}</option>`).join('')}
-          <option value="__atributo__${col}" ${current === `__atributo__${col}` ? 'selected' : ''}>Atributo: "${col}"</option>
-        </select>
-      `;
-      field.querySelector('select').addEventListener('change', e => {
-        console.log('[productos] mapeo cambiado → columna:', col, '| campo:', e.target.value);
-        this._data.draftImport.mapping[col] = e.target.value;
-      });
-      mappingSection.appendChild(field);
-    });
-
-    container.appendChild(mappingSection);
-
-    const actions = document.createElement('div');
-    actions.className = 'form-actions';
-    actions.appendChild(createButton({
-      label:   'Importar productos',
-      variant: 'primary',
-      icon:    'fa-check',
-      onClick: () => this._applyMapping()
-    }));
-    actions.appendChild(createButton({
-      label:   'Cancelar',
-      variant: 'secondary',
-      onClick: () => {
-        console.log('[productos] importación cancelada');
-        this._data.draftImport       = { csvData: [], csvColumns: [], mapping: {} };
-        this._data.showImportPreview = false;
-        this.render();
-      }
-    }));
-    container.appendChild(actions);
-
-    return container;
-  },
-
-  _applyMapping() {
-    const { csvData, mapping } = this._data.draftImport;
-    let added = 0, updated = 0, skipped = 0;
-
-    console.log('[productos] _applyMapping() → filas:', csvData.length, '| mapping:', mapping);
-
-    csvData.forEach((row, rowIndex) => {
-      const newProduct = { paused: false, atributos: {}, etiquetas: [] };
-
-      Object.keys(row).forEach(col => {
-        const target = mapping[col];
-        let value    = row[col];
-        if (!target || value === '' || value == null) return;
-
-        if (target.startsWith('__atributo__')) {
-          newProduct.atributos[target.replace('__atributo__', '')] = String(value);
-          return;
-        }
-        if (target === 'precio_final') value = this._parsePrecio(value);
-        else if (target === 'stock')   value = parseInt(value) || 0;
-        else                           value = String(value).trim();
-
-        newProduct[target] = value;
-      });
-
-      if (!newProduct.nombre) {
-        console.warn(`[productos] _applyMapping() fila ${rowIndex} sin nombre → ignorada`, row);
-        skipped++;
-        return;
-      }
-      if (!newProduct.codigo) newProduct.codigo = this._generateCodigo();
-
-      const idx = this._data.productos.findIndex(p => p.codigo === newProduct.codigo);
-      if (idx >= 0) {
-        this._data.productos[idx] = {
-          ...this._data.productos[idx],
-          ...Object.fromEntries(Object.entries(newProduct).filter(([, v]) => v !== '' && v != null))
-        };
-        updated++;
-      } else {
-        this._data.productos.push(newProduct);
-        added++;
-      }
-    });
-
-    console.log(`[productos] _applyMapping() resultado → nuevos: ${added} | actualizados: ${updated} | ignorados: ${skipped}`);
-
-    this._data.draftImport       = { csvData: [], csvColumns: [], mapping: {} };
-    this._data.showImportPreview = false;
-
-    showToast('Importación completa', `${added} nuevos, ${updated} actualizados`, 'success');
-    this.render();
-  },
-
   _parsePrecio(value) {
     if (typeof value === 'number') return value;
     if (!value) return 0;
-    let clean  = String(value).replace(/[^\d,.-]/g, '').replace(',', '.');
+    let clean = String(value).replace(/[^\d,.-]/g, '').replace(',', '.');
     const parts = clean.split('.');
     if (parts.length > 2) clean = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
     const num = parseFloat(clean);
-    console.log('[productos] _parsePrecio()', value, '→', num);
     return isNaN(num) ? 0 : num;
   },
 
   _generateCodigo() {
-    const codigo = `PR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    console.log('[productos] _generateCodigo():', codigo);
-    return codigo;
+    return `PR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
   },
 
   // ──────────────────────────────────────────────────────────
@@ -714,7 +658,6 @@ const page = {
   },
 
   _filterProducts(searchTerm) {
-    console.log('[productos] _filterProducts():', searchTerm);
     document.querySelectorAll('#products-tbody tr').forEach(row => {
       row.style.display = row.textContent.toLowerCase().includes(searchTerm.toLowerCase()) ? '' : 'none';
     });
@@ -723,14 +666,13 @@ const page = {
   _toggleProduct(index) {
     const p = this._data.productos[index];
     p.paused = !p.paused;
-    console.log(`[productos] _toggleProduct() index:${index} nombre:"${p.nombre}" paused:${p.paused}`);
+    console.log(`[productos] _toggleProduct() "${p.nombre}" paused:${p.paused}`);
     this.render();
   },
 
   _deleteProduct(index) {
     const nombre = this._data.productos[index].nombre || 'este producto';
     if (confirm(`¿Eliminar "${nombre}"?\n\nEsta acción no se puede deshacer.`)) {
-      console.log(`[productos] _deleteProduct() eliminado: "${nombre}" index:${index}`);
       this._data.productos.splice(index, 1);
       showToast('Producto eliminado', 'Guardá para confirmar', 'info');
       this.render();
@@ -742,18 +684,15 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // SAVE BUTTON
+  // SAVE BUTTON — sin cambios
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
     const dirtyController = {
       hasUnsavedChanges: () => {
-        const dirty = JSON.stringify(this._data.productos) !== JSON.stringify(this._originalSnapshot);
-        console.log('[productos] hasUnsavedChanges():', dirty);
-        return dirty;
+        return JSON.stringify(this._data.productos) !== JSON.stringify(this._originalSnapshot);
       },
       markSaved: () => {
         this._originalSnapshot = structuredClone(this._data.productos);
-        console.log('[productos] markSaved() snapshot actualizado');
       }
     };
 
@@ -763,9 +702,7 @@ const page = {
       validate: () => {
         const activos = this._data.productos.filter(p => !p.paused).length;
         if (this._isEditMode && !dirtyController.hasUnsavedChanges()) return true;
-        const valid = activos > 0;
-        console.log('[productos] validate() activos:', activos, '| válido:', valid);
-        return valid;
+        return activos > 0;
       },
 
       getLabel: () => {
@@ -807,11 +744,8 @@ const page = {
           }
         });
 
-        console.log(`[productos] onSave() → eliminar:${toDelete.length} | actualizar:${toUpdate.length} | agregar:${toAdd.length}`);
-
         const totalOps = toDelete.length + toUpdate.length + toAdd.length;
         if (totalOps === 0) {
-          console.log('[productos] onSave() → sin cambios reales');
           showToast('Sin cambios', 'No hay cambios para guardar', 'info');
           return { success: true, stepMarked: false };
         }
@@ -839,14 +773,11 @@ const page = {
         }
 
         await batch.commit();
-        console.log('[productos] onSave() batch committed OK');
         finishProgressOverlay('Catálogo sincronizado', 800);
-
         return { success: true, stepMarked: false };
       },
 
       onSuccess: () => {
-        console.log('[productos] onSuccess() guardado exitoso');
         showToast('Éxito', 'Productos guardados correctamente', 'success');
       },
 
