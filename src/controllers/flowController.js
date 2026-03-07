@@ -29,14 +29,16 @@ const NEUTRAL_PAGES = ["skeletonTest"];
 function buildPipeline(offerType = {}) {
   const { productos, servicios } = offerType || {};
 
-  const steps = [
-    "modelo-negocio",
-    "horarios",
-  ];
+  const steps = ["modelo-negocio"];
 
   if (servicios) steps.push("servicios");
   if (productos) steps.push("productos");
 
+  // Entrega solo aplica si el comercio vende productos.
+  // Los servicios ya tienen su propia modalidad (presencial, remoto, a domicilio).
+  if (productos) steps.push("entrega");
+
+  steps.push("horarios");
   steps.push("ia-config");
 
   return steps;
@@ -108,8 +110,6 @@ export async function runFlowController(uid) {
     );
 
     if (!comercioSnap.exists()) {
-      // Si por alguna razón no existe el comercio,
-      // lo mandamos a recrearlo.
       window.location.href = "/mi-comercio.html";
       return;
     }
@@ -121,10 +121,7 @@ export async function runFlowController(uid) {
     console.log("🔍 [FlowController] offerType:", comercioData.offerType);
 
     const pipeline = buildPipeline(comercioData.offerType);
-    const firstIncomplete = getFirstIncompleteStep(
-      pipeline,
-      comercioSteps
-    );
+    const firstIncomplete = getFirstIncompleteStep(pipeline, comercioSteps);
 
     console.log("🔍 [FlowController] pipeline:", pipeline);
     console.log("🔍 [FlowController] firstIncomplete:", firstIncomplete);
