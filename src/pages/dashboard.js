@@ -48,7 +48,6 @@ const page = {
     console.log('offerType leído:', this._data.offerType);
     console.groupEnd();
 
-    // Cargamos en paralelo servicios y productos
     await Promise.all([
       this._loadServiciosStats(),
       this._loadProductosStats(ctx.comercioId)
@@ -58,7 +57,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // STATS PRODUCTOS — lee la subcolección directo
+  // STATS PRODUCTOS
   // ──────────────────────────────────────────────────────────
   async _loadProductosStats(comercioId) {
     console.group('[dashboard] _loadProductosStats()');
@@ -74,23 +73,14 @@ const page = {
       snap.docs.forEach(d => {
         const data = d.data();
         data.paused ? pausados++ : activos++;
-
-        // Rastreamos la fecha de actualización más reciente
         const fecha = data.fechaActualizacion?.toDate?.();
         if (fecha && (!ultimaActualizacion || fecha > ultimaActualizacion)) {
           ultimaActualizacion = fecha;
         }
       });
 
-      this._data.productosStats = {
-        total: snap.docs.length,
-        activos,
-        pausados,
-        ultimaActualizacion
-      };
+      this._data.productosStats = { total: snap.docs.length, activos, pausados, ultimaActualizacion };
 
-      // Si hay productos cargados, marcamos offerType.productos como true
-      // aunque modelo-negocio no haya sido completado
       if (snap.docs.length > 0) {
         this._data.offerType.productos = true;
       }
@@ -165,7 +155,7 @@ const page = {
     if (this._data.entityState === 'never')    root.appendChild(this._renderNeverGeneratedBanner());
 
     root.appendChild(this._renderSeccion(
-      '🏪 El Comercio',
+      '🏪 Mi Comercio',
       'Tu estructura base: qué ofrecés, cuándo y cómo.',
       this._renderSeccionComercio()
     ));
@@ -307,7 +297,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // SECCIÓN 1 — EL COMERCIO
+  // SECCIÓN 1 — MI COMERCIO
   // ──────────────────────────────────────────────────────────
   _renderSeccionComercio() {
     const grid = document.createElement('div');
@@ -317,6 +307,12 @@ const page = {
     grid.appendChild(this._renderModeloNegocioCard());
     grid.appendChild(this._renderProductosCard());
     grid.appendChild(this._renderServiciosCard());
+
+    // Entrega solo visible si el comercio tiene productos
+    if (this._data.offerType.productos === true) {
+      grid.appendChild(this._renderEntregaCard());
+    }
+
     grid.appendChild(this._renderHorariosCard());
 
     return grid;
@@ -340,7 +336,6 @@ const page = {
     });
   },
 
-  // FIX: lee productosStats en lugar de cantidadProductos (que nunca se escribía)
   _renderProductosCard() {
     const hasProductos = this._data.offerType.productos === true;
     const { total, activos, pausados, ultimaActualizacion } = this._data.productosStats;
@@ -348,12 +343,10 @@ const page = {
     if (hasProductos) {
       const content = document.createElement('div');
 
-      // Línea principal
       const linea1 = document.createElement('p');
       linea1.innerHTML = `<strong>${total}</strong> producto${total !== 1 ? 's' : ''} en catálogo`;
       content.appendChild(linea1);
 
-      // Activos / pausados
       if (total > 0) {
         const linea2 = document.createElement('p');
         linea2.innerHTML = `
@@ -363,7 +356,6 @@ const page = {
         content.appendChild(linea2);
       }
 
-      // Última actualización
       if (ultimaActualizacion) {
         const linea3 = document.createElement('p');
         linea3.className = 'ultima-actualizacion';
@@ -379,7 +371,6 @@ const page = {
       });
     }
 
-    // No habilitado
     return createCard({
       title: 'Productos',
       icon: 'fa-box',
@@ -389,7 +380,6 @@ const page = {
     });
   },
 
-  // FIX: botón "Habilitar" servicios va a modelo-negocio, no a crear-entidad
   _renderServiciosCard() {
     const hasServicios             = this._data.offerType.servicios === true;
     const { activos, pausados, total } = this._data.serviciosStats;
@@ -416,8 +406,45 @@ const page = {
       icon: 'fa-concierge-bell',
       flat: true,
       content: '<p class="inactive-text">No habilitado</p><p>Ofrecé turnos o atención por hora</p>',
-      // FIX: era /crear-entidad.html, ahora va a modelo-negocio donde se habilita
       action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Habilitar', className: 's-btn s-btn-outline-primary s-btn-sm' }
+    });
+  },
+
+  _renderEntregaCard() {
+    const LABELS = {
+      salon:        'Atención en el local',
+      takeaway:     'Para llevar',
+      delivery:     'Delivery a domicilio',
+      correo:       'Correo / Mensajería',
+      transporte:   'Transporte / Flete',
+      comisionista: 'Comisionista',
+      descarga:     'Descarga digital',
+      email:        'Envío por email',
+      a_coordinar:  'A coordinar',
+    };
+
+    const entrega    = this._data.comercio.entrega || {};
+    const modalidades = Object.keys(entrega);
+    const content    = document.createElement('div');
+
+    if (modalidades.length > 0) {
+      const lista = document.createElement('ul');
+      lista.className = 'entrega-list';
+      modalidades.forEach(key => {
+        const li = document.createElement('li');
+        li.textContent = LABELS[key] || key;
+        lista.appendChild(li);
+      });
+      content.appendChild(lista);
+    } else {
+      content.innerHTML = '<p class="inactive-text">Sin configurar</p>';
+    }
+
+    return createCard({
+      title: 'Entregas',
+      icon: 'fa-truck',
+      content,
+      action: { type: 'link', url: '/entrega.html?edit=true', label: 'Editar', className: 's-btn s-btn-secondary s-btn-sm' }
     });
   },
 
