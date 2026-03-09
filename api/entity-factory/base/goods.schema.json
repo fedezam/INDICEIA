@@ -2,80 +2,54 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://indiceia.com/schemas/goods.schema.json",
   "title": "Goods – Catálogo de Productos",
-  "description": "Universo cerrado de productos. Estructura compatible con templates visuales via postMessage.",
+  "description": "Universo cerrado de productos. Estructura canónica consumida por templates visuales via postMessage.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["bloque_B_contexto_comercial"],
+  "required": ["goods"],
   "properties": {
-    "bloque_B_contexto_comercial": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["identity", "contacto", "catalogo"],
-      "properties": {
-
-        "identity": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["nombre_comercio"],
-          "properties": {
-            "nombre_comercio": { "type": "string" }
-          }
-        },
-
-        "contacto": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "whatsapp_number": { "type": "string" }
-          }
-        },
-
-        "catalogo": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["categorias", "items"],
-          "properties": {
-
-            "categorias": {
-              "type": "array",
-              "description": "Derivado dinámicamente desde los items. Cada valor único de item.categoria.",
-              "items": { "type": "string" }
-            },
-
-            "items": {
-              "type": "array",
-              "minItems": 1,
-              "items": { "$ref": "#/$defs/item" }
-            }
-          }
-        }
-      }
+    "goods": {
+      "type": "array",
+      "minItems": 0,
+      "items": { "$ref": "#/$defs/item" }
     }
   },
-
   "$defs": {
     "item": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "nombre", "precio_final"],
+      "required": ["id", "nombre"],
       "properties": {
-        "id":          { "type": "string" },
-        "nombre":      { "type": "string" },
-        "precio_final":{ "type": "number", "minimum": 0 },
-        "descripcion": { "type": "string" },
-        "categoria":   { "type": "string" },
-        "subcategoria":{ "type": "string" },
-        "marca":       { "type": "string" },
-        "codigo":      { "type": "string" },
-        "imagen":      { "type": "string" },
-        "stock":       { "type": "number", "minimum": 0 },
+        "id":            { "type": "string" },
+        "nombre":        { "type": "string" },
+        "precio_final":  { "type": "number", "minimum": 0 },
+        "descripcion":   { "type": "string" },
+        "categoria":     { "type": "string" },
+        "subcategoria":  { "type": "string" },
+        "marca":         { "type": "string" },
+        "imagen":        { "type": "string" },
+        "stock":         { "type": "number", "minimum": 0 },
         "disponibilidad": {
           "type": "string",
           "enum": ["inmediata", "bajo_pedido", "sin_stock"]
         },
-        "etiquetas":   { "type": "array", "items": { "type": "string" } },
-        "atributos":   { "type": "object", "additionalProperties": true },
-        "paused":      { "type": "boolean" }
+        "etiquetas": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "variantes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/variante" }
+        }
+      }
+    },
+    "variante": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "precio"],
+      "properties": {
+        "id":    { "type": "string" },
+        "label": { "type": "string" },
+        "precio":{ "type": "number", "minimum": 0 }
       }
     }
   }
