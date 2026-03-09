@@ -1,12 +1,13 @@
 {
-  "registry_version": "1.0.0",
-  "last_updated": "2026-03-09T00:38:16.481Z",
+  "registry_version": "1.0.1",
+  "last_updated": "2026-03-09T00:00:00.000Z",
   "templates": {
     "C1_SIMPLE_CATALOG": {
       "id": "C1_SIMPLE_CATALOG",
       "version": "1.0.0",
       "paths": {
-        "runtime_html": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/runtime.html"
+        "runtime_html": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/runtime.html",
+        "component_jsx": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/component.jsx"
       },
       "supports": {
         "categories": true,
@@ -15,12 +16,10 @@
         "multiple_prices": true,
         "search": false,
         "filters": false,
-        "variants": false
+        "variants": true
       },
       "requirements": {
-        "whatsapp_number": "obligatorio",
-        "catalogo.categorias": "obligatorio",
-        "catalogo.items": "obligatorio"
+        "goods.goods": "obligatorio"
       }
     }
   }
