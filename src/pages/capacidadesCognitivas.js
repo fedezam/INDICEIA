@@ -38,6 +38,10 @@ const COGNITIVE_PERMISSIONS = {
   maintain_conversation_context: {
     label: 'Recordar contexto de la conversación',
     description: 'Mantener coherencia durante la sesión, recordando temas previos sin salir del universo del comercio.'
+  },
+  web_search_contextual: {
+    label: 'Búsqueda web contextual',
+    description: 'Permite consultar información externa para razonar mejor sobre productos o servicios existentes en el catálogo. No busca precios ni productos fuera del universo del comercio.'
   }
 };
 
