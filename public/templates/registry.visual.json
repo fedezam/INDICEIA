@@ -3,7 +3,7 @@
   "last_updated": "2026-03-10T03:35:55.671Z",
   "templates": [
     {
-      "id": "C1_SIMPLE_CATALOG",
+      "id": "C1_SimpleCatalog",
       "name": "Menú Simple",
       "version": "1.0.0",
       "tier": "C1",
