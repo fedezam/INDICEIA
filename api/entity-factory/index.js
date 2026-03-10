@@ -1,6 +1,3 @@
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
 
 import { buildContext }      from '../../lib/entity-factory/builders/context.builder.js';
@@ -9,8 +6,6 @@ import { buildGoods }        from '../../lib/entity-factory/builders/goods.build
 import { buildServices }     from '../../lib/entity-factory/builders/services.builder.js';
 import { buildCapabilities } from '../../lib/entity-factory/builders/capabilities.builder.js';
 import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
-
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 // ─── Firebase ───────────────────────────────────────────────
 if (!admin.apps.length) {
@@ -24,16 +19,6 @@ if (!admin.apps.length) {
   });
 }
 const db = admin.firestore();
-
-// ─── Template registry (visual) ─────────────────────────────
-let templateRegistry = { templates: {} };
-try {
-  templateRegistry = JSON.parse(
-    readFileSync(resolve(__dirname, 'templates/registry.entity.json'), 'utf-8')
-  );
-} catch {
-  console.warn('⚠️ Registry de templates no disponible.');
-}
 
 // ─── Referral code ──────────────────────────────────────────
 async function resolveReferralCode(comercioId, duenoId) {
@@ -59,13 +44,13 @@ export async function buildEntity({ comercioId }) {
   // Resolver referral
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
 
-  // Construir bloques — cada builder sabe qué schema sigue
+  // Construir bloques — cada builder sabe que schema sigue
   const context      = buildContext(data, comercioId, referralCode);
   const mind         = buildMind(data, context, referralCode);
   const goods        = await buildGoods(comercioRef, context);
   const services     = await buildServices(comercioRef);
   const capabilities = buildCapabilities(context);
-  const visual       = buildVisual(context, templateRegistry);
+  const visual       = await buildVisual(context, goods, comercioId);
 
   // Ensamblar entidad
   return {
