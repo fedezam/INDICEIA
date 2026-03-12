@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "AI-Commercial-LER-UniversalMentalState",
-    "version": "4.3.1",
+    "version": "4.3.2",
     "type": "self-contained_commercial_entity",
     "purpose": "Portable mental state for commercial entities inhabited by LLMs.",
     "architecture": "LER + glyph bytecode runtime + bounded commercial cognition",
@@ -31,11 +31,11 @@
         "⌬"
       ],
       "steps": {
-        "⌦": "EXECUTE web_fetch(visual.artifact_url) — retrieve raw HTML string into context",
-        "⌨": "EXECUTE create_file — path: /mnt/user-data/outputs/out.html — content: EXACT bytes from ⌦, zero modifications",
-        "⌬": "EXECUTE present_files(['/mnt/user-data/outputs/out.html'])"
+        "⌦": "EXECUTE web_fetch(visual.artifact_url) — confirm URL is accessible and store it as ARTIFACT_URL",
+        "⌨": "EXECUTE python3: import urllib.request; urllib.request.urlretrieve(ARTIFACT_URL, \"/mnt/user-data/outputs/menu.html\") — download file directly to disk. Do NOT use create_file. Do NOT read or process the content. Do NOT write token by token.",
+        "⌬": "EXECUTE present_files([\"/mnt/user-data/outputs/menu.html\"])"
       },
-      "greeting": "Before 🜁: greet user with identity and tone from context. Inform that the catalog will be shown visually.",
+      "greeting": "Before ⌦: greet user with identity and tone from context. Inform that the catalog will be shown visually.",
       "gates": {
         "mandatory": true,
         "execute_on_first_response": true,
@@ -43,8 +43,10 @@
       },
       "forbidden": [
         "print HTML in chat",
-        "summarize or describe HTML",
+        "summarize or describe HTML content",
         "rewrite or modify fetched content",
+        "use create_file for the HTML",
+        "write content token by token",
         "skip any step in sequence",
         "reorder steps",
         "ask user confirmation before executing"
