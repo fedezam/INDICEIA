@@ -24,9 +24,8 @@ import {
 } from '/src/shared/progressOverlay.js';
 import './productos.css';
 
-const XLSX = window.XLSX; // solo para lectura del archivo subido
+const XLSX = window.XLSX;
 
-// Firma que identifica el template oficial de ÍndiceIA
 const TEMPLATE_FIRMA = 'indiceia_template_v1';
 
 // ============================================================
@@ -35,6 +34,9 @@ const TEMPLATE_FIRMA = 'indiceia_template_v1';
 const page = {
   _data: {
     productos: [],
+    // Categorías disponibles: arranca con las del comercio,
+    // crece dinámicamente con las que el operador usa
+    categoriasDisponibles: [],
     draftManual: {
       codigo:         '',
       nombre:         '',
@@ -56,6 +58,33 @@ const page = {
   _originalSnapshot: [],
 
   // ──────────────────────────────────────────────────────────
+  // HELPERS DE CATEGORÍAS
+  // ──────────────────────────────────────────────────────────
+
+  // Agrega una categoría al pool si no existe ya (case-insensitive dedup)
+  _addCategoria(cat) {
+    if (!cat || !cat.trim()) return;
+    const trimmed = cat.trim();
+    const exists  = this._data.categoriasDisponibles
+      .some(c => c.toLowerCase() === trimmed.toLowerCase());
+    if (!exists) {
+      this._data.categoriasDisponibles.push(trimmed);
+    }
+  },
+
+  // Sincroniza el datalist en el DOM sin re-render completo
+  _syncDatalist() {
+    const dl = document.getElementById('categorias-datalist');
+    if (!dl) return;
+    dl.innerHTML = '';
+    this._data.categoriasDisponibles.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      dl.appendChild(opt);
+    });
+  },
+
+  // ──────────────────────────────────────────────────────────
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
@@ -63,6 +92,10 @@ const page = {
 
     this._isEditMode = ctx.isEditMode === true;
     const comercioId = ctx.comercioId;
+
+    // Cargar categorías base del comercio (definidas en el registro)
+    const categoriasBase = Array.isArray(ctx.categories) ? ctx.categories : [];
+    this._data.categoriasDisponibles = [...categoriasBase];
 
     if (!comercioId) {
       console.warn('[productos] load() → sin comercioId, productos vacíos');
@@ -75,7 +108,11 @@ const page = {
       const snap = await getDocs(collection(db, 'comercios', comercioId, 'productos'));
       this._data.productos   = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       this._originalSnapshot = structuredClone(this._data.productos);
-      console.log(`[productos] load() → ${this._data.productos.length} productos cargados`);
+
+      // Agregar al pool las categorías ya usadas en productos existentes
+      this._data.productos.forEach(p => this._addCategoria(p.categoria));
+
+      console.log(`[productos] load() → ${this._data.productos.length} productos | ${this._data.categoriasDisponibles.length} categorías`);
     } catch (err) {
       console.error('[productos] load() ERROR:', err);
       this._data.productos   = [];
@@ -87,7 +124,7 @@ const page = {
   // RENDER
   // ──────────────────────────────────────────────────────────
   render() {
-    console.log('[productos] render() → productos:', this._data.productos.length, '| showAdvanced:', this._data.showAdvanced);
+    console.log('[productos] render() → productos:', this._data.productos.length);
 
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
@@ -105,6 +142,17 @@ const page = {
       </div>
     `;
     root.appendChild(header);
+
+    // Datalist global — accesible desde cualquier input de categoría
+    const datalist = document.createElement('datalist');
+    datalist.id = 'categorias-datalist';
+    this._data.categoriasDisponibles.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      datalist.appendChild(opt);
+    });
+    root.appendChild(datalist);
+
     root.appendChild(this._renderTipsCard());
     root.appendChild(this._renderFormCard());
     root.appendChild(this._renderImportCard());
@@ -123,18 +171,18 @@ const page = {
     const tips = [
       {
         icon: 'fa-tags',
-        titulo: 'Usá categorías',
-        texto: 'Asigná una categoría a cada producto (ej: Pizzas, Bebidas, Postres). Si usás un template visual, los productos se van a agrupar automáticamente y se va a ver mucho mejor.'
+        titulo: 'Categoría obligatoria',
+        texto: 'Cada producto debe tener una categoría. El template visual agrupa los productos por categoría — sin categoría, todo va junto sin orden. Usá las sugerencias o escribí la tuya.'
       },
       {
         icon: 'fa-font',
         titulo: 'Nombres consistentes',
-        texto: 'Usá siempre el mismo nombre para el mismo producto. El cliente lo ve tal cual lo escribís. Ej: "Pizza Muzzarella" — siempre igual, sin variantes de escritura.'
+        texto: 'Usá siempre el mismo nombre para el mismo producto. Ej: "Pizza Muzzarella" — siempre igual, sin variantes de escritura.'
       },
       {
         icon: 'fa-align-left',
         titulo: 'Descripción corta',
-        texto: 'Una línea es suficiente. Ej: "Pizza con muzzarella y tomate, tamaño grande". No copies texto largo del menú.'
+        texto: 'Una línea es suficiente. Ej: "Pizza con muzzarella y tomate, tamaño grande".'
       },
       {
         icon: 'fa-dollar-sign',
@@ -144,7 +192,7 @@ const page = {
       {
         icon: 'fa-image',
         titulo: 'Imágenes',
-        texto: 'Pegá el link directo a la foto del producto (debe terminar en .jpg, .png, etc.). Si no tenés, dejalo vacío — se mostrará una imagen genérica.'
+        texto: 'Pegá el link directo a la foto del producto (debe terminar en .jpg, .png, etc.). Si no tenés, dejalo vacío.'
       }
     ];
 
@@ -192,10 +240,38 @@ const page = {
 
     const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',   placeholder: 'SKU123', helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
     const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto', required: true, placeholder: 'Ej: Pizza Muzzarella Grande', value: this._data.draftManual.nombre });
-    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',          type: 'textarea', rows: 2, required: true, placeholder: 'Una línea. Ej: Pizza con muzzarella y tomate, tamaño grande', value: this._data.draftManual.descripcion });
-    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',               type: 'number', required: true, placeholder: '5500', helpText: 'Solo el número, sin $ ni puntos', value: this._data.draftManual.precio });
-    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                type: 'number', placeholder: '0', value: this._data.draftManual.stock });
-    const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',            placeholder: 'Ej: Pizzas', helpText: 'Agregar categoría mejora la visualización', value: this._data.draftManual.categoria });
+    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción', type: 'textarea', rows: 2, required: true, placeholder: 'Una línea. Ej: Pizza con muzzarella y tomate, tamaño grande', value: this._data.draftManual.descripcion });
+    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio', type: 'number', required: true, placeholder: '5500', helpText: 'Solo el número, sin $ ni puntos', value: this._data.draftManual.precio });
+    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock', type: 'number', placeholder: '0', value: this._data.draftManual.stock });
+
+    // Categoría — obligatoria + datalist dinámico
+    const categoriaWrapper = document.createElement('div');
+    categoriaWrapper.className = 'form-group';
+
+    const categoriaLabel = document.createElement('label');
+    categoriaLabel.innerHTML = 'Categoría <span class="required-mark">*</span>';
+    categoriaLabel.htmlFor = 'prod-categoria';
+
+    const categoriaInput = document.createElement('input');
+    categoriaInput.type        = 'text';
+    categoriaInput.id          = 'prod-categoria';
+    categoriaInput.placeholder = 'Ej: Pizzas, Bebidas, Postres';
+    categoriaInput.setAttribute('list', 'categorias-datalist');
+    categoriaInput.value       = this._data.draftManual.categoria || '';
+    categoriaInput.required    = true;
+
+    const categoriaHelp = document.createElement('small');
+    categoriaHelp.className   = 'form-help';
+    categoriaHelp.textContent = 'Obligatoria. Usá las sugerencias para mantener consistencia o escribí una nueva.';
+
+    categoriaWrapper.appendChild(categoriaLabel);
+    categoriaWrapper.appendChild(categoriaInput);
+    categoriaWrapper.appendChild(categoriaHelp);
+
+    // Getter compatible con el resto del código
+    const categoria = {
+      getValue: () => categoriaInput.value.trim()
+    };
 
     const _saveBaseDraft = () => {
       this._data.draftManual.codigo      = codigo.getValue();
@@ -217,7 +293,7 @@ const page = {
       }
     });
 
-    container.append(codigo, nombre, descripcion, precio, stock, categoria, toggleBtn);
+    container.append(codigo, nombre, descripcion, precio, stock, categoriaWrapper, toggleBtn);
 
     if (this._data.showAdvanced) {
       container.appendChild(this._renderAdvancedFields());
@@ -359,13 +435,25 @@ const page = {
   },
 
   _handleManualSubmit(refs) {
+    const categoriaVal = refs.categoria.getValue();
+
+    // Validación — categoría obligatoria
+    if (!refs.nombre.getValue() || !refs.descripcion.getValue()) {
+      showToast('Campos requeridos', 'Completá nombre y descripción', 'warning');
+      return;
+    }
+    if (!categoriaVal) {
+      showToast('Categoría requerida', 'Asigná una categoría al producto', 'warning');
+      return;
+    }
+
     const newProduct = {
       codigo:       refs.codigo.getValue() || this._generateCodigo(),
       nombre:       refs.nombre.getValue(),
       descripcion:  refs.descripcion.getValue(),
       precio_final: parseFloat(refs.precio.getValue()) || 0,
       stock:        parseInt(refs.stock.getValue()) || 0,
-      categoria:    refs.categoria.getValue(),
+      categoria:    categoriaVal,
       paused:       false,
       atributos:    {},
       etiquetas:    [...this._data.draftManual.etiquetas]
@@ -382,10 +470,9 @@ const page = {
       newProduct.atributos[attr.key] = attr.value;
     });
 
-    if (!newProduct.nombre || !newProduct.descripcion) {
-      showToast('Campos requeridos', 'Completá nombre y descripción', 'warning');
-      return;
-    }
+    // Agregar categoría nueva al pool dinámico
+    this._addCategoria(categoriaVal);
+    this._syncDatalist();
 
     this._data.productos.push(newProduct);
 
@@ -406,20 +493,18 @@ const page = {
   _renderImportCard() {
     const container = document.createElement('div');
 
-    // Instrucciones
     const instrucciones = document.createElement('div');
     instrucciones.className = 'import-instrucciones';
     instrucciones.innerHTML = `
       <p>Para cargar varios productos a la vez:</p>
       <ol>
         <li>Descargá la plantilla oficial de ÍndiceIA</li>
-        <li>Completá tus productos en el archivo</li>
+        <li>Completá tus productos en el archivo (la columna <strong>categoria</strong> es obligatoria)</li>
         <li>Subí el archivo completado</li>
       </ol>
     `;
     container.appendChild(instrucciones);
 
-    // Botón descarga
     const btnDescarga = createButton({
       label:   'Descargar plantilla ÍndiceIA',
       variant: 'secondary',
@@ -428,13 +513,11 @@ const page = {
     });
     container.appendChild(btnDescarga);
 
-    // Separador
     const sep = document.createElement('div');
     sep.className = 'import-separator';
     sep.innerHTML = '<span>Una vez completada, subí la plantilla acá</span>';
     container.appendChild(sep);
 
-    // Upload zone
     const uploadZone = document.createElement('div');
     uploadZone.className = 'upload-zone';
     uploadZone.innerHTML = `
@@ -447,8 +530,8 @@ const page = {
     `;
 
     const fileInput = document.createElement('input');
-    fileInput.type    = 'file';
-    fileInput.accept  = '.xlsx';
+    fileInput.type          = 'file';
+    fileInput.accept        = '.xlsx';
     fileInput.style.display = 'none';
 
     uploadZone.addEventListener('click',     () => fileInput.click());
@@ -470,16 +553,12 @@ const page = {
     return createCard({ title: 'Importar desde Plantilla', icon: 'fa-file-excel', content: container });
   },
 
-  // ──────────────────────────────────────────────────────────
-  // DOWNLOAD TEMPLATE
-  // ──────────────────────────────────────────────────────────
   _downloadTemplate() {
-    console.log('[productos] _downloadTemplate() → descargando plantilla estática');
     window.open('/plantilla_indiceia_productos.xlsx', '_blank');
   },
 
   // ──────────────────────────────────────────────────────────
-  // PARSE FILE — verifica firma y carga en memoria
+  // PARSE FILE
   // ──────────────────────────────────────────────────────────
   _parseFile(file) {
     console.log('[productos] _parseFile() archivo:', file.name);
@@ -494,41 +573,37 @@ const page = {
       try {
         const wb = XLSX.read(e.target.result, { type: 'binary' });
 
-        // Verificar firma
         const metaSheet = wb.Sheets['_indiceia_meta'];
         if (!metaSheet) {
-          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA. Descargala desde el botón de arriba.', 'error');
-          console.warn('[productos] _parseFile() → sin hoja _indiceia_meta');
+          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA.', 'error');
           return;
         }
         const firmaData = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
         if (!firmaData?.[0]?.[0] || firmaData[0][0] !== TEMPLATE_FIRMA) {
-          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA. Descargala desde el botón de arriba.', 'error');
-          console.warn('[productos] _parseFile() → firma inválida:', firmaData?.[0]?.[0]);
+          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA.', 'error');
           return;
         }
 
-        // Parsear productos
         const ws       = wb.Sheets['productos'];
         const jsonData = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
-        console.log('[productos] _parseFile() firma OK → filas:', jsonData.length);
-
         if (jsonData.length === 0) {
-          showToast('Plantilla vacía', 'Completá al menos un producto en la plantilla', 'warning');
+          showToast('Plantilla vacía', 'Completá al menos un producto', 'warning');
           return;
         }
 
-        // Campos base conocidos — todo lo demás va a atributos{}
         const CAMPOS_BASE = ['codigo','nombre','descripcion','precio_final','categoria','stock','disponibilidad','imagen'];
-        let added = 0, skipped = 0;
+        let added = 0, skipped = 0, sinCategoria = 0;
 
         jsonData.forEach((row, idx) => {
           if (!row.nombre) {
-            console.warn(`[productos] fila ${idx + 2} sin nombre → ignorada`);
             skipped++;
             return;
           }
+
+          // Categoría obligatoria — fallback a 'General' con aviso
+          const categoriaRaw = String(row.categoria || '').trim();
+          if (!categoriaRaw) sinCategoria++;
 
           const producto = {
             codigo:         String(row.codigo || this._generateCodigo()),
@@ -536,7 +611,7 @@ const page = {
             descripcion:    String(row.descripcion || '').trim(),
             precio_final:   this._parsePrecio(row.precio_final),
             stock:          parseInt(row.stock) || 0,
-            categoria:      String(row.categoria || '').trim(),
+            categoria:      categoriaRaw || 'General',
             imagen:         String(row.imagen || '').trim(),
             disponibilidad: ['inmediata', 'bajo_pedido', 'sin_stock'].includes(row.disponibilidad)
                               ? row.disponibilidad : 'inmediata',
@@ -545,16 +620,15 @@ const page = {
             etiquetas:      []
           };
 
-          // Columnas extras → atributos{}
           Object.keys(row).forEach(col => {
             if (!CAMPOS_BASE.includes(col) && row[col] !== '' && row[col] != null) {
               producto.atributos[col] = String(row[col]).trim();
             }
           });
 
-          console.log(`[productos] fila ${idx + 2} atributos extras:`, Object.keys(producto.atributos));
+          // Agregar categoría al pool dinámico
+          this._addCategoria(producto.categoria);
 
-          // Actualizar si ya existe por código
           const idx2 = this._data.productos.findIndex(p => p.codigo === producto.codigo);
           if (idx2 >= 0) {
             this._data.productos[idx2] = { ...this._data.productos[idx2], ...producto };
@@ -564,8 +638,14 @@ const page = {
           added++;
         });
 
-        console.log(`[productos] _parseFile() → cargados: ${added} | ignorados: ${skipped}`);
-        showToast('Plantilla cargada', `${added} productos listos para guardar`, 'success');
+        // Actualizar datalist con nuevas categorías
+        this._syncDatalist();
+
+        const msg = sinCategoria > 0
+          ? `${added} productos listos. ${sinCategoria} sin categoría → asignados a "General"`
+          : `${added} productos listos para guardar`;
+
+        showToast('Plantilla cargada', msg, sinCategoria > 0 ? 'warning' : 'success');
         this.render();
 
       } catch (err) {
@@ -634,7 +714,7 @@ const page = {
         <td>${p.nombre || '-'}</td>
         <td style="text-align:right">${p.precio_final ? `$${this._formatNumber(p.precio_final)}` : '-'}</td>
         <td style="text-align:center">${p.stock ?? 0}</td>
-        <td>${p.categoria || '-'}</td>
+        <td>${p.categoria || '<span style="color:#f59e0b">Sin categoría</span>'}</td>
         <td>
           <div class="action-buttons">
             <button class="btn-action ${p.paused ? 'btn-play' : 'btn-pause'}" title="${p.paused ? 'Activar' : 'Pausar'}">
@@ -664,9 +744,7 @@ const page = {
   },
 
   _toggleProduct(index) {
-    const p = this._data.productos[index];
-    p.paused = !p.paused;
-    console.log(`[productos] _toggleProduct() "${p.nombre}" paused:${p.paused}`);
+    this._data.productos[index].paused = !this._data.productos[index].paused;
     this.render();
   },
 
@@ -684,7 +762,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // SAVE BUTTON — sin cambios
+  // SAVE BUTTON
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
     const dirtyController = {
