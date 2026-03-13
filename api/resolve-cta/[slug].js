@@ -1,61 +1,45 @@
-// api/resolve-cta/[slug].js
+// ============================================================
+// indiceia/api/resolve-cta/[slug].js
+// Expandido para incluir comercioId y seoHtmlUrl
+// ============================================================
+
 import admin from 'firebase-admin';
 import { buildPrompt } from '../../lib/link-builder/config/prompt-template.js';
 
 if (!admin.apps.length) {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-
-  // 🔧 Fix Vercel: convertir \\n → saltos reales
-  serviceAccount.private_key =
-    serviceAccount.private_key.replace(/\\n/g, '\n');
-
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
+  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
 
 const db = admin.firestore();
 
 export default async function handler(req, res) {
   const { slug } = req.query;
-
-  if (!slug) {
-    return res.status(400).json({ ok: false, error: 'slug requerido' });
-  }
+  if (!slug) return res.status(400).json({ ok: false, error: 'slug requerido' });
 
   try {
-    // 1️⃣ Resolver slug → comercioId
     const landingSnap = await db.collection('landings').doc(slug).get();
-    if (!landingSnap.exists) {
-      return res.status(404).json({ ok: false, error: 'landing no encontrada' });
-    }
+    if (!landingSnap.exists) return res.status(404).json({ ok: false, error: 'landing no encontrada' });
 
     const { comercioId } = landingSnap.data();
 
-    // 2️⃣ Cargar comercio
     const comercioSnap = await db.collection('comercios').doc(comercioId).get();
-    if (!comercioSnap.exists) {
-      return res.status(404).json({ ok: false, error: 'comercio no encontrado' });
-    }
+    if (!comercioSnap.exists) return res.status(404).json({ ok: false, error: 'comercio no encontrado' });
 
     const data = comercioSnap.data();
+    if (!data.entityPublicUrl) return res.status(409).json({ ok: false, error: 'entidad no generada' });
 
-    if (!data.entityPublicUrl) {
-      return res.status(409).json({ ok: false, error: 'entidad no generada' });
-    }
-
-    // 3️⃣ Mini-prompt (texto puro)
     const miniPrompt = buildPrompt(data.entityPublicUrl);
 
-    // 4️⃣ Contrato público FINAL
     return res.status(200).json({
-      ok: true,
+      ok:             true,
       slug,
-
+      comercioId,                          // ← nuevo
       nombreComercio: data.nombreComercio,
-      descripcion: data.descripcion || '',
-
+      descripcion:    data.descripcion    || '',
       entityPublicUrl: data.entityPublicUrl,
+      seoHtmlUrl:     data.seoHtmlUrl     || null,  // ← nuevo
       miniPrompt,
     });
 
