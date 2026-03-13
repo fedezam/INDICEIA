@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-import fs from 'fs';
+import fs   from 'fs';
 import path from 'path';
-import Ajv from 'ajv';
+import Ajv  from 'ajv';
 
 // ================= CONFIG =================
-const TEMPLATES_DIR = process.env.TEMPLATES_PATH || path.join(process.cwd(), '..');
+const TEMPLATES_DIR      = process.env.TEMPLATES_PATH || path.join(process.cwd(), '..');
 const TEMPLATES_BASE_URL = 'https://indiceia-templates.vercel.app/templates';
-const VISUAL_OUTPUT = 'public/templates/registry.visual.json';
-const ENTITY_OUTPUT = 'api/entity-factory/templates/registry.entity.json';
+const VISUAL_OUTPUT      = 'public/templates/registry.visual.json';
+const ENTITY_OUTPUT      = 'api/entity-factory/templates/registry.entity.json';
 
 // ================= UTILS =================
 function safeReadJSON(p) {
@@ -27,34 +27,21 @@ function writeJSON(p, data) {
 // ================= MAIN STEPS =================
 function loadTemplateDirs() {
   const root = path.join(TEMPLATES_DIR, 'public', 'templates');
-
-  if (!fs.existsSync(root)) {
-    throw new Error(`❌ No existe el directorio de templates: ${root}`);
-  }
-
+  if (!fs.existsSync(root)) throw new Error(`❌ No existe: ${root}`);
   console.log(`📂 Leyendo templates desde: ${root}`);
-
-  return fs
-    .readdirSync(root)
-    .filter((d) => fs.statSync(path.join(root, d)).isDirectory())
-    .sort(); // orden determinista
+  return fs.readdirSync(root)
+    .filter(d => fs.statSync(path.join(root, d)).isDirectory())
+    .sort();
 }
 
 function buildRegistries(dirs) {
   const ajv = new Ajv({ allErrors: true, strict: false });
-
-  // Cargar schema de metadata
   const schemaPath = path.join(TEMPLATES_DIR, 'schemas', 'template.metadata.schema.json');
-
-  if (!fs.existsSync(schemaPath)) {
-    throw new Error(`❌ Schema no encontrado: ${schemaPath}`);
-  }
-
+  if (!fs.existsSync(schemaPath)) throw new Error(`❌ Schema no encontrado: ${schemaPath}`);
   console.log(`📋 Usando schema: ${schemaPath}`);
 
-  const schema = safeReadJSON(schemaPath);
+  const schema   = safeReadJSON(schemaPath);
   const validate = ajv.compile(schema);
-
   const timestamp = new Date().toISOString();
 
   const visualRegistry = {
@@ -70,7 +57,7 @@ function buildRegistries(dirs) {
   };
 
   for (const dir of dirs) {
-    const base = path.join(TEMPLATES_DIR, 'public', 'templates', dir);
+    const base     = path.join(TEMPLATES_DIR, 'public', 'templates', dir);
     const metaPath = path.join(base, 'metadata.json');
 
     if (!fs.existsSync(metaPath)) {
@@ -79,12 +66,8 @@ function buildRegistries(dirs) {
     }
 
     let meta;
-    try {
-      meta = safeReadJSON(metaPath);
-    } catch {
-      console.warn(`⚠️  ${dir}: error al leer metadata.json → saltando`);
-      continue;
-    }
+    try { meta = safeReadJSON(metaPath); }
+    catch { console.warn(`⚠️  ${dir}: error al leer metadata.json → saltando`); continue; }
 
     if (!validate(meta)) {
       console.warn(`⚠️  ${dir}: metadata NO pasa validación`);
@@ -92,62 +75,48 @@ function buildRegistries(dirs) {
       continue;
     }
 
-    // Determinar ID del template (mantener consistencia Visual Registry)
     const templateId = meta.template_id || meta.id || dir;
-
     if (!templateId || !/^[A-Z0-9_]+$/i.test(templateId)) {
-      console.warn(`⚠️  ${dir}: ID inválido o no determinado → saltando`);
+      console.warn(`⚠️  ${dir}: ID inválido → saltando`);
       continue;
     }
 
     console.log(`✓ ${dir} → ${templateId}`);
 
-    // Construir URLs
-    const baseUrl = `${TEMPLATES_BASE_URL}/${dir}`;
+    const baseUrl      = `${TEMPLATES_BASE_URL}/${dir}`;
+    const templateUrl  = `${baseUrl}/template.txt`;
+    const iframeUrl    = meta.visual?.preview_html  ? `${baseUrl}/${meta.visual.preview_html}`  : null;
+    const thumbnailUrl = meta.visual?.thumbnail     ? `${baseUrl}/${meta.visual.thumbnail}`     : null;
 
-    // runtime.html para Entity Factory
-    const runtimeUrl = `${baseUrl}/runtime.html`;
-
-    // preview HTML/JSX para Visual Builder
-    const iframeUrl = meta.visual?.preview_html
-      ? `${baseUrl}/${meta.visual.preview_html}`
-      : null;
-
-    const thumbnailUrl = meta.visual?.thumbnail
-      ? `${baseUrl}/${meta.visual.thumbnail}`
-      : null;
-
-    // ======== VISUAL REGISTRY (para Visual Builder) ========
+    // ── VISUAL REGISTRY (para Visual Builder dashboard) ──────
     visualRegistry.templates.push({
-      id: templateId,
-      name: meta.name,
-      version: meta.version,
-      tier: meta.tier,
+      id:          templateId,
+      name:        meta.name,
+      version:     meta.version,
+      tier:        meta.tier,
       description: meta.description,
-      ideal_for: meta.ideal_for,
+      ideal_for:   meta.ideal_for,
       visual: {
-        iframe_url: iframeUrl // preview HTML completo
+        iframe_url: iframeUrl
       },
       previews: {
         thumbnail: thumbnailUrl
       }
     });
 
-    // ======== ENTITY REGISTRY (para Entity Factory) ========
+    // ── ENTITY REGISTRY (para entity-factory/visual.builder) ─
     entityRegistry.templates[templateId] = {
-      id: templateId,
-      version: meta.version,
+      id:           templateId,
+      version:      meta.version,
       paths: {
-        runtime_html: runtimeUrl
+        template_url: templateUrl   // ← el único archivo que necesita el builder
       },
-      supports: meta.supports ?? {},
+      supports:     meta.supports     ?? {},
       requirements: meta.requirements ?? {}
     };
   }
 
-  // Orden final para Visual Registry
   visualRegistry.templates.sort((a, b) => a.id.localeCompare(b.id));
-
   return { visualRegistry, entityRegistry };
 }
 
@@ -155,16 +124,12 @@ function buildRegistries(dirs) {
 function main() {
   try {
     console.log('🔄 Sincronizando templates...\n');
-
     const dirs = loadTemplateDirs();
-    console.log(`📦 Encontrados ${dirs.length} directorios de templates\n`);
-
+    console.log(`📦 Encontrados ${dirs.length} directorios\n`);
     const { visualRegistry, entityRegistry } = buildRegistries(dirs);
-
     writeJSON(VISUAL_OUTPUT, visualRegistry);
     writeJSON(ENTITY_OUTPUT, entityRegistry);
-
-    console.log('\n✅ Registries generados y validados correctamente');
+    console.log('\n✅ Registries actualizados');
     console.log(`→ Visual: ${VISUAL_OUTPUT}`);
     console.log(`→ Entity: ${ENTITY_OUTPUT}`);
   } catch (err) {
