@@ -39,7 +39,8 @@ export default async function handler(req, res) {
       nombreComercio: data.nombreComercio,
       descripcion:    data.descripcion    || '',
       entityPublicUrl: data.entityPublicUrl,
-      seoHtmlUrl:     data.seoHtmlUrl     || null,  // ← nuevo
+      seoHtmlUrl:     data.seoHtmlUrl     || null,
+      visualHtmlUrl:  data.visualHtmlUrl  || null,
       miniPrompt,
     });
 
