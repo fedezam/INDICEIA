@@ -6,8 +6,10 @@ import { buildGoods }        from '../../lib/entity-factory/builders/goods.build
 import { buildServices }     from '../../lib/entity-factory/builders/services.builder.js';
 import { buildCapabilities } from '../../lib/entity-factory/builders/capabilities.builder.js';
 import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
+import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
 
-// ─── Firebase ───────────────────────────────────────────────
+
+
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
     throw new Error('Falta FIREBASE_SERVICE_ACCOUNT');
@@ -44,13 +46,14 @@ export async function buildEntity({ comercioId }) {
   // Resolver referral
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
 
-  // Construir bloques — cada builder sabe que schema sigue
+  // Construir bloques — cada builder sabe qué schema sigue
   const context      = buildContext(data, comercioId, referralCode);
   const mind         = buildMind(data, context, referralCode);
   const goods        = await buildGoods(comercioRef, context);
   const services     = await buildServices(comercioRef);
   const capabilities = buildCapabilities(context);
   const visual       = await buildVisual(context, goods, comercioId);
+  await buildSeo(data, comercioId);
 
   // Ensamblar entidad
   return {
