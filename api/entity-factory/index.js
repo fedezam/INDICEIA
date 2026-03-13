@@ -7,6 +7,7 @@ import { buildServices }     from '../../lib/entity-factory/builders/services.bu
 import { buildCapabilities } from '../../lib/entity-factory/builders/capabilities.builder.js';
 import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
+import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
 
 
 
@@ -54,6 +55,7 @@ export async function buildEntity({ comercioId }) {
   const capabilities = buildCapabilities(context);
   const visual       = await buildVisual(context, goods, comercioId);
   await buildSeo(data, comercioId);
+  await buildIndex(data, comercioId, goods);
 
   // Ensamblar entidad
   return {
