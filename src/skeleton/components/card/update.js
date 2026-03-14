@@ -1,4 +1,5 @@
 // skeleton/components/card/update.js
+import { createButton } from '../button/index.js';
 
 export function updateCard(dom, config = {}) {
   const {
@@ -36,7 +37,6 @@ export function updateCard(dom, config = {}) {
   } else if (typeof content === 'string') {
     body.innerHTML = `<p>${content}</p>`;
   } else {
-    // Si es un elemento DOM o HTML
     if (typeof content === 'object' && content.nodeType) {
       body.innerHTML = '';
       body.appendChild(content);
@@ -46,37 +46,53 @@ export function updateCard(dom, config = {}) {
   }
 
   // ==================== VARIANTS ====================
-  if (variant) {
-    card.classList.add(variant);
-  }
+  if (variant) card.classList.add(variant);
 
   // ==================== MODIFIERS ====================
   if (highlight) card.classList.add('highlight');
   if (selectable) card.classList.add('selectable');
-  if (selected) card.classList.add('selected');
-  if (clickable) card.classList.add('clickable');
-  if (compact) card.classList.add('compact');
-  if (flat) card.classList.add('flat');
-  if (noHeader) card.classList.add('no-header');
+  if (selected)   card.classList.add('selected');
+  if (clickable)  card.classList.add('clickable');
+  if (compact)    card.classList.add('compact');
+  if (flat)       card.classList.add('flat');
+  if (noHeader)   card.classList.add('no-header');
 
   // ==================== ACTION (Footer) ====================
   if (action) {
+    const btnVariant = action.variant || 'primary';
+    const btnSize    = action.size    || 'sm';
+    const btnLabel   = action.label   || 'Ver más';
+    const btnIcon    = action.icon    || null;
+
     if (action.type === 'link') {
+      // Botón skeleton dentro de un <a> para navegación
       const link = document.createElement('a');
       link.href = action.url || '#';
-      link.className = action.className || 's-btn s-btn-primary s-btn-sm';
-      link.textContent = action.label || 'Ver más';
       if (action.target) link.target = action.target;
-      if (action.onClick) link.onclick = action.onClick;
+
+      const btn = createButton({
+        label:   btnLabel,
+        variant: btnVariant,
+        size:    btnSize,
+        icon:    btnIcon,
+      });
+
+      // El <a> hereda el look del botón
+      btn.style.pointerEvents = 'none'; // el click lo maneja el <a>
+      link.appendChild(btn);
       footer.appendChild(link);
+
     } else if (action.type === 'button') {
-      const btn = document.createElement('button');
-      btn.className = action.className || 's-btn s-btn-primary s-btn-sm';
-      btn.textContent = action.label || 'Acción';
-      if (action.onClick) btn.onclick = action.onClick;
+      const btn = createButton({
+        label:   btnLabel,
+        variant: btnVariant,
+        size:    btnSize,
+        icon:    btnIcon,
+        onClick: action.onClick || null,
+      });
       footer.appendChild(btn);
+
     } else if (action.type === 'custom') {
-      // Permite insertar cualquier HTML personalizado
       if (typeof action.content === 'string') {
         footer.innerHTML = action.content;
       } else if (action.content && action.content.nodeType) {
@@ -95,12 +111,10 @@ export function updateCard(dom, config = {}) {
   if (selectable && !onClick) {
     card.onclick = () => {
       card.classList.toggle('selected');
-      
-      // Emitir evento personalizado para que la página sepa
       card.dispatchEvent(new CustomEvent('card-select', {
-        detail: { 
+        detail: {
           selected: card.classList.contains('selected'),
-          card: card 
+          card
         },
         bubbles: true
       }));
