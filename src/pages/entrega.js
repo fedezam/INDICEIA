@@ -22,69 +22,15 @@ import './entrega.css';
 // DATOS ESTÁTICOS
 // ============================================================
 const MODALIDADES = [
-  {
-    key:   'salon',
-    label: 'Atención en el local',
-    icon:  'fa-store',
-    desc:  'El cliente viene y consume o retira en el comercio',
-    campos: null
-  },
-  {
-    key:   'takeaway',
-    label: 'Para llevar / Takeaway',
-    icon:  'fa-shopping-bag',
-    desc:  'El cliente retira su pedido y se lo lleva',
-    campos: null
-  },
-  {
-    key:   'delivery',
-    label: 'Delivery a domicilio',
-    icon:  'fa-motorcycle',
-    desc:  'El comercio entrega en el domicilio del cliente',
-    campos: 'delivery'
-  },
-  {
-    key:   'correo',
-    label: 'Correo / Mensajería',
-    icon:  'fa-box',
-    desc:  'Envío por OCA, Andreani, Correo Argentino u otro',
-    campos: 'correo'
-  },
-  {
-    key:   'transporte',
-    label: 'Transporte / Flete',
-    icon:  'fa-truck',
-    desc:  'Para productos de gran volumen o peso',
-    campos: 'transporte'
-  },
-  {
-    key:   'comisionista',
-    label: 'Comisionista / Distribuidor',
-    icon:  'fa-handshake',
-    desc:  'Un tercero distribuye el producto',
-    campos: 'comisionista'
-  },
-  {
-    key:   'descarga',
-    label: 'Descarga digital',
-    icon:  'fa-download',
-    desc:  'El cliente descarga el producto (software, archivos, diseños)',
-    campos: null
-  },
-  {
-    key:   'email',
-    label: 'Envío por email',
-    icon:  'fa-envelope',
-    desc:  'Documentos, tickets, licencias, facturas',
-    campos: null
-  },
-  {
-    key:   'a_coordinar',
-    label: 'A coordinar',
-    icon:  'fa-comments',
-    desc:  'El comercio y el cliente acuerdan cómo se entrega',
-    campos: 'a_coordinar'
-  },
+  { key: 'salon',        label: 'Atención en el local',      icon: 'fa-store',      desc: 'El cliente viene y consume o retira en el comercio',                  campos: null          },
+  { key: 'takeaway',     label: 'Para llevar / Takeaway',    icon: 'fa-shopping-bag',desc: 'El cliente retira su pedido y se lo lleva',                           campos: null          },
+  { key: 'delivery',     label: 'Delivery a domicilio',      icon: 'fa-motorcycle', desc: 'El comercio entrega en el domicilio del cliente',                      campos: 'delivery'    },
+  { key: 'correo',       label: 'Correo / Mensajería',       icon: 'fa-box',        desc: 'Envío por OCA, Andreani, Correo Argentino u otro',                     campos: 'correo'      },
+  { key: 'transporte',   label: 'Transporte / Flete',        icon: 'fa-truck',      desc: 'Para productos de gran volumen o peso',                                campos: 'transporte'  },
+  { key: 'comisionista', label: 'Comisionista / Distribuidor',icon: 'fa-handshake', desc: 'Un tercero distribuye el producto',                                    campos: 'comisionista'},
+  { key: 'descarga',     label: 'Descarga digital',          icon: 'fa-download',   desc: 'El cliente descarga el producto (software, archivos, diseños)',         campos: null          },
+  { key: 'email',        label: 'Envío por email',           icon: 'fa-envelope',   desc: 'Documentos, tickets, licencias, facturas',                             campos: null          },
+  { key: 'a_coordinar',  label: 'A coordinar',               icon: 'fa-comments',   desc: 'El comercio y el cliente acuerdan cómo se entrega',                    campos: 'a_coordinar' },
 ];
 
 const EMPRESAS_CORREO = ['OCA', 'Andreani', 'Correo Argentino', 'Otra'];
@@ -125,6 +71,16 @@ function render(ctx, state) {
     entrega: structuredClone(state.entrega)
   };
 
+  // Snapshot para dirty state
+  const originalSnapshot = structuredClone(state.entrega);
+
+  const dirtyController = {
+    hasUnsavedChanges: () =>
+      JSON.stringify(uiState.entrega) !== JSON.stringify(originalSnapshot),
+    markSaved: () =>
+      Object.assign(originalSnapshot, structuredClone(uiState.entrega))
+  };
+
   // ==================== HEADER ====================
   const header = document.createElement('div');
   header.className = 'page-header';
@@ -136,12 +92,12 @@ function render(ctx, state) {
 
   // ==================== AI CARD ====================
   page.appendChild(createCard({
-    title: '¡Tu IA informará cómo entregás!',
-    icon: 'fa-robot',
-    variant: 'info',
+    title:     '¡Tu IA informará cómo entregás!',
+    icon:      'fa-robot',
+    variant:   'info',
     highlight: true,
-    content: 'Con esta info tu asistente podrá responder preguntas como "¿hacen delivery?", "¿mandan por correo?" o "¿puedo pasar a buscar?"',
-    compact: true
+    compact:   true,
+    content:   'Con esta info tu asistente podrá responder preguntas como "¿hacen delivery?", "¿mandan por correo?" o "¿puedo pasar a buscar?"'
   }));
 
   // ==================== MODALIDADES ====================
@@ -157,8 +113,7 @@ function render(ctx, state) {
   grid.className = 'entrega-grid';
 
   MODALIDADES.forEach(m => {
-    const item = createModalidadItem(m, uiState, grid);
-    grid.appendChild(item);
+    grid.appendChild(createModalidadItem(m, uiState));
   });
 
   seccion.appendChild(grid);
@@ -170,11 +125,23 @@ function render(ctx, state) {
 
   btnContainer.appendChild(createOnboardingButton({
     stepName: 'entrega',
+
+    validate: () => Object.keys(uiState.entrega).length > 0,
+
     getData: () => ({
-      entrega: uiState.entrega,
+      entrega:    uiState.entrega,
       comercioId: ctx.comercioId,
     }),
-    validate: () => Object.keys(uiState.entrega).length > 0,
+
+    dirtyController,
+
+    getLabel: () => {
+      if (ctx.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
+      return 'Guardar y continuar';
+    },
+
+    onSuccess: () => showToast('Entrega guardada correctamente', 'success'),
+    onError:   (err) => showToast('Error al guardar: ' + err.message, 'error'),
   }));
 
   page.appendChild(btnContainer);
@@ -183,21 +150,20 @@ function render(ctx, state) {
 // ============================================================
 // MODALIDAD ITEM
 // ============================================================
-function createModalidadItem(m, uiState, grid) {
+function createModalidadItem(m, uiState) {
   const activa = !!uiState.entrega[m.key];
 
   const wrapper = document.createElement('div');
   wrapper.className = `entrega-item ${activa ? 'activa' : ''}`;
   wrapper.dataset.key = m.key;
 
-  // Checkbox + label
   const header = document.createElement('label');
   header.className = 'entrega-item-header';
 
   const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
+  checkbox.type    = 'checkbox';
   checkbox.checked = activa;
-  checkbox.id = `modal_${m.key}`;
+  checkbox.id      = `modal_${m.key}`;
 
   const info = document.createElement('div');
   info.className = 'entrega-item-info';
@@ -210,17 +176,15 @@ function createModalidadItem(m, uiState, grid) {
   header.appendChild(info);
   wrapper.appendChild(header);
 
-  // Campos extra
   const camposContainer = document.createElement('div');
   camposContainer.className = `entrega-campos ${activa && m.campos ? '' : 'hidden'}`;
 
-  if (m.campos) {
+  if (m.campos && activa) {
     buildCampos(m, uiState, camposContainer);
   }
 
   wrapper.appendChild(camposContainer);
 
-  // Evento toggle
   checkbox.addEventListener('change', (e) => {
     if (e.target.checked) {
       uiState.entrega[m.key] = getDefaultData(m.key);
@@ -235,6 +199,9 @@ function createModalidadItem(m, uiState, grid) {
       wrapper.classList.remove('activa');
       camposContainer.classList.add('hidden');
     }
+
+    // ✅ Notificar al botón que el estado cambió
+    document.dispatchEvent(new Event('change'));
   });
 
   return wrapper;
@@ -266,17 +233,17 @@ function buildCampos(m, uiState, container) {
       if (!data.costo) data.costo = { tipo: 'consultar' };
 
       const zona = createFormField({
-        label: 'Zona de cobertura',
-        name: 'delivery_zona',
-        type: 'text',
+        label: 'Zona de cobertura', name: 'delivery_zona', type: 'text',
         placeholder: 'Ej: radio 5km de Casilda, solo centro',
         value: data.zona || '',
         helpText: 'Describí en pocas palabras dónde entregás'
       });
-      zona.addEventListener('change', () => { data.zona = zona.getValue(); });
+      zona.addEventListener('change', () => {
+        data.zona = zona.getValue();
+        document.dispatchEvent(new Event('change'));
+      });
       container.appendChild(zona);
-
-      container.appendChild(buildCostoField('delivery', data, uiState));
+      container.appendChild(buildCostoField('delivery', data));
       break;
     }
 
@@ -298,7 +265,7 @@ function buildCampos(m, uiState, container) {
         item.className = 'empresa-item';
 
         const cb = document.createElement('input');
-        cb.type = 'checkbox';
+        cb.type    = 'checkbox';
         cb.checked = (data.empresas || []).includes(empresa);
         cb.addEventListener('change', () => {
           if (!data.empresas) data.empresas = [];
@@ -307,6 +274,7 @@ function buildCampos(m, uiState, container) {
           } else {
             data.empresas = data.empresas.filter(e => e !== empresa);
           }
+          document.dispatchEvent(new Event('change'));
         });
 
         item.appendChild(cb);
@@ -329,16 +297,16 @@ function buildCampos(m, uiState, container) {
       if (!data.costo) data.costo = { tipo: 'consultar' };
 
       const desc = createFormField({
-        label: 'Descripción',
-        name: 'transporte_desc',
-        type: 'text',
+        label: 'Descripción', name: 'transporte_desc', type: 'text',
         placeholder: 'Ej: flete propio para zona centro, coordinamos con el cliente',
         value: data.descripcion || ''
       });
-      desc.addEventListener('change', () => { data.descripcion = desc.getValue(); });
+      desc.addEventListener('change', () => {
+        data.descripcion = desc.getValue();
+        document.dispatchEvent(new Event('change'));
+      });
       container.appendChild(desc);
-
-      container.appendChild(buildCostoField('transporte', data, uiState));
+      container.appendChild(buildCostoField('transporte', data));
       break;
     }
 
@@ -347,13 +315,14 @@ function buildCampos(m, uiState, container) {
       const data = uiState.entrega.comisionista;
 
       const cobertura = createFormField({
-        label: 'Cobertura',
-        name: 'comisionista_cobertura',
-        type: 'text',
+        label: 'Cobertura', name: 'comisionista_cobertura', type: 'text',
         placeholder: 'Ej: toda la provincia de Santa Fe, zona sur',
         value: data.cobertura || ''
       });
-      cobertura.addEventListener('change', () => { data.cobertura = cobertura.getValue(); });
+      cobertura.addEventListener('change', () => {
+        data.cobertura = cobertura.getValue();
+        document.dispatchEvent(new Event('change'));
+      });
       container.appendChild(cobertura);
       break;
     }
@@ -363,13 +332,14 @@ function buildCampos(m, uiState, container) {
       const data = uiState.entrega.a_coordinar;
 
       const desc = createFormField({
-        label: 'Cómo se coordina',
-        name: 'coordinar_desc',
-        type: 'text',
+        label: 'Cómo se coordina', name: 'coordinar_desc', type: 'text',
         placeholder: 'Ej: acordamos día y lugar por WhatsApp',
         value: data.descripcion || ''
       });
-      desc.addEventListener('change', () => { data.descripcion = desc.getValue(); });
+      desc.addEventListener('change', () => {
+        data.descripcion = desc.getValue();
+        document.dispatchEvent(new Event('change'));
+      });
       container.appendChild(desc);
       break;
     }
@@ -379,18 +349,18 @@ function buildCampos(m, uiState, container) {
 // ============================================================
 // COSTO FIELD (reutilizable para delivery y transporte)
 // ============================================================
-function buildCostoField(key, data, uiState) {
+function buildCostoField(key, data) {
   const wrapper = document.createElement('div');
   wrapper.className = 'costo-wrapper';
 
   const tipo = createFormField({
     label: 'Costo de envío',
-    name: `${key}_costo_tipo`,
-    type: 'select',
+    name:  `${key}_costo_tipo`,
+    type:  'select',
     options: [
-      { value: 'consultar',  label: 'El local lo confirma al tomar el pedido' },
-      { value: 'estimado',   label: 'Costo estimado (el LLM dice "aproximadamente")' },
-      { value: 'fijo',       label: 'Costo fijo' },
+      { value: 'consultar', label: 'El local lo confirma al tomar el pedido' },
+      { value: 'estimado',  label: 'Costo estimado (el LLM dice "aproximadamente")' },
+      { value: 'fijo',      label: 'Costo fijo' },
     ],
     value: data.costo?.tipo || 'consultar'
   });
@@ -399,10 +369,8 @@ function buildCostoField(key, data, uiState) {
   valorWrapper.className = data.costo?.tipo === 'consultar' ? 'hidden' : '';
 
   const valor = createFormField({
-    label: 'Valor ($)',
-    name: `${key}_costo_valor`,
-    type: 'number',
-    placeholder: '0',
+    label: 'Valor ($)', name: `${key}_costo_valor`,
+    type: 'number', placeholder: '0',
     value: data.costo?.valor || ''
   });
   valorWrapper.appendChild(valor);
@@ -417,11 +385,13 @@ function buildCostoField(key, data, uiState) {
     } else {
       valorWrapper.classList.remove('hidden');
     }
+    document.dispatchEvent(new Event('change'));
   });
 
   valor.addEventListener('change', () => {
     if (!data.costo) data.costo = {};
     data.costo.valor = parseFloat(valor.getValue()) || 0;
+    document.dispatchEvent(new Event('change'));
   });
 
   wrapper.appendChild(tipo);
