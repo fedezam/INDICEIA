@@ -7,9 +7,6 @@ import { runLifecycle }          from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }           from '/src/skeleton/layout/index.js';
 
-// ==================== FLOW ====================
-import { runFlowController } from '/src/controllers/flowController.js';
-
 // ==================== COMPONENTES ====================
 import { createCard }   from '/src/skeleton/components/card/index.js';
 import { createButton } from '/src/skeleton/components/button/index.js';
@@ -36,7 +33,6 @@ runLifecycle({
   options: { loadingMessage: 'Cargando tu link público...' },
 
   async onReady(ctx) {
-    await runFlowController(ctx.user.uid);
     mountLayout(ctx);
     const state = await load(ctx);
     render(ctx, state);
@@ -77,17 +73,7 @@ function render(ctx, state) {
   page.appendChild(renderLinkCard(state));
   page.appendChild(renderPreviewCard(state));
   page.appendChild(renderDescargasCard(state));
-
-  // ── Botón volver al dashboard ─────────────────────────────
-  const btnContainer = document.createElement('div');
-  btnContainer.className = 'back-btn-container';
-  btnContainer.appendChild(createButton({
-    label:   'Volver al dashboard',
-    variant: 'secondary',
-    icon:    'fa-arrow-left',
-    onClick: () => window.location.href = '/dashboard.html'
-  }));
-  page.appendChild(btnContainer);
+  page.appendChild(renderVolverBtn());
 }
 
 // ============================================================
@@ -233,4 +219,19 @@ function renderDescargasCard(state) {
     icon:    'fa-file-image',
     content: container
   });
+}
+
+// ============================================================
+// BOTÓN VOLVER
+// ============================================================
+function renderVolverBtn() {
+  const container = document.createElement('div');
+  container.className = 'back-btn-container';
+  container.appendChild(createButton({
+    label:   'Volver al dashboard',
+    variant: 'secondary',
+    icon:    'fa-arrow-left',
+    onClick: () => window.location.href = '/dashboard.html'
+  }));
+  return container;
 }
