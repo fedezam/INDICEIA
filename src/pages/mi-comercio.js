@@ -7,7 +7,9 @@ import { runLifecycle }          from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }           from '/src/skeleton/layout/index.js';
 
-// ==================== FIREBASE ====================
+// ==================== FIREBASE (caso especial: creación de comercio nuevo) ====================
+// Firebase directo justificado: setDoc de comercio nuevo, plan trial, landing, usuario
+// Estas operaciones no pueden ir por persistence.updateData() — son escrituras multi-colección
 import { doc, getDoc, setDoc, updateDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '/src/services/firebase/firebase.js';
 
@@ -16,9 +18,9 @@ import { runFlowController } from '/src/controllers/flowController.js';
 
 // ==================== COMPONENTES ====================
 import { createFormField }        from '/src/skeleton/components/form-field/index.js';
-import { createButton }           from '/src/skeleton/components/button/index.js';
 import { createCard }             from '/src/skeleton/components/card/index.js';
 import { createCategorySelector } from '/src/skeleton/components/category-selector/index.js';
+import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
 
 // ==================== SHARED ====================
@@ -35,12 +37,12 @@ const CATEGORIAS_COMUNES = [
 ];
 
 const METODOS_PAGO = [
-  { id: 'efectivo', nombre: 'Efectivo', icon: 'fa-money-bill' },
-  { id: 'tarjeta_debito', nombre: 'Tarjeta Débito', icon: 'fa-credit-card' },
-  { id: 'tarjeta_credito', nombre: 'Tarjeta Crédito', icon: 'fa-credit-card' },
-  { id: 'transferencia', nombre: 'Transferencia', icon: 'fa-exchange-alt' },
-  { id: 'mercadopago', nombre: 'Mercado Pago', icon: 'fa-wallet' },
-  { id: 'qr', nombre: 'QR', icon: 'fa-qrcode' }
+  { id: 'efectivo',        nombre: 'Efectivo',        icon: 'fa-money-bill'   },
+  { id: 'tarjeta_debito',  nombre: 'Tarjeta Débito',  icon: 'fa-credit-card'  },
+  { id: 'tarjeta_credito', nombre: 'Tarjeta Crédito', icon: 'fa-credit-card'  },
+  { id: 'transferencia',   nombre: 'Transferencia',   icon: 'fa-exchange-alt' },
+  { id: 'mercadopago',     nombre: 'Mercado Pago',    icon: 'fa-wallet'       },
+  { id: 'qr',              nombre: 'QR',              icon: 'fa-qrcode'       }
 ];
 
 // ==================== HELPERS ====================
@@ -67,16 +69,9 @@ runLifecycle({
   },
 
   async onReady(ctx) {
-    // 1️⃣ FLOW
     await runFlowController(ctx.user.uid);
-
-    // 2️⃣ LAYOUT
     mountLayout(ctx);
-
-    // 3️⃣ LOAD
     const state = await load(ctx);
-
-    // 4️⃣ RENDER
     render(ctx, state);
   }
 });
@@ -85,10 +80,10 @@ runLifecycle({
 // LOAD
 // ============================================================
 async function load(ctx) {
-  const isNewComercio = !ctx.comercioData || !ctx.comercioData.nombreComercio;
-  const comercioData = ctx.comercioData || {};
-  const comercioSlug = comercioData.landing?.slug || null;
-  const slugDisponible = !!comercioSlug;
+  const comercioData          = ctx.comercioData || {};
+  const isNewComercio         = !comercioData.nombreComercio;
+  const comercioSlug          = comercioData.landing?.slug || null;
+  const slugDisponible        = !!comercioSlug;
   const selectedPaymentMethods = comercioData.paymentMethods || [];
 
   return { isNewComercio, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods };
@@ -101,27 +96,30 @@ function render(ctx, state) {
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
+  // refs — nodos del DOM que necesitan comunicarse entre secciones
   const refs = {
-    fields: {},
-    categorySelector: null,
-    paymentCards: [],
-    slugInput: null,
-    slugStatus: null,
-    guardarBtn: null,
+    fields:             {},
+    categorySelector:   null,
+    paymentCards:       [],
+    slugInput:          null,
+    slugStatus:         null,
     slugValidationTimer: null,
   };
 
+  // uiState — estado mutable de esta página
   const uiState = {
-    comercioSlug: state.comercioSlug,
-    slugDisponible: state.slugDisponible,
+    comercioSlug:          state.comercioSlug,
+    slugDisponible:        state.slugDisponible,
     selectedPaymentMethods: [...state.selectedPaymentMethods],
   };
 
+  // Título
   const title = document.createElement('h2');
   title.textContent = state.isNewComercio ? 'Crear Mi Comercio' : 'Editar Mi Comercio';
   title.className = 'page-title';
   page.appendChild(title);
 
+  // Secciones
   page.appendChild(renderSeccionBasicos(state, refs, uiState));
   page.appendChild(renderSeccionUbicacion(state, refs, uiState));
   page.appendChild(renderSeccionContacto(state, refs, uiState));
@@ -129,37 +127,20 @@ function render(ctx, state) {
   page.appendChild(renderSeccionCategorias(state, refs, uiState));
   page.appendChild(renderSeccionPagos(state, refs, uiState));
 
+  // Slug solo si el comercio no tiene landing todavía
   if (!state.comercioData.landing?.slug) {
     page.appendChild(renderSeccionSlug(state, refs, uiState));
   }
 
-  refs.guardarBtn = createButton({
-    label: 'Guardar Comercio',
-    icon: 'fa-save',
-    variant: 'success',
-    size: 'lg',
-    block: true,
-    onClick: () => handleGuardar(ctx, state, refs, uiState)
-  });
-
-  const btnContainer = document.createElement('div');
-  btnContainer.className = 'btn-container';
-  btnContainer.appendChild(refs.guardarBtn);
-  page.appendChild(btnContainer);
-
-  validateForm(state, refs, uiState);
+  // Botón canónico
+  page.appendChild(renderBotonGuardar(ctx, state, refs, uiState));
 }
 
 // ============================================================
 // SECCIONES
 // ============================================================
 function renderSeccionBasicos(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Datos Básicos';
-  section.appendChild(h3);
+  const section = crearSeccion('Datos Básicos');
 
   refs.fields.nombreComercio = createFormField({
     label: 'Nombre del Comercio', name: 'nombreComercio', required: true,
@@ -174,6 +155,7 @@ function renderSeccionBasicos(state, refs, uiState) {
 
   section.append(refs.fields.nombreComercio, refs.fields.descripcion);
 
+  // Auto-generar slug desde el nombre (solo si el comercio no tiene landing)
   if (!uiState.comercioSlug) {
     refs.fields.nombreComercio.input.addEventListener('input', () => {
       clearTimeout(refs.slugValidationTimer);
@@ -188,59 +170,32 @@ function renderSeccionBasicos(state, refs, uiState) {
     });
   }
 
-  [refs.fields.nombreComercio, refs.fields.descripcion].forEach(field => {
-    field.input.addEventListener('input', () => validateForm(state, refs, uiState));
-  });
-
+  agregarListeners([refs.fields.nombreComercio, refs.fields.descripcion], refs, uiState);
   return section;
 }
 
 function renderSeccionUbicacion(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
+  const section = crearSeccion('Ubicación');
 
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Ubicación';
-  section.appendChild(h3);
-
-  refs.fields.pais = createFormField({ label: 'País', name: 'pais', value: 'Argentina', disabled: true });
-
+  refs.fields.pais      = createFormField({ label: 'País',      name: 'pais',      value: 'Argentina', disabled: true });
   refs.fields.provincia = createFormField({ label: 'Provincia', name: 'provincia', type: 'select', required: true });
-
-  refs.fields.ciudad = createFormField({
-    label: 'Ciudad', name: 'ciudad', required: true,
-    value: state.comercioData.ciudad || ''
-  });
-
-  refs.fields.direccion = createFormField({
-    label: 'Dirección', name: 'direccion', required: true,
-    value: state.comercioData.direccion || ''
-  });
+  refs.fields.ciudad    = createFormField({ label: 'Ciudad',    name: 'ciudad',    required: true, value: state.comercioData.ciudad   || '' });
+  refs.fields.direccion = createFormField({ label: 'Dirección', name: 'direccion', required: true, value: state.comercioData.direccion || '' });
 
   section.append(refs.fields.pais, refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion);
 
   fillProvinciaSelector('Argentina', refs.fields.provincia.input);
 
-  const provinciaSaved = state.comercioData.provincia || null;
-  if (provinciaSaved) {
-    refs.fields.provincia.input.value = provinciaSaved;
-    console.log('✅ Provincia cargada desde DB:', provinciaSaved);
+  if (state.comercioData.provincia) {
+    refs.fields.provincia.input.value = state.comercioData.provincia;
   }
 
-  [refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion].forEach(field => {
-    field.input.addEventListener('input', () => validateForm(state, refs, uiState));
-  });
-
+  agregarListeners([refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion], refs, uiState);
   return section;
 }
 
 function renderSeccionContacto(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Contacto';
-  section.appendChild(h3);
+  const section = crearSeccion('Contacto');
 
   refs.fields.telefono = createFormField({
     label: 'Teléfono', name: 'telefono', type: 'tel', required: true,
@@ -253,56 +208,39 @@ function renderSeccionContacto(state, refs, uiState) {
   });
 
   section.append(refs.fields.telefono, refs.fields.email);
-
-  [refs.fields.telefono, refs.fields.email].forEach(field => {
-    field.input.addEventListener('input', () => validateForm(state, refs, uiState));
-  });
-
+  agregarListeners([refs.fields.telefono, refs.fields.email], refs, uiState);
   return section;
 }
 
 function renderSeccionRedes(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Redes Sociales';
-  section.appendChild(h3);
+  const section = crearSeccion('Redes Sociales');
 
   const help = document.createElement('p');
   help.className = 'form-help';
   help.textContent = 'Al menos una red social es obligatoria';
   section.appendChild(help);
 
-  refs.fields.website  = createFormField({ label: 'Sitio Web',  name: 'website',   type: 'url', placeholder: 'https://...',            value: state.comercioData.website   || '' });
-  refs.fields.instagram = createFormField({ label: 'Instagram', name: 'instagram',              placeholder: '@usuario',                value: state.comercioData.instagram || '' });
-  refs.fields.facebook  = createFormField({ label: 'Facebook',  name: 'facebook',               placeholder: 'facebook.com/usuario',    value: state.comercioData.facebook  || '' });
-  refs.fields.whatsapp  = createFormField({ label: 'WhatsApp',  name: 'whatsapp',  type: 'tel', placeholder: '+54 9 11 1234-5678',      value: state.comercioData.whatsapp  || '' });
+  refs.fields.website   = createFormField({ label: 'Sitio Web',  name: 'website',   type: 'url', placeholder: 'https://...',         value: state.comercioData.website   || '' });
+  refs.fields.instagram = createFormField({ label: 'Instagram',  name: 'instagram',              placeholder: '@usuario',             value: state.comercioData.instagram || '' });
+  refs.fields.facebook  = createFormField({ label: 'Facebook',   name: 'facebook',               placeholder: 'facebook.com/usuario', value: state.comercioData.facebook  || '' });
+  refs.fields.whatsapp  = createFormField({ label: 'WhatsApp',   name: 'whatsapp',  type: 'tel', placeholder: '+54 9 11 1234-5678',   value: state.comercioData.whatsapp  || '' });
 
   section.append(refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp);
-
-  [refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp].forEach(field => {
-    field.input.addEventListener('input', () => validateForm(state, refs, uiState));
-  });
-
+  agregarListeners([refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp], refs, uiState);
   return section;
 }
 
 function renderSeccionCategorias(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Categorías';
-  section.appendChild(h3);
+  const section = crearSeccion('Categorías');
 
   refs.categorySelector = createCategorySelector({
-    options: CATEGORIAS_COMUNES,
+    options:  CATEGORIAS_COMUNES,
     selected: state.comercioData.categories || [],
   });
 
+  // El selector emite evento custom — lo usamos para re-validar
   refs.categorySelector.addEventListener('categories-change', () => {
-    validateForm(state, refs, uiState);
+    document.dispatchEvent(new Event('change'));
   });
 
   section.appendChild(refs.categorySelector);
@@ -310,23 +248,17 @@ function renderSeccionCategorias(state, refs, uiState) {
 }
 
 function renderSeccionPagos(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Métodos de Pago';
-  section.appendChild(h3);
+  const section = crearSeccion('Métodos de Pago');
 
   const grid = document.createElement('div');
   grid.className = 'payment-grid';
-  section.appendChild(grid);
 
   METODOS_PAGO.forEach(metodo => {
     const isSelected = uiState.selectedPaymentMethods.includes(metodo.id);
 
     const card = createCard({
       title: metodo.nombre, icon: metodo.icon, variant: 'info',
-      selectable: true, selected: isSelected, clickable: true, compact: true,
+      selectable: true, selected: isSelected, compact: true,
       onClick: () => {
         card.toggle();
         if (card.isSelected()) {
@@ -335,7 +267,7 @@ function renderSeccionPagos(state, refs, uiState) {
         } else {
           uiState.selectedPaymentMethods = uiState.selectedPaymentMethods.filter(id => id !== metodo.id);
         }
-        validateForm(state, refs, uiState);
+        document.dispatchEvent(new Event('change'));
       }
     });
 
@@ -343,16 +275,12 @@ function renderSeccionPagos(state, refs, uiState) {
     grid.appendChild(card);
   });
 
+  section.appendChild(grid);
   return section;
 }
 
 function renderSeccionSlug(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Link Público';
-  section.appendChild(h3);
+  const section = crearSeccion('Link Público');
 
   const help = document.createElement('p');
   help.className = 'form-help';
@@ -367,10 +295,10 @@ function renderSeccionSlug(state, refs, uiState) {
   slugPrefix.textContent = 'indiceia.com/';
 
   refs.slugInput = document.createElement('input');
-  refs.slugInput.type = 'text';
-  refs.slugInput.className = 'slug-input';
+  refs.slugInput.type        = 'text';
+  refs.slugInput.className   = 'slug-input';
   refs.slugInput.placeholder = 'mi-comercio';
-  refs.slugInput.value = uiState.comercioSlug || '';
+  refs.slugInput.value       = uiState.comercioSlug || '';
 
   slugContainer.append(slugPrefix, refs.slugInput);
   section.appendChild(slugContainer);
@@ -386,8 +314,8 @@ function renderSeccionSlug(state, refs, uiState) {
     if (slug.length < 3) {
       updateSlugStatus(refs, 'empty', '');
       uiState.slugDisponible = false;
-      uiState.comercioSlug = null;
-      validateForm(state, refs, uiState);
+      uiState.comercioSlug   = null;
+      document.dispatchEvent(new Event('change'));
       return;
     }
     updateSlugStatus(refs, 'checking', 'Verificando disponibilidad...');
@@ -398,14 +326,121 @@ function renderSeccionSlug(state, refs, uiState) {
 }
 
 // ============================================================
+// BOTÓN GUARDAR — Modo Custom (lógica multi-colección)
+// ============================================================
+function renderBotonGuardar(ctx, state, refs, uiState) {
+  const btnContainer = document.createElement('div');
+  btnContainer.className = 'btn-container';
+
+  const btn = createOnboardingButton({
+    stepName: 'mi-comercio',
+
+    validate: () => isFormValid(refs, uiState, state),
+
+    getLabel: () => {
+      if (ctx.isEditMode && !hayDirtyState(refs, uiState, state)) return 'Volver al dashboard';
+      return state.isNewComercio ? 'Crear comercio' : 'Guardar cambios';
+    },
+
+    onSave: async ({ uid, comercioId: ctxComercioId }) => {
+      const updates = getCurrentData(refs, uiState);
+      const originalHasLanding = state.comercioData.landing?.slug;
+
+      // Landing data
+      if (!originalHasLanding) {
+        updates.landing = {
+          activo: true, nombre: updates.nombreComercio,
+          slug: uiState.comercioSlug, tipo: 'default',
+          createdAt: new Date(), updatedAt: new Date()
+        };
+      } else {
+        updates.landing = {
+          ...state.comercioData.landing,
+          nombre: updates.nombreComercio,
+          updatedAt: new Date()
+        };
+      }
+
+      if (state.isNewComercio) {
+        // ── COMERCIO NUEVO — multi-colección, no puede ir por persistence ──
+        const comercioRef = ctxComercioId
+          ? doc(db, 'comercios', ctxComercioId)
+          : doc(collection(db, 'comercios'));
+        const comercioId = comercioRef.id;
+
+        await setDoc(comercioRef, {
+          ...updates,
+          duenoId:            uid,
+          fechaCreacion:      new Date(),
+          fechaActualizacion: new Date(),
+          onboardingSteps:    { 'mi-comercio': true }
+        });
+
+        const now       = Timestamp.now();
+        const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+
+        await updateDoc(comercioRef, {
+          plan: {
+            type: 'trial', active: true, trial: true,
+            startedAt: now, expiresAt, createdAt: now, updatedAt: now, source: 'system'
+          },
+          fechaActualizacion: new Date()
+        });
+
+        await setDoc(doc(db, 'landings', uiState.comercioSlug), {
+          slug: uiState.comercioSlug, comercioId,
+          nombre: updates.nombreComercio, activo: true,
+          createdAt: new Date(), updatedAt: new Date()
+        });
+
+        await updateDoc(doc(db, 'usuarios', uid), {
+          comercioId,
+          'onboardingSteps.mi-comercio': true
+        });
+
+        // stepMarked: true — ya escribimos onboardingSteps manualmente arriba
+        return { success: true, stepMarked: true };
+
+      } else {
+        // ── COMERCIO EXISTENTE — updateDoc directo ──
+        await updateDoc(doc(db, 'comercios', ctxComercioId), {
+          ...updates,
+          'onboardingSteps.mi-comercio': true,
+          fechaActualizacion: new Date()
+        });
+
+        if (!originalHasLanding) {
+          await setDoc(doc(db, 'landings', uiState.comercioSlug), {
+            slug: uiState.comercioSlug, comercioId: ctxComercioId,
+            nombre: updates.nombreComercio, activo: true,
+            createdAt: new Date(), updatedAt: new Date()
+          });
+        }
+
+        return { success: true, stepMarked: true };
+      }
+    },
+
+    onSuccess: () => showToast('Comercio guardado correctamente', 'success'),
+    onError:   (err) => {
+      console.error('❌ Error guardando:', err);
+      showToast('Error al guardar: ' + err.message, 'error');
+    },
+  });
+
+  btnContainer.appendChild(btn);
+  return btnContainer;
+}
+
+// ============================================================
 // VALIDACIÓN SLUG
 // ============================================================
 async function validarSlug(slug, refs, uiState, autoGenerated) {
   if (!slug || slug.length < 3) {
     updateSlugStatus(refs, 'empty', '');
     uiState.slugDisponible = false;
-    uiState.comercioSlug = null;
-    validateForm(null, refs, uiState);
+    uiState.comercioSlug   = null;
+    document.dispatchEvent(new Event('change'));
     return;
   }
 
@@ -413,39 +448,39 @@ async function validarSlug(slug, refs, uiState, autoGenerated) {
     const landingSnap = await getDoc(doc(db, 'landings', slug));
 
     if (!landingSnap.exists()) {
-      uiState.comercioSlug = slug;
+      uiState.comercioSlug   = slug;
       uiState.slugDisponible = true;
       updateSlugStatus(refs, 'available', `✓ Disponible: indiceia.com/${slug}`);
-      validateForm(null, refs, uiState);
+      document.dispatchEvent(new Event('change'));
       return;
     }
 
     if (autoGenerated) {
       for (let i = 1; i <= 3; i++) {
-        const alt = `${slug}-${i}`;
+        const alt     = `${slug}-${i}`;
         const altSnap = await getDoc(doc(db, 'landings', alt));
         if (!altSnap.exists()) {
-          uiState.comercioSlug = alt;
+          uiState.comercioSlug   = alt;
           uiState.slugDisponible = true;
           updateSlugStatus(refs, 'suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`);
           refs.slugInput.value = alt;
-          validateForm(null, refs, uiState);
+          document.dispatchEvent(new Event('change'));
           return;
         }
       }
     }
 
     uiState.slugDisponible = false;
-    uiState.comercioSlug = null;
+    uiState.comercioSlug   = null;
     updateSlugStatus(refs, 'taken', 'Este nombre ya está en uso. Probá con otro.');
-    validateForm(null, refs, uiState);
+    document.dispatchEvent(new Event('change'));
 
   } catch (err) {
     console.error('Error validando slug:', err);
     uiState.slugDisponible = false;
-    uiState.comercioSlug = null;
+    uiState.comercioSlug   = null;
     updateSlugStatus(refs, 'error', 'Error al validar. Intentá de nuevo.');
-    validateForm(null, refs, uiState);
+    document.dispatchEvent(new Event('change'));
   }
 }
 
@@ -461,150 +496,90 @@ function updateSlugStatus(refs, status, message) {
     error:      '<i class="fas fa-exclamation-triangle" style="color: var(--s-warning)"></i>',
     empty:      ''
   };
-  icon.innerHTML = icons[status] || '';
-  text.textContent = message;
+  icon.innerHTML    = icons[status] || '';
+  text.textContent  = message;
 }
 
 // ============================================================
-// VALIDACIÓN FORMULARIO
+// HELPERS DE FORMULARIO
 // ============================================================
-function validateForm(state, refs, uiState) {
-  const camposBasicosValidos =
-    refs.fields.nombreComercio?.input.value.trim() &&
-    refs.fields.descripcion?.input.value.trim() &&
-    refs.fields.provincia?.input.value.trim() &&
-    refs.fields.ciudad?.input.value.trim() &&
-    refs.fields.direccion?.input.value.trim() &&
-    refs.fields.telefono?.input.value.trim() &&
-    refs.fields.email?.input.value.trim();
 
-  const tieneRedSocial =
-    refs.fields.website?.input.value.trim() ||
-    refs.fields.instagram?.input.value.trim() ||
-    refs.fields.facebook?.input.value.trim() ||
-    refs.fields.whatsapp?.input.value.trim();
+/** Snapshot actual del formulario */
+function getCurrentData(refs, uiState) {
+  return {
+    nombreComercio: refs.fields.nombreComercio?.input.value.trim() || '',
+    descripcion:    refs.fields.descripcion?.input.value.trim()    || '',
+    pais:           'Argentina',
+    provincia:      refs.fields.provincia?.input.value.trim()      || '',
+    ciudad:         refs.fields.ciudad?.input.value.trim()         || '',
+    direccion:      refs.fields.direccion?.input.value.trim()      || '',
+    telefono:       refs.fields.telefono?.input.value.trim()       || '',
+    email:          refs.fields.email?.input.value.trim()          || '',
+    website:        refs.fields.website?.input.value.trim()        || null,
+    instagram:      refs.fields.instagram?.input.value.trim()      || null,
+    facebook:       refs.fields.facebook?.input.value.trim()       || null,
+    whatsapp:       refs.fields.whatsapp?.input.value.trim()       || null,
+    categories:     refs.categorySelector?.getSelected()           || [],
+    paymentMethods: uiState.selectedPaymentMethods,
+  };
+}
 
-  const tieneCategorias = refs.categorySelector?.getSelected().length > 0;
-  const originalHasLanding = state?.comercioData?.landing?.slug;
-  const slugValido = originalHasLanding || uiState?.slugDisponible;
+/** Retorna true si el formulario tiene lo mínimo para guardar */
+function isFormValid(refs, uiState, state) {
+  const data = getCurrentData(refs, uiState);
 
-  const formularioValido = camposBasicosValidos && tieneRedSocial && tieneCategorias && slugValido;
+  const camposBasicos = data.nombreComercio && data.descripcion &&
+    data.provincia && data.ciudad && data.direccion &&
+    data.telefono  && data.email;
 
-  if (refs.guardarBtn) {
-    formularioValido ? refs.guardarBtn.enable() : refs.guardarBtn.disable();
-  }
+  const tieneRedSocial = data.website || data.instagram || data.facebook || data.whatsapp;
+  const tieneCategorias = data.categories.length > 0;
+  const slugValido = state.comercioData.landing?.slug || uiState.slugDisponible;
 
-  return formularioValido;
+  return !!(camposBasicos && tieneRedSocial && tieneCategorias && slugValido);
+}
+
+/** Detecta si hay cambios respecto al estado original (para edit mode) */
+function hayDirtyState(refs, uiState, state) {
+  const current  = getCurrentData(refs, uiState);
+  const original = state.comercioData;
+
+  return (
+    current.nombreComercio !== (original.nombreComercio || '') ||
+    current.descripcion    !== (original.descripcion    || '') ||
+    current.provincia      !== (original.provincia      || '') ||
+    current.ciudad         !== (original.ciudad         || '') ||
+    current.direccion      !== (original.direccion      || '') ||
+    current.telefono       !== (original.telefono       || '') ||
+    current.email          !== (original.email          || '') ||
+    current.website        !== (original.website        || null) ||
+    current.instagram      !== (original.instagram      || null) ||
+    current.facebook       !== (original.facebook       || null) ||
+    current.whatsapp       !== (original.whatsapp       || null) ||
+    JSON.stringify(current.categories)     !== JSON.stringify(original.categories     || []) ||
+    JSON.stringify(current.paymentMethods) !== JSON.stringify(original.paymentMethods || [])
+  );
 }
 
 // ============================================================
-// GUARDAR
+// UTILS
 // ============================================================
-async function handleGuardar(ctx, state, refs, uiState) {
-  if (!validateForm(state, refs, uiState)) {
-    showToast('Completá todos los campos requeridos', 'warning');
-    return;
-  }
 
-  refs.guardarBtn.setLoading(true);
+/** Crea una sección de formulario con título */
+function crearSeccion(titulo) {
+  const section = document.createElement('div');
+  section.className = 'form-section';
+  const h3 = document.createElement('h3');
+  h3.textContent = titulo;
+  section.appendChild(h3);
+  return section;
+}
 
-  try {
-    const updates = {
-      nombreComercio: refs.fields.nombreComercio.input.value.trim(),
-      descripcion:    refs.fields.descripcion.input.value.trim(),
-      pais:           'Argentina',
-      provincia:      refs.fields.provincia.input.value.trim(),
-      ciudad:         refs.fields.ciudad.input.value.trim(),
-      direccion:      refs.fields.direccion.input.value.trim(),
-      telefono:       refs.fields.telefono.input.value.trim(),
-      email:          refs.fields.email.input.value.trim(),
-      website:        refs.fields.website.input.value.trim() || null,
-      instagram:      refs.fields.instagram.input.value.trim() || null,
-      facebook:       refs.fields.facebook.input.value.trim() || null,
-      whatsapp:       refs.fields.whatsapp.input.value.trim() || null,
-      categories:     refs.categorySelector.getSelected(),
-      paymentMethods: uiState.selectedPaymentMethods
-    };
-
-    const originalHasLanding = state.comercioData.landing?.slug;
-
-    if (!originalHasLanding) {
-      updates.landing = {
-        activo: true, nombre: updates.nombreComercio,
-        slug: uiState.comercioSlug, tipo: 'default',
-        createdAt: new Date(), updatedAt: new Date()
-      };
-    } else {
-      updates.landing = { ...state.comercioData.landing, nombre: updates.nombreComercio, updatedAt: new Date() };
-    }
-
-    if (state.isNewComercio) {
-      console.log('🆕 Creando comercio nuevo...');
-
-      // ✅ Generar nuevo ID si ctx.comercioId es null
-      const comercioRef = ctx.comercioId
-        ? doc(db, 'comercios', ctx.comercioId)
-        : doc(collection(db, 'comercios'));
-      const comercioId = comercioRef.id;
-
-      const nuevoComercio = {
-        ...updates,
-        duenoId: ctx.user.uid,
-        fechaCreacion: new Date(),
-        fechaActualizacion: new Date(),
-        onboardingSteps: { 'mi-comercio': true }
-      };
-
-      await setDoc(comercioRef, nuevoComercio);
-
-      const now = Timestamp.now();
-      const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-
-      await updateDoc(comercioRef, {
-        plan: {
-          type: 'trial', active: true, trial: true,
-          startedAt: now, expiresAt, createdAt: now, updatedAt: now, source: 'system'
-        },
-        fechaActualizacion: new Date()
-      });
-
-      await setDoc(doc(db, 'landings', uiState.comercioSlug), {
-        slug: uiState.comercioSlug, comercioId,
-        nombre: updates.nombreComercio, activo: true,
-        createdAt: new Date(), updatedAt: new Date()
-      });
-
-      // ✅ Guardar el nuevo comercioId en el doc del usuario
-      await updateDoc(doc(db, 'usuarios', ctx.user.uid), {
-        comercioId,
-        'onboardingSteps.mi-comercio': true
-      });
-
-    } else {
-      console.log('✏️ Actualizando comercio existente...');
-
-      updates['onboardingSteps.mi-comercio'] = true;
-      updates.fechaActualizacion = new Date();
-
-      await updateDoc(doc(db, 'comercios', ctx.comercioId), updates);
-
-      if (!originalHasLanding) {
-        await setDoc(doc(db, 'landings', uiState.comercioSlug), {
-          slug: uiState.comercioSlug, comercioId: ctx.comercioId,
-          nombre: updates.nombreComercio, activo: true,
-          createdAt: new Date(), updatedAt: new Date()
-        });
-      }
-    }
-
-    showToast('Comercio guardado correctamente', 'success');
-    await new Promise(resolve => setTimeout(resolve, 500));
-    window.location.href = '/src/pages/dashboard.html';
-
-  } catch (error) {
-    console.error('❌ Error guardando:', error);
-    showToast('Error al guardar: ' + error.message, 'error');
-  } finally {
-    refs.guardarBtn.setLoading(false);
-  }
+/** Agrega listeners de change a un array de fields para que el botón re-evalúe */
+function agregarListeners(fields, refs, uiState) {
+  fields.forEach(field => {
+    field.input.addEventListener('input', () => {
+      document.dispatchEvent(new Event('change'));
+    });
+  });
 }
