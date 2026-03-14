@@ -228,8 +228,9 @@ const page = {
       action: {
         type: 'link',
         url: '/plans.html',
-        label: 'Ver planes',
-        className: 's-btn s-btn-primary s-btn-sm'
+        variant: 'primary',
+        size: 'sm',
+        label: 'Ver planes'
       }
     });
   },
@@ -272,7 +273,7 @@ const page = {
         type: 'link',
         url: '/usuario.html?edit=true',
         label: 'Editar perfil',
-        className: 's-btn s-btn-secondary s-btn-sm'
+        variant: 'secondary', size: 'sm'
       }
     });
   },
@@ -323,7 +324,7 @@ const page = {
       title: 'Mi Comercio',
       icon: 'fa-store',
       content: '<p>Nombre, dirección, contacto y datos generales</p>',
-      action: { type: 'link', url: '/mi-comercio.html?edit=true', label: 'Editar', className: 's-btn s-btn-secondary s-btn-sm' }
+      action: { type: 'link', url: '/mi-comercio.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
     });
   },
 
@@ -332,7 +333,7 @@ const page = {
       title: 'Modelo de Negocio',
       icon: 'fa-sitemap',
       content: '<p>Qué ofrecés: productos, servicios o ambos</p>',
-      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Editar', className: 's-btn s-btn-secondary s-btn-sm' }
+      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
     });
   },
 
@@ -367,7 +368,7 @@ const page = {
         title: 'Productos',
         icon: 'fa-box',
         content,
-        action: { type: 'link', url: '/productos.html?edit=true', label: 'Editar', className: 's-btn s-btn-secondary s-btn-sm' }
+        action: { type: 'link', url: '/productos.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
       });
     }
 
@@ -376,7 +377,7 @@ const page = {
       icon: 'fa-box',
       flat: true,
       content: '<p class="inactive-text">No habilitado</p><p>Vendé artículos físicos o digitales</p>',
-      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Habilitar', className: 's-btn s-btn-outline-primary s-btn-sm' }
+      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Habilitar', variant: 'outline-primary', size: 'sm' }
     });
   },
 
@@ -397,7 +398,7 @@ const page = {
         title: 'Servicios',
         icon: 'fa-concierge-bell',
         content,
-        action: { type: 'link', url: '/servicios.html?edit=true', label: 'Editar', className: 's-btn s-btn-secondary s-btn-sm' }
+        action: { type: 'link', url: '/servicios.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
       });
     }
 
@@ -406,7 +407,7 @@ const page = {
       icon: 'fa-concierge-bell',
       flat: true,
       content: '<p class="inactive-text">No habilitado</p><p>Ofrecé turnos o atención por hora</p>',
-      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Habilitar', className: 's-btn s-btn-outline-primary s-btn-sm' }
+      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Habilitar', variant: 'outline-primary', size: 'sm' }
     });
   },
 
@@ -444,7 +445,7 @@ const page = {
       title: 'Entregas',
       icon: 'fa-truck',
       content,
-      action: { type: 'link', url: '/entrega.html?edit=true', label: 'Editar', className: 's-btn s-btn-secondary s-btn-sm' }
+      action: { type: 'link', url: '/entrega.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
     });
   },
 
@@ -454,7 +455,7 @@ const page = {
       title: 'Horarios',
       icon: 'fa-clock',
       content: `<p>${ok ? 'Configurados ✓' : 'Sin configurar'}</p>`,
-      action: { type: 'link', url: '/horarios.html?edit=true', label: 'Editar', className: 's-btn s-btn-secondary s-btn-sm' }
+      action: { type: 'link', url: '/horarios.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
     });
   },
 
@@ -478,7 +479,7 @@ const page = {
       icon: 'fa-robot',
       variant: 'primary',
       content: '<p>Personalidad, tono y comportamiento del asistente</p>',
-      action: { type: 'link', url: '/ia-config.html?edit=true', label: 'Editar', className: 's-btn s-btn-primary s-btn-sm' }
+      action: { type: 'link', url: '/ia-config.html?edit=true', label: 'Editar', variant: 'primary',   size: 'sm' }
     });
   },
 
@@ -512,8 +513,9 @@ const page = {
       action: {
         type: 'link',
         url: '/capacidadesCognitivas.html',
-        label: hayActivas ? 'Editar' : 'Configurar',
-        className: hayActivas ? 's-btn s-btn-primary s-btn-sm' : 's-btn s-btn-outline-primary s-btn-sm'
+        label:   hayActivas ? 'Editar' : 'Configurar',
+        variant: hayActivas ? 'primary' : 'outline-primary',
+        size:    'sm'
       }
     });
   },
@@ -525,7 +527,7 @@ const page = {
       variant: 'primary',
       highlight: true,
       content: '<p>Personalizá la apariencia y estética de tu IA</p>',
-      action: { type: 'link', url: '/visual.html', label: 'Acceder', className: 's-btn s-btn-primary s-btn-sm' }
+      action: { type: 'link', url: '/visual.html', label: 'Acceder', variant: 'primary',   size: 'sm' }
     });
   },
 
@@ -562,9 +564,10 @@ const page = {
       highlight: true,
       content,
       action: {
-        type: 'button',
-        label: cfg.label,
-        className: `s-btn s-btn-${cfg.variant} s-btn-sm`,
+        type:    'button',
+        label:   cfg.label,
+        variant: cfg.variant,
+        size:    'sm',
         onClick: () => this._generarEntidad()
       }
     });
@@ -589,7 +592,7 @@ const page = {
         type: 'link',
         url: '/link-publico.html',
         label: 'Ver link y QR',
-        className: 's-btn s-btn-primary s-btn-sm'
+        variant: 'primary',   size: 'sm'
       }
     });
   },
@@ -605,7 +608,7 @@ const page = {
       title: 'Estadísticas',
       icon: 'fa-chart-bar',
       content: '<p>Visitas, consultas y conversiones de tu landing</p>',
-      action: { type: 'link', url: '/stats.html', label: 'Ver estadísticas', className: 's-btn s-btn-secondary s-btn-sm' }
+      action: { type: 'link', url: '/stats.html', label: 'Ver estadísticas', variant: 'secondary', size: 'sm' }
     }));
 
     return grid;
@@ -669,9 +672,7 @@ const page = {
     const btn = document.querySelector('#card-generar-entidad button');
     if (!btn || btn.disabled) return;
 
-    const originalHTML = btn.innerHTML;
-    btn.disabled  = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+    btn.setLoading(true);
 
     try {
       console.log('[dashboard] Generando entidad para:', this._data.comercio.id);
@@ -710,8 +711,7 @@ const page = {
     } catch (err) {
       console.error('[dashboard] Error generando entidad:', err);
       showToast('Error: ' + err.message, 'error');
-      btn.innerHTML = originalHTML;
-      btn.disabled  = false;
+      btn.setLoading(false);
     }
   },
 
@@ -733,21 +733,38 @@ const page = {
           <input type="checkbox" id="acceptHVTerms">
           Acepto los términos del plan High Value
         </label>
-        <div class="modal-actions">
-          <button id="cancelHV"  class="s-btn s-btn-secondary s-btn-sm">Cancelar</button>
-          <button id="confirmHV" class="s-btn s-btn-primary   s-btn-sm" disabled>Activar</button>
-        </div>
+        <div class="modal-actions"></div>
       </div>
     `;
 
     document.body.appendChild(modal);
 
-    const checkbox   = modal.querySelector('#acceptHVTerms');
-    const confirmBtn = modal.querySelector('#confirmHV');
+    const checkbox    = modal.querySelector('#acceptHVTerms');
+    const actionsDiv  = modal.querySelector('.modal-actions');
 
-    checkbox.addEventListener('change', () => { confirmBtn.disabled = !checkbox.checked; });
+    const cancelBtn = createButton({
+      label:   'Cancelar',
+      variant: 'secondary',
+      size:    'sm',
+      onClick: () => modal.remove()
+    });
+
+    const confirmBtn = createButton({
+      label:    'Activar',
+      variant:  'primary',
+      size:     'sm',
+      disabled: true,
+    });
+
+    actionsDiv.appendChild(cancelBtn);
+    actionsDiv.appendChild(confirmBtn);
+
+    checkbox.addEventListener('change', () => {
+      checkbox.checked ? confirmBtn.enable() : confirmBtn.disable();
+    });
 
     confirmBtn.addEventListener('click', async () => {
+      confirmBtn.setLoading(true);
       try {
         const { updateDoc, doc, db } = await import('firebase/firestore');
         await updateDoc(doc(db, 'comercios', this._data.comercio.id), {
@@ -762,10 +779,10 @@ const page = {
         this.render();
       } catch (err) {
         showToast('Error al activar', 'error');
+        confirmBtn.setLoading(false);
       }
     });
 
-    modal.querySelector('#cancelHV').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   }
 };
