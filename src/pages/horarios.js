@@ -11,10 +11,10 @@ import { mountLayout }           from '/src/skeleton/layout/index.js';
 import { runFlowController } from '/src/controllers/flowController.js';
 
 // ==================== COMPONENTES ====================
-import { createButton }            from '/src/skeleton/components/button/index.js';
-import { createCard }              from '/src/skeleton/components/card/index.js';
-import { showToast }               from '/src/skeleton/components/toast/index.js';
-import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
+import { createButton }           from '/src/skeleton/components/button/index.js';
+import { createCard }             from '/src/skeleton/components/card/index.js';
+import { showToast }              from '/src/skeleton/components/toast/index.js';
+import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 
 import './horarios.css';
 
@@ -36,9 +36,7 @@ const adapter = (options) => createFirebaseAdapter(options);
 // ==================== LIFECYCLE ====================
 runLifecycle({
   adapter,
-  options: {
-    loadingMessage: 'Cargando horarios...',
-  },
+  options: { loadingMessage: 'Cargando horarios...' },
 
   async onReady(ctx) {
     await runFlowController(ctx.user.uid);
@@ -53,10 +51,10 @@ runLifecycle({
 // ============================================================
 function getDefaultDaySchedule() {
   return {
-    closed: false,
+    closed:     false,
     continuous: true,
-    open: "09:00",
-    close: "18:00",
+    open:       "09:00",
+    close:      "18:00",
     morning:   { enabled: true, open: "08:00", close: "13:00" },
     afternoon: { enabled: true, open: "16:00", close: "21:00" }
   };
@@ -64,10 +62,8 @@ function getDefaultDaySchedule() {
 
 function ensureHorariosStructure(horariosData) {
   const result = {};
-
   DAYS.forEach(day => {
     const existing = horariosData?.[day];
-
     if (!existing) {
       result[day] = getDefaultDaySchedule();
     } else {
@@ -89,7 +85,6 @@ function ensureHorariosStructure(horariosData) {
       };
     }
   });
-
   return result;
 }
 
@@ -109,13 +104,20 @@ function render(ctx, state) {
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
-  const refs = {
-    dayCards: [],
-    guardarBtn: null,
-  };
+  const refs = { dayCards: [] };
 
   const uiState = {
     horarios: state.horarios,
+  };
+
+  // Snapshot para dirty state
+  const originalSnapshot = structuredClone(state.horarios);
+
+  const dirtyController = {
+    hasUnsavedChanges: () =>
+      JSON.stringify(uiState.horarios) !== JSON.stringify(originalSnapshot),
+    markSaved: () =>
+      Object.assign(originalSnapshot, structuredClone(uiState.horarios))
   };
 
   // ==================== HEADER ====================
@@ -129,12 +131,12 @@ function render(ctx, state) {
 
   // ==================== AI CARD ====================
   page.appendChild(createCard({
-    title: '¡Tu IA conocerá tus horarios!',
-    icon: 'fa-robot',
-    variant: 'info',
+    title:     '¡Tu IA conocerá tus horarios!',
+    icon:      'fa-robot',
+    variant:   'info',
     highlight: true,
-    content: 'Configurando tus horarios, tu asistente sabrá cuándo puede atender clientes y gestionar pedidos automáticamente.',
-    compact: true
+    compact:   true,
+    content:   'Configurando tus horarios, tu asistente sabrá cuándo puede atender clientes y gestionar pedidos automáticamente.'
   }));
 
   // ==================== GRID DE DÍAS ====================
@@ -154,8 +156,8 @@ function render(ctx, state) {
   quickActions.className = 'quick-actions';
 
   quickActions.appendChild(createButton({
-    label: 'Copiar lunes a todos',
-    icon: 'fa-copy',
+    label:   'Copiar lunes a todos',
+    icon:    'fa-copy',
     variant: 'secondary',
     onClick: () => {
       const lunes = structuredClone(uiState.horarios.lunes);
@@ -163,36 +165,50 @@ function render(ctx, state) {
         if (day !== 'lunes') uiState.horarios[day] = structuredClone(lunes);
       });
       rebuildGrid(grid, uiState, refs);
+      document.dispatchEvent(new Event('change')); // ✅ notificar al botón
       showToast('Horarios de lunes aplicados a todos los días', 'success');
     }
   }));
 
   quickActions.appendChild(createButton({
-    label: 'Cerrar todos',
-    icon: 'fa-times-circle',
+    label:   'Cerrar todos',
+    icon:    'fa-times-circle',
     variant: 'secondary',
     onClick: () => {
       DAYS.forEach(day => { uiState.horarios[day].closed = true; });
       rebuildGrid(grid, uiState, refs);
+      document.dispatchEvent(new Event('change')); // ✅ notificar al botón
       showToast('Todos los días marcados como cerrado', 'info');
     }
   }));
 
   page.appendChild(quickActions);
 
-  // ==================== BOTÓN GUARDAR (onboarding-button canónico) ====================
-  refs.guardarBtn = createOnboardingButton({
-    stepName: 'horarios',
-    getData: () => ({
-      horarios: uiState.horarios,
-      comercioId: ctx.comercioId,
-    }),
-    validate: () => DAYS.some(day => !uiState.horarios[day].closed),
-  });
-
+  // ==================== BOTÓN GUARDAR ====================
   const btnContainer = document.createElement('div');
   btnContainer.style.marginTop = '30px';
-  btnContainer.appendChild(refs.guardarBtn);
+
+  btnContainer.appendChild(createOnboardingButton({
+    stepName: 'horarios',
+
+    validate: () => DAYS.some(day => !uiState.horarios[day].closed),
+
+    getData: () => ({
+      horarios:   uiState.horarios,
+      comercioId: ctx.comercioId,
+    }),
+
+    dirtyController,
+
+    getLabel: () => {
+      if (ctx.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
+      return 'Guardar y continuar';
+    },
+
+    onSuccess: () => showToast('Horarios guardados correctamente', 'success'),
+    onError:   (err) => showToast('Error al guardar: ' + err.message, 'error'),
+  }));
+
   page.appendChild(btnContainer);
 }
 
@@ -214,10 +230,10 @@ function rebuildGrid(grid, uiState, refs) {
 // ============================================================
 function createDayCard(day, uiState, refs) {
   const schedule = uiState.horarios[day];
-  const isOpen = !schedule.closed;
+  const isOpen   = !schedule.closed;
 
   const card = document.createElement('div');
-  card.className = `day-card ${isOpen ? 'active' : ''}`;
+  card.className  = `day-card ${isOpen ? 'active' : ''}`;
   card.dataset.day = day;
 
   card.appendChild(createDayHeader(day, isOpen, uiState, refs));
@@ -238,8 +254,8 @@ function createDayHeader(day, isOpen, uiState, refs) {
   toggle.className = 'day-toggle';
 
   const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.id = `toggle_${day}`;
+  checkbox.type    = 'checkbox';
+  checkbox.id      = `toggle_${day}`;
   checkbox.checked = isOpen;
 
   const label = document.createElement('label');
@@ -252,6 +268,7 @@ function createDayHeader(day, isOpen, uiState, refs) {
   checkbox.addEventListener('change', (e) => {
     uiState.horarios[day].closed = !e.target.checked;
     updateDayCard(day, uiState, refs);
+    document.dispatchEvent(new Event('change')); // ✅ notificar al botón
   });
 
   toggle.appendChild(checkbox);
@@ -262,13 +279,13 @@ function createDayHeader(day, isOpen, uiState, refs) {
 }
 
 function buildDayContent(day, uiState, refs) {
-  const schedule = uiState.horarios[day];
+  const schedule  = uiState.horarios[day];
   const container = document.createElement('div');
   container.className = 'day-content';
 
   if (schedule.closed) {
     const msg = document.createElement('p');
-    msg.className = 'closed-message';
+    msg.className   = 'closed-message';
     msg.textContent = 'Este día el comercio permanece cerrado';
     container.appendChild(msg);
     return container;
@@ -297,13 +314,14 @@ function createModeToggle(day, isContinuous, uiState, refs) {
   label.className = 'schedule-type-label';
 
   const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.id = `continuous_${day}`;
+  checkbox.type    = 'checkbox';
+  checkbox.id      = `continuous_${day}`;
   checkbox.checked = isContinuous;
 
   checkbox.addEventListener('change', (e) => {
     uiState.horarios[day].continuous = e.target.checked;
     updateDayCard(day, uiState, refs);
+    document.dispatchEvent(new Event('change')); // ✅ notificar al botón
   });
 
   const span = document.createElement('span');
@@ -318,7 +336,7 @@ function createModeToggle(day, isContinuous, uiState, refs) {
 
 function createContinuousSchedule(day, uiState) {
   const schedule = uiState.horarios[day];
-  const wrapper = document.createElement('div');
+  const wrapper  = document.createElement('div');
   wrapper.className = 'continuous-schedule';
 
   const title = document.createElement('h4');
@@ -329,17 +347,13 @@ function createContinuousSchedule(day, uiState) {
   timeWrapper.className = 'time-inputs';
 
   timeWrapper.appendChild(createTimeInput({
-    id: `open_${day}`,
-    label: 'Apertura',
-    value: schedule.open,
-    onChange: (v) => { schedule.open = v; }
+    id: `open_${day}`, label: 'Apertura', value: schedule.open,
+    onChange: (v) => { schedule.open = v; document.dispatchEvent(new Event('change')); }
   }));
 
   timeWrapper.appendChild(createTimeInput({
-    id: `close_${day}`,
-    label: 'Cierre',
-    value: schedule.close,
-    onChange: (v) => { schedule.close = v; }
+    id: `close_${day}`, label: 'Cierre', value: schedule.close,
+    onChange: (v) => { schedule.close = v; document.dispatchEvent(new Event('change')); }
   }));
 
   wrapper.appendChild(timeWrapper);
@@ -348,7 +362,7 @@ function createContinuousSchedule(day, uiState) {
 
 function createSplitSchedule(day, uiState, refs) {
   const schedule = uiState.horarios[day];
-  const wrapper = document.createElement('div');
+  const wrapper  = document.createElement('div');
   wrapper.className = 'split-schedule';
 
   wrapper.appendChild(createPeriodSection({
@@ -379,13 +393,14 @@ function createPeriodSection({ day, period, label, icon, data, uiState, refs }) 
   toggleLabel.className = 'period-toggle';
 
   const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.id = `${period}_enabled_${day}`;
+  checkbox.type    = 'checkbox';
+  checkbox.id      = `${period}_enabled_${day}`;
   checkbox.checked = data.enabled;
 
   checkbox.addEventListener('change', (e) => {
     data.enabled = e.target.checked;
     updateDayCard(day, uiState, refs);
+    document.dispatchEvent(new Event('change')); // ✅ notificar al botón
   });
 
   const span = document.createElement('span');
@@ -398,7 +413,7 @@ function createPeriodSection({ day, period, label, icon, data, uiState, refs }) 
 
   if (!data.enabled) {
     const msg = document.createElement('p');
-    msg.className = 'period-disabled';
+    msg.className   = 'period-disabled';
     msg.textContent = `${label} cerrado`;
     section.appendChild(msg);
     return section;
@@ -408,17 +423,13 @@ function createPeriodSection({ day, period, label, icon, data, uiState, refs }) 
   timeWrapper.className = 'time-inputs';
 
   timeWrapper.appendChild(createTimeInput({
-    id: `${period}_open_${day}`,
-    label: 'Apertura',
-    value: data.open,
-    onChange: (v) => { data.open = v; }
+    id: `${period}_open_${day}`, label: 'Apertura', value: data.open,
+    onChange: (v) => { data.open = v; document.dispatchEvent(new Event('change')); }
   }));
 
   timeWrapper.appendChild(createTimeInput({
-    id: `${period}_close_${day}`,
-    label: 'Cierre',
-    value: data.close,
-    onChange: (v) => { data.close = v; }
+    id: `${period}_close_${day}`, label: 'Cierre', value: data.close,
+    onChange: (v) => { data.close = v; document.dispatchEvent(new Event('change')); }
   }));
 
   section.appendChild(timeWrapper);
@@ -433,8 +444,8 @@ function createTimeInput({ id, label, value, onChange }) {
   labelEl.textContent = label;
 
   const input = document.createElement('input');
-  input.type = 'time';
-  input.id = id;
+  input.type  = 'time';
+  input.id    = id;
   input.value = value;
 
   input.addEventListener('change', (e) => onChange(e.target.value));
@@ -449,7 +460,7 @@ function createTimeInput({ id, label, value, onChange }) {
 // UPDATE DAY CARD
 // ============================================================
 function updateDayCard(day, uiState, refs) {
-  const index = DAYS.indexOf(day);
+  const index   = DAYS.indexOf(day);
   const oldCard = refs.dayCards[index];
   const newCard = createDayCard(day, uiState, refs);
   oldCard.replaceWith(newCard);
