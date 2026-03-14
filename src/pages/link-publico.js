@@ -77,10 +77,21 @@ function render(ctx, state) {
   page.appendChild(renderLinkCard(state));
   page.appendChild(renderPreviewCard(state));
   page.appendChild(renderDescargasCard(state));
+
+  // ── Botón volver al dashboard ─────────────────────────────
+  const btnContainer = document.createElement('div');
+  btnContainer.className = 'back-btn-container';
+  btnContainer.appendChild(createButton({
+    label:   'Volver al dashboard',
+    variant: 'secondary',
+    icon:    'fa-arrow-left',
+    onClick: () => window.location.href = '/dashboard.html'
+  }));
+  page.appendChild(btnContainer);
 }
 
 // ============================================================
-// SIN SLUG — Patrón 3: solo botón de navegación
+// SIN SLUG
 // ============================================================
 function renderSinSlug() {
   const container = document.createElement('div');
@@ -199,8 +210,7 @@ function renderDescargasCard(state) {
           showToast('El QR todavía no está listo', 'warning');
           return;
         }
-        btn.disabled  = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando…';
+        btn.setLoading(true);
         try {
           const result = exportCartel({ formatId: format.id, qrCanvas: state.qrCanvas });
           result.download({ name: `indiceia-${format.id}` });
@@ -209,8 +219,7 @@ function renderDescargasCard(state) {
           console.error('[link-publico] error exportando:', err);
           showToast('Error al generar cartel', 'error');
         } finally {
-          btn.disabled  = false;
-          btn.innerHTML = `<i class="fas fa-download"></i> Descargar ${format.label}`;
+          btn.setLoading(false);
         }
       }
     });
