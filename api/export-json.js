@@ -1,7 +1,7 @@
 // /api/entity-factory/index.js
 // Entity Factory oficial — Ensamblador A + B + C (ÍndiceIA v1.0)
 
-import blockA from './base/blockA.json' assert { type: 'json' };
+import blockA from './base/blockA.json' with { type: 'json' };
 import { loadVisualTemplate } from './utils/template-loader.js';
 
 /**
