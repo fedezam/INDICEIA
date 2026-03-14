@@ -34,8 +34,6 @@ function buildPipeline(offerType = {}) {
   if (servicios) steps.push("servicios");
   if (productos) steps.push("productos");
 
-  // Entrega solo aplica si el comercio vende productos.
-  // Los servicios ya tienen su propia modalidad (presencial, remoto, a domicilio).
   if (productos) steps.push("entrega");
 
   steps.push("horarios");
@@ -98,6 +96,12 @@ export async function runFlowController(uid) {
       if (currentPage !== "mi-comercio") {
         window.location.href = "/mi-comercio.html";
       }
+      return;
+    }
+
+    // ✅ FIX: edit mode siempre puede acceder a mi-comercio
+    // aunque el paso esté completo y el usuario ya tenga comercioId
+    if (currentPage === "mi-comercio" && editMode) {
       return;
     }
 
