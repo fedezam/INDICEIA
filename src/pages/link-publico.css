@@ -1,6 +1,7 @@
 /* ============================================================
    src/pages/link-publico/link-publico.css
-   Estilos propios — cards, botones y toast vienen del skeleton
+   Solo estilos propios de esta página.
+   Cards, botones y toast vienen del skeleton.
    ============================================================ */
 
 /* ── Layout general ─────────────────────────────────────── */
@@ -30,7 +31,7 @@
 
 .page-header p {
   margin: 0;
-  color: #555;
+  color: var(--s-gray, #adb5bd);
   font-size: 15px;
 }
 
@@ -45,13 +46,14 @@
 .public-url {
   flex: 1;
   padding: 14px 16px;
-  background: #f1f1f1;
-  border-radius: 10px;
+  background: var(--s-light, #f8f9fa);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     'Liberation Mono', monospace;
   font-size: 0.9rem;
   word-break: break-all;
-  color: #000;
+  color: var(--s-dark, #343a40);
 }
 
 /* ── Preview del cartel ─────────────────────────────────── */
@@ -60,18 +62,17 @@
   justify-content: center;
   align-items: center;
   padding: 24px;
-  background: #fafafa;
-  border-radius: 14px;
-  border: 1px dashed #ddd;
+  background: var(--s-light, #f8f9fa);
+  border-radius: var(--s-radius-lg, 6px);
+  border: 1px dashed var(--s-border, #d2d6de);
   margin-top: 16px;
 }
 
 .cartel-preview canvas {
   max-width: 100%;
   height: auto !important;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  border-radius: var(--s-radius, 4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* ── Botones de descarga ────────────────────────────────── */
@@ -82,34 +83,17 @@
   flex-wrap: wrap;
 }
 
-/* Los botones vienen de createButton (skeleton) pero les damos
-   el look negro del original para mantener coherencia visual */
-.carteles-actions .s-btn {
-  padding: 12px 20px;
-  border-radius: 10px;
-  border: none;
-  background: #000;
-  color: #fff;
-  font-size: 0.95rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-}
-
-.carteles-actions .s-btn:hover {
-  background: #222;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-}
-
-.carteles-actions .s-btn:active {
-  transform: translateY(0);
-  box-shadow: none;
+/* ── Botón volver ───────────────────────────────────────── */
+.back-btn-container {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
 }
 
 /* ── Estado vacío (sin slug) ────────────────────────────── */
 .empty-state {
   text-align: center;
   padding: 60px 24px;
-  color: #555;
 }
 
 .empty-state i {
@@ -129,7 +113,7 @@
 .empty-state p {
   font-size: 15px;
   margin: 0 0 24px 0;
-  color: #555;
+  color: var(--s-gray, #adb5bd);
 }
 
 /* ── Responsive ─────────────────────────────────────────── */
@@ -148,9 +132,5 @@
 
   .carteles-actions {
     flex-direction: column;
-  }
-
-  .carteles-actions .s-btn {
-    width: 100%;
   }
 }
