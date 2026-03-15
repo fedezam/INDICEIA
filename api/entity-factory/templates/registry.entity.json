@@ -1,5 +1,27 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2026-03-15T06:07:48.937Z",
-  "templates": {}
+  "last_updated": "2026-03-15T14:58:30.673Z",
+  "templates": {
+    "C1_SimpleCatalog": {
+      "id": "C1_SimpleCatalog",
+      "version": "1.0.0",
+      "paths": {
+        "template_url": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/template.txt"
+      },
+      "supports": {
+        "categories": true,
+        "cart": true,
+        "single_image_per_item": true,
+        "multiple_prices": true,
+        "search": false,
+        "filters": false,
+        "variants": false
+      },
+      "requirements": {
+        "whatsapp_number": "obligatorio",
+        "catalogo.categorias": "obligatorio",
+        "catalogo.items": "obligatorio"
+      }
+    }
+  }
 }

@@ -1,5 +1,29 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2026-03-15T06:07:48.937Z",
-  "templates": []
+  "last_updated": "2026-03-15T14:58:30.673Z",
+  "templates": [
+    {
+      "id": "C1_SimpleCatalog",
+      "name": "Menú Simple",
+      "version": "1.0.0",
+      "tier": "C1",
+      "description": "Catálogo visual simple y rápido con categorías, carrito de pedidos y checkout directo por WhatsApp. Soporta múltiples precios por producto (ideal para tamaños). Perfecto para comercios gastronómicos que venden principalmente por WhatsApp. Carga rápida, optimizado para móviles y experiencia de usuario fluida.",
+      "ideal_for": [
+        "pizzerías",
+        "restaurantes",
+        "cafeterías",
+        "panaderías",
+        "bares",
+        "heladerías",
+        "delivery de comida",
+        "comercios con catálogo simple"
+      ],
+      "visual": {
+        "iframe_url": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/C1_SimpleCatalog_full.html"
+      },
+      "previews": {
+        "thumbnail": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/thumbnail.png"
+      }
+    }
+  ]
 }
