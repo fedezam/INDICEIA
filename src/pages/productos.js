@@ -198,6 +198,23 @@ const page = {
     const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                type: 'number', placeholder: '0', value: this._data.draftManual.stock });
     const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',            required: true, placeholder: 'Ej: Pizzas', helpText: 'Necesaria para agrupar productos en el catálogo visual', value: this._data.draftManual.categoria });
 
+    // Autocomplete con categorías ya usadas
+    const categoriasExistentes = [...new Set(
+      this._data.productos.map(p => p.categoria).filter(c => c && c.trim())
+    )];
+    if (categoriasExistentes.length > 0) {
+      const datalist = document.createElement('datalist');
+      datalist.id = 'categorias-datalist';
+      categoriasExistentes.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        datalist.appendChild(opt);
+      });
+      categoria.appendChild(datalist);
+      const input = categoria.querySelector('input');
+      if (input) input.setAttribute('list', 'categorias-datalist');
+    }
+
     const _saveBaseDraft = () => {
       this._data.draftManual.codigo      = codigo.getValue();
       this._data.draftManual.nombre      = nombre.getValue();
@@ -257,7 +274,7 @@ const page = {
 
     container.appendChild(btnAgregar);
 
-    return createCard({ title: this._data.editingIndex !== null ? 'Editando Producto' : 'Agregar Producto Manualmente', icon: this._data.editingIndex !== null ? 'fa-edit' : 'fa-plus-circle', content: container });
+    return createCard({ title: this._data.editingIndex !== null ? 'Editando Producto' : 'Agregar Producto Manualmente', icon: this._data.editingIndex !== null ? 'fa-edit' : 'fa-plus-circle', id: 'form-manual-card', content: container });
   },
 
   _renderAdvancedFields() {
@@ -711,23 +728,23 @@ const page = {
     this._data.editingIndex = index;
     this._data.showAdvanced = !!(p.subcategoria || p.marca || p.imagen || p.disponibilidad !== 'inmediata');
     this._data.draftManual = {
-      codigo:         p.codigo        || '',
-      nombre:         p.nombre        || '',
-      descripcion:    p.descripcion   || '',
-      precio:         p.precio_final  ? String(p.precio_final) : '',
-      stock:          p.stock         !== undefined ? String(p.stock) : '',
-      categoria:      p.categoria     || '',
-      subcategoria:   p.subcategoria  || '',
-      marca:          p.marca         || '',
-      imagen:         p.imagen        || '',
+      codigo:         p.codigo         || '',
+      nombre:         p.nombre         || '',
+      descripcion:    p.descripcion    || '',
+      precio:         p.precio_final   ? String(p.precio_final) : '',
+      stock:          p.stock          !== undefined ? String(p.stock) : '',
+      categoria:      p.categoria      || '',
+      subcategoria:   p.subcategoria   || '',
+      marca:          p.marca          || '',
+      imagen:         p.imagen         || '',
       disponibilidad: p.disponibilidad || 'inmediata',
       atributos:      p.atributos ? Object.entries(p.atributos).map(([key, value]) => ({ key, value })) : [],
-      etiquetas:      p.etiquetas     || []
+      etiquetas:      p.etiquetas      || []
     };
     this.render();
-    // Scroll al form
+    // Scroll al form de carga individual (no al de importación)
     setTimeout(() => {
-      const formCard = document.querySelector('.card');
+      const formCard = document.getElementById('form-manual-card');
       if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 50);
   },
