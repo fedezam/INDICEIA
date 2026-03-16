@@ -190,6 +190,7 @@ const page = {
     console.log('[productos] _renderFormCard()');
 
     const container = document.createElement('div');
+    container.id = 'form-manual-card';
 
     const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',   placeholder: 'SKU123', helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
     const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto', required: true, placeholder: 'Ej: Pizza Muzzarella Grande', value: this._data.draftManual.nombre });
@@ -274,7 +275,7 @@ const page = {
 
     container.appendChild(btnAgregar);
 
-    return createCard({ title: this._data.editingIndex !== null ? 'Editando Producto' : 'Agregar Producto Manualmente', icon: this._data.editingIndex !== null ? 'fa-edit' : 'fa-plus-circle', id: 'form-manual-card', content: container });
+    return createCard({ title: this._data.editingIndex !== null ? 'Editando Producto' : 'Agregar Producto Manualmente', icon: this._data.editingIndex !== null ? 'fa-edit' : 'fa-plus-circle', content: container });
   },
 
   _renderAdvancedFields() {
