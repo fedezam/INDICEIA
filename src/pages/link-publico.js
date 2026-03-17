@@ -18,7 +18,6 @@ const PUBLIC_BASE_URL = 'https://indiceia-public.vercel.app';
 
 // Canales con sus metadatos para renderizar
 const CANALES = [
-  { id: 'qr',  label: 'QR / Vidriera', icon: 'fa-qrcode',         hint: 'Pegalo en tu local o vidriera' },
   { id: 'ig',  label: 'Instagram',     icon: 'fa-instagram',       hint: 'Para tu bio o stories'         },
   { id: 'fb',  label: 'Facebook',      icon: 'fa-facebook',        hint: 'Para tu página o publicaciones' },
   { id: 'wa',  label: 'WhatsApp',      icon: 'fa-whatsapp',        hint: 'Para compartir por mensaje'    },
@@ -66,7 +65,7 @@ const page = {
 
     // El QR apunta al link con src=qr
     console.log('[link-publico] generando QR...');
-    this._data.qrCanvas = await generateQR(this._data.links.qr);
+    this._data.qrCanvas = await generateQR(`${PUBLIC_BASE_URL}/c/${slug}?src=qr`);
     console.log('[link-publico] QR generado:', this._data.qrCanvas);
 
     console.groupEnd();
