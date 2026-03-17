@@ -1,11 +1,11 @@
 // ============================================================
 // src/pages/stats.js
 // ============================================================
-import { runSkeleton }           from '/src/skeleton/skeleton.js';
-import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
-import { createCard }            from '/src/skeleton/components/card/index.js';
-import { collection, getDocs }   from 'firebase/firestore';
-import { db }                    from '/src/services/firebase/firebase.js';
+import { runSkeleton }                     from '/src/skeleton/skeleton.js';
+import { createFirebaseAdapter }           from '/src/skeleton/adapters/firebaseAdapter.js';
+import { createCard }                      from '/src/skeleton/components/card/index.js';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db }                              from '/src/services/firebase/firebase.js';
 import './stats.css';
 
 // ============================================================
@@ -17,10 +17,11 @@ const page = {
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
-    const comercioId = ctx.comercioId;
-    if (!comercioId) return;
+    const slug = ctx.comercioData?.landing?.slug;
+    if (!slug) return;
 
-    const snap = await getDocs(collection(db, 'comercios', comercioId, 'stats'));
+    const q    = query(collection(db, 'landing_events'), where('destination', '==', slug));
+    const snap = await getDocs(q);
 
     const events = [];
     snap.forEach(d => events.push(d.data()));
