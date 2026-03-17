@@ -1,12 +1,12 @@
 // ============================================================
 // src/pages/stats.js
 // ============================================================
-import { runSkeleton }                     from '/src/skeleton/skeleton.js';
-import { createFirebaseAdapter }           from '/src/skeleton/adapters/firebaseAdapter.js';
-import { createCard }                      from '/src/skeleton/components/card/index.js';
-import { createButton }                    from '/src/skeleton/components/button/index.js';
+import { runSkeleton }                       from '/src/skeleton/skeleton.js';
+import { createFirebaseAdapter }             from '/src/skeleton/adapters/firebaseAdapter.js';
+import { createCard }                        from '/src/skeleton/components/card/index.js';
+import { createButton }                      from '/src/skeleton/components/button/index.js';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db }                              from '/src/services/firebase/firebase.js';
+import { db }                                from '/src/services/firebase/firebase.js';
 import './stats.css';
 
 // ============================================================
@@ -31,18 +31,16 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // PROCESS — toda la lógica de métricas
+  // PROCESS
   // ──────────────────────────────────────────────────────────
   _process(events) {
     if (!events.length) return null;
 
-    // ── Métricas generales ───────────────────────────────────
-    const views  = events.filter(e => e.event === 'landing_view').length;
-    const clicks = events.filter(e => e.event === 'talk_click').length;
-    const ctr      = views ? ((clicks / views) * 100).toFixed(1) : 0;
+    const views     = events.filter(e => e.event === 'landing_view').length;
+    const clicks    = events.filter(e => e.event === 'talk_click').length;
+    const ctr       = views ? ((clicks / views) * 100).toFixed(1) : 0;
     const abandonos = views - clicks;
 
-    // ── Tiempo de decisión ───────────────────────────────────
     const fps = {};
     events.forEach(e => {
       if (!e.fingerprint) return;
@@ -58,14 +56,13 @@ const page = {
       if (view && click) tiempos.push((click - view) / 1000);
     }
 
-    const tiempoPromedio   = tiempos.length
+    const tiempoPromedio = tiempos.length
       ? (tiempos.reduce((a, b) => a + b, 0) / tiempos.length).toFixed(1)
       : null;
-    const total            = tiempos.length;
-    const rapidas          = total ? ((tiempos.filter(t => t < 5).length  / total) * 100).toFixed(1) : 0;
-    const lentas           = total ? ((tiempos.filter(t => t > 20).length / total) * 100).toFixed(1) : 0;
+    const total   = tiempos.length;
+    const rapidas = total ? ((tiempos.filter(t => t < 5).length  / total) * 100).toFixed(1) : 0;
+    const lentas  = total ? ((tiempos.filter(t => t > 20).length / total) * 100).toFixed(1) : 0;
 
-    // ── Dispositivos ─────────────────────────────────────────
     const dispositivos = {};
     events.forEach(e => {
       const d = e.device || 'unknown';
@@ -74,7 +71,6 @@ const page = {
       if (e.event === 'talk_click')   dispositivos[d].clicks++;
     });
 
-    // ── Origen (src) — nuevo ─────────────────────────────────
     const origenes = {};
     events.forEach(e => {
       if (e.event !== 'landing_view') return;
@@ -88,7 +84,6 @@ const page = {
       if (origenes[src]) origenes[src].clicks++;
     });
 
-    // ── Horarios ─────────────────────────────────────────────
     const horarios = {};
     events.forEach(e => {
       const dt = e.timestamp?.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
@@ -98,11 +93,7 @@ const page = {
       if (e.event === 'talk_click')   horarios[h].clicks++;
     });
 
-    return {
-      views, clicks, ctr, abandonos,
-      tiempoPromedio, rapidas, lentas,
-      dispositivos, origenes, horarios
-    };
+    return { views, clicks, ctr, abandonos, tiempoPromedio, rapidas, lentas, dispositivos, origenes, horarios };
   },
 
   // ──────────────────────────────────────────────────────────
@@ -118,16 +109,11 @@ const page = {
       <h1><i class="fas fa-chart-bar"></i> Estadísticas</h1>
       <p class="page-subtitle">Cómo interactúan tus visitantes con tu asistente IA</p>
     `;
-    header.appendChild(createButton({
-      label:   'Volver al dashboard',
-      variant: 'secondary',
-      icon:    'fa-arrow-left',
-      onClick: () => window.location.href = '/dashboard.html'
-    }));
     root.appendChild(header);
 
     if (!this._stats) {
       root.appendChild(this._renderSinDatos());
+      root.appendChild(this._renderBotonVolver());
       return;
     }
 
@@ -136,6 +122,22 @@ const page = {
     root.appendChild(this._renderDispositivos());
     root.appendChild(this._renderTiempo());
     root.appendChild(this._renderHorarios());
+    root.appendChild(this._renderBotonVolver());
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // BOTÓN VOLVER
+  // ──────────────────────────────────────────────────────────
+  _renderBotonVolver() {
+    const div = document.createElement('div');
+    div.className = 'page-footer-action';
+    div.appendChild(createButton({
+      label:   'Volver al dashboard',
+      variant: 'secondary',
+      icon:    'fa-arrow-left',
+      onClick: () => window.location.href = '/dashboard.html'
+    }));
+    return div;
   },
 
   // ──────────────────────────────────────────────────────────
@@ -157,10 +159,8 @@ const page = {
   // ──────────────────────────────────────────────────────────
   _renderGeneral() {
     const { views, clicks, ctr, abandonos } = this._stats;
-
     const container = document.createElement('div');
     container.className = 'kpi-grid';
-
     const ctrClass = ctr >= 50 ? 'ctr-high' : ctr >= 25 ? 'ctr-medium' : 'ctr-low';
 
     container.innerHTML = `
@@ -186,15 +186,11 @@ const page = {
       </div>
     `;
 
-    return createCard({
-      title:   'General',
-      icon:    'fa-chart-pie',
-      content: container
-    });
+    return createCard({ title: 'General', icon: 'fa-chart-pie', content: container });
   },
 
   // ──────────────────────────────────────────────────────────
-  // ORIGEN DEL TRÁFICO (src)
+  // ORIGEN DEL TRÁFICO
   // ──────────────────────────────────────────────────────────
   _renderOrigenes() {
     const { origenes, views } = this._stats;
@@ -202,54 +198,43 @@ const page = {
     container.className = 'stats-list';
 
     const ICONOS = {
-      qr:     'fa-qrcode',
-      ig:     'fa-instagram',
-      fb:     'fa-facebook',
-      wa:     'fa-whatsapp',
-      web:    'fa-globe',
-      email:  'fa-envelope',
-      ads:    'fa-ad',
-      direct: 'fa-link'
+      qr: 'fa-qrcode', ig: 'fa-instagram', fb: 'fa-facebook',
+      wa: 'fa-whatsapp', web: 'fa-globe', email: 'fa-envelope',
+      ads: 'fa-ad', direct: 'fa-link'
     };
 
-    const sorted = Object.entries(origenes).sort((a, b) => b[1].views - a[1].views);
+    Object.entries(origenes)
+      .sort((a, b) => b[1].views - a[1].views)
+      .forEach(([src, data]) => {
+        const pct       = views ? ((data.views / views) * 100).toFixed(1) : 0;
+        const ctr       = data.views ? ((data.clicks / data.views) * 100).toFixed(1) : 0;
+        const icon      = ICONOS[src] || (data.srcType === 'entity' ? 'fa-robot' : 'fa-link');
+        const esEntidad = data.srcType === 'entity';
 
-    sorted.forEach(([src, data]) => {
-      const pct     = views ? ((data.views / views) * 100).toFixed(1) : 0;
-      const ctr     = data.views ? ((data.clicks / data.views) * 100).toFixed(1) : 0;
-      const icon    = ICONOS[src] || (data.srcType === 'entity' ? 'fa-robot' : 'fa-link');
-      const esEntidad = data.srcType === 'entity';
-
-      const row = document.createElement('div');
-      row.className = 'stats-row';
-      row.innerHTML = `
-        <div class="stats-row-label">
-          <i class="fas ${icon}"></i>
-          <span>${esEntidad ? `entidad: ${src}` : src}</span>
-          ${esEntidad ? '<span class="badge-entity">entidad</span>' : ''}
-        </div>
-        <div class="stats-row-bar">
-          <div class="bar-fill" style="width:${pct}%"></div>
-        </div>
-        <div class="stats-row-nums">
-          <span>${data.views}v</span>
-          <span>${data.clicks}c</span>
-          <span class="ctr-${ctr >= 50 ? 'high' : ctr >= 25 ? 'medium' : 'low'}">${ctr}%</span>
-        </div>
-      `;
-      container.appendChild(row);
-    });
+        const row = document.createElement('div');
+        row.className = 'stats-row';
+        row.innerHTML = `
+          <div class="stats-row-label">
+            <i class="fas ${icon}"></i>
+            <span>${esEntidad ? `entidad: ${src}` : src}</span>
+            ${esEntidad ? '<span class="badge-entity">entidad</span>' : ''}
+          </div>
+          <div class="stats-row-bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+          <div class="stats-row-nums">
+            <span>${data.views}v</span>
+            <span>${data.clicks}c</span>
+            <span class="ctr-${ctr >= 50 ? 'high' : ctr >= 25 ? 'medium' : 'low'}">${ctr}%</span>
+          </div>
+        `;
+        container.appendChild(row);
+      });
 
     const hint = document.createElement('p');
     hint.className = 'stats-hint';
     hint.textContent = 'Mostrá desde qué canal te visitan más y cuál convierte mejor.';
     container.appendChild(hint);
 
-    return createCard({
-      title:   'Origen del tráfico',
-      icon:    'fa-share-alt',
-      content: container
-    });
+    return createCard({ title: 'Origen del tráfico', icon: 'fa-share-alt', content: container });
   },
 
   // ──────────────────────────────────────────────────────────
@@ -276,9 +261,7 @@ const page = {
             <i class="fab ${icon}"></i>
             <span>${device}</span>
           </div>
-          <div class="stats-row-bar">
-            <div class="bar-fill" style="width:${pct}%"></div>
-          </div>
+          <div class="stats-row-bar"><div class="bar-fill" style="width:${pct}%"></div></div>
           <div class="stats-row-nums">
             <span>${data.views}v</span>
             <span>${data.clicks}c</span>
@@ -293,11 +276,7 @@ const page = {
     hint.textContent = 'Detectá qué dispositivos usan tus visitantes.';
     container.appendChild(hint);
 
-    return createCard({
-      title:   'Dispositivos',
-      icon:    'fa-mobile-alt',
-      content: container
-    });
+    return createCard({ title: 'Dispositivos', icon: 'fa-mobile-alt', content: container });
   },
 
   // ──────────────────────────────────────────────────────────
@@ -332,11 +311,7 @@ const page = {
     hint.textContent = 'Menor tiempo promedio = mensaje claro y atractivo.';
     container.appendChild(hint);
 
-    return createCard({
-      title:   'Tiempo de decisión',
-      icon:    'fa-clock',
-      content: container
-    });
+    return createCard({ title: 'Tiempo de decisión', icon: 'fa-clock', content: container });
   },
 
   // ──────────────────────────────────────────────────────────
@@ -370,11 +345,7 @@ const page = {
     hint.textContent = 'Las horas con más tráfico son las mejores para publicar.';
     container.appendChild(hint);
 
-    return createCard({
-      title:   'Horarios',
-      icon:    'fa-calendar-alt',
-      content: container
-    });
+    return createCard({ title: 'Horarios', icon: 'fa-calendar-alt', content: container });
   }
 };
 
