@@ -120,9 +120,17 @@ const page = {
     header.innerHTML = `
       <h1><i class="fas fa-link"></i> Link público</h1>
       <p>Este es el acceso directo a tu comercio en ÍndiceIA</p>
-    `;
-    return header;
-  },
+  `;
+
+  header.appendChild(createButton({
+    label:   'Volver al dashboard',
+    variant: 'secondary',
+    icon:    'fa-arrow-left',
+    onClick: () => window.location.href = '/dashboard.html'
+  }));
+
+  return header;
+},
 
   // ──────────────────────────────────────────────────────────
   // LINKS CARD — uno por canal
