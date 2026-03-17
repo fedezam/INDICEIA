@@ -139,6 +139,12 @@
   box-shadow: none;
 }
 
+/* ── Botón pie de página ────────────────────────────────── */
+.page-footer-action {
+  margin-top: 8px;
+  padding-bottom: 16px;
+}
+
 /* ── Estado vacío (sin slug) ────────────────────────────── */
 .empty-state {
   text-align: center;
