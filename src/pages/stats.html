@@ -2,51 +2,14 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Estadísticas · ÍndiceIA</title>
-  <link rel="stylesheet" href="stats.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/src/skeleton/theme-variables.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="./stats.css" />
 </head>
 <body>
-  <header>
-    <h1>📊 Estadísticas de tu Landing</h1>
-    <p class="subtitle">Aprende cómo tus visitantes interactúan con tu IA y mejora tu mensaje</p>
-  </header>
-  <!-- GENERAL -->
-  <section class="kpi-section">
-    <h2>General</h2>
-    <div class="kpi">👥 Visitas totales: <span id="kpiViews">—</span></div>
-    <div class="kpi">🤖 Clicks "Hablar con la IA": <span id="kpiClicks">—</span></div>
-    <div class="kpi">📈 Tasa de conversión: <span id="kpiCTR">—</span></div>
-    <div class="kpi">📉 Abandonos: <span id="kpiAbandonos">—</span></div>
-    <p class="hint">El CTR indica qué porcentaje de visitantes realmente interactúa con tu IA.</p>
-  </section>
-  <!-- DISPOSITIVOS -->
-  <section class="kpi-section">
-    <h2>Dispositivos</h2>
-    <div id="kpiDevices"></div>
-    <p class="hint">Detecta qué dispositivos usan tus visitantes para optimizar compatibilidad.</p>
-  </section>
-  <!-- ORIGEN DEL TRÁFICO -->
-  <section class="kpi-section">
-    <h2>Origen del Tráfico</h2>
-    <div id="kpiReferrers"></div>
-    <p class="hint">Conocer la fuente de tus visitantes te permite enfocar tus campañas donde funciona.</p>
-  </section>
-  <!-- TIEMPO DE DECISIÓN -->
-  <section class="kpi-section">
-    <h2>Tiempo de decisión</h2>
-    <div id="kpiTiempo"></div>
-    <p class="hint">⏱ Indica qué tan rápido los visitantes hacen click. Menor tiempo = mensaje claro y atractivo.</p>
-  </section>
-  <!-- HORARIOS -->
-  <section class="kpi-section">
-    <h2>Horarios y días</h2>
-    <div id="kpiHorarios"></div>
-    <p class="hint">Detecta las horas con mayor interacción y planifica tus publicaciones y promociones.</p>
-  </section>
-  <footer>
-    <span>Asistente impulsado por ÍndiceIA</span>
-  </footer>
+  <div id="app"></div>
   <script type="module" src="./stats.js"></script>
 </body>
 </html>
