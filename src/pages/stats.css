@@ -186,6 +186,12 @@
   color: #888;
 }
 
+/* ── Botón pie de página ────────────────────────────────── */
+.page-footer-action {
+  margin-top: 8px;
+  padding-bottom: 16px;
+}
+
 /* ── Empty state ────────────────────────────────────────── */
 .empty-state {
   text-align: center;
