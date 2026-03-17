@@ -1,82 +1,242 @@
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #0f0f10;
-  color: #f4f4f5;
-  min-height: 100vh;
-  padding: 16px;
+/* ============================================================
+   src/pages/stats.css
+   Solo estilos propios — cards y componentes vienen del skeleton
+   ============================================================ */
+
+/* ── Layout general ─────────────────────────────────────── */
+#skeleton-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
 }
 
-header h1 {
-  text-align: center;
-  margin-bottom: 4px;
+/* ── Header ─────────────────────────────────────────────── */
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  margin: 0 0 8px 0;
   font-size: 2rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
 }
 
-header p.subtitle {
-  text-align: center;
-  color: #a1a1aa;
-  margin-bottom: 24px;
+.page-header h1 i {
+  color: var(--s-primary, #3c8dbc);
+  margin-right: 10px;
 }
 
-.kpi-section {
-  background: #18181b;
-  border: 1px solid #27272a;
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+.page-subtitle {
+  margin: 0;
+  color: #555;
+  font-size: 15px;
 }
 
-.kpi-section h2 {
-  font-size: 1.2rem;
-  margin-bottom: 8px;
-  color: #22c55e;
+/* ── KPI grid (general y tiempo) ────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
 }
 
-.kpi {
+.kpi-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.kpi-box {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  margin: 4px 0;
-  font-size: 1rem;
-}
-
-.hint {
-  margin-top: 8px;
-  font-size: 0.85rem;
-  color: #a1a1aa;
-}
-
-footer {
-  text-align: center;
-  margin-top: 24px;
-  font-size: 0.75rem;
-  color: #71717a;
-}
-
-footer span {
-  opacity: 0.7;
-}
-
-/* BARRAS DE PROGRESO */
-.kpi-bar {
-  background: #27272a;
+  gap: 6px;
+  padding: 16px 8px;
+  background: #f8f9fa;
   border-radius: 12px;
-  height: 16px;
-  width: 100%;
-  margin-top: 4px;
+  border: 1px solid #e9ecef;
+  text-align: center;
+}
+
+.kpi-box i {
+  font-size: 1.4rem;
+  color: var(--s-primary, #3c8dbc);
+}
+
+.kpi-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--s-dark, #343a40);
+  line-height: 1;
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+/* ── Colores CTR ────────────────────────────────────────── */
+.ctr-high   { color: #22c55e; }
+.ctr-medium { color: #facc15; }
+.ctr-low    { color: #ef4444; }
+
+/* ── Stats list (origenes y dispositivos) ───────────────── */
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: 160px 1fr 120px;
+  align-items: center;
+  gap: 12px;
+}
+
+.stats-row-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--s-dark, #343a40);
+}
+
+.stats-row-label i {
+  color: var(--s-primary, #3c8dbc);
+  width: 16px;
+  text-align: center;
+}
+
+.badge-entity {
+  font-size: 0.65rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 2px 6px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.stats-row-bar {
+  height: 10px;
+  background: #e9ecef;
+  border-radius: 20px;
   overflow: hidden;
 }
 
-.kpi-bar-fill {
+.bar-fill {
   height: 100%;
-  border-radius: 12px;
-  background-color: #22c55e;
-  width: 0%;
-  transition: width 0.5s ease;
+  background: var(--s-primary, #3c8dbc);
+  border-radius: 20px;
+  transition: width 0.4s ease;
+  min-width: 2px;
 }
 
-.ctr-high { color: #22c55e; font-weight: bold; }   /* verde */
-.ctr-medium { color: #facc15; font-weight: bold; } /* amarillo */
-.ctr-low { color: #ef4444; font-weight: bold; }    /* rojo */
+.stats-row-nums {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  font-size: 0.82rem;
+  color: #666;
+}
+
+/* ── Horarios ───────────────────────────────────────────── */
+.horarios-grid {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 100px;
+  padding-bottom: 4px;
+}
+
+.hora-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+  gap: 4px;
+}
+
+.hora-bar-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.hora-bar-fill {
+  width: 80%;
+  background: var(--s-primary, #3c8dbc);
+  border-radius: 4px 4px 0 0;
+  min-height: 2px;
+  transition: height 0.4s ease;
+}
+
+.hora-label {
+  font-size: 0.6rem;
+  color: #aaa;
+  white-space: nowrap;
+}
+
+/* ── Hint ────────────────────────────────────────────────── */
+.stats-hint {
+  margin: 0;
+  font-size: 0.83rem;
+  color: #888;
+}
+
+/* ── Empty state ────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: #555;
+}
+
+.empty-state i {
+  font-size: 48px;
+  color: var(--s-primary, #3c8dbc);
+  margin-bottom: 16px;
+  display: block;
+}
+
+.empty-state h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  font-size: 15px;
+  margin: 0;
+  color: #555;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 640px) {
+  #skeleton-page {
+    padding: 24px 12px 48px;
+  }
+
+  .page-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .kpi-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .stats-row {
+    grid-template-columns: 120px 1fr 90px;
+    gap: 8px;
+  }
+
+  .hora-label {
+    display: none;
+  }
+}
