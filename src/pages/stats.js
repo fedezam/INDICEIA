@@ -1,107 +1,95 @@
 // ============================================================
-// src/pages/stats.js
+// src/pages/productos/productos.js
 // ============================================================
-import { runSkeleton }                     from '/src/skeleton/skeleton.js';
-import { createFirebaseAdapter }           from '/src/skeleton/adapters/firebaseAdapter.js';
-import { createCard }                      from '/src/skeleton/components/card/index.js';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db }                              from '/src/services/firebase/firebase.js';
-import './stats.css';
 
+import { runSkeleton }             from '/src/skeleton/skeleton.js';
+import { createFirebaseAdapter }   from '/src/skeleton/adapters/firebaseAdapter.js';
+import { createFormField }         from '/src/skeleton/components/form-field/index.js';
+import { createButton }            from '/src/skeleton/components/button/index.js';
+import { createCard }              from '/src/skeleton/components/card/index.js';
+import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
+import { showToast }               from '/src/skeleton/components/toast/index.js';
+import { db }                      from '/src/services/firebase/firebase.js';
+import {
+  writeBatch,
+  doc,
+  collection,
+  getDocs,
+  serverTimestamp
+} from 'firebase/firestore';
+import {
+  showProgressOverlay,
+  updateProgress,
+  finishProgressOverlay
+} from '/src/shared/progressOverlay.js';
+import './productos.css';
+
+const XLSX = window.XLSX;
+const TEMPLATE_FIRMA = 'indiceia_template_v1';
+
+// ============================================================
+// PÁGINA
 // ============================================================
 const page = {
+  _data: {
+    productos: [],
+    draftManual: {
+      codigo:         '',
+      nombre:         '',
+      descripcion:    '',
+      precio:         '',
+      stock:          '',
+      categoria:      '',
+      subcategoria:   '',
+      marca:          '',
+      imagen:         '',
+      disponibilidad: 'inmediata',
+      atributos:      [],
+      etiquetas:      []
+    },
+    showAdvanced: false,
+    editingIndex: null,
+  },
 
-  _stats: null,
+  _isEditMode:       false,
+  _originalSnapshot: [],
+
+  // ──────────────────────────────────────────────────────────
+  // HELPERS: etiquetas únicas de todo el catálogo
+  // ──────────────────────────────────────────────────────────
+  _getEtiquetasExistentes() {
+    const set = new Set();
+    this._data.productos.forEach(p => {
+      (p.etiquetas || []).forEach(e => set.add(e));
+    });
+    // También las del draft actual (por si estamos editando)
+    this._data.draftManual.etiquetas.forEach(e => set.add(e));
+    return [...set].sort();
+  },
 
   // ──────────────────────────────────────────────────────────
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
-    const slug = ctx.comercioData?.landing?.slug;
-    if (!slug) return;
+    console.log('[productos] load() ctx:', ctx);
+    this._isEditMode = ctx.isEditMode === true;
+    const comercioId = ctx.comercioId;
 
-    const q    = query(collection(db, 'landing_events'), where('destination', '==', slug));
-    const snap = await getDocs(q);
-
-    const events = [];
-    snap.forEach(d => events.push(d.data()));
-
-    this._stats = this._process(events);
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // PROCESS — toda la lógica de métricas
-  // ──────────────────────────────────────────────────────────
-  _process(events) {
-    if (!events.length) return null;
-
-    // ── Métricas generales ───────────────────────────────────
-    const views  = events.filter(e => e.event === 'landing_view').length;
-    const clicks = events.filter(e => e.event === 'talk_click').length;
-    const ctr      = views ? ((clicks / views) * 100).toFixed(1) : 0;
-    const abandonos = views - clicks;
-
-    // ── Tiempo de decisión ───────────────────────────────────
-    const fps = {};
-    events.forEach(e => {
-      if (!e.fingerprint) return;
-      if (!fps[e.fingerprint]) fps[e.fingerprint] = {};
-      const ts = e.timestamp?.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
-      if (e.event === 'landing_view') fps[e.fingerprint].view  = ts;
-      if (e.event === 'talk_click')   fps[e.fingerprint].click = ts;
-    });
-
-    const tiempos = [];
-    for (const fp in fps) {
-      const { view, click } = fps[fp];
-      if (view && click) tiempos.push((click - view) / 1000);
+    if (!comercioId) {
+      this._data.productos   = [];
+      this._originalSnapshot = [];
+      return;
     }
 
-    const tiempoPromedio   = tiempos.length
-      ? (tiempos.reduce((a, b) => a + b, 0) / tiempos.length).toFixed(1)
-      : null;
-    const total            = tiempos.length;
-    const rapidas          = total ? ((tiempos.filter(t => t < 5).length  / total) * 100).toFixed(1) : 0;
-    const lentas           = total ? ((tiempos.filter(t => t > 20).length / total) * 100).toFixed(1) : 0;
-
-    // ── Dispositivos ─────────────────────────────────────────
-    const dispositivos = {};
-    events.forEach(e => {
-      const d = e.device || 'unknown';
-      if (!dispositivos[d]) dispositivos[d] = { views: 0, clicks: 0 };
-      if (e.event === 'landing_view') dispositivos[d].views++;
-      if (e.event === 'talk_click')   dispositivos[d].clicks++;
-    });
-
-    // ── Origen (src) — nuevo ─────────────────────────────────
-    const origenes = {};
-    events.forEach(e => {
-      if (e.event !== 'landing_view') return;
-      const src = e.src || 'direct';
-      if (!origenes[src]) origenes[src] = { views: 0, clicks: 0, srcType: e.srcType || 'channel' };
-      origenes[src].views++;
-    });
-    events.forEach(e => {
-      if (e.event !== 'talk_click') return;
-      const src = e.src || 'direct';
-      if (origenes[src]) origenes[src].clicks++;
-    });
-
-    // ── Horarios ─────────────────────────────────────────────
-    const horarios = {};
-    events.forEach(e => {
-      const dt = e.timestamp?.toDate ? e.timestamp.toDate() : new Date(e.timestamp);
-      const h  = dt.getHours();
-      if (!horarios[h]) horarios[h] = { views: 0, clicks: 0 };
-      if (e.event === 'landing_view') horarios[h].views++;
-      if (e.event === 'talk_click')   horarios[h].clicks++;
-    });
-
-    return {
-      views, clicks, ctr, abandonos,
-      tiempoPromedio, rapidas, lentas,
-      dispositivos, origenes, horarios
-    };
+    try {
+      const snap = await getDocs(collection(db, 'comercios', comercioId, 'productos'));
+      this._data.productos   = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      this._originalSnapshot = structuredClone(this._data.productos);
+    } catch (err) {
+      console.error('[productos] load() ERROR:', err);
+      this._data.productos   = [];
+      this._originalSnapshot = [];
+    }
   },
 
   // ──────────────────────────────────────────────────────────
@@ -114,259 +102,815 @@ const page = {
     const header = document.createElement('div');
     header.className = 'page-header';
     header.innerHTML = `
-      <h1><i class="fas fa-chart-bar"></i> Estadísticas</h1>
-      <p class="page-subtitle">Cómo interactúan tus visitantes con tu asistente IA</p>
+      <h1><i class="fas fa-box"></i> Catálogo de Productos</h1>
+      <p>Cargá tus productos manualmente o importá desde Excel</p>
+      <div class="product-stats">
+        <span class="stat-badge">
+          <i class="fas fa-boxes"></i>
+          <strong>${this._data.productos.length}</strong> productos
+        </span>
+      </div>
     `;
     root.appendChild(header);
+    root.appendChild(this._renderTipsCard());
+    root.appendChild(this._renderFormCard());
+    root.appendChild(this._renderImportCard());
 
-    if (!this._stats) {
-      root.appendChild(this._renderSinDatos());
+    if (this._data.productos.length > 0) {
+      root.appendChild(this._renderTableCard());
+    }
+
+    root.appendChild(this._renderSaveButton());
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // TIPS CARD
+  // ──────────────────────────────────────────────────────────
+  _renderTipsCard() {
+    const tips = [
+      { icon: 'fa-tags',        titulo: 'Usá categorías',       texto: 'Asigná una categoría a cada producto (ej: Pizzas, Bebidas, Postres). Si usás un template visual, los productos se van a agrupar automáticamente.' },
+      { icon: 'fa-font',        titulo: 'Nombres consistentes', texto: 'Usá siempre el mismo nombre para el mismo producto. El cliente lo ve tal cual lo escribís.' },
+      { icon: 'fa-align-left',  titulo: 'Descripción corta',    texto: 'Una línea es suficiente. Ej: "Pizza con muzzarella y tomate, tamaño grande".' },
+      { icon: 'fa-dollar-sign', titulo: 'Precio sin símbolos',  texto: 'Escribí solo el número, sin puntos ni símbolos. Ej: 5500 — no $5.500 ni 5,500.' },
+      { icon: 'fa-image',       titulo: 'Imágenes',             texto: 'Pegá el link directo a la foto del producto (debe terminar en .jpg, .png, etc.). Si no tenés, dejalo vacío.' }
+    ];
+
+    const container = document.createElement('div');
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'tips-toggle';
+    toggleBtn.innerHTML = `<i class="fas fa-lightbulb"></i> Consejos para cargar bien tus productos <i class="fas fa-chevron-down tips-chevron"></i>`;
+
+    const tipsContent = document.createElement('div');
+    tipsContent.className = 'tips-content tips-hidden';
+
+    tips.forEach(tip => {
+      const item = document.createElement('div');
+      item.className = 'tip-item';
+      item.innerHTML = `
+        <div class="tip-icon"><i class="fas ${tip.icon}"></i></div>
+        <div class="tip-body"><strong>${tip.titulo}</strong><p>${tip.texto}</p></div>
+      `;
+      tipsContent.appendChild(item);
+    });
+
+    toggleBtn.addEventListener('click', () => {
+      const isOpen = !tipsContent.classList.contains('tips-hidden');
+      tipsContent.classList.toggle('tips-hidden', isOpen);
+      toggleBtn.querySelector('.tips-chevron').className = `fas tips-chevron ${isOpen ? 'fa-chevron-down' : 'fa-chevron-up'}`;
+    });
+
+    container.appendChild(toggleBtn);
+    container.appendChild(tipsContent);
+    return container;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // FORM CARD
+  // ──────────────────────────────────────────────────────────
+  _renderFormCard() {
+    const container = document.createElement('div');
+    container.id = 'form-manual-card';
+
+    const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',    placeholder: 'SKU123', helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
+    const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto',  required: true, placeholder: 'Ej: Pizza Muzzarella Grande', value: this._data.draftManual.nombre });
+    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',           type: 'textarea', rows: 2, required: true, placeholder: 'Una línea. Ej: Pizza con muzzarella y tomate, tamaño grande', value: this._data.draftManual.descripcion });
+    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',                type: 'number', required: true, placeholder: '5500', helpText: 'Solo el número, sin $ ni puntos', value: this._data.draftManual.precio });
+    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                 type: 'number', placeholder: '0', value: this._data.draftManual.stock });
+    const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',             required: true, placeholder: 'Ej: Pizzas', helpText: 'Necesaria para agrupar productos en el catálogo visual', value: this._data.draftManual.categoria });
+
+    // Autocomplete categorías
+    const categoriasExistentes = [...new Set(
+      this._data.productos.map(p => p.categoria).filter(c => c && c.trim())
+    )];
+    if (categoriasExistentes.length > 0) {
+      const datalist = document.createElement('datalist');
+      datalist.id = 'categorias-datalist';
+      categoriasExistentes.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        datalist.appendChild(opt);
+      });
+      categoria.appendChild(datalist);
+      const input = categoria.querySelector('input');
+      if (input) input.setAttribute('list', 'categorias-datalist');
+    }
+
+    const _saveBaseDraft = () => {
+      this._data.draftManual.codigo      = codigo.getValue();
+      this._data.draftManual.nombre      = nombre.getValue();
+      this._data.draftManual.descripcion = descripcion.getValue();
+      this._data.draftManual.precio      = precio.getValue();
+      this._data.draftManual.stock       = stock.getValue();
+      this._data.draftManual.categoria   = categoria.getValue();
+    };
+
+    const toggleBtn = createButton({
+      label:   this._data.showAdvanced ? 'Ocultar detalles' : 'Agregar más detalles',
+      variant: 'link',
+      icon:    this._data.showAdvanced ? 'fa-chevron-up' : 'fa-chevron-down',
+      onClick: () => {
+        _saveBaseDraft();
+        this._data.showAdvanced = !this._data.showAdvanced;
+        this.render();
+      }
+    });
+
+    container.append(codigo, nombre, descripcion, precio, stock, categoria, toggleBtn);
+
+    if (this._data.showAdvanced) {
+      container.appendChild(this._renderAdvancedFields());
+    }
+
+    const btnAgregar = createButton({
+      label:   this._data.editingIndex !== null ? 'Actualizar Producto' : 'Agregar Producto',
+      variant: 'primary',
+      icon:    this._data.editingIndex !== null ? 'fa-check' : 'fa-plus',
+      block:   true,
+      onClick: () => {
+        _saveBaseDraft();
+        this._handleManualSubmit({ codigo, nombre, descripcion, precio, stock, categoria });
+      }
+    });
+
+    if (this._data.editingIndex !== null) {
+      const btnCancelar = createButton({
+        label:   'Cancelar edición',
+        variant: 'link',
+        icon:    'fa-times',
+        block:   true,
+        onClick: () => {
+          this._data.editingIndex = null;
+          this._data.draftManual  = {
+            codigo: '', nombre: '', descripcion: '', precio: '', stock: '',
+            categoria: '', subcategoria: '', marca: '', imagen: '',
+            disponibilidad: 'inmediata', atributos: [], etiquetas: []
+          };
+          this._data.showAdvanced = false;
+          this.render();
+        }
+      });
+      container.appendChild(btnCancelar);
+    }
+
+    container.appendChild(btnAgregar);
+
+    return createCard({
+      title:   this._data.editingIndex !== null ? 'Editando Producto' : 'Agregar Producto Manualmente',
+      icon:    this._data.editingIndex !== null ? 'fa-edit' : 'fa-plus-circle',
+      content: container
+    });
+  },
+
+  _renderAdvancedFields() {
+    const container = document.createElement('div');
+    container.className = 'advanced-fields';
+
+    const subcategoria   = createFormField({ id: 'prod-subcategoria',   label: 'Subcategoría',  placeholder: 'Ej: Especiales',     value: this._data.draftManual.subcategoria });
+    const marca          = createFormField({ id: 'prod-marca',           label: 'Marca',          placeholder: 'Ej: Nike',           value: this._data.draftManual.marca });
+    const imagen         = createFormField({ id: 'prod-imagen',          label: 'URL de imagen',  type: 'url', placeholder: 'https://...', helpText: 'Link directo a la foto del producto', value: this._data.draftManual.imagen });
+    const disponibilidad = createFormField({
+      id: 'prod-disponibilidad', label: 'Disponibilidad', type: 'select',
+      options: [
+        { value: 'inmediata',    label: 'Inmediata'     },
+        { value: 'bajo_pedido', label: 'Bajo pedido'   },
+        { value: 'sin_stock',   label: 'Sin stock'     }
+      ],
+      value: this._data.draftManual.disponibilidad || 'inmediata'
+    });
+
+    container.append(subcategoria, marca, imagen, disponibilidad);
+    container.appendChild(this._renderAtributosSection());
+    container.appendChild(this._renderEtiquetasSection());
+
+    this._advancedRefs = { subcategoria, marca, imagen, disponibilidad };
+    return container;
+  },
+
+  _renderAtributosSection() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.textContent = 'Atributos personalizados';
+    wrapper.appendChild(label);
+
+    const list = document.createElement('div');
+    list.className = 'atributos-list';
+
+    this._data.draftManual.atributos.forEach((attr, index) => {
+      const row = document.createElement('div');
+      row.className = 'atributo-row';
+      row.innerHTML = `<span><strong>${attr.key}:</strong> ${attr.value}</span><button type="button" class="btn-icon btn-sm"><i class="fas fa-times"></i></button>`;
+      row.querySelector('button').addEventListener('click', () => {
+        this._data.draftManual.atributos.splice(index, 1);
+        this.render();
+      });
+      list.appendChild(row);
+    });
+    wrapper.appendChild(list);
+
+    const inputs = document.createElement('div');
+    inputs.className = 'atributo-inputs';
+    inputs.innerHTML = `<input type="text" id="attr-key" placeholder="Nombre (ej: sabor)"><input type="text" id="attr-value" placeholder="Valor (ej: chocolate)">`;
+    wrapper.appendChild(inputs);
+
+    wrapper.appendChild(createButton({
+      label: 'Agregar atributo', variant: 'secondary', size: 'sm', icon: 'fa-plus',
+      onClick: () => {
+        const key   = inputs.querySelector('#attr-key').value.trim();
+        const value = inputs.querySelector('#attr-value').value.trim();
+        if (key && value) {
+          this._data.draftManual.atributos.push({ key, value });
+          this.render();
+        }
+      }
+    }));
+
+    return wrapper;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // ETIQUETAS — con tags editables y dropdown de sugerencias
+  // ──────────────────────────────────────────────────────────
+  _renderEtiquetasSection() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'form-group etiquetas-section';
+
+    const label = document.createElement('label');
+    label.textContent = 'Etiquetas';
+    wrapper.appendChild(label);
+
+    const helpText = document.createElement('p');
+    helpText.className = 'etiquetas-help';
+    helpText.textContent = 'Usadas para agrupar y filtrar productos. Hacé clic en × para quitar una etiqueta de este producto.';
+    wrapper.appendChild(helpText);
+
+    // Tags actuales
+    const tags = document.createElement('div');
+    tags.className = 'etiquetas-tags';
+
+    if (this._data.draftManual.etiquetas.length === 0) {
+      const empty = document.createElement('span');
+      empty.className = 'etiquetas-empty';
+      empty.textContent = 'Sin etiquetas';
+      tags.appendChild(empty);
+    } else {
+      this._data.draftManual.etiquetas.forEach((etiqueta, index) => {
+        const tag = document.createElement('span');
+        tag.className = 'etiqueta-tag';
+        tag.innerHTML = `
+          <span class="etiqueta-tag-text">${etiqueta}</span>
+          <button type="button" class="etiqueta-tag-remove" title="Quitar etiqueta" aria-label="Quitar ${etiqueta}">
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+        tag.querySelector('.etiqueta-tag-remove').addEventListener('click', () => {
+          this._data.draftManual.etiquetas.splice(index, 1);
+          this.render();
+        });
+        tags.appendChild(tag);
+      });
+    }
+    wrapper.appendChild(tags);
+
+    // Input con dropdown de sugerencias
+    const inputWrapper = document.createElement('div');
+    inputWrapper.className = 'etiqueta-input-wrapper';
+
+    const input = document.createElement('input');
+    input.type        = 'text';
+    input.id          = 'etiqueta-input';
+    input.placeholder = 'Ej: destacado, nuevo, sin tacc...';
+    input.className   = 'etiqueta-input';
+    inputWrapper.appendChild(input);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'etiqueta-dropdown etiqueta-dropdown-hidden';
+    inputWrapper.appendChild(dropdown);
+
+    wrapper.appendChild(inputWrapper);
+
+    const etiquetasExistentes = this._getEtiquetasExistentes()
+      .filter(e => !this._data.draftManual.etiquetas.includes(e));
+
+    const _addEtiqueta = (value) => {
+      const val = value.trim().toLowerCase();
+      if (val && !this._data.draftManual.etiquetas.includes(val)) {
+        this._data.draftManual.etiquetas.push(val);
+        this.render();
+      }
+    };
+
+    const _renderDropdown = (filtro) => {
+      dropdown.innerHTML = '';
+      const sugerencias = etiquetasExistentes.filter(e =>
+        e.toLowerCase().includes(filtro.toLowerCase())
+      );
+
+      if (sugerencias.length === 0) {
+        dropdown.classList.add('etiqueta-dropdown-hidden');
+        return;
+      }
+
+      sugerencias.forEach(s => {
+        const item = document.createElement('button');
+        item.type      = 'button';
+        item.className = 'etiqueta-dropdown-item';
+        item.innerHTML = `<i class="fas fa-tag"></i> ${s}`;
+        item.addEventListener('mousedown', (e) => {
+          e.preventDefault(); // evita que el input pierda foco antes del click
+          _addEtiqueta(s);
+        });
+        dropdown.appendChild(item);
+      });
+
+      dropdown.classList.remove('etiqueta-dropdown-hidden');
+    };
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim();
+      if (val.length === 0 && etiquetasExistentes.length > 0) {
+        _renderDropdown('');
+      } else if (val.length > 0) {
+        _renderDropdown(val);
+      } else {
+        dropdown.classList.add('etiqueta-dropdown-hidden');
+      }
+    });
+
+    input.addEventListener('focus', () => {
+      if (etiquetasExistentes.length > 0) _renderDropdown(input.value.trim());
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(() => dropdown.classList.add('etiqueta-dropdown-hidden'), 150);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = input.value.trim().replace(/,$/, '');
+        if (val) _addEtiqueta(val);
+      }
+    });
+
+    const btnAgregar = createButton({
+      label: 'Agregar', variant: 'secondary', size: 'sm', icon: 'fa-plus',
+      onClick: () => {
+        const val = input.value.trim();
+        if (val) _addEtiqueta(val);
+      }
+    });
+    wrapper.appendChild(btnAgregar);
+
+    // Sugerencias rápidas (etiquetas existentes no usadas aún)
+    if (etiquetasExistentes.length > 0) {
+      const sugerenciasWrap = document.createElement('div');
+      sugerenciasWrap.className = 'etiquetas-sugerencias';
+
+      const sugerenciasLabel = document.createElement('span');
+      sugerenciasLabel.className = 'etiquetas-sugerencias-label';
+      sugerenciasLabel.textContent = 'Etiquetas existentes:';
+      sugerenciasWrap.appendChild(sugerenciasLabel);
+
+      const chips = document.createElement('div');
+      chips.className = 'etiquetas-chips';
+
+      etiquetasExistentes.slice(0, 12).forEach(e => {
+        const chip = document.createElement('button');
+        chip.type      = 'button';
+        chip.className = 'etiqueta-chip';
+        chip.textContent = e;
+        chip.addEventListener('click', () => _addEtiqueta(e));
+        chips.appendChild(chip);
+      });
+
+      sugerenciasWrap.appendChild(chips);
+      wrapper.appendChild(sugerenciasWrap);
+    }
+
+    return wrapper;
+  },
+
+  _handleManualSubmit(refs) {
+    const newProduct = {
+      codigo:       refs.codigo.getValue()      || this._generateCodigo(),
+      nombre:       refs.nombre.getValue(),
+      descripcion:  refs.descripcion.getValue(),
+      precio_final: parseFloat(refs.precio.getValue()) || 0,
+      stock:        parseInt(refs.stock.getValue())    || 0,
+      categoria:    refs.categoria.getValue(),
+      paused:       false,
+      atributos:    {},
+      etiquetas:    [...this._data.draftManual.etiquetas]
+    };
+
+    if (this._advancedRefs) {
+      newProduct.subcategoria   = this._advancedRefs.subcategoria.getValue();
+      newProduct.marca          = this._advancedRefs.marca.getValue();
+      newProduct.imagen         = this._advancedRefs.imagen.getValue();
+      newProduct.disponibilidad = this._advancedRefs.disponibilidad.getValue();
+    }
+
+    this._data.draftManual.atributos.forEach(attr => {
+      newProduct.atributos[attr.key] = attr.value;
+    });
+
+    if (!newProduct.nombre || !newProduct.descripcion) {
+      showToast('Campos requeridos', 'Completá nombre y descripción', 'warning');
       return;
     }
 
-    root.appendChild(this._renderGeneral());
-    root.appendChild(this._renderOrigenes());
-    root.appendChild(this._renderDispositivos());
-    root.appendChild(this._renderTiempo());
-    root.appendChild(this._renderHorarios());
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // SIN DATOS
-  // ──────────────────────────────────────────────────────────
-  _renderSinDatos() {
-    const el = document.createElement('div');
-    el.className = 'empty-state';
-    el.innerHTML = `
-      <i class="fas fa-chart-bar"></i>
-      <h2>Todavía no hay datos</h2>
-      <p>Cuando alguien visite tu landing pública, las estadísticas aparecerán acá.</p>
-    `;
-    return el;
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // GENERAL
-  // ──────────────────────────────────────────────────────────
-  _renderGeneral() {
-    const { views, clicks, ctr, abandonos } = this._stats;
-
-    const container = document.createElement('div');
-    container.className = 'kpi-grid';
-
-    const ctrClass = ctr >= 50 ? 'ctr-high' : ctr >= 25 ? 'ctr-medium' : 'ctr-low';
-
-    container.innerHTML = `
-      <div class="kpi-box">
-        <i class="fas fa-users"></i>
-        <span class="kpi-value">${views}</span>
-        <span class="kpi-label">Visitas</span>
-      </div>
-      <div class="kpi-box">
-        <i class="fas fa-robot"></i>
-        <span class="kpi-value">${clicks}</span>
-        <span class="kpi-label">Clicks a la IA</span>
-      </div>
-      <div class="kpi-box">
-        <i class="fas fa-percentage"></i>
-        <span class="kpi-value ${ctrClass}">${ctr}%</span>
-        <span class="kpi-label">Conversión</span>
-      </div>
-      <div class="kpi-box">
-        <i class="fas fa-sign-out-alt"></i>
-        <span class="kpi-value">${abandonos}</span>
-        <span class="kpi-label">Abandonos</span>
-      </div>
-    `;
-
-    return createCard({
-      title:   'General',
-      icon:    'fa-chart-pie',
-      content: container
-    });
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // ORIGEN DEL TRÁFICO (src)
-  // ──────────────────────────────────────────────────────────
-  _renderOrigenes() {
-    const { origenes, views } = this._stats;
-    const container = document.createElement('div');
-    container.className = 'stats-list';
-
-    const ICONOS = {
-      qr:     'fa-qrcode',
-      ig:     'fa-instagram',
-      fb:     'fa-facebook',
-      wa:     'fa-whatsapp',
-      web:    'fa-globe',
-      email:  'fa-envelope',
-      ads:    'fa-ad',
-      direct: 'fa-link'
-    };
-
-    const sorted = Object.entries(origenes).sort((a, b) => b[1].views - a[1].views);
-
-    sorted.forEach(([src, data]) => {
-      const pct     = views ? ((data.views / views) * 100).toFixed(1) : 0;
-      const ctr     = data.views ? ((data.clicks / data.views) * 100).toFixed(1) : 0;
-      const icon    = ICONOS[src] || (data.srcType === 'entity' ? 'fa-robot' : 'fa-link');
-      const esEntidad = data.srcType === 'entity';
-
-      const row = document.createElement('div');
-      row.className = 'stats-row';
-      row.innerHTML = `
-        <div class="stats-row-label">
-          <i class="fas ${icon}"></i>
-          <span>${esEntidad ? `entidad: ${src}` : src}</span>
-          ${esEntidad ? '<span class="badge-entity">entidad</span>' : ''}
-        </div>
-        <div class="stats-row-bar">
-          <div class="bar-fill" style="width:${pct}%"></div>
-        </div>
-        <div class="stats-row-nums">
-          <span>${data.views}v</span>
-          <span>${data.clicks}c</span>
-          <span class="ctr-${ctr >= 50 ? 'high' : ctr >= 25 ? 'medium' : 'low'}">${ctr}%</span>
-        </div>
-      `;
-      container.appendChild(row);
-    });
-
-    const hint = document.createElement('p');
-    hint.className = 'stats-hint';
-    hint.textContent = 'Mostrá desde qué canal te visitan más y cuál convierte mejor.';
-    container.appendChild(hint);
-
-    return createCard({
-      title:   'Origen del tráfico',
-      icon:    'fa-share-alt',
-      content: container
-    });
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // DISPOSITIVOS
-  // ──────────────────────────────────────────────────────────
-  _renderDispositivos() {
-    const { dispositivos, views } = this._stats;
-    const container = document.createElement('div');
-    container.className = 'stats-list';
-
-    const ICONOS = { android: 'fa-android', ios: 'fa-apple', web: 'fa-desktop', unknown: 'fa-question' };
-
-    Object.entries(dispositivos)
-      .sort((a, b) => b[1].views - a[1].views)
-      .forEach(([device, data]) => {
-        const pct  = views ? ((data.views / views) * 100).toFixed(1) : 0;
-        const ctr  = data.views ? ((data.clicks / data.views) * 100).toFixed(1) : 0;
-        const icon = ICONOS[device] || 'fa-mobile';
-
-        const row = document.createElement('div');
-        row.className = 'stats-row';
-        row.innerHTML = `
-          <div class="stats-row-label">
-            <i class="fab ${icon}"></i>
-            <span>${device}</span>
-          </div>
-          <div class="stats-row-bar">
-            <div class="bar-fill" style="width:${pct}%"></div>
-          </div>
-          <div class="stats-row-nums">
-            <span>${data.views}v</span>
-            <span>${data.clicks}c</span>
-            <span class="ctr-${ctr >= 50 ? 'high' : ctr >= 25 ? 'medium' : 'low'}">${ctr}%</span>
-          </div>
-        `;
-        container.appendChild(row);
-      });
-
-    const hint = document.createElement('p');
-    hint.className = 'stats-hint';
-    hint.textContent = 'Detectá qué dispositivos usan tus visitantes.';
-    container.appendChild(hint);
-
-    return createCard({
-      title:   'Dispositivos',
-      icon:    'fa-mobile-alt',
-      content: container
-    });
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // TIEMPO DE DECISIÓN
-  // ──────────────────────────────────────────────────────────
-  _renderTiempo() {
-    const { tiempoPromedio, rapidas, lentas } = this._stats;
-    const container = document.createElement('div');
-    container.className = 'kpi-grid kpi-grid-3';
-
-    container.innerHTML = `
-      <div class="kpi-box">
-        <i class="fas fa-stopwatch"></i>
-        <span class="kpi-value">${tiempoPromedio ? tiempoPromedio + 's' : '—'}</span>
-        <span class="kpi-label">Tiempo promedio</span>
-      </div>
-      <div class="kpi-box">
-        <i class="fas fa-bolt"></i>
-        <span class="kpi-value ctr-high">${rapidas}%</span>
-        <span class="kpi-label">Decisiones rápidas (&lt;5s)</span>
-      </div>
-      <div class="kpi-box">
-        <i class="fas fa-hourglass-half"></i>
-        <span class="kpi-value ctr-low">${lentas}%</span>
-        <span class="kpi-label">Decisiones lentas (&gt;20s)</span>
-      </div>
-    `;
-
-    const hint = document.createElement('p');
-    hint.className = 'stats-hint';
-    hint.style.marginTop = '12px';
-    hint.textContent = 'Menor tiempo promedio = mensaje claro y atractivo.';
-    container.appendChild(hint);
-
-    return createCard({
-      title:   'Tiempo de decisión',
-      icon:    'fa-clock',
-      content: container
-    });
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // HORARIOS
-  // ──────────────────────────────────────────────────────────
-  _renderHorarios() {
-    const { horarios } = this._stats;
-    const container = document.createElement('div');
-    container.className = 'horarios-grid';
-
-    const maxViews = Math.max(...Object.values(horarios).map(h => h.views), 1);
-
-    for (let h = 0; h < 24; h++) {
-      const data = horarios[h] || { views: 0, clicks: 0 };
-      const pct  = ((data.views / maxViews) * 100).toFixed(0);
-
-      const col = document.createElement('div');
-      col.className = 'hora-col';
-      col.innerHTML = `
-        <div class="hora-bar-wrap">
-          <div class="hora-bar-fill" style="height:${pct}%" title="${data.views} visitas"></div>
-        </div>
-        <span class="hora-label">${h}h</span>
-      `;
-      container.appendChild(col);
+    if (!newProduct.categoria) {
+      showToast('Categoría requerida', 'Asigná una categoría (ej: Pizzas, Bebidas)', 'warning');
+      return;
     }
 
-    const hint = document.createElement('p');
-    hint.className = 'stats-hint';
-    hint.style.marginTop = '12px';
-    hint.textContent = 'Las horas con más tráfico son las mejores para publicar.';
-    container.appendChild(hint);
+    if (this._data.editingIndex !== null) {
+      const original = this._data.productos[this._data.editingIndex];
+      this._data.productos[this._data.editingIndex] = { ...original, ...newProduct };
+      this._data.editingIndex = null;
+      showToast('Producto actualizado', 'Guardá para confirmar los cambios', 'success');
+    } else {
+      this._data.productos.push(newProduct);
+      showToast('Producto agregado', 'Guardá para confirmar los cambios', 'success');
+    }
 
-    return createCard({
-      title:   'Horarios',
-      icon:    'fa-calendar-alt',
-      content: container
+    this._data.draftManual = {
+      codigo: '', nombre: '', descripcion: '', precio: '', stock: '',
+      categoria: '', subcategoria: '', marca: '', imagen: '',
+      disponibilidad: 'inmediata', atributos: [], etiquetas: []
+    };
+    this._data.showAdvanced = false;
+    this.render();
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // IMPORT CARD
+  // ──────────────────────────────────────────────────────────
+  _renderImportCard() {
+    const container = document.createElement('div');
+
+    const instrucciones = document.createElement('div');
+    instrucciones.className = 'import-instrucciones';
+    instrucciones.innerHTML = `
+      <p>Para cargar varios productos a la vez:</p>
+      <ol>
+        <li>Descargá la plantilla oficial de ÍndiceIA</li>
+        <li>Completá tus productos en el archivo</li>
+        <li>Subí el archivo completado</li>
+      </ol>
+    `;
+    container.appendChild(instrucciones);
+
+    container.appendChild(createButton({
+      label: 'Descargar plantilla ÍndiceIA', variant: 'secondary', icon: 'fa-download',
+      onClick: () => this._downloadTemplate()
+    }));
+
+    const sep = document.createElement('div');
+    sep.className = 'import-separator';
+    sep.innerHTML = '<span>Una vez completada, subí la plantilla acá</span>';
+    container.appendChild(sep);
+
+    const uploadZone = document.createElement('div');
+    uploadZone.className = 'upload-zone';
+    uploadZone.innerHTML = `
+      <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+      <p class="upload-text"><strong>Arrastrá tu plantilla aquí</strong></p>
+      <p class="upload-subtext">o hacé clic para seleccionar</p>
+      <div class="upload-formats"><span class="format-badge">.xlsx</span></div>
+    `;
+
+    const fileInput = document.createElement('input');
+    fileInput.type    = 'file';
+    fileInput.accept  = '.xlsx';
+    fileInput.style.display = 'none';
+
+    uploadZone.addEventListener('click',     () => fileInput.click());
+    uploadZone.addEventListener('dragover',  e  => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', ()  => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) this._parseFile(file);
+    });
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) this._parseFile(file);
+    });
+
+    container.append(uploadZone, fileInput);
+
+    return createCard({ title: 'Importar desde Plantilla', icon: 'fa-file-excel', content: container });
+  },
+
+  _downloadTemplate() {
+    window.open('/plantilla_indiceia_productos.xlsx', '_blank');
+  },
+
+  _parseFile(file) {
+    if (!XLSX) { showToast('Error', 'Librería XLSX no cargada', 'error'); return; }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'binary' });
+
+        const metaSheet = wb.Sheets['_indiceia_meta'];
+        if (!metaSheet) {
+          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA.', 'error');
+          return;
+        }
+        const firmaData = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
+        if (!firmaData?.[0]?.[0] || firmaData[0][0] !== TEMPLATE_FIRMA) {
+          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA.', 'error');
+          return;
+        }
+
+        const ws       = wb.Sheets['productos'];
+        const jsonData = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+        if (jsonData.length === 0) {
+          showToast('Plantilla vacía', 'Completá al menos un producto en la plantilla', 'warning');
+          return;
+        }
+
+        const CAMPOS_BASE = ['codigo','nombre','descripcion','precio_final','categoria','stock','disponibilidad','imagen'];
+        let added = 0, skipped = 0;
+
+        jsonData.forEach((row, idx) => {
+          if (!row.nombre || !String(row.categoria || '').trim()) { skipped++; return; }
+
+          const producto = {
+            codigo:         String(row.codigo || this._generateCodigo()),
+            nombre:         String(row.nombre).trim(),
+            descripcion:    String(row.descripcion || '').trim(),
+            precio_final:   this._parsePrecio(row.precio_final),
+            stock:          parseInt(row.stock) || 0,
+            categoria:      String(row.categoria || '').trim(),
+            imagen:         String(row.imagen || '').trim(),
+            disponibilidad: ['inmediata', 'bajo_pedido', 'sin_stock'].includes(row.disponibilidad)
+                              ? row.disponibilidad : 'inmediata',
+            paused:    false,
+            atributos: {},
+            etiquetas: []
+          };
+
+          Object.keys(row).forEach(col => {
+            if (!CAMPOS_BASE.includes(col) && row[col] !== '' && row[col] != null) {
+              producto.atributos[col] = String(row[col]).trim();
+            }
+          });
+
+          const idx2 = this._data.productos.findIndex(p => p.codigo === producto.codigo);
+          if (idx2 >= 0) {
+            this._data.productos[idx2] = { ...this._data.productos[idx2], ...producto };
+          } else {
+            this._data.productos.push(producto);
+          }
+          added++;
+        });
+
+        showToast('Plantilla cargada', `${added} productos listos para guardar`, 'success');
+        this.render();
+
+      } catch (err) {
+        console.error('[productos] _parseFile() ERROR:', err);
+        showToast('Error', 'No se pudo leer el archivo', 'error');
+      }
+    };
+    reader.readAsBinaryString(file);
+  },
+
+  _parsePrecio(value) {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    let clean = String(value).replace(/[^\d,.-]/g, '').replace(',', '.');
+    const parts = clean.split('.');
+    if (parts.length > 2) clean = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+    const num = parseFloat(clean);
+    return isNaN(num) ? 0 : num;
+  },
+
+  _generateCodigo() {
+    return `PR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // TABLE CARD
+  // ──────────────────────────────────────────────────────────
+  _renderTableCard() {
+    const container = document.createElement('div');
+
+    const header = document.createElement('div');
+    header.className = 'table-header';
+    const search = createFormField({
+      id: 'search-products', type: 'text', placeholder: 'Buscar productos...',
+      actions: { onInput: (value) => this._filterProducts(value) }
+    });
+    search.classList.add('search-box');
+    header.appendChild(search);
+    container.appendChild(header);
+
+    const tableWrap = document.createElement('div');
+    tableWrap.className = 'table-container';
+
+    const table = document.createElement('table');
+    table.className = 'products-table';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Código</th><th>Nombre</th><th>Precio</th>
+          <th>Stock</th><th>Categoría</th><th>Etiquetas</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="products-tbody"></tbody>
+    `;
+
+    const tbody = table.querySelector('#products-tbody');
+
+    this._data.productos.forEach((p, index) => {
+      const row = document.createElement('tr');
+      row.className     = p.paused ? 'paused-row' : '';
+      row.dataset.index = index;
+
+      const etiquetasHtml = (p.etiquetas || []).length > 0
+        ? (p.etiquetas || []).map(e => `<span class="table-tag">${e}</span>`).join('')
+        : '<span class="table-tag-empty">—</span>';
+
+      row.innerHTML = `
+        <td>${p.codigo || '-'}</td>
+        <td>${p.nombre || '-'}</td>
+        <td style="text-align:right">${p.precio_final ? `$${this._formatNumber(p.precio_final)}` : '-'}</td>
+        <td style="text-align:center">${p.stock ?? 0}</td>
+        <td>${p.categoria || '-'}</td>
+        <td><div class="table-tags">${etiquetasHtml}</div></td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn-action btn-edit"  title="Editar"><i class="fas fa-pen"></i></button>
+            <button class="btn-action ${p.paused ? 'btn-play' : 'btn-pause'}" title="${p.paused ? 'Activar' : 'Pausar'}">
+              <i class="fas fa-${p.paused ? 'play' : 'pause'}"></i>
+            </button>
+            <button class="btn-action btn-delete" title="Eliminar"><i class="fas fa-trash"></i></button>
+          </div>
+        </td>
+      `;
+      row.querySelector('.btn-edit').addEventListener('click',   () => this._editProduct(index));
+      row.querySelector('.btn-pause, .btn-play').addEventListener('click', () => this._toggleProduct(index));
+      row.querySelector('.btn-delete').addEventListener('click', () => this._deleteProduct(index));
+      tbody.appendChild(row);
+    });
+
+    tableWrap.appendChild(table);
+    container.appendChild(tableWrap);
+
+    return createCard({ title: 'Productos Cargados', icon: 'fa-table', variant: 'warning', content: container });
+  },
+
+  _filterProducts(searchTerm) {
+    document.querySelectorAll('#products-tbody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(searchTerm.toLowerCase()) ? '' : 'none';
+    });
+  },
+
+  // ── FIX: showAdvanced se activa también si hay etiquetas ──
+  _editProduct(index) {
+    const p = this._data.productos[index];
+    this._data.editingIndex = index;
+    this._data.showAdvanced = !!(
+      p.subcategoria ||
+      p.marca ||
+      p.imagen ||
+      p.disponibilidad !== 'inmediata' ||
+      p.etiquetas?.length > 0           // ← fix
+    );
+    this._data.draftManual = {
+      codigo:         p.codigo         || '',
+      nombre:         p.nombre         || '',
+      descripcion:    p.descripcion    || '',
+      precio:         p.precio_final   ? String(p.precio_final) : '',
+      stock:          p.stock          !== undefined ? String(p.stock) : '',
+      categoria:      p.categoria      || '',
+      subcategoria:   p.subcategoria   || '',
+      marca:          p.marca          || '',
+      imagen:         p.imagen         || '',
+      disponibilidad: p.disponibilidad || 'inmediata',
+      atributos:      p.atributos ? Object.entries(p.atributos).map(([key, value]) => ({ key, value })) : [],
+      etiquetas:      [...(p.etiquetas || [])]   // ← copia limpia
+    };
+    this.render();
+    setTimeout(() => {
+      const formCard = document.getElementById('form-manual-card');
+      if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  },
+
+  _toggleProduct(index) {
+    this._data.productos[index].paused = !this._data.productos[index].paused;
+    this.render();
+  },
+
+  _deleteProduct(index) {
+    const nombre = this._data.productos[index].nombre || 'este producto';
+    if (confirm(`¿Eliminar "${nombre}"?\n\nEsta acción no se puede deshacer.`)) {
+      this._data.productos.splice(index, 1);
+      showToast('Producto eliminado', 'Guardá para confirmar', 'info');
+      this.render();
+    }
+  },
+
+  _formatNumber(num) {
+    return new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // SAVE BUTTON
+  // ──────────────────────────────────────────────────────────
+  _renderSaveButton() {
+    const dirtyController = {
+      hasUnsavedChanges: () => JSON.stringify(this._data.productos) !== JSON.stringify(this._originalSnapshot),
+      markSaved:         () => { this._originalSnapshot = structuredClone(this._data.productos); }
+    };
+
+    return createOnboardingButton({
+      stepName: 'productos',
+
+      validate: () => {
+        const activos = this._data.productos.filter(p => !p.paused).length;
+        if (this._isEditMode && !dirtyController.hasUnsavedChanges()) return true;
+        return activos > 0;
+      },
+
+      getLabel: () => {
+        const activos = this._data.productos.filter(p => !p.paused).length;
+        if (activos === 0) return 'Cargá al menos un producto';
+        if (this._isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
+        return 'Guardar productos';
+      },
+
+      dirtyController,
+
+      onSave: async ({ uid, comercioId }) => {
+        if (!comercioId) throw new Error('No hay comercioId');
+
+        const productosRef = collection(db, 'comercios', comercioId, 'productos');
+        const batch        = writeBatch(db);
+        const existentes   = await getDocs(productosRef);
+        const existingMap  = new Map(existentes.docs.map(d => [d.id, d.data()]));
+        const currentMap   = new Map(this._data.productos.filter(p => p.id).map(p => [p.id, p]));
+
+        const toDelete = [];
+        const toUpdate = [];
+        const toAdd    = [];
+
+        existentes.docs.forEach(d => { if (!currentMap.has(d.id)) toDelete.push(d.ref); });
+
+        this._data.productos.forEach(p => {
+          if (!p.id) {
+            toAdd.push(p);
+          } else {
+            const old = existingMap.get(p.id);
+            if (old && JSON.stringify(old) !== JSON.stringify(p)) {
+              toUpdate.push({ ref: doc(db, 'comercios', comercioId, 'productos', p.id), data: p });
+            }
+          }
+        });
+
+        const totalOps = toDelete.length + toUpdate.length + toAdd.length;
+        if (totalOps === 0) {
+          showToast('Sin cambios', 'No hay cambios para guardar', 'info');
+          return { success: true, stepMarked: false };
+        }
+
+        showProgressOverlay(totalOps, {
+          title: 'Sincronizando catálogo',
+          initialMessage: `${toDelete.length} eliminados, ${toUpdate.length} actualizados, ${toAdd.length} nuevos`
+        });
+
+        for (const ref of toDelete) { updateProgress('Eliminando producto...'); batch.delete(ref); }
+        for (const { ref, data } of toUpdate) {
+          updateProgress(`Actualizando ${data.nombre || 'producto'}...`);
+          const { id, ...rest } = data;
+          batch.update(ref, { ...rest, fechaActualizacion: serverTimestamp() });
+        }
+        for (const p of toAdd) {
+          updateProgress(`Creando ${p.nombre || 'producto'}...`);
+          const newRef = doc(productosRef);
+          batch.set(newRef, { ...p, fechaCreacion: serverTimestamp(), fechaActualizacion: serverTimestamp() });
+        }
+
+        await batch.commit();
+        finishProgressOverlay('Catálogo sincronizado', 800);
+        return { success: true, stepMarked: false };
+      },
+
+      onSuccess: () => showToast('Éxito', 'Productos guardados correctamente', 'success'),
+      onError:   (err) => {
+        console.error('[productos] onError():', err);
+        showToast('Error al guardar', err.message, 'error');
+      }
     });
   }
 };
@@ -377,5 +921,5 @@ const page = {
 runSkeleton({
   page,
   adapter: createFirebaseAdapter,
-  options: { loadingMessage: 'Cargando estadísticas...' }
+  options: { loadingMessage: 'Cargando catálogo...' }
 });
