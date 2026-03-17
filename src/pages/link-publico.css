@@ -1,7 +1,5 @@
 /* ============================================================
    src/pages/link-publico/link-publico.css
-   Solo estilos propios de esta página.
-   Cards, botones y toast vienen del skeleton.
    ============================================================ */
 
 /* ── Layout general ─────────────────────────────────────── */
@@ -31,29 +29,65 @@
 
 .page-header p {
   margin: 0;
-  color: var(--s-gray, #adb5bd);
+  color: #555;
   font-size: 15px;
 }
 
-/* ── Link box ───────────────────────────────────────────── */
-.link-box {
+/* ── Lista de links por canal ───────────────────────────── */
+.links-list {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
 }
 
+.link-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.link-row-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
+}
+
+.link-row-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--s-dark, #343a40);
+}
+
+.link-row-label i {
+  margin-right: 6px;
+  color: var(--s-primary, #3c8dbc);
+  width: 16px;
+  text-align: center;
+}
+
+.link-row-hint {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+/* ── URL pública ────────────────────────────────────────── */
 .public-url {
   flex: 1;
-  padding: 14px 16px;
-  background: var(--s-light, #f8f9fa);
-  border: 1px solid var(--s-border, #d2d6de);
-  border-radius: var(--s-radius, 4px);
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     'Liberation Mono', monospace;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   word-break: break-all;
-  color: var(--s-dark, #343a40);
+  color: #444;
 }
 
 /* ── Preview del cartel ─────────────────────────────────── */
@@ -62,17 +96,18 @@
   justify-content: center;
   align-items: center;
   padding: 24px;
-  background: var(--s-light, #f8f9fa);
-  border-radius: var(--s-radius-lg, 6px);
-  border: 1px dashed var(--s-border, #d2d6de);
+  background: #fafafa;
+  border-radius: 14px;
+  border: 1px dashed #ddd;
   margin-top: 16px;
 }
 
 .cartel-preview canvas {
   max-width: 100%;
   height: auto !important;
-  border-radius: var(--s-radius, 4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
 }
 
 /* ── Botones de descarga ────────────────────────────────── */
@@ -83,17 +118,32 @@
   flex-wrap: wrap;
 }
 
-/* ── Botón volver ───────────────────────────────────────── */
-.back-btn-container {
-  margin-top: 30px;
-  display: flex;
-  justify-content: center;
+.carteles-actions .s-btn {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  background: #000;
+  color: #fff;
+  font-size: 0.95rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.carteles-actions .s-btn:hover {
+  background: #222;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.carteles-actions .s-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 /* ── Estado vacío (sin slug) ────────────────────────────── */
 .empty-state {
   text-align: center;
   padding: 60px 24px;
+  color: #555;
 }
 
 .empty-state i {
@@ -113,7 +163,7 @@
 .empty-state p {
   font-size: 15px;
   margin: 0 0 24px 0;
-  color: var(--s-gray, #adb5bd);
+  color: #555;
 }
 
 /* ── Responsive ─────────────────────────────────────────── */
@@ -126,11 +176,24 @@
     font-size: 1.6rem;
   }
 
+  .link-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .public-url {
+    width: 100%;
+  }
+
   .cartel-preview {
     padding: 16px;
   }
 
   .carteles-actions {
     flex-direction: column;
+  }
+
+  .carteles-actions .s-btn {
+    width: 100%;
   }
 }
