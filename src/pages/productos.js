@@ -24,9 +24,7 @@ import {
 } from '/src/shared/progressOverlay.js';
 import './productos.css';
 
-const XLSX = window.XLSX; // solo para lectura del archivo subido
-
-// Firma que identifica el template oficial de ÍndiceIA
+const XLSX = window.XLSX;
 const TEMPLATE_FIRMA = 'indiceia_template_v1';
 
 // ============================================================
@@ -57,16 +55,27 @@ const page = {
   _originalSnapshot: [],
 
   // ──────────────────────────────────────────────────────────
+  // HELPERS: etiquetas únicas de todo el catálogo
+  // ──────────────────────────────────────────────────────────
+  _getEtiquetasExistentes() {
+    const set = new Set();
+    this._data.productos.forEach(p => {
+      (p.etiquetas || []).forEach(e => set.add(e));
+    });
+    // También las del draft actual (por si estamos editando)
+    this._data.draftManual.etiquetas.forEach(e => set.add(e));
+    return [...set].sort();
+  },
+
+  // ──────────────────────────────────────────────────────────
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
     console.log('[productos] load() ctx:', ctx);
-
     this._isEditMode = ctx.isEditMode === true;
     const comercioId = ctx.comercioId;
 
     if (!comercioId) {
-      console.warn('[productos] load() → sin comercioId, productos vacíos');
       this._data.productos   = [];
       this._originalSnapshot = [];
       return;
@@ -76,7 +85,6 @@ const page = {
       const snap = await getDocs(collection(db, 'comercios', comercioId, 'productos'));
       this._data.productos   = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       this._originalSnapshot = structuredClone(this._data.productos);
-      console.log(`[productos] load() → ${this._data.productos.length} productos cargados`);
     } catch (err) {
       console.error('[productos] load() ERROR:', err);
       this._data.productos   = [];
@@ -88,8 +96,6 @@ const page = {
   // RENDER
   // ──────────────────────────────────────────────────────────
   render() {
-    console.log('[productos] render() → productos:', this._data.productos.length, '| showAdvanced:', this._data.showAdvanced);
-
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
 
@@ -101,7 +107,7 @@ const page = {
       <div class="product-stats">
         <span class="stat-badge">
           <i class="fas fa-boxes"></i>
-          <strong id="productCount">${this._data.productos.length}</strong> productos
+          <strong>${this._data.productos.length}</strong> productos
         </span>
       </div>
     `;
@@ -122,35 +128,14 @@ const page = {
   // ──────────────────────────────────────────────────────────
   _renderTipsCard() {
     const tips = [
-      {
-        icon: 'fa-tags',
-        titulo: 'Usá categorías',
-        texto: 'Asigná una categoría a cada producto (ej: Pizzas, Bebidas, Postres). Si usás un template visual, los productos se van a agrupar automáticamente y se va a ver mucho mejor.'
-      },
-      {
-        icon: 'fa-font',
-        titulo: 'Nombres consistentes',
-        texto: 'Usá siempre el mismo nombre para el mismo producto. El cliente lo ve tal cual lo escribís. Ej: "Pizza Muzzarella" — siempre igual, sin variantes de escritura.'
-      },
-      {
-        icon: 'fa-align-left',
-        titulo: 'Descripción corta',
-        texto: 'Una línea es suficiente. Ej: "Pizza con muzzarella y tomate, tamaño grande". No copies texto largo del menú.'
-      },
-      {
-        icon: 'fa-dollar-sign',
-        titulo: 'Precio sin símbolos',
-        texto: 'Escribí solo el número, sin puntos ni símbolos. Ej: 5500 — no $5.500 ni 5,500.'
-      },
-      {
-        icon: 'fa-image',
-        titulo: 'Imágenes',
-        texto: 'Pegá el link directo a la foto del producto (debe terminar en .jpg, .png, etc.). Si no tenés, dejalo vacío — se mostrará una imagen genérica.'
-      }
+      { icon: 'fa-tags',        titulo: 'Usá categorías',       texto: 'Asigná una categoría a cada producto (ej: Pizzas, Bebidas, Postres). Si usás un template visual, los productos se van a agrupar automáticamente.' },
+      { icon: 'fa-font',        titulo: 'Nombres consistentes', texto: 'Usá siempre el mismo nombre para el mismo producto. El cliente lo ve tal cual lo escribís.' },
+      { icon: 'fa-align-left',  titulo: 'Descripción corta',    texto: 'Una línea es suficiente. Ej: "Pizza con muzzarella y tomate, tamaño grande".' },
+      { icon: 'fa-dollar-sign', titulo: 'Precio sin símbolos',  texto: 'Escribí solo el número, sin puntos ni símbolos. Ej: 5500 — no $5.500 ni 5,500.' },
+      { icon: 'fa-image',       titulo: 'Imágenes',             texto: 'Pegá el link directo a la foto del producto (debe terminar en .jpg, .png, etc.). Si no tenés, dejalo vacío.' }
     ];
 
     const container = document.createElement('div');
-
     const toggleBtn = document.createElement('button');
     toggleBtn.className = 'tips-toggle';
     toggleBtn.innerHTML = `<i class="fas fa-lightbulb"></i> Consejos para cargar bien tus productos <i class="fas fa-chevron-down tips-chevron"></i>`;
@@ -163,10 +148,7 @@ const page = {
       item.className = 'tip-item';
       item.innerHTML = `
         <div class="tip-icon"><i class="fas ${tip.icon}"></i></div>
-        <div class="tip-body">
-          <strong>${tip.titulo}</strong>
-          <p>${tip.texto}</p>
-        </div>
+        <div class="tip-body"><strong>${tip.titulo}</strong><p>${tip.texto}</p></div>
       `;
       tipsContent.appendChild(item);
     });
@@ -179,7 +161,6 @@ const page = {
 
     container.appendChild(toggleBtn);
     container.appendChild(tipsContent);
-
     return container;
   },
 
@@ -187,19 +168,17 @@ const page = {
   // FORM CARD
   // ──────────────────────────────────────────────────────────
   _renderFormCard() {
-    console.log('[productos] _renderFormCard()');
-
     const container = document.createElement('div');
     container.id = 'form-manual-card';
 
-    const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',   placeholder: 'SKU123', helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
-    const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto', required: true, placeholder: 'Ej: Pizza Muzzarella Grande', value: this._data.draftManual.nombre });
-    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',          type: 'textarea', rows: 2, required: true, placeholder: 'Una línea. Ej: Pizza con muzzarella y tomate, tamaño grande', value: this._data.draftManual.descripcion });
-    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',               type: 'number', required: true, placeholder: '5500', helpText: 'Solo el número, sin $ ni puntos', value: this._data.draftManual.precio });
-    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                type: 'number', placeholder: '0', value: this._data.draftManual.stock });
-    const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',            required: true, placeholder: 'Ej: Pizzas', helpText: 'Necesaria para agrupar productos en el catálogo visual', value: this._data.draftManual.categoria });
+    const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',    placeholder: 'SKU123', helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
+    const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto',  required: true, placeholder: 'Ej: Pizza Muzzarella Grande', value: this._data.draftManual.nombre });
+    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',           type: 'textarea', rows: 2, required: true, placeholder: 'Una línea. Ej: Pizza con muzzarella y tomate, tamaño grande', value: this._data.draftManual.descripcion });
+    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',                type: 'number', required: true, placeholder: '5500', helpText: 'Solo el número, sin $ ni puntos', value: this._data.draftManual.precio });
+    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                 type: 'number', placeholder: '0', value: this._data.draftManual.stock });
+    const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',             required: true, placeholder: 'Ej: Pizzas', helpText: 'Necesaria para agrupar productos en el catálogo visual', value: this._data.draftManual.categoria });
 
-    // Autocomplete con categorías ya usadas
+    // Autocomplete categorías
     const categoriasExistentes = [...new Set(
       this._data.productos.map(p => p.categoria).filter(c => c && c.trim())
     )];
@@ -261,7 +240,7 @@ const page = {
         block:   true,
         onClick: () => {
           this._data.editingIndex = null;
-          this._data.draftManual = {
+          this._data.draftManual  = {
             codigo: '', nombre: '', descripcion: '', precio: '', stock: '',
             categoria: '', subcategoria: '', marca: '', imagen: '',
             disponibilidad: 'inmediata', atributos: [], etiquetas: []
@@ -275,24 +254,26 @@ const page = {
 
     container.appendChild(btnAgregar);
 
-    return createCard({ title: this._data.editingIndex !== null ? 'Editando Producto' : 'Agregar Producto Manualmente', icon: this._data.editingIndex !== null ? 'fa-edit' : 'fa-plus-circle', content: container });
+    return createCard({
+      title:   this._data.editingIndex !== null ? 'Editando Producto' : 'Agregar Producto Manualmente',
+      icon:    this._data.editingIndex !== null ? 'fa-edit' : 'fa-plus-circle',
+      content: container
+    });
   },
 
   _renderAdvancedFields() {
     const container = document.createElement('div');
     container.className = 'advanced-fields';
 
-    const subcategoria   = createFormField({ id: 'prod-subcategoria',   label: 'Subcategoría',  placeholder: 'Ej: Especiales', value: this._data.draftManual.subcategoria });
-    const marca          = createFormField({ id: 'prod-marca',           label: 'Marca',          placeholder: 'Ej: Nike',       value: this._data.draftManual.marca });
+    const subcategoria   = createFormField({ id: 'prod-subcategoria',   label: 'Subcategoría',  placeholder: 'Ej: Especiales',     value: this._data.draftManual.subcategoria });
+    const marca          = createFormField({ id: 'prod-marca',           label: 'Marca',          placeholder: 'Ej: Nike',           value: this._data.draftManual.marca });
     const imagen         = createFormField({ id: 'prod-imagen',          label: 'URL de imagen',  type: 'url', placeholder: 'https://...', helpText: 'Link directo a la foto del producto', value: this._data.draftManual.imagen });
     const disponibilidad = createFormField({
-      id: 'prod-disponibilidad',
-      label: 'Disponibilidad',
-      type: 'select',
+      id: 'prod-disponibilidad', label: 'Disponibilidad', type: 'select',
       options: [
-        { value: 'inmediata',    label: 'Inmediata' },
-        { value: 'bajo_pedido', label: 'Bajo pedido' },
-        { value: 'sin_stock',   label: 'Sin stock' }
+        { value: 'inmediata',    label: 'Inmediata'     },
+        { value: 'bajo_pedido', label: 'Bajo pedido'   },
+        { value: 'sin_stock',   label: 'Sin stock'     }
       ],
       value: this._data.draftManual.disponibilidad || 'inmediata'
     });
@@ -302,7 +283,6 @@ const page = {
     container.appendChild(this._renderEtiquetasSection());
 
     this._advancedRefs = { subcategoria, marca, imagen, disponibilidad };
-
     return container;
   },
 
@@ -335,10 +315,7 @@ const page = {
     wrapper.appendChild(inputs);
 
     wrapper.appendChild(createButton({
-      label:   'Agregar atributo',
-      variant: 'secondary',
-      size:    'sm',
-      icon:    'fa-plus',
+      label: 'Agregar atributo', variant: 'secondary', size: 'sm', icon: 'fa-plus',
       onClick: () => {
         const key   = inputs.querySelector('#attr-key').value.trim();
         const value = inputs.querySelector('#attr-value').value.trim();
@@ -352,58 +329,176 @@ const page = {
     return wrapper;
   },
 
+  // ──────────────────────────────────────────────────────────
+  // ETIQUETAS — con tags editables y dropdown de sugerencias
+  // ──────────────────────────────────────────────────────────
   _renderEtiquetasSection() {
     const wrapper = document.createElement('div');
-    wrapper.className = 'form-group';
+    wrapper.className = 'form-group etiquetas-section';
 
     const label = document.createElement('label');
     label.textContent = 'Etiquetas';
     wrapper.appendChild(label);
 
+    const helpText = document.createElement('p');
+    helpText.className = 'etiquetas-help';
+    helpText.textContent = 'Usadas para agrupar y filtrar productos. Hacé clic en × para quitar una etiqueta de este producto.';
+    wrapper.appendChild(helpText);
+
+    // Tags actuales
     const tags = document.createElement('div');
     tags.className = 'etiquetas-tags';
 
-    this._data.draftManual.etiquetas.forEach((etiqueta, index) => {
-      const tag = document.createElement('span');
-      tag.className = 'etiqueta-tag';
-      tag.innerHTML = `${etiqueta}<button type="button">×</button>`;
-      tag.querySelector('button').addEventListener('click', () => {
-        this._data.draftManual.etiquetas.splice(index, 1);
-        this.render();
+    if (this._data.draftManual.etiquetas.length === 0) {
+      const empty = document.createElement('span');
+      empty.className = 'etiquetas-empty';
+      empty.textContent = 'Sin etiquetas';
+      tags.appendChild(empty);
+    } else {
+      this._data.draftManual.etiquetas.forEach((etiqueta, index) => {
+        const tag = document.createElement('span');
+        tag.className = 'etiqueta-tag';
+        tag.innerHTML = `
+          <span class="etiqueta-tag-text">${etiqueta}</span>
+          <button type="button" class="etiqueta-tag-remove" title="Quitar etiqueta" aria-label="Quitar ${etiqueta}">
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+        tag.querySelector('.etiqueta-tag-remove').addEventListener('click', () => {
+          this._data.draftManual.etiquetas.splice(index, 1);
+          this.render();
+        });
+        tags.appendChild(tag);
       });
-      tags.appendChild(tag);
-    });
+    }
     wrapper.appendChild(tags);
 
-    const inputGroup = document.createElement('div');
-    inputGroup.className = 'etiqueta-input-group';
-    inputGroup.innerHTML = `<input type="text" id="etiqueta-input" placeholder="Ej: nuevo, destacado">`;
-    wrapper.appendChild(inputGroup);
+    // Input con dropdown de sugerencias
+    const inputWrapper = document.createElement('div');
+    inputWrapper.className = 'etiqueta-input-wrapper';
 
-    wrapper.appendChild(createButton({
-      label:   'Agregar etiqueta',
-      variant: 'secondary',
-      size:    'sm',
-      icon:    'fa-tag',
-      onClick: () => {
-        const value = inputGroup.querySelector('#etiqueta-input').value.trim();
-        if (value && !this._data.draftManual.etiquetas.includes(value)) {
-          this._data.draftManual.etiquetas.push(value);
-          this.render();
-        }
+    const input = document.createElement('input');
+    input.type        = 'text';
+    input.id          = 'etiqueta-input';
+    input.placeholder = 'Ej: destacado, nuevo, sin tacc...';
+    input.className   = 'etiqueta-input';
+    inputWrapper.appendChild(input);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'etiqueta-dropdown etiqueta-dropdown-hidden';
+    inputWrapper.appendChild(dropdown);
+
+    wrapper.appendChild(inputWrapper);
+
+    const etiquetasExistentes = this._getEtiquetasExistentes()
+      .filter(e => !this._data.draftManual.etiquetas.includes(e));
+
+    const _addEtiqueta = (value) => {
+      const val = value.trim().toLowerCase();
+      if (val && !this._data.draftManual.etiquetas.includes(val)) {
+        this._data.draftManual.etiquetas.push(val);
+        this.render();
       }
-    }));
+    };
+
+    const _renderDropdown = (filtro) => {
+      dropdown.innerHTML = '';
+      const sugerencias = etiquetasExistentes.filter(e =>
+        e.toLowerCase().includes(filtro.toLowerCase())
+      );
+
+      if (sugerencias.length === 0) {
+        dropdown.classList.add('etiqueta-dropdown-hidden');
+        return;
+      }
+
+      sugerencias.forEach(s => {
+        const item = document.createElement('button');
+        item.type      = 'button';
+        item.className = 'etiqueta-dropdown-item';
+        item.innerHTML = `<i class="fas fa-tag"></i> ${s}`;
+        item.addEventListener('mousedown', (e) => {
+          e.preventDefault(); // evita que el input pierda foco antes del click
+          _addEtiqueta(s);
+        });
+        dropdown.appendChild(item);
+      });
+
+      dropdown.classList.remove('etiqueta-dropdown-hidden');
+    };
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim();
+      if (val.length === 0 && etiquetasExistentes.length > 0) {
+        _renderDropdown('');
+      } else if (val.length > 0) {
+        _renderDropdown(val);
+      } else {
+        dropdown.classList.add('etiqueta-dropdown-hidden');
+      }
+    });
+
+    input.addEventListener('focus', () => {
+      if (etiquetasExistentes.length > 0) _renderDropdown(input.value.trim());
+    });
+
+    input.addEventListener('blur', () => {
+      setTimeout(() => dropdown.classList.add('etiqueta-dropdown-hidden'), 150);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = input.value.trim().replace(/,$/, '');
+        if (val) _addEtiqueta(val);
+      }
+    });
+
+    const btnAgregar = createButton({
+      label: 'Agregar', variant: 'secondary', size: 'sm', icon: 'fa-plus',
+      onClick: () => {
+        const val = input.value.trim();
+        if (val) _addEtiqueta(val);
+      }
+    });
+    wrapper.appendChild(btnAgregar);
+
+    // Sugerencias rápidas (etiquetas existentes no usadas aún)
+    if (etiquetasExistentes.length > 0) {
+      const sugerenciasWrap = document.createElement('div');
+      sugerenciasWrap.className = 'etiquetas-sugerencias';
+
+      const sugerenciasLabel = document.createElement('span');
+      sugerenciasLabel.className = 'etiquetas-sugerencias-label';
+      sugerenciasLabel.textContent = 'Etiquetas existentes:';
+      sugerenciasWrap.appendChild(sugerenciasLabel);
+
+      const chips = document.createElement('div');
+      chips.className = 'etiquetas-chips';
+
+      etiquetasExistentes.slice(0, 12).forEach(e => {
+        const chip = document.createElement('button');
+        chip.type      = 'button';
+        chip.className = 'etiqueta-chip';
+        chip.textContent = e;
+        chip.addEventListener('click', () => _addEtiqueta(e));
+        chips.appendChild(chip);
+      });
+
+      sugerenciasWrap.appendChild(chips);
+      wrapper.appendChild(sugerenciasWrap);
+    }
 
     return wrapper;
   },
 
   _handleManualSubmit(refs) {
     const newProduct = {
-      codigo:       refs.codigo.getValue() || this._generateCodigo(),
+      codigo:       refs.codigo.getValue()      || this._generateCodigo(),
       nombre:       refs.nombre.getValue(),
       descripcion:  refs.descripcion.getValue(),
       precio_final: parseFloat(refs.precio.getValue()) || 0,
-      stock:        parseInt(refs.stock.getValue()) || 0,
+      stock:        parseInt(refs.stock.getValue())    || 0,
       categoria:    refs.categoria.getValue(),
       paused:       false,
       atributos:    {},
@@ -431,7 +526,6 @@ const page = {
       return;
     }
 
-    // Modo edición: actualizar producto existente
     if (this._data.editingIndex !== null) {
       const original = this._data.productos[this._data.editingIndex];
       this._data.productos[this._data.editingIndex] = { ...original, ...newProduct };
@@ -457,7 +551,6 @@ const page = {
   _renderImportCard() {
     const container = document.createElement('div');
 
-    // Instrucciones
     const instrucciones = document.createElement('div');
     instrucciones.className = 'import-instrucciones';
     instrucciones.innerHTML = `
@@ -470,31 +563,23 @@ const page = {
     `;
     container.appendChild(instrucciones);
 
-    // Botón descarga
-    const btnDescarga = createButton({
-      label:   'Descargar plantilla ÍndiceIA',
-      variant: 'secondary',
-      icon:    'fa-download',
+    container.appendChild(createButton({
+      label: 'Descargar plantilla ÍndiceIA', variant: 'secondary', icon: 'fa-download',
       onClick: () => this._downloadTemplate()
-    });
-    container.appendChild(btnDescarga);
+    }));
 
-    // Separador
     const sep = document.createElement('div');
     sep.className = 'import-separator';
     sep.innerHTML = '<span>Una vez completada, subí la plantilla acá</span>';
     container.appendChild(sep);
 
-    // Upload zone
     const uploadZone = document.createElement('div');
     uploadZone.className = 'upload-zone';
     uploadZone.innerHTML = `
       <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
       <p class="upload-text"><strong>Arrastrá tu plantilla aquí</strong></p>
       <p class="upload-subtext">o hacé clic para seleccionar</p>
-      <div class="upload-formats">
-        <span class="format-badge">.xlsx</span>
-      </div>
+      <div class="upload-formats"><span class="format-badge">.xlsx</span></div>
     `;
 
     const fileInput = document.createElement('input');
@@ -521,71 +606,42 @@ const page = {
     return createCard({ title: 'Importar desde Plantilla', icon: 'fa-file-excel', content: container });
   },
 
-  // ──────────────────────────────────────────────────────────
-  // DOWNLOAD TEMPLATE
-  // ──────────────────────────────────────────────────────────
   _downloadTemplate() {
-    console.log('[productos] _downloadTemplate() → descargando plantilla estática');
     window.open('/plantilla_indiceia_productos.xlsx', '_blank');
   },
 
-  // ──────────────────────────────────────────────────────────
-  // PARSE FILE — verifica firma y carga en memoria
-  // ──────────────────────────────────────────────────────────
   _parseFile(file) {
-    console.log('[productos] _parseFile() archivo:', file.name);
-
-    if (!XLSX) {
-      showToast('Error', 'Librería XLSX no cargada', 'error');
-      return;
-    }
+    if (!XLSX) { showToast('Error', 'Librería XLSX no cargada', 'error'); return; }
 
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const wb = XLSX.read(e.target.result, { type: 'binary' });
 
-        // Verificar firma
         const metaSheet = wb.Sheets['_indiceia_meta'];
         if (!metaSheet) {
-          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA. Descargala desde el botón de arriba.', 'error');
-          console.warn('[productos] _parseFile() → sin hoja _indiceia_meta');
+          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA.', 'error');
           return;
         }
         const firmaData = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
         if (!firmaData?.[0]?.[0] || firmaData[0][0] !== TEMPLATE_FIRMA) {
-          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA. Descargala desde el botón de arriba.', 'error');
-          console.warn('[productos] _parseFile() → firma inválida:', firmaData?.[0]?.[0]);
+          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA.', 'error');
           return;
         }
 
-        // Parsear productos
         const ws       = wb.Sheets['productos'];
         const jsonData = XLSX.utils.sheet_to_json(ws, { defval: '' });
-
-        console.log('[productos] _parseFile() firma OK → filas:', jsonData.length);
 
         if (jsonData.length === 0) {
           showToast('Plantilla vacía', 'Completá al menos un producto en la plantilla', 'warning');
           return;
         }
 
-        // Campos base conocidos — todo lo demás va a atributos{}
         const CAMPOS_BASE = ['codigo','nombre','descripcion','precio_final','categoria','stock','disponibilidad','imagen'];
         let added = 0, skipped = 0;
 
         jsonData.forEach((row, idx) => {
-          if (!row.nombre) {
-            console.warn(`[productos] fila ${idx + 2} sin nombre → ignorada`);
-            skipped++;
-            return;
-          }
-
-          if (!String(row.categoria || '').trim()) {
-            console.warn(`[productos] fila ${idx + 2} sin categoria → ignorada`);
-            skipped++;
-            return;
-          }
+          if (!row.nombre || !String(row.categoria || '').trim()) { skipped++; return; }
 
           const producto = {
             codigo:         String(row.codigo || this._generateCodigo()),
@@ -597,21 +653,17 @@ const page = {
             imagen:         String(row.imagen || '').trim(),
             disponibilidad: ['inmediata', 'bajo_pedido', 'sin_stock'].includes(row.disponibilidad)
                               ? row.disponibilidad : 'inmediata',
-            paused:         false,
-            atributos:      {},
-            etiquetas:      []
+            paused:    false,
+            atributos: {},
+            etiquetas: []
           };
 
-          // Columnas extras → atributos{}
           Object.keys(row).forEach(col => {
             if (!CAMPOS_BASE.includes(col) && row[col] !== '' && row[col] != null) {
               producto.atributos[col] = String(row[col]).trim();
             }
           });
 
-          console.log(`[productos] fila ${idx + 2} atributos extras:`, Object.keys(producto.atributos));
-
-          // Actualizar si ya existe por código
           const idx2 = this._data.productos.findIndex(p => p.codigo === producto.codigo);
           if (idx2 >= 0) {
             this._data.productos[idx2] = { ...this._data.productos[idx2], ...producto };
@@ -621,7 +673,6 @@ const page = {
           added++;
         });
 
-        console.log(`[productos] _parseFile() → cargados: ${added} | ignorados: ${skipped}`);
         showToast('Plantilla cargada', `${added} productos listos para guardar`, 'success');
         this.render();
 
@@ -656,9 +707,7 @@ const page = {
     const header = document.createElement('div');
     header.className = 'table-header';
     const search = createFormField({
-      id: 'search-products',
-      type: 'text',
-      placeholder: 'Buscar productos...',
+      id: 'search-products', type: 'text', placeholder: 'Buscar productos...',
       actions: { onInput: (value) => this._filterProducts(value) }
     });
     search.classList.add('search-box');
@@ -674,7 +723,7 @@ const page = {
       <thead>
         <tr>
           <th>Código</th><th>Nombre</th><th>Precio</th>
-          <th>Stock</th><th>Categoría</th><th>Acciones</th>
+          <th>Stock</th><th>Categoría</th><th>Etiquetas</th><th>Acciones</th>
         </tr>
       </thead>
       <tbody id="products-tbody"></tbody>
@@ -686,27 +735,29 @@ const page = {
       const row = document.createElement('tr');
       row.className     = p.paused ? 'paused-row' : '';
       row.dataset.index = index;
+
+      const etiquetasHtml = (p.etiquetas || []).length > 0
+        ? (p.etiquetas || []).map(e => `<span class="table-tag">${e}</span>`).join('')
+        : '<span class="table-tag-empty">—</span>';
+
       row.innerHTML = `
         <td>${p.codigo || '-'}</td>
         <td>${p.nombre || '-'}</td>
         <td style="text-align:right">${p.precio_final ? `$${this._formatNumber(p.precio_final)}` : '-'}</td>
         <td style="text-align:center">${p.stock ?? 0}</td>
         <td>${p.categoria || '-'}</td>
+        <td><div class="table-tags">${etiquetasHtml}</div></td>
         <td>
           <div class="action-buttons">
-            <button class="btn-action btn-edit" title="Editar">
-              <i class="fas fa-pen"></i>
-            </button>
+            <button class="btn-action btn-edit"  title="Editar"><i class="fas fa-pen"></i></button>
             <button class="btn-action ${p.paused ? 'btn-play' : 'btn-pause'}" title="${p.paused ? 'Activar' : 'Pausar'}">
               <i class="fas fa-${p.paused ? 'play' : 'pause'}"></i>
             </button>
-            <button class="btn-action btn-delete" title="Eliminar">
-              <i class="fas fa-trash"></i>
-            </button>
+            <button class="btn-action btn-delete" title="Eliminar"><i class="fas fa-trash"></i></button>
           </div>
         </td>
       `;
-      row.querySelector('.btn-edit').addEventListener('click', () => this._editProduct(index));
+      row.querySelector('.btn-edit').addEventListener('click',   () => this._editProduct(index));
       row.querySelector('.btn-pause, .btn-play').addEventListener('click', () => this._toggleProduct(index));
       row.querySelector('.btn-delete').addEventListener('click', () => this._deleteProduct(index));
       tbody.appendChild(row);
@@ -724,10 +775,17 @@ const page = {
     });
   },
 
+  // ── FIX: showAdvanced se activa también si hay etiquetas ──
   _editProduct(index) {
     const p = this._data.productos[index];
     this._data.editingIndex = index;
-    this._data.showAdvanced = !!(p.subcategoria || p.marca || p.imagen || p.disponibilidad !== 'inmediata');
+    this._data.showAdvanced = !!(
+      p.subcategoria ||
+      p.marca ||
+      p.imagen ||
+      p.disponibilidad !== 'inmediata' ||
+      p.etiquetas?.length > 0           // ← fix
+    );
     this._data.draftManual = {
       codigo:         p.codigo         || '',
       nombre:         p.nombre         || '',
@@ -740,10 +798,9 @@ const page = {
       imagen:         p.imagen         || '',
       disponibilidad: p.disponibilidad || 'inmediata',
       atributos:      p.atributos ? Object.entries(p.atributos).map(([key, value]) => ({ key, value })) : [],
-      etiquetas:      p.etiquetas      || []
+      etiquetas:      [...(p.etiquetas || [])]   // ← copia limpia
     };
     this.render();
-    // Scroll al form de carga individual (no al de importación)
     setTimeout(() => {
       const formCard = document.getElementById('form-manual-card');
       if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -751,9 +808,7 @@ const page = {
   },
 
   _toggleProduct(index) {
-    const p = this._data.productos[index];
-    p.paused = !p.paused;
-    console.log(`[productos] _toggleProduct() "${p.nombre}" paused:${p.paused}`);
+    this._data.productos[index].paused = !this._data.productos[index].paused;
     this.render();
   },
 
@@ -771,16 +826,12 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // SAVE BUTTON — sin cambios
+  // SAVE BUTTON
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
     const dirtyController = {
-      hasUnsavedChanges: () => {
-        return JSON.stringify(this._data.productos) !== JSON.stringify(this._originalSnapshot);
-      },
-      markSaved: () => {
-        this._originalSnapshot = structuredClone(this._data.productos);
-      }
+      hasUnsavedChanges: () => JSON.stringify(this._data.productos) !== JSON.stringify(this._originalSnapshot),
+      markSaved:         () => { this._originalSnapshot = structuredClone(this._data.productos); }
     };
 
     return createOnboardingButton({
@@ -802,8 +853,6 @@ const page = {
       dirtyController,
 
       onSave: async ({ uid, comercioId }) => {
-        console.log('[productos] onSave() uid:', uid, '| comercioId:', comercioId);
-
         if (!comercioId) throw new Error('No hay comercioId');
 
         const productosRef = collection(db, 'comercios', comercioId, 'productos');
@@ -816,9 +865,7 @@ const page = {
         const toUpdate = [];
         const toAdd    = [];
 
-        existentes.docs.forEach(d => {
-          if (!currentMap.has(d.id)) toDelete.push(d.ref);
-        });
+        existentes.docs.forEach(d => { if (!currentMap.has(d.id)) toDelete.push(d.ref); });
 
         this._data.productos.forEach(p => {
           if (!p.id) {
@@ -838,21 +885,16 @@ const page = {
         }
 
         showProgressOverlay(totalOps, {
-          title:          'Sincronizando catálogo',
+          title: 'Sincronizando catálogo',
           initialMessage: `${toDelete.length} eliminados, ${toUpdate.length} actualizados, ${toAdd.length} nuevos`
         });
 
-        for (const ref of toDelete) {
-          updateProgress('Eliminando producto...');
-          batch.delete(ref);
-        }
-
+        for (const ref of toDelete) { updateProgress('Eliminando producto...'); batch.delete(ref); }
         for (const { ref, data } of toUpdate) {
           updateProgress(`Actualizando ${data.nombre || 'producto'}...`);
           const { id, ...rest } = data;
           batch.update(ref, { ...rest, fechaActualizacion: serverTimestamp() });
         }
-
         for (const p of toAdd) {
           updateProgress(`Creando ${p.nombre || 'producto'}...`);
           const newRef = doc(productosRef);
@@ -864,11 +906,8 @@ const page = {
         return { success: true, stepMarked: false };
       },
 
-      onSuccess: () => {
-        showToast('Éxito', 'Productos guardados correctamente', 'success');
-      },
-
-      onError: (err) => {
+      onSuccess: () => showToast('Éxito', 'Productos guardados correctamente', 'success'),
+      onError:   (err) => {
         console.error('[productos] onError():', err);
         showToast('Error al guardar', err.message, 'error');
       }
