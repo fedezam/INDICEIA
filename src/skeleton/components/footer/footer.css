@@ -1,13 +1,11 @@
 /* src/skeleton/components/footer/footer.css */
-/* Footer adaptado al estilo AdminLTE usando variables del theme */
 
 .footer {
   background: var(--s-dark);
   border-top: 3px solid var(--s-primary);
   color: #b8c7ce;
-  padding: 20px 0;
-  margin-top: 0;
-  font-size: 14px;
+  padding: 16px 0;
+  font-size: 13px;
 }
 
 .footer .container {
@@ -16,168 +14,67 @@
   padding: 0 15px;
 }
 
-/* ==================== FOOTER CONTENT ==================== */
-.footer-content {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
-  gap: 2rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* ==================== FOOTER BRAND ==================== */
-.footer-brand {
+/* ── Fila única ──────────────────────────────────────────── */
+.footer-bottom {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
+/* ── Brand ───────────────────────────────────────────────── */
 .footer-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .footer-logo-icon {
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1;
 }
 
-.footer-logo h3 {
-  font-size: 18px;
-  color: white;
-  margin: 0;
+.footer-brand-name {
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.footer-description {
-  color: #b8c7ce;
-  font-size: 13px;
-  line-height: 1.6;
-  max-width: 320px;
-}
-
-/* ==================== FOOTER LINKS ==================== */
-.footer-section h4 {
-  font-size: 14px;
-  font-weight: 600;
   color: white;
-  margin: 0 0 10px 0;
-  text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.footer-links {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.footer-links a {
-  color: #b8c7ce;
-  text-decoration: none;
-  font-size: 13px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 2px 0;
-}
-
-.footer-links a:hover {
-  color: var(--s-primary);
-  padding-left: 5px;
-}
-
-.footer-links i {
-  font-size: 12px;
-  width: 14px;
-  opacity: 0.7;
-}
-
-/* ==================== FOOTER BOTTOM ==================== */
-.footer-bottom {
-  padding-top: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
+/* ── Copyright ───────────────────────────────────────────── */
 .footer-copyright {
   color: #b8c7ce;
-  font-size: 13px;
 }
 
 .footer-copyright strong {
   color: white;
-  font-weight: 600;
 }
 
-.footer-social {
-  display: flex;
-  gap: 10px;
-}
-
-.footer-social a {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--s-radius);
-  background: rgba(255, 255, 255, 0.1);
+/* ── Contacto ────────────────────────────────────────────── */
+.footer-contact a {
   color: #b8c7ce;
+  text-decoration: none;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  transition: color 0.2s;
+}
+
+.footer-contact a:hover {
+  color: var(--s-primary);
   text-decoration: none;
-  transition: all 0.2s ease;
-  font-size: 14px;
 }
 
-.footer-social a:hover {
-  background: var(--s-primary);
-  color: white;
-  transform: translateY(-2px);
+.footer-contact i {
+  font-size: 12px;
 }
 
-/* ==================== RESPONSIVE ==================== */
-@media (max-width: 992px) {
-  .footer-content {
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-  }
-
-  .footer-brand {
-    grid-column: 1 / -1;
-  }
-}
-
+/* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
-  .footer {
-    padding: 15px 0;
-  }
-
-  .footer .container {
-    padding: 0 10px;
-  }
-
-  .footer-content {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-  }
-
   .footer-bottom {
     flex-direction: column;
-    gap: 10px;
     text-align: center;
-  }
-
-  .footer-social {
-    justify-content: center;
+    gap: 10px;
   }
 }
