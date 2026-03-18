@@ -7,7 +7,7 @@ import { mountLayout }       from './layout/index.js';
 import { initializeRuntime } from './runtime.js';
 import { runFlowController } from '../controllers/flowController.js';
 import { auth }              from '../services/firebase/firebase.js';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 /**
  * Skeleton canónico de ÍndiceIA
@@ -22,6 +22,16 @@ export async function runSkeleton({ page, adapter, options = {} }) {
 
   // 🦴 1. Layout base
   renderLayout();
+
+  // 🔑 Logout — escucha el evento del botón del header
+  document.addEventListener('skeleton:logout', async () => {
+    try {
+      await signOut(auth);
+      window.location.href = '/';
+    } catch (err) {
+      console.error('[skeleton] Error en logout:', err);
+    }
+  }, { once: false });
 
   // 🧬 2. Ciclo de vida
   await runLifecycle({
