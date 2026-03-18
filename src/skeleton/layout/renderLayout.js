@@ -25,6 +25,6 @@ export function renderLayout() {
   console.log('🦴 Skeleton layout base renderizado');
 
   createHeader();
-  renderProgress();
+  //renderProgress();
   renderFooter();
 }
