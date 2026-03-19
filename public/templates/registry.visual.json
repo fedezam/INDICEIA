@@ -1,9 +1,9 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2026-03-19T20:13:42.481Z",
+  "last_updated": "2026-03-19T20:29:11.184Z",
   "templates": [
     {
-      "id": "C1_SIMPLE_CATALOG",
+      "id": "C1_SimpleCatalog",
       "name": "Catálogo Simple",
       "version": "2.1.0",
       "tier": "C1",
