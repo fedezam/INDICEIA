@@ -1,5 +1,23 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2026-03-19T20:05:14.555Z",
-  "templates": {}
+  "last_updated": "2026-03-19T20:07:30.566Z",
+  "templates": {
+    "C1_SIMPLE_CATALOG": {
+      "id": "C1_SIMPLE_CATALOG",
+      "version": "2.1.0",
+      "paths": {
+        "template_url": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/template.txt"
+      },
+      "supports": {
+        "categories": true,
+        "cart": true,
+        "variants": true,
+        "images": true,
+        "delivery": true,
+        "search": false,
+        "filters": false
+      },
+      "requirements": {}
+    }
+  }
 }

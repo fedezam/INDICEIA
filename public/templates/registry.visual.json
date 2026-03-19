@@ -1,5 +1,30 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2026-03-19T20:05:14.555Z",
-  "templates": []
+  "last_updated": "2026-03-19T20:07:30.566Z",
+  "templates": [
+    {
+      "id": "C1_SIMPLE_CATALOG",
+      "name": "Catálogo Simple",
+      "version": "2.1.0",
+      "tier": "C1",
+      "description": "Catálogo visual con categorías, carrito y checkout directo por WhatsApp. Mobile-first, carga rápida, funciona para cualquier rubro.",
+      "ideal_for": [
+        "pizzerías",
+        "restaurantes",
+        "cafeterías",
+        "panaderías",
+        "bares",
+        "heladerías",
+        "delivery de comida",
+        "ropa y accesorios",
+        "comercios con catálogo simple"
+      ],
+      "visual": {
+        "iframe_url": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/preview.html"
+      },
+      "previews": {
+        "thumbnail": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/thumbnail.png"
+      }
+    }
+  ]
 }
