@@ -40,9 +40,9 @@ const page = {
       precio:         '',
       stock:          '',
       categoria:      '',
+      imagen:         '',       // ← ahora en grupo principal
       subcategoria:   '',
       marca:          '',
-      imagen:         '',
       disponibilidad: 'inmediata',
       atributos:      [],
       etiquetas:      []
@@ -55,23 +55,27 @@ const page = {
   _originalSnapshot: [],
 
   // ──────────────────────────────────────────────────────────
-  // HELPERS: etiquetas únicas de todo el catálogo
+  // HELPERS
   // ──────────────────────────────────────────────────────────
   _getEtiquetasExistentes() {
     const set = new Set();
-    this._data.productos.forEach(p => {
-      (p.etiquetas || []).forEach(e => set.add(e));
-    });
-    // También las del draft actual (por si estamos editando)
+    this._data.productos.forEach(p => (p.etiquetas || []).forEach(e => set.add(e)));
     this._data.draftManual.etiquetas.forEach(e => set.add(e));
     return [...set].sort();
+  },
+
+  _getCategoriasUnicas() {
+    return [...new Set(
+      this._data.productos
+        .map(p => p.categoria)
+        .filter(c => c && c.trim() && c !== 'general')
+    )].sort((a, b) => a.localeCompare(b, 'es'));
   },
 
   // ──────────────────────────────────────────────────────────
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
-    console.log('[productos] load() ctx:', ctx);
     this._isEditMode = ctx.isEditMode === true;
     const comercioId = ctx.comercioId;
 
@@ -83,7 +87,13 @@ const page = {
 
     try {
       const snap = await getDocs(collection(db, 'comercios', comercioId, 'productos'));
-      this._data.productos   = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      this._data.productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Orden alfabético por nombre
+      this._data.productos.sort((a, b) =>
+        (a.nombre || '').localeCompare(b.nombre || '', 'es')
+      );
+
       this._originalSnapshot = structuredClone(this._data.productos);
     } catch (err) {
       console.error('[productos] load() ERROR:', err);
@@ -117,6 +127,7 @@ const page = {
     root.appendChild(this._renderImportCard());
 
     if (this._data.productos.length > 0) {
+      root.appendChild(this._renderCategoriasCard());
       root.appendChild(this._renderTableCard());
     }
 
@@ -171,17 +182,18 @@ const page = {
     const container = document.createElement('div');
     container.id = 'form-manual-card';
 
-    const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',    placeholder: 'SKU123', helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
-    const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto',  required: true, placeholder: 'Ej: Pizza Muzzarella Grande', value: this._data.draftManual.nombre });
-    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',           type: 'textarea', rows: 2, required: true, placeholder: 'Una línea. Ej: Pizza con muzzarella y tomate, tamaño grande', value: this._data.draftManual.descripcion });
-    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',                type: 'number', required: true, placeholder: '5500', helpText: 'Solo el número, sin $ ni puntos', value: this._data.draftManual.precio });
-    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                 type: 'number', placeholder: '0', value: this._data.draftManual.stock });
-    const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',             required: true, placeholder: 'Ej: Pizzas', helpText: 'Necesaria para agrupar productos en el catálogo visual', value: this._data.draftManual.categoria });
+    const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',   placeholder: 'SKU123', helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
+    const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto', required: true, placeholder: 'Ej: Pizza Muzzarella Grande', value: this._data.draftManual.nombre });
+    const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',          type: 'textarea', rows: 2, required: true, placeholder: 'Una línea. Ej: Pizza con muzzarella y tomate, tamaño grande', value: this._data.draftManual.descripcion });
+    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',               type: 'number', required: true, placeholder: '5500', helpText: 'Solo el número, sin $ ni puntos', value: this._data.draftManual.precio });
+    const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                type: 'number', placeholder: '0', value: this._data.draftManual.stock });
+    const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',            required: true, placeholder: 'Ej: Pizzas', helpText: 'Necesaria para agrupar productos en el catálogo visual', value: this._data.draftManual.categoria });
+
+    // Imagen en grupo principal
+    const imagen = createFormField({ id: 'prod-imagen', label: 'URL de imagen', type: 'url', placeholder: 'https://...', helpText: 'Link directo a la foto del producto', value: this._data.draftManual.imagen });
 
     // Autocomplete categorías
-    const categoriasExistentes = [...new Set(
-      this._data.productos.map(p => p.categoria).filter(c => c && c.trim())
-    )];
+    const categoriasExistentes = this._getCategoriasUnicas();
     if (categoriasExistentes.length > 0) {
       const datalist = document.createElement('datalist');
       datalist.id = 'categorias-datalist';
@@ -202,6 +214,7 @@ const page = {
       this._data.draftManual.precio      = precio.getValue();
       this._data.draftManual.stock       = stock.getValue();
       this._data.draftManual.categoria   = categoria.getValue();
+      this._data.draftManual.imagen      = imagen.getValue();
     };
 
     const toggleBtn = createButton({
@@ -215,11 +228,16 @@ const page = {
       }
     });
 
-    container.append(codigo, nombre, descripcion, precio, stock, categoria, toggleBtn);
+    container.append(codigo, nombre, descripcion, precio, stock, categoria, imagen, toggleBtn);
 
     if (this._data.showAdvanced) {
       container.appendChild(this._renderAdvancedFields());
     }
+
+    // Separador visual entre toggleBtn/advanced y btnAgregar
+    const spacer = document.createElement('div');
+    spacer.className = 'form-actions-spacer';
+    container.appendChild(spacer);
 
     const btnAgregar = createButton({
       label:   this._data.editingIndex !== null ? 'Actualizar Producto' : 'Agregar Producto',
@@ -228,7 +246,7 @@ const page = {
       block:   true,
       onClick: () => {
         _saveBaseDraft();
-        this._handleManualSubmit({ codigo, nombre, descripcion, precio, stock, categoria });
+        this._handleManualSubmit({ codigo, nombre, descripcion, precio, stock, categoria, imagen });
       }
     });
 
@@ -242,7 +260,7 @@ const page = {
           this._data.editingIndex = null;
           this._data.draftManual  = {
             codigo: '', nombre: '', descripcion: '', precio: '', stock: '',
-            categoria: '', subcategoria: '', marca: '', imagen: '',
+            categoria: '', imagen: '', subcategoria: '', marca: '',
             disponibilidad: 'inmediata', atributos: [], etiquetas: []
           };
           this._data.showAdvanced = false;
@@ -265,24 +283,24 @@ const page = {
     const container = document.createElement('div');
     container.className = 'advanced-fields';
 
-    const subcategoria   = createFormField({ id: 'prod-subcategoria',   label: 'Subcategoría',  placeholder: 'Ej: Especiales',     value: this._data.draftManual.subcategoria });
-    const marca          = createFormField({ id: 'prod-marca',           label: 'Marca',          placeholder: 'Ej: Nike',           value: this._data.draftManual.marca });
-    const imagen         = createFormField({ id: 'prod-imagen',          label: 'URL de imagen',  type: 'url', placeholder: 'https://...', helpText: 'Link directo a la foto del producto', value: this._data.draftManual.imagen });
+    // Imagen ya está en el grupo principal — acá solo subcategoría, marca, disponibilidad
+    const subcategoria   = createFormField({ id: 'prod-subcategoria',   label: 'Subcategoría',  placeholder: 'Ej: Especiales', value: this._data.draftManual.subcategoria });
+    const marca          = createFormField({ id: 'prod-marca',           label: 'Marca',          placeholder: 'Ej: Nike',       value: this._data.draftManual.marca });
     const disponibilidad = createFormField({
       id: 'prod-disponibilidad', label: 'Disponibilidad', type: 'select',
       options: [
-        { value: 'inmediata',    label: 'Inmediata'     },
-        { value: 'bajo_pedido', label: 'Bajo pedido'   },
-        { value: 'sin_stock',   label: 'Sin stock'     }
+        { value: 'inmediata',    label: 'Inmediata'   },
+        { value: 'bajo_pedido', label: 'Bajo pedido' },
+        { value: 'sin_stock',   label: 'Sin stock'   }
       ],
       value: this._data.draftManual.disponibilidad || 'inmediata'
     });
 
-    container.append(subcategoria, marca, imagen, disponibilidad);
+    container.append(subcategoria, marca, disponibilidad);
     container.appendChild(this._renderAtributosSection());
     container.appendChild(this._renderEtiquetasSection());
 
-    this._advancedRefs = { subcategoria, marca, imagen, disponibilidad };
+    this._advancedRefs = { subcategoria, marca, disponibilidad };
     return container;
   },
 
@@ -329,9 +347,6 @@ const page = {
     return wrapper;
   },
 
-  // ──────────────────────────────────────────────────────────
-  // ETIQUETAS — con tags editables y dropdown de sugerencias
-  // ──────────────────────────────────────────────────────────
   _renderEtiquetasSection() {
     const wrapper = document.createElement('div');
     wrapper.className = 'form-group etiquetas-section';
@@ -345,7 +360,6 @@ const page = {
     helpText.textContent = 'Usadas para agrupar y filtrar productos. Hacé clic en × para quitar una etiqueta de este producto.';
     wrapper.appendChild(helpText);
 
-    // Tags actuales
     const tags = document.createElement('div');
     tags.className = 'etiquetas-tags';
 
@@ -373,7 +387,6 @@ const page = {
     }
     wrapper.appendChild(tags);
 
-    // Input con dropdown de sugerencias
     const inputWrapper = document.createElement('div');
     inputWrapper.className = 'etiqueta-input-wrapper';
 
@@ -406,46 +419,26 @@ const page = {
       const sugerencias = etiquetasExistentes.filter(e =>
         e.toLowerCase().includes(filtro.toLowerCase())
       );
-
-      if (sugerencias.length === 0) {
-        dropdown.classList.add('etiqueta-dropdown-hidden');
-        return;
-      }
-
+      if (sugerencias.length === 0) { dropdown.classList.add('etiqueta-dropdown-hidden'); return; }
       sugerencias.forEach(s => {
         const item = document.createElement('button');
         item.type      = 'button';
         item.className = 'etiqueta-dropdown-item';
         item.innerHTML = `<i class="fas fa-tag"></i> ${s}`;
-        item.addEventListener('mousedown', (e) => {
-          e.preventDefault(); // evita que el input pierda foco antes del click
-          _addEtiqueta(s);
-        });
+        item.addEventListener('mousedown', (e) => { e.preventDefault(); _addEtiqueta(s); });
         dropdown.appendChild(item);
       });
-
       dropdown.classList.remove('etiqueta-dropdown-hidden');
     };
 
     input.addEventListener('input', () => {
       const val = input.value.trim();
-      if (val.length === 0 && etiquetasExistentes.length > 0) {
-        _renderDropdown('');
-      } else if (val.length > 0) {
-        _renderDropdown(val);
-      } else {
-        dropdown.classList.add('etiqueta-dropdown-hidden');
-      }
+      if (val.length === 0 && etiquetasExistentes.length > 0) _renderDropdown('');
+      else if (val.length > 0) _renderDropdown(val);
+      else dropdown.classList.add('etiqueta-dropdown-hidden');
     });
-
-    input.addEventListener('focus', () => {
-      if (etiquetasExistentes.length > 0) _renderDropdown(input.value.trim());
-    });
-
-    input.addEventListener('blur', () => {
-      setTimeout(() => dropdown.classList.add('etiqueta-dropdown-hidden'), 150);
-    });
-
+    input.addEventListener('focus', () => { if (etiquetasExistentes.length > 0) _renderDropdown(input.value.trim()); });
+    input.addEventListener('blur',  () => { setTimeout(() => dropdown.classList.add('etiqueta-dropdown-hidden'), 150); });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ',') {
         e.preventDefault();
@@ -454,37 +447,28 @@ const page = {
       }
     });
 
-    const btnAgregar = createButton({
+    wrapper.appendChild(createButton({
       label: 'Agregar', variant: 'secondary', size: 'sm', icon: 'fa-plus',
-      onClick: () => {
-        const val = input.value.trim();
-        if (val) _addEtiqueta(val);
-      }
-    });
-    wrapper.appendChild(btnAgregar);
+      onClick: () => { const val = input.value.trim(); if (val) _addEtiqueta(val); }
+    }));
 
-    // Sugerencias rápidas (etiquetas existentes no usadas aún)
     if (etiquetasExistentes.length > 0) {
       const sugerenciasWrap = document.createElement('div');
       sugerenciasWrap.className = 'etiquetas-sugerencias';
-
       const sugerenciasLabel = document.createElement('span');
       sugerenciasLabel.className = 'etiquetas-sugerencias-label';
       sugerenciasLabel.textContent = 'Etiquetas existentes:';
       sugerenciasWrap.appendChild(sugerenciasLabel);
-
       const chips = document.createElement('div');
       chips.className = 'etiquetas-chips';
-
       etiquetasExistentes.slice(0, 12).forEach(e => {
         const chip = document.createElement('button');
-        chip.type      = 'button';
+        chip.type = 'button';
         chip.className = 'etiqueta-chip';
         chip.textContent = e;
         chip.addEventListener('click', () => _addEtiqueta(e));
         chips.appendChild(chip);
       });
-
       sugerenciasWrap.appendChild(chips);
       wrapper.appendChild(sugerenciasWrap);
     }
@@ -500,6 +484,7 @@ const page = {
       precio_final: parseFloat(refs.precio.getValue()) || 0,
       stock:        parseInt(refs.stock.getValue())    || 0,
       categoria:    refs.categoria.getValue(),
+      imagen:       refs.imagen.getValue(),             // ← ahora en refs principal
       paused:       false,
       atributos:    {},
       etiquetas:    [...this._data.draftManual.etiquetas]
@@ -508,7 +493,6 @@ const page = {
     if (this._advancedRefs) {
       newProduct.subcategoria   = this._advancedRefs.subcategoria.getValue();
       newProduct.marca          = this._advancedRefs.marca.getValue();
-      newProduct.imagen         = this._advancedRefs.imagen.getValue();
       newProduct.disponibilidad = this._advancedRefs.disponibilidad.getValue();
     }
 
@@ -520,7 +504,6 @@ const page = {
       showToast('Campos requeridos', 'Completá nombre y descripción', 'warning');
       return;
     }
-
     if (!newProduct.categoria) {
       showToast('Categoría requerida', 'Asigná una categoría (ej: Pizzas, Bebidas)', 'warning');
       return;
@@ -536,13 +519,96 @@ const page = {
       showToast('Producto agregado', 'Guardá para confirmar los cambios', 'success');
     }
 
+    // Re-ordenar alfabéticamente
+    this._data.productos.sort((a, b) =>
+      (a.nombre || '').localeCompare(b.nombre || '', 'es')
+    );
+
     this._data.draftManual = {
       codigo: '', nombre: '', descripcion: '', precio: '', stock: '',
-      categoria: '', subcategoria: '', marca: '', imagen: '',
+      categoria: '', imagen: '', subcategoria: '', marca: '',
       disponibilidad: 'inmediata', atributos: [], etiquetas: []
     };
     this._data.showAdvanced = false;
     this.render();
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // GESTIONAR CATEGORÍAS
+  // ──────────────────────────────────────────────────────────
+  _renderCategoriasCard() {
+    const container = document.createElement('div');
+
+    const categorias = this._getCategoriasUnicas();
+
+    if (categorias.length === 0) {
+      const empty = document.createElement('p');
+      empty.style.cssText = 'color:#888;font-size:13px;margin:0;';
+      empty.textContent = 'No hay categorías cargadas todavía.';
+      container.appendChild(empty);
+      return createCard({ title: 'Gestionar Categorías', icon: 'fa-tags', content: container });
+    }
+
+    const hint = document.createElement('p');
+    hint.className = 'categorias-hint';
+    hint.textContent = 'Renombrá una categoría para corregirla en todos los productos que la tienen.';
+    container.appendChild(hint);
+
+    const list = document.createElement('div');
+    list.className = 'categorias-list';
+
+    categorias.forEach(cat => {
+      const count = this._data.productos.filter(p => p.categoria === cat).length;
+
+      const row = document.createElement('div');
+      row.className = 'categoria-row';
+
+      const info = document.createElement('div');
+      info.className = 'categoria-info';
+      info.innerHTML = `
+        <span class="categoria-nombre">${cat}</span>
+        <span class="categoria-count">${count} producto${count !== 1 ? 's' : ''}</span>
+      `;
+
+      const input = document.createElement('input');
+      input.type        = 'text';
+      input.className   = 'categoria-rename-input';
+      input.value       = cat;
+      input.placeholder = 'Nuevo nombre...';
+
+      const btnRenombrar = createButton({
+        label:   'Renombrar',
+        variant: 'secondary',
+        size:    'sm',
+        icon:    'fa-pen',
+        onClick: () => {
+          const nuevoNombre = input.value.trim();
+          if (!nuevoNombre || nuevoNombre === cat) return;
+
+          // Actualizar en todos los productos en memoria
+          this._data.productos.forEach(p => {
+            if (p.categoria === cat) p.categoria = nuevoNombre;
+          });
+
+          showToast('Categoría renombrada', `"${cat}" → "${nuevoNombre}" en ${count} producto${count !== 1 ? 's' : ''}`, 'success');
+          this.render();
+        }
+      });
+
+      row.appendChild(info);
+      row.appendChild(input);
+      row.appendChild(btnRenombrar);
+      list.appendChild(row);
+    });
+
+    container.appendChild(list);
+
+    const hint2 = document.createElement('p');
+    hint2.className = 'categorias-hint-small';
+    hint2.textContent = 'Los cambios se aplican al guardar el catálogo.';
+    container.appendChild(hint2);
+
+    return createCard({ title: 'Gestionar Categorías', icon: 'fa-tags', content: container });
   },
 
   // ──────────────────────────────────────────────────────────
@@ -602,7 +668,6 @@ const page = {
     });
 
     container.append(uploadZone, fileInput);
-
     return createCard({ title: 'Importar desde Plantilla', icon: 'fa-file-excel', content: container });
   },
 
@@ -619,28 +684,21 @@ const page = {
         const wb = XLSX.read(e.target.result, { type: 'binary' });
 
         const metaSheet = wb.Sheets['_indiceia_meta'];
-        if (!metaSheet) {
-          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA.', 'error');
-          return;
-        }
+        if (!metaSheet) { showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA.', 'error'); return; }
         const firmaData = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
         if (!firmaData?.[0]?.[0] || firmaData[0][0] !== TEMPLATE_FIRMA) {
-          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA.', 'error');
-          return;
+          showToast('Archivo no válido', 'Usá la plantilla oficial de ÍndiceIA.', 'error'); return;
         }
 
         const ws       = wb.Sheets['productos'];
         const jsonData = XLSX.utils.sheet_to_json(ws, { defval: '' });
 
-        if (jsonData.length === 0) {
-          showToast('Plantilla vacía', 'Completá al menos un producto en la plantilla', 'warning');
-          return;
-        }
+        if (jsonData.length === 0) { showToast('Plantilla vacía', 'Completá al menos un producto en la plantilla', 'warning'); return; }
 
         const CAMPOS_BASE = ['codigo','nombre','descripcion','precio_final','categoria','stock','disponibilidad','imagen'];
         let added = 0, skipped = 0;
 
-        jsonData.forEach((row, idx) => {
+        jsonData.forEach((row) => {
           if (!row.nombre || !String(row.categoria || '').trim()) { skipped++; return; }
 
           const producto = {
@@ -653,9 +711,7 @@ const page = {
             imagen:         String(row.imagen || '').trim(),
             disponibilidad: ['inmediata', 'bajo_pedido', 'sin_stock'].includes(row.disponibilidad)
                               ? row.disponibilidad : 'inmediata',
-            paused:    false,
-            atributos: {},
-            etiquetas: []
+            paused: false, atributos: {}, etiquetas: []
           };
 
           Object.keys(row).forEach(col => {
@@ -673,6 +729,7 @@ const page = {
           added++;
         });
 
+        this._data.productos.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
         showToast('Plantilla cargada', `${added} productos listos para guardar`, 'success');
         this.render();
 
@@ -722,8 +779,13 @@ const page = {
     table.innerHTML = `
       <thead>
         <tr>
-          <th>Código</th><th>Nombre</th><th>Precio</th>
-          <th>Stock</th><th>Categoría</th><th>Etiquetas</th><th>Acciones</th>
+          <th>Nombre</th>
+          <th>Categoría</th>
+          <th style="text-align:right">Precio</th>
+          <th style="text-align:center">Stock</th>
+          <th style="text-align:center">Imagen</th>
+          <th>Etiquetas</th>
+          <th style="text-align:center">Acciones</th>
         </tr>
       </thead>
       <tbody id="products-tbody"></tbody>
@@ -736,16 +798,21 @@ const page = {
       row.className     = p.paused ? 'paused-row' : '';
       row.dataset.index = index;
 
+      const tieneImagen = !!(p.imagen && p.imagen.trim());
+      const imagenHtml  = tieneImagen
+        ? '<i class="fas fa-check-circle" style="color:var(--s-success);font-size:16px;" title="Tiene imagen"></i>'
+        : '<i class="fas fa-times-circle" style="color:var(--s-gray);font-size:16px;" title="Sin imagen"></i>';
+
       const etiquetasHtml = (p.etiquetas || []).length > 0
         ? (p.etiquetas || []).map(e => `<span class="table-tag">${e}</span>`).join('')
         : '<span class="table-tag-empty">—</span>';
 
       row.innerHTML = `
-        <td>${p.codigo || '-'}</td>
-        <td>${p.nombre || '-'}</td>
+        <td><strong>${p.nombre || '-'}</strong>${p.codigo ? `<br><small style="color:#aaa">${p.codigo}</small>` : ''}</td>
+        <td>${p.categoria || '<span style="color:#aaa;font-style:italic">general</span>'}</td>
         <td style="text-align:right">${p.precio_final ? `$${this._formatNumber(p.precio_final)}` : '-'}</td>
         <td style="text-align:center">${p.stock ?? 0}</td>
-        <td>${p.categoria || '-'}</td>
+        <td style="text-align:center">${imagenHtml}</td>
         <td><div class="table-tags">${etiquetasHtml}</div></td>
         <td>
           <div class="action-buttons">
@@ -775,16 +842,14 @@ const page = {
     });
   },
 
-  // ── FIX: showAdvanced se activa también si hay etiquetas ──
   _editProduct(index) {
     const p = this._data.productos[index];
     this._data.editingIndex = index;
     this._data.showAdvanced = !!(
       p.subcategoria ||
       p.marca ||
-      p.imagen ||
       p.disponibilidad !== 'inmediata' ||
-      p.etiquetas?.length > 0           // ← fix
+      p.etiquetas?.length > 0
     );
     this._data.draftManual = {
       codigo:         p.codigo         || '',
@@ -793,12 +858,12 @@ const page = {
       precio:         p.precio_final   ? String(p.precio_final) : '',
       stock:          p.stock          !== undefined ? String(p.stock) : '',
       categoria:      p.categoria      || '',
+      imagen:         p.imagen         || '',
       subcategoria:   p.subcategoria   || '',
       marca:          p.marca          || '',
-      imagen:         p.imagen         || '',
       disponibilidad: p.disponibilidad || 'inmediata',
       atributos:      p.atributos ? Object.entries(p.atributos).map(([key, value]) => ({ key, value })) : [],
-      etiquetas:      [...(p.etiquetas || [])]   // ← copia limpia
+      etiquetas:      [...(p.etiquetas || [])]
     };
     this.render();
     setTimeout(() => {
