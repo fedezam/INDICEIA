@@ -1,10 +1,9 @@
 /* src/skeleton/layout/header/header.css */
-/* Estilos específicos del header - usa variables de theme-variables.css */
 
 .header {
   background: var(--s-dark);
   color: white;
-  padding: 10px 0;
+  padding: 0;
   border-bottom: 3px solid var(--s-primary);
   box-shadow: var(--s-box-shadow);
 }
@@ -12,162 +11,116 @@
 .header .container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 15px;
+  padding: 0 16px;
 }
 
-/* ============================
-   ESTRUCTURA DE FILAS
-============================ */
-.header-top {
+/* ── Fila única ──────────────────────────────────────────── */
+.header-inner {
   display: flex;
+  align-items: stretch;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 6px;
+  min-height: 56px;
 }
 
-.header-bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* ============================
-   COLUMNAS
-============================ */
-.header-left,
-.header-left-bottom {
+/* ── Izquierda ───────────────────────────────────────────── */
+.header-left {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 16px;
 }
 
-.header-right-top,
-.header-right-bottom {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-/* ============================
-   LOGO
-============================ */
+/* ── Logo ────────────────────────────────────────────────── */
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .logo-icon {
-  font-size: 28px;
+  font-size: 22px;
+  color: var(--s-primary);
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 1px;
+}
+
+/* ── Usuario ─────────────────────────────────────────────── */
+.user-name {
+  font-size: 13px;
+  color: var(--s-gray);
+  font-weight: 400;
+  border-left: 1px solid rgba(255,255,255,0.15);
+  padding-left: 16px;
+}
+
+/* ── Derecha ─────────────────────────────────────────────── */
+.header-right {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.header-right-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  padding-right: 12px;
+}
+
+/* ── Nombre comercio ─────────────────────────────────────── */
+.commerce-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
   line-height: 1;
 }
 
-.logo h1 {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0;
-  letter-spacing: 0.5px;
-  color: white;
-}
-
-/* ============================
-   NOMBRE COMERCIO
-============================ */
-.commerce-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: white;
-}
-
-/* ============================
-   NOMBRE USUARIO
-============================ */
-.user-name {
-  font-size: 14px;
-  color: var(--s-gray);
-  font-weight: 400;
-}
-
-/* ============================
-   BADGE PLAN
-============================ */
+/* ── Badge plan ──────────────────────────────────────────── */
 .plan-badge {
-  padding: 4px 10px;
+  padding: 2px 8px;
   border-radius: var(--s-radius);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  align-self: flex-end;
 }
 
-.plan-badge.trial {
-  background: var(--s-warning);
-  color: white;
-}
+.plan-badge.trial   { background: var(--s-warning); color: white; }
+.plan-badge.active  { background: var(--s-success);  color: white; }
+.plan-badge.expired { background: var(--s-danger);   color: white; }
 
-.plan-badge.active {
-  background: var(--s-success);
-  color: white;
-}
-
-.plan-badge.expired {
-  background: var(--s-danger);
-  color: white;
-}
-
-/* ============================
-   BOTÓN LOGOUT
-============================ */
+/* ── Botón logout ────────────────────────────────────────── */
 .btn-logout {
-  width: 50px;
-  height: 70px;  /* Ocupa las dos filas */
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--s-radius);
-  color: white;
-  font-size: 20px;
+  width: 52px;
+  align-self: stretch;
+  background: rgba(255,255,255,0.08);
+  border: none;
+  border-left: 1px solid rgba(255,255,255,0.12);
+  color: var(--s-gray);
+  font-size: 18px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.2s, color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: auto;
 }
 
 .btn-logout:hover {
   background: var(--s-danger);
-  border-color: var(--s-danger);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: white;
 }
 
-.btn-logout:active {
-  transform: translateY(0);
-}
-
-/* ============================
-   RESPONSIVE
-============================ */
-@media (max-width: 768px) {
-  .header {
-    padding: 8px 0;
-  }
-
-  .logo h1 {
-    font-size: 16px;
-  }
-
-  .commerce-name {
-    font-size: 14px;
-  }
-
-  .user-name {
-    font-size: 12px;
-  }
-
-  .btn-logout {
-    width: 40px;
-    height: 60px;
-    font-size: 18px;
-  }
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .logo-text   { font-size: 15px; }
+  .user-name   { display: none; }
+  .commerce-name { font-size: 13px; }
+  .btn-logout  { width: 44px; }
 }
