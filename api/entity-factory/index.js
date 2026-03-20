@@ -4,6 +4,7 @@ import { buildMind }         from '../../lib/entity-factory/builders/mind.builde
 import { buildGoods }        from '../../lib/entity-factory/builders/goods.builder.js';
 import { buildServices }     from '../../lib/entity-factory/builders/services.builder.js';
 import { buildCapabilities } from '../../lib/entity-factory/builders/capabilities.builder.js';
+import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
 
@@ -45,6 +46,7 @@ export async function buildEntity({ comercioId }) {
   const goods        = await buildGoods(comercioRef, context);
   const services     = await buildServices(comercioRef);
   const capabilities = buildCapabilities(context);
+  const visual       = await buildVisual(context, goods, comercioId);
 
   await buildSeo(data, comercioId);
   await buildIndex(data, comercioId, goods);
@@ -60,12 +62,14 @@ export async function buildEntity({ comercioId }) {
       context:      { role: 'identity',             version: '1.0', mutable: false },
       goods:        { role: 'products_catalog',      version: '1.0', optional: true },
       services:     { role: 'services_catalog',      version: '1.0', optional: true },
+      visual:       { role: 'visual_interface',      version: '1.0', optional: true },
       capabilities: { role: 'interaction_protocols', version: '1.0', mutable: false },
     },
     mind,
     context,
     ...(goods    && { goods }),
     ...(services && { services }),
+    ...(visual   && { visual }),
     capabilities,
   };
 }
