@@ -10,6 +10,7 @@ import { createCard }              from '/src/skeleton/components/card/index.js'
 import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }               from '/src/skeleton/components/toast/index.js';
 import { db }                      from '/src/services/firebase/firebase.js';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   writeBatch,
   doc,
@@ -26,6 +27,7 @@ import './productos.css';
 
 const XLSX = window.XLSX;
 const TEMPLATE_FIRMA = 'indiceia_template_v1';
+const storage = getStorage();
 
 // ============================================================
 // PÁGINA
@@ -40,7 +42,7 @@ const page = {
       precio:         '',
       stock:          '',
       categoria:      '',
-      imagen:         '',       // ← ahora en grupo principal
+      imagen:         '',
       subcategoria:   '',
       marca:          '',
       disponibilidad: 'inmediata',
@@ -52,6 +54,7 @@ const page = {
   },
 
   _isEditMode:       false,
+  _comercioId:       null,
   _originalSnapshot: [],
 
   // ──────────────────────────────────────────────────────────
@@ -73,27 +76,35 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
+  // UPLOAD IMAGEN
+  // ──────────────────────────────────────────────────────────
+  async _subirImagen(file) {
+    if (!this._comercioId) throw new Error('Sin comercioId');
+    const filename = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
+    const ref = storageRef(storage, `comercios/${this._comercioId}/productos/${filename}`);
+    await uploadBytes(ref, file);
+    return getDownloadURL(ref);
+  },
+
+  // ──────────────────────────────────────────────────────────
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
     this._isEditMode = ctx.isEditMode === true;
-    const comercioId = ctx.comercioId;
+    this._comercioId = ctx.comercioId;
 
-    if (!comercioId) {
+    if (!this._comercioId) {
       this._data.productos   = [];
       this._originalSnapshot = [];
       return;
     }
 
     try {
-      const snap = await getDocs(collection(db, 'comercios', comercioId, 'productos'));
+      const snap = await getDocs(collection(db, 'comercios', this._comercioId, 'productos'));
       this._data.productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-      // Orden alfabético por nombre
       this._data.productos.sort((a, b) =>
         (a.nombre || '').localeCompare(b.nombre || '', 'es')
       );
-
       this._originalSnapshot = structuredClone(this._data.productos);
     } catch (err) {
       console.error('[productos] load() ERROR:', err);
@@ -143,7 +154,7 @@ const page = {
       { icon: 'fa-font',        titulo: 'Nombres consistentes', texto: 'Usá siempre el mismo nombre para el mismo producto. El cliente lo ve tal cual lo escribís.' },
       { icon: 'fa-align-left',  titulo: 'Descripción corta',    texto: 'Una línea es suficiente. Ej: "Pizza con muzzarella y tomate, tamaño grande".' },
       { icon: 'fa-dollar-sign', titulo: 'Precio sin símbolos',  texto: 'Escribí solo el número, sin puntos ni símbolos. Ej: 5500 — no $5.500 ni 5,500.' },
-      { icon: 'fa-image',       titulo: 'Imágenes',             texto: 'Pegá el link directo a la foto del producto (debe terminar en .jpg, .png, etc.). Si no tenés, dejalo vacío.' }
+      { icon: 'fa-image',       titulo: 'Imágenes',             texto: 'Subí una foto desde tu celular o pegá un link directo. Las fotos que subís quedan guardadas en ÍndiceIA.' }
     ];
 
     const container = document.createElement('div');
@@ -189,9 +200,6 @@ const page = {
     const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                type: 'number', placeholder: '0', value: this._data.draftManual.stock });
     const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',            required: true, placeholder: 'Ej: Pizzas', helpText: 'Necesaria para agrupar productos en el catálogo visual', value: this._data.draftManual.categoria });
 
-    // Imagen en grupo principal
-    const imagen = createFormField({ id: 'prod-imagen', label: 'URL de imagen', type: 'url', placeholder: 'https://...', helpText: 'Link directo a la foto del producto', value: this._data.draftManual.imagen });
-
     // Autocomplete categorías
     const categoriasExistentes = this._getCategoriasUnicas();
     if (categoriasExistentes.length > 0) {
@@ -206,6 +214,80 @@ const page = {
       const input = categoria.querySelector('input');
       if (input) input.setAttribute('list', 'categorias-datalist');
     }
+
+    // ── IMAGEN — upload + preview + fallback URL ──────────
+    const imagenGroup = document.createElement('div');
+    imagenGroup.className = 'form-group imagen-group';
+
+    const imagenLabel = document.createElement('label');
+    imagenLabel.textContent = 'Foto del producto';
+    imagenGroup.appendChild(imagenLabel);
+
+    // Preview
+    const preview = document.createElement('div');
+    preview.className = 'imagen-preview' + (this._data.draftManual.imagen ? ' imagen-preview--visible' : '');
+    if (this._data.draftManual.imagen) {
+      preview.innerHTML = `<img src="${this._data.draftManual.imagen}" alt="preview"/><button class="imagen-preview-remove" title="Quitar imagen"><i class="fas fa-times"></i></button>`;
+      preview.querySelector('.imagen-preview-remove').addEventListener('click', () => {
+        this._data.draftManual.imagen = '';
+        this.render();
+      });
+    }
+    imagenGroup.appendChild(preview);
+
+    // Botón subir desde dispositivo
+    const fileInput = document.createElement('input');
+    fileInput.type    = 'file';
+    fileInput.accept  = 'image/*';
+    fileInput.style.display = 'none';
+    imagenGroup.appendChild(fileInput);
+
+    const btnSubir = document.createElement('button');
+    btnSubir.type      = 'button';
+    btnSubir.className = 'imagen-upload-btn';
+    btnSubir.innerHTML = `<i class="fas fa-camera"></i> Subir foto desde mi dispositivo`;
+    btnSubir.addEventListener('click', () => fileInput.click());
+    imagenGroup.appendChild(btnSubir);
+
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      btnSubir.disabled   = true;
+      btnSubir.innerHTML  = `<i class="fas fa-spinner fa-spin"></i> Subiendo...`;
+      try {
+        const url = await this._subirImagen(file);
+        this._data.draftManual.imagen = url;
+        showToast('Foto cargada', 'La imagen se guardó correctamente', 'success');
+        this.render();
+      } catch (err) {
+        console.error(err);
+        showToast('Error', 'No se pudo subir la imagen', 'error');
+        btnSubir.disabled  = false;
+        btnSubir.innerHTML = `<i class="fas fa-camera"></i> Subir foto desde mi dispositivo`;
+      }
+    });
+
+    // Separador
+    const sep = document.createElement('div');
+    sep.className = 'imagen-sep';
+    sep.innerHTML = '<span>o pegá un link directo</span>';
+    imagenGroup.appendChild(sep);
+
+    // Campo URL como fallback
+    const imagenUrl = document.createElement('input');
+    imagenUrl.type        = 'url';
+    imagenUrl.className   = 'imagen-url-input';
+    imagenUrl.placeholder = 'https://...';
+    imagenUrl.value       = this._data.draftManual.imagen || '';
+    imagenUrl.addEventListener('input', () => {
+      this._data.draftManual.imagen = imagenUrl.value.trim();
+    });
+    imagenGroup.appendChild(imagenUrl);
+
+    // Objeto imagen compatible con _handleManualSubmit
+    const imagen = {
+      getValue: () => this._data.draftManual.imagen || imagenUrl.value.trim()
+    };
 
     const _saveBaseDraft = () => {
       this._data.draftManual.codigo      = codigo.getValue();
@@ -228,13 +310,12 @@ const page = {
       }
     });
 
-    container.append(codigo, nombre, descripcion, precio, stock, categoria, imagen, toggleBtn);
+    container.append(codigo, nombre, descripcion, precio, stock, categoria, imagenGroup, toggleBtn);
 
     if (this._data.showAdvanced) {
       container.appendChild(this._renderAdvancedFields());
     }
 
-    // Separador visual entre toggleBtn/advanced y btnAgregar
     const spacer = document.createElement('div');
     spacer.className = 'form-actions-spacer';
     container.appendChild(spacer);
@@ -283,7 +364,6 @@ const page = {
     const container = document.createElement('div');
     container.className = 'advanced-fields';
 
-    // Imagen ya está en el grupo principal — acá solo subcategoría, marca, disponibilidad
     const subcategoria   = createFormField({ id: 'prod-subcategoria',   label: 'Subcategoría',  placeholder: 'Ej: Especiales', value: this._data.draftManual.subcategoria });
     const marca          = createFormField({ id: 'prod-marca',           label: 'Marca',          placeholder: 'Ej: Nike',       value: this._data.draftManual.marca });
     const disponibilidad = createFormField({
@@ -484,7 +564,7 @@ const page = {
       precio_final: parseFloat(refs.precio.getValue()) || 0,
       stock:        parseInt(refs.stock.getValue())    || 0,
       categoria:    refs.categoria.getValue(),
-      imagen:       refs.imagen.getValue(),             // ← ahora en refs principal
+      imagen:       refs.imagen.getValue(),
       paused:       false,
       atributos:    {},
       etiquetas:    [...this._data.draftManual.etiquetas]
@@ -519,7 +599,6 @@ const page = {
       showToast('Producto agregado', 'Guardá para confirmar los cambios', 'success');
     }
 
-    // Re-ordenar alfabéticamente
     this._data.productos.sort((a, b) =>
       (a.nombre || '').localeCompare(b.nombre || '', 'es')
     );
@@ -538,7 +617,6 @@ const page = {
   // ──────────────────────────────────────────────────────────
   _renderCategoriasCard() {
     const container = document.createElement('div');
-
     const categorias = this._getCategoriasUnicas();
 
     if (categorias.length === 0) {
@@ -559,7 +637,6 @@ const page = {
 
     categorias.forEach(cat => {
       const count = this._data.productos.filter(p => p.categoria === cat).length;
-
       const row = document.createElement('div');
       row.className = 'categoria-row';
 
@@ -577,19 +654,13 @@ const page = {
       input.placeholder = 'Nuevo nombre...';
 
       const btnRenombrar = createButton({
-        label:   'Renombrar',
-        variant: 'secondary',
-        size:    'sm',
-        icon:    'fa-pen',
+        label: 'Renombrar', variant: 'secondary', size: 'sm', icon: 'fa-pen',
         onClick: () => {
           const nuevoNombre = input.value.trim();
           if (!nuevoNombre || nuevoNombre === cat) return;
-
-          // Actualizar en todos los productos en memoria
           this._data.productos.forEach(p => {
             if (p.categoria === cat) p.categoria = nuevoNombre;
           });
-
           showToast('Categoría renombrada', `"${cat}" → "${nuevoNombre}" en ${count} producto${count !== 1 ? 's' : ''}`, 'success');
           this.render();
         }
@@ -800,7 +871,7 @@ const page = {
 
       const tieneImagen = !!(p.imagen && p.imagen.trim());
       const imagenHtml  = tieneImagen
-        ? '<i class="fas fa-check-circle" style="color:var(--s-success);font-size:16px;" title="Tiene imagen"></i>'
+        ? `<img src="${p.imagen}" style="width:40px;height:40px;object-fit:cover;border-radius:6px;" onerror="this.replaceWith('<i class=\\'fas fa-times-circle\\'></i>')">`
         : '<i class="fas fa-times-circle" style="color:var(--s-gray);font-size:16px;" title="Sin imagen"></i>';
 
       const etiquetasHtml = (p.etiquetas || []).length > 0
@@ -846,10 +917,8 @@ const page = {
     const p = this._data.productos[index];
     this._data.editingIndex = index;
     this._data.showAdvanced = !!(
-      p.subcategoria ||
-      p.marca ||
-      p.disponibilidad !== 'inmediata' ||
-      p.etiquetas?.length > 0
+      p.subcategoria || p.marca ||
+      p.disponibilidad !== 'inmediata' || p.etiquetas?.length > 0
     );
     this._data.draftManual = {
       codigo:         p.codigo         || '',
@@ -901,22 +970,18 @@ const page = {
 
     return createOnboardingButton({
       stepName: 'productos',
-
       validate: () => {
         const activos = this._data.productos.filter(p => !p.paused).length;
         if (this._isEditMode && !dirtyController.hasUnsavedChanges()) return true;
         return activos > 0;
       },
-
       getLabel: () => {
         const activos = this._data.productos.filter(p => !p.paused).length;
         if (activos === 0) return 'Cargá al menos un producto';
         if (this._isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
         return 'Guardar productos';
       },
-
       dirtyController,
-
       onSave: async ({ uid, comercioId }) => {
         if (!comercioId) throw new Error('No hay comercioId');
 
@@ -970,7 +1035,6 @@ const page = {
         finishProgressOverlay('Catálogo sincronizado', 800);
         return { success: true, stepMarked: false };
       },
-
       onSuccess: () => showToast('Éxito', 'Productos guardados correctamente', 'success'),
       onError:   (err) => {
         console.error('[productos] onError():', err);
