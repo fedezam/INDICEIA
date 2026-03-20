@@ -1,10 +1,9 @@
 // ============================================================
 // indiceia/api/resolve-cta/[slug].js
-// Expandido para incluir comercioId y seoHtmlUrl
 // ============================================================
-
 import admin from 'firebase-admin';
 import { buildPrompt } from '../../lib/link-builder/config/prompt-template.js';
+import { hasData } from '../../lib/entity-factory/utils/hasData.js';
 
 if (!admin.apps.length) {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -24,7 +23,8 @@ export default async function handler(req, res) {
 
     const { comercioId } = landingSnap.data();
 
-    const comercioSnap = await db.collection('comercios').doc(comercioId).get();
+    const comercioRef  = db.collection('comercios').doc(comercioId);
+    const comercioSnap = await comercioRef.get();
     if (!comercioSnap.exists) return res.status(404).json({ ok: false, error: 'comercio no encontrado' });
 
     const data = comercioSnap.data();
@@ -32,16 +32,45 @@ export default async function handler(req, res) {
 
     const miniPrompt = buildPrompt(data.entityPublicUrl);
 
+    // goods
+    const snapshot = await comercioRef.collection('productos').get();
+    const goods = snapshot.empty ? [] : snapshot.docs
+      .filter(doc => !doc.data().paused)
+      .map(doc => {
+        const p = doc.data();
+        const imagenRaw = p.imagen || p.atributos?.url_imagen || null;
+        const imagen = imagenRaw ? imagenRaw.replace(/ /g, '_') : null;
+        return {
+          id:           doc.id,
+          nombre:       p.nombre,
+          precio_final: p.precio_final,
+          ...(hasData(p.codigo)         && { codigo: p.codigo }),
+          ...(hasData(p.descripcion)    && { descripcion: p.descripcion }),
+          ...(hasData(p.categoria)      && { categoria: p.categoria }),
+          ...(hasData(p.subcategoria)   && { subcategoria: p.subcategoria }),
+          ...(hasData(p.marca)          && { marca: p.marca }),
+          ...(hasData(imagen)           && { imagen }),
+          ...(hasData(p.stock)          && { stock: p.stock }),
+          ...(hasData(p.disponibilidad) && { disponibilidad: p.disponibilidad }),
+          ...(hasData(p.etiquetas)      && { etiquetas: p.etiquetas }),
+          ...(hasData(p.variantes)      && { variantes: p.variantes }),
+        };
+      });
+
     return res.status(200).json({
-      ok:             true,
+      ok:              true,
       slug,
-      comercioId,                          // ← nuevo
-      nombreComercio: data.nombreComercio,
-      descripcion:    data.descripcion    || '',
+      comercioId,
+      nombreComercio:  data.nombreComercio,
+      descripcion:     data.descripcion     || '',
       entityPublicUrl: data.entityPublicUrl,
-      seoHtmlUrl:     data.seoHtmlUrl     || null,
-      visualHtmlUrl:  data.visualHtmlUrl  || null,
+      seoHtmlUrl:      data.seoHtmlUrl      || null,
+      visualHtmlUrl:   data.visualHtmlUrl   || null,
       miniPrompt,
+      // ── mini app ──
+      whatsapp:        data.whatsapp        || '',
+      templateId:      data.visualTemplateId || 'C1_SimpleCatalog',
+      goods,
     });
 
   } catch (err) {
