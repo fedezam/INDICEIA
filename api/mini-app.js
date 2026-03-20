@@ -1,5 +1,5 @@
-// indiceia/api/mini-app.js
 import admin from 'firebase-admin';
+import { hasData } from '../lib/entity-factory/utils/hasData.js';
 
 if (!admin.apps.length) {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -16,27 +16,50 @@ export default async function handler(req, res) {
   try {
     // 1. slug → comercioId
     const landingSnap = await db.collection('landings').doc(slug).get();
-    if (!landingSnap.exists) return res.status(404).json({ ok: false, error: 'landing no encontrada' });
+    if (!landingSnap.exists)
+      return res.status(404).json({ ok: false, error: 'landing no encontrada' });
+
     const { comercioId } = landingSnap.data();
 
     // 2. comercioId → comercio
-    const comercioSnap = await db.collection('comercios').doc(comercioId).get();
-    if (!comercioSnap.exists) return res.status(404).json({ ok: false, error: 'comercio no encontrado' });
+    const comercioRef  = db.collection('comercios').doc(comercioId);
+    const comercioSnap = await comercioRef.get();
+    if (!comercioSnap.exists)
+      return res.status(404).json({ ok: false, error: 'comercio no encontrado' });
+
     const data = comercioSnap.data();
 
-    // 3. goods desde subcolección
-    const goodsSnap = await db
-      .collection('comercios').doc(comercioId)
-      .collection('goods').get();
-    const goods = goodsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // 3. productos
+    const snapshot = await comercioRef.collection('productos').get();
+    const goods = snapshot.empty ? [] : snapshot.docs
+      .filter(doc => !doc.data().paused)
+      .map(doc => {
+        const p = doc.data();
+        const imagenRaw = p.imagen || p.atributos?.url_imagen || null;
+        const imagen = imagenRaw ? imagenRaw.replace(/ /g, '_') : null;
+        return {
+          id:           doc.id,
+          nombre:       p.nombre,
+          precio_final: p.precio_final,
+          ...(hasData(p.codigo)         && { codigo: p.codigo }),
+          ...(hasData(p.descripcion)    && { descripcion: p.descripcion }),
+          ...(hasData(p.categoria)      && { categoria: p.categoria }),
+          ...(hasData(p.subcategoria)   && { subcategoria: p.subcategoria }),
+          ...(hasData(p.marca)          && { marca: p.marca }),
+          ...(hasData(imagen)           && { imagen }),
+          ...(hasData(p.stock)          && { stock: p.stock }),
+          ...(hasData(p.disponibilidad) && { disponibilidad: p.disponibilidad }),
+          ...(hasData(p.etiquetas)      && { etiquetas: p.etiquetas }),
+          ...(hasData(p.variantes)      && { variantes: p.variantes }),
+        };
+      });
 
-    // 4. Respuesta
     res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json({
       ok:         true,
-      nombre:     data.nombreComercio || '',
-      whatsapp:   data.whatsapp || '',
-      templateId: data.templateId || 'C1_SimpleCatalog',
+      nombre:     data.nombreComercio   || '',
+      whatsapp:   data.whatsapp         || '',
+      templateId: data.visualTemplateId || 'C1_SimpleCatalog',
       goods,
     });
 
