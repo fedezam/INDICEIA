@@ -1,0 +1,119 @@
+/* ============================================================
+   mi-comercio.css
+   Layout y estilos propios de la página
+   ============================================================ */
+
+/* ==================== TÍTULO ====================  */
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  margin-bottom: 2rem;
+}
+
+/* ==================== SECCIONES ====================  */
+.form-section {
+  background: white;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.form-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  margin: 0 0 1.25rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--s-border, #d2d6de);
+}
+
+.form-help {
+  font-size: 0.875rem;
+  color: var(--s-gray, #6c757d);
+  margin: 0 0 1rem 0;
+  font-style: italic;
+}
+
+/* ==================== GRID MÉTODOS DE PAGO ====================  */
+.payment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+/* ==================== SLUG INPUT ====================  */
+.slug-container {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.slug-prefix {
+  background: var(--s-light, #f8f9fa);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--s-gray, #6c757d);
+  border-right: 1px solid var(--s-border, #d2d6de);
+  white-space: nowrap;
+}
+
+.slug-input {
+  flex: 1;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  outline: none;
+  font-family: monospace;
+}
+
+.slug-input:focus {
+  background: rgba(60, 141, 188, 0.05);
+}
+
+/* ==================== SLUG STATUS ====================  */
+.slug-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  min-height: 2rem;
+}
+
+.slug-icon {
+  font-size: 1rem;
+}
+
+.slug-text {
+  color: var(--s-text, #495057);
+}
+
+/* ==================== BOTÓN CONTAINER ====================  */
+.btn-container {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--s-border, #d2d6de);
+}
+
+/* ==================== RESPONSIVE ====================  */
+@media (max-width: 768px) {
+  .payment-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .slug-prefix {
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  .form-section {
+    padding: 1rem;
+  }
+}
