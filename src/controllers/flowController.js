@@ -1,13 +1,9 @@
-// =========================================================
+// ============================================================
 // src/controllers/flowController.js
-// =========================================================
+// ============================================================
 
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
 
 function getCurrentPage() {
   const file = window.location.pathname.split("/").pop();
@@ -19,26 +15,30 @@ function isEditMode() {
   return params.get("edit") === "true";
 }
 
-const PUBLIC_PAGES = ["login", "registro", "index", ""];
+const PUBLIC_PAGES  = ["login", "registro", "index", ""];
 const NEUTRAL_PAGES = ["skeletonTest"];
 
-/* =========================================================
-   PIPELINE BUILDER (SOLO COMERCIO)
-   ========================================================= */
-
-function buildPipeline(offerType = {}) {
+// ============================================================
+// PIPELINE BUILDER
+// ============================================================
+function buildPipeline(entityType, offerType = {}) {
   const { productos, servicios } = offerType || {};
 
-  const steps = ["modelo-negocio"];
+  // Prestador puro o híbrido
+  if (entityType === 'prestador') {
+    const steps = ['mi-perfil'];
+    if (servicios) steps.push('servicios');
+    if (productos) steps.push('productos');
+    steps.push('horarios', 'ia-config');
+    return steps;
+  }
 
-  if (servicios) steps.push("servicios");
-  if (productos) steps.push("productos");
-
-  if (productos) steps.push("entrega");
-
-  steps.push("horarios");
-  steps.push("ia-config");
-
+  // Comercio puro o híbrido (default)
+  const steps = ['mi-comercio'];
+  if (productos) steps.push('productos');
+  if (servicios) steps.push('servicios');
+  if (productos) steps.push('entrega');
+  steps.push('horarios', 'ia-config');
   return steps;
 }
 
@@ -46,29 +46,21 @@ function getFirstIncompleteStep(pipeline, completedSteps = {}) {
   return pipeline.find(step => completedSteps[step] !== true);
 }
 
-/* =========================================================
-   FLOW CONTROLLER
-   ========================================================= */
-
+// ============================================================
+// FLOW CONTROLLER
+// ============================================================
 export async function runFlowController(uid) {
   const currentPage = getCurrentPage();
   if (!uid) return;
 
-  if (PUBLIC_PAGES.includes(currentPage)) return;
-
-  if (NEUTRAL_PAGES.includes(currentPage)) {
-    console.log(`🧪 FlowController: página neutral (${currentPage})`);
-    return;
-  }
+  if (PUBLIC_PAGES.includes(currentPage))  return;
+  if (NEUTRAL_PAGES.includes(currentPage)) return;
 
   const editMode = isEditMode();
   window.isEditMode = editMode;
 
   try {
-    // =====================================================
-    // 1️⃣ VALIDAR USUARIO
-    // =====================================================
-
+    // ── 1. USUARIO ─────────────────────────────────────────
     const userSnap = await getDoc(doc(db, "usuarios", uid));
 
     if (!userSnap.exists()) {
@@ -76,77 +68,69 @@ export async function runFlowController(uid) {
       return;
     }
 
-    const userData = userSnap.data();
+    const userData  = userSnap.data();
     const userSteps = userData.onboardingSteps || {};
 
     console.log("🔍 [FlowController] currentPage:", currentPage);
-    console.log("🔍 [FlowController] userSteps:", userSteps);
-    console.log("🔍 [FlowController] comercioId:", userData.comercioId);
+    console.log("🔍 [FlowController] userSteps:",   userSteps);
+    console.log("🔍 [FlowController] comercioId:",  userData.comercioId);
 
-    // ---------- STEP: usuario ----------
+    // ── STEP: usuario ───────────────────────────────────────
     if (!userSteps.usuario) {
-      if (currentPage !== "usuario") {
-        window.location.href = "/usuario.html";
-      }
+      if (currentPage !== "usuario") window.location.href = "/usuario.html";
       return;
     }
 
-    // ---------- STEP: mi-comercio ----------
+    // ── STEP: tipo-entidad (antes modelo-negocio) ───────────
+    // Vive en dominio usuario — todavía no hay comercioId
+    if (!userSteps['tipo-entidad']) {
+      if (currentPage !== 'tipo-entidad') window.location.href = '/tipo-entidad.html';
+      return;
+    }
+
+    // ── STEP: mi-comercio / mi-perfil ───────────────────────
     if (!userData.comercioId) {
-      if (currentPage !== "mi-comercio") {
-        window.location.href = "/mi-comercio.html";
-      }
+      const nextPage = userData.entityType === 'prestador' ? 'mi-perfil' : 'mi-comercio';
+      if (currentPage !== nextPage) window.location.href = `/${nextPage}.html`;
       return;
     }
 
-    // ✅ FIX: edit mode siempre puede acceder a mi-comercio
-    // aunque el paso esté completo y el usuario ya tenga comercioId
-    if (currentPage === "mi-comercio" && editMode) {
-      return;
-    }
+    // ── edit mode: mi-comercio / mi-perfil siempre accesibles
+    const identityPage = userData.entityType === 'prestador' ? 'mi-perfil' : 'mi-comercio';
+    if (currentPage === identityPage && editMode) return;
 
-    // =====================================================
-    // 2️⃣ DOMINIO COMERCIO
-    // =====================================================
-
-    const comercioSnap = await getDoc(
-      doc(db, "comercios", userData.comercioId)
-    );
+    // ── 2. COMERCIO ─────────────────────────────────────────
+    const comercioSnap = await getDoc(doc(db, "comercios", userData.comercioId));
 
     if (!comercioSnap.exists()) {
-      window.location.href = "/mi-comercio.html";
+      window.location.href = `/${identityPage}.html`;
       return;
     }
 
-    const comercioData = comercioSnap.data();
+    const comercioData  = comercioSnap.data();
     const comercioSteps = comercioData.onboardingSteps || {};
 
-    console.log("🔍 [FlowController] comercioSteps:", comercioSteps);
-    console.log("🔍 [FlowController] offerType:", comercioData.offerType);
+    // Usar entityType y offerType desde userData (fuente de verdad)
+    const entityType = userData.entityType || 'comercio';
+    const offerType  = userData.offerType  || {};
 
-    const pipeline = buildPipeline(comercioData.offerType);
+    const pipeline        = buildPipeline(entityType, offerType);
     const firstIncomplete = getFirstIncompleteStep(pipeline, comercioSteps);
 
-    console.log("🔍 [FlowController] pipeline:", pipeline);
+    console.log("🔍 [FlowController] entityType:",      entityType);
+    console.log("🔍 [FlowController] offerType:",       offerType);
+    console.log("🔍 [FlowController] pipeline:",        pipeline);
     console.log("🔍 [FlowController] firstIncomplete:", firstIncomplete);
 
-    // =====================================================
-    // MODO EDICIÓN
-    // =====================================================
-
+    // ── MODO EDICIÓN ────────────────────────────────────────
     if (editMode) {
-      if (pipeline.includes(currentPage)) return;
-
-      if (currentPage !== "dashboard") {
-        window.location.href = "/dashboard.html";
-      }
+      const editablePages = [...pipeline, identityPage, 'tipo-entidad'];
+      if (editablePages.includes(currentPage)) return;
+      if (currentPage !== "dashboard") window.location.href = "/dashboard.html";
       return;
     }
 
-    // =====================================================
-    // ONBOARDING NORMAL
-    // =====================================================
-
+    // ── ONBOARDING NORMAL ───────────────────────────────────
     if (firstIncomplete) {
       if (currentPage !== firstIncomplete) {
         window.location.href = `/${firstIncomplete}.html`;
@@ -154,10 +138,7 @@ export async function runFlowController(uid) {
       return;
     }
 
-    // =====================================================
-    // TODO COMPLETO → DASHBOARD
-    // =====================================================
-
+    // ── TODO COMPLETO → DASHBOARD ───────────────────────────
     if (currentPage !== "dashboard") {
       window.location.href = "/dashboard.html";
     }
@@ -168,10 +149,9 @@ export async function runFlowController(uid) {
   }
 }
 
-/* =========================================================
-   HELPER POST SAVE
-   ========================================================= */
-
+// ============================================================
+// HELPER POST SAVE
+// ============================================================
 export function redirectAfterSave(nextStep) {
   if (window.isEditMode) {
     window.location.href = "/dashboard.html";
