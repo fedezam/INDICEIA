@@ -21,35 +21,37 @@
   line-height: 1.5;
 }
 
-/* ── Cards ───────────────────────────────────────────────── */
-.cards-container {
+/* ── Labels de pregunta ──────────────────────────────────── */
+.te-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  margin: 1.5rem 0 0.75rem 0;
+}
+
+/* ── Cards container ─────────────────────────────────────── */
+.te-cards {
   display: flex;
-  gap: 1.5rem;
-  margin: 1.5rem 0;
+  gap: 1.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .te-cards .s-card {
   flex: 1;
-  min-height: 200px;
-  cursor: pointer;
+  min-height: 180px;
 }
 
-.te-card-content {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
+/* ── Contenido de cards ──────────────────────────────────── */
 .te-card-desc {
-  margin: 0;
-  font-size: 0.9rem;
+  margin: 0 0 10px 0;
+  font-size: 0.88rem;
   color: var(--s-secondary, #6c757d);
   line-height: 1.5;
 }
 
 .te-card-ejemplos {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--s-gray, #adb5bd);
   line-height: 1.4;
 }
@@ -58,18 +60,54 @@
   color: var(--s-dark, #343a40);
 }
 
+/* ── Card deshabilitada (Próximamente) ───────────────────── */
+.te-card-disabled {
+  opacity: 0.55;
+  cursor: not-allowed !important;
+  pointer-events: auto;
+}
+
+.te-card-disabled .s-card-header,
+.te-card-disabled .s-card-body {
+  pointer-events: none;
+}
+
+/* ── Badge próximamente ──────────────────────────────────── */
+.te-badge-soon {
+  display: inline-block;
+  padding: 2px 10px;
+  background: var(--s-warning, #f39c12);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+/* ── Q2 container ────────────────────────────────────────── */
+.te-q2 {
+  animation: te-fadein 0.25s ease;
+}
+
+@keyframes te-fadein {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ── Ayuda ───────────────────────────────────────────────── */
 .te-ayuda {
   font-size: 0.82rem;
   color: var(--s-gray, #adb5bd);
   font-style: italic;
-  margin: 0 0 1.5rem 0;
+  margin: 1.5rem 0;
   text-align: center;
 }
 
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .cards-container {
+  .te-cards {
     flex-direction: column;
   }
 }
