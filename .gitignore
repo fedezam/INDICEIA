@@ -4,3 +4,5 @@ node_modules/
 dist/
 .DS_Store
 *.bak
+indiceia-firebase-adminsdk-fbsvc-ede93c100a.json
+migrate.cjs

@@ -155,10 +155,8 @@ const page = {
     if (this._data.entityState === 'never')    root.appendChild(this._renderNeverGeneratedBanner());
 
     root.appendChild(this._renderSeccion(
-      '🏪 Mi Comercio',
-      'Tu estructura base: qué ofrecés, cuándo y cómo.',
-      this._renderSeccionComercio()
-    ));
+      this._data.comercio.entityType === 'prestador' ? '👷 Mi Perfil' : '🏪 Mi Comercio',
+      this._data.comercio.entityType === 'prestador' ? 'Tu especialidad, zona y disponibilidad.' : 'Tu estructura base: qué ofrecés, cuándo y cómo.',
 
     root.appendChild(this._renderSeccion(
       '🤖 La IA del Comercio',
@@ -320,22 +318,31 @@ const page = {
   },
 
   _renderMiComercioCard() {
+  const entityType = this._data.comercio.entityType || 'comercio';
+  if (entityType === 'prestador') {
     return createCard({
-      title: 'Mi Comercio',
-      icon: 'fa-store',
-      content: '<p>Nombre, dirección, contacto y datos generales</p>',
-      action: { type: 'link', url: '/mi-comercio.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+      title: 'Mi Perfil',
+      icon: 'fa-user-tie',
+      content: '<p>Tu nombre, especialidad, zona y datos de contacto</p>',
+      action: { type: 'link', url: '/mi-perfil.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
     });
-  },
+  }
+  return createCard({
+    title: 'Mi Comercio',
+    icon: 'fa-store',
+    content: '<p>Nombre, dirección, contacto y datos generales</p>',
+    action: { type: 'link', url: '/mi-comercio.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+  });
+},
 
   _renderModeloNegocioCard() {
-    return createCard({
-      title: 'Modelo de Negocio',
-      icon: 'fa-sitemap',
-      content: '<p>Qué ofrecés: productos, servicios o ambos</p>',
-      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
-    });
-  },
+  return createCard({
+    title: 'Tipo de entidad',
+    icon: 'fa-sitemap',
+    content: '<p>Qué tipo de entidad sos y qué ofrecés: productos, servicios o ambos</p>',
+    action: { type: 'link', url: '/tipo-entidad.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+  });
+},
 
   _renderProductosCard() {
     const hasProductos = this._data.offerType.productos === true;
