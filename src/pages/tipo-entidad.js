@@ -29,20 +29,20 @@ runLifecycle({
 // LOAD
 // ============================================================
 async function load(ctx) {
-  // Lee desde userData — ahora vive en usuarios, no en comercios
-  const entityType = ctx.userData?.entityType || null;
-  const offerType  = ctx.userData?.offerType  || {};
-  const isEditMode = ctx.isEditMode === true;
+  const entityType  = ctx.userData?.entityType  || null;
+  const offerType   = ctx.userData?.offerType   || {};
+  const serviceType = ctx.userData?.serviceType || null; // 'oficio' | 'profesional'
+  const isEditMode  = ctx.isEditMode === true;
 
-  // Derivar selección inicial desde lo guardado
-  let selected = null;
+  // Derivar selección inicial
+  let selectedOffer = null;
   if (entityType) {
-    if (offerType.productos && offerType.servicios) selected = 'ambas';
-    else if (offerType.productos) selected = 'productos';
-    else if (offerType.servicios) selected = 'servicios';
+    if (offerType.productos && offerType.servicios) selectedOffer = 'ambas';
+    else if (offerType.productos)                   selectedOffer = 'productos';
+    else if (offerType.servicios)                   selectedOffer = 'servicios';
   }
 
-  return { selected, isEditMode };
+  return { selectedOffer, serviceType, isEditMode };
 }
 
 // ============================================================
@@ -51,6 +51,10 @@ async function load(ctx) {
 function render(ctx, state) {
   const page = document.getElementById("skeleton-page");
   page.innerHTML = "";
+
+  // Estado mutable
+  let selectedOffer   = state.selectedOffer;
+  let selectedService = state.serviceType;
 
   // ── Header ──────────────────────────────────────────────
   const header = document.createElement("div");
@@ -61,15 +65,17 @@ function render(ctx, state) {
   `;
   page.appendChild(header);
 
-  // ── Estado de selección ──────────────────────────────────
-  let selected = state.selected;
+  // ── Pregunta 1 — oferta ──────────────────────────────────
+  const labelQ1 = document.createElement("p");
+  labelQ1.className = "te-label";
+  labelQ1.textContent = "¿Qué hacés principalmente?";
+  page.appendChild(labelQ1);
 
-  // ── Cards ────────────────────────────────────────────────
-  const cardsContainer = document.createElement("div");
-  cardsContainer.className = "cards-container te-cards";
-  page.appendChild(cardsContainer);
+  const cardsQ1 = document.createElement("div");
+  cardsQ1.className = "te-cards";
+  page.appendChild(cardsQ1);
 
-  const opciones = [
+  const opcionesQ1 = [
     {
       key:      'productos',
       title:    'Vendo productos',
@@ -84,7 +90,7 @@ function render(ctx, state) {
       icon:     'fa-hands-helping',
       variant:  'info',
       desc:     'Tu trabajo es lo que hacés, no lo que vendés. Tus clientes te contratan por tu tiempo, habilidad o conocimiento.',
-      ejemplos: 'Plomero, psicólogo, peluquería, clases particulares, diseñador, médico.',
+      ejemplos: 'Plomero, manicura, peluquería, profe particular, electricista.',
     },
     {
       key:      'ambas',
@@ -92,15 +98,14 @@ function render(ctx, state) {
       icon:     'fa-layer-group',
       variant:  'success',
       desc:     'Tu actividad combina las dos cosas. Vendés productos Y también prestás servicios relacionados.',
-      ejemplos: 'Óptica que vende lentes y hace medición de vista, centro de estética que vende cosméticos y da tratamientos, taller que vende repuestos y hace reparaciones.',
+      ejemplos: 'Óptica que vende lentes y hace medición, estética que vende cosméticos y da tratamientos, taller que vende repuestos y hace reparaciones.',
     },
   ];
 
-  const cards = {};
+  const cardsQ1Map = {};
 
-  opciones.forEach(op => {
+  opcionesQ1.forEach(op => {
     const content = document.createElement('div');
-    content.className = 'te-card-content';
     content.innerHTML = `
       <p class="te-card-desc">${op.desc}</p>
       <p class="te-card-ejemplos"><strong>Ejemplos:</strong> ${op.ejemplos}</p>
@@ -111,62 +116,155 @@ function render(ctx, state) {
       icon:       op.icon,
       variant:    op.variant,
       selectable: true,
-      selected:   selected === op.key,
+      selected:   selectedOffer === op.key,
       content,
     });
 
-    cards[op.key] = card;
-    cardsContainer.appendChild(card);
+    cardsQ1Map[op.key] = card;
+    cardsQ1.appendChild(card);
   });
 
-  // ── Texto de ayuda ───────────────────────────────────────
+  // ── Pregunta 2 — tipo de servicio (condicional) ──────────
+  const q2Container = document.createElement("div");
+  q2Container.className = "te-q2";
+  q2Container.style.display = (selectedOffer === 'servicios' || selectedOffer === 'ambas') ? 'block' : 'none';
+  page.appendChild(q2Container);
+
+  function renderQ2() {
+    q2Container.innerHTML = "";
+
+    const labelQ2 = document.createElement("p");
+    labelQ2.className = "te-label";
+    labelQ2.textContent = "¿Qué tipo de servicio ofrecés?";
+    q2Container.appendChild(labelQ2);
+
+    const cardsQ2 = document.createElement("div");
+    cardsQ2.className = "te-cards";
+    q2Container.appendChild(cardsQ2);
+
+    // Card oficio
+    const contentOficio = document.createElement('div');
+    contentOficio.innerHTML = `
+      <p class="te-card-desc">Realizás un trabajo manual o actividad práctica. No necesitás título universitario para ejercerlo. Tus clientes te contactan para que vayas a su casa o para ir a tu local.</p>
+      <p class="te-card-ejemplos"><strong>Ejemplos:</strong> Plomero, electricista, manicura, peluquero, profe particular, fotógrafo, cocinero.</p>
+    `;
+
+    const cardOficio = createCard({
+      title:      'Oficio o servicio',
+      icon:       'fa-tools',
+      variant:    'info',
+      selectable: true,
+      selected:   selectedService === 'oficio',
+      content:    contentOficio,
+    });
+
+    // Card profesional — próximamente
+    const contentProfesional = document.createElement('div');
+    contentProfesional.innerHTML = `
+      <span class="te-badge-soon">Próximamente</span>
+      <p class="te-card-desc">Ejercés una profesión regulada con título universitario y/o matrícula. Tus clientes esperan ver tus credenciales y especialidades.</p>
+      <p class="te-card-ejemplos"><strong>Ejemplos:</strong> Médico, abogado, contador, psicólogo, arquitecto, odontólogo.</p>
+    `;
+
+    const cardProfesional = createCard({
+      title:   'Profesional con título',
+      icon:    'fa-user-graduate',
+      variant: 'warning',
+      content: contentProfesional,
+    });
+    cardProfesional.classList.add('te-card-disabled');
+
+    cardsQ2.appendChild(cardOficio);
+    cardsQ2.appendChild(cardProfesional);
+
+    // Selección Q2 — solo oficio es clickeable
+    cardOficio.addEventListener('click', () => {
+      setTimeout(() => {
+        selectedService = cardOficio.isSelected() ? 'oficio' : null;
+        document.dispatchEvent(new Event('change'));
+      }, 0);
+    });
+
+    // Profesional — click muestra aviso
+    cardProfesional.addEventListener('click', () => {
+      showToast('Próximamente', 'Esta opción estará disponible muy pronto', 'info');
+    });
+
+    return { cardOficio };
+  }
+
+  let q2Refs = renderQ2();
+
+  // ── Texto ayuda ──────────────────────────────────────────
   const ayuda = document.createElement('p');
   ayuda.className = 'te-ayuda';
   ayuda.textContent = '¿No estás seguro? Elegí la que más se parece a tu actividad principal. Siempre podés cambiarlo después.';
   page.appendChild(ayuda);
 
-  // ── Lógica de selección exclusiva ───────────────────────
-  cardsContainer.addEventListener('click', () => {
+  // ── Lógica selección Q1 — exclusiva ─────────────────────
+  cardsQ1.addEventListener('click', () => {
     setTimeout(() => {
-      // Solo una puede estar activa
       let active = null;
-      Object.entries(cards).forEach(([key, card]) => {
+      Object.entries(cardsQ1Map).forEach(([key, card]) => {
         if (card.isSelected()) active = key;
       });
 
-      // Si ninguna quedó activa, restaurar la anterior
       if (!active) {
-        if (selected) cards[selected].select();
+        if (selectedOffer) cardsQ1Map[selectedOffer].select();
         showToast('Seleccioná una opción para continuar', 'warning');
         return;
       }
 
-      // Desactivar las otras
-      Object.entries(cards).forEach(([key, card]) => {
-        if (key !== active && card.isSelected()) card.deselect?.();
+      // Deseleccionar las otras
+      Object.entries(cardsQ1Map).forEach(([key, card]) => {
+        if (key !== active) card.deselect();
       });
 
-      selected = active;
+      selectedOffer = active;
+
+      // Mostrar/ocultar Q2
+      const needsQ2 = active === 'servicios' || active === 'ambas';
+      q2Container.style.display = needsQ2 ? 'block' : 'none';
+
+      if (!needsQ2) selectedService = null;
+      else q2Refs = renderQ2();
+
       document.dispatchEvent(new Event('change'));
     }, 0);
   });
 
   // ── Snapshot para dirty check ────────────────────────────
-  const snapshot = { selected: state.selected };
+  const snapshot = {
+    selectedOffer:   state.selectedOffer,
+    selectedService: state.serviceType,
+  };
 
   const dirtyController = {
-    hasUnsavedChanges: () => selected !== snapshot.selected,
-    markSaved: () => { snapshot.selected = selected; }
+    hasUnsavedChanges: () =>
+      selectedOffer !== snapshot.selectedOffer ||
+      selectedService !== snapshot.selectedService,
+    markSaved: () => {
+      snapshot.selectedOffer   = selectedOffer;
+      snapshot.selectedService = selectedService;
+    }
   };
 
   // ── Botón ────────────────────────────────────────────────
   const btn = createOnboardingButton({
     stepName: 'tipo-entidad',
 
-    validate: () => !!selected,
+    validate: () => {
+      if (!selectedOffer) return false;
+      // Si tiene servicios, necesita también elegir el tipo
+      const needsService = selectedOffer === 'servicios' || selectedOffer === 'ambas';
+      if (needsService && !selectedService) return false;
+      return true;
+    },
 
     getLabel: () => {
-      if (!selected) return 'Seleccioná una opción para continuar';
+      if (!selectedOffer) return 'Seleccioná una opción para continuar';
+      const needsService = selectedOffer === 'servicios' || selectedOffer === 'ambas';
+      if (needsService && !selectedService) return 'Seleccioná el tipo de servicio';
       if (state.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
       if (state.isEditMode) return 'Guardar y volver al dashboard';
       return 'Continuar';
@@ -176,16 +274,16 @@ function render(ctx, state) {
 
     onSave: async ({ uid }) => {
       const offerType = {
-        productos: selected === 'productos' || selected === 'ambas',
-        servicios: selected === 'servicios' || selected === 'ambas',
+        productos: selectedOffer === 'productos' || selectedOffer === 'ambas',
+        servicios: selectedOffer === 'servicios' || selectedOffer === 'ambas',
       };
 
-      const entityType = selected === 'servicios' ? 'prestador' : 'comercio';
+      const entityType = selectedOffer === 'servicios' ? 'prestador' : 'comercio';
 
-      // Guarda en usuarios — comercio todavía no existe
       await updateDoc(doc(db, 'usuarios', uid), {
         entityType,
         offerType,
+        serviceType: selectedService || null,
         'onboardingSteps.tipo-entidad': true,
       });
 
@@ -198,7 +296,7 @@ function render(ctx, state) {
         servicios: 'Vas a configurar tu perfil de servicios',
         ambas:     'Vas a configurar productos y servicios',
       };
-      showToast(msgs[selected] || 'Configuración guardada', 'success');
+      showToast(msgs[selectedOffer] || 'Configuración guardada', 'success');
     },
 
     onError: (err) => {
