@@ -272,7 +272,7 @@ function render(ctx, state) {
 
     dirtyController: state.isEditMode ? dirtyController : undefined,
 
-    onSave: async ({ uid }) => {
+    onSave: async ({ uid, comercioId }) => {
       const offerType = {
         productos: selectedOffer === 'productos' || selectedOffer === 'ambas',
         servicios: selectedOffer === 'servicios' || selectedOffer === 'ambas',
@@ -287,9 +287,16 @@ function render(ctx, state) {
         'onboardingSteps.tipo-entidad': true,
       });
 
+      if (comercioId) {
+        await updateDoc(doc(db, 'entidades', comercioId), {
+          entityType,
+          offerType,
+          serviceType: selectedService || null,
+        });
+      }
+
       return { success: true, stepMarked: true };
     },
-
     onSuccess: () => {
       const msgs = {
         productos: 'Vas a configurar tu negocio de productos',

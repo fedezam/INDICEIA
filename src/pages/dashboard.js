@@ -385,7 +385,7 @@ const page = {
       icon: 'fa-box',
       flat: true,
       content: '<p class="inactive-text">No habilitado</p><p>Vendé artículos físicos o digitales</p>',
-      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Habilitar', variant: 'outline-primary', size: 'sm' }
+      action: { type: 'link', url: '/tipo-entidad.html?edit=true', label: 'Habilitar', variant: 'outline-primary', size: 'sm' }
     });
   },
 
@@ -415,7 +415,7 @@ const page = {
       icon: 'fa-concierge-bell',
       flat: true,
       content: '<p class="inactive-text">No habilitado</p><p>Ofrecé turnos o atención por hora</p>',
-      action: { type: 'link', url: '/modelo-negocio.html?edit=true', label: 'Habilitar', variant: 'outline-primary', size: 'sm' }
+      action: { type: 'link', url: '/tipo-entidad.html?edit=true', label: 'Habilitar', variant: 'outline-primary', size: 'sm' }
     });
   },
 
