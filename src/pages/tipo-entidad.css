@@ -1,0 +1,75 @@
+/* ============================================================
+   tipo-entidad.css
+   ============================================================ */
+
+/* ── Header ─────────────────────────────────────────────── */
+.te-header {
+  margin-bottom: 1.5rem;
+}
+
+.te-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--s-dark, #343a40);
+}
+
+.te-subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--s-secondary, #6c757d);
+  line-height: 1.5;
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.cards-container {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.te-cards .s-card {
+  flex: 1;
+  min-height: 200px;
+  cursor: pointer;
+}
+
+.te-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.te-card-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--s-secondary, #6c757d);
+  line-height: 1.5;
+}
+
+.te-card-ejemplos {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--s-gray, #adb5bd);
+  line-height: 1.4;
+}
+
+.te-card-ejemplos strong {
+  color: var(--s-dark, #343a40);
+}
+
+/* ── Ayuda ───────────────────────────────────────────────── */
+.te-ayuda {
+  font-size: 0.82rem;
+  color: var(--s-gray, #adb5bd);
+  font-style: italic;
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .cards-container {
+    flex-direction: column;
+  }
+}
