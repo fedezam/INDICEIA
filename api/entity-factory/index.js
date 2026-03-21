@@ -49,7 +49,7 @@ export async function buildEntity({ comercioId }) {
   const visual       = await buildVisual(context, goods, comercioId);
 
   await buildSeo(data, comercioId);
-  await buildIndex(data, comercioId, goods);
+  await buildIndex(data, comercioId, goods, services);
 
   return {
     meta: {
