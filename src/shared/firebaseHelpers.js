@@ -34,7 +34,7 @@ export async function getComercioId() {
  */
 export async function getUserData() {
   const comercioId = await getComercioId();
-  const comercioRef = doc(db, 'comercios', comercioId);
+  const comercioRef = doc(db, 'entidades', comercioId);
   const comercioDoc = await getDoc(comercioRef);
   
   if (!comercioDoc.exists()) {
@@ -49,7 +49,7 @@ export async function getUserData() {
  */
 export async function getProducts() {
   const comercioId = await getComercioId();
-  const productosRef = collection(db, 'comercios', comercioId, 'productos');
+  const productosRef = collection(db, 'entidades', comercioId, 'productos');
   const snapshot = await getDocs(productosRef);
   
   return snapshot.docs.map(doc => ({
@@ -63,7 +63,7 @@ export async function getProducts() {
  */
 export async function addProduct(productData) {
   const comercioId = await getComercioId();
-  const productosRef = collection(db, 'comercios', comercioId, 'productos');
+  const productosRef = collection(db, 'entidades', comercioId, 'productos');
   
   const docRef = await addDoc(productosRef, {
     ...productData,
@@ -79,7 +79,7 @@ export async function addProduct(productData) {
  */
 export async function updateProduct(productId, updates) {
   const comercioId = await getComercioId();
-  const productRef = doc(db, 'comercios', comercioId, 'productos', productId);
+  const productRef = doc(db, 'entidades', comercioId, 'productos', productId);
   
   await updateDoc(productRef, {
     ...updates,
@@ -92,7 +92,7 @@ export async function updateProduct(productId, updates) {
  */
 export async function deleteProduct(productId) {
   const comercioId = await getComercioId();
-  const productRef = doc(db, 'comercios', comercioId, 'productos', productId);
+  const productRef = doc(db, 'entidades', comercioId, 'productos', productId);
   await deleteDoc(productRef);
 }
 
@@ -109,7 +109,7 @@ export async function getHorarios() {
  */
 export async function saveHorarios(horariosData) {
   const comercioId = await getComercioId();
-  const comercioRef = doc(db, 'comercios', comercioId);
+  const comercioRef = doc(db, 'entidades', comercioId);
   
   await updateDoc(comercioRef, {
     horarios: horariosData,
@@ -122,7 +122,7 @@ export async function saveHorarios(horariosData) {
  */
 export async function updateUserData(updates) {
   const comercioId = await getComercioId();
-  const comercioRef = doc(db, 'comercios', comercioId);
+  const comercioRef = doc(db, 'entidades', comercioId);
   
   await updateDoc(comercioRef, {
     ...updates,

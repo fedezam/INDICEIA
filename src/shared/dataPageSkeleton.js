@@ -83,7 +83,7 @@ export async function runDataPage(pageModule) {
 
       if (currentComercioId) {
         const comercioSnap = await getDoc(
-          doc(db, 'comercios', currentComercioId)
+          doc(db, 'entidades', currentComercioId)
         );
 
         comercioData = comercioSnap.exists()

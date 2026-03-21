@@ -4,7 +4,7 @@ import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firest
 import { db } from '@/firebase'
 
 export async function loadCognition(comercioId, container) {
-  const ref = doc(db, 'comercios', comercioId, 'config', 'cognition')
+  const ref = doc(db, 'entidades', comercioId, 'config', 'cognition')
   const snap = await getDoc(ref)
 
   if (!snap.exists()) return
@@ -32,7 +32,7 @@ export async function saveCognition(comercioId, container) {
     }
   })
 
-  const ref = doc(db, 'comercios', comercioId, 'config', 'cognition')
+  const ref = doc(db, 'entidades', comercioId, 'config', 'cognition')
 
   if (Object.keys(cognitive_permissions).length === 0) {
     await deleteDoc(ref)

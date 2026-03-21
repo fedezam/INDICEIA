@@ -98,7 +98,7 @@ export async function runFlowController(uid) {
     if (currentPage === identityPage && editMode) return;
 
     // ── 2. COMERCIO ─────────────────────────────────────────
-    const comercioSnap = await getDoc(doc(db, "comercios", userData.comercioId));
+    const comercioSnap = await getDoc(doc(db, "entidades", userData.comercioId));
 
     if (!comercioSnap.exists()) {
       window.location.href = `/${identityPage}.html`;

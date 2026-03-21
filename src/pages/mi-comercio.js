@@ -364,8 +364,8 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
       if (state.isNewComercio) {
         // ── COMERCIO NUEVO — multi-colección, no puede ir por persistence ──
         const comercioRef = ctxComercioId
-          ? doc(db, 'comercios', ctxComercioId)
-          : doc(collection(db, 'comercios'));
+          ? doc(db, 'entidades', ctxComercioId)
+          : doc(collection(db, 'entidades'));
         const comercioId = comercioRef.id;
 
         await setDoc(comercioRef, {
@@ -403,7 +403,7 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
 
       } else {
         // ── COMERCIO EXISTENTE — updateDoc directo ──
-        await updateDoc(doc(db, 'comercios', ctxComercioId), {
+        await updateDoc(doc(db, 'entidades', ctxComercioId), {
           ...updates,
           'onboardingSteps.mi-comercio': true,
           fechaActualizacion: new Date()

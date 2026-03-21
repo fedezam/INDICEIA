@@ -67,7 +67,7 @@ const page = {
       return;
     }
     try {
-      const snap = await getDocs(collection(db, 'comercios', comercioId, 'productos'));
+      const snap = await getDocs(collection(db, 'entidades', comercioId, 'productos'));
       let activos = 0, pausados = 0, ultimaActualizacion = null;
 
       snap.docs.forEach(d => {
@@ -698,7 +698,7 @@ const page = {
       const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
       const { db } = await import('/src/services/firebase/firebase.js');
 
-      const comercioRef = doc(db, 'comercios', this._data.comercio.id);
+      const comercioRef = doc(db, 'entidades', this._data.comercio.id);
       await updateDoc(comercioRef, { entityGeneratedAt: serverTimestamp() });
 
       this._data.comercio.entityGeneratedAt = new Date().toISOString();
@@ -767,7 +767,7 @@ const page = {
       confirmBtn.setLoading(true);
       try {
         const { updateDoc, doc, db } = await import('firebase/firestore');
-        await updateDoc(doc(db, 'comercios', this._data.comercio.id), {
+        await updateDoc(doc(db, 'entidades', this._data.comercio.id), {
           plan: 'highvalue',
           liveEnabled: true,
           commissionEnabled: true,

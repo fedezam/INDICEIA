@@ -284,7 +284,7 @@ const page = {
         };
 
         // cleanPayload elimina vacíos antes de persistir
-        await updateDoc(doc(db, 'comercios', comercioId), {
+        await updateDoc(doc(db, 'entidades', comercioId), {
           ...cleanPayload(raw),
           fechaActualizacion: serverTimestamp()
         });

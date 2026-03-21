@@ -469,8 +469,8 @@ async function handleGuardar(ctx, state, refs, uiState) {
     if (state.isNuevo) {
       // Crear doc en comercios (mismo patrón que mi-comercio)
       const comercioRef = ctx.comercioId
-        ? doc(db, 'comercios', ctx.comercioId)
-        : doc(collection(db, 'comercios'));
+        ? doc(db, 'entidades', ctx.comercioId)
+        : doc(collection(db, 'entidades'));
       const comercioId = comercioRef.id;
 
       const now       = Timestamp.now();
@@ -506,7 +506,7 @@ async function handleGuardar(ctx, state, refs, uiState) {
       updates['onboardingSteps.mi-perfil'] = true;
       updates.fechaActualizacion           = new Date();
 
-      await updateDoc(doc(db, 'comercios', ctx.comercioId), updates);
+      await updateDoc(doc(db, 'entidades', ctx.comercioId), updates);
 
       if (!state.slugExiste) {
         await setDoc(doc(db, 'landings', uiState.slug), {

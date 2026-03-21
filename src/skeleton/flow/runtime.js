@@ -32,7 +32,7 @@ export async function runFlowRuntime() {
 
   if (userData.comercioId) {
     const comercioSnap = await getDoc(
-      doc(db, "comercios", userData.comercioId)
+      doc(db, "entidades", userData.comercioId)
     );
     if (comercioSnap.exists()) {
       comercioExiste = true;

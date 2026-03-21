@@ -15,23 +15,23 @@ export const STEP_TARGETS = {
     idField: 'uid' 
   },
   'mi-comercio': { 
-    collection: 'comercios', 
+    collection: 'entidades', 
     idField: 'comercioId' 
   },
   'horarios': { 
-    collection: 'comercios', 
+    collection: 'entidades', 
     idField: 'comercioId' 
   },
   'servicios': { 
-    collection: 'comercios', 
+    collection: 'entidades', 
     idField: 'comercioId' 
   },
   'productos': { 
-    collection: 'comercios', 
+    collection: 'entidades', 
     idField: 'comercioId' 
   },
   'ia-config': { 
-    collection: 'comercios', 
+    collection: 'entidades', 
     idField: 'comercioId' 
   }
 };

@@ -33,7 +33,7 @@ export function resolveFirebaseContext(onReady, onError) {
 
       if (comercioId) {
         const comercioSnap = await getDoc(
-          doc(db, 'comercios', comercioId)
+          doc(db, 'entidades', comercioId)
         );
 
         if (comercioSnap.exists()) {

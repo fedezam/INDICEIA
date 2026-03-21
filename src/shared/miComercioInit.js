@@ -76,7 +76,7 @@ export async function runMiComercioPage(pageModule) {
         // Ya existe comercio → cargar datos
         currentComercioId = userData.comercioId;
         
-        const comercioRef = doc(db, 'comercios', currentComercioId);
+        const comercioRef = doc(db, 'entidades', currentComercioId);
         const comercioSnap = await getDoc(comercioRef);
 
         if (comercioSnap.exists()) {
@@ -93,7 +93,7 @@ export async function runMiComercioPage(pageModule) {
         // No tiene comercio → crear nuevo
         isNewComercio = true;
         // Generar ID único para el nuevo comercio
-        currentComercioId = doc(collection(db, 'comercios')).id;
+        currentComercioId = doc(collection(db, 'entidades')).id;
         
         comercioData = {
           id: currentComercioId,

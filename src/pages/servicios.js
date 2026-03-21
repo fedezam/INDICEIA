@@ -52,7 +52,7 @@ const page = {
 
     try {
       // Cargar servicios existentes de la subcolección
-      const serviciosRef = collection(db, 'comercios', comercioId, 'servicios');
+      const serviciosRef = collection(db, 'entidades', comercioId, 'servicios');
       const snapshot = await getDocs(serviciosRef);
       
       this._data.serviciosAcumulados = snapshot.docs.map(doc => ({
@@ -709,10 +709,10 @@ const page = {
         }
 
         const batch = writeBatch(db);
-        const comercioRef = doc(db, 'comercios', comercioId);
+        const comercioRef = doc(db, 'entidades', comercioId);
 
         // 1. Obtener y borrar servicios existentes
-        const serviciosRef = collection(db, 'comercios', comercioId, 'servicios');
+        const serviciosRef = collection(db, 'entidades', comercioId, 'servicios');
         const existentes = await getDocs(serviciosRef);
         
         existentes.docs.forEach(docSnap => {
@@ -724,7 +724,7 @@ const page = {
           // Limpiar ID temporal si existe
           const { id, ...servicioData } = servicio;
           
-          const nuevoRef = doc(collection(db, 'comercios', comercioId, 'servicios'));
+          const nuevoRef = doc(collection(db, 'entidades', comercioId, 'servicios'));
           batch.set(nuevoRef, {
             ...servicioData,
             fechaActualizacion: serverTimestamp()

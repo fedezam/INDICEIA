@@ -81,7 +81,7 @@ const page = {
   async _subirImagen(file) {
     if (!this._comercioId) throw new Error('Sin comercioId');
     const filename = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
-    const ref = storageRef(storage, `comercios/${this._comercioId}/productos/${filename}`);
+    const ref = storageRef(storage, `entidades/${this._comercioId}/productos/${filename}`);
     await uploadBytes(ref, file);
     return getDownloadURL(ref);
   },
@@ -100,7 +100,7 @@ const page = {
     }
 
     try {
-      const snap = await getDocs(collection(db, 'comercios', this._comercioId, 'productos'));
+      const snap = await getDocs(collection(db, 'entidades', this._comercioId, 'productos'));
       this._data.productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       this._data.productos.sort((a, b) =>
         (a.nombre || '').localeCompare(b.nombre || '', 'es')
@@ -985,7 +985,7 @@ const page = {
       onSave: async ({ uid, comercioId }) => {
         if (!comercioId) throw new Error('No hay comercioId');
 
-        const productosRef = collection(db, 'comercios', comercioId, 'productos');
+        const productosRef = collection(db, 'entidades', comercioId, 'productos');
         const batch        = writeBatch(db);
         const existentes   = await getDocs(productosRef);
         const existingMap  = new Map(existentes.docs.map(d => [d.id, d.data()]));
@@ -1003,7 +1003,7 @@ const page = {
           } else {
             const old = existingMap.get(p.id);
             if (old && JSON.stringify(old) !== JSON.stringify(p)) {
-              toUpdate.push({ ref: doc(db, 'comercios', comercioId, 'productos', p.id), data: p });
+              toUpdate.push({ ref: doc(db, 'entidades', comercioId, 'productos', p.id), data: p });
             }
           }
         });

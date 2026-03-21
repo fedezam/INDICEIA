@@ -31,7 +31,7 @@ export async function redirectToNextStep() {
         }
         
         // --- Obtener comercio ---
-        const comercioRef = doc(db, "comercios", comercioId);
+        const comercioRef = doc(db, "entidades", comercioId);
         const comercioSnap = await getDoc(comercioRef);
         
         if (!comercioSnap.exists()) {
@@ -42,7 +42,7 @@ export async function redirectToNextStep() {
         const comercioData = comercioSnap.data();
         
         // --- Obtener productos ---
-        const productosRef = collection(db, "comercios", comercioId, "productos");
+        const productosRef = collection(db, "entidades", comercioId, "productos");
         const productosSnap = await getDocs(productosRef);
         const productos = productosSnap.docs.map((d) => d.data());
         
