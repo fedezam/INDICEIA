@@ -18,7 +18,9 @@ function isEditMode() {
 const PUBLIC_PAGES  = ["login", "registro", "index", ""];
 const NEUTRAL_PAGES = ["skeletonTest"];
 
-// En buildPipeline, el serviceType influye en mi-perfil vs mi-comercio
+// ============================================================
+// PIPELINE BUILDER
+// ============================================================
 function buildPipeline(entityType, offerType = {}) {
   const { productos, servicios } = offerType || {};
 
@@ -36,6 +38,10 @@ function buildPipeline(entityType, offerType = {}) {
   if (productos) steps.push('entrega');
   steps.push('horarios', 'ia-config');
   return steps;
+}
+
+function getFirstIncompleteStep(pipeline, completedSteps = {}) {
+  return pipeline.find(step => completedSteps[step] !== true);
 }
 
 // ============================================================
@@ -73,7 +79,7 @@ export async function runFlowController(uid) {
       return;
     }
 
-    // ── STEP: tipo-entidad (antes modelo-negocio) ───────────
+    // ── STEP: tipo-entidad ──────────────────────────────────
     // Vive en dominio usuario — todavía no hay comercioId
     if (!userSteps['tipo-entidad']) {
       if (currentPage !== 'tipo-entidad') window.location.href = '/tipo-entidad.html';
@@ -87,7 +93,7 @@ export async function runFlowController(uid) {
       return;
     }
 
-    // ── edit mode: mi-comercio / mi-perfil siempre accesibles
+    // ── edit mode: identidad siempre accesible ──────────────
     const identityPage = userData.entityType === 'prestador' ? 'mi-perfil' : 'mi-comercio';
     if (currentPage === identityPage && editMode) return;
 
@@ -102,7 +108,6 @@ export async function runFlowController(uid) {
     const comercioData  = comercioSnap.data();
     const comercioSteps = comercioData.onboardingSteps || {};
 
-    // Usar entityType y offerType desde userData (fuente de verdad)
     const entityType = userData.entityType || 'comercio';
     const offerType  = userData.offerType  || {};
 
