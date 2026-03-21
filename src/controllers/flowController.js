@@ -18,13 +18,10 @@ function isEditMode() {
 const PUBLIC_PAGES  = ["login", "registro", "index", ""];
 const NEUTRAL_PAGES = ["skeletonTest"];
 
-// ============================================================
-// PIPELINE BUILDER
-// ============================================================
+// En buildPipeline, el serviceType influye en mi-perfil vs mi-comercio
 function buildPipeline(entityType, offerType = {}) {
   const { productos, servicios } = offerType || {};
 
-  // Prestador puro o híbrido
   if (entityType === 'prestador') {
     const steps = ['mi-perfil'];
     if (servicios) steps.push('servicios');
@@ -33,17 +30,12 @@ function buildPipeline(entityType, offerType = {}) {
     return steps;
   }
 
-  // Comercio puro o híbrido (default)
   const steps = ['mi-comercio'];
   if (productos) steps.push('productos');
   if (servicios) steps.push('servicios');
   if (productos) steps.push('entrega');
   steps.push('horarios', 'ia-config');
   return steps;
-}
-
-function getFirstIncompleteStep(pipeline, completedSteps = {}) {
-  return pipeline.find(step => completedSteps[step] !== true);
 }
 
 // ============================================================
