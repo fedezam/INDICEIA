@@ -157,6 +157,10 @@ const page = {
     root.appendChild(this._renderSeccion(
       this._data.comercio.entityType === 'prestador' ? '👷 Mi Perfil' : '🏪 Mi Comercio',
       this._data.comercio.entityType === 'prestador' ? 'Tu especialidad, zona y disponibilidad.' : 'Tu estructura base: qué ofrecés, cuándo y cómo.',
+      this._renderSeccionComercio()
+    ));
+
+    root.appendChild(this._renderSeccion(
 
     root.appendChild(this._renderSeccion(
       '🤖 La IA del Comercio',
