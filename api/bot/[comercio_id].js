@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     }).catch(() => {});
 
     // 🔹 Obtener data pública del comercio
-    const snap = await db.collection('comercios').doc(comercio_id).get();
+    const snap = await db.collection('entidades').doc(comercio_id).get();
 
     if (!snap.exists) {
       return res.status(404).json({ error: 'comercio_not_found' });

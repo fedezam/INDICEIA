@@ -34,7 +34,7 @@ async function resolveReferralCode(comercioId, duenoId) {
 export async function buildEntity({ comercioId }) {
   if (!comercioId) throw new Error('Falta comercioId');
 
-  const comercioRef = db.collection('comercios').doc(comercioId);
+  const comercioRef = db.collection('entidades').doc(comercioId);
   const snap = await comercioRef.get();
   if (!snap.exists) throw new Error(`Comercio ${comercioId} no encontrado`);
 

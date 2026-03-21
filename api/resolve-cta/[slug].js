@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
     const { comercioId } = landingSnap.data();
 
-    const comercioRef  = db.collection('comercios').doc(comercioId);
+    const comercioRef  = db.collection('entidades').doc(comercioId);
     const comercioSnap = await comercioRef.get();
     if (!comercioSnap.exists) return res.status(404).json({ ok: false, error: 'comercio no encontrado' });
 

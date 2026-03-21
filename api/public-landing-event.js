@@ -45,7 +45,7 @@ export default async function handler(req, res) {
   try {
     // ── 1. Subcolección stats por comercio (comportamiento anterior) ──
     const snap = await db
-      .collection('comercios')
+      .collection('entidades')
       .where('slug', '==', data.slug)
       .limit(1)
       .get();
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
       const comercioId = snap.docs[0].id;
 
       await db
-        .collection('comercios')
+        .collection('entidades')
         .doc(comercioId)
         .collection('stats')
         .add({

@@ -45,7 +45,7 @@ export default async function handler(req, res) {
 
     console.log('[LIVE-SLUG] Buscando slug:', slug);
 
-    const comerciosRef = db.collection('comercios');
+    const comerciosRef = db.collection('entidades');
     const q = comerciosRef.where('landing.slug', '==', slug);
     const querySnap = await q.get();
 

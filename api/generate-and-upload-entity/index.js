@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     });
 
     // Guardar URL en Firestore (atómico con el upload)
-    await db.collection('comercios').doc(comercioId).update({
+    await db.collection('entidades').doc(comercioId).update({
       entityPublicUrl: url,
       entityGeneratedAt: new Date().toISOString(),
     });

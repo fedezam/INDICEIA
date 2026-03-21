@@ -65,7 +65,7 @@ export default async function handler(req, res) {
     console.log('[LINK-BUILDER] Fetching comercio document...');
     
     // ✅ CORREGIDO: Sintaxis de firebase-admin
-    const comercioRef = db.collection('comercios').doc(comercio_id);
+    const comercioRef = db.collection('entidades').doc(comercio_id);
     const comercioSnap = await comercioRef.get();
     
     // ✅ CORREGIDO: .exists SIN paréntesis
