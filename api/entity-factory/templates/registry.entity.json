@@ -1,7 +1,25 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2026-03-22T15:15:05.003Z",
+  "last_updated": "2026-03-22T15:21:46.716Z",
   "templates": {
+    "A1_ComboProfile": {
+      "id": "A1_ComboProfile",
+      "version": "1.0.0",
+      "paths": {
+        "template_url": "https://indiceia-templates.vercel.app/templates/A1_ComboProfile/template.txt"
+      },
+      "supports": {
+        "products": true,
+        "services": true,
+        "gallery": true,
+        "horarios": true,
+        "cart": true,
+        "search": false,
+        "images": true,
+        "categories": true
+      },
+      "requirements": {}
+    },
     "C1_SimpleCatalog": {
       "id": "C1_SimpleCatalog",
       "version": "2.1.0",

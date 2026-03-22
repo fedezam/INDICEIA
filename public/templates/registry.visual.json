@@ -1,7 +1,28 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2026-03-22T15:15:05.003Z",
+  "last_updated": "2026-03-22T15:21:46.716Z",
   "templates": [
+    {
+      "id": "A1_ComboProfile",
+      "name": "Perfil Combo",
+      "version": "1.0.0",
+      "tier": "A1",
+      "description": "Mini app con navegación por tabs para negocios que combinan productos y servicios. Catálogo con carrito, servicios con consulta, galería, horarios y contacto.",
+      "ideal_for": [
+        "ópticas",
+        "talleres mecánicos",
+        "estéticas",
+        "veterinarias",
+        "ferreterías con instalación",
+        "negocios con productos y servicios"
+      ],
+      "visual": {
+        "iframe_url": "https://indiceia-templates.vercel.app/templates/A1_ComboProfile/previews/preview.html"
+      },
+      "previews": {
+        "thumbnail": null
+      }
+    },
     {
       "id": "C1_SimpleCatalog",
       "name": "Catálogo Simple",
