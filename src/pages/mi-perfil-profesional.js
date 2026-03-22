@@ -1,0 +1,355 @@
+// ============================================================
+// src/pages/mi-perfil-profesional.js
+// ============================================================
+
+import { runLifecycle }          from '/src/skeleton/lifecycle.js';
+import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
+import { mountLayout }           from '/src/skeleton/layout/index.js';
+import { runFlowController }     from '/src/controllers/flowController.js';
+import { createFormField }       from '/src/skeleton/components/form-field/index.js';
+import { createButton }          from '/src/skeleton/components/button/index.js';
+import { createCard }            from '/src/skeleton/components/card/index.js';
+import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
+import { showToast }             from '/src/skeleton/components/toast/index.js';
+import { db }                    from '/src/services/firebase/firebase.js';
+import { doc, updateDoc }        from 'firebase/firestore';
+import './mi-perfil-profesional.css';
+
+// ============================================================
+// DATA — especialidades por categoría
+// ============================================================
+const ESPECIALIDADES = {
+  salud: [
+    'Medicina General / Clínica Médica',
+    'Pediatría',
+    'Cardiología',
+    'Dermatología',
+    'Ginecología y Obstetricia',
+    'Traumatología y Ortopedia',
+    'Neurología',
+    'Psiquiatría',
+    'Oftalmología',
+    'Otorrinolaringología',
+    'Urología',
+    'Endocrinología',
+    'Gastroenterología',
+    'Neumología',
+    'Oncología',
+    'Reumatología',
+    'Anestesiología',
+    'Radiología',
+    'Cirugía General',
+    'Medicina Interna',
+    'Odontología General',
+    'Ortodoncia',
+    'Odontopediatría',
+    'Implantología',
+    'Periodoncia',
+    'Psicología Clínica',
+    'Psicología Infantil',
+    'Psicología de Pareja',
+    'Kinesiología',
+    'Fonoaudiología',
+    'Nutrición',
+    'Otra especialidad',
+  ],
+};
+
+const ORGANISMOS_MATRICULA = {
+  salud: [
+    'Colegio Médico de la Provincia',
+    'Colegio de Médicos Distrito I (Santa Fe)',
+    'Colegio de Médicos Distrito II (Rosario)',
+    'Colegio de Odontólogos',
+    'Colegio de Psicólogos',
+    'Colegio de Kinesiólogos',
+    'Ministerio de Salud de la Nación',
+    'Otro organismo',
+  ],
+};
+
+const IDIOMAS = ['Español', 'Inglés', 'Portugués', 'Italiano', 'Francés', 'Alemán'];
+
+// ============================================================
+const adapter = (options) => createFirebaseAdapter(options);
+
+runLifecycle({
+  adapter,
+  options: { loadingMessage: 'Cargando perfil profesional...' },
+  async onReady(ctx) {
+    await runFlowController(ctx.user.uid);
+    mountLayout(ctx);
+    const state = await load(ctx);
+    render(ctx, state);
+  }
+});
+
+// ============================================================
+// LOAD
+// ============================================================
+async function load(ctx) {
+  const data       = ctx.comercioData || {};
+  const isNuevo    = !data.nombre;
+  const categoria  = ctx.userData?.categoria || 'salud';
+
+  return {
+    isNuevo,
+    categoria,
+    data: {
+      nombre:        data.nombre        || '',
+      especialidad:  data.especialidad  || '',
+      descripcion:   data.descripcion   || '',
+      experiencia:   data.experiencia   || '',
+      titulo:        data.titulo        || '',
+      matricula:     data.matricula     || { numero: '', organismo: '' },
+      institucionFormadora: data.institucionFormadora || '',
+      idiomas:       data.idiomas       || [],
+    }
+  };
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render(ctx, state) {
+  const page = document.getElementById('skeleton-page');
+  page.innerHTML = '';
+
+  const uiState = structuredClone(state.data);
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'page-header';
+  header.innerHTML = `
+    <h2><i class="fas fa-user-md"></i> ${state.isNuevo ? 'Crear perfil profesional' : 'Editar perfil profesional'}</h2>
+    <p>Estos datos definen cómo te va a presentar tu asistente a los pacientes o clientes.</p>
+  `;
+  page.appendChild(header);
+
+  page.appendChild(renderSeccionIdentidad(state, uiState));
+  page.appendChild(renderSeccionCredenciales(state, uiState));
+  page.appendChild(renderSeccionFormacion(state, uiState));
+
+  // Botón guardar
+  const guardarBtn = createOnboardingButton({
+    stepName: 'mi-perfil-profesional',
+    validate: () =>
+      uiState.nombre?.trim() &&
+      uiState.especialidad?.trim() &&
+      uiState.matricula?.numero?.trim() &&
+      uiState.matricula?.organismo?.trim(),
+    getLabel: () => {
+      const valido =
+        uiState.nombre?.trim() &&
+        uiState.especialidad?.trim() &&
+        uiState.matricula?.numero?.trim() &&
+        uiState.matricula?.organismo?.trim();
+      return valido ? 'Guardar y continuar' : 'Completá los campos requeridos';
+    },
+    onSave: async ({ uid, comercioId, persistence }) => {
+      if (!comercioId) throw new Error('Sin comercioId');
+      await persistence.updateData({
+        nombre:              uiState.nombre.trim(),
+        especialidad:        uiState.especialidad.trim(),
+        descripcion:         uiState.descripcion.trim(),
+        experiencia:         uiState.experiencia.trim(),
+        titulo:              uiState.titulo.trim(),
+        matricula:           uiState.matricula,
+        institucionFormadora: uiState.institucionFormadora.trim(),
+        idiomas:             uiState.idiomas,
+        entityType:          'profesional',
+        categoria:           state.categoria,
+      });
+      return { success: true, stepMarked: true };
+    },
+    onSuccess: () => showToast('Perfil guardado', 'success'),
+    onError:   (err) => showToast('Error: ' + err.message, 'error'),
+  });
+
+  const btnContainer = document.createElement('div');
+  btnContainer.className = 'btn-container';
+  btnContainer.appendChild(guardarBtn);
+  page.appendChild(btnContainer);
+}
+
+// ============================================================
+// SECCIÓN: IDENTIDAD
+// ============================================================
+function renderSeccionIdentidad(state, uiState) {
+  const section = document.createElement('div');
+
+  const nombre = createFormField({
+    label: 'Nombre completo',
+    name: 'nombre',
+    required: true,
+    placeholder: 'Dr. Juan García',
+    helpText: 'Como te conocen tus pacientes o clientes',
+    value: uiState.nombre,
+  });
+  nombre.input?.addEventListener('input', e => { uiState.nombre = e.target.value; });
+
+  const especialidadOptions = (ESPECIALIDADES[state.categoria] || []).map(e => ({ value: e, label: e }));
+  const especialidad = createFormField({
+    label: 'Especialidad',
+    name: 'especialidad',
+    type: 'select',
+    required: true,
+    placeholder: 'Seleccioná tu especialidad',
+    options: [{ value: '', label: 'Seleccioná tu especialidad' }, ...especialidadOptions],
+    value: uiState.especialidad,
+  });
+  especialidad.input?.addEventListener('change', e => { uiState.especialidad = e.target.value; });
+
+  const descripcion = createFormField({
+    label: 'Descripción',
+    name: 'descripcion',
+    type: 'textarea',
+    rows: 3,
+    placeholder: 'Ej: Médico clínico con enfoque en medicina preventiva y atención personalizada.',
+    helpText: 'Dos o tres líneas que expliquen tu enfoque y por qué elegirte',
+    value: uiState.descripcion,
+  });
+  descripcion.input?.addEventListener('input', e => { uiState.descripcion = e.target.value; });
+
+  const experiencia = createFormField({
+    label: 'Años de experiencia',
+    name: 'experiencia',
+    type: 'number',
+    placeholder: 'Ej: 10',
+    helpText: 'Opcional — ayuda a generar confianza',
+    value: uiState.experiencia,
+  });
+  experiencia.input?.addEventListener('input', e => { uiState.experiencia = e.target.value; });
+
+  section.append(
+    createCard({
+      title: '¿Quién sos?',
+      icon: 'fa-user-md',
+      content: (() => {
+        const c = document.createElement('div');
+        c.append(nombre, especialidad, descripcion, experiencia);
+        return c;
+      })()
+    })
+  );
+
+  return section;
+}
+
+// ============================================================
+// SECCIÓN: CREDENCIALES
+// ============================================================
+function renderSeccionCredenciales(state, uiState) {
+  const section = document.createElement('div');
+
+  const matriculaNumero = createFormField({
+    label: 'Número de matrícula',
+    name: 'matricula-numero',
+    required: true,
+    placeholder: 'Ej: 12345',
+    helpText: 'El número que te otorgó el colegio profesional',
+    value: uiState.matricula.numero,
+  });
+  matriculaNumero.input?.addEventListener('input', e => {
+    uiState.matricula = { ...uiState.matricula, numero: e.target.value };
+  });
+
+  const organismoOptions = (ORGANISMOS_MATRICULA[state.categoria] || []).map(o => ({ value: o, label: o }));
+  const matriculaOrganismo = createFormField({
+    label: 'Organismo que emite la matrícula',
+    name: 'matricula-organismo',
+    type: 'select',
+    required: true,
+    options: [{ value: '', label: 'Seleccioná el organismo' }, ...organismoOptions],
+    value: uiState.matricula.organismo,
+  });
+  matriculaOrganismo.input?.addEventListener('change', e => {
+    uiState.matricula = { ...uiState.matricula, organismo: e.target.value };
+  });
+
+  section.append(
+    createCard({
+      title: 'Matrícula profesional',
+      icon: 'fa-id-card',
+      content: (() => {
+        const c = document.createElement('div');
+        const help = document.createElement('p');
+        help.className = 'form-help';
+        help.textContent = 'La matrícula valida tu credencial ante los pacientes.';
+        c.append(help, matriculaNumero, matriculaOrganismo);
+        return c;
+      })()
+    })
+  );
+
+  return section;
+}
+
+// ============================================================
+// SECCIÓN: FORMACIÓN E IDIOMAS
+// ============================================================
+function renderSeccionFormacion(state, uiState) {
+  const section = document.createElement('div');
+
+  const titulo = createFormField({
+    label: 'Título universitario',
+    name: 'titulo',
+    placeholder: 'Ej: Médico Cirujano — UBA',
+    helpText: 'Tu título de grado y la universidad donde lo obtuviste',
+    value: uiState.titulo,
+  });
+  titulo.input?.addEventListener('input', e => { uiState.titulo = e.target.value; });
+
+  const institucion = createFormField({
+    label: 'Institución donde te formaste',
+    name: 'institucionFormadora',
+    placeholder: 'Ej: Hospital Italiano de Buenos Aires',
+    helpText: 'Residencia, fellowship o especialización principal',
+    value: uiState.institucionFormadora,
+  });
+  institucion.input?.addEventListener('input', e => { uiState.institucionFormadora = e.target.value; });
+
+  // Idiomas — checkboxes manuales
+  const idiomasWrapper = document.createElement('div');
+  idiomasWrapper.className = 's-form-field';
+
+  const idiomasLabel = document.createElement('label');
+  idiomasLabel.className = 's-label';
+  idiomasLabel.textContent = 'Idiomas en que atendés';
+  idiomasWrapper.appendChild(idiomasLabel);
+
+  const idiomasGrid = document.createElement('div');
+  idiomasGrid.className = 'idiomas-grid';
+
+  IDIOMAS.forEach(idioma => {
+    const row = document.createElement('label');
+    row.className = 'idioma-row';
+    const cb = document.createElement('input');
+    cb.type    = 'checkbox';
+    cb.value   = idioma;
+    cb.checked = uiState.idiomas.includes(idioma);
+    cb.addEventListener('change', () => {
+      if (cb.checked) uiState.idiomas = [...uiState.idiomas, idioma];
+      else            uiState.idiomas = uiState.idiomas.filter(i => i !== idioma);
+    });
+    row.appendChild(cb);
+    row.appendChild(document.createTextNode(` ${idioma}`));
+    idiomasGrid.appendChild(row);
+  });
+
+  idiomasWrapper.appendChild(idiomasGrid);
+
+  section.append(
+    createCard({
+      title: 'Formación e idiomas',
+      icon: 'fa-graduation-cap',
+      content: (() => {
+        const c = document.createElement('div');
+        c.append(titulo, institucion, idiomasWrapper);
+        return c;
+      })()
+    })
+  );
+
+  return section;
+}
