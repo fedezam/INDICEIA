@@ -1,6 +1,6 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2026-03-22T03:02:41.964Z",
+  "last_updated": "2026-03-22T03:14:44.852Z",
   "templates": {
     "C1_SimpleCatalog": {
       "id": "C1_SimpleCatalog",
@@ -16,6 +16,22 @@
         "delivery": true,
         "search": false,
         "filters": false
+      },
+      "requirements": {}
+    },
+    "S1_ServiceProfile": {
+      "id": "S1_ServiceProfile",
+      "version": "1.0.0",
+      "paths": {
+        "template_url": "https://indiceia-templates.vercel.app/templates/S1_ServiceProfile/template.txt"
+      },
+      "supports": {
+        "services": true,
+        "gallery": true,
+        "horarios": true,
+        "cart": false,
+        "search": false,
+        "images": true
       },
       "requirements": {}
     }

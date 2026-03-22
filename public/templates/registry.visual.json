@@ -1,6 +1,6 @@
 {
   "registry_version": "1.0.0",
-  "last_updated": "2026-03-22T03:02:41.964Z",
+  "last_updated": "2026-03-22T03:14:44.852Z",
   "templates": [
     {
       "id": "C1_SimpleCatalog",
@@ -24,6 +24,29 @@
       },
       "previews": {
         "thumbnail": "https://indiceia-templates.vercel.app/templates/C1_SimpleCatalog/previews/thumbnail.png"
+      }
+    },
+    {
+      "id": "S1_ServiceProfile",
+      "name": "Perfil de Servicios",
+      "version": "1.0.0",
+      "tier": "S1",
+      "description": "Mini app para prestadores de servicios. Muestra servicios con selección, galería de trabajos realizados, horarios y botón de contacto por WhatsApp.",
+      "ideal_for": [
+        "plomeros",
+        "electricistas",
+        "manicuras",
+        "peluqueros",
+        "profesores particulares",
+        "fotógrafos",
+        "albañiles",
+        "pintores"
+      ],
+      "visual": {
+        "iframe_url": "https://indiceia-templates.vercel.app/templates/S1_ServiceProfile/previews/preview.html"
+      },
+      "previews": {
+        "thumbnail": null
       }
     }
   ]
