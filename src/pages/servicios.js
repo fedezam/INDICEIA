@@ -39,6 +39,7 @@ const page = {
   },
 
   _comercioId: null,
+  _originalSnapshot: [],
 
   // ──────────────────────────────────────────────────────────
   // UPLOAD IMAGEN
@@ -81,6 +82,7 @@ const page = {
     }
 
     this._data.draft = {};
+    this._originalSnapshot = structuredClone(this._data.serviciosAcumulados);
   },
 
   // ──────────────────────────────────────────────────────────
@@ -636,12 +638,26 @@ const page = {
   // SAVE BUTTON
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
+    const dirtyController = {
+      hasUnsavedChanges: () =>
+        JSON.stringify(this._data.serviciosAcumulados) !== JSON.stringify(this._originalSnapshot),
+      markSaved: () => {
+        this._originalSnapshot = structuredClone(this._data.serviciosAcumulados);
+      }
+    };
+
     return createOnboardingButton({
       stepName: 'servicios',
 
-      validate: () => this._data.serviciosAcumulados.length > 0,
+      validate: () => {
+        if (!dirtyController.hasUnsavedChanges()) return true;
+        return this._data.serviciosAcumulados.length > 0;
+      },
+
+      dirtyController,
 
       getLabel: () => {
+        if (!dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
         const n = this._data.serviciosAcumulados.length;
         if (n === 0) return 'Agregá al menos un servicio';
         if (n === 1) return 'Guardar y continuar (1 servicio)';
