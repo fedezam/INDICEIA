@@ -46,7 +46,7 @@ export async function buildEntity({ comercioId }) {
   const goods        = await buildGoods(comercioRef, context);
   const services     = await buildServices(comercioRef);
   const capabilities = buildCapabilities(context);
-  const visual       = await buildVisual(context, goods, comercioId);
+  const visual = await buildVisual(context, goods, comercioId, services);
 
   await buildSeo(data, comercioId);
   await buildIndex(data, comercioId, goods, services);
