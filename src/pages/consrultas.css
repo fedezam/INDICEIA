@@ -1,0 +1,41 @@
+.page-header { margin-bottom: 20px; text-align: center; }
+.page-header h2 { margin: 0 0 8px 0; color: var(--s-dark); font-size: 24px; font-weight: 600; }
+.page-header h2 i { margin-right: 8px; color: var(--s-primary); }
+.page-header p { margin: 0; color: var(--s-gray); font-size: 14px; }
+
+.radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--s-border);
+  cursor: pointer;
+}
+.radio-option:last-of-type { border-bottom: none; }
+.radio-option input { margin-top: 3px; flex-shrink: 0; }
+.radio-option strong { display: block; font-size: 14px; color: var(--s-dark); }
+.radio-option span { font-size: 12px; color: var(--s-gray); }
+
+.consulta-desc { font-size: 13px; color: var(--s-gray); margin-bottom: 10px; }
+
+.consulta-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+
+.chip {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--s-light);
+  color: var(--s-gray);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chip i { font-size: 11px; }
+
+.chip-precio { background: #e8f5e9; color: #2e7d32; }
+
+.consulta-actions { margin-top: 8px; }
+
+.btn-container { margin-top: 24px; }
