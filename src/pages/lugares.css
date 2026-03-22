@@ -1,0 +1,57 @@
+.page-header { margin-bottom: 20px; text-align: center; }
+.page-header h2 { margin: 0 0 8px 0; color: var(--s-dark); font-size: 24px; font-weight: 600; }
+.page-header h2 i { margin-right: 8px; color: var(--s-primary); }
+.page-header p { margin: 0; color: var(--s-gray); font-size: 14px; }
+
+.dias-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.dia-btn {
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 1.5px solid var(--s-border);
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--s-gray);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dia-btn.active {
+  background: var(--s-primary);
+  border-color: var(--s-primary);
+  color: #fff;
+}
+
+.horario-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.lugar-info { margin-bottom: 12px; }
+
+.lugar-detalle {
+  font-size: 13px;
+  color: var(--s-gray);
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lugar-detalle i { color: var(--s-primary); width: 14px; }
+
+.lugar-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-container { margin-top: 24px; }
