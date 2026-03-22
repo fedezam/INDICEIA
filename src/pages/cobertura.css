@@ -1,0 +1,61 @@
+.page-header { margin-bottom: 20px; text-align: center; }
+.page-header h2 { margin: 0 0 8px 0; color: var(--s-dark); font-size: 24px; font-weight: 600; }
+.page-header h2 i { margin-right: 8px; color: var(--s-primary); }
+.page-header p { margin: 0; color: var(--s-gray); font-size: 14px; }
+
+.form-help { font-size: 13px; color: var(--s-gray); margin-bottom: 16px; }
+
+.checkbox-con-explicacion {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--s-border);
+  cursor: pointer;
+}
+.checkbox-con-explicacion:last-of-type { border-bottom: none; }
+.checkbox-con-explicacion input { margin-top: 2px; flex-shrink: 0; width: 16px; height: 16px; }
+.checkbox-con-explicacion strong { display: block; font-size: 14px; color: var(--s-dark); }
+.checkbox-con-explicacion span { font-size: 12px; color: var(--s-gray); }
+
+.mutual-search {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.mutuales-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.mutual-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--s-dark);
+  cursor: pointer;
+  padding: 6px 4px;
+  border-radius: var(--s-radius);
+  transition: background 0.1s;
+}
+.mutual-row:hover { background: var(--s-light); }
+.mutual-row input { width: 14px; height: 14px; flex-shrink: 0; }
+
+.mutuales-resumen {
+  font-size: 12px;
+  color: var(--s-primary);
+  font-weight: 500;
+  margin-top: 8px;
+  text-align: right;
+}
+
+.btn-container { margin-top: 24px; }
