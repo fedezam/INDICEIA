@@ -27,7 +27,13 @@ const page = {
       const res = await fetch('/templates/registry.visual.json?t=' + Date.now());
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      this._data.templates = json.templates || [];
+      const entityType = ctx.comercioData?.entityType || 'comercio';
+      const tierMap = {
+        comercio:  (t) => t.tier?.startsWith('C'),
+        prestador: (t) => t.tier?.startsWith('S'),
+        ambos:     (t) => t.tier?.startsWith('A'),
+      };
+      this._data.templates = (json.templates || []).filter(tierMap[entityType] || tierMap.comercio);
     } catch (err) {
       console.error('[visual] Error cargando registry:', err);
       this._data.templates = [];
