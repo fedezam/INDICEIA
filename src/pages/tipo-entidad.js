@@ -31,12 +31,13 @@ runLifecycle({
 async function load(ctx) {
   const entityType  = ctx.userData?.entityType  || null;
   const offerType   = ctx.userData?.offerType   || {};
-  const serviceType = ctx.userData?.serviceType || null; // 'oficio' | 'profesional'
+  const serviceType = ctx.userData?.serviceType || null;
   const isEditMode  = ctx.isEditMode === true;
 
-  // Derivar selección inicial
   let selectedOffer = null;
-  if (entityType) {
+  if (entityType === 'profesional') {
+    selectedOffer = 'profesional';
+  } else if (entityType) {
     if (offerType.productos && offerType.servicios) selectedOffer = 'ambas';
     else if (offerType.productos)                   selectedOffer = 'productos';
     else if (offerType.servicios)                   selectedOffer = 'servicios';
@@ -52,7 +53,6 @@ function render(ctx, state) {
   const page = document.getElementById("skeleton-page");
   page.innerHTML = "";
 
-  // Estado mutable
   let selectedOffer   = state.selectedOffer;
   let selectedService = state.serviceType;
 
@@ -65,7 +65,6 @@ function render(ctx, state) {
   `;
   page.appendChild(header);
 
-  // ── Pregunta 1 — oferta ──────────────────────────────────
   const labelQ1 = document.createElement("p");
   labelQ1.className = "te-label";
   labelQ1.textContent = "¿Qué hacés principalmente?";
@@ -100,6 +99,14 @@ function render(ctx, state) {
       desc:     'Tu actividad combina las dos cosas. Vendés productos Y también prestás servicios relacionados.',
       ejemplos: 'Óptica que vende lentes y hace medición, estética que vende cosméticos y da tratamientos, taller que vende repuestos y hace reparaciones.',
     },
+    {
+      key:      'profesional',
+      title:    'Soy profesional matriculado',
+      icon:     'fa-user-md',
+      variant:  'warning',
+      desc:     'Ejercés una profesión con título universitario y matrícula habilitante. Tus clientes o pacientes buscan tus credenciales, especialidad, cobertura y disponibilidad.',
+      ejemplos: 'Médico, odontólogo, psicólogo, kinesiólogo, abogado, contador, arquitecto, veterinario.',
+    },
   ];
 
   const cardsQ1Map = {};
@@ -124,7 +131,7 @@ function render(ctx, state) {
     cardsQ1.appendChild(card);
   });
 
-  // ── Pregunta 2 — tipo de servicio (condicional) ──────────
+  // ── Pregunta 2 — tipo de servicio (solo para servicios/ambas) ──
   const q2Container = document.createElement("div");
   q2Container.className = "te-q2";
   q2Container.style.display = (selectedOffer === 'servicios' || selectedOffer === 'ambas') ? 'block' : 'none';
@@ -142,7 +149,6 @@ function render(ctx, state) {
     cardsQ2.className = "te-cards";
     q2Container.appendChild(cardsQ2);
 
-    // Card oficio
     const contentOficio = document.createElement('div');
     contentOficio.innerHTML = `
       <p class="te-card-desc">Realizás un trabajo manual o actividad práctica. No necesitás título universitario para ejercerlo. Tus clientes te contactan para que vayas a su casa o para ir a tu local.</p>
@@ -158,36 +164,13 @@ function render(ctx, state) {
       content:    contentOficio,
     });
 
-    // Card profesional — próximamente
-    const contentProfesional = document.createElement('div');
-    contentProfesional.innerHTML = `
-      <span class="te-badge-soon">Próximamente</span>
-      <p class="te-card-desc">Ejercés una profesión regulada con título universitario y/o matrícula. Tus clientes esperan ver tus credenciales y especialidades.</p>
-      <p class="te-card-ejemplos"><strong>Ejemplos:</strong> Médico, abogado, contador, psicólogo, arquitecto, odontólogo.</p>
-    `;
-
-    const cardProfesional = createCard({
-      title:   'Profesional con título',
-      icon:    'fa-user-graduate',
-      variant: 'warning',
-      content: contentProfesional,
-    });
-    cardProfesional.classList.add('te-card-disabled');
-
     cardsQ2.appendChild(cardOficio);
-    cardsQ2.appendChild(cardProfesional);
 
-    // Selección Q2 — solo oficio es clickeable
     cardOficio.addEventListener('click', () => {
       setTimeout(() => {
         selectedService = cardOficio.isSelected() ? 'oficio' : null;
         document.dispatchEvent(new Event('change'));
       }, 0);
-    });
-
-    // Profesional — click muestra aviso
-    cardProfesional.addEventListener('click', () => {
-      showToast('Próximamente', 'Esta opción estará disponible muy pronto', 'info');
     });
 
     return { cardOficio };
@@ -201,7 +184,7 @@ function render(ctx, state) {
   ayuda.textContent = '¿No estás seguro? Elegí la que más se parece a tu actividad principal. Siempre podés cambiarlo después.';
   page.appendChild(ayuda);
 
-  // ── Lógica selección Q1 — exclusiva ─────────────────────
+  // ── Lógica selección Q1 ──────────────────────────────────
   cardsQ1.addEventListener('click', () => {
     setTimeout(() => {
       let active = null;
@@ -215,14 +198,13 @@ function render(ctx, state) {
         return;
       }
 
-      // Deseleccionar las otras
       Object.entries(cardsQ1Map).forEach(([key, card]) => {
         if (key !== active) card.deselect();
       });
 
       selectedOffer = active;
 
-      // Mostrar/ocultar Q2
+      // Q2 solo para servicios/ambas — profesional no la necesita
       const needsQ2 = active === 'servicios' || active === 'ambas';
       q2Container.style.display = needsQ2 ? 'block' : 'none';
 
@@ -233,7 +215,7 @@ function render(ctx, state) {
     }, 0);
   });
 
-  // ── Snapshot para dirty check ────────────────────────────
+  // ── Dirty check ──────────────────────────────────────────
   const snapshot = {
     selectedOffer:   state.selectedOffer,
     selectedService: state.serviceType,
@@ -255,7 +237,6 @@ function render(ctx, state) {
 
     validate: () => {
       if (!selectedOffer) return false;
-      // Si tiene servicios, necesita también elegir el tipo
       const needsService = selectedOffer === 'servicios' || selectedOffer === 'ambas';
       if (needsService && !selectedService) return false;
       return true;
@@ -273,17 +254,22 @@ function render(ctx, state) {
     dirtyController: state.isEditMode ? dirtyController : undefined,
 
     onSave: async ({ uid, comercioId }) => {
-      const offerType = {
-        productos: selectedOffer === 'productos' || selectedOffer === 'ambas',
-        servicios: selectedOffer === 'servicios' || selectedOffer === 'ambas',
-      };
+      // Mapear selectedOffer a entityType y offerType
+      const entityType = selectedOffer === 'profesional' ? 'profesional'
+                       : selectedOffer === 'servicios'   ? 'prestador'
+                       : 'comercio';
 
-      const entityType = selectedOffer === 'servicios' ? 'prestador' : 'comercio';
+      const offerType = selectedOffer === 'profesional'
+        ? { productos: false, servicios: true }
+        : {
+            productos: selectedOffer === 'productos' || selectedOffer === 'ambas',
+            servicios: selectedOffer === 'servicios' || selectedOffer === 'ambas',
+          };
 
       await updateDoc(doc(db, 'usuarios', uid), {
         entityType,
         offerType,
-        serviceType: selectedService || null,
+        serviceType:                    selectedService || null,
         'onboardingSteps.tipo-entidad': true,
       });
 
@@ -297,11 +283,13 @@ function render(ctx, state) {
 
       return { success: true, stepMarked: true };
     },
+
     onSuccess: () => {
       const msgs = {
-        productos: 'Vas a configurar tu negocio de productos',
-        servicios: 'Vas a configurar tu perfil de servicios',
-        ambas:     'Vas a configurar productos y servicios',
+        productos:    'Vas a configurar tu negocio de productos',
+        servicios:    'Vas a configurar tu perfil de servicios',
+        ambas:        'Vas a configurar productos y servicios',
+        profesional:  'Vas a configurar tu perfil profesional',
       };
       showToast(msgs[selectedOffer] || 'Configuración guardada', 'success');
     },
