@@ -24,6 +24,10 @@ const NEUTRAL_PAGES = ["skeletonTest"];
 function buildPipeline(entityType, offerType = {}) {
   const { productos, servicios } = offerType || {};
 
+  if (entityType === 'profesional') {
+    return ['mi-perfil-profesional', 'lugares', 'cobertura', 'consultas', 'ia-config'];
+  }
+
   if (entityType === 'prestador') {
     const steps = ['mi-perfil'];
     if (servicios) steps.push('servicios');
@@ -80,21 +84,24 @@ export async function runFlowController(uid) {
     }
 
     // ── STEP: tipo-entidad ──────────────────────────────────
-    // Vive en dominio usuario — todavía no hay comercioId
     if (!userSteps['tipo-entidad']) {
       if (currentPage !== 'tipo-entidad') window.location.href = '/tipo-entidad.html';
       return;
     }
 
-    // ── STEP: mi-comercio / mi-perfil ───────────────────────
+    // ── STEP: identidad (primer paso según entityType) ──────
     if (!userData.comercioId) {
-      const nextPage = userData.entityType === 'prestador' ? 'mi-perfil' : 'mi-comercio';
+      const nextPage = userData.entityType === 'prestador'    ? 'mi-perfil'
+                     : userData.entityType === 'profesional'  ? 'mi-perfil-profesional'
+                     : 'mi-comercio';
       if (currentPage !== nextPage) window.location.href = `/${nextPage}.html`;
       return;
     }
 
     // ── edit mode: identidad siempre accesible ──────────────
-    const identityPage = userData.entityType === 'prestador' ? 'mi-perfil' : 'mi-comercio';
+    const identityPage = userData.entityType === 'prestador'   ? 'mi-perfil'
+                       : userData.entityType === 'profesional' ? 'mi-perfil-profesional'
+                       : 'mi-comercio';
     if (currentPage === identityPage && editMode) return;
 
     // ── 2. COMERCIO ─────────────────────────────────────────
