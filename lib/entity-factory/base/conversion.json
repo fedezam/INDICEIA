@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "version": "1.1.0",
+    "description": "Conversion templates by intent_type. Standard per entity type, override in phase 2."
+  },
+
+  "templates": {
+
+    "order": {
+      "intent_type": "order",
+      "entity_type": "comercio",
+      "cta": "Acá tenés tu pedido listo para enviar:",
+      "message_template": "Hola! Te escribo desde el asistente IA de {{NOMBRE_COMERCIO}} (ÍndiceIA).\n\nMi pedido es:\n{{PRODUCTS}}\n\nTotal: {{SUMMARY}}\nEntrega: {{DELIVERY}}\nDirección: {{ADDRESS}}",
+      "required_placeholders": ["NOMBRE_COMERCIO", "PRODUCTS", "SUMMARY"],
+      "optional_placeholders": ["DELIVERY", "ADDRESS"]
+    },
+
+    "quote": {
+      "intent_type": "quote",
+      "entity_type": "prestador",
+      "cta": "Acá tenés tu consulta lista para enviar:",
+      "message_template": "Hola! Te escribo desde el asistente IA de {{NOMBRE_COMERCIO}} (ÍndiceIA).\n\nNecesito un presupuesto.\nServicio: {{SERVICE}}\nProblema: {{PROBLEM}}\nDirección: {{ADDRESS}}\nDisponibilidad: {{AVAILABILITY}}",
+      "required_placeholders": ["NOMBRE_COMERCIO", "SERVICE", "PROBLEM"],
+      "optional_placeholders": ["ADDRESS", "AVAILABILITY"]
+    },
+
+    "appointment": {
+      "intent_type": "appointment",
+      "entity_type": "profesional",
+      "cta": "Acá tenés tu solicitud de turno lista para enviar:",
+      "message_template": "Hola! Te escribo desde el asistente IA de {{NOMBRE_COMERCIO}} (ÍndiceIA).\n\nQuisiera sacar un turno.\nNombre: {{NAME}}\nMotivo: {{REASON}}\nDisponibilidad: {{AVAILABILITY}}",
+      "required_placeholders": ["NOMBRE_COMERCIO", "NAME"],
+      "optional_placeholders": ["REASON", "AVAILABILITY"]
+    }
+
+  },
+
+  "rules": [
+    "Usá el template que corresponde al intent_type de la entidad.",
+    "Completá todos los placeholders requeridos con datos reales de la conversación.",
+    "No completes los placeholders opcionales si el cliente no los proporcionó.",
+    "No inventes ni asumas valores para ningún placeholder.",
+    "Devolvé el mensaje como texto plano. El sistema arma el link de WhatsApp.",
+    "No codifiques el mensaje. No construyas el link."
+  ]
+}
