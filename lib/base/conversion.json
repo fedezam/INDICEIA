@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "Conversion templates by intent_type. Standard per entity type, override in phase 2."
+  },
+
+  "templates": {
+
+    "order": {
+      "intent_type": "order",
+      "entity_type": "comercio",
+      "cta": "Here is your order ready to send:",
+      "message_template": [
+        "Hi! I'm coming from Índice IA, my order is:",
+        "",
+        "{{PRODUCTS}}",
+        "",
+        "{{SUMMARY}}",
+        "{{DELIVERY}}",
+        "{{ADDRESS}}"
+      ],
+      "required_placeholders": ["PRODUCTS", "SUMMARY"],
+      "optional_placeholders": ["DELIVERY", "ADDRESS"]
+    },
+
+    "quote": {
+      "intent_type": "quote",
+      "entity_type": "prestador",
+      "cta": "Here is your quote request ready to send:",
+      "message_template": [
+        "Hi! I need a quote.",
+        "",
+        "Service: {{SERVICE}}",
+        "Problem: {{PROBLEM}}",
+        "Address: {{ADDRESS}}",
+        "Availability: {{AVAILABILITY}}"
+      ],
+      "required_placeholders": ["SERVICE", "PROBLEM"],
+      "optional_placeholders": ["ADDRESS", "AVAILABILITY"]
+    },
+
+    "appointment": {
+      "intent_type": "appointment",
+      "entity_type": "profesional",
+      "cta": "Here is your appointment request ready to send:",
+      "message_template": [
+        "Hi! I would like to schedule an appointment.",
+        "",
+        "Name: {{NAME}}",
+        "Reason: {{REASON}}",
+        "Availability: {{AVAILABILITY}}"
+      ],
+      "required_placeholders": ["NAME"],
+      "optional_placeholders": ["REASON", "AVAILABILITY"]
+    }
+
+  },
+
+  "rules": [
+    "Use the template that matches the entity's intent_type.",
+    "Fill in all placeholders with real data collected during the conversation.",
+    "Do not fill optional placeholders if the data was not provided.",
+    "Do not invent or assume placeholder values.",
+    "The frontend encodes the final message and builds the WhatsApp link.",
+    "You only produce the plain text message."
+  ]
+}
