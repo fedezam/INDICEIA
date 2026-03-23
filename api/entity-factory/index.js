@@ -12,6 +12,7 @@ import { buildVisual }       from '../../lib/entity-factory/builders/visual.buil
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
 import { buildConversion }   from '../../lib/entity-factory/builders/conversion.builder.js';
+import { buildPromotion }    from '../../lib/entity-factory/builders/promotion.builder.js';
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -55,6 +56,7 @@ export async function buildEntity({ comercioId }) {
   const capabilities = buildCapabilities(context);
   const visual       = await buildVisual(context, goods, comercioId, services);
   const conversion   = buildConversion(context, entityType);
+  const promotion    = buildPromotion(context);
 
   await buildSeo(data, comercioId);
   await buildIndex(data, comercioId, goods, services);
@@ -67,12 +69,13 @@ export async function buildEntity({ comercioId }) {
       generatedAt: new Date().toISOString(),
     },
     contracts: {
-      context:    { role: 'identity',             version: '1.0', mutable: false },
-      goods:      { role: 'products_catalog',      version: '1.0', optional: true },
-      services:   { role: 'services_catalog',      version: '1.0', optional: true },
-      visual:     { role: 'visual_interface',      version: '1.0', optional: true },
+      context:      { role: 'identity',             version: '1.0', mutable: false },
+      goods:        { role: 'products_catalog',      version: '1.0', optional: true },
+      services:     { role: 'services_catalog',      version: '1.0', optional: true },
+      visual:       { role: 'visual_interface',      version: '1.0', optional: true },
       capabilities: { role: 'interaction_protocols', version: '1.0', mutable: false },
-      conversion: { role: 'action_protocol',       version: '1.0', optional: true },
+      conversion:   { role: 'action_protocol',       version: '1.0', optional: true },
+      promotion:    { role: 'growth_protocol',       version: '1.0', mutable: false },
     },
     mind,
     context,
@@ -80,6 +83,7 @@ export async function buildEntity({ comercioId }) {
     ...(services   && { services }),
     ...(visual     && { visual }),
     ...(conversion && { conversion }),
+    promotion,
     capabilities,
   };
 }
