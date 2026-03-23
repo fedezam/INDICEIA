@@ -1,3 +1,7 @@
+// ============================================================
+// lib/entity-factory/index.js
+// ============================================================
+
 import admin from 'firebase-admin';
 import { buildContext }      from '../../lib/entity-factory/builders/context.builder.js';
 import { buildMind }         from '../../lib/entity-factory/builders/mind.builder.js';
@@ -7,6 +11,7 @@ import { buildCapabilities } from '../../lib/entity-factory/builders/capabilitie
 import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
+import { buildConversion }   from '../../lib/entity-factory/builders/conversion.builder.js';
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -35,18 +40,21 @@ export async function buildEntity({ comercioId }) {
   if (!comercioId) throw new Error('Falta comercioId');
 
   const comercioRef = db.collection('entidades').doc(comercioId);
-  const snap = await comercioRef.get();
+  const snap        = await comercioRef.get();
   if (!snap.exists) throw new Error(`Comercio ${comercioId} no encontrado`);
 
-  const data = snap.data();
+  const data       = snap.data();
+  const entityType = data.entityType || 'comercio';
+
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
 
   const context      = buildContext(data, comercioId, referralCode);
   const mind         = buildMind(data, context, referralCode);
   const goods        = await buildGoods(comercioRef, context);
-  const services     = await buildServices(comercioRef);
+  const services     = await buildServices(comercioRef, data);
   const capabilities = buildCapabilities(context);
-  const visual = await buildVisual(context, goods, comercioId, services);
+  const visual       = await buildVisual(context, goods, comercioId, services);
+  const conversion   = buildConversion(context, entityType);
 
   await buildSeo(data, comercioId);
   await buildIndex(data, comercioId, goods, services);
@@ -59,17 +67,19 @@ export async function buildEntity({ comercioId }) {
       generatedAt: new Date().toISOString(),
     },
     contracts: {
-      context:      { role: 'identity',             version: '1.0', mutable: false },
-      goods:        { role: 'products_catalog',      version: '1.0', optional: true },
-      services:     { role: 'services_catalog',      version: '1.0', optional: true },
-      visual:       { role: 'visual_interface',      version: '1.0', optional: true },
+      context:    { role: 'identity',             version: '1.0', mutable: false },
+      goods:      { role: 'products_catalog',      version: '1.0', optional: true },
+      services:   { role: 'services_catalog',      version: '1.0', optional: true },
+      visual:     { role: 'visual_interface',      version: '1.0', optional: true },
       capabilities: { role: 'interaction_protocols', version: '1.0', mutable: false },
+      conversion: { role: 'action_protocol',       version: '1.0', optional: true },
     },
     mind,
     context,
-    ...(goods    && { goods }),
-    ...(services && { services }),
-    ...(visual   && { visual }),
+    ...(goods      && { goods }),
+    ...(services   && { services }),
+    ...(visual     && { visual }),
+    ...(conversion && { conversion }),
     capabilities,
   };
 }
