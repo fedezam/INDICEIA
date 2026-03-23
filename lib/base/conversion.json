@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Conversion templates by intent_type. Standard per entity type, override in phase 2."
   },
 
@@ -9,59 +9,38 @@
     "order": {
       "intent_type": "order",
       "entity_type": "comercio",
-      "cta": "Here is your order ready to send:",
-      "message_template": [
-        "Hi! I'm coming from Índice IA, my order is:",
-        "",
-        "{{PRODUCTS}}",
-        "",
-        "{{SUMMARY}}",
-        "{{DELIVERY}}",
-        "{{ADDRESS}}"
-      ],
-      "required_placeholders": ["PRODUCTS", "SUMMARY"],
+      "cta": "Acá tenés tu pedido listo para enviar:",
+      "message_template": "Hola! Te escribo desde el asistente IA de {{NOMBRE_COMERCIO}} (ÍndiceIA).\n\nMi pedido es:\n{{PRODUCTS}}\n\nTotal: {{SUMMARY}}\nEntrega: {{DELIVERY}}\nDirección: {{ADDRESS}}",
+      "required_placeholders": ["NOMBRE_COMERCIO", "PRODUCTS", "SUMMARY"],
       "optional_placeholders": ["DELIVERY", "ADDRESS"]
     },
 
     "quote": {
       "intent_type": "quote",
       "entity_type": "prestador",
-      "cta": "Here is your quote request ready to send:",
-      "message_template": [
-        "Hi! I need a quote.",
-        "",
-        "Service: {{SERVICE}}",
-        "Problem: {{PROBLEM}}",
-        "Address: {{ADDRESS}}",
-        "Availability: {{AVAILABILITY}}"
-      ],
-      "required_placeholders": ["SERVICE", "PROBLEM"],
+      "cta": "Acá tenés tu consulta lista para enviar:",
+      "message_template": "Hola! Te escribo desde el asistente IA de {{NOMBRE_COMERCIO}} (ÍndiceIA).\n\nNecesito un presupuesto.\nServicio: {{SERVICE}}\nProblema: {{PROBLEM}}\nDirección: {{ADDRESS}}\nDisponibilidad: {{AVAILABILITY}}",
+      "required_placeholders": ["NOMBRE_COMERCIO", "SERVICE", "PROBLEM"],
       "optional_placeholders": ["ADDRESS", "AVAILABILITY"]
     },
 
     "appointment": {
       "intent_type": "appointment",
       "entity_type": "profesional",
-      "cta": "Here is your appointment request ready to send:",
-      "message_template": [
-        "Hi! I would like to schedule an appointment.",
-        "",
-        "Name: {{NAME}}",
-        "Reason: {{REASON}}",
-        "Availability: {{AVAILABILITY}}"
-      ],
-      "required_placeholders": ["NAME"],
+      "cta": "Acá tenés tu solicitud de turno lista para enviar:",
+      "message_template": "Hola! Te escribo desde el asistente IA de {{NOMBRE_COMERCIO}} (ÍndiceIA).\n\nQuisiera sacar un turno.\nNombre: {{NAME}}\nMotivo: {{REASON}}\nDisponibilidad: {{AVAILABILITY}}",
+      "required_placeholders": ["NOMBRE_COMERCIO", "NAME"],
       "optional_placeholders": ["REASON", "AVAILABILITY"]
     }
 
   },
 
   "rules": [
-    "Use the template that matches the entity's intent_type.",
-    "Fill in all placeholders with real data collected during the conversation.",
-    "Do not fill optional placeholders if the data was not provided.",
-    "Do not invent or assume placeholder values.",
-    "The frontend encodes the final message and builds the WhatsApp link.",
-    "You only produce the plain text message."
+    "Usá el template que corresponde al intent_type de la entidad.",
+    "Completá todos los placeholders requeridos con datos reales de la conversación.",
+    "No completes los placeholders opcionales si el cliente no los proporcionó.",
+    "No inventes ni asumas valores para ningún placeholder.",
+    "Devolvé el mensaje como texto plano. El sistema arma el link de WhatsApp.",
+    "No codifiques el mensaje. No construyas el link."
   ]
 }
