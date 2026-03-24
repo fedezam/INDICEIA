@@ -1,0 +1,6802 @@
+{
+  "10": {
+    "nombre": "Catamarca",
+    "departamentos": {
+      "10007": {
+        "nombre": "Ambato",
+        "localidades": [
+          "Chuchucaruana",
+          "Colpes",
+          "El Bolsón",
+          "El Rodeo",
+          "Huaycama",
+          "La Puerta",
+          "Las Chacritas",
+          "Las Juntas",
+          "Los Castillos",
+          "Los Talas",
+          "Los Varela",
+          "Singuil"
+        ]
+      },
+      "10014": {
+        "nombre": "Ancasti",
+        "localidades": [
+          "Ancasti",
+          "Anquincila",
+          "La Candelaria",
+          "La Majada"
+        ]
+      },
+      "10021": {
+        "nombre": "Andalgalá",
+        "localidades": [
+          "Aconquija",
+          "Alto de las Juntas",
+          "Amanao",
+          "Andalgalá",
+          "Buena Vista",
+          "Chaquiago",
+          "Choya",
+          "El Alamito",
+          "El Alamito",
+          "El Lindero",
+          "El Lindero",
+          "El Potrero",
+          "La Mesada"
+        ]
+      },
+      "10028": {
+        "nombre": "Antofagasta de la Sierra",
+        "localidades": [
+          "Antofagasta de la Sierra",
+          "El Peñón",
+          "Los Nacimientos"
+        ]
+      },
+      "10035": {
+        "nombre": "Belén",
+        "localidades": [
+          "Barranca Larga",
+          "Belén",
+          "Cóndor Huasi",
+          "Corral Quemado",
+          "El Durazno",
+          "Farallón Negro",
+          "Hualfín",
+          "Jacipunco",
+          "La Puntilla",
+          "Las Juntas",
+          "Londres",
+          "Los Nacimientos",
+          "Puerta de Corral Quemado",
+          "Puerta de San José",
+          "Villa Vil"
+        ]
+      },
+      "10042": {
+        "nombre": "Capayán",
+        "localidades": [
+          "Capayán",
+          "Chumbicha",
+          "Colonia del Valle",
+          "Colonia Nueva Coneta",
+          "Concepción",
+          "Coneta",
+          "El Bañado",
+          "Huillapima",
+          "Los Angeles",
+          "Los Ángeles Norte",
+          "Los Ángeles Sur",
+          "Miraflores",
+          "San Martín",
+          "San Pablo",
+          "San Pedro"
+        ]
+      },
+      "10049": {
+        "nombre": "Capital",
+        "localidades": [
+          "San Fernando del Valle de Catamarca"
+        ]
+      },
+      "10056": {
+        "nombre": "El Alto",
+        "localidades": [
+          "El Alto",
+          "Guayamba",
+          "Infanzón",
+          "Los Corrales",
+          "Tapso",
+          "Vilismán"
+        ]
+      },
+      "10063": {
+        "nombre": "Fray Mamerto Esquiú",
+        "localidades": [
+          "El Hueco",
+          "La Carrera",
+          "La Falda de San Antonio",
+          "La Tercena",
+          "Pomancillo Este",
+          "Pomancillo Oeste",
+          "San Antonio",
+          "San José",
+          "San José",
+          "Villa Las Pirquitas"
+        ]
+      },
+      "10070": {
+        "nombre": "La Paz",
+        "localidades": [
+          "Casa de Piedra",
+          "El Aybal",
+          "El Bañado",
+          "El Divisadero",
+          "El Quimilo",
+          "Esquiú",
+          "Icaño",
+          "La Dorada",
+          "La Guardia",
+          "Las Esquinas",
+          "Las Palmitas",
+          "Quirós",
+          "Ramblones",
+          "Recreo",
+          "San Antonio"
+        ]
+      },
+      "10077": {
+        "nombre": "Paclín",
+        "localidades": [
+          "Amadores",
+          "La Higuera",
+          "La Merced",
+          "La Viña",
+          "Las Lajas",
+          "Monte Potrero",
+          "Palo Labrado",
+          "San Antonio",
+          "Villa de Balcozna"
+        ]
+      },
+      "10084": {
+        "nombre": "Pomán",
+        "localidades": [
+          "Colana",
+          "Colpes",
+          "El Pajonal",
+          "Mutquin",
+          "Pomán",
+          "Rincón",
+          "San Miguel",
+          "Saujil",
+          "Siján"
+        ]
+      },
+      "10091": {
+        "nombre": "Santa María",
+        "localidades": [
+          "Andalhualá",
+          "Casa de Piedra",
+          "Chañar Punco",
+          "Chañar Punco",
+          "El Cajón",
+          "El Cerrito",
+          "El Desmonte",
+          "El Puesto",
+          "Famatanca",
+          "Famatanca",
+          "Fuerte Quemado",
+          "La Hoyada",
+          "La Puntilla",
+          "Lampacito",
+          "Las Mojarras",
+          "Las Mojarras",
+          "Medanitos",
+          "Palo Seco",
+          "Punta de Balasto",
+          "San José",
+          "San José Banda",
+          "San José Norte",
+          "San José Villa",
+          "Santa María",
+          "Yapes"
+        ]
+      },
+      "10098": {
+        "nombre": "Santa Rosa",
+        "localidades": [
+          "Alijilán",
+          "Bañado de Ovanta",
+          "Las Cañas",
+          "Lavalle",
+          "Los Altos",
+          "Manantiales",
+          "San Pedro"
+        ]
+      },
+      "10105": {
+        "nombre": "Tinogasta",
+        "localidades": [
+          "Anillaco",
+          "Copacabana",
+          "Copacabana",
+          "El Puesto",
+          "El Salado",
+          "Fiambalá",
+          "Fiambalá",
+          "La Puntilla",
+          "La Ramadita",
+          "Medanitos",
+          "Palo Blanco",
+          "Pampa Blanca",
+          "Saujil",
+          "Tinogasta"
+        ]
+      },
+      "10112": {
+        "nombre": "Valle Viejo",
+        "localidades": [
+          "El Bañado",
+          "El Portezuelo",
+          "Huaycama",
+          "Las Tejas",
+          "Polcos",
+          "Pozo del Mistol",
+          "San Isidro",
+          "San Isidro",
+          "Santa Cruz",
+          "Santa Rosa",
+          "Sumalao",
+          "Villa Dolores"
+        ]
+      }
+    }
+  },
+  "14": {
+    "nombre": "Córdoba",
+    "departamentos": {
+      "14007": {
+        "nombre": "Calamuchita",
+        "localidades": [
+          "Amboy",
+          "Arroyo San Antonio",
+          "Cañada del Sauce",
+          "El Corcovado - El Torreón",
+          "El Durazno",
+          "Embalse",
+          "La Cruz",
+          "La Cumbrecita",
+          "Las Bajadas",
+          "Las Caleras",
+          "Los Cóndores",
+          "Los Molinos",
+          "Los Molinos",
+          "Los Reartes",
+          "Lutti",
+          "Parque Calmayo",
+          "Río de los Sauces",
+          "San Agustín",
+          "San Ignacio (Loteo San Javier)",
+          "San Ignacio (Loteo Vélez Crespo)",
+          "Santa Mónica",
+          "Santa Rosa de Calamuchita",
+          "Santa Rosa de Calamuchita",
+          "Segunda Usina",
+          "Solar de los Molinos",
+          "Va.Ciudad Pque.Los Reartes (1° Sección)",
+          "Va.Ciudad Pque.Los Reartes (3° Sección)",
+          "Villa Alpina",
+          "Villa Amancay",
+          "Villa Berna",
+          "Villa Ciudad Parque Los Reartes",
+          "Villa Ciudad Parque Los Reartes",
+          "Villa del Dique",
+          "Villa El Tala",
+          "Villa General Belgrano",
+          "Villa La Rivera",
+          "Villa Quillinzo",
+          "Villa Rumipal",
+          "Villa San Miguel",
+          "Villa Yacanto"
+        ]
+      },
+      "14014": {
+        "nombre": "Capital",
+        "localidades": [
+          "Córdoba",
+          "Córdoba",
+          "Jardín Arenales",
+          "La Floresta"
+        ]
+      },
+      "14021": {
+        "nombre": "Colón",
+        "localidades": [
+          "1° de Agosto",
+          "Agua de Oro",
+          "Allmirante Brown",
+          "Ascochinga",
+          "Ciudad de los Niños",
+          "Colonia Caroya",
+          "Colonia Tirolesa",
+          "Colonia Vicente Agüero",
+          "Dumesnil",
+          "El Diquecito",
+          "El Manzano",
+          "El Pueblito",
+          "General Paz",
+          "Guiñazú Norte",
+          "Jesús María",
+          "Juárez Celman",
+          "La Calera",
+          "La Calera",
+          "La Granja",
+          "La Puerta",
+          "Malvinas Argentinas",
+          "Mendiolaza",
+          "Mi Granja",
+          "Parque Norte",
+          "Parque Norte - Ciudad de los Niños - Guiñazú Norte",
+          "Río Ceballos",
+          "Saldán",
+          "Salsipuedes",
+          "Salsipuedes",
+          "Tinoco",
+          "Unquillo",
+          "Villa Allende",
+          "Villa Cerro Azul",
+          "Villa Corazón de María",
+          "Villa Los Llanos",
+          "Villa Los Llanos - Juárez Celman",
+          "Villa Pastora"
+        ]
+      },
+      "14028": {
+        "nombre": "Cruz del Eje",
+        "localidades": [
+          "Alto de los Quebrachos",
+          "Bañado de Soto",
+          "Cruz de Caña",
+          "Cruz del Eje",
+          "El Brete",
+          "Guanaco Muerto",
+          "La Batea",
+          "La Higuera",
+          "Las Cañadas",
+          "Las Playas",
+          "Los Chañaritos",
+          "Media Naranja",
+          "Paso Viejo",
+          "San Marcos Sierra",
+          "Serrezuela",
+          "Tuclame",
+          "Villa de Soto"
+        ]
+      },
+      "14035": {
+        "nombre": "General Roca",
+        "localidades": [
+          "Del Campillo",
+          "Estación Lecueder",
+          "Hipólito Bouchard",
+          "Huinca Renancó",
+          "Italó",
+          "Mattaldi",
+          "Nicolás Bruzzone",
+          "Onagoity",
+          "Pincén",
+          "Ranqueles",
+          "Santa Magdalena",
+          "Villa Huidobro",
+          "Villa Sarmiento",
+          "Villa Valeria"
+        ]
+      },
+      "14042": {
+        "nombre": "General San Martín",
+        "localidades": [
+          "Arroyo Algodón",
+          "Arroyo Cabral",
+          "Ausonia",
+          "Chazón",
+          "Etruria",
+          "La Laguna",
+          "La Palestina",
+          "La Playosa",
+          "Las Mojarras",
+          "Luca",
+          "Pasco",
+          "Sanabria",
+          "Silvio Pellico",
+          "Ticino",
+          "Tío Pujio",
+          "Villa María",
+          "Villa Nueva",
+          "Villa Oeste"
+        ]
+      },
+      "14049": {
+        "nombre": "Ischilín",
+        "localidades": [
+          "Avellaneda",
+          "Cañada de Río Pinto",
+          "Chuña",
+          "Copacabana",
+          "Deán Funes",
+          "Los Pozos",
+          "Olivares de San Nicolás",
+          "Quilino",
+          "San Pedro de Toyos",
+          "Villa Gutiérrez"
+        ]
+      },
+      "14056": {
+        "nombre": "Juárez Celman",
+        "localidades": [
+          "Alejandro Roca",
+          "Assunta",
+          "Bengolea",
+          "Carnerillo",
+          "Charras",
+          "El Rastreador",
+          "General Cabrera",
+          "General Deheza",
+          "Huanchillas",
+          "La Carlota",
+          "Los Cisnes",
+          "Olaeta",
+          "Pacheco de Melo",
+          "Paso del Durazno",
+          "Santa Eufemia",
+          "Ucacha",
+          "Villa Reducción"
+        ]
+      },
+      "14063": {
+        "nombre": "Marcos Juárez",
+        "localidades": [
+          "Alejo Ledesma",
+          "Arias",
+          "Camilo Aldao",
+          "Capitán General Bernardo O'Higgins",
+          "Cavanagh",
+          "Colonia Barge",
+          "Colonia Italiana",
+          "Colonia Veinticinco",
+          "Corral de Bustos",
+          "Cruz Alta",
+          "General Baldissera",
+          "General Roca",
+          "Guatimozín",
+          "Inriville",
+          "Isla Verde",
+          "Leones",
+          "Los Surgentes",
+          "Marcos Juárez",
+          "Monte Buey",
+          "Saira",
+          "Saladillo",
+          "Villa Elisa"
+        ]
+      },
+      "14070": {
+        "nombre": "Minas",
+        "localidades": [
+          "Ciénaga del Coro",
+          "El Chacho",
+          "Estancia de Guadalupe",
+          "Guasapampa",
+          "La Playa",
+          "San Carlos Minas",
+          "Talaini",
+          "Tosno"
+        ]
+      },
+      "14077": {
+        "nombre": "Pocho",
+        "localidades": [
+          "Chancani",
+          "Las Palmas",
+          "Los Talares",
+          "Salsacate",
+          "San Gerónimo",
+          "Tala Cañada",
+          "Villa de Pocho"
+        ]
+      },
+      "14084": {
+        "nombre": "Presidente Roque Sáenz Peña",
+        "localidades": [
+          "General Levalle",
+          "La Cesira",
+          "Laboulaye",
+          "Leguizamón",
+          "Melo",
+          "Río Bamba",
+          "Rosales",
+          "San Joaquín",
+          "Serrano",
+          "Villa Rossi"
+        ]
+      },
+      "14091": {
+        "nombre": "Punilla",
+        "localidades": [
+          "Bialet Massé",
+          "Bialet Massé",
+          "Cabalango",
+          "Capilla del Monte",
+          "Casa Grande",
+          "Charbonier",
+          "Cosquín",
+          "Cuesta Blanca",
+          "Estancia Vieja",
+          "Huerta Grande",
+          "La Cumbre",
+          "La Falda",
+          "Las Jarillas",
+          "Los Cocos",
+          "Mallín",
+          "Mayu Sumaj",
+          "San Antonio de Arredondo",
+          "San Esteban",
+          "San Roque",
+          "San Roque del Lago",
+          "Santa María de Punilla",
+          "Tala Huasi",
+          "Tanti",
+          "Valle Hermoso",
+          "Villa Carlos Paz",
+          "Villa Flor Serrana",
+          "Villa Giardino",
+          "Villa Lago Azul",
+          "Villa Parque Siquimán",
+          "Villa Río Icho Cruz",
+          "Villa Santa Cruz del Lago"
+        ]
+      },
+      "14098": {
+        "nombre": "Río Cuarto",
+        "localidades": [
+          "Achiras",
+          "Adelia María",
+          "Alcira Gigena",
+          "Alpa Corral",
+          "Berrotarán",
+          "Bulnes",
+          "Chaján",
+          "Chucul",
+          "Coronel Baigorria",
+          "Coronel Moldes",
+          "Elena",
+          "La Carolina",
+          "La Cautiva",
+          "La Gilda",
+          "Las Acequias",
+          "Las Albahacas",
+          "Las Higueras",
+          "Las Peñas",
+          "Las Vertientes",
+          "Malena",
+          "Monte de los Gauchos",
+          "Río Cuarto",
+          "Sampacho",
+          "San Basilio",
+          "Santa Catalina Holmberg",
+          "Suco",
+          "Tosquitas",
+          "Vicuña Mackenna",
+          "Villa El Chacay",
+          "Washington"
+        ]
+      },
+      "14105": {
+        "nombre": "Río Primero",
+        "localidades": [
+          "Atahona",
+          "Cañada de Machado",
+          "Capilla de los Remedios",
+          "Chalacea",
+          "Colonia Las Cuatro Esquinas",
+          "Diego de Rojas",
+          "El Alcalde",
+          "El Crispín",
+          "Esquina",
+          "Kilómetro 658",
+          "La Para",
+          "La Posta",
+          "La Puerta",
+          "La Quinta",
+          "Las Gramillas",
+          "Las Saladas",
+          "Maquinista Gallini",
+          "Monte del Rosario",
+          "Montecristo",
+          "Obispo Trejo",
+          "Piquillín",
+          "Plaza de Mercedes",
+          "Pueblo Comechingones",
+          "Río Primero",
+          "Sagrada Familia",
+          "Santa Rosa de Río Primero",
+          "Villa Fontana"
+        ]
+      },
+      "14112": {
+        "nombre": "Río Seco",
+        "localidades": [
+          "Cerro Colorado",
+          "Chañar Viejo",
+          "Eufrasio Loza",
+          "Gutemberg",
+          "La Rinconada",
+          "Los Hoyos",
+          "Puesto de Castro",
+          "Rayo Cortado",
+          "San Pedro de Gütemberg",
+          "Santa Elena",
+          "Sebastián Elcano",
+          "Villa Candelaria",
+          "Villa de María"
+        ]
+      },
+      "14119": {
+        "nombre": "Río Segundo",
+        "localidades": [
+          "Calchín",
+          "Calchín Oeste",
+          "Capilla del Carmen",
+          "Carrilobo",
+          "Colazo",
+          "Colonia Videla",
+          "Costasacate",
+          "Impira",
+          "Laguna Larga",
+          "Las Junturas",
+          "Los Chañaritos",
+          "Luque",
+          "Manfredi",
+          "Matorrales",
+          "Oncativo",
+          "Pilar",
+          "Pozo del Molle",
+          "Rincón",
+          "Río Segundo",
+          "Santiago Temple",
+          "Villa del Rosario"
+        ]
+      },
+      "14126": {
+        "nombre": "San Alberto",
+        "localidades": [
+          "Ambul",
+          "Arroyo Los Patos",
+          "Las Calles",
+          "Las Rabonas",
+          "Mina Clavero",
+          "Mussi",
+          "Nono",
+          "Panaholma",
+          "San Lorenzo",
+          "San Martín",
+          "San Pedro",
+          "San Vicente",
+          "Sauce Arriba",
+          "Villa Cura Brochero",
+          "Villa Sarmiento"
+        ]
+      },
+      "14133": {
+        "nombre": "San Javier",
+        "localidades": [
+          "Alto Resbaloso - El Barrial",
+          "Conlara",
+          "El Pueblito",
+          "El Valle",
+          "La Paz",
+          "La Población",
+          "La Travesía",
+          "Las Chacras",
+          "Las Tapias",
+          "Los Cerrillos",
+          "Los Hornillos",
+          "Luyaba",
+          "San Javier y Yacanto",
+          "San José",
+          "Villa de las Rosas",
+          "Villa de las Rosas",
+          "Villa Dolores",
+          "Villa La Viña"
+        ]
+      },
+      "14140": {
+        "nombre": "San Justo",
+        "localidades": [
+          "Alicia",
+          "Altos de Chipión",
+          "Arroyito",
+          "Balnearia",
+          "Brinkmann",
+          "Colonia 10 de Julio",
+          "Colonia Anita",
+          "Colonia Iturraspe",
+          "Colonia Las Pichanas",
+          "Colonia Marina",
+          "Colonia Prosperidad",
+          "Colonia San Bartolomé",
+          "Colonia San Pedro",
+          "Colonia Santa María",
+          "Colonia Valtelina",
+          "Colonia Vignaud",
+          "Devoto",
+          "El Arañado",
+          "El Fortín",
+          "El Fuertecito",
+          "El Tío",
+          "Estación Luxardo",
+          "Freyre",
+          "La Francia",
+          "La Paquita",
+          "La Tordilla",
+          "Las Varas",
+          "Las Varillas",
+          "Marull",
+          "Miramar",
+          "Morteros",
+          "Plaza Luxardo",
+          "Plaza San Francisco",
+          "Porteña",
+          "Quebracho Herrado",
+          "Sacanta",
+          "San Francisco",
+          "Saturnino María Laspiur",
+          "Seeber",
+          "Toro Pujio",
+          "Tránsito",
+          "Villa Concepción del Tío",
+          "Villa del Tránsito",
+          "Villa San Esteban"
+        ]
+      },
+      "14147": {
+        "nombre": "Santa María",
+        "localidades": [
+          "Alta Gracia",
+          "Anisacate",
+          "Barrio Gilbert",
+          "Barrio Gilbert (1º de Mayo) - Tejas Tres",
+          "Barrio Villa del Parque",
+          "Bouwer",
+          "Caseros Centro",
+          "Despeñaderos",
+          "Dique Chico",
+          "Falda del Cañete",
+          "Falda del Carmen",
+          "José de la Quintana",
+          "La Boca del Río",
+          "La Donosa",
+          "La Paisanita",
+          "La Rancherita y Las Cascadas",
+          "La Serranita",
+          "Las Quintas",
+          "Los Cedros",
+          "Los Cedros",
+          "Lozada",
+          "Malagueño",
+          "Mi Valle",
+          "Monte Ralo",
+          "Potrero de Garay",
+          "Rafael García",
+          "San Clemente",
+          "Socavones",
+          "Tejas Tres",
+          "Toledo",
+          "Valle de Anisacate",
+          "Villa Ciudad de América",
+          "Villa Ciudad de América",
+          "Villa del Prado",
+          "Villa del Prado",
+          "Villa La Bolsa",
+          "Villa Los Aromos",
+          "Villa Parque Santa Ana",
+          "Villa Parque Santa Ana",
+          "Villa San Isidro"
+        ]
+      },
+      "14154": {
+        "nombre": "Sobremonte",
+        "localidades": [
+          "Caminiaga",
+          "Chuña Huasi",
+          "Pozo Nuevo",
+          "San Francisco del Chañar"
+        ]
+      },
+      "14161": {
+        "nombre": "Tercero Arriba",
+        "localidades": [
+          "Almafuerte",
+          "Colonia Almada",
+          "Corralito",
+          "Dalmacio Vélez",
+          "General Fotheringham",
+          "Hernando",
+          "James Craik",
+          "Las Isletillas",
+          "Las Perdices",
+          "Los Zorros",
+          "Oliva",
+          "Pampayasta Norte",
+          "Pampayasta Sud",
+          "Punta del Agua",
+          "Río Tercero",
+          "Tancacha",
+          "Villa Ascasubi"
+        ]
+      },
+      "14168": {
+        "nombre": "Totoral",
+        "localidades": [
+          "Candelaria Sur",
+          "Cañada de Luque",
+          "Capilla de Sitón",
+          "La Pampa",
+          "Las Peñas",
+          "Los Mistoles",
+          "Santa Catalina",
+          "Sarmiento",
+          "Simbolar",
+          "Sinsacate",
+          "Villa del Totoral"
+        ]
+      },
+      "14175": {
+        "nombre": "Tulumba",
+        "localidades": [
+          "Churqui Cañada",
+          "El Rodeo",
+          "El Tuscal",
+          "Las Arrias",
+          "Lucio V. Mansilla",
+          "Rosario del Saladillo",
+          "San José de la Dormida",
+          "San José de las Salinas",
+          "San Pedro Norte",
+          "Villa Tulumba"
+        ]
+      },
+      "14182": {
+        "nombre": "Unión",
+        "localidades": [
+          "Aldea Santa María",
+          "Alto Alegre",
+          "Ana Zumarán",
+          "Ballesteros",
+          "Ballesteros Sud",
+          "Bell Ville",
+          "Benjamín Gould",
+          "Canals",
+          "Chilibroste",
+          "Cintra",
+          "Colonia Bismarck",
+          "Colonia Bremen",
+          "Idiazabal",
+          "Justiniano Posse",
+          "Laborde",
+          "Monte Leña",
+          "Monte Maíz",
+          "Morrison",
+          "Noetinger",
+          "Ordoñez",
+          "Pascanas",
+          "Pueblo Italiano",
+          "Ramón J. Cárcano",
+          "San Antonio de Litín",
+          "San Marcos",
+          "San Severo",
+          "Viamonte",
+          "Villa Los Patos",
+          "Wenceslao Escalante"
+        ]
+      }
+    }
+  },
+  "18": {
+    "nombre": "Corrientes",
+    "departamentos": {
+      "18007": {
+        "nombre": "Bella Vista",
+        "localidades": [
+          "Bella Vista"
+        ]
+      },
+      "18014": {
+        "nombre": "Berón de Astrada",
+        "localidades": [
+          "Berón de Astrada",
+          "Yahapé"
+        ]
+      },
+      "18021": {
+        "nombre": "Capital",
+        "localidades": [
+          "Corrientes",
+          "Riachuelo",
+          "San Cayetano"
+        ]
+      },
+      "18028": {
+        "nombre": "Concepción",
+        "localidades": [
+          "Concepción",
+          "Santa Rosa",
+          "Tabay",
+          "Tatacua"
+        ]
+      },
+      "18035": {
+        "nombre": "Curuzú Cuatiá",
+        "localidades": [
+          "Cazadores Correntinos",
+          "Curuzú Cuatiá",
+          "Perugorría"
+        ]
+      },
+      "18042": {
+        "nombre": "Empedrado",
+        "localidades": [
+          "El Sombrero",
+          "Empedrado"
+        ]
+      },
+      "18049": {
+        "nombre": "Esquina",
+        "localidades": [
+          "Esquina",
+          "Pueblo Libertador"
+        ]
+      },
+      "18056": {
+        "nombre": "General Alvear",
+        "localidades": [
+          "Alvear",
+          "Estación Torrent"
+        ]
+      },
+      "18063": {
+        "nombre": "General Paz",
+        "localidades": [
+          "Itá Ibaté",
+          "Lomas de Vallejos",
+          "Nuestra Señora del Rosario de Caá Catí",
+          "Palmar Grande"
+        ]
+      },
+      "18070": {
+        "nombre": "Goya",
+        "localidades": [
+          "Carolina",
+          "Goya"
+        ]
+      },
+      "18077": {
+        "nombre": "Itatí",
+        "localidades": [
+          "Itatí",
+          "Ramada Paso"
+        ]
+      },
+      "18084": {
+        "nombre": "Ituzaingó",
+        "localidades": [
+          "Colonia Liebig's",
+          "Ituzaingó",
+          "San Antonio",
+          "San Carlos",
+          "Villa Olivari"
+        ]
+      },
+      "18091": {
+        "nombre": "Lavalle",
+        "localidades": [
+          "Cruz de los Milagros",
+          "Gobernador Juan E. Martínez",
+          "Lavalle",
+          "Santa Lucía",
+          "Villa Córdoba",
+          "Yatayti Calle"
+        ]
+      },
+      "18098": {
+        "nombre": "Mburucuyá",
+        "localidades": [
+          "Mburucuyá"
+        ]
+      },
+      "18105": {
+        "nombre": "Mercedes",
+        "localidades": [
+          "Felipe Yofré",
+          "Mariano I. Loza",
+          "Mercedes"
+        ]
+      },
+      "18112": {
+        "nombre": "Monte Caseros",
+        "localidades": [
+          "Colonia Libertad",
+          "Estación Libertad",
+          "Juan Pujol",
+          "Mocoretá",
+          "Monte Caseros",
+          "Parada Acuña",
+          "Parada Labougle"
+        ]
+      },
+      "18119": {
+        "nombre": "Paso de los Libres",
+        "localidades": [
+          "Bonpland",
+          "Parada Pucheta",
+          "Paso de los Libres",
+          "Tapebicuá"
+        ]
+      },
+      "18126": {
+        "nombre": "Saladas",
+        "localidades": [
+          "Saladas",
+          "San Lorenzo"
+        ]
+      },
+      "18133": {
+        "nombre": "San Cosme",
+        "localidades": [
+          "Ingenio Primer Correntino",
+          "Paso de la Patria",
+          "San Cosme",
+          "Santa Ana"
+        ]
+      },
+      "18140": {
+        "nombre": "San Luis del Palmar",
+        "localidades": [
+          "San Luis del Palmar"
+        ]
+      },
+      "18147": {
+        "nombre": "San Martín",
+        "localidades": [
+          "Colonia Carlos Pellegrini",
+          "Guaviraví",
+          "La Cruz",
+          "Yapeyú"
+        ]
+      },
+      "18154": {
+        "nombre": "San Miguel",
+        "localidades": [
+          "Loreto",
+          "San Miguel"
+        ]
+      },
+      "18161": {
+        "nombre": "San Roque",
+        "localidades": [
+          "9 de Julio",
+          "Chavarría",
+          "Colonia Pando",
+          "Pedro R. Fernández",
+          "San Roque"
+        ]
+      },
+      "18168": {
+        "nombre": "Santo Tomé",
+        "localidades": [
+          "Garruchos",
+          "Gobernador Igr. Valentín Virasoro",
+          "José Rafael Gómez",
+          "Santo Tomé"
+        ]
+      },
+      "18175": {
+        "nombre": "Sauce",
+        "localidades": [
+          "Sauce"
+        ]
+      }
+    }
+  },
+  "22": {
+    "nombre": "Chaco",
+    "departamentos": {
+      "22007": {
+        "nombre": "Almirante Brown",
+        "localidades": [
+          "Concepción del Bermejo",
+          "Los Frentones",
+          "Pampa del Infierno",
+          "Río Muerto",
+          "Taco Pozo"
+        ]
+      },
+      "22014": {
+        "nombre": "Bermejo",
+        "localidades": [
+          "General Vedia",
+          "Isla del Cerrito",
+          "La Leonesa",
+          "Las Palmas",
+          "Puerto Bermejo Nuevo",
+          "Puerto Bermejo Viejo",
+          "Puerto Eva Perón"
+        ]
+      },
+      "22021": {
+        "nombre": "Comandante Fernández",
+        "localidades": [
+          "Presidencia Roque Sáenz Peña"
+        ]
+      },
+      "22028": {
+        "nombre": "Chacabuco",
+        "localidades": [
+          "Charata"
+        ]
+      },
+      "22036": {
+        "nombre": "12 de Octubre",
+        "localidades": [
+          "Gancedo",
+          "General Capdevila",
+          "General Pinedo",
+          "Mesón de Fierro",
+          "Pampa Landriel"
+        ]
+      },
+      "22039": {
+        "nombre": "2 de Abril",
+        "localidades": [
+          "Hermoso Campo",
+          "Itín"
+        ]
+      },
+      "22043": {
+        "nombre": "Fray Justo Santa María de Oro",
+        "localidades": [
+          "Chorotis",
+          "Santa Sylvina",
+          "Venados Grandes"
+        ]
+      },
+      "22049": {
+        "nombre": "General Belgrano",
+        "localidades": [
+          "Corzuela"
+        ]
+      },
+      "22056": {
+        "nombre": "General Donovan",
+        "localidades": [
+          "La Escondida",
+          "La Verde",
+          "Lapachito",
+          "Makallé"
+        ]
+      },
+      "22063": {
+        "nombre": "General Güemes",
+        "localidades": [
+          "El Espinillo",
+          "El Sauzal",
+          "El Sauzalito",
+          "Fortín Lavalle",
+          "Fuerte Esperanza",
+          "Juan José Castelli",
+          "Miraflores",
+          "Nueva Pompeya",
+          "Villa Río Bermejito",
+          "Wichi",
+          "Zaparinqui"
+        ]
+      },
+      "22070": {
+        "nombre": "Independencia",
+        "localidades": [
+          "Avia Terai",
+          "Campo Largo",
+          "Fortín Las Chuñas",
+          "Napenay"
+        ]
+      },
+      "22077": {
+        "nombre": "Libertad",
+        "localidades": [
+          "Colonia Popular",
+          "Estación General Obligado",
+          "Laguna Blanca",
+          "Puerto Tirol"
+        ]
+      },
+      "22084": {
+        "nombre": "Libertador General San Martín",
+        "localidades": [
+          "Ciervo Petiso",
+          "General José de San Martín",
+          "La Eduvigis",
+          "Laguna Limpia",
+          "Pampa Almirón",
+          "Pampa del Indio",
+          "Presidencia Roca",
+          "Selvas del Río de Oro"
+        ]
+      },
+      "22091": {
+        "nombre": "Maipú",
+        "localidades": [
+          "Tres Isletas"
+        ]
+      },
+      "22098": {
+        "nombre": "Mayor Luis J. Fontana",
+        "localidades": [
+          "Coronel Du Graty",
+          "Enrique Urien",
+          "Villa Angela"
+        ]
+      },
+      "22105": {
+        "nombre": "9 de Julio",
+        "localidades": [
+          "Las Breñas"
+        ]
+      },
+      "22112": {
+        "nombre": "O'Higgins",
+        "localidades": [
+          "La Clotilde",
+          "La Tigra",
+          "San Bernardo"
+        ]
+      },
+      "22119": {
+        "nombre": "Presidencia de la Plaza",
+        "localidades": [
+          "Presidencia de la Plaza"
+        ]
+      },
+      "22126": {
+        "nombre": "1° de Mayo",
+        "localidades": [
+          "Barrio de los Pescadores",
+          "Colonia Benítez",
+          "Margarita Belén"
+        ]
+      },
+      "22133": {
+        "nombre": "Quitilipi",
+        "localidades": [
+          "Quitilipi",
+          "Villa El Palmar"
+        ]
+      },
+      "22140": {
+        "nombre": "San Fernando",
+        "localidades": [
+          "Barranqueras",
+          "Basail",
+          "Colonia Baranda",
+          "Fontana",
+          "Puerto Vilelas",
+          "Resistencia"
+        ]
+      },
+      "22147": {
+        "nombre": "San Lorenzo",
+        "localidades": [
+          "Samuhú",
+          "Villa Berthet"
+        ]
+      },
+      "22154": {
+        "nombre": "Sargento Cabral",
+        "localidades": [
+          "Capitán Solari",
+          "Colonia Elisa",
+          "Colonias Unidas",
+          "Ingeniero Barbet",
+          "Las Garcitas"
+        ]
+      },
+      "22161": {
+        "nombre": "Tapenagá",
+        "localidades": [
+          "Charadai",
+          "Cote Lai",
+          "Haumonia",
+          "Horquilla",
+          "La Sabana"
+        ]
+      },
+      "22168": {
+        "nombre": "25 de Mayo",
+        "localidades": [
+          "Colonia Aborigen",
+          "Machagai",
+          "Napalpí"
+        ]
+      }
+    }
+  },
+  "26": {
+    "nombre": "Chubut",
+    "departamentos": {
+      "26007": {
+        "nombre": "Biedma",
+        "localidades": [
+          "Arroyo Verde",
+          "Puerto Madryn",
+          "Puerto Pirámides",
+          "Quintas El Mirador",
+          "Reserva Area Protegida El Doradillo"
+        ]
+      },
+      "26014": {
+        "nombre": "Cushamen",
+        "localidades": [
+          "Buenos Aires Chico",
+          "Cholila",
+          "Costa del Chubut",
+          "Cushamen Centro",
+          "El Hoyo",
+          "El Maitén",
+          "Epuyén",
+          "Fofo Cahuel",
+          "Gualjaina",
+          "Lago Epuyén",
+          "Lago Puelo",
+          "Leleque"
+        ]
+      },
+      "26021": {
+        "nombre": "Escalante",
+        "localidades": [
+          "Acceso Norte",
+          "Astra",
+          "Bahía Bustamante",
+          "Barrio 25 de Mayo",
+          "Barrio Caleta Córdova",
+          "Barrio Castelli",
+          "Barrio Ciudadela",
+          "Barrio Gasoducto",
+          "Barrio Güemes",
+          "Barrio Laprida",
+          "Barrio Manantial Rosales",
+          "Barrio Militar y Aeropuerto",
+          "Barrio Próspero Palazzo",
+          "Barrio Restinga Alí",
+          "Barrio Rodríguez Peña",
+          "Barrio Saavedra",
+          "Barrio Sarmiento",
+          "Barrio Villa S.U.P.E.",
+          "Caleta Olivares",
+          "Comodoro Rivadavia",
+          "Comodoro Rivadavia",
+          "Diadema Argentina",
+          "Kilómetro 11 - Cuarteles",
+          "Kilómetro 3 - General Mosconi",
+          "Kilómetro 5 - Presidente Ortíz",
+          "Kilómetro 8 - Don Bosco",
+          "Rada Tilly"
+        ]
+      },
+      "26028": {
+        "nombre": "Florentino Ameghino",
+        "localidades": [
+          "Camarones",
+          "Garayalde"
+        ]
+      },
+      "26035": {
+        "nombre": "Futaleufú",
+        "localidades": [
+          "Aldea Escolar (Los Rápidos)",
+          "Corcovado",
+          "Esquel",
+          "Lago Rosario",
+          "Los Cipreses",
+          "Trevelín",
+          "Villa Futalaufquen"
+        ]
+      },
+      "26042": {
+        "nombre": "Gaiman",
+        "localidades": [
+          "28 de Julio",
+          "Dique Florentino Ameghino",
+          "Dolavon",
+          "Gaiman"
+        ]
+      },
+      "26049": {
+        "nombre": "Gastre",
+        "localidades": [
+          "Blancuntre",
+          "El Escorial",
+          "Gastre",
+          "Lagunita Salada",
+          "Yala Laubat"
+        ]
+      },
+      "26056": {
+        "nombre": "Languiñeo",
+        "localidades": [
+          "Aldea Epulef",
+          "Carrenleufú",
+          "Colan Conhué",
+          "Paso del Sapo",
+          "Tecka"
+        ]
+      },
+      "26063": {
+        "nombre": "Mártires",
+        "localidades": [
+          "El Mirasol",
+          "Las Plumas"
+        ]
+      },
+      "26070": {
+        "nombre": "Paso de Indios",
+        "localidades": [
+          "Cerro Cóndor",
+          "Los Altares",
+          "Paso de Indios"
+        ]
+      },
+      "26077": {
+        "nombre": "Rawson",
+        "localidades": [
+          "Playa Magagna",
+          "Playa Unión",
+          "Rawson",
+          "Trelew"
+        ]
+      },
+      "26084": {
+        "nombre": "Río Senguer",
+        "localidades": [
+          "Aldea Apeleg",
+          "Aldea Beleiro",
+          "Alto Río Senguer",
+          "Doctor Ricardo Rojas",
+          "Facundo",
+          "Lago Blanco",
+          "Río Mayo"
+        ]
+      },
+      "26091": {
+        "nombre": "Sarmiento",
+        "localidades": [
+          "Buen Pasto",
+          "Sarmiento"
+        ]
+      },
+      "26098": {
+        "nombre": "Tehuelches",
+        "localidades": [
+          "Doctor Oscar Atilio Viglione (Frontera de Río Pico)",
+          "Gobernador Costa",
+          "José de San Martín",
+          "Río Pico"
+        ]
+      },
+      "26105": {
+        "nombre": "Telsen",
+        "localidades": [
+          "Gan Gan",
+          "Telsen"
+        ]
+      }
+    }
+  },
+  "30": {
+    "nombre": "Entre Ríos",
+    "departamentos": {
+      "30008": {
+        "nombre": "Colón",
+        "localidades": [
+          "Arroyo Barú",
+          "Colón",
+          "Colonia Hugues",
+          "El Brillante",
+          "El Colorado",
+          "Hambis",
+          "Hocker",
+          "La Clarita",
+          "Pueblo Cazes",
+          "Pueblo Liebig's",
+          "San José",
+          "San José",
+          "Ubajay",
+          "Villa Elisa"
+        ]
+      },
+      "30015": {
+        "nombre": "Concordia",
+        "localidades": [
+          "Benito Legerén",
+          "Calabacilla",
+          "Clodomiro Ledesma",
+          "Colonia Ayuí",
+          "Colonia General Roca",
+          "Concordia",
+          "Concordia",
+          "Estación Yeruá",
+          "Estación Yuquerí",
+          "Estancia Grande",
+          "La Criolla",
+          "Las Tejas",
+          "Los Charrúas",
+          "Nueva Escocia",
+          "Osvaldo Magnasco",
+          "Pedernal",
+          "Puerto Yeruá",
+          "Villa Adela",
+          "Villa Zorraquín"
+        ]
+      },
+      "30021": {
+        "nombre": "Diamante",
+        "localidades": [
+          "Aldea Brasilera",
+          "Aldea Grapschental",
+          "Aldea Protestante",
+          "Aldea Salto",
+          "Aldea San Francisco",
+          "Aldea Spatzenkutter",
+          "Aldea Valle María",
+          "Colonia Ensayo",
+          "Diamante",
+          "Diamante",
+          "Estación Camps",
+          "Estación Puiggari",
+          "General Alvear",
+          "General Racedo (El Carmen)",
+          "General Ramírez",
+          "La Juanita",
+          "Las Jaulas",
+          "Paraje La Virgen",
+          "Puerto Las Cuevas",
+          "Strobel",
+          "Villa Libertador San Martín",
+          "Villa Libertador San Martín"
+        ]
+      },
+      "30028": {
+        "nombre": "Federación",
+        "localidades": [
+          "Chajarí",
+          "Colonia Alemana",
+          "Colonia La Argentina",
+          "Federación",
+          "Los Conquistadores",
+          "San Jaime de la Frontera",
+          "San Pedro",
+          "San Ramón",
+          "Santa Ana",
+          "Villa del Rosario"
+        ]
+      },
+      "30035": {
+        "nombre": "Federal",
+        "localidades": [
+          "Aldea San Isidro (El Cimarrón)",
+          "Conscripto Bernardi",
+          "Federal",
+          "Nueva Vizcaya",
+          "Sauce de Luna"
+        ]
+      },
+      "30042": {
+        "nombre": "Feliciano",
+        "localidades": [
+          "San José de Feliciano",
+          "San Víctor"
+        ]
+      },
+      "30049": {
+        "nombre": "Gualeguay",
+        "localidades": [
+          "Aldea Asunción",
+          "Estación Lazo",
+          "General Galarza",
+          "Gualeguay",
+          "Puerto Ruiz"
+        ]
+      },
+      "30056": {
+        "nombre": "Gualeguaychú",
+        "localidades": [
+          "Aldea San Antonio",
+          "Aldea San Juan",
+          "Enrique Carbó",
+          "Estación Escriña",
+          "Faustino M. Parera",
+          "General Almada",
+          "Gilbert",
+          "Gualeguaychú",
+          "Irazusta",
+          "Larroque",
+          "Pastor Britos",
+          "Pueblo General Belgrano",
+          "Urdinarrain"
+        ]
+      },
+      "30063": {
+        "nombre": "Islas del Ibicuy",
+        "localidades": [
+          "Ceibas",
+          "Ibicuy",
+          "Médanos",
+          "Villa Paranacito"
+        ]
+      },
+      "30070": {
+        "nombre": "La Paz",
+        "localidades": [
+          "Alcaraz",
+          "Bovril",
+          "Colonia Avigdor",
+          "El Solar",
+          "La Paz",
+          "Piedras Blancas",
+          "San Gustavo",
+          "Santa Elena",
+          "Sir Leonard"
+        ]
+      },
+      "30077": {
+        "nombre": "Nogoyá",
+        "localidades": [
+          "Aranguren",
+          "Betbeder",
+          "Don Cristóbal",
+          "Febré",
+          "Hernández",
+          "Lucas González",
+          "Nogoyá",
+          "XX de Setiembre"
+        ]
+      },
+      "30084": {
+        "nombre": "Paraná",
+        "localidades": [
+          "Aldea María Luisa",
+          "Aldea San Juan",
+          "Aldea San Rafael",
+          "Aldea Santa María",
+          "Aldea Santa Rosa",
+          "Cerrito",
+          "Cerrito",
+          "Colonia Avellaneda",
+          "Colonia Crespo",
+          "Crespo",
+          "El Palenque",
+          "El Pingo",
+          "El Ramblón",
+          "Hasenkamp",
+          "Hernandarias",
+          "La Picada",
+          "Las Tunas",
+          "María Grande",
+          "Oro Verde",
+          "Paraná",
+          "Pueblo Bellocq (Las Garzas)",
+          "Pueblo Brugo",
+          "Pueblo General San Martín",
+          "Pueblo Moreno",
+          "San Benito",
+          "Sauce Montrull",
+          "Sauce Pinto",
+          "Seguí",
+          "Sosa",
+          "Tabossi",
+          "Tezanos Pinto",
+          "Viale",
+          "Villa Fontana",
+          "Villa Gdor. Luis F. Etchevehere",
+          "Villa Urquiza"
+        ]
+      },
+      "30088": {
+        "nombre": "San Salvador",
+        "localidades": [
+          "General Campos",
+          "San Salvador"
+        ]
+      },
+      "30091": {
+        "nombre": "Tala",
+        "localidades": [
+          "Altamirano Sur",
+          "Durazno",
+          "Estación Arroyo Clé",
+          "Gobernador Echagüe",
+          "Gobernador Mansilla",
+          "Gobernador Solá",
+          "Guardamonte",
+          "Las Guachas",
+          "Maciá",
+          "Rosario del Tala"
+        ]
+      },
+      "30098": {
+        "nombre": "Uruguay",
+        "localidades": [
+          "1º de Mayo",
+          "Basavilbaso",
+          "Caseros",
+          "Colonia Elía",
+          "Concepción del Uruguay",
+          "Herrera",
+          "Las Moscas",
+          "Líbaros",
+          "Pronunciamiento",
+          "Rocamora",
+          "Santa Anita",
+          "Villa Mantero",
+          "Villa San Justo",
+          "Villa San Marcial (Est. Gobernador Urquiza)"
+        ]
+      },
+      "30105": {
+        "nombre": "Victoria",
+        "localidades": [
+          "Antelo",
+          "Molino Doll",
+          "Victoria"
+        ]
+      },
+      "30113": {
+        "nombre": "Villaguay",
+        "localidades": [
+          "Estación Raíces",
+          "Ingeniero Miguel Sajaroff",
+          "Jubileo",
+          "Paso de la Laguna",
+          "Villa Clara",
+          "Villa Domínguez",
+          "Villaguay"
+        ]
+      }
+    }
+  },
+  "34": {
+    "nombre": "Formosa",
+    "departamentos": {
+      "34007": {
+        "nombre": "Bermejo",
+        "localidades": [
+          "Fortín Soledad",
+          "Guadalcazar",
+          "La Rinconada",
+          "Laguna Yema",
+          "Lamadrid",
+          "Los Chiriguanos",
+          "Pozo de Maza",
+          "Pozo del Mortero",
+          "Vaca Perdida"
+        ]
+      },
+      "34014": {
+        "nombre": "Formosa",
+        "localidades": [
+          "Colonia Pastoril",
+          "Formosa",
+          "Gran Guardia",
+          "Mariano Boedo",
+          "Mojón de Fierro",
+          "San Hilario"
+        ]
+      },
+      "34021": {
+        "nombre": "Laishi",
+        "localidades": [
+          "Banco Payaguá",
+          "General Lucio V. Mansilla",
+          "Herradura",
+          "San Francisco de Laishi",
+          "Tatané",
+          "Villa Escolar"
+        ]
+      },
+      "34028": {
+        "nombre": "Matacos",
+        "localidades": [
+          "Ingeniero Guillermo N. Juárez"
+        ]
+      },
+      "34035": {
+        "nombre": "Patiño",
+        "localidades": [
+          "Bartolomé de las Casas",
+          "Bartolomé de las Casas",
+          "Colonia Sarmiento",
+          "Comandante Fontana",
+          "Comunidad Aborigen Bartolomé de las Casas",
+          "El Recreo",
+          "Estanislao del Campo",
+          "Fortín Cabo 1º Lugones",
+          "Fortín Sargento 1º Leyes",
+          "Ibarreta",
+          "Juan G. Bazán",
+          "Las Lomitas",
+          "Posta Cambio Zalazar",
+          "Pozo del Tigre",
+          "San Martín I",
+          "San Martín II",
+          "Subteniente Perín",
+          "Villa General Güemes",
+          "Villa General Manuel Belgrano"
+        ]
+      },
+      "34042": {
+        "nombre": "Pilagás",
+        "localidades": [
+          "Buena Vista",
+          "El Espinillo",
+          "Laguna Gallo",
+          "Misión Tacaaglé",
+          "Portón Negro",
+          "Tres Lagunas"
+        ]
+      },
+      "34049": {
+        "nombre": "Pilcomayo",
+        "localidades": [
+          "Clorinda",
+          "Laguna Blanca",
+          "Laguna Naick-Neck",
+          "Palma Sola",
+          "Puerto Pilcomayo",
+          "Riacho He-He",
+          "Riacho Negro",
+          "Siete Palmas"
+        ]
+      },
+      "34056": {
+        "nombre": "Pirané",
+        "localidades": [
+          "Colonia Campo Villafañe",
+          "El Colorado",
+          "Palo Santo",
+          "Pirané",
+          "Villa Kilómetro 213"
+        ]
+      },
+      "34063": {
+        "nombre": "Ramón Lista",
+        "localidades": [
+          "El Potrillo",
+          "El Quebracho",
+          "General Mosconi"
+        ]
+      }
+    }
+  },
+  "38": {
+    "nombre": "Jujuy",
+    "departamentos": {
+      "38007": {
+        "nombre": "Cochinoca",
+        "localidades": [
+          "Abra Pampa",
+          "Abralaite",
+          "Agua de Castilla",
+          "Casabindo",
+          "Cochinoca",
+          "La Redonda",
+          "Puesto del Marquéz",
+          "Quebraleña",
+          "Quera",
+          "Rinconadillas",
+          "San Francisco de Alfarcito",
+          "Santa Ana de la Puna",
+          "Santuario de Tres Pozos",
+          "Tambillos",
+          "Tusaquillas"
+        ]
+      },
+      "38014": {
+        "nombre": "El Carmen",
+        "localidades": [
+          "Aguas Calientes",
+          "Aguas Calientes",
+          "Barrio El Milagro",
+          "Barrio La Unión",
+          "El Carmen",
+          "Fleming",
+          "Los Lapachos",
+          "Manantiales",
+          "Monterrico",
+          "Pampa Blanca",
+          "Perico",
+          "Pila Pardo",
+          "Puesto Viejo",
+          "San Isidro",
+          "San Juancito"
+        ]
+      },
+      "38021": {
+        "nombre": "Dr. Manuel Belgrano",
+        "localidades": [
+          "Guerrero",
+          "La Almona",
+          "León",
+          "Los Nogales",
+          "Lozano",
+          "Ocloyas",
+          "San Pablo de Reyes",
+          "San Salvador de Jujuy",
+          "Tesorero",
+          "Yala",
+          "Yala"
+        ]
+      },
+      "38028": {
+        "nombre": "Humahuaca",
+        "localidades": [
+          "Aparzo",
+          "Cianzo",
+          "Coctaca",
+          "El Aguilar",
+          "Hipólito Yrigoyen",
+          "Humahuaca",
+          "Palca de Aparzo",
+          "Palca de Varas",
+          "Rodero",
+          "Tres Cruces",
+          "Uquía"
+        ]
+      },
+      "38035": {
+        "nombre": "Ledesma",
+        "localidades": [
+          "Bananal",
+          "Bermejito",
+          "Caimancito",
+          "Calilegua",
+          "Chalicán",
+          "Fraile Pintado",
+          "Libertad",
+          "Libertador General San Martín",
+          "Libertador General San Martín",
+          "Maíz Negro",
+          "Paulina",
+          "Pueblo Ledesma",
+          "Yuto"
+        ]
+      },
+      "38042": {
+        "nombre": "Palpalá",
+        "localidades": [
+          "Carahunco",
+          "Centro Forestal",
+          "Palpalá",
+          "Palpalá",
+          "Río Blanco"
+        ]
+      },
+      "38049": {
+        "nombre": "Rinconada",
+        "localidades": [
+          "Casa Colorada",
+          "Coyaguaima",
+          "Lagunillas de Farallón",
+          "Liviara",
+          "Loma Blanca",
+          "Nuevo Pirquitas",
+          "Orosmayo",
+          "Rinconada"
+        ]
+      },
+      "38056": {
+        "nombre": "San Antonio",
+        "localidades": [
+          "El Ceibal",
+          "Los Alisos",
+          "Loteo Navea",
+          "Nuestra Señora del Rosario",
+          "San Antonio"
+        ]
+      },
+      "38063": {
+        "nombre": "San Pedro",
+        "localidades": [
+          "Arrayanal",
+          "Arroyo Colorado",
+          "Don Emilio",
+          "El Acheral",
+          "El Puesto",
+          "El Quemado",
+          "La Esperanza",
+          "La Manga",
+          "La Mendieta",
+          "Palos Blancos",
+          "Piedritas",
+          "Rodeito",
+          "Rosario de Río Grande (ex Barro Negro)",
+          "San Antonio",
+          "San Lucas",
+          "San Pedro"
+        ]
+      },
+      "38070": {
+        "nombre": "Santa Bárbara",
+        "localidades": [
+          "El Fuerte",
+          "El Piquete",
+          "El Talar",
+          "Palma Sola",
+          "Puente Lavayén",
+          "Santa Clara",
+          "Vinalito"
+        ]
+      },
+      "38077": {
+        "nombre": "Santa Catalina",
+        "localidades": [
+          "Casira",
+          "Ciénega de Paicone",
+          "Cieneguillas",
+          "Cusi Cusi",
+          "El Angosto",
+          "La Ciénega",
+          "Misarrumi",
+          "Oratorio",
+          "Paicone",
+          "San Juan de Oros",
+          "Santa Catalina",
+          "Yoscaba"
+        ]
+      },
+      "38084": {
+        "nombre": "Susques",
+        "localidades": [
+          "Catua",
+          "Coranzuli",
+          "El Toro",
+          "Huáncar",
+          "Jama",
+          "Mina Providencia",
+          "Olacapato",
+          "Olaroz Chico",
+          "Pastos Chicos",
+          "Puesto Sey",
+          "San Juan de Quillaqués",
+          "Susques"
+        ]
+      },
+      "38094": {
+        "nombre": "Tilcara",
+        "localidades": [
+          "Colonia San José",
+          "Colonia San José",
+          "Huacalera",
+          "Juella",
+          "Maimará",
+          "Tilcara",
+          "Yacoraite"
+        ]
+      },
+      "38098": {
+        "nombre": "Tumbaya",
+        "localidades": [
+          "Bárcena",
+          "El Moreno",
+          "Puerta de Colorados",
+          "Purmamarca",
+          "Tumbaya",
+          "Volcán"
+        ]
+      },
+      "38105": {
+        "nombre": "Valle Grande",
+        "localidades": [
+          "Caspalá",
+          "Pampichuela",
+          "San Francisco",
+          "Santa Ana",
+          "Valle Colorado",
+          "Valle Grande"
+        ]
+      },
+      "38112": {
+        "nombre": "Yavi",
+        "localidades": [
+          "Barrios",
+          "Cangrejillos",
+          "El Cóndor",
+          "La Intermedia",
+          "La Quiaca",
+          "Llulluchayoc",
+          "Pumahuasi",
+          "San José",
+          "Yavi",
+          "Yavi",
+          "Yavi Chico"
+        ]
+      }
+    }
+  },
+  "42": {
+    "nombre": "La Pampa",
+    "departamentos": {
+      "42007": {
+        "nombre": "Atreucó",
+        "localidades": [
+          "Doblas",
+          "Macachín",
+          "Miguel Riglos",
+          "Rolón",
+          "Tomás M. Anchorena"
+        ]
+      },
+      "42014": {
+        "nombre": "Caleu Caleu",
+        "localidades": [
+          "Anzoátegui",
+          "La Adela"
+        ]
+      },
+      "42021": {
+        "nombre": "Capital",
+        "localidades": [
+          "Anguil",
+          "Santa Rosa"
+        ]
+      },
+      "42028": {
+        "nombre": "Catriló",
+        "localidades": [
+          "Catriló",
+          "La Gloria",
+          "Lonquimay",
+          "Uriburu"
+        ]
+      },
+      "42035": {
+        "nombre": "Conhelo",
+        "localidades": [
+          "Conhelo",
+          "Eduardo Castex",
+          "Mauricio Mayer",
+          "Monte Nievas",
+          "Rucanelo",
+          "Winifreda"
+        ]
+      },
+      "42042": {
+        "nombre": "Curacó",
+        "localidades": [
+          "Gobernador Duval",
+          "Puelches"
+        ]
+      },
+      "42049": {
+        "nombre": "Chalileo",
+        "localidades": [
+          "Santa Isabel"
+        ]
+      },
+      "42056": {
+        "nombre": "Chapaleufú",
+        "localidades": [
+          "Bernardo Larroude",
+          "Ceballos",
+          "Coronel Hilario Lagos",
+          "Intendente Alvear",
+          "Sarah",
+          "Vértiz"
+        ]
+      },
+      "42063": {
+        "nombre": "Chical Co",
+        "localidades": [
+          "Algarrobo del Águila",
+          "La Humada"
+        ]
+      },
+      "42070": {
+        "nombre": "Guatraché",
+        "localidades": [
+          "Alpachiri",
+          "General Manuel J. Campos",
+          "Guatraché",
+          "Perú",
+          "Santa Teresa"
+        ]
+      },
+      "42077": {
+        "nombre": "Hucal",
+        "localidades": [
+          "Abramo",
+          "Bernasconi",
+          "General San Martín",
+          "Hucal",
+          "Jacinto Aráuz"
+        ]
+      },
+      "42084": {
+        "nombre": "Lihuel Calel",
+        "localidades": [
+          "Cuchillo Co"
+        ]
+      },
+      "42091": {
+        "nombre": "Limay Mahuida",
+        "localidades": [
+          "La Reforma",
+          "Limay Mahuida"
+        ]
+      },
+      "42098": {
+        "nombre": "Loventué",
+        "localidades": [
+          "Carro Quemado",
+          "Loventué",
+          "Luan Toro",
+          "Telén",
+          "Victorica"
+        ]
+      },
+      "42105": {
+        "nombre": "Maracó",
+        "localidades": [
+          "Agustoni",
+          "Dorila",
+          "General Pico",
+          "Speluzzi",
+          "Trebolares"
+        ]
+      },
+      "42112": {
+        "nombre": "Puelén",
+        "localidades": [
+          "25 de Mayo",
+          "Casa de Piedra",
+          "Puelén"
+        ]
+      },
+      "42119": {
+        "nombre": "Quemú Quemú",
+        "localidades": [
+          "Colonia Barón",
+          "Colonia San José",
+          "Miguel Cané",
+          "Quemú Quemú",
+          "Relmo",
+          "Villa Mirasol"
+        ]
+      },
+      "42126": {
+        "nombre": "Rancul",
+        "localidades": [
+          "Caleufú",
+          "Ingeniero Foster",
+          "La Maruja",
+          "Parera",
+          "Pichi Huinca",
+          "Quetrequén",
+          "Rancul"
+        ]
+      },
+      "42133": {
+        "nombre": "Realicó",
+        "localidades": [
+          "Adolfo Van Praet",
+          "Alta Italia",
+          "Damián Maisonave",
+          "Embajador Martini",
+          "Falucho",
+          "Ingeniero Luiggi",
+          "Ojeda",
+          "Realicó"
+        ]
+      },
+      "42140": {
+        "nombre": "Toay",
+        "localidades": [
+          "Cachirulo",
+          "Naicó",
+          "Toay"
+        ]
+      },
+      "42147": {
+        "nombre": "Trenel",
+        "localidades": [
+          "Arata",
+          "Metileo",
+          "Trenel"
+        ]
+      },
+      "42154": {
+        "nombre": "Utracán",
+        "localidades": [
+          "Ataliva Roca",
+          "Chacharramendi",
+          "Colonia Santa María",
+          "General Acha",
+          "Quehué",
+          "Unanué"
+        ]
+      }
+    }
+  },
+  "46": {
+    "nombre": "La Rioja",
+    "departamentos": {
+      "46007": {
+        "nombre": "Arauco",
+        "localidades": [
+          "Aimogasta",
+          "Aimogasta",
+          "Bañado de los Pantanos",
+          "Estación Mazán",
+          "Machigasta",
+          "San Antonio",
+          "Termas de Santa Teresita",
+          "Villa Mazán"
+        ]
+      },
+      "46014": {
+        "nombre": "Capital",
+        "localidades": [
+          "La Rioja"
+        ]
+      },
+      "46021": {
+        "nombre": "Castro Barros",
+        "localidades": [
+          "Aminga",
+          "Anillaco",
+          "Anjullón",
+          "Chuquis",
+          "Los Molinos",
+          "Pinchas",
+          "San Pedro",
+          "Santa Vera Cruz"
+        ]
+      },
+      "46028": {
+        "nombre": "General Felipe Varela",
+        "localidades": [
+          "Aicuñá",
+          "Banda Florida",
+          "Guandacol",
+          "Guandacol",
+          "Los Palacios",
+          "Pagancillo",
+          "Santa Clara",
+          "Villa Unión",
+          "Villa Unión"
+        ]
+      },
+      "46035": {
+        "nombre": "Chamical",
+        "localidades": [
+          "Chamical",
+          "Polco"
+        ]
+      },
+      "46042": {
+        "nombre": "Chilecito",
+        "localidades": [
+          "Anguinán",
+          "Chilecito",
+          "Chilecito",
+          "Colonia Anguinán",
+          "Colonia Malligasta",
+          "Colonia Vichigasta",
+          "Guanchín",
+          "La Puntilla",
+          "Los Sarmientos",
+          "Malligasta",
+          "Miranda",
+          "Nonogasta",
+          "San Miguel",
+          "San Nicolás",
+          "Santa Florentina",
+          "Sañogasta",
+          "Tilimuqui",
+          "Vichigasta"
+        ]
+      },
+      "46049": {
+        "nombre": "Famatina",
+        "localidades": [
+          "Alto Carrizal",
+          "Angulos",
+          "Antinaco",
+          "Bajo Carrizal",
+          "Campanas",
+          "Chañarmuyo",
+          "Famatina",
+          "La Cuadra",
+          "Pituil",
+          "Plaza Vieja",
+          "Santa Cruz",
+          "Santo Domingo"
+        ]
+      },
+      "46056": {
+        "nombre": "Ángel Vicente Peñaloza",
+        "localidades": [
+          "Punta de los Llanos",
+          "Tama"
+        ]
+      },
+      "46063": {
+        "nombre": "General Belgrano",
+        "localidades": [
+          "Castro Barros",
+          "Chañar",
+          "Loma Blanca",
+          "Olta"
+        ]
+      },
+      "46070": {
+        "nombre": "General Juan Facundo Quiroga",
+        "localidades": [
+          "Malanzán",
+          "Nácate",
+          "Portezuelo",
+          "San Antonio"
+        ]
+      },
+      "46077": {
+        "nombre": "General Lamadrid",
+        "localidades": [
+          "Villa Castelli"
+        ]
+      },
+      "46084": {
+        "nombre": "General Ortiz de Ocampo",
+        "localidades": [
+          "Ambil",
+          "Colonia Ortiz de Ocampo",
+          "Milagro",
+          "Olpas",
+          "Santa Rita de Catuna"
+        ]
+      },
+      "46091": {
+        "nombre": "General San Martín",
+        "localidades": [
+          "Ulapes"
+        ]
+      },
+      "46098": {
+        "nombre": "Vinchina",
+        "localidades": [
+          "Jagüé",
+          "Villa San José de Vinchina"
+        ]
+      },
+      "46105": {
+        "nombre": "Independencia",
+        "localidades": [
+          "Amaná",
+          "Patquía"
+        ]
+      },
+      "46112": {
+        "nombre": "Rosario Vera Peñaloza",
+        "localidades": [
+          "Chepes",
+          "Desiderio Tello"
+        ]
+      },
+      "46119": {
+        "nombre": "San Blas de Los Sauces",
+        "localidades": [
+          "Alpasinche",
+          "Amuschina",
+          "Andolucas",
+          "Chaupihuasi",
+          "Cuipán",
+          "Las Talas",
+          "Los Robles",
+          "Salicas",
+          "Salicas - San Blas",
+          "San Blas",
+          "Shaqui",
+          "Suriyaco",
+          "Tuyubil"
+        ]
+      },
+      "46126": {
+        "nombre": "Sanagasta",
+        "localidades": [
+          "Villa Sanagasta"
+        ]
+      }
+    }
+  },
+  "50": {
+    "nombre": "Mendoza",
+    "departamentos": {
+      "50007": {
+        "nombre": "Capital",
+        "localidades": [
+          "10ma Sección",
+          "11va Sección",
+          "1ra Sección",
+          "2da Sección",
+          "3ra Sección",
+          "4ta Sección",
+          "5ta Sección",
+          "6ta Sección",
+          "7ma Sección",
+          "8va Sección",
+          "9na Sección",
+          "Mendoza"
+        ]
+      },
+      "50014": {
+        "nombre": "General Alvear",
+        "localidades": [
+          "Bowen",
+          "Carmensa",
+          "General Alvear",
+          "Los Compartos"
+        ]
+      },
+      "50021": {
+        "nombre": "Godoy Cruz",
+        "localidades": [
+          "Ciudad de Godoy Cruz",
+          "Gobernador Benegas",
+          "Godoy Cruz",
+          "Las Tortugas",
+          "Presidente Sarmiento",
+          "San Francisco del Monte"
+        ]
+      },
+      "50028": {
+        "nombre": "Guaymallén",
+        "localidades": [
+          "Bermejo",
+          "Buena Nueva",
+          "Capilla del Rosario",
+          "Colonia Segovia",
+          "Dorrego",
+          "El Sauce",
+          "General Belgrano",
+          "Guaymallén",
+          "Jesús Nazareno",
+          "La Primavera",
+          "Las Cañas",
+          "Los Corralitos",
+          "Nueva Ciudad",
+          "Pedro Molina",
+          "Puente de Hierro",
+          "Rodeo de la Cruz",
+          "San Francisco del Monte",
+          "San José",
+          "Villa Nueva"
+        ]
+      },
+      "50035": {
+        "nombre": "Junín",
+        "localidades": [
+          "Ingeniero Giagnoni",
+          "Junín",
+          "La Colonia",
+          "Los Barriales",
+          "Medrano",
+          "Phillips",
+          "Rodríguez Peña"
+        ]
+      },
+      "50042": {
+        "nombre": "La Paz",
+        "localidades": [
+          "Desaguadero",
+          "La Paz",
+          "Villa Antigua"
+        ]
+      },
+      "50049": {
+        "nombre": "Las Heras",
+        "localidades": [
+          "Blanco Encalada",
+          "Capdevila",
+          "Ciudad de Las Heras",
+          "El Algarrobal",
+          "El Borbollón",
+          "El Challao",
+          "El Plumerillo",
+          "El Resguardo",
+          "El Zapallar",
+          "Jocolí",
+          "La Cieneguita",
+          "Las Cuevas",
+          "Las Heras",
+          "Los Penitentes",
+          "Panquehuá",
+          "Polvaredas",
+          "Puente del Inca",
+          "Punta de Vacas",
+          "Sierras de Encalada",
+          "Uspallata"
+        ]
+      },
+      "50056": {
+        "nombre": "Lavalle",
+        "localidades": [
+          "3 de Mayo",
+          "Barrio Alto del Olvido",
+          "Barrio Jocolí II",
+          "Barrio La Palmera",
+          "Barrio La Pega",
+          "Barrio Lagunas de Bartoluzzi",
+          "Barrio Los Jarilleros",
+          "Barrio Los Olivos",
+          "Barrio Virgen del Rosario",
+          "Costa de Araujo",
+          "El Paramillo",
+          "El Vergel",
+          "Ingeniero Gustavo André",
+          "Jocolí",
+          "Jocolí Viejo",
+          "Las Violetas",
+          "Villa Tulumaya"
+        ]
+      },
+      "50063": {
+        "nombre": "Luján de Cuyo",
+        "localidades": [
+          "Agrelo",
+          "Barrio Perdriel IV",
+          "Cacheuta",
+          "Carrodilla",
+          "Chacras de Coria",
+          "Ciudad Luján de Cuyo",
+          "Costa Flores",
+          "El Carrizal",
+          "El Salto",
+          "La Puntilla",
+          "Las Compuertas",
+          "Las Vegas",
+          "Luján de Cuyo",
+          "Mayor Drummond",
+          "Perdriel",
+          "Potrerillos",
+          "Ugarteche",
+          "Vistalba"
+        ]
+      },
+      "50070": {
+        "nombre": "Maipú",
+        "localidades": [
+          "Barrancas",
+          "Barrio Jesús de Nazaret",
+          "Ciudad de Maipú",
+          "Coquimbito",
+          "Cruz de Piedra",
+          "El Pedregal",
+          "Fray Luis Beltrán",
+          "General Gutiérrez",
+          "Luzuriaga",
+          "Maipú",
+          "Rodeo del Medio",
+          "San Roque",
+          "Villa Teresa"
+        ]
+      },
+      "50077": {
+        "nombre": "Malargüe",
+        "localidades": [
+          "Agua Escondida",
+          "Las Leñas",
+          "Malargüe"
+        ]
+      },
+      "50084": {
+        "nombre": "Rivadavia",
+        "localidades": [
+          "Andrade",
+          "Barrio Cooperativa Los Campamentos",
+          "Barrio Rivadavia",
+          "Cuadro Ortega",
+          "El Mirador",
+          "La Central",
+          "La Esperanza",
+          "La Florida",
+          "La Florida",
+          "La Libertad",
+          "Los Árboles",
+          "Los Campamentos",
+          "Medrano",
+          "Mundo Nuevo",
+          "Reducción de Abajo",
+          "Rivadavia",
+          "Santa María de Oro"
+        ]
+      },
+      "50091": {
+        "nombre": "San Carlos",
+        "localidades": [
+          "Barrio Carrasco",
+          "Barrio El Cepillo",
+          "Chilecito",
+          "Eugenio Bustos",
+          "La Consulta",
+          "Pareditas",
+          "San Carlos"
+        ]
+      },
+      "50098": {
+        "nombre": "San Martín",
+        "localidades": [
+          "Alto Verde",
+          "Barrio Chivilcoy",
+          "Barrio Emanuel",
+          "Barrio La Estación",
+          "Barrio Los Charabones",
+          "Barrio Ntra. Sra. De Fátima",
+          "Chapanay",
+          "Chivilcoy",
+          "El Espino",
+          "El Ramblón",
+          "Montecaseros",
+          "Nueva California",
+          "Palmira",
+          "San Martín",
+          "San Martín",
+          "Tres Porteñas"
+        ]
+      },
+      "50105": {
+        "nombre": "San Rafael",
+        "localidades": [
+          "25 de Mayo",
+          "Barrio El Nevado",
+          "Barrio Empleados de Comercio",
+          "Barrio Intendencia",
+          "Capitán Montoya",
+          "Cuadro Benegas",
+          "Cuadro Nacional",
+          "El Nihuil",
+          "El Sosneado",
+          "El Tropezón",
+          "Goudge",
+          "Jaime Prats",
+          "La Llave Nueva",
+          "Las Malvinas",
+          "Los Reyunos",
+          "Monte Comán",
+          "Pobre Diablo",
+          "Punta del Agua",
+          "Rama Caída",
+          "Real del Padre",
+          "Salto de las Rosas",
+          "San Rafael",
+          "San Rafael",
+          "Villa Atuel",
+          "Villa Atuel Norte"
+        ]
+      },
+      "50112": {
+        "nombre": "Santa Rosa",
+        "localidades": [
+          "Barrio 12 de Octubre",
+          "Barrio María Auxiliadora",
+          "Barrio Molina Cabrera",
+          "La Dormida",
+          "Las Catitas",
+          "Santa Rosa"
+        ]
+      },
+      "50119": {
+        "nombre": "Tunuyán",
+        "localidades": [
+          "Barrio San Cayetano",
+          "Campo Los Andes",
+          "Colonia Las Rosas",
+          "El Manzano",
+          "Los Sauces",
+          "Tunuyán",
+          "Vista Flores"
+        ]
+      },
+      "50126": {
+        "nombre": "Tupungato",
+        "localidades": [
+          "Barrio Belgrano Norte",
+          "Cordón del Plata",
+          "El Peral",
+          "El Zampal",
+          "La Arboleda",
+          "San José",
+          "Tupungato",
+          "Tupungato",
+          "Villa Bastias"
+        ]
+      }
+    }
+  },
+  "54": {
+    "nombre": "Misiones",
+    "departamentos": {
+      "54007": {
+        "nombre": "Apóstoles",
+        "localidades": [
+          "Apóstoles",
+          "Azara",
+          "Barrio Rural",
+          "Estación Apóstoles",
+          "Pindapoy",
+          "Rincón de Azara",
+          "San José",
+          "Tres Capones"
+        ]
+      },
+      "54014": {
+        "nombre": "Cainguás",
+        "localidades": [
+          "1º de Mayo",
+          "Aristóbulo del Valle",
+          "Campo Grande",
+          "Dos de Mayo",
+          "Dos de Mayo Núcleo I",
+          "Dos de Mayo Núcleo II",
+          "Dos de Mayo Nucleo III (Bº Bernardino Rivadavia)",
+          "Kilómetro 17",
+          "Pueblo Illia",
+          "Salto Encantado"
+        ]
+      },
+      "54021": {
+        "nombre": "Candelaria",
+        "localidades": [
+          "Barrio del Lago",
+          "Bonpland",
+          "Candelaria",
+          "Cerro Corá",
+          "Loreto",
+          "Mártires",
+          "Profundidad",
+          "Puerto Santa Ana",
+          "Santa Ana"
+        ]
+      },
+      "54028": {
+        "nombre": "Capital",
+        "localidades": [
+          "Garupá",
+          "Nemesio Parma",
+          "Posadas",
+          "Posadas (Extensión)"
+        ]
+      },
+      "54035": {
+        "nombre": "Concepción",
+        "localidades": [
+          "Barra Concepción",
+          "Concepción de la Sierra",
+          "La Corita",
+          "Santa María"
+        ]
+      },
+      "54042": {
+        "nombre": "Eldorado",
+        "localidades": [
+          "9 de Julio Kilómetro 20",
+          "9 de Julio Kilómetro 28",
+          "Colonia Victoria",
+          "Eldorado",
+          "María Magdalena",
+          "Nueva Delicia",
+          "Pueblo Nuevo",
+          "Puerto Mado",
+          "Puerto Pinares",
+          "Santiago de Liniers",
+          "Valle Hermoso",
+          "Villa Roulet"
+        ]
+      },
+      "54049": {
+        "nombre": "General Manuel Belgrano",
+        "localidades": [
+          "Bernardo de Irigoyen",
+          "Caburei",
+          "Comandante Andresito",
+          "Dos Hermanas",
+          "Integración",
+          "Piñalito Norte",
+          "Puerto Andresito",
+          "Puerto Deseado",
+          "San Antonio"
+        ]
+      },
+      "54056": {
+        "nombre": "Guaraní",
+        "localidades": [
+          "El Soberbio",
+          "Fracrán",
+          "San Vicente"
+        ]
+      },
+      "54063": {
+        "nombre": "Iguazú",
+        "localidades": [
+          "Colonia Wanda",
+          "Puerto Esperanza",
+          "Puerto Iguazú",
+          "Puerto Libertad",
+          "Villa Cooperativa"
+        ]
+      },
+      "54070": {
+        "nombre": "Leandro N. Alem",
+        "localidades": [
+          "Almafuerte",
+          "Arroyo del Medio",
+          "Caá - Yarí",
+          "Cerro Azul",
+          "Dos Arroyos",
+          "Gobernador López",
+          "Leandro N. Alem",
+          "Olegario V. Andrade",
+          "Villa Libertad"
+        ]
+      },
+      "54077": {
+        "nombre": "Libertador General San Martín",
+        "localidades": [
+          "Capioví",
+          "Capioviciño",
+          "El Alcázar",
+          "Garuhapé",
+          "Mbopicuá",
+          "Puerto Leoni",
+          "Puerto Rico",
+          "Ruiz de Montoya",
+          "San Alberto",
+          "San Gotardo",
+          "San Miguel",
+          "Villa Akerman",
+          "Villa Urrutia"
+        ]
+      },
+      "54084": {
+        "nombre": "Montecarlo",
+        "localidades": [
+          "Bario Ita",
+          "Barrio Cuatro Bocas",
+          "Barrio Guatambu",
+          "Caraguatay",
+          "Laharrague",
+          "Montecarlo",
+          "Piray Kilómetro 18",
+          "Puerto Piray",
+          "Tarumá",
+          "Villa Parodi"
+        ]
+      },
+      "54091": {
+        "nombre": "Oberá",
+        "localidades": [
+          "Barrio Escuela 461",
+          "Barrio Escuela 633",
+          "Campo Ramón",
+          "Campo Viera",
+          "Colonia Alberdi",
+          "El Salto",
+          "General Alvear",
+          "Guaraní",
+          "Los Helechos",
+          "Oberá",
+          "Panambí",
+          "Panambi Kilómetro 15",
+          "Panambí Kilómetro 8",
+          "San Martín",
+          "Villa Bonita"
+        ]
+      },
+      "54098": {
+        "nombre": "San Ignacio",
+        "localidades": [
+          "Barrio Tungoil",
+          "Colonia Polana",
+          "Corpus",
+          "Domingo Savio",
+          "General Urquiza",
+          "Gobernador Roca",
+          "Helvecia",
+          "Hipólito Yrigoyen",
+          "Jardín América",
+          "Oasis",
+          "Roca Chica",
+          "San Ignacio",
+          "Santo Pipó"
+        ]
+      },
+      "54105": {
+        "nombre": "San Javier",
+        "localidades": [
+          "Florentino Ameghino",
+          "Itacaruaré",
+          "Mojón Grande",
+          "San Javier"
+        ]
+      },
+      "54112": {
+        "nombre": "San Pedro",
+        "localidades": [
+          "Cruce Caballero",
+          "Paraíso",
+          "Piñalito Sur",
+          "San Pedro",
+          "Tobuna"
+        ]
+      },
+      "54119": {
+        "nombre": "25 de Mayo",
+        "localidades": [
+          "25 de Mayo",
+          "Alba Posse",
+          "Alicia Alta",
+          "Alicia Baja",
+          "Colonia Aurora",
+          "San Francisco de Asís",
+          "Santa Rita"
+        ]
+      }
+    }
+  },
+  "58": {
+    "nombre": "Neuquén",
+    "departamentos": {
+      "58007": {
+        "nombre": "Aluminé",
+        "localidades": [
+          "Aluminé",
+          "Moquehue",
+          "Villa Pehuenia"
+        ]
+      },
+      "58014": {
+        "nombre": "Añelo",
+        "localidades": [
+          "Aguada San Roque",
+          "Añelo",
+          "San Patricio del Chañar"
+        ]
+      },
+      "58021": {
+        "nombre": "Catán Lil",
+        "localidades": [
+          "Las Coloradas"
+        ]
+      },
+      "58028": {
+        "nombre": "Collón Curá",
+        "localidades": [
+          "Piedra del Águila",
+          "Santo Tomás"
+        ]
+      },
+      "58035": {
+        "nombre": "Confluencia",
+        "localidades": [
+          "Arroyito",
+          "Centenario",
+          "Cutral Có",
+          "Mari Menuco",
+          "Neuquén",
+          "Plaza Huincul",
+          "Plottier",
+          "Senillosa",
+          "Villa El Chocón",
+          "Vista Alegre Norte",
+          "Vista Alegre Sur"
+        ]
+      },
+      "58042": {
+        "nombre": "Chos Malal",
+        "localidades": [
+          "Chos Malal",
+          "Tricao Malal",
+          "Villa del Curi Leuvú"
+        ]
+      },
+      "58049": {
+        "nombre": "Huiliches",
+        "localidades": [
+          "Junín de los Andes"
+        ]
+      },
+      "58056": {
+        "nombre": "Lácar",
+        "localidades": [
+          "San Martín de los Andes",
+          "Villa Lago Meliquina"
+        ]
+      },
+      "58063": {
+        "nombre": "Loncopué",
+        "localidades": [
+          "Chorriaca",
+          "Loncopué"
+        ]
+      },
+      "58070": {
+        "nombre": "Los Lagos",
+        "localidades": [
+          "Villa La Angostura",
+          "Villa Traful"
+        ]
+      },
+      "58077": {
+        "nombre": "Minas",
+        "localidades": [
+          "Andacollo",
+          "Huinganco",
+          "Las Ovejas",
+          "Los Miches",
+          "Manzano Amargo",
+          "Varvarco",
+          "Villa del Nahueve"
+        ]
+      },
+      "58084": {
+        "nombre": "Ñorquín",
+        "localidades": [
+          "Caviahue",
+          "Copahue",
+          "El Cholar",
+          "El Huecú",
+          "Taquimilán"
+        ]
+      },
+      "58091": {
+        "nombre": "Pehuenches",
+        "localidades": [
+          "Barrancas",
+          "Buta Ranquil",
+          "Octavio Pico",
+          "Rincón de los Sauces"
+        ]
+      },
+      "58098": {
+        "nombre": "Picún Leufú",
+        "localidades": [
+          "El Sauce",
+          "Paso Aguerre",
+          "Picún Leufú"
+        ]
+      },
+      "58105": {
+        "nombre": "Picunches",
+        "localidades": [
+          "Bajada del Agrio",
+          "La Buitrera",
+          "Las Lajas",
+          "Quili Malal"
+        ]
+      },
+      "58112": {
+        "nombre": "Zapala",
+        "localidades": [
+          "Covunco Centro",
+          "Los Catutos",
+          "Mariano Moreno",
+          "Mariano Moreno",
+          "Ramón M. Castro",
+          "Zapala"
+        ]
+      }
+    }
+  },
+  "62": {
+    "nombre": "Río Negro",
+    "departamentos": {
+      "62007": {
+        "nombre": "Adolfo Alsina",
+        "localidades": [
+          "Bahía Creek",
+          "El Cóndor",
+          "El Juncal",
+          "Guardia Mitre",
+          "La Lobería",
+          "Loteo Costa de Río",
+          "Pozo Salado",
+          "San Javier",
+          "Viedma"
+        ]
+      },
+      "62014": {
+        "nombre": "Avellaneda",
+        "localidades": [
+          "Barrio Unión",
+          "Chelforó",
+          "Chimpay",
+          "Choele Choel",
+          "Coronel Belisle",
+          "Darwin",
+          "Lamarque",
+          "Luis Beltrán",
+          "Pomona"
+        ]
+      },
+      "62021": {
+        "nombre": "Bariloche",
+        "localidades": [
+          "Colonia Suiza",
+          "El Bolsón",
+          "El Foyel",
+          "Mallín Ahogado",
+          "Río Villegas",
+          "San Carlos de Bariloche",
+          "San Carlos de Bariloche",
+          "Villa Campanario",
+          "Villa Catedral",
+          "Villa Llao Llao",
+          "Villa Mascardi"
+        ]
+      },
+      "62028": {
+        "nombre": "Conesa",
+        "localidades": [
+          "Barrio Colonia Conesa",
+          "Barrio Planta Compresora de Gas",
+          "General Conesa"
+        ]
+      },
+      "62035": {
+        "nombre": "El Cuy",
+        "localidades": [
+          "Aguada Guzmán",
+          "Cerro Policía",
+          "El Cuy",
+          "Las Perlas",
+          "Mencué",
+          "Naupa Huen",
+          "Paso Córdova",
+          "Valle Azul"
+        ]
+      },
+      "62042": {
+        "nombre": "General Roca",
+        "localidades": [
+          "Allen",
+          "Barda del Medio",
+          "Barrio Blanco",
+          "Barrio Calle Ciega Nº 10",
+          "Barrio Calle Ciega Nº 6",
+          "Barrio Canale",
+          "Barrio Chacra Monte",
+          "Barrio Costa Este",
+          "Barrio Costa Oeste",
+          "Barrio Destacamento",
+          "Barrio El Labrador",
+          "Barrio El Maruchito",
+          "Barrio El Petróleo",
+          "Barrio Emergente",
+          "Barrio Fátima",
+          "Barrio Frontera",
+          "Barrio Guerrico",
+          "Barrio Isla 10",
+          "Barrio La Barda",
+          "Barrio La Costa",
+          "Barrio La Defensa",
+          "Barrio La Herradura",
+          "Barrio La Lor",
+          "Barrio Luisillo",
+          "Barrio Mar del Plata",
+          "Barrio María Elvira",
+          "Barrio Moño Azul",
+          "Barrio Norte",
+          "Barrio Pinar",
+          "Barrio Pino Azul",
+          "Barrio Porvenir",
+          "Barrio Presidente Perón",
+          "Barrio Santa Lucia",
+          "Barrio Santa Rita",
+          "Barrio Unión",
+          "Catriel",
+          "Cervantes",
+          "Chichinales",
+          "Cinco Saltos",
+          "Cinco Saltos",
+          "Cipolletti",
+          "Cipolletti",
+          "Contralmirante Cordero",
+          "Ferri",
+          "General Enrique Godoy",
+          "General Fernández Oro",
+          "General Roca",
+          "General Roca",
+          "Ingeniero Luis A. Huergo",
+          "Ingeniero Otto Krause",
+          "Mainqué",
+          "Paraje Arroyón (Bajo San Cayetano)",
+          "Paso Córdova",
+          "Península Ruca Co",
+          "Puente Cero",
+          "Sargento Vidal",
+          "Villa Alberdi",
+          "Villa del Parque",
+          "Villa Manzano",
+          "Villa Regina",
+          "Villa San Isidro"
+        ]
+      },
+      "62049": {
+        "nombre": "9 de Julio",
+        "localidades": [
+          "Comicó",
+          "Cona Niyeu",
+          "Ministro Ramos Mexía",
+          "Prahuaniyeu",
+          "Sierra Colorada",
+          "Treneta",
+          "Yaminué"
+        ]
+      },
+      "62056": {
+        "nombre": "Ñorquinco",
+        "localidades": [
+          "Las Bayas",
+          "Mamuel Choique",
+          "Ñorquincó",
+          "Ojos de Agua",
+          "Río Chico"
+        ]
+      },
+      "62063": {
+        "nombre": "Pichi Mahuida",
+        "localidades": [
+          "Barrio Esperanza",
+          "Colonia Juliá y Echarren",
+          "Juventud Unida",
+          "Pichi Mahuida",
+          "Río Colorado",
+          "Salto Andersen"
+        ]
+      },
+      "62070": {
+        "nombre": "Pilcaniyeu",
+        "localidades": [
+          "Cañadón Chileno",
+          "Comallo",
+          "Dina Huapi",
+          "Laguna Blanca",
+          "Ñirihuau",
+          "Pilcaniyeu",
+          "Pilquiniyeu del Limay",
+          "Villa Llanquín"
+        ]
+      },
+      "62077": {
+        "nombre": "San Antonio",
+        "localidades": [
+          "El Empalme",
+          "Las Grutas",
+          "Playas Doradas",
+          "Puerto San Antonio Este",
+          "Punta Colorada",
+          "Saco Viejo",
+          "San Antonio Oeste",
+          "Sierra Grande"
+        ]
+      },
+      "62084": {
+        "nombre": "Valcheta",
+        "localidades": [
+          "Aguada Cecilio",
+          "Arroyo Los Berros",
+          "Arroyo Ventana",
+          "Nahuel Niyeu",
+          "Sierra Pailemán",
+          "Valcheta"
+        ]
+      },
+      "62091": {
+        "nombre": "25 de Mayo",
+        "localidades": [
+          "Aguada de Guerra",
+          "Clemente Onelli",
+          "Colan Conhue",
+          "El Caín",
+          "Ingeniero Jacobacci",
+          "Los Menucos",
+          "Maquinchao",
+          "Pilquiniyeu"
+        ]
+      }
+    }
+  },
+  "66": {
+    "nombre": "Salta",
+    "departamentos": {
+      "66007": {
+        "nombre": "Anta",
+        "localidades": [
+          "Apolinario Saravia",
+          "Ceibalito",
+          "Centro 25 de Junio",
+          "Coronel Mollinedo",
+          "Coronel Olleros",
+          "El Quebrachal",
+          "Gaona",
+          "General Pizarro",
+          "Joaquín V. González",
+          "Las Lajitas",
+          "Luis Burela",
+          "Macapillo",
+          "Nuestra Señora de Talavera",
+          "Piquete Cabado",
+          "Río del Valle",
+          "Tolloche"
+        ]
+      },
+      "66014": {
+        "nombre": "Cachi",
+        "localidades": [
+          "Cachi",
+          "Payogasta"
+        ]
+      },
+      "66021": {
+        "nombre": "Cafayate",
+        "localidades": [
+          "Cafayate",
+          "Tolombón"
+        ]
+      },
+      "66028": {
+        "nombre": "Capital",
+        "localidades": [
+          "Country Club El Tipal",
+          "Country Club La Almudena",
+          "Salta",
+          "Salta",
+          "Villa San Lorenzo"
+        ]
+      },
+      "66035": {
+        "nombre": "Cerrillos",
+        "localidades": [
+          "Cerrillos",
+          "La Merced",
+          "San Agustín"
+        ]
+      },
+      "66042": {
+        "nombre": "Chicoana",
+        "localidades": [
+          "Barrio Finca La Maroma",
+          "Barrio La Rotonda",
+          "Barrio Santa Teresita",
+          "Chicoana",
+          "El Carril"
+        ]
+      },
+      "66049": {
+        "nombre": "General Güemes",
+        "localidades": [
+          "Campo Santo",
+          "Cobos",
+          "El Bordo",
+          "General Güemes"
+        ]
+      },
+      "66056": {
+        "nombre": "General José de San Martín",
+        "localidades": [
+          "Aguaray",
+          "Campichuelo",
+          "Campo Durán",
+          "Capiazuti",
+          "Carboncito",
+          "Coronel Cornejo",
+          "Dragones",
+          "Embarcación",
+          "Embarcación",
+          "General Ballivián",
+          "General Mosconi",
+          "General Mosconi",
+          "Hickman",
+          "Misión Chaqueña",
+          "Misión Kilómetro 6",
+          "Misión Tierras Fiscales",
+          "Pacará",
+          "Padre Lozano",
+          "Piquirenda",
+          "Profesor Salvador Mazza",
+          "Recaredo",
+          "Tartagal",
+          "Tobantirenda",
+          "Tranquitas",
+          "Yacuy"
+        ]
+      },
+      "66063": {
+        "nombre": "Guachipas",
+        "localidades": [
+          "Guachipas"
+        ]
+      },
+      "66070": {
+        "nombre": "Iruya",
+        "localidades": [
+          "Iruya",
+          "Isla de Cañas",
+          "Pueblo Viejo"
+        ]
+      },
+      "66077": {
+        "nombre": "La Caldera",
+        "localidades": [
+          "La Caldera",
+          "Vaqueros"
+        ]
+      },
+      "66084": {
+        "nombre": "La Candelaria",
+        "localidades": [
+          "El Jardín",
+          "El Tala",
+          "La Candelaria"
+        ]
+      },
+      "66091": {
+        "nombre": "La Poma",
+        "localidades": [
+          "Cobres",
+          "La Poma"
+        ]
+      },
+      "66098": {
+        "nombre": "La Viña",
+        "localidades": [
+          "Ampascachi",
+          "Cabra Corral",
+          "Coronel Moldes",
+          "La Viña",
+          "Talapampa"
+        ]
+      },
+      "66105": {
+        "nombre": "Los Andes",
+        "localidades": [
+          "Olacapato",
+          "San Antonio de los Cobres",
+          "Santa Rosa de los Pastos Grandes",
+          "Tolar Grande"
+        ]
+      },
+      "66112": {
+        "nombre": "Metán",
+        "localidades": [
+          "El Galpón",
+          "El Tunal",
+          "Lumbreras",
+          "Río Piedras",
+          "San José de Metán (Est. Metán)",
+          "San José de Orquera"
+        ]
+      },
+      "66119": {
+        "nombre": "Molinos",
+        "localidades": [
+          "La Puerta",
+          "Molinos",
+          "Seclantás"
+        ]
+      },
+      "66126": {
+        "nombre": "Orán",
+        "localidades": [
+          "Aguas Blancas",
+          "Colonia Santa Rosa",
+          "Colonia Santa Rosa",
+          "El Tabacal",
+          "Hipólito Yrigoyen",
+          "La Misión",
+          "Pichanal",
+          "San Ramón de la Nueva Orán",
+          "Urundel"
+        ]
+      },
+      "66133": {
+        "nombre": "Rivadavia",
+        "localidades": [
+          "Alto de la Sierra",
+          "Capitán Juan Pagé",
+          "Coronel Juan Solá",
+          "Hito 1",
+          "La Unión",
+          "Los Blancos",
+          "Pluma de Pato",
+          "Rivadavia",
+          "Santa María",
+          "Santa Rosa",
+          "Santa Victoria Este"
+        ]
+      },
+      "66140": {
+        "nombre": "Rosario de la Frontera",
+        "localidades": [
+          "Antillá",
+          "Copo Quile",
+          "El Naranjo",
+          "El Potrero",
+          "Rosario de la Frontera",
+          "San Felipe"
+        ]
+      },
+      "66147": {
+        "nombre": "Rosario de Lerma",
+        "localidades": [
+          "Campo Quijano",
+          "La Merced del Encón",
+          "La Silleta",
+          "Rosario de Lerma"
+        ]
+      },
+      "66154": {
+        "nombre": "San Carlos",
+        "localidades": [
+          "Angastaco",
+          "Animaná",
+          "San Carlos"
+        ]
+      },
+      "66161": {
+        "nombre": "Santa Victoria",
+        "localidades": [
+          "Acoyte",
+          "Campo La Cruz",
+          "Los Toldos",
+          "Nazareno",
+          "Poscaya",
+          "San Marcos",
+          "Santa Victoria"
+        ]
+      }
+    }
+  },
+  "70": {
+    "nombre": "San Juan",
+    "departamentos": {
+      "70007": {
+        "nombre": "Albardón",
+        "localidades": [
+          "El Rincón",
+          "Villa General San Martín - Campo Afuera"
+        ]
+      },
+      "70014": {
+        "nombre": "Angaco",
+        "localidades": [
+          "Las Tapias",
+          "Villa El Salvador",
+          "Villa El Salvador - Villa Sefair",
+          "Villa Sefair"
+        ]
+      },
+      "70021": {
+        "nombre": "Calingasta",
+        "localidades": [
+          "Barreal - Villa Pituil",
+          "Calingasta",
+          "Tamberías"
+        ]
+      },
+      "70028": {
+        "nombre": "Capital",
+        "localidades": [
+          "San Juan"
+        ]
+      },
+      "70035": {
+        "nombre": "Caucete",
+        "localidades": [
+          "Bermejo",
+          "Caucete",
+          "El Rincón",
+          "Las Talas",
+          "Las Talas - Los Médanos",
+          "Los Médanos",
+          "Marayes",
+          "Pie de Palo",
+          "Vallecito",
+          "Villa Independencia"
+        ]
+      },
+      "70042": {
+        "nombre": "Chimbas",
+        "localidades": [
+          "Chimbas"
+        ]
+      },
+      "70049": {
+        "nombre": "Iglesia",
+        "localidades": [
+          "Angualasto",
+          "Iglesia",
+          "Las Flores",
+          "Pismanta",
+          "Rodeo",
+          "Tudcum"
+        ]
+      },
+      "70056": {
+        "nombre": "Jáchal",
+        "localidades": [
+          "El Médano",
+          "Gran China",
+          "Huaco",
+          "La Falda",
+          "Mogna",
+          "Niquivil",
+          "Pampa Vieja",
+          "Pampa Vieja",
+          "San Isidro",
+          "San José de Jáchal",
+          "Tamberías",
+          "Villa Malvinas Argentinas",
+          "Villa Mercedes"
+        ]
+      },
+      "70063": {
+        "nombre": "9 de Julio",
+        "localidades": [
+          "9 de Julio",
+          "Alto de Sierra",
+          "Las Chacritas"
+        ]
+      },
+      "70070": {
+        "nombre": "Pocito",
+        "localidades": [
+          "Barrio Municipal",
+          "Barrio Ruta 40",
+          "Carpintería",
+          "La Rinconada",
+          "Quinto Cuartel",
+          "Villa Aberastain",
+          "Villa Aberastain - La Rinconada",
+          "Villa Barboza",
+          "Villa Barboza - Villa Nacusi",
+          "Villa Centenario",
+          "Villa Nacusi"
+        ]
+      },
+      "70077": {
+        "nombre": "Rawson",
+        "localidades": [
+          "El Medanito",
+          "Rawson",
+          "Rawson",
+          "Villa Bolaños (Médano de Oro)"
+        ]
+      },
+      "70084": {
+        "nombre": "Rivadavia",
+        "localidades": [
+          "Rivadavia"
+        ]
+      },
+      "70091": {
+        "nombre": "San Martín",
+        "localidades": [
+          "Barrio Sadop - Bella Vista",
+          "Dos Acequias",
+          "San Isidro",
+          "Villa del Salvador",
+          "Villa Dominguito",
+          "Villa Don Bosco",
+          "Villa San Martín"
+        ]
+      },
+      "70098": {
+        "nombre": "Santa Lucía",
+        "localidades": [
+          "Colonia Gutiérrez",
+          "Santa Lucía",
+          "Santa Lucía"
+        ]
+      },
+      "70105": {
+        "nombre": "Sarmiento",
+        "localidades": [
+          "Cañada Honda",
+          "Cienaguita",
+          "Colonia Fiscal",
+          "Divisadero",
+          "Las Lagunas",
+          "Los Berros",
+          "Pedernal",
+          "Punta del Médano",
+          "Villa Media Agua"
+        ]
+      },
+      "70112": {
+        "nombre": "Ullum",
+        "localidades": [
+          "Villa Ibáñez"
+        ]
+      },
+      "70119": {
+        "nombre": "Valle Fértil",
+        "localidades": [
+          "Astica",
+          "Balde del Rosario",
+          "Chucuma",
+          "Los Baldecitos",
+          "Usno",
+          "Villa San Agustín"
+        ]
+      },
+      "70126": {
+        "nombre": "25 de Mayo",
+        "localidades": [
+          "El Encón",
+          "La Chimbera",
+          "Tupelí",
+          "Villa Borjas",
+          "Villa Borjas - La Chimbera",
+          "Villa El Tango",
+          "Villa Santa Rosa"
+        ]
+      },
+      "70133": {
+        "nombre": "Zonda",
+        "localidades": [
+          "Villa Basilio Nievas",
+          "Villa Basilio Nievas",
+          "Villa Tacú"
+        ]
+      }
+    }
+  },
+  "74": {
+    "nombre": "San Luis",
+    "departamentos": {
+      "74007": {
+        "nombre": "Ayacucho",
+        "localidades": [
+          "Candelaria",
+          "Leandro N. Alem",
+          "Luján",
+          "Quines",
+          "San Francisco del Monte de Oro"
+        ]
+      },
+      "74014": {
+        "nombre": "Belgrano",
+        "localidades": [
+          "La Calera",
+          "Nogolí",
+          "Villa de la Quebrada",
+          "Villa General Roca"
+        ]
+      },
+      "74021": {
+        "nombre": "Coronel Pringles",
+        "localidades": [
+          "Carolina",
+          "El Trapiche",
+          "Estancia Grande",
+          "Fraga",
+          "La Florida",
+          "La Toma",
+          "Riocito",
+          "Saladillo"
+        ]
+      },
+      "74028": {
+        "nombre": "Chacabuco",
+        "localidades": [
+          "Concarán",
+          "Cortaderas",
+          "Naschel",
+          "Papagayos",
+          "Renca",
+          "San Pablo",
+          "Tilisarao",
+          "Villa del Carmen",
+          "Villa Larca"
+        ]
+      },
+      "74035": {
+        "nombre": "General Pedernera",
+        "localidades": [
+          "5ta Brigada",
+          "Country Club Los Caldenes",
+          "Juan Jorba",
+          "Juan Llerena",
+          "Justo Daract",
+          "La Punilla",
+          "La Ribera",
+          "Lavaisse",
+          "Nación Ranquel",
+          "San José del Morro",
+          "Villa Mercedes",
+          "Villa Mercedes",
+          "Villa Reynolds",
+          "Villa Salles"
+        ]
+      },
+      "74042": {
+        "nombre": "Gobernador Dupuy",
+        "localidades": [
+          "Anchorena",
+          "Arizona",
+          "Bagual",
+          "Batavia",
+          "Buena Esperanza",
+          "Fortín El Patria",
+          "Fortuna",
+          "La Maroma",
+          "Los Overos",
+          "Martín de Loyola",
+          "Nahuel Mapá",
+          "Navia",
+          "Nueva Galia",
+          "Unión"
+        ]
+      },
+      "74049": {
+        "nombre": "Junín",
+        "localidades": [
+          "Carpintería",
+          "Lafinur",
+          "Los Cajones",
+          "Los Molles",
+          "Merlo",
+          "Santa Rosa del Conlara",
+          "Talita"
+        ]
+      },
+      "74056": {
+        "nombre": "Juan Martín de Pueyrredón",
+        "localidades": [
+          "Alto Pelado",
+          "Alto Pencoso",
+          "Balde",
+          "Beazley",
+          "Cazador",
+          "Cerro Colorado",
+          "Chosmes",
+          "Cruz de Piedra",
+          "Desaguadero",
+          "El Chorrillo",
+          "El Volcán",
+          "Jarilla",
+          "Juana Koslay",
+          "La Punta",
+          "Las Chacras",
+          "Mosmota",
+          "Potrero de los Funes",
+          "Salinas del Bebedero",
+          "San Jerónimo",
+          "San Luis",
+          "San Roque",
+          "Zanjitas"
+        ]
+      },
+      "74063": {
+        "nombre": "Libertador General San Martín",
+        "localidades": [
+          "La Vertiente",
+          "Las Aguadas",
+          "Las Chacras",
+          "Las Lagunas",
+          "Paso Grande",
+          "Potrerillo",
+          "San Martín",
+          "Villa de Praga"
+        ]
+      }
+    }
+  },
+  "78": {
+    "nombre": "Santa Cruz",
+    "departamentos": {
+      "78007": {
+        "nombre": "Corpen Aike",
+        "localidades": [
+          "Comandante Luis Piedrabuena",
+          "Puerto Santa Cruz"
+        ]
+      },
+      "78014": {
+        "nombre": "Deseado",
+        "localidades": [
+          "Caleta Olivia",
+          "Cañadón Seco",
+          "Fitz Roy",
+          "Jaramillo",
+          "Koluel Kaike",
+          "Las Heras",
+          "Pico Truncado",
+          "Puerto Deseado",
+          "Tellier"
+        ]
+      },
+      "78021": {
+        "nombre": "Güer Aike",
+        "localidades": [
+          "28 de Noviembre",
+          "El Turbio",
+          "Julia Dufour",
+          "Río Gallegos",
+          "Rospentek",
+          "Yacimientos Río Turbio"
+        ]
+      },
+      "78028": {
+        "nombre": "Lago Argentino",
+        "localidades": [
+          "El Calafate",
+          "El Chaltén",
+          "Tres Lagos"
+        ]
+      },
+      "78035": {
+        "nombre": "Lago Buenos Aires",
+        "localidades": [
+          "Los Antiguos",
+          "Perito Moreno"
+        ]
+      },
+      "78042": {
+        "nombre": "Magallanes",
+        "localidades": [
+          "Puerto San Julián"
+        ]
+      },
+      "78049": {
+        "nombre": "Río Chico",
+        "localidades": [
+          "Bajo Caracoles",
+          "Gobernador Gregores",
+          "Hipólito Yrigoyen"
+        ]
+      }
+    }
+  },
+  "82": {
+    "nombre": "Santa Fe",
+    "departamentos": {
+      "82007": {
+        "nombre": "Belgrano",
+        "localidades": [
+          "Armstrong",
+          "Bouquet",
+          "Las Parejas",
+          "Las Rosas",
+          "Montes de Oca",
+          "Tortugas"
+        ]
+      },
+      "82014": {
+        "nombre": "Caseros",
+        "localidades": [
+          "Arequito",
+          "Arteaga",
+          "Beravebú",
+          "Bigand",
+          "Casilda",
+          "Chabas",
+          "Chañar Ladeado",
+          "Gödeken",
+          "Los Molinos",
+          "Los Nogales",
+          "Los Quirquinchos",
+          "San José de la Esquina",
+          "Sanford",
+          "Villada"
+        ]
+      },
+      "82021": {
+        "nombre": "Castellanos",
+        "localidades": [
+          "Aldao",
+          "Angélica",
+          "Ataliva",
+          "Aurelia",
+          "Barrios Acapulco y Veracruz",
+          "Bauer y Sigel",
+          "Bella Italia",
+          "Castellanos",
+          "Colonia Bicha",
+          "Colonia Cello",
+          "Colonia Margarita",
+          "Colonia Raquel",
+          "Coronel Fraga",
+          "Egusquiza",
+          "Esmeralda",
+          "Estación Clucellas",
+          "Estación Presidente Roca",
+          "Estación Saguier",
+          "Eusebia y Carolina",
+          "Eustolia",
+          "Frontera",
+          "Garibaldi",
+          "Humberto Primo",
+          "Josefina",
+          "Lehmann",
+          "María Juana",
+          "Nueva Lehmann",
+          "Plaza Clucellas",
+          "Plaza Saguier",
+          "Presidente Roca",
+          "Presidente Roca",
+          "Pueblo Marini",
+          "Rafaela",
+          "Ramona",
+          "San Antonio",
+          "San Vicente",
+          "Santa Clara de Saguier",
+          "Sunchales",
+          "Susana",
+          "Tacural",
+          "Vila",
+          "Villa Josefina",
+          "Villa San José",
+          "Virginia",
+          "Zenón Pereyra"
+        ]
+      },
+      "82028": {
+        "nombre": "Constitución",
+        "localidades": [
+          "Alcorta",
+          "Barrio Arroyo del Medio",
+          "Barrio Mitre",
+          "Bombal",
+          "Cañada Rica",
+          "Cepeda",
+          "Empalme Villa Constitución",
+          "Firmat",
+          "General Gelly",
+          "Godoy",
+          "Juan B. Molina",
+          "Juncal",
+          "La Vanguardia",
+          "Máximo Paz",
+          "Pavón",
+          "Pavón Arriba",
+          "Peyrano",
+          "Rueda",
+          "Santa Teresa",
+          "Sargento Cabral",
+          "Stephenson",
+          "Theobald",
+          "Villa Constitución"
+        ]
+      },
+      "82035": {
+        "nombre": "Garay",
+        "localidades": [
+          "Cayastá",
+          "Helvecia",
+          "Los Zapallos",
+          "Saladero Mariano Cabal",
+          "Santa Rosa de Calchines"
+        ]
+      },
+      "82042": {
+        "nombre": "General López",
+        "localidades": [
+          "Aarón Castellanos",
+          "Amenábar",
+          "Cafferata",
+          "Cañada del Ucle",
+          "Carmen",
+          "Carreras",
+          "Chapuy",
+          "Chovet",
+          "Christophersen",
+          "Diego de Alvear",
+          "Elortondo",
+          "Firmat",
+          "Hughes",
+          "La Chispa",
+          "Labordeboy",
+          "Lazzarino",
+          "Maggiolo",
+          "María Teresa",
+          "Melincué",
+          "Miguel Torres",
+          "Murphy",
+          "Rufino",
+          "San Eduardo",
+          "San Francisco de Santa Fe",
+          "San Gregorio",
+          "Sancti Spiritu",
+          "Santa Isabel",
+          "Teodelina",
+          "Venado Tuerto",
+          "Villa Cañás",
+          "Wheelwright"
+        ]
+      },
+      "82049": {
+        "nombre": "General Obligado",
+        "localidades": [
+          "Arroyo Ceibal",
+          "Avellaneda",
+          "Berna",
+          "El Araza",
+          "El Rabón",
+          "Florencia",
+          "Guadalupe Norte",
+          "Ingeniero Chanourdie",
+          "La Isleta",
+          "La Sarita",
+          "Lanteri",
+          "Las Garzas",
+          "Las Toscas",
+          "Los Laureles",
+          "Malabrigo",
+          "Paraje San Manuel",
+          "Puerto Reconquista",
+          "Reconquista",
+          "San Antonio de Obligado",
+          "Tacuarendí",
+          "Villa Ana",
+          "Villa Guillermina",
+          "Villa Ocampo"
+        ]
+      },
+      "82056": {
+        "nombre": "Iriondo",
+        "localidades": [
+          "Barrio Cicarelli",
+          "Bustinza",
+          "Cañada de Gómez",
+          "Carrizales",
+          "Classon",
+          "Colonia Médici",
+          "Correa",
+          "Larguía",
+          "Lucio V. López",
+          "Oliveros",
+          "Pueblo Andino",
+          "Salto Grande",
+          "Serodino",
+          "Totoras",
+          "Villa Eloísa",
+          "Villa La Rivera (Oliveros)",
+          "Villa La Rivera (Pueblo Andino)"
+        ]
+      },
+      "82063": {
+        "nombre": "La Capital",
+        "localidades": [
+          "Angel Gallardo",
+          "Arroyo Aguiar",
+          "Arroyo Leyes",
+          "Arroyo Leyes",
+          "Cabal",
+          "Campo Andino",
+          "Candioti",
+          "Emilia",
+          "Laguna Paiva",
+          "Llambi Campbell",
+          "Monte Vera",
+          "Nelson",
+          "Paraje Chaco Chico",
+          "Paraje La Costa",
+          "Recreo",
+          "Rincón Norte",
+          "Rincón Potrero",
+          "San José del Rincón",
+          "Santa Fe",
+          "Santo Tomé",
+          "Sauce Viejo",
+          "Sauce Viejo",
+          "Villa Adelina",
+          "Villa Laura"
+        ]
+      },
+      "82070": {
+        "nombre": "Las Colonias",
+        "localidades": [
+          "Cavour",
+          "Cululú",
+          "Elisa",
+          "Empalme San Carlos",
+          "Esperanza",
+          "Felicia",
+          "Franck",
+          "Grutly",
+          "Hipatía",
+          "Humboldt",
+          "Jacinto L. Aráuz",
+          "La Pelada",
+          "Las Tunas",
+          "María Luisa",
+          "Matilde",
+          "Nuevo Torino",
+          "Pilar",
+          "Plaza Matilde",
+          "Progreso",
+          "Providencia",
+          "Sa Pereyra",
+          "San Agustín",
+          "San Carlos Centro",
+          "San Carlos Norte",
+          "San Carlos Sud",
+          "San Jerónimo del Sauce",
+          "San Jerónimo Norte",
+          "San Mariano",
+          "Santa Clara de Buena Vista",
+          "Santo Domingo",
+          "Sarmiento"
+        ]
+      },
+      "82077": {
+        "nombre": "9 de Julio",
+        "localidades": [
+          "Esteban Rams",
+          "Gato Colorado",
+          "Gregoria Pérez de Denis",
+          "Logroño",
+          "Montefiore",
+          "Pozo Borrado",
+          "San Bernardo",
+          "Santa Margarita",
+          "Tostado",
+          "Villa Minetti"
+        ]
+      },
+      "82084": {
+        "nombre": "Rosario",
+        "localidades": [
+          "Acébal",
+          "Albarellos",
+          "Álvarez",
+          "Alvear",
+          "Arbilla",
+          "Arminda",
+          "Arroyo Seco",
+          "Carmen del Sauce",
+          "Coronel Bogado",
+          "Coronel Rodolfo S. Domínguez",
+          "Cuatro Esquinas",
+          "El Caramelo",
+          "Fighiera",
+          "Funes",
+          "General Lagos",
+          "Granadero Baigorria",
+          "Ibarlucea",
+          "Kilómetro 101",
+          "Los Muchachos - La Alborada",
+          "Monte Flores",
+          "Pérez",
+          "Piñero",
+          "Pueblo Esther",
+          "Pueblo Muñóz",
+          "Pueblo Uranga",
+          "Puerto Arroyo Seco",
+          "Rosario",
+          "Soldini",
+          "Villa Amelia",
+          "Villa del Plata",
+          "Villa Gobernador Gálvez",
+          "Zavalla"
+        ]
+      },
+      "82091": {
+        "nombre": "San Cristóbal",
+        "localidades": [
+          "Aguará Grande",
+          "Ambrosetti",
+          "Arrufo",
+          "Balneario La Verde",
+          "Capivara",
+          "Ceres",
+          "Colonia Ana",
+          "Colonia Bossi",
+          "Colonia Rosa",
+          "Constanza",
+          "Curupaytí",
+          "Hersilia",
+          "Huanqueros",
+          "La Cabral",
+          "La Lucila",
+          "La Rubia",
+          "Las Avispas",
+          "Las Palmeras",
+          "Moisés Ville",
+          "Monigotes",
+          "Ñanducita",
+          "Palacios",
+          "San Cristóbal",
+          "San Guillermo",
+          "Santurce",
+          "Soledad",
+          "Suardi",
+          "Villa Saralegui",
+          "Villa Trinidad"
+        ]
+      },
+      "82098": {
+        "nombre": "San Javier",
+        "localidades": [
+          "Alejandra",
+          "Cacique Ariacaiquín",
+          "Colonia Durán",
+          "La Brava",
+          "Romang",
+          "San Javier"
+        ]
+      },
+      "82105": {
+        "nombre": "San Jerónimo",
+        "localidades": [
+          "Arocena",
+          "Balneario Monje",
+          "Barrancas",
+          "Barrio Caima",
+          "Barrio El Pacaá - Barrio Comipini",
+          "Bernardo de Irigoyen",
+          "Casalegno",
+          "Centeno",
+          "Coronda",
+          "Desvío Arijón",
+          "Díaz",
+          "Gaboto",
+          "Gálvez",
+          "Gessler",
+          "Irigoyen",
+          "Larrechea",
+          "Loma Alta",
+          "López",
+          "Maciel",
+          "Monje",
+          "Puerto Aragón",
+          "San Eugenio",
+          "San Fabián",
+          "San Genaro",
+          "San Genaro Norte"
+        ]
+      },
+      "82112": {
+        "nombre": "San Justo",
+        "localidades": [
+          "Angeloni",
+          "Cayastacito",
+          "Colonia Dolores",
+          "Esther",
+          "Gobernador Crespo",
+          "La Criolla",
+          "La Penca y Caraguatá",
+          "Marcelino Escalada",
+          "Naré",
+          "Pedro Gómez Cello",
+          "Ramayón",
+          "San Bernardo",
+          "San Justo",
+          "San Martín Norte",
+          "Silva",
+          "Vera y Pintado",
+          "Videla"
+        ]
+      },
+      "82119": {
+        "nombre": "San Lorenzo",
+        "localidades": [
+          "Aldao",
+          "Capitán Bermúdez",
+          "Carcarañá",
+          "Coronel Arnold",
+          "Fray Luis Beltrán",
+          "Fuentes",
+          "Luis Palacios",
+          "Puerto General San Martín",
+          "Pujato",
+          "Ricardone",
+          "Roldán",
+          "San Jerónimo Sud",
+          "San Lorenzo",
+          "Timbúes",
+          "Villa Elvira",
+          "Villa Mugueta"
+        ]
+      },
+      "82126": {
+        "nombre": "San Martín",
+        "localidades": [
+          "Cañada Rosquín",
+          "Carlos Pellegrini",
+          "Casas",
+          "Castelar",
+          "Colonia Belgrano",
+          "Crispi",
+          "El Trébol",
+          "Landeta",
+          "Las Bandurrias",
+          "Las Petacas",
+          "Los Cardos",
+          "María Susana",
+          "Piamonte",
+          "San Jorge",
+          "San Martín de las Escobas",
+          "Sastre",
+          "Traill",
+          "Wildermuth"
+        ]
+      },
+      "82133": {
+        "nombre": "Vera",
+        "localidades": [
+          "Calchaquí",
+          "Cañada Ombú",
+          "Colmena",
+          "Fortín Olmos",
+          "Garabato",
+          "Golondrina",
+          "Intiyaco",
+          "Kilómetro 115",
+          "La Gallareta",
+          "Los Amores",
+          "Margarita",
+          "Paraje 29",
+          "Pozo de los Indios",
+          "Pueblo Santa Lucía",
+          "Tartagal",
+          "Toba",
+          "Vera"
+        ]
+      }
+    }
+  },
+  "86": {
+    "nombre": "Santiago del Estero",
+    "departamentos": {
+      "86007": {
+        "nombre": "Aguirre",
+        "localidades": [
+          "Argentina",
+          "Casares",
+          "Malbrán",
+          "Villa General Mitre"
+        ]
+      },
+      "86014": {
+        "nombre": "Alberdi",
+        "localidades": [
+          "Campo Gallo",
+          "Coronel Manuel L. Rico",
+          "Donadeu",
+          "Sachayoj",
+          "Santos Lugares"
+        ]
+      },
+      "86021": {
+        "nombre": "Atamisqui",
+        "localidades": [
+          "Estación Atamisqui",
+          "Medellín",
+          "Villa Atamisqui"
+        ]
+      },
+      "86028": {
+        "nombre": "Avellaneda",
+        "localidades": [
+          "Colonia Dora",
+          "Herrera",
+          "Icaño",
+          "Lugones",
+          "Real Sayana",
+          "Villa Mailín"
+        ]
+      },
+      "86035": {
+        "nombre": "Banda",
+        "localidades": [
+          "Abra Grande",
+          "Antajé",
+          "Ardiles",
+          "Cañada Escobar",
+          "Chaupi Pozo",
+          "Clodomira",
+          "Huyamampa",
+          "La Aurora",
+          "La Banda",
+          "La Dársena",
+          "Los Quiroga",
+          "Los Soria",
+          "Simbolar",
+          "Tramo 16",
+          "Tramo 20"
+        ]
+      },
+      "86042": {
+        "nombre": "Belgrano",
+        "localidades": [
+          "Bandera",
+          "Cuatro Bocas",
+          "Fortín Inca",
+          "Guardia Escolta"
+        ]
+      },
+      "86049": {
+        "nombre": "Capital",
+        "localidades": [
+          "El Deán",
+          "El Mojón",
+          "El Zanjón",
+          "Los Cardozos",
+          "Maco",
+          "Maquito",
+          "Morales",
+          "Puesto de San Antonio",
+          "San Pedro",
+          "Santa María",
+          "Santiago del Estero",
+          "Vuelta de la Barranca",
+          "Yanda"
+        ]
+      },
+      "86056": {
+        "nombre": "Copo",
+        "localidades": [
+          "El Caburé",
+          "Los Pirpintos",
+          "Los Tigres",
+          "Monte Quemado",
+          "Pampa de los Guanacos",
+          "San José del Boquerón",
+          "Urutaú"
+        ]
+      },
+      "86063": {
+        "nombre": "Choya",
+        "localidades": [
+          "Ancaján",
+          "Choya",
+          "Estación La Punta",
+          "Frías",
+          "Laprida",
+          "San Pedro",
+          "Tapso",
+          "Villa La Punta"
+        ]
+      },
+      "86070": {
+        "nombre": "Figueroa",
+        "localidades": [
+          "Bandera Bajada",
+          "Caspi Corral",
+          "Colonia San Juan",
+          "El Crucero",
+          "La Cañada",
+          "La Invernada",
+          "Minerva",
+          "Vaca Huañuna",
+          "Villa Figueroa"
+        ]
+      },
+      "86077": {
+        "nombre": "General Taboada",
+        "localidades": [
+          "Añatuya",
+          "Averías",
+          "Estación Tacañitas",
+          "La Nena",
+          "Los Juríes",
+          "Tomás Young"
+        ]
+      },
+      "86084": {
+        "nombre": "Guasayán",
+        "localidades": [
+          "Lavalle",
+          "San Pedro"
+        ]
+      },
+      "86091": {
+        "nombre": "Jiménez",
+        "localidades": [
+          "El Arenal",
+          "El Bobadal",
+          "El Charco",
+          "El Rincón",
+          "Gramilla",
+          "Isca Yacu",
+          "Isca Yacu Semaul",
+          "Pozo Hondo",
+          "San Pedro"
+        ]
+      },
+      "86098": {
+        "nombre": "Juan Felipe Ibarra",
+        "localidades": [
+          "El Colorado",
+          "El Cuadrado",
+          "Matará",
+          "Suncho Corral",
+          "Vilelas",
+          "Yuchán"
+        ]
+      },
+      "86105": {
+        "nombre": "Loreto",
+        "localidades": [
+          "Villa San Martín (Est. Loreto)"
+        ]
+      },
+      "86112": {
+        "nombre": "Mitre",
+        "localidades": [
+          "Villa Unión"
+        ]
+      },
+      "86119": {
+        "nombre": "Moreno",
+        "localidades": [
+          "Aerolito",
+          "Alhuampa",
+          "Hasse",
+          "Hernán Mejía Miraval",
+          "Las Tinajas",
+          "Libertad",
+          "Lilo Viejo",
+          "Patay",
+          "Pueblo Pablo Torelo",
+          "Quimili",
+          "Roversi",
+          "Tintina",
+          "Weisburd"
+        ]
+      },
+      "86126": {
+        "nombre": "Ojo de Agua",
+        "localidades": [
+          "El 49",
+          "Sol de Julio",
+          "Villa Ojo de Agua"
+        ]
+      },
+      "86133": {
+        "nombre": "Pellegrini",
+        "localidades": [
+          "El Mojón",
+          "Las Delicias",
+          "Nueva Esperanza",
+          "Pozo Betbeder",
+          "Rapelli",
+          "Santo Domingo"
+        ]
+      },
+      "86140": {
+        "nombre": "Quebrachos",
+        "localidades": [
+          "Ramírez de Velazco",
+          "Sumampa",
+          "Sumampa Viejo"
+        ]
+      },
+      "86147": {
+        "nombre": "Río Hondo",
+        "localidades": [
+          "Chauchillas",
+          "Colonia Tinco",
+          "El Charco",
+          "El Sauzal",
+          "Gramilla",
+          "La Nueva Donosa",
+          "Los Miranda",
+          "Los Núñez",
+          "Mansupa",
+          "Pozuelos",
+          "Rodeo de Valdez",
+          "Termas de Río Hondo",
+          "Villa Giménez",
+          "Villa Río Hondo",
+          "Vinará"
+        ]
+      },
+      "86154": {
+        "nombre": "Rivadavia",
+        "localidades": [
+          "Colonia Alpina",
+          "Palo Negro",
+          "Selva"
+        ]
+      },
+      "86161": {
+        "nombre": "Robles",
+        "localidades": [
+          "Beltrán",
+          "Colonia El Simbolar",
+          "Fernández",
+          "Ingeniero Forres",
+          "Vilmer"
+        ]
+      },
+      "86168": {
+        "nombre": "Salavina",
+        "localidades": [
+          "Chilca Juliana",
+          "Los Telares",
+          "Villa Salavina"
+        ]
+      },
+      "86175": {
+        "nombre": "San Martín",
+        "localidades": [
+          "Brea Pozo",
+          "Estación Robles",
+          "Estación Taboada",
+          "Villa Nueva"
+        ]
+      },
+      "86182": {
+        "nombre": "Sarmiento",
+        "localidades": [
+          "Garza"
+        ]
+      },
+      "86189": {
+        "nombre": "Silípica",
+        "localidades": [
+          "Árraga",
+          "Nueva Francia",
+          "Simbol",
+          "Sumamao",
+          "Villa Silípica"
+        ]
+      }
+    }
+  },
+  "90": {
+    "nombre": "Tucumán",
+    "departamentos": {
+      "90007": {
+        "nombre": "Burruyacú",
+        "localidades": [
+          "Barrio San Jorge",
+          "El Chañar",
+          "El Naranjo",
+          "Garmendia",
+          "La Ramada",
+          "Macomitas",
+          "Piedrabuena",
+          "Villa Benjamín Aráoz",
+          "Villa Burruyacú",
+          "Villa Padre Monti"
+        ]
+      },
+      "90014": {
+        "nombre": "Cruz Alta",
+        "localidades": [
+          "Alderetes",
+          "Alderetes",
+          "Banda del Río Salí",
+          "Banda del Río Salí",
+          "Barrio Aeropuerto",
+          "Colombres",
+          "Colonia Mayo - Barrio La Milagrosa",
+          "Delfín Gallo",
+          "El Bracho",
+          "El Corte",
+          "El Paraíso",
+          "Ex Ingenio Esperanza",
+          "Ex Ingenio Los Ralos",
+          "Ex Ingenio Luján",
+          "Ingenio La Florida",
+          "La Florida",
+          "La Florida",
+          "Las Cejas",
+          "Lastenia",
+          "Los Gutiérrez",
+          "Los Ralos",
+          "Pacará",
+          "Ranchillos",
+          "San Andrés",
+          "Villa Recaste",
+          "Villa Tercera"
+        ]
+      },
+      "90021": {
+        "nombre": "Chicligasta",
+        "localidades": [
+          "Alpachiri",
+          "Alto Verde",
+          "Arcadia",
+          "Concepción",
+          "Iltico",
+          "La Trinidad",
+          "Medina"
+        ]
+      },
+      "90028": {
+        "nombre": "Famaillá",
+        "localidades": [
+          "Campo de Herrera",
+          "Ex Ingenio Nueva Baviera",
+          "Famaillá",
+          "Famaillá",
+          "Ingenio Fronterita"
+        ]
+      },
+      "90035": {
+        "nombre": "Graneros",
+        "localidades": [
+          "Graneros",
+          "Lamadrid",
+          "Taco Ralo"
+        ]
+      },
+      "90042": {
+        "nombre": "Juan Bautista Alberdi",
+        "localidades": [
+          "Juan Bautista Alberdi",
+          "Villa Belgrano"
+        ]
+      },
+      "90049": {
+        "nombre": "La Cocha",
+        "localidades": [
+          "La Cocha",
+          "San José de La Cocha"
+        ]
+      },
+      "90056": {
+        "nombre": "Leales",
+        "localidades": [
+          "Bella Vista",
+          "Estación Aráoz",
+          "Los Puestos",
+          "Manuel García Fernández",
+          "Río Colorado",
+          "Santa Rosa de Leales",
+          "Villa de Leales",
+          "Villa Fiad - Ingenio Leales"
+        ]
+      },
+      "90063": {
+        "nombre": "Lules",
+        "localidades": [
+          "Barrio Araujo",
+          "Barrio San Felipe",
+          "El Manantial",
+          "El Manantial",
+          "Ingenio San Pablo",
+          "La Reducción",
+          "Lules"
+        ]
+      },
+      "90070": {
+        "nombre": "Monteros",
+        "localidades": [
+          "Acheral",
+          "Capitán Cáceres",
+          "Monteros",
+          "Pueblo Independencia",
+          "Río Seco",
+          "Santa Lucía",
+          "Sargento Moya",
+          "Soldado Maldonado",
+          "Teniente Berdina",
+          "Villa Quinteros"
+        ]
+      },
+      "90077": {
+        "nombre": "Río Chico",
+        "localidades": [
+          "Aguilares",
+          "Aguilares",
+          "Ingenio Santa Bárbara",
+          "Los Sarmientos",
+          "Río Chico",
+          "Santa Ana",
+          "Villa Clodomiro Hileret"
+        ]
+      },
+      "90084": {
+        "nombre": "Capital",
+        "localidades": [
+          "San Miguel de Tucumán"
+        ]
+      },
+      "90091": {
+        "nombre": "Simoca",
+        "localidades": [
+          "Atahona",
+          "Monteagudo",
+          "Nueva Trinidad",
+          "Santa Cruz",
+          "Simoca",
+          "Villa Chicligasta"
+        ]
+      },
+      "90098": {
+        "nombre": "Tafí del Valle",
+        "localidades": [
+          "Amaicha del Valle",
+          "Colalao del Valle",
+          "El Mollar",
+          "Tafí del Valle"
+        ]
+      },
+      "90105": {
+        "nombre": "Tafí Viejo",
+        "localidades": [
+          "Barrio Mutual San Martín",
+          "El Cadillal",
+          "Tafí Viejo",
+          "Villa Mariano Moreno - El Colmenar"
+        ]
+      },
+      "90112": {
+        "nombre": "Trancas",
+        "localidades": [
+          "Choromoro",
+          "San Pedro de Colalao",
+          "Villa de Trancas"
+        ]
+      },
+      "90119": {
+        "nombre": "Yerba Buena",
+        "localidades": [
+          "Ex Ingenio San José",
+          "Villa Carmela",
+          "Yerba Buena - Marcos Paz",
+          "Yerba Buena - Marcos Paz"
+        ]
+      }
+    }
+  },
+  "94": {
+    "nombre": "Tierra del Fuego, Antártida e Islas del Atlántico Sur",
+    "departamentos": {
+      "94008": {
+        "nombre": "Río Grande",
+        "localidades": [
+          "Río Grande"
+        ]
+      },
+      "94011": {
+        "nombre": "Tolhuin",
+        "localidades": []
+      },
+      "94015": {
+        "nombre": "Ushuaia",
+        "localidades": [
+          "Laguna Escondida",
+          "Ushuaia"
+        ]
+      },
+      "94021": {
+        "nombre": "Islas del Atlántico Sur",
+        "localidades": [
+          "Puerto Argentino"
+        ]
+      },
+      "94028": {
+        "nombre": "Antártida Argentina",
+        "localidades": []
+      }
+    }
+  },
+  "02": {
+    "nombre": "Ciudad Autónoma de Buenos Aires",
+    "departamentos": {
+      "02042": {
+        "nombre": "Comuna 6",
+        "localidades": [
+          "Caballito"
+        ]
+      },
+      "02007": {
+        "nombre": "Comuna 1",
+        "localidades": [
+          "Constitución",
+          "Monserrat",
+          "Puerto Madero",
+          "Retiro",
+          "San Nicolás",
+          "San Telmo"
+        ]
+      },
+      "02028": {
+        "nombre": "Comuna 4",
+        "localidades": [
+          "Barracas",
+          "Boca",
+          "Nueva Pompeya",
+          "Parque Patricios"
+        ]
+      },
+      "02035": {
+        "nombre": "Comuna 5",
+        "localidades": [
+          "Almagro",
+          "Boedo"
+        ]
+      },
+      "02084": {
+        "nombre": "Comuna 12",
+        "localidades": [
+          "Coghlan",
+          "Saavedra",
+          "Villa Pueyrredón",
+          "Villa Urquiza"
+        ]
+      },
+      "02049": {
+        "nombre": "Comuna 7",
+        "localidades": [
+          "Flores",
+          "Parque Chacabuco"
+        ]
+      },
+      "02070": {
+        "nombre": "Comuna 10",
+        "localidades": [
+          "Floresta",
+          "Monte Castro",
+          "Vélez Sarsfield",
+          "Versalles",
+          "Villa Luro",
+          "Villa Real"
+        ]
+      },
+      "02077": {
+        "nombre": "Comuna 11",
+        "localidades": [
+          "Villa del Parque",
+          "Villa Devoto",
+          "Villa General Mitre",
+          "Villa Santa Rita"
+        ]
+      },
+      "02021": {
+        "nombre": "Comuna 3",
+        "localidades": [
+          "Balvanera",
+          "San Cristóbal"
+        ]
+      },
+      "02014": {
+        "nombre": "Comuna 2",
+        "localidades": [
+          "Ciudad de Buenos Aires",
+          "Recoleta"
+        ]
+      },
+      "02056": {
+        "nombre": "Comuna 8",
+        "localidades": [
+          "Villa Lugano",
+          "Villa Riachuelo",
+          "Villa Soldati"
+        ]
+      },
+      "02091": {
+        "nombre": "Comuna 13",
+        "localidades": [
+          "Belgrano",
+          "Colegiales",
+          "Nuñez"
+        ]
+      },
+      "02098": {
+        "nombre": "Comuna 14",
+        "localidades": [
+          "Palermo"
+        ]
+      },
+      "02063": {
+        "nombre": "Comuna 9",
+        "localidades": [
+          "Liniers",
+          "Mataderos",
+          "Parque Avellaneda"
+        ]
+      },
+      "02105": {
+        "nombre": "Comuna 15",
+        "localidades": [
+          "Agronomía",
+          "Chacarita",
+          "Parque Chas",
+          "Paternal",
+          "Villa Crespo",
+          "Villa Ortúzar"
+        ]
+      }
+    }
+  },
+  "06": {
+    "nombre": "Buenos Aires",
+    "departamentos": {
+      "06014": {
+        "nombre": "Adolfo Gonzales Chaves",
+        "localidades": [
+          "Adolfo Gonzales Chaves",
+          "De La Garma",
+          "Juan E. Barra",
+          "Vásquez"
+        ]
+      },
+      "06707": {
+        "nombre": "Saladillo",
+        "localidades": [
+          "Álvarez de Toledo",
+          "Cazón",
+          "Del Carril",
+          "Polvaredas"
+        ]
+      },
+      "06455": {
+        "nombre": "Las Flores",
+        "localidades": [
+          "Coronel Boerr",
+          "El Trigo",
+          "Las Flores",
+          "Pardo"
+        ]
+      },
+      "06686": {
+        "nombre": "Rojas",
+        "localidades": [
+          "Barrio Las Margaritas",
+          "La Beba",
+          "Las Carabelas",
+          "Los Indios",
+          "Rafael Obligado",
+          "Roberto Cano",
+          "Rojas",
+          "Rojas",
+          "Sol de Mayo",
+          "Villa Manuel Pomar",
+          "Villa Parque Cecir"
+        ]
+      },
+      "06252": {
+        "nombre": "Escobar",
+        "localidades": [
+          "Belén de Escobar",
+          "El Cazador",
+          "Escobar",
+          "Garín",
+          "Ingeniero Maschwitz",
+          "Loma Verde",
+          "Maquinista F. Savio Este",
+          "Matheu"
+        ]
+      },
+      "06412": {
+        "nombre": "José C. Paz",
+        "localidades": [
+          "Del Viso",
+          "José C. Paz",
+          "José C. Paz",
+          "Tortuguitas"
+        ]
+      },
+      "06056": {
+        "nombre": "Bahía Blanca",
+        "localidades": [
+          "Bahía Blanca",
+          "Bahía Blanca",
+          "Cabildo",
+          "General Daniel Cerri",
+          "Grünbein",
+          "Ingeniero White",
+          "Villa Bordeau",
+          "Villa Espora"
+        ]
+      },
+      "06735": {
+        "nombre": "San Antonio de Areco",
+        "localidades": [
+          "Duggan",
+          "San Antonio de Areco",
+          "Villa Lía"
+        ]
+      },
+      "06511": {
+        "nombre": "Maipú",
+        "localidades": [
+          "Las Armas",
+          "Maipú",
+          "Santo Domingo"
+        ]
+      },
+      "06280": {
+        "nombre": "General Alvarado",
+        "localidades": [
+          "Comandante Nicanor Otamendi",
+          "Mar del Sur",
+          "Mechongué",
+          "Miramar"
+        ]
+      },
+      "06357": {
+        "nombre": "General Pueyrredón",
+        "localidades": [
+          "Barrio Colinas Verdes",
+          "Barrio El Casal",
+          "Barrio El Coyunco",
+          "Barrio La Gloria",
+          "Barrio Santa Paula",
+          "Batán",
+          "Camet",
+          "Chapadmalal",
+          "El Marquesado",
+          "Estación Camet",
+          "Estación Chapadmalal",
+          "Mar del Plata",
+          "Mar del Plata",
+          "Punta Mogotes",
+          "Sierra de los Padres",
+          "Sierra de los Padres"
+        ]
+      },
+      "06518": {
+        "nombre": "Mar Chiquita",
+        "localidades": [
+          "Atlántida",
+          "Camet Norte",
+          "Coronel Vidal",
+          "Frente Mar",
+          "General Pirán",
+          "La Armonía",
+          "La Baliza",
+          "La Caleta",
+          "Mar Chiquita",
+          "Mar de Cobo",
+          "Mar de Cobo",
+          "Playa Dorada",
+          "Santa Clara del Mar",
+          "Santa Clara del Mar",
+          "Santa Elena",
+          "Vivoratá"
+        ]
+      },
+      "06868": {
+        "nombre": "Villa Gesell",
+        "localidades": [
+          "Mar Azul",
+          "Mar Azul",
+          "Mar de las Pampas",
+          "Villa Gesell"
+        ]
+      },
+      "06644": {
+        "nombre": "Pinamar",
+        "localidades": [
+          "Cariló",
+          "Ostende",
+          "Pinamar",
+          "Pinamar",
+          "Valeria del Mar"
+        ]
+      },
+      "06336": {
+        "nombre": "General Lavalle",
+        "localidades": [
+          "General Lavalle"
+        ]
+      },
+      "06420": {
+        "nombre": "La Costa",
+        "localidades": [
+          "Aguas Verdes",
+          "Las Toninas",
+          "Lucila del Mar",
+          "Mar de Ajó",
+          "Mar de Ajó - San Bernardo",
+          "Mar de Ajó Norte",
+          "Mar del Tuyú",
+          "San Bernardo",
+          "San Clemente del Tuyú",
+          "Santa Teresita",
+          "Santa Teresita - Mar del Tuyú"
+        ]
+      },
+      "06505": {
+        "nombre": "Magdalena",
+        "localidades": [
+          "Atalaya",
+          "General Mansilla",
+          "Los Naranjos",
+          "Magdalena",
+          "Roberto J. Payró",
+          "Vieytes"
+        ]
+      },
+      "06861": {
+        "nombre": "Vicente López",
+        "localidades": [
+          "Carapachay",
+          "Florida",
+          "Florida Oeste",
+          "La Lucila",
+          "Munro",
+          "Olivos",
+          "Vicente López",
+          "Vicente López",
+          "Villa Adelina",
+          "Villa Martelli"
+        ]
+      },
+      "06672": {
+        "nombre": "Rauch",
+        "localidades": [
+          "Rauch"
+        ]
+      },
+      "06560": {
+        "nombre": "Moreno",
+        "localidades": [
+          "Cuartel V",
+          "Francisco Álvarez",
+          "La Reja",
+          "Moreno",
+          "Moreno",
+          "Paso del Rey",
+          "Trujui"
+        ]
+      },
+      "06427": {
+        "nombre": "La Matanza",
+        "localidades": [
+          "20 de Junio",
+          "Aldo Bonzi",
+          "Ciudad Evita",
+          "González Catán",
+          "Gregorio de Laferrere",
+          "Isidro Casanova",
+          "La Matanza",
+          "La Tablada",
+          "Lomas del Mirador",
+          "Rafael Castillo",
+          "Ramos Mejía",
+          "San Justo",
+          "Tapiales",
+          "Villa Eduardo Madero",
+          "Villa Luzuriaga",
+          "Virrey del Pino"
+        ]
+      },
+      "06791": {
+        "nombre": "Tandil",
+        "localidades": [
+          "De la Canal",
+          "Gardey",
+          "María Ignacia",
+          "Tandil"
+        ]
+      },
+      "06203": {
+        "nombre": "Coronel Suárez",
+        "localidades": [
+          "Cascada",
+          "Coronel Suárez",
+          "Curamalal",
+          "D'Orbigny",
+          "Huanguelén",
+          "Pasman",
+          "San José",
+          "Santa María",
+          "Santa Trinidad",
+          "Villa La Arcadia"
+        ]
+      },
+      "06721": {
+        "nombre": "Salliqueló",
+        "localidades": [
+          "Quenumá",
+          "Salliqueló"
+        ]
+      },
+      "06091": {
+        "nombre": "Berazategui",
+        "localidades": [
+          "Berazategui",
+          "Berazategui",
+          "Berazategui Oeste",
+          "Carlos Tomás Sourigues",
+          "El Pato",
+          "Guillermo Enrique Hudson",
+          "Juan María Gutiérrez",
+          "Pereyra",
+          "Plátanos",
+          "Ranelagh",
+          "Villa España"
+        ]
+      },
+      "06343": {
+        "nombre": "General Paz",
+        "localidades": [
+          "Barrio Río Salado",
+          "Loma Verde",
+          "Ranchos",
+          "Villanueva"
+        ]
+      },
+      "06308": {
+        "nombre": "General Guido",
+        "localidades": [
+          "General Guido",
+          "Labardén"
+        ]
+      },
+      "06315": {
+        "nombre": "General Juan Madariaga",
+        "localidades": [
+          "Barrio Kennedy",
+          "General Juan Madariaga",
+          "General Juan Madariaga"
+        ]
+      },
+      "06819": {
+        "nombre": "Tornquist",
+        "localidades": [
+          "Chasicó",
+          "La Gruta",
+          "Tornquist",
+          "Tres Picos",
+          "Villa Ventana"
+        ]
+      },
+      "06196": {
+        "nombre": "Coronel Pringles",
+        "localidades": [
+          "Coronel Pringles",
+          "El Divisorio",
+          "El Pensamiento",
+          "Indio Rico",
+          "Lartigau"
+        ]
+      },
+      "06875": {
+        "nombre": "Villarino",
+        "localidades": [
+          "Argerich",
+          "Hilario Ascasubi",
+          "Juan Cousté",
+          "Mayor Buratovich",
+          "Médanos",
+          "Pedro Luro",
+          "Teniente Origone"
+        ]
+      },
+      "06351": {
+        "nombre": "General Pinto",
+        "localidades": [
+          "Colonia San Ricardo",
+          "General Pinto",
+          "Germania",
+          "Villa Francia",
+          "Villa Roth"
+        ]
+      },
+      "06742": {
+        "nombre": "San Cayetano",
+        "localidades": [
+          "Balneario San Cayetano",
+          "Ochandío",
+          "San Cayetano"
+        ]
+      },
+      "06833": {
+        "nombre": "Tres Arroyos",
+        "localidades": [
+          "Balneario Orense",
+          "Claromecó",
+          "Claromecó",
+          "Copetonas",
+          "Dunamar",
+          "Lin Calel",
+          "Micaela Cascallares",
+          "Orense",
+          "Reta",
+          "San Francisco de Bellocq",
+          "San Mayol",
+          "Tres Arroyos",
+          "Villa Rodríguez"
+        ]
+      },
+      "06189": {
+        "nombre": "Coronel Dorrego",
+        "localidades": [
+          "Aparicio",
+          "Coronel Dorrego",
+          "El Perdido",
+          "Faro",
+          "Irene",
+          "Marisol",
+          "Oriente",
+          "San Román"
+        ]
+      },
+      "06581": {
+        "nombre": "Necochea",
+        "localidades": [
+          "Claraz",
+          "Costa Bonita",
+          "Juan N. Fernández",
+          "Necochea",
+          "Necochea - Quequén",
+          "Nicanor Olivera",
+          "Quequén",
+          "Ramón Santamarina"
+        ]
+      },
+      "06218": {
+        "nombre": "Chascomús",
+        "localidades": [
+          "Barrio San Cayetano",
+          "Chascomús",
+          "Chascomús",
+          "Villa Parque Girado"
+        ]
+      },
+      "06655": {
+        "nombre": "Punta Indio",
+        "localidades": [
+          "Alvarez Jonte",
+          "Pipinas",
+          "Punta Indio",
+          "Verónica"
+        ]
+      },
+      "06466": {
+        "nombre": "Lezama",
+        "localidades": [
+          "Manuel J. Cobo"
+        ]
+      },
+      "06126": {
+        "nombre": "Campana",
+        "localidades": [
+          "Barrio Los Pioneros (Barrio Tavella)",
+          "Los Cardales"
+        ]
+      },
+      "06007": {
+        "nombre": "Adolfo Alsina",
+        "localidades": [
+          "Carhué",
+          "Colonia San Miguel Arcángel",
+          "Delfín Huergo",
+          "Espartillar",
+          "Esteban Agustín Gascón",
+          "La Pala",
+          "Maza",
+          "Rivera",
+          "Villa Margarita"
+        ]
+      },
+      "06616": {
+        "nombre": "Pellegrini",
+        "localidades": [
+          "Bocayuva",
+          "De Bary",
+          "Pellegrini"
+        ]
+      },
+      "06245": {
+        "nombre": "Ensenada",
+        "localidades": [
+          "Dique N° 1",
+          "Ensenada",
+          "Ensenada",
+          "Isla Santiago",
+          "Punta Lara",
+          "Villa Catela"
+        ]
+      },
+      "06623": {
+        "nombre": "Pergamino",
+        "localidades": [
+          "Acevedo",
+          "Fontezuela",
+          "Guerrico",
+          "Juan A. de la Peña",
+          "Juan Anchorena",
+          "La Violeta",
+          "Manuel Ocampo",
+          "Mariano Benítez",
+          "Mariano H. Alfonzo",
+          "Pergamino",
+          "Pinzón",
+          "Rancagua",
+          "Villa Angélica",
+          "Villa San José"
+        ]
+      },
+      "06651": {
+        "nombre": "Puán",
+        "localidades": [
+          "17 de Agosto",
+          "Azopardo",
+          "Bordenave",
+          "Darregueira",
+          "Estela",
+          "Felipe Solá",
+          "López Lecube",
+          "Puán",
+          "San Germán",
+          "Villa Castelar",
+          "Villa Iris"
+        ]
+      },
+      "06392": {
+        "nombre": "General Villegas",
+        "localidades": [
+          "Banderaló",
+          "Cañada Seca",
+          "Coronel Charlone",
+          "Emilio V. Bunge",
+          "General Villegas",
+          "Massey",
+          "Pichincha",
+          "Piedritas",
+          "Santa Eleodora",
+          "Santa Regina",
+          "Villa Saboya",
+          "Villa Sauze"
+        ]
+      },
+      "06749": {
+        "nombre": "San Fernando",
+        "localidades": [
+          "San Fernando",
+          "San Fernando",
+          "Victoria",
+          "Virreyes"
+        ]
+      },
+      "06805": {
+        "nombre": "Tigre",
+        "localidades": [
+          "Benavídez",
+          "Dique Luján",
+          "Don Torcuato Este",
+          "Don Torcuato Oeste",
+          "El Talar",
+          "General Pacheco",
+          "Ricardo Rojas",
+          "Rincón de Milberg",
+          "Tigre",
+          "Tigre",
+          "Troncos del Talar"
+        ]
+      },
+      "06270": {
+        "nombre": "Ezeiza",
+        "localidades": [
+          "Aeropuerto Internacional Ezeiza",
+          "Canning",
+          "Carlos Spegazzini",
+          "Ezeiza",
+          "José María Ezeiza",
+          "La Unión",
+          "Tristán Suárez"
+        ]
+      },
+      "06168": {
+        "nombre": "Castelli",
+        "localidades": [
+          "Castelli",
+          "Centro Guerrero",
+          "Cerro de la Gloria"
+        ]
+      },
+      "06028": {
+        "nombre": "Almirante Brown",
+        "localidades": [
+          "Adrogué",
+          "Almirante Brown",
+          "Burzaco",
+          "Claypole",
+          "Don Orione",
+          "Glew",
+          "José Mármol",
+          "Longchamps",
+          "Malvinas Argentinas",
+          "Ministro Rivadavia",
+          "Rafael Calzada",
+          "San Francisco Solano",
+          "San José"
+        ]
+      },
+      "06648": {
+        "nombre": "Presidente Perón",
+        "localidades": [
+          "Barrio América Unida",
+          "Guernica",
+          "Presidente Perón"
+        ]
+      },
+      "06413": {
+        "nombre": "Junín",
+        "localidades": [
+          "Agustín Roca",
+          "Agustina",
+          "Balneario Laguna de Gómez",
+          "Fortín Tiburcio",
+          "Junín",
+          "Laplacette",
+          "Saforcada"
+        ]
+      },
+      "06119": {
+        "nombre": "Brandsen",
+        "localidades": [
+          "Altamirano",
+          "Barrio Las Golondrinas",
+          "Barrio Los Bosquecitos",
+          "Barrio Parque Las Acacias",
+          "Coronel Brandsen",
+          "Gómez",
+          "Jeppener",
+          "Oliden",
+          "Samborombón"
+        ]
+      },
+      "06224": {
+        "nombre": "Chivilcoy",
+        "localidades": [
+          "Chivilcoy",
+          "Emilio Ayarza",
+          "Gorostiaga",
+          "La Rica",
+          "Moquehuá",
+          "Ramón Biaus",
+          "San Sebastián"
+        ]
+      },
+      "06021": {
+        "nombre": "Alberti",
+        "localidades": [
+          "Alberti",
+          "Coronel Seguí",
+          "Mechita",
+          "Pla",
+          "Villa Grisolía",
+          "Villa María",
+          "Villa Ortiz"
+        ]
+      },
+      "06112": {
+        "nombre": "Bragado",
+        "localidades": [
+          "Bragado",
+          "Comodoro Py",
+          "General O'Brien",
+          "Irala",
+          "Juan F. Salaberry",
+          "La Limpia",
+          "Mechita",
+          "Olascoaga",
+          "Warnes"
+        ]
+      },
+      "06329": {
+        "nombre": "General Las Heras",
+        "localidades": [
+          "General Hornos",
+          "General Las Heras",
+          "La Choza",
+          "Plomer"
+        ]
+      },
+      "06147": {
+        "nombre": "Carlos Casares",
+        "localidades": [
+          "Bellocq",
+          "Cadret",
+          "Carlos Casares",
+          "Colonia Mauricio",
+          "Hortensia",
+          "La Sofía",
+          "Mauricio Hirsch",
+          "Moctezuma",
+          "Ordoqui",
+          "Smith"
+        ]
+      },
+      "06525": {
+        "nombre": "Marcos Paz",
+        "localidades": [
+          "Barrio Lisandro de la Torre y Santa Marta",
+          "Marcos Paz",
+          "Marcos Paz"
+        ]
+      },
+      "06385": {
+        "nombre": "General Viamonte",
+        "localidades": [
+          "Baigorrita",
+          "La Delfina",
+          "Los Toldos",
+          "San Emilio",
+          "Zavalía"
+        ]
+      },
+      "06154": {
+        "nombre": "Carlos Tejedor",
+        "localidades": [
+          "Carlos Tejedor",
+          "Colonia Seré",
+          "Curarú",
+          "Timote",
+          "Tres Algarrobos"
+        ]
+      },
+      "06854": {
+        "nombre": "25 de Mayo",
+        "localidades": [
+          "25 de Mayo",
+          "Agustín Mosconi",
+          "Del Valle",
+          "Ernestina",
+          "Gobernador Ugarte",
+          "Lucas Monteverde",
+          "Norberto de la Riestra",
+          "Pedernales",
+          "San Enrique",
+          "Valdés"
+        ]
+      },
+      "06588": {
+        "nombre": "9 de Julio",
+        "localidades": [
+          "12 de Octubre",
+          "9 de Julio",
+          "Alfredo Demarchi",
+          "Carlos María Naón",
+          "Dudignac",
+          "La Aurora",
+          "Manuel B. Gonnet",
+          "Marcelino Ugarte",
+          "Morea",
+          "Norumbega",
+          "Patricios",
+          "Villa Fournier"
+        ]
+      },
+      "06609": {
+        "nombre": "Pehuajó",
+        "localidades": [
+          "Capitán Castro",
+          "Francisco Madero",
+          "Juan José Paso",
+          "Magdala",
+          "Mones Cazón",
+          "Nueva Plata",
+          "Pehuajó",
+          "San Bernardo",
+          "San Esteban"
+        ]
+      },
+      "06798": {
+        "nombre": "Tapalqué",
+        "localidades": [
+          "Crotto",
+          "Tapalqué",
+          "Velloso"
+        ]
+      },
+      "06826": {
+        "nombre": "Trenque Lauquen",
+        "localidades": [
+          "30 de Agosto",
+          "Berutti",
+          "Girodias",
+          "La Carreta",
+          "Trenque Lauquen",
+          "Trongé"
+        ]
+      },
+      "06301": {
+        "nombre": "General Belgrano",
+        "localidades": [
+          "General Belgrano",
+          "Gorchs"
+        ]
+      },
+      "06547": {
+        "nombre": "Monte",
+        "localidades": [
+          "Abbott",
+          "San Miguel del Monte",
+          "Zenón Videla Dorna"
+        ]
+      },
+      "06693": {
+        "nombre": "Roque Pérez",
+        "localidades": [
+          "Carlos Beguerie",
+          "Roque Pérez"
+        ]
+      },
+      "06595": {
+        "nombre": "Olavarría",
+        "localidades": [
+          "Colonia Hinojo",
+          "Colonia San Miguel",
+          "Espigas",
+          "Hinojo",
+          "Hinojo",
+          "Olavarría",
+          "Recalde",
+          "Santa Luisa",
+          "Sierra Chica",
+          "Sierras Bayas",
+          "Sierras Bayas",
+          "Villa Alfredo Fortabat",
+          "Villa Arrieta",
+          "Villa La Serranía"
+        ]
+      },
+      "06539": {
+        "nombre": "Merlo",
+        "localidades": [
+          "Libertad",
+          "Mariano Acosta",
+          "Merlo",
+          "Merlo",
+          "Pontevedra",
+          "San Antonio de Padua"
+        ]
+      },
+      "06260": {
+        "nombre": "Esteban Echeverría",
+        "localidades": [
+          "9 de Abril",
+          "Canning",
+          "El Jagüel",
+          "Esteban Echeverría",
+          "Luis Guillón",
+          "Monte Grande"
+        ]
+      },
+      "06077": {
+        "nombre": "Arrecifes",
+        "localidades": [
+          "Arrecifes",
+          "Todd",
+          "Viña"
+        ]
+      },
+      "06140": {
+        "nombre": "Capitán Sarmiento",
+        "localidades": [
+          "Capitán Sarmiento",
+          "La Luisa"
+        ]
+      },
+      "06161": {
+        "nombre": "Carmen de Areco",
+        "localidades": [
+          "Carmen de Areco",
+          "Pueblo Gouin",
+          "Tres Sargentos"
+        ]
+      },
+      "06714": {
+        "nombre": "Salto",
+        "localidades": [
+          "Arroyo Dulce",
+          "Berdier",
+          "Gahan",
+          "Inés Indart",
+          "La Invencible",
+          "Salto"
+        ]
+      },
+      "06266": {
+        "nombre": "Exaltación de la Cruz",
+        "localidades": [
+          "Arroyo de la Cruz",
+          "El Remanso",
+          "Parada Orlando",
+          "Parada Robles",
+          "Parada Robles - Pavón",
+          "Pavón"
+        ]
+      },
+      "06760": {
+        "nombre": "San Miguel",
+        "localidades": [
+          "Bella Vista",
+          "Campo de Mayo",
+          "Muñiz",
+          "San Miguel",
+          "San Miguel"
+        ]
+      },
+      "06728": {
+        "nombre": "San Andrés de Giles",
+        "localidades": [
+          "Azcuénaga",
+          "Cucullú",
+          "Franklin",
+          "San Andrés de Giles",
+          "Solís",
+          "Villa Espil",
+          "Villa Ruiz"
+        ]
+      },
+      "06532": {
+        "nombre": "Mercedes",
+        "localidades": [
+          "Gowland",
+          "Jorge Born",
+          "Mercedes"
+        ]
+      },
+      "06638": {
+        "nombre": "Pilar",
+        "localidades": [
+          "Del Viso",
+          "Fátima",
+          "La Lonja",
+          "Los Cachorros",
+          "Manzanares",
+          "Manzone",
+          "Maquinista F. Savio Oeste",
+          "Pilar",
+          "Pilar",
+          "Presidente Derqui",
+          "Roberto de Vicenzo",
+          "Santa Teresa",
+          "Tortuguitas",
+          "Villa Astolfi",
+          "Villa Rosa",
+          "Zelaya"
+        ]
+      },
+      "06497": {
+        "nombre": "Luján",
+        "localidades": [
+          "Barrio Las Casuarinas",
+          "Carlos Keen",
+          "Cortines",
+          "Country Club Las Praderas",
+          "Lezica y Torrezuri",
+          "Luján",
+          "Luján",
+          "Olivera",
+          "Open Door",
+          "Torres",
+          "Villa Flandria Norte",
+          "Villa Flandria Sur"
+        ]
+      },
+      "06408": {
+        "nombre": "Hurlingham",
+        "localidades": [
+          "Hurlingham",
+          "Hurlingham",
+          "Villa Santos Tesei",
+          "William C. Morris"
+        ]
+      },
+      "06568": {
+        "nombre": "Morón",
+        "localidades": [
+          "Castelar",
+          "El Palomar",
+          "Haedo",
+          "Morón",
+          "Morón",
+          "Villa Sarmiento"
+        ]
+      },
+      "06210": {
+        "nombre": "Chacabuco",
+        "localidades": [
+          "Castilla",
+          "Chacabuco",
+          "Los Angeles",
+          "O'Higgins",
+          "Rawson"
+        ]
+      },
+      "06515": {
+        "nombre": "Malvinas Argentinas",
+        "localidades": [
+          "Área de Promoción El Triángulo",
+          "Grand Bourg",
+          "Ingeniero Adolfo Sourdeaux",
+          "Ingeniero Pablo Nogués",
+          "Los Polvorines",
+          "Malvinas Argentinas",
+          "Malvinas Argentinas",
+          "Tortuguitas",
+          "Villa de Mayo"
+        ]
+      },
+      "06847": {
+        "nombre": "Tres Lomas",
+        "localidades": [
+          "Ingeniero Thompson",
+          "Tres Lomas"
+        ]
+      },
+      "06042": {
+        "nombre": "Ayacucho",
+        "localidades": [
+          "Ayacucho",
+          "La Constancia",
+          "Solanet",
+          "Udaquiola"
+        ]
+      },
+      "06399": {
+        "nombre": "Guaminí",
+        "localidades": [
+          "Arroyo Venado",
+          "Casbas",
+          "Garré",
+          "Guaminí",
+          "Laguna Alsina"
+        ]
+      },
+      "06371": {
+        "nombre": "General San Martín",
+        "localidades": [
+          "Barrio Parque General San Martín",
+          "Billinghurst",
+          "Ciudad del Libertador General San Martín",
+          "Ciudad Jardín El Libertador",
+          "General San Martín",
+          "Va.María Irene de los Remedios Escalada",
+          "Va.Marqués Alejandro María de Aguado",
+          "Villa Ayacucho",
+          "Villa Ballester",
+          "Villa Bernardo Monteagudo",
+          "Villa Chacabuco",
+          "Villa Coronel José M. Zapiola",
+          "Villa General Antonio J. de Sucre",
+          "Villa General Eugenio Necochea",
+          "Villa General José Tomás Guido",
+          "Villa General Juan G. Las Heras",
+          "Villa Godoy Cruz",
+          "Villa Granaderos de San Martín",
+          "Villa Gregoria Matorras",
+          "Villa José León Suárez",
+          "Villa Juan Martín de Pueyrredón",
+          "Villa Libertad",
+          "Villa Lynch",
+          "Villa Maipú",
+          "Villa Parque Presidente Figueroa Alcorta",
+          "Villa Parque San Lorenzo",
+          "Villa San Andrés",
+          "Villa Yapeyú"
+        ]
+      },
+      "06469": {
+        "nombre": "Lincoln",
+        "localidades": [
+          "Arenaza",
+          "Bayauca",
+          "Bermúdez",
+          "Carlos Salas",
+          "Coronel Martínez de Hoz",
+          "El Triunfo",
+          "Las Toscas",
+          "Lincoln",
+          "Pasteur",
+          "Roberts",
+          "Triunvirato"
+        ]
+      },
+      "06448": {
+        "nombre": "Laprida",
+        "localidades": [
+          "Laprida",
+          "Pueblo Nuevo",
+          "Pueblo San Jorge"
+        ]
+      },
+      "06756": {
+        "nombre": "San Isidro",
+        "localidades": [
+          "Acasusso",
+          "Béccar",
+          "Boulogne Sur Mer",
+          "Martínez",
+          "San Isidro",
+          "San Isidro",
+          "Villa Adelina"
+        ]
+      },
+      "06084": {
+        "nombre": "Benito Juárez",
+        "localidades": [
+          "Barker",
+          "Benito Juárez",
+          "López",
+          "Tedín Uriburu",
+          "Villa Cacique"
+        ]
+      },
+      "06175": {
+        "nombre": "Colón",
+        "localidades": [
+          "Colón",
+          "Pearson",
+          "Sarasa",
+          "Villa Manuel Pomar"
+        ]
+      },
+      "06410": {
+        "nombre": "Ituzaingó",
+        "localidades": [
+          "Ituzaingó",
+          "Ituzaingó Centro",
+          "Ituzaingó Sur",
+          "Villa Gobernador Udadondo"
+        ]
+      },
+      "06364": {
+        "nombre": "General Rodríguez",
+        "localidades": [
+          "Barrio Morabo",
+          "Barrio Ruta 24 Kilómetro 10",
+          "Country Club Bosque Real",
+          "General Rodríguez",
+          "General Rodríguez"
+        ]
+      },
+      "06784": {
+        "nombre": "Suipacha",
+        "localidades": [
+          "General Rivas",
+          "Suipacha"
+        ]
+      },
+      "06840": {
+        "nombre": "Tres de Febrero",
+        "localidades": [
+          "11 de Septiembre",
+          "Caseros",
+          "Churruca",
+          "Ciudad Jardín Lomas del Palomar",
+          "Ciudadela",
+          "El Libertador",
+          "José Ingenieros",
+          "Loma Hermosa",
+          "Martín Coronado",
+          "Pablo Podestá",
+          "Remedios de Escalada",
+          "Sáenz Peña",
+          "Santos Lugares",
+          "Tres de Febrero",
+          "Villa Bosch",
+          "Villa Raffo"
+        ]
+      },
+      "06274": {
+        "nombre": "Florencio Varela",
+        "localidades": [
+          "Bosques",
+          "El Tropezón",
+          "Estanislao Severo Zeballos",
+          "Florencio Varela",
+          "Gobernador Julio A. Costa",
+          "Ingeniero Juan Allan",
+          "La Capilla",
+          "San Juan Bautista",
+          "Villa Brown",
+          "Villa San Luis",
+          "Villa Santa Rosa",
+          "Villa Vatteone"
+        ]
+      },
+      "06574": {
+        "nombre": "Navarro",
+        "localidades": [
+          "José Juan Almeyra",
+          "Las Marianas",
+          "Navarro",
+          "Villa Moll"
+        ]
+      },
+      "06134": {
+        "nombre": "Cañuelas",
+        "localidades": [
+          "Alejandro Petión",
+          "Barrio El Taladro",
+          "Cañuelas",
+          "Gobernador Udaondo",
+          "Santa Rosa",
+          "Uribelarrea",
+          "Vicente Casares"
+        ]
+      },
+      "06778": {
+        "nombre": "San Vicente",
+        "localidades": [
+          "Alejandro Korn",
+          "Domselaar",
+          "San Vicente",
+          "San Vicente"
+        ]
+      },
+      "06483": {
+        "nombre": "Lobos",
+        "localidades": [
+          "Antonio Carboni",
+          "Elvira",
+          "Laguna de Lobos",
+          "Lobos",
+          "Salvador María"
+        ]
+      },
+      "06287": {
+        "nombre": "General Alvear",
+        "localidades": [
+          "General Alvear"
+        ]
+      },
+      "06658": {
+        "nombre": "Quilmes",
+        "localidades": [
+          "Bernal",
+          "Bernal Oeste",
+          "Don Bosco",
+          "Ezpeleta",
+          "Ezpeleta Oeste",
+          "Quilmes",
+          "Quilmes",
+          "Quilmes Oeste",
+          "San Francisco Solano",
+          "Villa La Florida"
+        ]
+      },
+      "06630": {
+        "nombre": "Pila",
+        "localidades": [
+          "Casalins",
+          "Pila"
+        ]
+      },
+      "06322": {
+        "nombre": "General La Madrid",
+        "localidades": [
+          "General La Madrid",
+          "La Colina",
+          "Las Martinetas",
+          "Líbano",
+          "Pontaut"
+        ]
+      },
+      "06105": {
+        "nombre": "Bolívar",
+        "localidades": [
+          "Hale",
+          "Juan F. Ibarra",
+          "Paula",
+          "Pirovano",
+          "San Carlos de Bolívar",
+          "Urdampilleta",
+          "Villa Lynch Pueyrredón"
+        ]
+      },
+      "06063": {
+        "nombre": "Balcarce",
+        "localidades": [
+          "Balcarce",
+          "Los Pinos",
+          "Napaleofú",
+          "Ramos Otero",
+          "San Agustín",
+          "Villa Laguna La Brava"
+        ]
+      },
+      "06406": {
+        "nombre": "Hipólito Yrigoyen",
+        "localidades": [
+          "Henderson",
+          "Herrera Vegas"
+        ]
+      },
+      "06238": {
+        "nombre": "Dolores",
+        "localidades": [
+          "Dolores",
+          "Sevigne"
+        ]
+      },
+      "06049": {
+        "nombre": "Azul",
+        "localidades": [
+          "16 de Julio",
+          "Ariel",
+          "Azul",
+          "Cacharí",
+          "Chillar"
+        ]
+      },
+      "06231": {
+        "nombre": "Daireaux",
+        "localidades": [
+          "Andant",
+          "Arboledas",
+          "Daireaux",
+          "La Larga",
+          "Salazar"
+        ]
+      },
+      "06700": {
+        "nombre": "Saavedra",
+        "localidades": [
+          "Arroyo Corto",
+          "Colonia San Martín",
+          "Dufaur",
+          "Espartillar",
+          "Goyena",
+          "Pigüé",
+          "Saavedra"
+        ]
+      },
+      "06553": {
+        "nombre": "Monte Hermoso",
+        "localidades": [
+          "Balneario Sauce Grande",
+          "Monte Hermoso"
+        ]
+      },
+      "06476": {
+        "nombre": "Lobería",
+        "localidades": [
+          "Arenas Verdes",
+          "Licenciado Matienzo",
+          "Lobería",
+          "Pieres",
+          "San Manuel",
+          "Tamangueyú"
+        ]
+      },
+      "06098": {
+        "nombre": "Berisso",
+        "localidades": [
+          "Barrio Banco Provincia",
+          "Barrio El Carmen Este",
+          "Barrio Universitario",
+          "Berisso",
+          "Berisso",
+          "Los Talas",
+          "Villa Argüello",
+          "Villa Dolores",
+          "Villa Independencia",
+          "Villa Nueva",
+          "Villa Porteña",
+          "Villa Progreso",
+          "Villa San Carlos",
+          "Villa Zula"
+        ]
+      },
+      "06812": {
+        "nombre": "Tordillo",
+        "localidades": [
+          "General Conesa"
+        ]
+      },
+      "06882": {
+        "nombre": "Zárate",
+        "localidades": [
+          "Barrio Saavedra",
+          "Escalada",
+          "Lima",
+          "Zárate",
+          "Zárate"
+        ]
+      },
+      "06665": {
+        "nombre": "Ramallo",
+        "localidades": [
+          "El Paraíso",
+          "Las Bahamas",
+          "Pérez Millán",
+          "Ramallo",
+          "Villa General Savio",
+          "Villa Ramallo"
+        ]
+      },
+      "06763": {
+        "nombre": "San Nicolás",
+        "localidades": [
+          "Campos Salles",
+          "Conesa",
+          "Erezcano",
+          "General Rojo",
+          "La Emilia",
+          "La Emilia",
+          "San Nicolás de los Arroyos",
+          "San Nicolás de los Arroyos",
+          "Villa Campi",
+          "Villa Canto",
+          "Villa Esperanza",
+          "Villa Riccio"
+        ]
+      },
+      "06434": {
+        "nombre": "Lanús",
+        "localidades": [
+          "Gerli",
+          "Lanús",
+          "Lanús Este",
+          "Lanús Oeste",
+          "Monte Chingolo",
+          "Remedios de Escalada de San Martín",
+          "Valentín Alsina"
+        ]
+      },
+      "06462": {
+        "nombre": "Leandro N. Alem",
+        "localidades": [
+          "Alberdi Viejo",
+          "El Dorado",
+          "Fortín Acha",
+          "Juan Bautista Alberdi",
+          "Leandro N. Alem",
+          "Vedia"
+        ]
+      },
+      "06294": {
+        "nombre": "General Arenales",
+        "localidades": [
+          "Arribeños",
+          "Ascensión",
+          "Estación Arenales",
+          "Ferré",
+          "General Arenales",
+          "La Angelita",
+          "La Trinidad"
+        ]
+      },
+      "06679": {
+        "nombre": "Rivadavia",
+        "localidades": [
+          "América",
+          "Fortín Olavarría",
+          "González Moreno",
+          "Mira Pampa",
+          "Roosevelt",
+          "San Mauricio",
+          "Sansinena",
+          "Sundblad"
+        ]
+      },
+      "06602": {
+        "nombre": "Patagones",
+        "localidades": [
+          "Bahía San Blas",
+          "Cardenal Cagliero",
+          "Carmen de Patagones",
+          "José B. Casas",
+          "Juan A. Pradere",
+          "Stroeder",
+          "Villalonga"
+        ]
+      },
+      "06182": {
+        "nombre": "Coronel de Marina Leonardo Rosales",
+        "localidades": [
+          "Bajo Hondo",
+          "Balneario Pehuen Co",
+          "Punta Alta",
+          "Punta Alta",
+          "Villa del Mar",
+          "Villa General Arias"
+        ]
+      },
+      "06070": {
+        "nombre": "Baradero",
+        "localidades": [
+          "Baradero",
+          "Irineo Portela",
+          "Santa Coloma",
+          "Villa Alsina"
+        ]
+      },
+      "06770": {
+        "nombre": "San Pedro",
+        "localidades": [
+          "Gobernador Castro",
+          "Obligado",
+          "Pueblo Doyle",
+          "Río Tala",
+          "San Pedro",
+          "Santa Lucía"
+        ]
+      },
+      "06277": {
+        "nombre": "Florentino Ameghino",
+        "localidades": [
+          "Blaquier",
+          "Florentino Ameghino",
+          "Porvenir"
+        ]
+      },
+      "06490": {
+        "nombre": "Lomas de Zamora",
+        "localidades": [
+          "Banfield",
+          "Llavallol",
+          "Lomas de Zamora",
+          "Lomas de Zamora",
+          "Temperley",
+          "Turdera",
+          "Villa Centenario",
+          "Villa Fiorito"
+        ]
+      },
+      "06035": {
+        "nombre": "Avellaneda",
+        "localidades": [
+          "Área Reserva Cinturón Ecológico",
+          "Avellaneda",
+          "Avellaneda",
+          "Crucesita",
+          "Dock Sud",
+          "Gerli",
+          "Piñeyro",
+          "Sarandí",
+          "Villa Domínico",
+          "Wilde"
+        ]
+      },
+      "06441": {
+        "nombre": "La Plata",
+        "localidades": [
+          "Abasto",
+          "Ángel Etcheverry",
+          "Arana",
+          "Arturo Seguí",
+          "Barrio El Carmen Oeste",
+          "Barrio Gambier",
+          "Barrio Las Malvinas",
+          "Barrio Las Quintas",
+          "City Bell",
+          "El Retiro",
+          "Joaquín Gorina",
+          "José Hernández",
+          "José Melchor Romero",
+          "La Cumbre",
+          "La Plata",
+          "La Plata",
+          "Lisandro Olmos",
+          "Los Hornos",
+          "Manuel B. Gonnet",
+          "Ringuelet",
+          "Rufino de Elizalde",
+          "Tolosa",
+          "Transradio",
+          "Villa Elisa",
+          "Villa Elvira",
+          "Villa Garibaldi",
+          "Villa Montoro",
+          "Villa Parque Sicardi"
+        ]
+      }
+    }
+  }
+}
