@@ -30,9 +30,15 @@ export default async function handler(req, res) {
     const data = comercioSnap.data();
     if (!data.entityPublicUrl) return res.status(409).json({ ok: false, error: 'entidad no generada' });
 
-    const miniPrompt = buildPrompt(data.entityPublicUrl);
+    // ── miniPrompt ──
+    const context = {
+      nombre:     data.nombreComercio,
+      entityType: data.entityType || 'comercio',
+      ubicacion:  data.ubicacion  || {},
+    };
+    const miniPrompt = buildPrompt(context, data.entityPublicUrl);
 
-    // goods
+    // ── goods ──
     const snapshot = await comercioRef.collection('productos').get();
     const goods = snapshot.empty ? [] : snapshot.docs
       .filter(doc => !doc.data().paused)
