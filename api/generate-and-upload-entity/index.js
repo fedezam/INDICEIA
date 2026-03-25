@@ -21,7 +21,14 @@ export default async function handler(req, res) {
 
     console.log('Generando entidad para:', comercioId);
 
-    const entity = await buildEntity({ comercioId });
+    // Resolver slug ANTES de buildEntity
+    const landingSnap = await db.collection('landings')
+      .where('comercioId', '==', comercioId)
+      .limit(1)
+      .get();
+    const slug = landingSnap.empty ? null : landingSnap.docs[0].id;
+
+    const entity = await buildEntity({ comercioId, slug });
     const jsonString = JSON.stringify(entity, null, 2);
 
     const blobPath = `entidades/${comercioId}/entity.json`;
@@ -32,15 +39,12 @@ export default async function handler(req, res) {
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    // Guardar URL en Firestore (atómico con el upload)
     await db.collection('entidades').doc(comercioId).update({
       entityPublicUrl: url,
       entityGeneratedAt: new Date().toISOString(),
     });
 
     console.log('Entidad completa para', comercioId, '→', url);
-
-    // Frontend solo necesita saber que todo salió bien
     return res.status(200).json({ ok: true });
 
   } catch (err) {
