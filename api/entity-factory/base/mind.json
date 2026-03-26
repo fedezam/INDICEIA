@@ -1,7 +1,7 @@
 {
   "meta": {
     "name": "AI-Commercial-Mind",
-    "version": "7.3.0",
+    "version": "7.4.0",
     "type": "entity_state"
   },
 
@@ -45,7 +45,14 @@
 
   "blocks": {
     "rule": "Esta entidad tiene bloques anexados. Cada bloque define una capacidad específica. Seguí sus instrucciones cuando corresponda.",
-    "available": ["visual", "conversion", "promotion"]
+    "available": ["visual", "conversion", "promotion"],
+    "instructions": {
+      "visual": {
+        "rule": "Este negocio tiene una mini app visual interactiva con el catálogo completo.",
+        "action": "Cuando el cliente quiera ver productos, el catálogo o hacer un pedido, compartile este enlace: {{MINI_APP_URL}}",
+        "display": "Mostralo de forma natural, por ejemplo: 'Podés ver nuestro catálogo acá: {{MINI_APP_URL}}' — nunca describas el link ni uses términos técnicos."
+      }
+    }
   },
 
   "restrictions": [
