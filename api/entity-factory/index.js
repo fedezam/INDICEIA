@@ -40,13 +40,20 @@ export async function buildEntity({ comercioId, slug = null }) {
 
   const data         = snap.data();
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
-
   const context      = buildContext(data, comercioId, referralCode);
-  const mind         = buildMind(data, context, referralCode);
-  const goods        = await buildGoods(comercioRef, context);
-  const services     = await buildServices(comercioRef);
+
+  // Goods y services primero — visual los necesita
+  const goods    = await buildGoods(comercioRef, context);
+  const services = await buildServices(comercioRef);
+
+  // Visual antes que mind — necesitamos la URL
+  const visual   = await buildVisual(context, goods, comercioId, services, slug);
+
+  // Mind recibe la URL del visual ya construido
+  const miniAppUrl = visual?.mini_app_url || '';
+  const mind       = buildMind(data, context, referralCode, miniAppUrl);
+
   const capabilities = buildCapabilities(context);
-  const visual       = await buildVisual(context, goods, comercioId, services, slug);
 
   await buildSeo(data, comercioId);
   await buildIndex(data, comercioId, goods, services);
