@@ -7,7 +7,7 @@ import { buildCapabilities } from '../../lib/entity-factory/builders/capabilitie
 import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
-import { resolveRubro }      from '../../lib/entity-factory/rubro-resolver.js';
+import { resolveDomain }     from '../../lib/entity-factory/domain-resolver.js';
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -47,17 +47,18 @@ export async function buildEntity({ comercioId, slug = null }) {
   const goods    = await buildGoods(comercioRef, context);
   const services = await buildServices(comercioRef);
 
-  // ── RUBRO RESOLVER ──────────────────────────────────────────
-  const rubroMeta = resolveRubro(context, { goods, services });
-  context.rubro_detected = rubroMeta.rubro;
-  context.tags           = rubroMeta.tags;
+  // ── DOMAIN RESOLVER ─────────────────────────────────────────
+  const domainMeta = resolveDomain(context);
+  context.domain_tag        = domainMeta.domain_tag;
+  context.domain_confidence = domainMeta.domain_confidence;
+  context.domain_source     = domainMeta.domain_source;
   // ────────────────────────────────────────────────────────────
 
   // Visual antes que mind — necesitamos la URL
   const visual     = await buildVisual(context, goods, comercioId, services, slug);
   const miniAppUrl = visual?.mini_app_url || '';
 
-  // Mind — ahora devuelve { ler, mind_hash, mind_id }
+  // Mind — devuelve { ler, mind_hash, mind_id }
   const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
 
   const capabilities = buildCapabilities(context);
