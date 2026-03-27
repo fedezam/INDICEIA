@@ -1,4 +1,3 @@
-// api/entity-factory/index.js
 import admin from 'firebase-admin';
 import { buildContext }      from '../../lib/entity-factory/builders/context.builder.js';
 import { buildMind }         from '../../lib/entity-factory/builders/mind.builder.js';
@@ -8,7 +7,7 @@ import { buildCapabilities } from '../../lib/entity-factory/builders/capabilitie
 import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
-import { resolveRubro }      from '../../lib/entity-factory/rubro-resolver.js'; // ← NEW
+import { resolveRubro }      from '../../lib/entity-factory/rubro-resolver.js';
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -44,6 +43,7 @@ export async function buildEntity({ comercioId, slug = null }) {
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
   const context      = buildContext(data, comercioId, referralCode);
 
+  // Goods y services primero — visual los necesita
   const goods    = await buildGoods(comercioRef, context);
   const services = await buildServices(comercioRef);
 
@@ -53,17 +53,17 @@ export async function buildEntity({ comercioId, slug = null }) {
   context.tags           = rubroMeta.tags;
   // ────────────────────────────────────────────────────────────
 
+  // Visual antes que mind — necesitamos la URL
   const visual     = await buildVisual(context, goods, comercioId, services, slug);
   const miniAppUrl = visual?.mini_app_url || '';
-  const mind       = buildMind(data, context, referralCode, miniAppUrl);
+
+  // Mind — ahora devuelve { ler, mind_hash, mind_id }
+  const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
 
   const capabilities = buildCapabilities(context);
 
   await buildSeo(data, comercioId);
   await buildIndex(data, comercioId, goods, services);
-
-  // hook para futuro mind_override
-  const mind_ref = rubroMeta.mind_override ?? 'mind://commerce.basic.v1';
 
   return {
     meta: {
@@ -71,6 +71,8 @@ export async function buildEntity({ comercioId, slug = null }) {
       tipo:        'entidad_comercial_indiceIA',
       comercioId,
       generatedAt: new Date().toISOString(),
+      mind_id,
+      mind_hash,
     },
     contracts: {
       context:      { role: 'identity',             version: '1.0', mutable: false },
@@ -79,7 +81,6 @@ export async function buildEntity({ comercioId, slug = null }) {
       visual:       { role: 'visual_interface',      version: '1.0', optional: true },
       capabilities: { role: 'interaction_protocols', version: '1.0', mutable: false },
     },
-    mind_ref, // ← hook futuro
     mind,
     context,
     ...(goods    && { goods }),
