@@ -78,7 +78,7 @@ export async function buildEntity({ comercioId, slug = null }) {
     },
     mind,
     context,
-    ...(goods        && { goods }),
+    ...(goods?.length  && { goods }),
     ...(services     && { services }),
     ...(visual       && { visual }),
     ...(capabilities && { capabilities }),
