@@ -85,8 +85,9 @@ async function load(ctx) {
   const comercioSlug          = comercioData.landing?.slug || null;
   const slugDisponible        = !!comercioSlug;
   const selectedPaymentMethods = comercioData.paymentMethods || [];
+  const tieneLocalFisico      = comercioData.tieneLocalFisico !== false; // true por defecto
 
-  return { isNewComercio, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods };
+  return { isNewComercio, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
 }
 
 // ============================================================
@@ -111,6 +112,7 @@ function render(ctx, state) {
     comercioSlug:          state.comercioSlug,
     slugDisponible:        state.slugDisponible,
     selectedPaymentMethods: [...state.selectedPaymentMethods],
+    tieneLocalFisico:      state.tieneLocalFisico,
   };
 
   // Título
@@ -176,6 +178,35 @@ function renderSeccionBasicos(state, refs, uiState) {
 
 function renderSeccionUbicacion(state, refs, uiState) {
   const section = crearSeccion('Ubicación');
+
+  // Toggle: ¿Tenés local físico?
+  const localFisicoContainer = document.createElement('div');
+  localFisicoContainer.className = 'form-field';
+  
+  const toggleWrapper = document.createElement('div');
+  toggleWrapper.className = 'toggle-wrapper';
+  
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.id = 'tieneLocalFisico';
+  checkbox.checked = uiState.tieneLocalFisico;
+  
+  const label = document.createElement('label');
+  label.htmlFor = 'tieneLocalFisico';
+  label.innerHTML = `
+    <span class="toggle-label">¿Tenés local físico?</span>
+    <span class="toggle-helper">Marcá si atendés clientes en un local</span>
+  `;
+  
+  checkbox.addEventListener('change', (e) => {
+    uiState.tieneLocalFisico = e.target.checked;
+    document.dispatchEvent(new Event('change'));
+  });
+  
+  toggleWrapper.appendChild(checkbox);
+  toggleWrapper.appendChild(label);
+  localFisicoContainer.appendChild(toggleWrapper);
+  section.appendChild(localFisicoContainer);
 
   refs.fields.pais      = createFormField({ label: 'País',      name: 'pais',      value: 'Argentina', disabled: true });
   refs.fields.provincia = createFormField({ label: 'Provincia', name: 'provincia', type: 'select', required: true });
@@ -521,6 +552,7 @@ function getCurrentData(refs, uiState) {
     whatsapp:       refs.fields.whatsapp?.input.value.trim()       || null,
     categories:     refs.categorySelector?.getSelected()           || [],
     paymentMethods: uiState.selectedPaymentMethods,
+    tieneLocalFisico: uiState.tieneLocalFisico,
   };
 }
 
@@ -557,7 +589,8 @@ function hayDirtyState(refs, uiState, state) {
     current.facebook       !== (original.facebook       || null) ||
     current.whatsapp       !== (original.whatsapp       || null) ||
     JSON.stringify(current.categories)     !== JSON.stringify(original.categories     || []) ||
-    JSON.stringify(current.paymentMethods) !== JSON.stringify(original.paymentMethods || [])
+    JSON.stringify(current.paymentMethods) !== JSON.stringify(original.paymentMethods || []) ||
+    current.tieneLocalFisico !== (original.tieneLocalFisico !== false)
   );
 }
 
