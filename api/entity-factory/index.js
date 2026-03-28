@@ -68,25 +68,16 @@ export async function buildEntity({ comercioId, slug = null }) {
 
   return {
     meta: {
-      version:     '1.0.0',
-      tipo:        'entidad_comercial_indiceIA',
       comercioId,
       generatedAt: new Date().toISOString(),
       mind_id,
       mind_hash,
     },
-    contracts: {
-      context:      { role: 'identity',             version: '1.0', mutable: false },
-      goods:        { role: 'products_catalog',      version: '1.0', optional: true },
-      services:     { role: 'services_catalog',      version: '1.0', optional: true },
-      visual:       { role: 'visual_interface',      version: '1.0', optional: true },
-      capabilities: { role: 'interaction_protocols', version: '1.0', mutable: false },
-    },
     mind,
     context,
-    ...(goods    && { goods }),
-    ...(services && { services }),
-    ...(visual   && { visual }),
-    capabilities,
+    ...(goods        && { goods }),
+    ...(services     && { services }),
+    ...(visual       && { visual }),
+    ...(capabilities && { capabilities }),
   };
 }
