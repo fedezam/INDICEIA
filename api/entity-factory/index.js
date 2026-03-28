@@ -49,9 +49,7 @@ export async function buildEntity({ comercioId, slug = null }) {
 
   // ── DOMAIN RESOLVER ─────────────────────────────────────────
   const domainMeta = resolveDomain(context);
-  context.domain_tag        = domainMeta.domain_tag;
-  context.domain_confidence = domainMeta.domain_confidence;
-  context.domain_source     = domainMeta.domain_source;
+  context.domain_tag = domainMeta.domain_tag; // mind.builder lo necesita
   // ────────────────────────────────────────────────────────────
 
   // Visual antes que mind — necesitamos la URL
@@ -62,7 +60,8 @@ export async function buildEntity({ comercioId, slug = null }) {
   const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
 
   const capabilities = buildCapabilities(context);
-  delete context.contacto; // capabilities ya lo consumió
+  delete context.contacto;   // capabilities ya lo consumió
+  delete context.domain_tag; // mind.builder ya lo consumió, no va al LLM
 
   await buildSeo(data, comercioId);
   await buildIndex(data, comercioId, goods, services);
@@ -73,6 +72,9 @@ export async function buildEntity({ comercioId, slug = null }) {
       generatedAt: new Date().toISOString(),
       mind_id,
       mind_hash,
+      domain_tag:        domainMeta.domain_tag,
+      domain_confidence: domainMeta.domain_confidence,
+      domain_source:     domainMeta.domain_source,
     },
     mind,
     context,
