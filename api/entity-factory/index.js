@@ -1,83 +1,67 @@
-import admin from 'firebase-admin';
-import { buildContext }      from '../../lib/entity-factory/builders/context.builder.js';
-import { buildMind }         from '../../lib/entity-factory/builders/mind.builder.js';
-import { buildGoods }        from '../../lib/entity-factory/builders/goods.builder.js';
-import { buildServices }     from '../../lib/entity-factory/builders/services.builder.js';
-import { buildCapabilities } from '../../lib/entity-factory/builders/capabilities.builder.js';
-import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
-import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
-import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
-import { resolveDomain }     from '../../lib/entity-factory/domain-resolver.js';
+// lib/entity-factory/builders/capabilities.builder.js
+// ⟦ROLE⟧ Compila capabilities + contacto → formato comprimido para LLM.
+// Lee fuente humana → output optimizado. NO modifica JSON base.
 
-if (!admin.apps.length) {
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
-    throw new Error('Falta FIREBASE_SERVICE_ACCOUNT');
-  }
-  admin.initializeApp({
-    credential: admin.credential.cert(
-      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-    ),
+import { readFileSync } from 'fs';
+import { resolve }      from 'path';
+import { hasData }      from '../utils/hasData.js';
+
+// Modo de cada canal — define cómo el LLM debe usarlo
+const CHANNEL_MODE = {
+  whatsapp:  'primary',
+  telefono:  'call',
+  email:     'mailto_link',
+  website:   'link',
+  instagram: 'copy_paste',
+  facebook:  'copy_paste',
+  tiktok:    'copy_paste',
+};
+
+export function buildCapabilities(context) {
+  const base = JSON.parse(
+    readFileSync(resolve(process.cwd(), 'api/entity-factory/base/capabilities.json'), 'utf-8')
+  );
+
+  // ── CHANNELS ─────────────────────────────────────────────────
+  // Construye channels desde contacto del context.
+  // Incluye value para canales que el LLM necesita mostrar.
+
+  const channels = {};
+  const contacto = context.contacto ?? {};
+
+  Object.entries(contacto).forEach(([channel, value]) => {
+    if (!hasData(value)) return;
+    const mode = CHANNEL_MODE[channel];
+    if (!mode) return;
+    channels[channel] = { enabled: true, mode, value };
   });
-}
 
-const db = admin.firestore();
+  // ── TEMPLATES ────────────────────────────────────────────────
+  // Solo si hay canales que los necesiten (email → mailto, redes → social)
 
-async function resolveReferralCode(comercioId, duenoId) {
-  if (duenoId) {
-    const ownerSnap = await db.collection('usuarios').doc(duenoId).get();
-    if (ownerSnap.exists && ownerSnap.data()?.referralId) {
-      return ownerSnap.data().referralId;
-    }
+  const templates = {};
+  const hasEmail  = channels.email;
+  const hasSocial = channels.instagram || channels.facebook || channels.tiktok;
+
+  const mailto = base.templates_canonicos?.EMAIL_CON_LINK?.mailto;
+  if (hasEmail && mailto) {
+    templates.mailto = {
+      subject: mailto.subject,
+      body:    Array.isArray(mailto.body) ? mailto.body.join('\n') : mailto.body,
+    };
   }
-  return comercioId.substring(0, 8).toUpperCase();
-}
 
-export async function buildEntity({ comercioId, slug = null }) {
-  if (!comercioId) throw new Error('Falta comercioId');
+  const social = base.templates_canonicos?.MENSAJE_CANONICO?.formato;
+  if (hasSocial && social) {
+    templates.social = Array.isArray(social) ? social.join('\n') : social;
+  }
 
-  const comercioRef = db.collection('entidades').doc(comercioId);
-  const snap        = await comercioRef.get();
-  if (!snap.exists) throw new Error(`Comercio ${comercioId} no encontrado`);
-
-  const data         = snap.data();
-  const referralCode = await resolveReferralCode(comercioId, data.duenoId);
-  const context      = buildContext(data, comercioId, referralCode);
-
-  // Goods y services primero — visual los necesita
-  const goods    = await buildGoods(comercioRef, context);
-  const services = await buildServices(comercioRef);
-
-  // ── DOMAIN RESOLVER ─────────────────────────────────────────
-  const domainMeta = resolveDomain(context);
-  context.domain_tag        = domainMeta.domain_tag;
-  context.domain_confidence = domainMeta.domain_confidence;
-  context.domain_source     = domainMeta.domain_source;
-  // ────────────────────────────────────────────────────────────
-
-  // Visual antes que mind — necesitamos la URL
-  const visual     = await buildVisual(context, goods, comercioId, services, slug);
-  const miniAppUrl = visual?.mini_app_url || '';
-
-  // Mind — devuelve { ler, mind_hash, mind_id }
-  const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
-
-  const capabilities = buildCapabilities(context);
-
-  await buildSeo(data, comercioId);
-  await buildIndex(data, comercioId, goods, services);
+  // ── RULES (LER) ───────────────────────────────────────────────
+  const rules = '⟦whatsapp:primary ∧ ¬disabled_channels ∧ ¬invent_channels⟧';
 
   return {
-    meta: {
-      comercioId,
-      generatedAt: new Date().toISOString(),
-      mind_id,
-      mind_hash,
-    },
-    mind,
-    context,
-    ...(goods        && { goods }),
-    ...(services     && { services }),
-    ...(visual       && { visual }),
-    ...(capabilities && { capabilities }),
+    ...(Object.keys(channels).length  && { channels }),
+    ...(Object.keys(templates).length && { templates }),
+    rules,
   };
 }
