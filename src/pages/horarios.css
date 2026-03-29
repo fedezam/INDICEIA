@@ -309,10 +309,60 @@
   font-style: italic;
 }
 
-/* ── Quick actions ───────────────────────────────────────── */
-.quick-actions {
+/* ── Time inputs ─────────────────────────────────────────── */
+.time-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.time-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 5px;
+}
+
+.time-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #868e96;
+  margin: 0;
+}
+
+/* Fila de los dos selects */
+.time-selects-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.time-separator {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--s-dark, #343a40);
+  line-height: 1;
+  margin-bottom: 1px;
+}
+
+.time-select {
+  flex: 1;
+  padding: 9px 6px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  background: #f8f9fa;
+  cursor: pointer;
+  text-align: center;
+  appearance: none;          /* quita la flecha nativa en algunos browsers */
+  -webkit-appearance: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.time-select:focus {
+  outline: none;
+  border-color: var(--s-primary, #3c8dbc);
+  background: white;
+  box-shadow: 0 0 0 2px rgba(60, 141, 188, 0.12);
 }
