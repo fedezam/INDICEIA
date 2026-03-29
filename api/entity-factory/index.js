@@ -7,7 +7,6 @@ import { buildCapabilities } from '../../lib/entity-factory/builders/capabilitie
 import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
-import { resolveDomain }     from '../../lib/entity-factory/domain-resolver.js';
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -43,44 +42,41 @@ export async function buildEntity({ comercioId, slug = null }) {
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
   const context      = buildContext(data, comercioId, referralCode);
 
-  // Goods y services primero — visual los necesita
+  // Cada builder lee de Firestore de manera independiente:
+  // goods.builder  → comprime para LLM (entity.json)
+  // visual.builder → lee crudo para el template (visual.html)
   const goods    = await buildGoods(comercioRef, context);
   const services = await buildServices(comercioRef);
 
-  // ── DOMAIN RESOLVER ─────────────────────────────────────────
-  const domainMeta = resolveDomain(context);
-  context.domain_tag = domainMeta.domain_tag; // mind.builder lo necesita
-  // ────────────────────────────────────────────────────────────
-
-  // Visual antes que mind — necesitamos la URL
-  const visual     = await buildVisual(context, goods, comercioId, services, slug);
+  // Visual lee sus propios datos de Firestore — no depende de goods
+  const visual     = await buildVisual(context, comercioRef, comercioId, slug);
   const miniAppUrl = visual?.mini_app_url || '';
 
-  // Mind — devuelve { ler, mind_hash, mind_id }
-  const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
-
+  const mind         = buildMind(data, context, referralCode, miniAppUrl);
   const capabilities = buildCapabilities(context);
-  delete context.contacto;   // capabilities ya lo consumió
-  delete context.domain_tag; // mind.builder ya lo consumió, no va al LLM
 
   await buildSeo(data, comercioId);
   await buildIndex(data, comercioId, goods, services);
 
   return {
     meta: {
+      version:     '1.0.0',
+      tipo:        'entidad_comercial_indiceIA',
       comercioId,
       generatedAt: new Date().toISOString(),
-      mind_id,
-      mind_hash,
-      domain_tag:        domainMeta.domain_tag,
-      domain_confidence: domainMeta.domain_confidence,
-      domain_source:     domainMeta.domain_source,
+    },
+    contracts: {
+      context:      { role: 'identity',             version: '1.0', mutable: false },
+      goods:        { role: 'products_catalog',      version: '1.0', optional: true },
+      services:     { role: 'services_catalog',      version: '1.0', optional: true },
+      visual:       { role: 'visual_interface',      version: '1.0', optional: true },
+      capabilities: { role: 'interaction_protocols', version: '1.0', mutable: false },
     },
     mind,
     context,
-    ...(goods?.length  && { goods }),
-    ...(services     && { services }),
-    ...(visual       && { visual }),
-    ...(capabilities && { capabilities }),
+    ...(goods    && { goods }),
+    ...(services && { services }),
+    ...(visual   && { visual }),
+    capabilities,
   };
 }
