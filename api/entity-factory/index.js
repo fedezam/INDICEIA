@@ -7,6 +7,7 @@ import { buildCapabilities } from '../../lib/entity-factory/builders/capabilitie
 import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
+import { resolveDomain }     from '../../lib/entity-factory/domain-resolver.js';
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -42,6 +43,13 @@ export async function buildEntity({ comercioId, slug = null }) {
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
   const context      = buildContext(data, comercioId, referralCode);
 
+  // ── DOMAIN ───────────────────────────────────────────────
+  // Resuelve domain_tag a partir de señales del context.
+  // Se inyecta en context ANTES de buildMind — lo necesita.
+  // Se elimina de context DESPUÉS — no va al LLM como campo.
+  const domainMeta   = resolveDomain(context);
+  context.domain_tag = domainMeta.domain_tag;
+
   // Cada builder lee de Firestore de manera independiente:
   // goods.builder  → comprime para LLM (entity.json)
   // visual.builder → lee crudo para el template (visual.html)
@@ -52,18 +60,28 @@ export async function buildEntity({ comercioId, slug = null }) {
   const visual     = await buildVisual(context, comercioRef, comercioId, slug);
   const miniAppUrl = visual?.mini_app_url || '';
 
-  const mind         = buildMind(data, context, referralCode, miniAppUrl);
+  // Mind consume domain_tag desde context
+  const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
+
   const capabilities = buildCapabilities(context);
+
+  // domain_tag ya fue consumido por mind — no va al LLM como campo
+  delete context.domain_tag;
 
   await buildSeo(data, comercioId);
   await buildIndex(data, comercioId, goods, services);
 
   return {
     meta: {
-      version:     '1.0.0',
-      tipo:        'entidad_comercial_indiceIA',
+      version:           '1.0.0',
+      tipo:              'entidad_comercial_indiceIA',
       comercioId,
-      generatedAt: new Date().toISOString(),
+      generatedAt:       new Date().toISOString(),
+      mind_id,
+      mind_hash,
+      domain_tag:        domainMeta.domain_tag,
+      domain_confidence: domainMeta.domain_confidence,
+      domain_source:     domainMeta.domain_source,
     },
     contracts: {
       context:      { role: 'identity',             version: '1.0', mutable: false },
