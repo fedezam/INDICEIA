@@ -117,7 +117,6 @@
   border-radius: 50%;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   transition: transform 0.25s;
-  /* posición: alineado con el track */
   margin-left: 3px;
 }
 
@@ -248,6 +247,16 @@
   border-color: var(--s-primary, #3c8dbc);
   background: white;
   box-shadow: 0 0 0 2px rgba(60, 141, 188, 0.12);
+}
+
+/* ── Forzar formato 24hs — ocultar AM/PM en todos los browsers ── */
+.time-group input[type="time"]::-webkit-datetime-edit-ampm-field {
+  display: none;
+}
+.time-group input[type="time"]::-webkit-calendar-picker-indicator {
+  font-size: 14px;
+  opacity: 0.6;
+  cursor: pointer;
 }
 
 /* ── Horario partido (mañana/tarde) ──────────────────────── */
