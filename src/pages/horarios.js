@@ -132,33 +132,7 @@ function render(ctx, state) {
 
   page.appendChild(grid);
 
-  // ── QUICK ACTIONS ─────────────────────────────────────────
-  const quickActions = document.createElement('div');
-  quickActions.className = 'quick-actions';
-
-  quickActions.appendChild(createButton({
-    label: 'Copiar lunes a todos', icon: 'fa-copy', variant: 'secondary',
-    onClick: () => {
-      const lunes = structuredClone(uiState.horarios.lunes);
-      DAYS.forEach(day => { if (day !== 'lunes') uiState.horarios[day] = structuredClone(lunes); });
-      rebuildGrid(grid, uiState, refs, state.tieneLocalFisico);
-      document.dispatchEvent(new Event('change'));
-      showToast('Horarios de lunes aplicados a todos los días', 'success');
-    }
-  }));
-
-  quickActions.appendChild(createButton({
-    label: 'Cerrar todos', icon: 'fa-times-circle', variant: 'secondary',
-    onClick: () => {
-      DAYS.forEach(day => { uiState.horarios[day].closed = true; });
-      rebuildGrid(grid, uiState, refs, state.tieneLocalFisico);
-      document.dispatchEvent(new Event('change'));
-      showToast('Todos los días marcados como cerrado', 'info');
-    }
-  }));
-
-  page.appendChild(quickActions);
-
+  
   // ── BOTÓN GUARDAR ─────────────────────────────────────────
   const btnContainer = document.createElement('div');
   btnContainer.style.marginTop = '30px';
@@ -403,21 +377,69 @@ function createPeriodSection({ day, period, label, icon, data, uiState, refs }) 
   return section;
 }
 
+// ============================================================
+// TIME INPUT — dos selects: hora (00-23) + minutos (00/15/30/45)
+// Elimina la ambigüedad AM/PM del input[type="time"] nativo
+// ============================================================
 function createTimeInput({ id, label, value, onChange }) {
   const group = document.createElement('div');
   group.className = 'time-group';
 
   const labelEl = document.createElement('label');
+  labelEl.setAttribute('for', `${id}_h`);
   labelEl.textContent = label;
-
-  const input = document.createElement('input');
-  input.type  = 'time';
-  input.id    = id;
-  input.value = value;
-  input.addEventListener('change', (e) => onChange(e.target.value));
-
   group.appendChild(labelEl);
-  group.appendChild(input);
+
+  // Parsear valor actual (ej: "09:30" → h=9, m=30)
+  const [hStr = '09', mStr = '00'] = (value || '09:00').split(':');
+  const currentH = parseInt(hStr, 10);
+  const currentM = parseInt(mStr, 10);
+
+  const row = document.createElement('div');
+  row.className = 'time-selects-row';
+
+  // ── Select horas ──
+  const selectH = document.createElement('select');
+  selectH.id = `${id}_h`;
+  selectH.className = 'time-select';
+  for (let h = 0; h < 24; h++) {
+    const opt = document.createElement('option');
+    opt.value = String(h).padStart(2, '0');
+    opt.textContent = String(h).padStart(2, '0');
+    if (h === currentH) opt.selected = true;
+    selectH.appendChild(opt);
+  }
+
+  const separator = document.createElement('span');
+  separator.className = 'time-separator';
+  separator.textContent = ':';
+
+  // ── Select minutos (cada 15 min; podés cambiar a cada 5 o 30) ──
+  const MINUTES = ['00', '15', '30', '45'];
+  const selectM = document.createElement('select');
+  selectM.className = 'time-select';
+  MINUTES.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    // redondear al cuarto más cercano si el valor guardado no es múltiplo de 15
+    if (parseInt(m, 10) === Math.round(currentM / 15) * 15 % 60) opt.selected = true;
+    selectM.appendChild(opt);
+  });
+
+  const notify = () => {
+    const val = `${selectH.value}:${selectM.value}`;
+    onChange(val);
+    document.dispatchEvent(new Event('change'));
+  };
+
+  selectH.addEventListener('change', notify);
+  selectM.addEventListener('change', notify);
+
+  row.appendChild(selectH);
+  row.appendChild(separator);
+  row.appendChild(selectM);
+  group.appendChild(row);
   return group;
 }
 
