@@ -44,20 +44,18 @@ export async function buildEntity({ comercioId, slug = null }) {
   const context      = buildContext(data, comercioId, referralCode);
 
   // ── DOMAIN ───────────────────────────────────────────────
-  // Resuelve domain_tag a partir de señales del context.
   // Se inyecta en context ANTES de buildMind — lo necesita.
-  // Se elimina de context DESPUÉS — no va al LLM como campo.
+  // Se elimina DESPUÉS — no va al LLM como campo.
   const domainMeta   = resolveDomain(context);
   context.domain_tag = domainMeta.domain_tag;
 
-  // Cada builder lee de Firestore de manera independiente:
-  // goods.builder  → comprime para LLM (entity.json)
-  // visual.builder → lee crudo para el template (visual.html)
   const goods    = await buildGoods(comercioRef, context);
   const services = await buildServices(comercioRef);
 
-  // Visual lee sus propios datos de Firestore — no depende de goods
-  const visual     = await buildVisual(context, comercioRef, comercioId, slug);
+  // templateId se pasa explícito — ya no vive en context
+  // context lo necesitaba solo para llegar acá
+  const templateId = data.templateId || null;
+  const visual     = await buildVisual(context, comercioRef, comercioId, slug, templateId);
   const miniAppUrl = visual?.mini_app_url || '';
 
   // Mind consume domain_tag desde context
@@ -65,8 +63,9 @@ export async function buildEntity({ comercioId, slug = null }) {
 
   const capabilities = buildCapabilities(context);
 
-  // domain_tag ya fue consumido por mind — no va al LLM como campo
+  // Campos efímeros — consumidos, no van al JSON final
   delete context.domain_tag;
+  delete context.contacto; // lo consume capabilities.builder, no el LLM
 
   await buildSeo(data, comercioId);
   await buildIndex(data, comercioId, goods, services);
