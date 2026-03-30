@@ -6,3 +6,5 @@ dist/
 *.bak
 indiceia-firebase-adminsdk-fbsvc-ede93c100a.json
 migrate.cjs
+service-account.json
+service-account.json
