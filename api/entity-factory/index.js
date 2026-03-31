@@ -51,14 +51,12 @@ export async function buildEntity({ comercioId, slug = null }) {
   const services = await buildServices(comercioRef);
 
   // ── VISUAL (con dirty state) ──────────────────────────────
-  // Pasamos visualHash y visualHtmlUrl guardados en Firestore.
-  // buildVisual los usa para comparar — si no cambiaron, skippea el upload.
-  const templateId = data.templateId || null;
-  const savedData  = {
+  const templateId   = data.templateId || null;
+  const savedVisual  = {
     visualHash:    data.visualHash    || null,
     visualHtmlUrl: data.visualHtmlUrl || null,
   };
-  const visual     = await buildVisual(context, comercioRef, comercioId, slug, templateId, savedData);
+  const visual     = await buildVisual(context, comercioRef, comercioId, slug, templateId, savedVisual);
   const miniAppUrl = visual?.mini_app_url || '';
 
   // Mind consume domain_tag desde context
@@ -70,7 +68,15 @@ export async function buildEntity({ comercioId, slug = null }) {
   delete context.domain_tag;
   delete context.contacto;
 
-  await buildSeo(data, comercioId);
+  // ── SEO (con dirty state) ─────────────────────────────────
+  // Mismo patrón que buildVisual: pasamos lo guardado en Firestore,
+  // buildSeo compara el hash y saltea el upload si no hubo cambios.
+  const savedSeo = {
+    seoHash:    data.seoHash    || null,
+    seoHtmlUrl: data.seoHtmlUrl || null,
+  };
+  await buildSeo(context, comercioId, savedSeo);
+
   await buildIndex(data, comercioId, goods, services);
 
   return {
