@@ -9,7 +9,7 @@ import { createButton }            from '/src/skeleton/components/button/index.j
 import { createCard }              from '/src/skeleton/components/card/index.js';
 import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }               from '/src/skeleton/components/toast/index.js';
-import { db }                      from '/src/services/firebase/firebase.js';
+import { app, db }                 from '/src/services/firebase/firebase.js';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   writeBatch,
@@ -27,7 +27,7 @@ import './productos.css';
 
 const XLSX = window.XLSX;
 const TEMPLATE_FIRMA = 'indiceia_template_v1';
-const storage = getStorage();
+const storage = getStorage(app);
 
 // ============================================================
 // PÁGINA
