@@ -142,13 +142,14 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // LINKS CARD — uno por canal
+  // LINKS CARD — uno por canal (EXCLUYENDO QR)
   // ──────────────────────────────────────────────────────────
   _renderLinksCard() {
     const container = document.createElement('div');
     container.className = 'links-list';
 
-    CANALES.forEach(({ id, label, icon, hint }) => {
+    // Filtramos 'qr' porque ya aparece en la sección de descarga/preview
+    CANALES.filter(({ id }) => id !== 'qr').forEach(({ id, label, icon, hint }) => {
       const url = this._data.links[id];
 
       const row = document.createElement('div');
