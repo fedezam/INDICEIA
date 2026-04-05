@@ -196,7 +196,48 @@ const page = {
     const codigo      = createFormField({ id: 'prod-codigo',      label: 'Código (opcional)',   placeholder: 'SKU123', helpText: 'Si no lo completás, se genera automáticamente', value: this._data.draftManual.codigo });
     const nombre      = createFormField({ id: 'prod-nombre',      label: 'Nombre del producto', required: true, placeholder: 'Ej: Pizza Muzzarella Grande', value: this._data.draftManual.nombre });
     const descripcion = createFormField({ id: 'prod-descripcion', label: 'Descripción',          type: 'textarea', rows: 2, required: true, placeholder: 'Una línea. Ej: Pizza con muzzarella y tomate, tamaño grande', value: this._data.draftManual.descripcion });
-    const precio      = createFormField({ id: 'prod-precio',      label: 'Precio',               type: 'number', required: true, placeholder: '5500', helpText: 'Solo el número, sin $ ni puntos', value: this._data.draftManual.precio });
+    
+    // ── PRECIO CON FORMATO EN TIEMPO REAL ─────────────────────
+    const precioGroup = document.createElement('div');
+    precioGroup.className = 'form-group';
+
+    const precioLabel = document.createElement('label');
+    precioLabel.innerHTML = 'Precio <span class="required">*</span>';
+
+    const precioInput = document.createElement('input');
+    precioInput.type = 'text';
+    precioInput.id = 'prod-precio';
+    precioInput.placeholder = '5.500';
+    precioInput.className = 'form-control';
+    precioInput.inputMode = 'numeric';
+
+    const _formatPrecioDisplay = (raw) => {
+      const clean = String(raw).replace(/\D/g, '');
+      return clean ? new Intl.NumberFormat('es-AR').format(parseInt(clean)) : '';
+    };
+    const _getPrecioRaw = () => precioInput.value.replace(/\./g, '').replace(/,/g, '');
+
+    precioInput.value = this._data.draftManual.precio
+      ? _formatPrecioDisplay(this._data.draftManual.precio)
+      : '';
+
+    precioInput.addEventListener('input', () => {
+      const raw = precioInput.value.replace(/\D/g, '');
+      const pos = precioInput.selectionStart;
+      const prevLen = precioInput.value.length;
+      precioInput.value = raw ? new Intl.NumberFormat('es-AR').format(parseInt(raw)) : '';
+      const diff = precioInput.value.length - prevLen;
+      precioInput.setSelectionRange(pos + diff, pos + diff);
+    });
+
+    const precioHelp = document.createElement('small');
+    precioHelp.className = 'form-help';
+    precioHelp.textContent = 'Solo el número, sin $ ni puntos';
+
+    precioGroup.append(precioLabel, precioInput, precioHelp);
+    const precio = { getValue: () => _getPrecioRaw() };
+    // ──────────────────────────────────────────────────────────
+
     const stock       = createFormField({ id: 'prod-stock',       label: 'Stock',                type: 'number', placeholder: '0', value: this._data.draftManual.stock });
     const categoria   = createFormField({ id: 'prod-categoria',   label: 'Categoría',            required: true, placeholder: 'Ej: Pizzas', helpText: 'Necesaria para agrupar productos en el catálogo visual', value: this._data.draftManual.categoria });
 
@@ -310,7 +351,7 @@ const page = {
       }
     });
 
-    container.append(codigo, nombre, descripcion, precio, stock, categoria, imagenGroup, toggleBtn);
+    container.append(codigo, nombre, descripcion, precioGroup, stock, categoria, imagenGroup, toggleBtn);
 
     if (this._data.showAdvanced) {
       container.appendChild(this._renderAdvancedFields());
@@ -700,10 +741,15 @@ const page = {
     `;
     container.appendChild(instrucciones);
 
+    // ── BOTÓN DE DESCARGA INTELIGENTE ──────────────────────
+    const tieneProductos = this._data.productos.length > 0;
     container.appendChild(createButton({
-      label: 'Descargar plantilla ÍndiceIA', variant: 'secondary', icon: 'fa-download',
-      onClick: () => this._downloadTemplate()
+      label: tieneProductos ? 'Descargar mis productos para editar' : 'Descargar plantilla vacía',
+      variant: 'secondary',
+      icon: 'fa-download',
+      onClick: () => tieneProductos ? this._downloadProductos() : this._downloadTemplate()
     }));
+    // ────────────────────────────────────────────────────────
 
     const sep = document.createElement('div');
     sep.className = 'import-separator';
@@ -745,6 +791,57 @@ const page = {
   _downloadTemplate() {
     window.open('/plantilla_indiceia_productos.xlsx', '_blank');
   },
+
+  // ── NUEVO MÉTODO: EXPORTAR PRODUCTOS ACTUALES ───────────
+  _downloadProductos() {
+    if (!XLSX) { showToast('Error', 'Librería XLSX no cargada', 'error'); return; }
+
+    const wb = XLSX.utils.book_new();
+
+    // Hoja de productos con datos actuales
+    const CAMPOS_BASE = ['codigo','nombre','descripcion','precio_final','categoria','stock','disponibilidad','imagen'];
+    const rows = this._data.productos.map(p => {
+      const row = {
+        codigo:         p.codigo        || '',
+        nombre:         p.nombre        || '',
+        descripcion:    p.descripcion   || '',
+        precio_final:   p.precio_final  || 0,
+        categoria:      p.categoria     || '',
+        stock:          p.stock         ?? 0,
+        disponibilidad: p.disponibilidad || 'inmediata',
+        imagen:         p.imagen        || ''
+      };
+      // Atributos extra como columnas adicionales
+      if (p.atributos && typeof p.atributos === 'object') {
+        Object.entries(p.atributos).forEach(([k, v]) => { row[k] = v; });
+      }
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows, { header: CAMPOS_BASE });
+
+    // Ancho de columnas para mejor legibilidad
+    ws['!cols'] = [
+      { wch: 18 }, // codigo
+      { wch: 30 }, // nombre
+      { wch: 40 }, // descripcion
+      { wch: 12 }, // precio_final
+      { wch: 18 }, // categoria
+      { wch: 8  }, // stock
+      { wch: 14 }, // disponibilidad
+      { wch: 50 }, // imagen
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'productos');
+
+    // Hoja de firma — para que el validador la reconozca al reimportar
+    const metaWs = XLSX.utils.aoa_to_sheet([[TEMPLATE_FIRMA]]);
+    XLSX.utils.book_append_sheet(wb, metaWs, '_indiceia_meta');
+
+    XLSX.writeFile(wb, 'mis_productos_indiceia.xlsx');
+    showToast('Descargado', `${this._data.productos.length} productos exportados`, 'success');
+  },
+  // ─────────────────────────────────────────────────────────
 
   _parseFile(file) {
     if (!XLSX) { showToast('Error', 'Librería XLSX no cargada', 'error'); return; }
