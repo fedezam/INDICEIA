@@ -28,7 +28,7 @@ const CANALES = [
 // ============================================================
 const page = {
 
-  _ {
+  _data: {
     slug:      null,
     publicUrl: null,   // sin src — link limpio para referencia
     links:     {},     // { qr, ig, fb, wa, web }
