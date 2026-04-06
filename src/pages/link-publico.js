@@ -18,17 +18,17 @@ const PUBLIC_BASE_URL = 'https://indiceia-public.vercel.app';
 
 // Canales con sus metadatos para renderizar
 const CANALES = [
-  { id: 'qr',  label: 'QR / Vidriera', icon: 'fa-qrcode',         hint: 'Pegalo en tu local o vidriera' },
-  { id: 'ig',  label: 'Instagram',     icon: 'fa-instagram',       hint: 'Para tu bio o stories'         },
-  { id: 'fb',  label: 'Facebook',      icon: 'fa-facebook',        hint: 'Para tu página o publicaciones' },
-  { id: 'wa',  label: 'WhatsApp',      icon: 'fa-whatsapp',        hint: 'Para compartir por mensaje'    },
-  { id: 'web', label: 'Sitio web',     icon: 'fa-globe',           hint: 'Para incrustar en tu web'      },
+  { id: 'qr',  label: 'QR / Vidriera', icon: 'fa-qrcode',         hint: 'Para imprimir y pegar en tu local. El QR ya incluye el rastreo.' },
+  { id: 'ig',  label: 'Instagram',     icon: 'fa-instagram',       hint: 'Para tu bio o stories. Centralizá tu catálogo en un solo link.' },
+  { id: 'fb',  label: 'Facebook',      icon: 'fa-facebook',        hint: 'Para tu página o publicaciones. Convertí visitas en pedidos reales.' },
+  { id: 'wa',  label: 'WhatsApp',      icon: 'fa-whatsapp',        hint: 'Para tu firma, respuestas rápidas o estados. Tu menú se envía solo.' },
+  { id: 'web', label: 'Sitio web',     icon: 'fa-globe',           hint: 'Para incrustar en tu web existente. Integrá tu catálogo sin programar.' },
 ];
 
 // ============================================================
 const page = {
 
-  _data: {
+  _ {
     slug:      null,
     publicUrl: null,   // sin src — link limpio para referencia
     links:     {},     // { qr, ig, fb, wa, web }
@@ -147,6 +147,17 @@ const page = {
   _renderLinksCard() {
     const container = document.createElement('div');
     container.className = 'links-list';
+
+    // ── TEXTO EXPLICATIVO ────────────────────────────────
+    const intro = document.createElement('div');
+    intro.className = 'links-intro';
+    intro.innerHTML = `
+      <p><strong>Cada link está diseñado para un canal específico.</strong></p>
+      <p>Usar el correcto permite que ÍndiceIA registre de dónde viene cada visita. En la página de <strong>Estadísticas</strong> vas a poder ver exactamente qué red te trae más clientes, detectar cuáles tienen menos tráfico y ajustar tu estrategia para mejorar los canales que menos convierten.</p>
+      <p style="margin-top: 0.75rem; border-top: 1px solid var(--s-gray-200); padding-top: 0.75rem;">Además, tu link es <strong>permanente por canal</strong>: una vez que lo compartís, nunca cambia. Si actualizás productos, precios o datos de tu comercio, el contenido se refresca automáticamente. No necesitás generar un link nuevo ni volver a compartirlo cada vez que hagas un ajuste.</p>
+    `;
+    container.appendChild(intro);
+    // ─────────────────────────────────────────────────────
 
     // Filtramos 'qr' porque ya aparece en la sección de descarga/preview
     CANALES.filter(({ id }) => id !== 'qr').forEach(({ id, label, icon, hint }) => {
