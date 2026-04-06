@@ -203,3 +203,16 @@
     width: 100%;
   }
 }
+
+.links-intro {
+  margin: 0 0 1.5rem 0;
+  padding: 1rem 1.25rem;
+  background: var(--s-gray-50);
+  border-radius: var(--s-radius);
+  border-left: 3px solid var(--s-primary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--s-gray-700);
+}
+.links-intro p { margin: 0; }
+.links-intro strong { color: var(--s-gray-900); }
