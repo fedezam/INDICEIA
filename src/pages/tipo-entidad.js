@@ -34,16 +34,32 @@ async function load(ctx) {
   const serviceType = ctx.userData?.serviceType || null;
   const isEditMode  = ctx.isEditMode === true;
 
+  // ── Qué tiene actualmente ──────────────────────────────
+  const tieneProductos = offerType.productos === true;
+  const tieneServicios = offerType.servicios  === true;
+
   let selectedOffer = null;
   if (entityType === 'profesional') {
     selectedOffer = 'profesional';
   } else if (entityType) {
-    if (offerType.productos && offerType.servicios) selectedOffer = 'ambas';
-    else if (offerType.productos)                   selectedOffer = 'productos';
-    else if (offerType.servicios)                   selectedOffer = 'servicios';
+    if (tieneProductos && tieneServicios) selectedOffer = 'ambas';
+    else if (tieneProductos)             selectedOffer = 'productos';
+    else if (tieneServicios)             selectedOffer = 'servicios';
   }
 
-  return { selectedOffer, serviceType, isEditMode };
+  // ── Modo upgrade: tiene solo uno de los dos ────────────
+  // upgradeMode = true cuando está en edit y tiene solo productos o solo servicios
+  // En ese caso limitamos las opciones disponibles
+  const upgradeMode = isEditMode && (tieneProductos !== tieneServicios); // XOR
+
+  return {
+    selectedOffer,
+    serviceType,
+    isEditMode,
+    tieneProductos,
+    tieneServicios,
+    upgradeMode,
+  };
 }
 
 // ============================================================
@@ -59,21 +75,38 @@ function render(ctx, state) {
   // ── Header ──────────────────────────────────────────────
   const header = document.createElement("div");
   header.className = "te-header";
-  header.innerHTML = `
-    <h1>¿A qué te dedicás?</h1>
-    <p class="te-subtitle">Elegí la opción que mejor describe tu actividad. Esto define cómo va a funcionar tu asistente.</p>
-  `;
+
+  if (state.upgradeMode) {
+    header.innerHTML = `
+      <h1>Expandí tu negocio</h1>
+      <p class="te-subtitle">
+        ${state.tieneProductos
+          ? 'Actualmente vendés productos. Podés agregar servicios para ofrecer más a tus clientes.'
+          : 'Actualmente ofrecés servicios. Podés agregar productos a tu catálogo.'
+        }
+      </p>
+    `;
+  } else {
+    header.innerHTML = `
+      <h1>¿A qué te dedicás?</h1>
+      <p class="te-subtitle">Elegí la opción que mejor describe tu actividad. Esto define cómo va a funcionar tu asistente.</p>
+    `;
+  }
   page.appendChild(header);
 
   const labelQ1 = document.createElement("p");
   labelQ1.className = "te-label";
-  labelQ1.textContent = "¿Qué hacés principalmente?";
+  labelQ1.textContent = state.upgradeMode
+    ? "¿Qué querés agregar?"
+    : "¿Qué hacés principalmente?";
   page.appendChild(labelQ1);
 
   const cardsQ1 = document.createElement("div");
   cardsQ1.className = "te-cards";
   page.appendChild(cardsQ1);
 
+  // ── Definir opciones y cuáles están deshabilitadas ──────
+  // En upgradeMode solo "ambas" está disponible
   const opcionesQ1 = [
     {
       key:      'productos',
@@ -82,6 +115,8 @@ function render(ctx, state) {
       variant:  'primary',
       desc:     'Tenés un negocio, local o tienda donde vendés artículos físicos o digitales. Tus clientes te preguntan precios, disponibilidad y cómo comprar.',
       ejemplos: 'Kiosco, ferretería, ropa, panadería, verdulería, electrónica.',
+      // En upgradeMode: deshabilitado (ya lo tiene, o no aplica)
+      disabled: state.upgradeMode,
     },
     {
       key:      'servicios',
@@ -90,14 +125,25 @@ function render(ctx, state) {
       variant:  'info',
       desc:     'Tu trabajo es lo que hacés, no lo que vendés. Tus clientes te contratan por tu tiempo, habilidad o conocimiento.',
       ejemplos: 'Plomero, manicura, peluquería, profe particular, electricista.',
+      // En upgradeMode: deshabilitado (ya lo tiene, o no aplica)
+      disabled: state.upgradeMode,
     },
     {
       key:      'ambas',
-      title:    'Vendo productos y ofrezco servicios',
+      title:    state.tieneProductos ? 'Vendo productos + ofrezco servicios' : 'Vendo productos + ofrezco servicios',
       icon:     'fa-layer-group',
       variant:  'success',
-      desc:     'Tu actividad combina las dos cosas. Vendés productos Y también prestás servicios relacionados.',
-      ejemplos: 'Óptica que vende lentes y hace medición, estética que vende cosméticos y da tratamientos, taller que vende repuestos y hace reparaciones.',
+      desc:     state.upgradeMode
+        ? (state.tieneProductos
+            ? 'Vas a mantener tus productos y agregar servicios a tu negocio.'
+            : 'Vas a mantener tus servicios y agregar productos a tu catálogo.')
+        : 'Tu actividad combina las dos cosas. Vendés productos Y también prestás servicios relacionados.',
+      ejemplos: state.upgradeMode
+        ? (state.tieneProductos
+            ? 'Óptica que vende lentes y hace medición, taller que vende repuestos y hace reparaciones.'
+            : 'Estética que da tratamientos y vende cosméticos.')
+        : 'Óptica que vende lentes y hace medición, estética que vende cosméticos y da tratamientos, taller que vende repuestos y hace reparaciones.',
+      disabled: false, // siempre disponible
     },
     {
       key:      'profesional',
@@ -106,6 +152,8 @@ function render(ctx, state) {
       variant:  'warning',
       desc:     'Ejercés una profesión con título universitario y matrícula habilitante. Tus clientes o pacientes buscan tus credenciales, especialidad, cobertura y disponibilidad.',
       ejemplos: 'Médico, odontólogo, psicólogo, kinesiólogo, abogado, contador, arquitecto, veterinario.',
+      // En upgradeMode: deshabilitado (cambio de entidad no permitido desde acá)
+      disabled: state.upgradeMode,
     },
   ];
 
@@ -121,20 +169,33 @@ function render(ctx, state) {
     const card = createCard({
       title:      op.title,
       icon:       op.icon,
-      variant:    op.variant,
-      selectable: true,
+      variant:    op.disabled ? null : op.variant,
+      selectable: !op.disabled,
       selected:   selectedOffer === op.key,
+      flat:       op.disabled,
       content,
     });
+
+    // Estilo visual de deshabilitado
+    if (op.disabled) {
+      card.style.opacity = '0.45';
+      card.style.pointerEvents = 'none';
+      card.style.cursor = 'not-allowed';
+    }
 
     cardsQ1Map[op.key] = card;
     cardsQ1.appendChild(card);
   });
 
-  // ── Pregunta 2 — tipo de servicio (solo para servicios/ambas) ──
+  // ── Pregunta 2 — tipo de servicio ───────────────────────
+  // Solo aplica si el usuario elige servicios o ambas
+  // En upgradeMode con tieneServicios ya completo, no hace falta
+  const needsQ2Initial = selectedOffer === 'servicios' || selectedOffer === 'ambas';
+  const q2AlreadyDone  = state.upgradeMode && state.tieneServicios; // ya tenía servicios configurados
+
   const q2Container = document.createElement("div");
   q2Container.className = "te-q2";
-  q2Container.style.display = (selectedOffer === 'servicios' || selectedOffer === 'ambas') ? 'block' : 'none';
+  q2Container.style.display = (needsQ2Initial && !q2AlreadyDone) ? 'block' : 'none';
   page.appendChild(q2Container);
 
   function renderQ2() {
@@ -179,36 +240,38 @@ function render(ctx, state) {
   let q2Refs = renderQ2();
 
   // ── Texto ayuda ──────────────────────────────────────────
-  const ayuda = document.createElement('p');
-  ayuda.className = 'te-ayuda';
-  ayuda.textContent = '¿No estás seguro? Elegí la que más se parece a tu actividad principal. Siempre podés cambiarlo después.';
-  page.appendChild(ayuda);
+  if (!state.upgradeMode) {
+    const ayuda = document.createElement('p');
+    ayuda.className = 'te-ayuda';
+    ayuda.textContent = '¿No estás seguro? Elegí la que más se parece a tu actividad principal. Siempre podés cambiarlo después.';
+    page.appendChild(ayuda);
+  }
 
   // ── Lógica selección Q1 ──────────────────────────────────
   cardsQ1.addEventListener('click', () => {
     setTimeout(() => {
       let active = null;
       Object.entries(cardsQ1Map).forEach(([key, card]) => {
-        if (card.isSelected()) active = key;
+        if (card.isSelected?.()) active = key;
       });
 
       if (!active) {
-        if (selectedOffer) cardsQ1Map[selectedOffer].select();
+        if (selectedOffer) cardsQ1Map[selectedOffer]?.select?.();
         showToast('Seleccioná una opción para continuar', 'warning');
         return;
       }
 
       Object.entries(cardsQ1Map).forEach(([key, card]) => {
-        if (key !== active) card.deselect();
+        if (key !== active) card.deselect?.();
       });
 
       selectedOffer = active;
 
-      // Q2 solo para servicios/ambas — profesional no la necesita
-      const needsQ2 = active === 'servicios' || active === 'ambas';
+      // Q2: mostrar solo si elige servicios/ambas Y no ya tiene servicios configurados
+      const needsQ2 = (active === 'servicios' || active === 'ambas') && !q2AlreadyDone;
       q2Container.style.display = needsQ2 ? 'block' : 'none';
 
-      if (!needsQ2) selectedService = null;
+      if (!needsQ2) selectedService = state.tieneServicios ? state.serviceType : null;
       else q2Refs = renderQ2();
 
       document.dispatchEvent(new Event('change'));
@@ -231,30 +294,41 @@ function render(ctx, state) {
     }
   };
 
+  // ── Label dinámico del botón ─────────────────────────────
+  function getLabel() {
+    if (!selectedOffer) return 'Seleccioná una opción para continuar';
+
+    const needsService = (selectedOffer === 'servicios' || selectedOffer === 'ambas') && !q2AlreadyDone;
+    if (needsService && !selectedService) return 'Seleccioná el tipo de servicio';
+
+    // Modo upgrade: label descriptivo de la acción
+    if (state.upgradeMode && selectedOffer === 'ambas') {
+      if (state.tieneProductos && !state.tieneServicios) return 'Guardar y agregar servicios';
+      if (state.tieneServicios && !state.tieneProductos) return 'Guardar y agregar productos';
+    }
+
+    if (state.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
+    if (state.isEditMode) return 'Guardar y volver al dashboard';
+
+    return 'Continuar';
+  }
+
   // ── Botón ────────────────────────────────────────────────
   const btn = createOnboardingButton({
     stepName: 'tipo-entidad',
 
     validate: () => {
       if (!selectedOffer) return false;
-      const needsService = selectedOffer === 'servicios' || selectedOffer === 'ambas';
+      const needsService = (selectedOffer === 'servicios' || selectedOffer === 'ambas') && !q2AlreadyDone;
       if (needsService && !selectedService) return false;
       return true;
     },
 
-    getLabel: () => {
-      if (!selectedOffer) return 'Seleccioná una opción para continuar';
-      const needsService = selectedOffer === 'servicios' || selectedOffer === 'ambas';
-      if (needsService && !selectedService) return 'Seleccioná el tipo de servicio';
-      if (state.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
-      if (state.isEditMode) return 'Guardar y volver al dashboard';
-      return 'Continuar';
-    },
+    getLabel,
 
     dirtyController: state.isEditMode ? dirtyController : undefined,
 
     onSave: async ({ uid, comercioId }) => {
-      // Mapear selectedOffer a entityType y offerType
       const entityType = selectedOffer === 'profesional' ? 'profesional'
                        : selectedOffer === 'servicios'   ? 'prestador'
                        : 'comercio';
@@ -266,10 +340,13 @@ function render(ctx, state) {
             servicios: selectedOffer === 'servicios' || selectedOffer === 'ambas',
           };
 
+      // El serviceType se mantiene si ya estaba configurado
+      const finalServiceType = selectedService || state.serviceType || null;
+
       await updateDoc(doc(db, 'usuarios', uid), {
         entityType,
         offerType,
-        serviceType:                    selectedService || null,
+        serviceType:                    finalServiceType,
         'onboardingSteps.tipo-entidad': true,
       });
 
@@ -277,7 +354,7 @@ function render(ctx, state) {
         await updateDoc(doc(db, 'entidades', comercioId), {
           entityType,
           offerType,
-          serviceType: selectedService || null,
+          serviceType: finalServiceType,
         });
       }
 
@@ -286,10 +363,12 @@ function render(ctx, state) {
 
     onSuccess: () => {
       const msgs = {
-        productos:    'Vas a configurar tu negocio de productos',
-        servicios:    'Vas a configurar tu perfil de servicios',
-        ambas:        'Vas a configurar productos y servicios',
-        profesional:  'Vas a configurar tu perfil profesional',
+        productos:   'Configuración guardada',
+        servicios:   'Configuración guardada',
+        ambas:       state.tieneProductos
+                       ? '¡Servicios agregados! Completá la configuración'
+                       : '¡Productos agregados! Completá la configuración',
+        profesional: 'Configuración guardada',
       };
       showToast(msgs[selectedOffer] || 'Configuración guardada', 'success');
     },
