@@ -32,7 +32,7 @@ async function load(ctx) {
   const entityType  = ctx.userData?.entityType  || null;
   const offerType   = ctx.userData?.offerType   || {};
   const serviceType = ctx.userData?.serviceType || null;
-  const isEditMode  = ctx.isEditMode === true;
+  const isEditMode = window.isEditMode === true;
 
   // ── Qué tiene actualmente ──────────────────────────────
   const tieneProductos = offerType.productos === true;
