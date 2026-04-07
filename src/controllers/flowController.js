@@ -116,7 +116,7 @@ export async function runFlowController(uid) {
     const comercioSteps = comercioData.onboardingSteps || {};
 
     const entityType = userData.entityType || 'comercio';
-    const offerType  = userData.offerType  || {};
+    const offerType = userData.offerType || comercioData.offerType || {};
 
     const pipeline        = buildPipeline(entityType, offerType);
     const firstIncomplete = getFirstIncompleteStep(pipeline, comercioSteps);
