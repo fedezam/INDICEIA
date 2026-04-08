@@ -1,4 +1,6 @@
 // src/skeleton/layout/header/update.js
+import { auth } from '/src/services/firebase/firebase.js';
+import { signOut } from 'firebase/auth';
 
 export function updateHeader({ userData, comercioData }) {
   console.log('🧩 updateHeader()', { userData, comercioData });
@@ -21,7 +23,7 @@ export function updateHeader({ userData, comercioData }) {
   if (planEl && comercioData?.plan) {
     const planText = comercioData.plan.toUpperCase();
     planEl.textContent = planText;
-    
+
     planEl.className = 'plan-badge'; // reset
     if (comercioData.plan === 'trial') {
       planEl.classList.add('trial');
@@ -32,12 +34,17 @@ export function updateHeader({ userData, comercioData }) {
     }
   }
 
-  // Evento logout
+  // ✅ Logout
   const logoutBtn = document.getElementById('headerLogoutBtn');
   if (logoutBtn) {
-    logoutBtn.onclick = () => {
-      console.log('⎋ Logout clickeado');
-      document.dispatchEvent(new CustomEvent('skeleton:logout'));
+    logoutBtn.onclick = async () => {
+      console.log('⎋ Cerrando sesión...');
+      try {
+        await signOut(auth);
+        window.location.href = '/';
+      } catch (err) {
+        console.error('❌ Error al cerrar sesión:', err);
+      }
     };
   }
 
