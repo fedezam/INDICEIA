@@ -2,12 +2,12 @@
 
 import './capacidadesCognitivas.css';
 
-import { runSkeleton }          from '../skeleton/skeleton.js';
-import { createFirebaseAdapter } from '../skeleton/adapters/firebaseAdapter.js';
-import { createCard }            from '../skeleton/components/card/index.js';
-import { createCheckboxGroup }   from '../skeleton/components/checkbox-group/index.js';
-import { createButton }          from '../skeleton/components/button/index.js';
-import { showToast }             from '../skeleton/components/toast/index.js';
+import { runSkeleton }             from '../skeleton/skeleton.js';
+import { createFirebaseAdapter }   from '../skeleton/adapters/firebaseAdapter.js';
+import { createCard }              from '../skeleton/components/card/index.js';
+import { createCheckboxGroup }     from '../skeleton/components/checkbox-group/index.js';
+import { createOnboardingButton }  from '../skeleton/components/onboarding-button/index.js';
+import { showToast }               from '../skeleton/components/toast/index.js';
 
 // ─── DEFINICIÓN CANÓNICA ────────────────────────────────────
 const COGNITIVE_PERMISSIONS = {
@@ -51,6 +51,12 @@ const page = {
   async load(ctx) {
     this.ctx = ctx;
     this.cognitiveState = ctx.comercioData?.cognitive_permissions || {};
+
+    // Keys originales para detectar cambios
+    this.originalKeys = Object.keys(this.cognitiveState)
+      .filter(k => this.cognitiveState[k]?.enabled)
+      .sort()
+      .join(',');
   },
 
   render() {
@@ -85,53 +91,60 @@ const page = {
     });
     root.appendChild(card);
 
-    // ── Botón guardar ──
-    const btn = createButton({
-      label: 'Guardar capacidades cognitivas',
-      icon: 'fa-save',
-      variant: 'success',
-      size: 'lg',
-      block: true,
-      onClick: () => this.handleGuardar()
+    // ── dirtyController — le dice al botón si hay cambios ──
+    const dirtyController = {
+      hasUnsavedChanges: () => {
+        const currentKeys = this.checkboxGroup.getValue().sort().join(',');
+        return currentKeys !== this.originalKeys;
+      },
+      markSaved: () => {
+        this.originalKeys = this.checkboxGroup.getValue().sort().join(',');
+      }
+    };
+
+    // ── Botón ──
+    const btn = createOnboardingButton({
+      stepName: 'capacidades-cognitivas',
+      validate: () => true,  // siempre habilitado
+      dirtyController,
+      getLabel: () => dirtyController.hasUnsavedChanges()
+        ? 'Guardar y volver al dashboard'
+        : 'Volver al dashboard',
+      getData: () => {
+        const selectedKeys = this.checkboxGroup.getValue();
+        const cognitive_permissions = {};
+        selectedKeys.forEach(key => {
+          const def = COGNITIVE_PERMISSIONS[key];
+          if (def) {
+            cognitive_permissions[key] = {
+              enabled: true,
+              label: def.label,
+              description: def.description
+            };
+          }
+        });
+        return { cognitive_permissions };
+      },
+      onSuccess: () => {
+        showToast({
+          title: 'Guardado',
+          message: 'Capacidades cognitivas actualizadas',
+          variant: 'success'
+        });
+      },
+      onError: (err) => {
+        showToast({
+          title: 'Error',
+          message: err.message,
+          variant: 'error'
+        });
+      }
     });
 
     const btnWrap = document.createElement('div');
     btnWrap.className = 'ec-save';
     btnWrap.appendChild(btn);
     root.appendChild(btnWrap);
-  },
-
-  async handleGuardar() {
-    const selectedKeys = this.checkboxGroup.getValue();
-
-    const cognitive_permissions = {};
-    selectedKeys.forEach(key => {
-      const def = COGNITIVE_PERMISSIONS[key];
-      if (def) {
-        cognitive_permissions[key] = {
-          enabled: true,
-          label: def.label,
-          description: def.description
-        };
-      }
-    });
-
-    try {
-      await this.ctx.persistence.updateData({ cognitive_permissions });
-
-      showToast({
-        title: 'Guardado',
-        message: 'Capacidades cognitivas actualizadas',
-        variant: 'success'
-      });
-    } catch (err) {
-      console.error('[capacidadesCognitivas] Error al guardar:', err);
-      showToast({
-        title: 'Error',
-        message: err.message,
-        variant: 'error'
-      });
-    }
   }
 };
 
