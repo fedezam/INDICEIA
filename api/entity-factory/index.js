@@ -3,6 +3,7 @@ import { buildContext }      from '../../lib/entity-factory/builders/context.bui
 import { buildMind }         from '../../lib/entity-factory/builders/mind.builder.js';
 import { buildGoods }        from '../../lib/entity-factory/builders/goods.builder.js';
 import { buildServices }     from '../../lib/entity-factory/builders/services.builder.js';
+import { buildChannels }     from '../../lib/entity-factory/builders/channels.builder.js';
 import { buildCapabilities } from '../../lib/entity-factory/builders/capabilities.builder.js';
 import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
@@ -48,7 +49,7 @@ export async function buildEntity({ comercioId, slug = null }) {
   context.domain_tag = domainMeta.domain_tag;
 
   const goods    = await buildGoods(comercioRef, context);
-  const services = await buildServices(comercioRef);
+  const services = await buildServices(comercioRef, data);
 
   // ── VISUAL (con dirty state) ──────────────────────────────
   const templateId   = data.templateId || null;
@@ -62,15 +63,16 @@ export async function buildEntity({ comercioId, slug = null }) {
   // Mind consume domain_tag desde context
   const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
 
-  const capabilities = buildCapabilities(context);
+  // channels — canales de contacto (whatsapp, email, redes)
+  // capabilities — cognitive_permissions del comercio (LER comprimido)
+  const channels     = buildChannels(context);
+  const capabilities = buildCapabilities(data);
 
   // Campos efímeros — consumidos, no van al JSON final
   delete context.domain_tag;
   delete context.contacto;
 
   // ── SEO (con dirty state) ─────────────────────────────────
-  // Mismo patrón que buildVisual: pasamos lo guardado en Firestore,
-  // buildSeo compara el hash y saltea el upload si no hubo cambios.
   const savedSeo = {
     seoHash:    data.seoHash    || null,
     seoHtmlUrl: data.seoHtmlUrl || null,
@@ -96,13 +98,15 @@ export async function buildEntity({ comercioId, slug = null }) {
       goods:        { role: 'products_catalog',      version: '1.0', optional: true },
       services:     { role: 'services_catalog',      version: '1.0', optional: true },
       visual:       { role: 'visual_interface',      version: '1.0', optional: true },
-      capabilities: { role: 'interaction_protocols', version: '1.0', mutable: false },
+      channels:     { role: 'contact_channels',      version: '1.0', mutable: false },
+      capabilities: { role: 'cognitive_permissions', version: '1.0', optional: true },
     },
     mind,
     context,
-    ...(goods    && { goods }),
-    ...(services && { services }),
-    ...(visual   && { visual }),
-    capabilities,
+    ...(goods         && { goods }),
+    ...(services      && { services }),
+    ...(visual        && { visual }),
+    ...(channels      && { channels }),
+    ...(capabilities  && { capabilities }),
   };
 }
