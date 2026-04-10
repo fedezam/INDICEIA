@@ -77,7 +77,7 @@ export async function buildEntity({ comercioId, slug = null }) {
     seoHash:    data.seoHash    || null,
     seoHtmlUrl: data.seoHtmlUrl || null,
   };
-  await buildSeo(context, comercioId, savedSeo);
+  await buildSeo(context, comercioId, savedSeo, slug);
 
   await buildIndex(data, comercioId, goods, services);
 
