@@ -1,3 +1,5 @@
+// api/entity-factory/index.js
+
 import admin from 'firebase-admin';
 import { buildContext }      from '../../lib/entity-factory/builders/context.builder.js';
 import { buildMind }         from '../../lib/entity-factory/builders/mind.builder.js';
@@ -33,59 +35,108 @@ async function resolveReferralCode(comercioId, duenoId) {
   return comercioId.substring(0, 8).toUpperCase();
 }
 
-export async function buildEntity({ comercioId, slug = null }) {
+// ─── BUILDERS POR ENTITYTYPE ──────────────────────────────────
+
+async function buildComercio(comercioRef, data, context, referralCode, slug) {
+  const goods    = await buildGoods(comercioRef, context);
+  const services = null; // comercio no tiene servicios
+
+  const templateId  = data.templateId || null;
+  const savedVisual = { visualHash: data.visualHash || null, visualHtmlUrl: data.visualHtmlUrl || null };
+  const visual      = await buildVisual(context, comercioRef, data.comercioId, slug, templateId, savedVisual);
+  const miniAppUrl  = visual?.mini_app_url || '';
+
+  const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
+  const channels     = buildChannels(context);
+  const capabilities = buildCapabilities(data);
+
+  return { goods, services, visual, mind, mind_hash, mind_id, channels, capabilities };
+}
+
+async function buildPrestador(comercioRef, data, context, referralCode, slug) {
+  const goods    = null; // prestador no tiene productos
+  const services = await buildServices(comercioRef, data);
+
+  const templateId  = data.templateId || null;
+  const savedVisual = { visualHash: data.visualHash || null, visualHtmlUrl: data.visualHtmlUrl || null };
+  const visual      = await buildVisual(context, comercioRef, data.comercioId, slug, templateId, savedVisual);
+  const miniAppUrl  = visual?.mini_app_url || '';
+
+  const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
+  const channels     = buildChannels(context);
+  const capabilities = buildCapabilities(data);
+
+  return { goods, services, visual, mind, mind_hash, mind_id, channels, capabilities };
+}
+
+async function buildProfesional(comercioRef, data, context, referralCode, slug) {
+  const goods    = null; // profesional no tiene productos
+  const services = await buildServices(comercioRef, data); // consultas/servicios médicos
+
+  // Visual opcional — solo si tiene templateId
+  const templateId  = data.templateId || null;
+  const savedVisual = { visualHash: data.visualHash || null, visualHtmlUrl: data.visualHtmlUrl || null };
+  const visual      = await buildVisual(context, comercioRef, data.comercioId, slug, templateId, savedVisual);
+  const miniAppUrl  = visual?.mini_app_url || '';
+
+  const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
+  const channels     = buildChannels(context);
+  const capabilities = buildCapabilities(data);
+
+  return { goods, services, visual, mind, mind_hash, mind_id, channels, capabilities };
+}
+
+// ─── EXPORT PRINCIPAL ─────────────────────────────────────────
+
+export async function buildEntity({ comercioId }) {
   if (!comercioId) throw new Error('Falta comercioId');
 
   const comercioRef = db.collection('entidades').doc(comercioId);
   const snap        = await comercioRef.get();
-  if (!snap.exists) throw new Error(`Comercio ${comercioId} no encontrado`);
+  if (!snap.exists) throw new Error(`Entidad ${comercioId} no encontrada`);
 
   const data         = snap.data();
+  const entityType   = data.entityType || 'comercio';
+
+  // Slug siempre desde Firestore — no se pasa como parámetro externo
+  const slug         = data.landing?.slug || null;
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
   const context      = buildContext(data, comercioId, referralCode);
 
-  // ── DOMAIN ───────────────────────────────────────────────
+  // Domain — efímero, solo para mind y meta
   const domainMeta   = resolveDomain(context);
   context.domain_tag = domainMeta.domain_tag;
 
-  const goods    = await buildGoods(comercioRef, context);
-  const services = await buildServices(comercioRef, data);
+  // ── Builder según entityType ──────────────────────────────
+  let built;
+  if (entityType === 'profesional') {
+    built = await buildProfesional(comercioRef, data, context, referralCode, slug);
+  } else if (entityType === 'prestador') {
+    built = await buildPrestador(comercioRef, data, context, referralCode, slug);
+  } else {
+    built = await buildComercio(comercioRef, data, context, referralCode, slug);
+  }
 
-  // ── VISUAL (con dirty state) ──────────────────────────────
-  const templateId   = data.templateId || null;
-  const savedVisual  = {
-    visualHash:    data.visualHash    || null,
-    visualHtmlUrl: data.visualHtmlUrl || null,
-  };
-  const visual     = await buildVisual(context, comercioRef, comercioId, slug, templateId, savedVisual);
-  const miniAppUrl = visual?.mini_app_url || '';
-
-  // Mind consume domain_tag desde context
-  const { ler: mind, mind_hash, mind_id } = buildMind(data, context, referralCode, miniAppUrl);
-
-  // channels — canales de contacto (whatsapp, email, redes)
-  // capabilities — cognitive_permissions del comercio (LER comprimido)
-  const channels     = buildChannels(context);
-  const capabilities = buildCapabilities(data);
+  const { goods, services, visual, mind, mind_hash, mind_id, channels, capabilities } = built;
 
   // Campos efímeros — consumidos, no van al JSON final
   delete context.domain_tag;
   delete context.contacto;
 
-  // ── SEO (con dirty state) ─────────────────────────────────
-  const savedSeo = {
-    seoHash:    data.seoHash    || null,
-    seoHtmlUrl: data.seoHtmlUrl || null,
-  };
+  // ── SEO ───────────────────────────────────────────────────
+  const savedSeo = { seoHash: data.seoHash || null, seoHtmlUrl: data.seoHtmlUrl || null };
   await buildSeo(context, comercioId, savedSeo, slug);
 
+  // ── INDEX ─────────────────────────────────────────────────
   await buildIndex(data, comercioId, goods, services);
 
+  // ── ENTITY JSON ───────────────────────────────────────────
   return {
     meta: {
       version:           '1.0.0',
       tipo:              'entidad_comercial_indiceIA',
       comercioId,
+      entityType,
       generatedAt:       new Date().toISOString(),
       mind_id,
       mind_hash,
