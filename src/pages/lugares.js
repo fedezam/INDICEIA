@@ -11,6 +11,8 @@ import { createButton }           from '/src/skeleton/components/button/index.js
 import { createCard }             from '/src/skeleton/components/card/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
+import { fillProvinciaSelector }    from '/src/shared/provincias.js';
+import { mountCiudadAutocomplete }  from '/src/shared/ciudades.js';
 import './lugares.css';
 
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
@@ -95,27 +97,61 @@ function renderFormLugar(uiState, onAdd) {
   const draft = uiState.draft;
 
   const nombre = createFormField({
-    label: 'Nombre del lugar',
-    name: 'lugar-nombre',
-    required: true,
+    label:       'Nombre del lugar',
+    name:        'lugar-nombre',
+    required:    true,
     placeholder: 'Ej: Consultorio propio, Clínica San José',
-    helpText: 'Como lo conocen tus pacientes',
+    helpText:    'Como lo conocen tus pacientes',
   });
   nombre.input?.addEventListener('input', e => { draft.nombre = e.target.value.trim(); });
 
+  // ── PROVINCIA ─────────────────────────────────────────────
+  const provinciaLabel = document.createElement('label');
+  provinciaLabel.className   = 'form-field-label';
+  provinciaLabel.textContent = 'Provincia *';
+
+  const provinciaSelect = document.createElement('select');
+  provinciaSelect.className = 'form-field-input';
+  const optDefault = document.createElement('option');
+  optDefault.value       = '';
+  optDefault.textContent = 'Elegí una provincia...';
+  provinciaSelect.appendChild(optDefault);
+  fillProvinciaSelector('Argentina', provinciaSelect);
+  provinciaSelect.addEventListener('change', () => {
+    draft.provincia = provinciaSelect.value;
+    draft.ciudad    = null;
+    montarCiudad(provinciaSelect.value);
+  });
+
+  // ── CIUDAD AUTOCOMPLETE ────────────────────────────────────
+  const ciudadLabel = document.createElement('label');
+  ciudadLabel.className   = 'form-field-label';
+  ciudadLabel.textContent = 'Ciudad *';
+
+  const ciudadContainer = document.createElement('div');
+  ciudadContainer.className = 'ciudad-autocomplete-container';
+
+  function montarCiudad(provincia) {
+    mountCiudadAutocomplete(provincia, ciudadContainer, '', (ciudad) => {
+      draft.ciudad = ciudad;
+    });
+  }
+
+  // ── DIRECCIÓN ──────────────────────────────────────────────
   const direccion = createFormField({
-    label: 'Dirección',
-    name: 'lugar-direccion',
-    required: true,
-    placeholder: 'Ej: Belgrano 1234, Casilda',
+    label:       'Dirección',
+    name:        'lugar-direccion',
+    required:    true,
+    placeholder: 'Ej: Belgrano 1234',
+    helpText:    'Calle y número — sin ciudad, ya la elegiste arriba',
   });
   direccion.input?.addEventListener('input', e => { draft.direccion = e.target.value.trim(); });
 
-  // Días
+  // ── DÍAS ──────────────────────────────────────────────────
   const diasWrapper = document.createElement('div');
   diasWrapper.className = 's-form-field';
   const diasLabel = document.createElement('label');
-  diasLabel.className = 's-label';
+  diasLabel.className   = 's-label';
   diasLabel.textContent = 'Días que atendés en este lugar *';
   diasWrapper.appendChild(diasLabel);
 
@@ -125,7 +161,7 @@ function renderFormLugar(uiState, onAdd) {
 
   DIAS.forEach(dia => {
     const btn = document.createElement('button');
-    btn.type = 'button';
+    btn.type      = 'button';
     btn.className = 'dia-btn';
     btn.textContent = DIAS_LABELS[dia];
     btn.dataset.dia = dia;
@@ -140,34 +176,24 @@ function renderFormLugar(uiState, onAdd) {
 
   diasWrapper.appendChild(diasGrid);
 
-  // Horario
+  // ── HORARIO ───────────────────────────────────────────────
   const horarioWrapper = document.createElement('div');
   horarioWrapper.className = 's-form-field horario-wrapper';
   const horarioLabel = document.createElement('label');
-  horarioLabel.className = 's-label';
+  horarioLabel.className   = 's-label';
   horarioLabel.textContent = 'Horario de atención';
   horarioWrapper.appendChild(horarioLabel);
 
   const horarioRow = document.createElement('div');
   horarioRow.className = 'horario-row';
 
-  const horarioDesde = createFormField({
-    label: 'Desde',
-    name: 'lugar-desde',
-    type: 'time',
-    value: '09:00',
-  });
+  const horarioDesde = createFormField({ label: 'Desde', name: 'lugar-desde', type: 'time', value: '09:00' });
   horarioDesde.input?.addEventListener('change', e => {
     draft.horario = { ...draft.horario, desde: e.target.value };
   });
   draft.horario = { desde: '09:00', hasta: '13:00' };
 
-  const horarioHasta = createFormField({
-    label: 'Hasta',
-    name: 'lugar-hasta',
-    type: 'time',
-    value: '13:00',
-  });
+  const horarioHasta = createFormField({ label: 'Hasta', name: 'lugar-hasta', type: 'time', value: '13:00' });
   horarioHasta.input?.addEventListener('change', e => {
     draft.horario = { ...draft.horario, hasta: e.target.value };
   });
@@ -175,34 +201,47 @@ function renderFormLugar(uiState, onAdd) {
   horarioRow.append(horarioDesde, horarioHasta);
   horarioWrapper.appendChild(horarioRow);
 
+  // ── BOTÓN AGREGAR ──────────────────────────────────────────
   const btnAgregar = createButton({
-    label: 'Agregar lugar',
+    label:   'Agregar lugar',
     variant: 'success',
-    icon: 'fa-plus',
-    block: true,
+    icon:    'fa-plus',
+    block:   true,
     onClick: () => {
-      if (!draft.nombre || !draft.direccion || !draft.dias?.length) {
-        showToast('Completá nombre, dirección y al menos un día', 'warning');
+      if (!draft.nombre || !draft.provincia || !draft.ciudad || !draft.direccion || !draft.dias?.length) {
+        showToast('Completá nombre, provincia, ciudad, dirección y al menos un día', 'warning');
         return;
       }
       uiState.lugares.push(structuredClone(draft));
       uiState.draft = {};
+
       // Limpiar form
-      if (nombre.input) nombre.input.value = '';
+      if (nombre.input)    nombre.input.value    = '';
       if (direccion.input) direccion.input.value = '';
+      provinciaSelect.value = '';
+      ciudadContainer.innerHTML = '';
       diasGrid.querySelectorAll('.dia-btn').forEach(b => b.classList.remove('active'));
       DIAS.forEach(d => { diasCheckboxes[d] = false; });
+
       onAdd();
       showToast('Lugar agregado', 'success');
     }
   });
 
   const content = document.createElement('div');
-  content.append(nombre, direccion, diasWrapper, horarioWrapper, btnAgregar);
+  content.append(
+    nombre,
+    provinciaLabel, provinciaSelect,
+    ciudadLabel, ciudadContainer,
+    direccion,
+    diasWrapper,
+    horarioWrapper,
+    btnAgregar
+  );
 
   return createCard({
-    title: 'Agregar lugar de atención',
-    icon: 'fa-plus-circle',
+    title:   'Agregar lugar de atención',
+    icon:    'fa-plus-circle',
     variant: 'primary',
     content,
   });
