@@ -5,6 +5,7 @@ import { buildContext }      from '../../lib/entity-factory/builders/context.bui
 import { buildMind }         from '../../lib/entity-factory/builders/mind.builder.js';
 import { buildGoods }        from '../../lib/entity-factory/builders/goods.builder.js';
 import { buildServices }     from '../../lib/entity-factory/builders/services.builder.js';
+import { buildProfessional } from '../../lib/entity-factory/builders/professional.builder.js';
 import { buildChannels }     from '../../lib/entity-factory/builders/channels.builder.js';
 import { buildCapabilities } from '../../lib/entity-factory/builders/capabilities.builder.js';
 import { buildVisual }       from '../../lib/entity-factory/builders/visual.builder.js';
@@ -39,7 +40,7 @@ async function resolveReferralCode(comercioId, duenoId) {
 
 async function buildComercio(comercioRef, data, context, referralCode, slug) {
   const goods    = await buildGoods(comercioRef, context);
-  const services = null; // comercio no tiene servicios
+  const services = null;
 
   const templateId  = data.templateId || null;
   const savedVisual = { visualHash: data.visualHash || null, visualHtmlUrl: data.visualHtmlUrl || null };
@@ -50,11 +51,11 @@ async function buildComercio(comercioRef, data, context, referralCode, slug) {
   const channels     = buildChannels(context);
   const capabilities = buildCapabilities(data);
 
-  return { goods, services, visual, mind, mind_hash, mind_id, channels, capabilities };
+  return { goods, services, professional: null, visual, mind, mind_hash, mind_id, channels, capabilities };
 }
 
 async function buildPrestador(comercioRef, data, context, referralCode, slug) {
-  const goods    = null; // prestador no tiene productos
+  const goods    = null;
   const services = await buildServices(comercioRef, data);
 
   const templateId  = data.templateId || null;
@@ -66,14 +67,15 @@ async function buildPrestador(comercioRef, data, context, referralCode, slug) {
   const channels     = buildChannels(context);
   const capabilities = buildCapabilities(data);
 
-  return { goods, services, visual, mind, mind_hash, mind_id, channels, capabilities };
+  return { goods, services, professional: null, visual, mind, mind_hash, mind_id, channels, capabilities };
 }
 
-async function buildProfesional(comercioRef, data, context, referralCode, slug) {
-  const goods    = null; // profesional no tiene productos
-  const services = await buildServices(comercioRef, data); // consultas/servicios médicos
+async function buildProfesionalEntity(comercioRef, data, context, referralCode, slug) {
+  const goods        = null;
+  const services     = null;
+  const professional = buildProfessional(data); // síncrono — lee directo de data
 
-  // Visual opcional — solo si tiene templateId
+  // Visual opcional — solo si tiene templateId asignado
   const templateId  = data.templateId || null;
   const savedVisual = { visualHash: data.visualHash || null, visualHtmlUrl: data.visualHtmlUrl || null };
   const visual      = await buildVisual(context, comercioRef, data.comercioId, slug, templateId, savedVisual);
@@ -83,7 +85,7 @@ async function buildProfesional(comercioRef, data, context, referralCode, slug) 
   const channels     = buildChannels(context);
   const capabilities = buildCapabilities(data);
 
-  return { goods, services, visual, mind, mind_hash, mind_id, channels, capabilities };
+  return { goods, services, professional, visual, mind, mind_hash, mind_id, channels, capabilities };
 }
 
 // ─── EXPORT PRINCIPAL ─────────────────────────────────────────
@@ -95,10 +97,10 @@ export async function buildEntity({ comercioId }) {
   const snap        = await comercioRef.get();
   if (!snap.exists) throw new Error(`Entidad ${comercioId} no encontrada`);
 
-  const data         = snap.data();
-  const entityType   = data.entityType || 'comercio';
+  const data       = snap.data();
+  const entityType = data.entityType || 'comercio';
 
-  // Slug siempre desde Firestore — no se pasa como parámetro externo
+  // Slug siempre desde Firestore
   const slug         = data.landing?.slug || null;
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
   const context      = buildContext(data, comercioId, referralCode);
@@ -110,14 +112,14 @@ export async function buildEntity({ comercioId }) {
   // ── Builder según entityType ──────────────────────────────
   let built;
   if (entityType === 'profesional') {
-    built = await buildProfesional(comercioRef, data, context, referralCode, slug);
+    built = await buildProfesionalEntity(comercioRef, data, context, referralCode, slug);
   } else if (entityType === 'prestador') {
     built = await buildPrestador(comercioRef, data, context, referralCode, slug);
   } else {
     built = await buildComercio(comercioRef, data, context, referralCode, slug);
   }
 
-  const { goods, services, visual, mind, mind_hash, mind_id, channels, capabilities } = built;
+  const { goods, services, professional, visual, mind, mind_hash, mind_id, channels, capabilities } = built;
 
   // Campos efímeros — consumidos, no van al JSON final
   delete context.domain_tag;
@@ -148,6 +150,7 @@ export async function buildEntity({ comercioId }) {
       context:      { role: 'identity',             version: '1.0', mutable: false },
       goods:        { role: 'products_catalog',      version: '1.0', optional: true },
       services:     { role: 'services_catalog',      version: '1.0', optional: true },
+      professional: { role: 'professional_profile',  version: '1.0', optional: true },
       visual:       { role: 'visual_interface',      version: '1.0', optional: true },
       channels:     { role: 'contact_channels',      version: '1.0', mutable: false },
       capabilities: { role: 'cognitive_permissions', version: '1.0', optional: true },
@@ -156,6 +159,7 @@ export async function buildEntity({ comercioId }) {
     context,
     ...(goods         && { goods }),
     ...(services      && { services }),
+    ...(professional  && { professional }),
     ...(visual        && { visual }),
     ...(channels      && { channels }),
     ...(capabilities  && { capabilities }),
