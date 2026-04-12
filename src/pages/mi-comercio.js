@@ -6,6 +6,7 @@
 import { runLifecycle }          from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }           from '/src/skeleton/layout/index.js';
+import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
 
 // ==================== FIREBASE (caso especial: creación de comercio nuevo) ====================
 // Firebase directo justificado: setDoc de comercio nuevo, plan trial, landing, usuario
@@ -182,46 +183,86 @@ function renderSeccionUbicacion(state, refs, uiState) {
   // Toggle: ¿Tenés local físico?
   const localFisicoContainer = document.createElement('div');
   localFisicoContainer.className = 'form-field';
-  
+
   const toggleWrapper = document.createElement('div');
   toggleWrapper.className = 'toggle-wrapper';
-  
+
   const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.id = 'tieneLocalFisico';
+  checkbox.type    = 'checkbox';
+  checkbox.id      = 'tieneLocalFisico';
   checkbox.checked = uiState.tieneLocalFisico;
-  
+
   const label = document.createElement('label');
   label.htmlFor = 'tieneLocalFisico';
   label.innerHTML = `
     <span class="toggle-label">¿Tenés local físico?</span>
     <span class="toggle-helper">Marcá si atendés clientes en un local</span>
   `;
-  
+
   checkbox.addEventListener('change', (e) => {
     uiState.tieneLocalFisico = e.target.checked;
     document.dispatchEvent(new Event('change'));
   });
-  
+
   toggleWrapper.appendChild(checkbox);
   toggleWrapper.appendChild(label);
   localFisicoContainer.appendChild(toggleWrapper);
   section.appendChild(localFisicoContainer);
 
-  refs.fields.pais      = createFormField({ label: 'País',      name: 'pais',      value: 'Argentina', disabled: true });
-  refs.fields.provincia = createFormField({ label: 'Provincia', name: 'provincia', type: 'select', required: true });
-  refs.fields.ciudad    = createFormField({ label: 'Ciudad',    name: 'ciudad',    required: true, value: state.comercioData.ciudad   || '' });
-  refs.fields.direccion = createFormField({ label: 'Dirección', name: 'direccion', required: true, value: state.comercioData.direccion || '' });
+  // ── PAÍS ──────────────────────────────────────────────────
+  refs.fields.pais = createFormField({
+    label: 'País', name: 'pais', value: 'Argentina', disabled: true
+  });
+  section.appendChild(refs.fields.pais);
 
-  section.append(refs.fields.pais, refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion);
-
+  // ── PROVINCIA ─────────────────────────────────────────────
+  refs.fields.provincia = createFormField({
+    label: 'Provincia', name: 'provincia', type: 'select', required: true
+  });
   fillProvinciaSelector('Argentina', refs.fields.provincia.input);
-
   if (state.comercioData.provincia) {
     refs.fields.provincia.input.value = state.comercioData.provincia;
   }
+  section.appendChild(refs.fields.provincia);
 
-  agregarListeners([refs.fields.provincia, refs.fields.ciudad, refs.fields.direccion], refs, uiState);
+  // ── CIUDAD (autocomplete) ─────────────────────────────────
+  const ciudadLabel = document.createElement('label');
+  ciudadLabel.className   = 'form-field-label';
+  ciudadLabel.textContent = 'Ciudad *';
+  section.appendChild(ciudadLabel);
+
+  const ciudadContainer = document.createElement('div');
+  ciudadContainer.className = 'ciudad-autocomplete-container';
+  section.appendChild(ciudadContainer);
+
+  // Monta el autocomplete y notifica cambios al botón guardar
+  function montarCiudad(provincia, valorActual = '') {
+    mountCiudadAutocomplete(provincia, ciudadContainer, valorActual, (ciudad) => {
+      refs.ciudadSeleccionada = ciudad;
+      document.dispatchEvent(new Event('change'));
+    });
+  }
+
+  const provinciaActual = state.comercioData.provincia || '';
+  const ciudadActual    = state.comercioData.ciudad    || '';
+  if (provinciaActual) montarCiudad(provinciaActual, ciudadActual);
+
+  refs.fields.provincia.input.addEventListener('change', () => {
+    refs.ciudadSeleccionada = null;
+    montarCiudad(refs.fields.provincia.input.value);
+    document.dispatchEvent(new Event('change'));
+  });
+
+  // ── DIRECCIÓN ─────────────────────────────────────────────
+  refs.fields.direccion = createFormField({
+    label: 'Dirección', name: 'direccion', required: true,
+    value: state.comercioData.direccion || ''
+  });
+  refs.fields.direccion.input.addEventListener('input', () => {
+    document.dispatchEvent(new Event('change'));
+  });
+  section.appendChild(refs.fields.direccion);
+
   return section;
 }
 
@@ -542,7 +583,7 @@ function getCurrentData(refs, uiState) {
     descripcion:    refs.fields.descripcion?.input.value.trim()    || '',
     pais:           'Argentina',
     provincia:      refs.fields.provincia?.input.value.trim()      || '',
-    ciudad:         refs.fields.ciudad?.input.value.trim()         || '',
+    ciudad: refs.ciudadSeleccionada || refs.fields.ciudad?.input?.value.trim() || '',
     direccion:      refs.fields.direccion?.input.value.trim()      || '',
     telefono:       refs.fields.telefono?.input.value.trim()       || '',
     email:          refs.fields.email?.input.value.trim()          || '',
