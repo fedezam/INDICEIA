@@ -1,51 +1,49 @@
 // src/shared/ciudades.js
-// Fetch localidades por provincia desde API Georef Argentina.
-// Cache en Map para no refetchear si el usuario vuelve a la misma provincia.
+// Localidades por provincia desde ar-geo.json (offline, sin API, sin dependencias)
+// Uso:
+//   getLocalidades('Santa Fe')  → ['Arroyo Seco', 'Casilda', ...]
+//   mountCiudadAutocomplete(provincia, containerEl, valorActual, onChange)
 
-const cache = new Map();
+import arGeo from './ar-geo.json' assert { type: 'json' };
 
-const GEOREF_URL = 'https://apis.datos.gob.ar/georef/api/localidades';
+// ── GET LOCALIDADES ───────────────────────────────────────────
+// Aplana todos los departamentos de una provincia → array de nombres únicos ordenados
 
-const FALLBACK = {
-  'Santa Fe': ['Rosario', 'Santa Fe', 'Rafaela', 'Venado Tuerto', 'Casilda', 'Reconquista', 'Villa Constitución'],
-  'Buenos Aires': ['La Plata', 'Mar del Plata', 'Bahía Blanca', 'Quilmes', 'Lanús', 'Tigre'],
-  'Córdoba': ['Córdoba', 'Villa María', 'Río Cuarto', 'San Francisco', 'Villa Carlos Paz'],
-};
-
-export async function fetchLocalidades(provincia) {
+export function getLocalidades(provincia) {
   if (!provincia) return [];
-  if (cache.has(provincia)) return cache.get(provincia);
 
-  try {
-    const res = await fetch(`${GEOREF_URL}?provincia=${encodeURIComponent(provincia)}&max=200&orden=nombre`);
-    if (!res.ok) throw new Error(`Georef error: ${res.status}`);
-    const data = await res.json();
-    const localidades = data.localidades
-      .map(l => l.nombre)
-      .sort((a, b) => a.localeCompare(b, 'es'));
-    cache.set(provincia, localidades);
-    return localidades;
-  } catch (err) {
-    console.warn('[ciudades] Georef no disponible, usando fallback:', err.message);
-    return FALLBACK[provincia] || [];
-  }
+  const entry = Object.values(arGeo).find(p => p.nombre === provincia);
+  if (!entry) return [];
+
+  const set = new Set();
+  Object.values(entry.departamentos).forEach(dep => {
+    dep.localidades.forEach(l => set.add(l));
+  });
+
+  return [...set].sort((a, b) => a.localeCompare(b, 'es'));
 }
+
+// ── MOUNT AUTOCOMPLETE ────────────────────────────────────────
+// Monta un input con dropdown sobre cualquier containerEl.
+// onChange(nombre) se llama cuando el usuario selecciona una ciudad válida.
 
 export function mountCiudadAutocomplete(provincia, containerEl, valorActual, onChange) {
   containerEl.innerHTML = '';
+
+  const allLocalidades = getLocalidades(provincia);
 
   const wrapper = document.createElement('div');
   wrapper.style.position = 'relative';
 
   const input = document.createElement('input');
-  input.type        = 'text';
-  input.className   = 'form-field-input';
-  input.placeholder = 'Buscá tu ciudad...';
-  input.value       = valorActual || '';
-  input.autocomplete = 'off';
+  input.type          = 'text';
+  input.className     = 'form-field-input';
+  input.placeholder   = provincia ? 'Buscá tu ciudad...' : 'Primero elegí una provincia';
+  input.value         = valorActual || '';
+  input.autocomplete  = 'off';
+  input.disabled      = !provincia;
 
   const dropdown = document.createElement('ul');
-  dropdown.className = 'ciudad-dropdown';
   dropdown.style.cssText = `
     position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
     background: #fff; border: 1px solid var(--s-border, #e5e7eb);
@@ -54,30 +52,27 @@ export function mountCiudadAutocomplete(provincia, containerEl, valorActual, onC
     box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: none;
   `;
 
-  let allLocalidades = [];
-  let selectedIndex  = -1;
+  let selectedIndex = -1;
 
   function renderDropdown(items) {
     dropdown.innerHTML = '';
     selectedIndex = -1;
     if (!items.length) { dropdown.style.display = 'none'; return; }
+
     items.slice(0, 8).forEach((nombre, i) => {
       const li = document.createElement('li');
       li.textContent = nombre;
       li.style.cssText = 'padding: 8px 12px; cursor: pointer; font-size: 0.9rem;';
       li.addEventListener('mouseenter', () => setActive(i));
-      li.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        selectItem(nombre);
-      });
+      li.addEventListener('mousedown', e => { e.preventDefault(); selectItem(nombre); });
       dropdown.appendChild(li);
     });
+
     dropdown.style.display = 'block';
   }
 
   function setActive(index) {
-    const items = dropdown.querySelectorAll('li');
-    items.forEach((li, i) => {
+    dropdown.querySelectorAll('li').forEach((li, i) => {
       li.style.background = i === index ? 'var(--s-primary-light, #f0fdf4)' : '';
     });
     selectedIndex = index;
@@ -92,11 +87,15 @@ export function mountCiudadAutocomplete(provincia, containerEl, valorActual, onC
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
     if (!q) { dropdown.style.display = 'none'; return; }
-    const filtered = allLocalidades.filter(l => l.toLowerCase().includes(q));
-    renderDropdown(filtered);
+    renderDropdown(allLocalidades.filter(l => l.toLowerCase().includes(q)));
   });
 
-  input.addEventListener('keydown', (e) => {
+  input.addEventListener('focus', () => {
+    const q = input.value.trim().toLowerCase();
+    if (q) renderDropdown(allLocalidades.filter(l => l.toLowerCase().includes(q)));
+  });
+
+  input.addEventListener('keydown', e => {
     const items = dropdown.querySelectorAll('li');
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -119,11 +118,6 @@ export function mountCiudadAutocomplete(provincia, containerEl, valorActual, onC
   wrapper.appendChild(input);
   wrapper.appendChild(dropdown);
   containerEl.appendChild(wrapper);
-
-  // Fetch async — el input ya está montado, se llena el cache
-  fetchLocalidades(provincia).then(localidades => {
-    allLocalidades = localidades;
-  });
 
   return input;
 }
