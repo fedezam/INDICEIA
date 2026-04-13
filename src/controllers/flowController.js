@@ -98,11 +98,10 @@ export async function runFlowController(uid) {
       return;
     }
 
-    // ── edit mode: identidad siempre accesible ──────────────
+    // ── identity page (sin guard de edit mode todavía) ──────
     const identityPage = userData.entityType === 'prestador'   ? 'mi-perfil'
                        : userData.entityType === 'profesional' ? 'mi-perfil-profesional'
                        : 'mi-comercio';
-    if (currentPage === identityPage && editMode) return;
 
     // ── 2. COMERCIO ─────────────────────────────────────────
     const comercioSnap = await getDoc(doc(db, "entidades", userData.comercioId));
@@ -116,7 +115,7 @@ export async function runFlowController(uid) {
     const comercioSteps = comercioData.onboardingSteps || {};
 
     const entityType = userData.entityType || 'comercio';
-    const offerType = userData.offerType || comercioData.offerType || {};
+    const offerType  = userData.offerType || comercioData.offerType || {};
 
     const pipeline        = buildPipeline(entityType, offerType);
     const firstIncomplete = getFirstIncompleteStep(pipeline, comercioSteps);
