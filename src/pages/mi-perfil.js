@@ -2,15 +2,15 @@
 // src/pages/mi-perfil/mi-perfil.js
 // ============================================================
 
-import { runLifecycle }          from '/src/skeleton/lifecycle.js';
-import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
-import { mountLayout }           from '/src/skeleton/layout/index.js';
-import { runFlowController }     from '/src/controllers/flowController.js';
-import { createFormField }       from '/src/skeleton/components/form-field/index.js';
-import { createButton }          from '/src/skeleton/components/button/index.js';
-import { showToast }             from '/src/skeleton/components/toast/index.js';
-import { db }                    from '/src/services/firebase/firebase.js';
-import { fillProvinciaSelector } from '/src/shared/provincias.js';
+import { runLifecycle }           from '/src/skeleton/lifecycle.js';
+import { createFirebaseAdapter }  from '/src/skeleton/adapters/firebaseAdapter.js';
+import { mountLayout }            from '/src/skeleton/layout/index.js';
+import { runFlowController }      from '/src/controllers/flowController.js';
+import { createFormField }        from '/src/skeleton/components/form-field/index.js';
+import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
+import { showToast }              from '/src/skeleton/components/toast/index.js';
+import { db }                     from '/src/services/firebase/firebase.js';
+import { fillProvinciaSelector }  from '/src/shared/provincias.js';
 import {
   doc, setDoc, updateDoc,
   collection, getDoc, Timestamp
@@ -49,7 +49,6 @@ function render(ctx, state) {
 
   const refs = {
     fields:              {},
-    guardarBtn:          null,
     slugInput:           null,
     slugStatus:          null,
     slugValidationTimer: null,
@@ -58,14 +57,69 @@ function render(ctx, state) {
   const uiState = {
     slug:       state.comercioData.landing?.slug || null,
     slugValido: !!state.comercioData.landing?.slug,
-    cobertura:  state.comercioData.cobertura || [],  // [{ localidad, provincia }]
+    cobertura:  state.comercioData.cobertura
+                  ? state.comercioData.cobertura.map(c => ({ ...c }))
+                  : [],
   };
 
+  // ── Snapshot inicial para dirty detection ─────────────────
+  // Se captura DESPUÉS del load, ANTES de que el usuario toque nada.
+  // Se serializa a JSON para comparación estable.
+  const initialSnapshot = {
+    nombre:       state.comercioData.nombre       || '',
+    especialidad: state.comercioData.especialidad || '',
+    descripcion:  state.comercioData.descripcion  || '',
+    experiencia:  state.comercioData.experiencia  || '',
+    whatsapp:     state.comercioData.whatsapp     || '',
+    telefono:     state.comercioData.telefono     || '',
+    email:        state.comercioData.email        || '',
+    instagram:    state.comercioData.instagram    || '',
+    direccion:    state.comercioData.direccion    || '',
+    cobertura:    JSON.stringify(state.comercioData.cobertura || []),
+    slug:         state.comercioData.landing?.slug || '',
+  };
+
+  // ── getCurrentState: lee el DOM en tiempo real ─────────────
+  function getCurrentState() {
+    return {
+      nombre:       refs.fields.nombre?.input?.value.trim()       || '',
+      especialidad: refs.fields.especialidad?.input?.value.trim() || '',
+      descripcion:  refs.fields.descripcion?.input?.value.trim()  || '',
+      experiencia:  refs.fields.experiencia?.input?.value.trim()  || '',
+      whatsapp:     refs.fields.whatsapp?.input?.value.trim()     || '',
+      telefono:     refs.fields.telefono?.input?.value.trim()     || '',
+      email:        refs.fields.email?.input?.value.trim()        || '',
+      instagram:    refs.fields.instagram?.input?.value.trim()    || '',
+      direccion:    refs.fields.direccion?.input?.value.trim()    || '',
+      cobertura:    JSON.stringify(uiState.cobertura),
+      slug:         uiState.slug || '',
+    };
+  }
+
+  // ── dirtyController ───────────────────────────────────────
+  const dirtyController = {
+    hasUnsavedChanges() {
+      const current = getCurrentState();
+      return Object.keys(initialSnapshot).some(k => current[k] !== initialSnapshot[k]);
+    },
+    // El botón llama a markSaved() después de guardar con éxito.
+    // Actualizamos el snapshot para que si el usuario vuelve a la
+    // página sin recargar, el estado vuelva a estar "limpio".
+    markSaved() {
+      const current = getCurrentState();
+      Object.keys(initialSnapshot).forEach(k => {
+        initialSnapshot[k] = current[k];
+      });
+    }
+  };
+
+  // ── Título ────────────────────────────────────────────────
   const title = document.createElement('h2');
   title.className   = 'page-title';
   title.textContent = state.isNuevo ? 'Crear mi perfil' : 'Editar mi perfil';
   page.appendChild(title);
 
+  // ── Secciones ─────────────────────────────────────────────
   page.appendChild(renderSeccionIdentidad(state, refs, uiState));
   page.appendChild(renderSeccionUbicacion(state, refs, uiState));
   page.appendChild(renderSeccionContacto(state, refs, uiState));
@@ -74,21 +128,138 @@ function render(ctx, state) {
     page.appendChild(renderSeccionSlug(state, refs, uiState));
   }
 
-  refs.guardarBtn = createButton({
-    label:   'Guardar perfil',
-    icon:    'fa-save',
-    variant: 'success',
-    size:    'lg',
-    block:   true,
-    onClick: () => handleGuardar(ctx, state, refs, uiState)
-  });
-
+  // ── Botón ─────────────────────────────────────────────────
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
-  btnContainer.appendChild(refs.guardarBtn);
-  page.appendChild(btnContainer);
 
-  validarFormulario(state, refs, uiState);
+  btnContainer.appendChild(
+    createOnboardingButton({
+      stepName: 'mi-perfil',
+      redirectTo: '/src/pages/dashboard.html',
+
+      dirtyController,
+
+      // Label dinámico: si no hay cambios, el botón ya comunica que
+      // solo va a volver al dashboard sin escribir nada.
+      getLabel() {
+        return dirtyController.hasUnsavedChanges()
+          ? 'Guardar perfil'
+          : 'Volver al dashboard';
+      },
+
+      validate() {
+        const camposValidos =
+          refs.fields.nombre?.input?.value.trim()       &&
+          refs.fields.especialidad?.input?.value.trim() &&
+          refs.fields.descripcion?.input?.value.trim()  &&
+          refs.fields.whatsapp?.input?.value.trim()     &&
+          uiState.cobertura.length > 0;
+
+        const slugValido = state.slugExiste || uiState.slugValido;
+        return !!(camposValidos && slugValido);
+      },
+
+      async onSave({ persistence }) {
+        // El dirty check ya lo resolvió update.js antes de llegar aquí.
+        // Si llegamos, hay cambios reales → guardamos.
+        try {
+          const updates = {
+            nombre:       refs.fields.nombre.input.value.trim(),
+            especialidad: refs.fields.especialidad.input.value.trim(),
+            descripcion:  refs.fields.descripcion.input.value.trim(),
+            experiencia:  refs.fields.experiencia?.input?.value.trim() || null,
+
+            cobertura:  uiState.cobertura,
+            provincia:  uiState.cobertura[0]?.provincia || null,
+            localidad:  uiState.cobertura[0]?.localidad || null,
+            pais:       'Argentina',
+            direccion:  refs.fields.direccion?.input?.value.trim() || null,
+
+            whatsapp:  refs.fields.whatsapp.input.value.trim(),
+            telefono:  refs.fields.telefono?.input?.value.trim()  || null,
+            email:     refs.fields.email?.input?.value.trim()     || null,
+            instagram: refs.fields.instagram?.input?.value.trim() || null,
+
+            entityType: 'prestador',
+          };
+
+          if (!state.slugExiste) {
+            updates.landing = {
+              activo: true, nombre: updates.nombre,
+              slug: uiState.slug, tipo: 'perfil',
+              createdAt: new Date(), updatedAt: new Date()
+            };
+          } else {
+            updates.landing = {
+              ...state.comercioData.landing,
+              nombre: updates.nombre, updatedAt: new Date()
+            };
+          }
+
+          if (state.isNuevo) {
+            const comercioRef = ctx.comercioId
+              ? doc(db, 'entidades', ctx.comercioId)
+              : doc(collection(db, 'entidades'));
+            const comercioId = comercioRef.id;
+
+            const now       = Timestamp.now();
+            const expiresAt = Timestamp.fromDate(
+              new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            );
+
+            await setDoc(comercioRef, {
+              ...updates,
+              duenoId: ctx.user.uid,
+              fechaCreacion: new Date(), fechaActualizacion: new Date(),
+              onboardingSteps: { 'mi-perfil': true },
+              plan: {
+                type: 'trial', active: true, trial: true,
+                startedAt: now, expiresAt, createdAt: now,
+                updatedAt: now, source: 'system'
+              }
+            });
+
+            await setDoc(doc(db, 'landings', uiState.slug), {
+              slug: uiState.slug, comercioId,
+              nombre: updates.nombre, activo: true,
+              createdAt: new Date(), updatedAt: new Date()
+            });
+
+            await updateDoc(doc(db, 'usuarios', ctx.user.uid), {
+              comercioId, 'onboardingSteps.mi-perfil': true
+            });
+
+          } else {
+            updates['onboardingSteps.mi-perfil'] = true;
+            updates.fechaActualizacion           = new Date();
+            await updateDoc(doc(db, 'entidades', ctx.comercioId), updates);
+
+            if (!state.slugExiste) {
+              await setDoc(doc(db, 'landings', uiState.slug), {
+                slug: uiState.slug, comercioId: ctx.comercioId,
+                nombre: updates.nombre, activo: true,
+                createdAt: new Date(), updatedAt: new Date()
+              });
+            }
+          }
+
+          showToast('Perfil guardado correctamente', 'success');
+
+          // Retornamos stepMarked=true porque ya escribimos
+          // onboardingSteps directamente en Firestore arriba,
+          // evitando que update.js haga un segundo write.
+          return { success: true, stepMarked: true };
+
+        } catch (err) {
+          console.error('❌ Error guardando perfil:', err);
+          showToast('Error al guardar: ' + err.message, 'error');
+          return false;
+        }
+      },
+    })
+  );
+
+  page.appendChild(btnContainer);
 }
 
 // ============================================================
@@ -131,9 +302,6 @@ function renderSeccionIdentidad(state, refs, uiState) {
     value: state.comercioData.experiencia || ''
   });
 
-  [refs.fields.nombre, refs.fields.especialidad, refs.fields.descripcion, refs.fields.experiencia]
-    .forEach(f => f.input?.addEventListener('input', () => validarFormulario(state, refs, uiState)));
-
   if (!uiState.slug) {
     refs.fields.nombre.input?.addEventListener('input', () => {
       clearTimeout(refs.slugValidationTimer);
@@ -143,7 +311,6 @@ function renderSeccionIdentidad(state, refs, uiState) {
           const newSlug = slugify(nombre);
           refs.slugInput.value = newSlug;
           await validarSlug(newSlug, refs, uiState, true);
-          validarFormulario(state, refs, uiState);
         }, 500);
       }
     });
@@ -165,7 +332,6 @@ function renderSeccionUbicacion(state, refs, uiState) {
   help.textContent = 'Agregá las localidades donde prestás servicio. Podés agregar más de una.';
   section.appendChild(help);
 
-  // ── PROVINCIA ─────────────────────────────────────────────
   refs.fields.provincia = createFormField({
     label: 'Provincia', name: 'provincia', type: 'select', required: true
   });
@@ -179,7 +345,6 @@ function renderSeccionUbicacion(state, refs, uiState) {
 
   section.appendChild(refs.fields.provincia);
 
-  // ── LOCALIDAD (autocomplete via form-field) ────────────────
   refs.fields.localidad = createFormField({
     label: 'Localidad', name: 'localidad', type: 'autocomplete',
     provincia: provinciaGuardada,
@@ -187,7 +352,6 @@ function renderSeccionUbicacion(state, refs, uiState) {
   });
   section.appendChild(refs.fields.localidad);
 
-  // re-montar localidad cuando cambia provincia
   refs.fields.provincia.input.addEventListener('change', () => {
     const nuevaProvincia = refs.fields.provincia.input.value;
     const localidadField = createFormField({
@@ -199,27 +363,29 @@ function renderSeccionUbicacion(state, refs, uiState) {
     refs.fields.localidad = localidadField;
   });
 
-  // ── BOTÓN AGREGAR ──────────────────────────────────────────
-  const agregarBtn = createButton({
-    label: 'Agregar localidad', icon: 'fa-plus', variant: 'secondary', size: 'sm',
-    onClick: () => {
-      const provincia = refs.fields.provincia.input.value;
-      const localidad = refs.fields.localidad.getValue();
-      if (!provincia || !localidad) {
-        showToast('Elegí provincia y localidad', 'warning');
-        return;
-      }
-      const yaExiste = uiState.cobertura.some(
-        c => c.localidad === localidad && c.provincia === provincia
-      );
-      if (yaExiste) {
-        showToast('Esa localidad ya está en tu cobertura', 'warning');
-        return;
-      }
-      uiState.cobertura.push({ localidad, provincia });
-      renderCobertura(coberturaContainer, uiState, state, refs);
-      validarFormulario(state, refs, uiState);
+  // ── Botón agregar (usa createButton local — no es un botón de submit) ──
+  const agregarBtn = document.createElement('button');
+  agregarBtn.type      = 'button';
+  agregarBtn.className = 'btn btn-secondary btn-sm';
+  agregarBtn.innerHTML = '<i class="fas fa-plus"></i> Agregar localidad';
+  agregarBtn.addEventListener('click', () => {
+    const provincia = refs.fields.provincia.input.value;
+    const localidad = refs.fields.localidad.getValue();
+    if (!provincia || !localidad) {
+      showToast('Elegí provincia y localidad', 'warning');
+      return;
     }
+    const yaExiste = uiState.cobertura.some(
+      c => c.localidad === localidad && c.provincia === provincia
+    );
+    if (yaExiste) {
+      showToast('Esa localidad ya está en tu cobertura', 'warning');
+      return;
+    }
+    uiState.cobertura.push({ localidad, provincia });
+    renderCobertura(coberturaContainer, uiState);
+    // Disparar change para que updateState del botón recalcule
+    document.dispatchEvent(new Event('change'));
   });
 
   const agregarContainer = document.createElement('div');
@@ -227,57 +393,51 @@ function renderSeccionUbicacion(state, refs, uiState) {
   agregarContainer.appendChild(agregarBtn);
   section.appendChild(agregarContainer);
 
-  // ── CHIPS DE COBERTURA ─────────────────────────────────────
   const coberturaContainer = document.createElement('div');
   coberturaContainer.className = 'cobertura-list';
-  renderCobertura(coberturaContainer, uiState, state, refs);
+  renderCobertura(coberturaContainer, uiState);
   section.appendChild(coberturaContainer);
 
-  // ── DIRECCIÓN ──────────────────────────────────────────────
   refs.fields.direccion = createFormField({
     label: 'Dirección de atención', name: 'direccion',
     placeholder: 'Ej: Av. San Martín 123, Casilda',
     helpText: 'Opcional — solo si el cliente viene a tu domicilio o local',
     value: state.comercioData.direccion || ''
   });
-  refs.fields.direccion.input?.addEventListener('input', () => validarFormulario(state, refs, uiState));
   section.appendChild(refs.fields.direccion);
 
   return section;
-}
 
-function renderCobertura(container, uiState, state, refs) {
-  container.innerHTML = '';
+  function renderCobertura(container, uiState) {
+    container.innerHTML = '';
+    if (!uiState.cobertura.length) {
+      const empty = document.createElement('p');
+      empty.className   = 'form-help';
+      empty.textContent = 'Todavía no agregaste ninguna localidad.';
+      container.appendChild(empty);
+      return;
+    }
+    uiState.cobertura.forEach((item, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'cobertura-chip';
 
-  if (!uiState.cobertura.length) {
-    const empty = document.createElement('p');
-    empty.className   = 'form-help';
-    empty.textContent = 'Todavía no agregaste ninguna localidad.';
-    container.appendChild(empty);
-    return;
-  }
+      const texto = document.createElement('span');
+      texto.textContent = `${item.localidad || item.ciudad || '(sin nombre)'}, ${item.provincia}`;
 
-  uiState.cobertura.forEach((item, i) => {
-    const chip = document.createElement('div');
-    chip.className = 'cobertura-chip';
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'cobertura-chip-remove';
+      removeBtn.innerHTML = '×';
+      removeBtn.setAttribute('aria-label', 'Quitar');
+      removeBtn.addEventListener('click', () => {
+        uiState.cobertura.splice(i, 1);
+        renderCobertura(container, uiState);
+        document.dispatchEvent(new Event('change'));
+      });
 
-    const texto = document.createElement('span');
-    const nombreLocalidad = item.localidad || item.ciudad || '(sin nombre)';
-    texto.textContent = `${nombreLocalidad}, ${item.provincia}`;
-
-    const removeBtn = document.createElement('button');
-    removeBtn.className   = 'cobertura-chip-remove';
-    removeBtn.innerHTML   = '×';
-    removeBtn.setAttribute('aria-label', 'Quitar');
-    removeBtn.addEventListener('click', () => {
-      uiState.cobertura.splice(i, 1);
-      renderCobertura(container, uiState, state, refs);
-      validarFormulario(state, refs, uiState);
+      chip.append(texto, removeBtn);
+      container.appendChild(chip);
     });
-
-    chip.append(texto, removeBtn);
-    container.appendChild(chip);
-  });
+  }
 }
 
 function renderSeccionContacto(state, refs, uiState) {
@@ -312,9 +472,6 @@ function renderSeccionContacto(state, refs, uiState) {
     placeholder: '@tuusuario',
     value: state.comercioData.instagram || ''
   });
-
-  [refs.fields.whatsapp, refs.fields.telefono, refs.fields.email, refs.fields.instagram]
-    .forEach(f => f.input?.addEventListener('input', () => validarFormulario(state, refs, uiState)));
 
   section.append(
     refs.fields.whatsapp, refs.fields.telefono,
@@ -362,13 +519,13 @@ function renderSeccionSlug(state, refs, uiState) {
       updateSlugStatus(refs, 'empty', '');
       uiState.slugValido = false;
       uiState.slug       = null;
-      validarFormulario(state, refs, uiState);
+      document.dispatchEvent(new Event('change'));
       return;
     }
     updateSlugStatus(refs, 'checking', 'Verificando disponibilidad...');
     refs.slugValidationTimer = setTimeout(async () => {
       await validarSlug(slug, refs, uiState, false);
-      validarFormulario(state, refs, uiState);
+      document.dispatchEvent(new Event('change'));
     }, 800);
   });
 
@@ -442,128 +599,6 @@ function updateSlugStatus(refs, status, message) {
   };
   icon.innerHTML   = icons[status] || '';
   text.textContent = message;
-}
-
-// ============================================================
-// VALIDACIÓN
-// ============================================================
-function validarFormulario(state, refs, uiState) {
-  const camposValidos =
-    refs.fields.nombre?.input?.value.trim()       &&
-    refs.fields.especialidad?.input?.value.trim() &&
-    refs.fields.descripcion?.input?.value.trim()  &&
-    refs.fields.whatsapp?.input?.value.trim()     &&
-    uiState.cobertura.length > 0;
-
-  const slugValido       = state.slugExiste || uiState.slugValido;
-  const formularioValido = !!(camposValidos && slugValido);
-
-  formularioValido ? refs.guardarBtn?.enable() : refs.guardarBtn?.disable();
-  return formularioValido;
-}
-
-// ============================================================
-// GUARDAR
-// ============================================================
-async function handleGuardar(ctx, state, refs, uiState) {
-  if (!validarFormulario(state, refs, uiState)) {
-    showToast('Completá todos los campos requeridos', 'warning');
-    return;
-  }
-
-  refs.guardarBtn.setLoading(true);
-
-  try {
-    const updates = {
-      // Identidad
-      nombre:       refs.fields.nombre.input.value.trim(),
-      especialidad: refs.fields.especialidad.input.value.trim(),
-      descripcion:  refs.fields.descripcion.input.value.trim(),
-      experiencia:  refs.fields.experiencia?.input?.value.trim() || null,
-
-      // Ubicación
-      cobertura:  uiState.cobertura,                              // [{ localidad, provincia }]
-      provincia:  uiState.cobertura[0]?.provincia  || null,       // para index.builder
-      localidad:  uiState.cobertura[0]?.localidad  || null,       // para index.builder
-      pais:       'Argentina',
-      direccion:  refs.fields.direccion?.input?.value.trim() || null,
-
-      // Contacto
-      whatsapp:  refs.fields.whatsapp.input.value.trim(),
-      telefono:  refs.fields.telefono?.input?.value.trim()  || null,
-      email:     refs.fields.email?.input?.value.trim()     || null,
-      instagram: refs.fields.instagram?.input?.value.trim() || null,
-
-      // Tipo
-      entityType: 'prestador',
-    };
-
-    if (!state.slugExiste) {
-      updates.landing = {
-        activo: true, nombre: updates.nombre,
-        slug: uiState.slug, tipo: 'perfil',
-        createdAt: new Date(), updatedAt: new Date()
-      };
-    } else {
-      updates.landing = {
-        ...state.comercioData.landing,
-        nombre: updates.nombre, updatedAt: new Date()
-      };
-    }
-
-    if (state.isNuevo) {
-      const comercioRef = ctx.comercioId
-        ? doc(db, 'entidades', ctx.comercioId)
-        : doc(collection(db, 'entidades'));
-      const comercioId = comercioRef.id;
-
-      const now       = Timestamp.now();
-      const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-
-      await setDoc(comercioRef, {
-        ...updates,
-        duenoId: ctx.user.uid, fechaCreacion: new Date(), fechaActualizacion: new Date(),
-        onboardingSteps: { 'mi-perfil': true },
-        plan: {
-          type: 'trial', active: true, trial: true,
-          startedAt: now, expiresAt, createdAt: now, updatedAt: now, source: 'system'
-        }
-      });
-
-      await setDoc(doc(db, 'landings', uiState.slug), {
-        slug: uiState.slug, comercioId,
-        nombre: updates.nombre, activo: true,
-        createdAt: new Date(), updatedAt: new Date()
-      });
-
-      await updateDoc(doc(db, 'usuarios', ctx.user.uid), {
-        comercioId, 'onboardingSteps.mi-perfil': true
-      });
-
-    } else {
-      updates['onboardingSteps.mi-perfil'] = true;
-      updates.fechaActualizacion           = new Date();
-      await updateDoc(doc(db, 'entidades', ctx.comercioId), updates);
-
-      if (!state.slugExiste) {
-        await setDoc(doc(db, 'landings', uiState.slug), {
-          slug: uiState.slug, comercioId: ctx.comercioId,
-          nombre: updates.nombre, activo: true,
-          createdAt: new Date(), updatedAt: new Date()
-        });
-      }
-    }
-
-    showToast('Perfil guardado correctamente', 'success');
-    await new Promise(r => setTimeout(r, 500));
-    window.location.href = '/src/pages/dashboard.html';
-
-  } catch (err) {
-    console.error('❌ Error guardando perfil:', err);
-    showToast('Error al guardar: ' + err.message, 'error');
-  } finally {
-    refs.guardarBtn.setLoading(false);
-  }
 }
 
 // ============================================================
