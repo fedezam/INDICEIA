@@ -43,8 +43,8 @@ const TONOS = [
 // ============================================================
 const page = {
   fields: {},
-  greetingPreview: null,
   _aiConfig: {},
+  _nombreEntidad: '',
 
   // ──────────────────────────────────────────────────────────
   // LOAD
@@ -52,14 +52,17 @@ const page = {
   async load(ctx) {
     const raw = ctx.comercioData?.aiConfig || {};
 
+    // Nombre real de la entidad — fuente de verdad para el sufijo del saludo
+    this._nombreEntidad = ctx.comercioData?.nombre || '';
+
     // Normaliza estructura — soporta legacy plano y nueva estructura anidada
     this._aiConfig = {
       identidad: {
-        nombre:       raw.identidad?.nombre       || raw.aiName        || '',
-        idioma:       raw.identidad?.idioma        || raw.aiLanguage    || 'es-AR',
-        personalidad: raw.identidad?.personalidad  || raw.aiPersonality || '',
-        tono:         raw.identidad?.tono          || raw.aiTone        || '',
-        saludo:       raw.identidad?.saludo        || raw.aiGreeting    || ''
+        nombre:        raw.identidad?.nombre       || raw.aiName        || '',
+        idioma:        raw.identidad?.idioma        || raw.aiLanguage    || 'es-AR',
+        personalidad:  raw.identidad?.personalidad  || raw.aiPersonality || '',
+        tono:          raw.identidad?.tono          || raw.aiTone        || '',
+        saludoPrefix:  raw.identidad?.saludoPrefix  || ''   // solo la parte editable
       },
       comportamiento: {
         proactividad:      raw.comportamiento?.proactividad      || raw.proactividad      || '',
@@ -133,32 +136,83 @@ const page = {
       required: true, value: id.tono
     });
 
-    this.fields.saludo = createFormField({
-      id: 'aiGreeting', label: 'Saludo inicial',
-      type: 'textarea', rows: 4,
-      required: true, maxLength: 200,
-      placeholder: 'Ej: ¡Hola! Soy JuancaBot, ¿en qué te puedo ayudar?',
-      value: id.saludo
-    });
-
-    this.greetingPreview = document.createElement('div');
-    this.greetingPreview.className = 'ia-greeting-preview';
-    this.greetingPreview.textContent = id.saludo || 'Tu saludo aparecerá aquí...';
-
-    this.fields.saludo.input.addEventListener('input', (e) => {
-      this.greetingPreview.textContent = e.target.value || 'Tu saludo aparecerá aquí...';
-    });
+    // Campo partido: prefix editable + sufijo readonly con nombre de entidad
+    const saludoField = this._renderSaludoPartido(id.saludoPrefix);
+    this.fields.saludoPartido = saludoField;
 
     container.append(
       this.fields.nombre,
       this.fields.idioma,
       this.fields.personalidad,
       this.fields.tono,
-      this.fields.saludo,
-      this.greetingPreview
+      saludoField.wrapper
     );
 
     return createCard({ title: 'Identidad', icon: 'fa-id-card', content: container });
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // SALUDO PARTIDO
+  // Parte editable libre + sufijo fijo con nombre de entidad.
+  // El sufijo viene de context.nombre — nunca editable.
+  // ──────────────────────────────────────────────────────────
+  _renderSaludoPartido(saludoPrefixValue = '') {
+    const sufijo = this._nombreEntidad
+      ? `, el asistente de ${this._nombreEntidad}`
+      : '';
+
+    // Contenedor que imita s-form-field
+    const wrapper = document.createElement('div');
+    wrapper.className = 's-form-field';
+
+    // Label
+    const label = document.createElement('label');
+    label.className = 's-label';
+    label.htmlFor = 'aiSaludoPrefix';
+    label.textContent = 'Saludo inicial';
+
+    // Help
+    const help = document.createElement('small');
+    help.className = 's-help';
+    help.textContent = 'Escribí la bienvenida. El nombre de tu negocio se agrega automáticamente.';
+
+    // Input editable
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'aiSaludoPrefix';
+    input.className = 's-input ia-saludo-prefix';
+    input.placeholder = '¡Hola! Soy CuquiIA 🔧';
+    input.maxLength = 120;
+    input.value = saludoPrefixValue;
+
+    // Sufijo readonly
+    const sufijoEl = document.createElement('span');
+    sufijoEl.className = 'ia-saludo-sufijo';
+    sufijoEl.textContent = sufijo;
+
+    // Input wrapper con ambos elementos inline
+    const inputWrapper = document.createElement('div');
+    inputWrapper.className = 's-input-wrapper ia-saludo-wrapper';
+    inputWrapper.appendChild(input);
+    if (sufijo) inputWrapper.appendChild(sufijoEl);
+
+    // Preview en tiempo real
+    const preview = document.createElement('div');
+    preview.className = 'ia-greeting-preview';
+    preview.textContent = (saludoPrefixValue || '¡Hola!') + sufijo;
+
+    input.addEventListener('input', () => {
+      preview.textContent = (input.value.trim() || '¡Hola!') + sufijo;
+    });
+
+    wrapper.append(label, inputWrapper, help, preview);
+
+    // Exponer input para validate y getValue
+    return {
+      wrapper,
+      input,
+      getValue: () => input.value.trim()
+    };
   },
 
   // ──────────────────────────────────────────────────────────
@@ -253,8 +307,10 @@ const page = {
       stepName: 'ia-config',
 
       validate: () => {
-        const required = ['nombre', 'personalidad', 'tono', 'saludo'];
-        return required.every(k => this.fields[k]?.input.value.trim());
+        const requiredFields = ['nombre', 'personalidad', 'tono'];
+        const fieldsOk = requiredFields.every(k => this.fields[k]?.input.value.trim());
+        const saludoOk = this.fields.saludoPartido?.getValue().length > 0;
+        return fieldsOk && saludoOk;
       },
 
       onSave: async ({ comercioId }) => {
@@ -265,11 +321,11 @@ const page = {
         const raw = {
           aiConfig: {
             identidad: {
-              nombre:       v('aiName'),
-              idioma:       v('aiLanguage'),
-              personalidad: v('aiPersonality'),
-              tono:         v('aiTone'),
-              saludo:       v('aiGreeting')
+              nombre:        v('aiName'),
+              idioma:        v('aiLanguage'),
+              personalidad:  v('aiPersonality'),
+              tono:          v('aiTone'),
+              saludoPrefix:  this.fields.saludoPartido?.getValue() || '' // solo la parte editable
             },
             comportamiento: {
               proactividad:      v('proactividad'),
@@ -283,7 +339,6 @@ const page = {
           }
         };
 
-        // cleanPayload elimina vacíos antes de persistir
         await updateDoc(doc(db, 'entidades', comercioId), {
           ...cleanPayload(raw),
           fechaActualizacion: serverTimestamp()
@@ -313,7 +368,7 @@ const page = {
       idioma:            v('aiLanguage'),
       personalidad:      v('aiPersonality'),
       tono:              v('aiTone'),
-      saludo:            v('aiGreeting'),
+      saludoPrefix:      this.fields.saludoPartido?.getValue() || '',
       proactividad:      v('proactividad'),
       formatoRespuestas: v('formatoRespuestas'),
       sinPrecio:         v('sinPrecio'),
@@ -323,8 +378,10 @@ const page = {
   },
 
   isFormValid() {
-    const required = ['nombre', 'personalidad', 'tono', 'saludo'];
-    return required.every(k => this.fields[k]?.input.value.trim());
+    const required = ['nombre', 'personalidad', 'tono'];
+    const fieldsOk = required.every(k => this.fields[k]?.input.value.trim());
+    const saludoOk = this.fields.saludoPartido?.getValue().length > 0;
+    return fieldsOk && saludoOk;
   }
 };
 
