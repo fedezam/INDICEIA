@@ -127,7 +127,7 @@ export async function runFlowController(uid) {
 
     // ── MODO EDICIÓN ────────────────────────────────────────
     if (editMode) {
-      const editablePages = [...pipeline, identityPage, 'tipo-entidad'];
+      const editablePages = [...pipeline, identityPage, 'tipo-entidad', 'usuario'];
       if (editablePages.includes(currentPage)) return;
       if (currentPage !== "dashboard") window.location.href = "/dashboard.html";
       return;
