@@ -7,6 +7,7 @@ import { createFirebaseAdapter }  from '/src/skeleton/adapters/firebaseAdapter.j
 import { mountLayout }            from '/src/skeleton/layout/index.js';
 import { runFlowController }      from '/src/controllers/flowController.js';
 import { createFormField }        from '/src/skeleton/components/form-field/index.js';
+import { createButton }           from '/src/skeleton/components/button/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
 import { db }                     from '/src/services/firebase/firebase.js';
@@ -363,29 +364,28 @@ function renderSeccionUbicacion(state, refs, uiState) {
     refs.fields.localidad = localidadField;
   });
 
-  // ── Botón agregar (usa createButton local — no es un botón de submit) ──
-  const agregarBtn = document.createElement('button');
-  agregarBtn.type      = 'button';
-  agregarBtn.className = 'btn btn-secondary btn-sm';
-  agregarBtn.innerHTML = '<i class="fas fa-plus"></i> Agregar localidad';
-  agregarBtn.addEventListener('click', () => {
-    const provincia = refs.fields.provincia.input.value;
-    const localidad = refs.fields.localidad.getValue();
-    if (!provincia || !localidad) {
-      showToast('Elegí provincia y localidad', 'warning');
-      return;
+  // ── Botón agregar ──────────────────────────────────────────
+  const agregarBtn = createButton({
+    label: 'Agregar localidad', icon: 'fa-plus', variant: 'secondary', size: 'sm',
+    onClick: () => {
+      const provincia = refs.fields.provincia.input.value;
+      const localidad = refs.fields.localidad.getValue();
+      if (!provincia || !localidad) {
+        showToast('Elegí provincia y localidad', 'warning');
+        return;
+      }
+      const yaExiste = uiState.cobertura.some(
+        c => c.localidad === localidad && c.provincia === provincia
+      );
+      if (yaExiste) {
+        showToast('Esa localidad ya está en tu cobertura', 'warning');
+        return;
+      }
+      uiState.cobertura.push({ localidad, provincia });
+      renderCobertura(coberturaContainer, uiState);
+      // Disparar change para que updateState del botón recalcule
+      document.dispatchEvent(new Event('change'));
     }
-    const yaExiste = uiState.cobertura.some(
-      c => c.localidad === localidad && c.provincia === provincia
-    );
-    if (yaExiste) {
-      showToast('Esa localidad ya está en tu cobertura', 'warning');
-      return;
-    }
-    uiState.cobertura.push({ localidad, provincia });
-    renderCobertura(coberturaContainer, uiState);
-    // Disparar change para que updateState del botón recalcule
-    document.dispatchEvent(new Event('change'));
   });
 
   const agregarContainer = document.createElement('div');
