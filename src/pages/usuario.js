@@ -117,10 +117,43 @@ function render(ctx, state) {
     setTimeout(() => { provincia.input.value = userData.provincia; }, 0);
   }
 
+  // ── DIRTY STATE ────────────────────────────────────────────
+  const initialState = {
+    nombre:          userData.nombre          || '',
+    apellido:        userData.apellido        || '',
+    fechaNacimiento: userData.fechaNacimiento ? isoToFecha(userData.fechaNacimiento) : '',
+    telefono:        userData.telefono        || '',
+    provincia:       userData.provincia       || '',
+    localidad:       userData.localidad       || '',
+    direccion:       userData.direccion       || '',
+  };
+
+  function getCurrentState() {
+    return {
+      nombre:          nombre.input.value.trim(),
+      apellido:        apellido.input.value.trim(),
+      fechaNacimiento: fechaNacimiento.input.value.trim(),
+      telefono:        telefono.input.value.trim(),
+      provincia:       provincia.input.value.trim(),
+      localidad:       localidad.input.value.trim(),
+      direccion:       direccion.input.value.trim(),
+    };
+  }
+
+  function isDirty() {
+    const current = getCurrentState();
+    return Object.keys(initialState).some(k => current[k] !== initialState[k]);
+  }
+
+  // ──────────────────────────────────────────────────────────
   const btnGuardar = createOnboardingButton({
     stepName: 'usuario',
 
     onSave: async ({ persistence }) => {
+      if (!isDirty()) {
+        window.location.href = '/dashboard.html';
+        return false;
+      }
       const data = {
         nombre:          nombre.input.value.trim(),
         apellido:        apellido.input.value.trim(),
