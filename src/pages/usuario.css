@@ -1,41 +1,33 @@
 /* ============================================================
-   src/pages/usuario/usuario.css
-   Solo layout y espaciado - los componentes ya tienen sus estilos
+   usuario.css
+   Solo layout y ajustes de posición — los estilos visuales
+   vienen del skeleton (s-form-field, s-input, s-label, etc.)
    ============================================================ */
 
+/* ==================== PÁGINA ==================== */
 #skeleton-page {
-  max-width: 600px;
+  max-width: 640px;
   margin: 0 auto;
-  padding: var(--s-spacing-lg, 24px);
 }
 
-/* Título de la página */
-#skeleton-page h2 {
-  margin: 0 0 var(--s-spacing-xl, 32px) 0;
-  font-size: 24px;
+/* ==================== TÍTULO ==================== */
+.page-title {
+  font-size: 1.75rem;
   font-weight: 600;
   color: var(--s-dark, #343a40);
+  margin-bottom: 2rem;
 }
 
-/* Espaciado entre campos de formulario */
-#skeleton-page > *:not(:last-child) {
-  margin-bottom: var(--s-spacing-md, 16px);
+/* ==================== BOTÓN ==================== */
+.btn-container {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--s-border, #d2d6de);
 }
 
-/* Botón onboarding al final */
-.onboarding-button {
-  width: 100%;
-  margin-top: var(--s-spacing-xl, 32px);
-}
-
-/* Responsive */
+/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
   #skeleton-page {
-    padding: var(--s-spacing-md, 16px);
-  }
-
-  #skeleton-page h2 {
-    font-size: 20px;
-    margin-bottom: var(--s-spacing-lg, 24px);
+    padding: 0 1rem;
   }
 }
