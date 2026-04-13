@@ -17,6 +17,56 @@
   gap: var(--s-spacing);
 }
 
+/* ── Saludo partido ───────────────────────────────────────── */
+/* Wrapper que agrupa input editable + sufijo readonly inline  */
+.ia-saludo-wrapper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  overflow: hidden;
+  background-color: var(--s-card-bg, #ffffff);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.ia-saludo-wrapper:focus-within {
+  border-color: var(--s-primary, #3c8dbc);
+  box-shadow: 0 0 0 0.2rem var(--s-focus-ring, rgba(60, 141, 188, 0.3));
+}
+
+/* Input editable — sin borde propio, hereda del wrapper */
+.ia-saludo-prefix {
+  flex: 1;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  min-width: 0;
+}
+
+.ia-saludo-prefix:focus {
+  outline: none;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Sufijo readonly — visualmente separado, no editable */
+.ia-saludo-sufijo {
+  flex-shrink: 0;
+  padding: 0 10px;
+  font-size: 0.875rem;
+  color: var(--s-secondary, #6c757d);
+  background-color: #e9ecef;
+  border-left: 1px solid var(--s-border, #d2d6de);
+  white-space: nowrap;
+  line-height: var(--s-input-height, 38px);
+  height: var(--s-input-height, 38px);
+  display: flex;
+  align-items: center;
+  user-select: none;
+  cursor: default;
+}
+
 /* ── Preview del saludo ───────────────────────────────────── */
 .ia-greeting-preview {
   margin-top: var(--s-spacing-sm);
@@ -35,5 +85,12 @@
 @media (max-width: 768px) {
   .ia-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* En mobile el sufijo puede truncarse con ellipsis */
+  .ia-saludo-sufijo {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
