@@ -19,7 +19,8 @@ import { createOnboardingButton } from '/src/skeleton/components/onboarding-butt
 import { showToast }              from '/src/skeleton/components/toast/index.js';
 
 // ==================== SHARED ====================
-import { fillProvinciaSelector } from '/src/shared/provincias.js';
+import { fillProvinciaSelector }   from '/src/shared/provincias.js';
+import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
 
 // ==================== ADAPTER ====================
 const adapter = (options) => createFirebaseAdapter(options);
@@ -64,6 +65,10 @@ function render(ctx, state) {
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
+  const refs = {
+    localidadSeleccionada: userData.localidad || null,
+  };
+
   const title = document.createElement('h2');
   title.textContent = 'Datos personales';
   page.appendChild(title);
@@ -95,27 +100,53 @@ function render(ctx, state) {
     value: userData.telefono || ''
   });
 
+  // ── PAÍS ──────────────────────────────────────────────────
+  const pais = createFormField({
+    label: 'País', name: 'pais', value: 'Argentina', disabled: true
+  });
+
+  // ── PROVINCIA ─────────────────────────────────────────────
   const provincia = createFormField({
     label: 'Provincia', type: 'select', name: 'provincia', required: true
   });
+  fillProvinciaSelector('Argentina', provincia.input);
+  if (userData.provincia) {
+    setTimeout(() => { provincia.input.value = userData.provincia; }, 0);
+  }
 
-  const localidad = createFormField({
-    label: 'Localidad', name: 'localidad', required: true,
-    value: userData.localidad || ''
+  // ── LOCALIDAD (autocomplete) ───────────────────────────────
+  const localidadLabel = document.createElement('label');
+  localidadLabel.className   = 'form-field-label';
+  localidadLabel.textContent = 'Localidad *';
+
+  const localidadContainer = document.createElement('div');
+  localidadContainer.className = 'ciudad-autocomplete-container';
+
+  function montarLocalidad(provinciaVal, valorActual = '') {
+    mountCiudadAutocomplete(provinciaVal, localidadContainer, valorActual, (localidad) => {
+      refs.localidadSeleccionada = localidad;
+    });
+  }
+
+  if (userData.provincia) {
+    montarLocalidad(userData.provincia, userData.localidad || '');
+  }
+
+  provincia.input.addEventListener('change', () => {
+    refs.localidadSeleccionada = null;
+    montarLocalidad(provincia.input.value);
   });
 
+  // ── DIRECCIÓN ─────────────────────────────────────────────
   const direccion = createFormField({
     label: 'Dirección', name: 'direccion', required: true,
     value: userData.direccion || ''
   });
 
-  page.append(nombre, apellido, mail, fechaNacimiento, telefono, provincia, localidad, direccion);
-
-  fillProvinciaSelector('Argentina', provincia.input);
-
-  if (userData.provincia) {
-    setTimeout(() => { provincia.input.value = userData.provincia; }, 0);
-  }
+  page.append(
+    nombre, apellido, mail, fechaNacimiento, telefono,
+    pais, provincia, localidadLabel, localidadContainer, direccion
+  );
 
   // ── DIRTY STATE ────────────────────────────────────────────
   const initialState = {
@@ -135,7 +166,7 @@ function render(ctx, state) {
       fechaNacimiento: fechaNacimiento.input.value.trim(),
       telefono:        telefono.input.value.trim(),
       provincia:       provincia.input.value.trim(),
-      localidad:       localidad.input.value.trim(),
+      localidad:       refs.localidadSeleccionada || '',
       direccion:       direccion.input.value.trim(),
     };
   }
@@ -159,32 +190,26 @@ function render(ctx, state) {
         apellido:        apellido.input.value.trim(),
         fechaNacimiento: fechaToISO(fechaNacimiento.input.value),
         telefono:        telefono.input.value.trim(),
+        pais:            'Argentina',
         provincia:       provincia.input.value.trim(),
-        localidad:       localidad.input.value.trim(),
+        localidad:       refs.localidadSeleccionada || '',
         direccion:       direccion.input.value.trim(),
-        pais:            'Argentina'
       };
       await persistence.updateUserData(data);
       return true;
     },
 
     validate: () => {
-      if (!nombre?.input || !apellido?.input || !fechaNacimiento?.input ||
-          !telefono?.input || !provincia?.input || !localidad?.input || !direccion?.input) {
-        console.log('⏳ Inputs aún no inicializados');
-        return false;
-      }
-
+      const current = getCurrentState();
       const valid = (
-        nombre.input.value.trim()          !== '' &&
-        apellido.input.value.trim()        !== '' &&
-        fechaNacimiento.input.value.trim() !== '' &&
-        telefono.input.value.trim()        !== '' &&
-        provincia.input.value.trim()       !== '' &&
-        localidad.input.value.trim()       !== '' &&
-        direccion.input.value.trim()       !== ''
+        current.nombre          !== '' &&
+        current.apellido        !== '' &&
+        current.fechaNacimiento !== '' &&
+        current.telefono        !== '' &&
+        current.provincia       !== '' &&
+        current.localidad       !== '' &&
+        current.direccion       !== ''
       );
-
       console.log('🔍 Validación:', valid ? 'OK ✅' : 'FALTAN DATOS ❌');
       return valid;
     }
