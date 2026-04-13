@@ -151,3 +151,38 @@ select.s-input:focus {
   background-color: #e9ecef;
   color: var(--s-secondary, #6c757d);
 }
+
+/* ────────────────────────────────────────────── */
+/* Autocomplete                                   */
+/* ────────────────────────────────────────────── */
+
+.s-autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--s-card-bg, #ffffff);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  margin-top: 2px;
+  padding: 4px 0;
+  max-height: 220px;
+  overflow-y: auto;
+  list-style: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.s-autocomplete-option {
+  padding: 8px var(--s-input-padding-x, 12px);
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #495057;
+  transition: background 0.1s;
+}
+
+.s-autocomplete-option:hover,
+.s-autocomplete-option.is-active {
+  background: var(--s-primary-light, #eaf4fb);
+  color: var(--s-primary, #3c8dbc);
+}
