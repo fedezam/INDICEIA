@@ -11,7 +11,6 @@ import { createButton }          from '/src/skeleton/components/button/index.js'
 import { showToast }             from '/src/skeleton/components/toast/index.js';
 import { db }                    from '/src/services/firebase/firebase.js';
 import { fillProvinciaSelector } from '/src/shared/provincias.js';
-import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
 import {
   doc, setDoc, updateDoc,
   collection, getDoc, Timestamp
@@ -38,7 +37,6 @@ async function load(ctx) {
   const isNuevo      = !ctx.comercioData || !ctx.comercioData.nombre;
   const comercioData = ctx.comercioData || {};
   const slugExiste   = !!comercioData.landing?.slug;
-
   return { isNuevo, comercioData, slugExiste };
 }
 
@@ -55,13 +53,12 @@ function render(ctx, state) {
     slugInput:           null,
     slugStatus:          null,
     slugValidationTimer: null,
-    coberturaList:       null,   // contenedor de chips de ciudades
   };
 
   const uiState = {
-    slug:        state.comercioData.landing?.slug || null,
-    slugValido:  !!state.comercioData.landing?.slug,
-    cobertura:   state.comercioData.cobertura || [],  // [{ ciudad, provincia }]
+    slug:       state.comercioData.landing?.slug || null,
+    slugValido: !!state.comercioData.landing?.slug,
+    cobertura:  state.comercioData.cobertura || [],  // [{ localidad, provincia }]
   };
 
   const title = document.createElement('h2');
@@ -98,12 +95,7 @@ function render(ctx, state) {
 // SECCIONES
 // ============================================================
 function renderSeccionIdentidad(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = '¿Quién sos?';
-  section.appendChild(h3);
+  const section = crearSeccion('¿Quién sos?');
 
   const help = document.createElement('p');
   help.className   = 'form-help';
@@ -111,41 +103,32 @@ function renderSeccionIdentidad(state, refs, uiState) {
   section.appendChild(help);
 
   refs.fields.nombre = createFormField({
-    label:       'Nombre o marca',
-    name:        'nombre',
-    required:    true,
+    label: 'Nombre o marca', name: 'nombre', required: true,
     placeholder: 'Ej: Juan Pérez o Plomería JP',
-    helpText:    'Como te conocen tus clientes — puede ser tu nombre o el nombre de tu marca',
-    value:       state.comercioData.nombre || ''
+    helpText: 'Como te conocen tus clientes — puede ser tu nombre o el nombre de tu marca',
+    value: state.comercioData.nombre || ''
   });
 
   refs.fields.especialidad = createFormField({
-    label:       'Especialidad',
-    name:        'especialidad',
-    required:    true,
+    label: 'Especialidad', name: 'especialidad', required: true,
     placeholder: 'Ej: Plomero, Manicura, Profe de matemáticas',
-    helpText:    'En una línea, qué hacés',
-    value:       state.comercioData.especialidad || ''
+    helpText: 'En una línea, qué hacés',
+    value: state.comercioData.especialidad || ''
   });
 
   refs.fields.descripcion = createFormField({
-    label:       'Descripción',
-    name:        'descripcion',
-    type:        'textarea',
-    rows:        3,
-    required:    true,
-    placeholder: 'Ej: Hago instalaciones y reparaciones de cañerías en hogares y comercios. Más de 10 años de experiencia.',
-    helpText:    'Dos o tres líneas que expliquen qué hacés y por qué elegirte',
-    value:       state.comercioData.descripcion || ''
+    label: 'Descripción', name: 'descripcion', type: 'textarea',
+    rows: 3, required: true,
+    placeholder: 'Ej: Hago instalaciones y reparaciones de cañerías en hogares y comercios.',
+    helpText: 'Dos o tres líneas que expliquen qué hacés y por qué elegirte',
+    value: state.comercioData.descripcion || ''
   });
 
   refs.fields.experiencia = createFormField({
-    label:       'Años de experiencia',
-    name:        'experiencia',
-    type:        'number',
+    label: 'Años de experiencia', name: 'experiencia', type: 'number',
     placeholder: 'Ej: 10',
-    helpText:    'Opcional — ayuda a generar confianza',
-    value:       state.comercioData.experiencia || ''
+    helpText: 'Opcional — ayuda a generar confianza',
+    value: state.comercioData.experiencia || ''
   });
 
   [refs.fields.nombre, refs.fields.especialidad, refs.fields.descripcion, refs.fields.experiencia]
@@ -160,162 +143,131 @@ function renderSeccionIdentidad(state, refs, uiState) {
           const newSlug = slugify(nombre);
           refs.slugInput.value = newSlug;
           await validarSlug(newSlug, refs, uiState, true);
+          validarFormulario(state, refs, uiState);
         }, 500);
       }
     });
   }
 
   section.append(
-    refs.fields.nombre,
-    refs.fields.especialidad,
-    refs.fields.descripcion,
-    refs.fields.experiencia
+    refs.fields.nombre, refs.fields.especialidad,
+    refs.fields.descripcion, refs.fields.experiencia
   );
 
   return section;
 }
 
 function renderSeccionUbicacion(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = '¿Dónde trabajás?';
-  section.appendChild(h3);
+  const section = crearSeccion('¿Dónde trabajás?');
 
   const help = document.createElement('p');
   help.className   = 'form-help';
-  help.textContent = 'Agregá las ciudades donde prestás servicio. Podés agregar más de una.';
+  help.textContent = 'Agregá las localidades donde prestás servicio. Podés agregar más de una.';
   section.appendChild(help);
 
   // ── PROVINCIA ─────────────────────────────────────────────
-  const provinciaLabel = document.createElement('label');
-  provinciaLabel.className   = 'form-field-label';
-  provinciaLabel.textContent = 'Provincia';
-  section.appendChild(provinciaLabel);
-
-  const provinciaSelect = document.createElement('select');
-  provinciaSelect.className = 'form-field-input';
+  refs.fields.provincia = createFormField({
+    label: 'Provincia', name: 'provincia', type: 'select', required: true
+  });
   const optDefault = document.createElement('option');
-  optDefault.value       = '';
-  optDefault.textContent = 'Elegí una provincia...';
-  provinciaSelect.appendChild(optDefault);
-  fillProvinciaSelector('Argentina', provinciaSelect);
+  optDefault.value = ''; optDefault.textContent = 'Elegí una provincia...';
+  refs.fields.provincia.input.prepend(optDefault);
+  fillProvinciaSelector('Argentina', refs.fields.provincia.input);
 
-  // Restaurar valor guardado si existe
   const provinciaGuardada = state.comercioData.cobertura?.[0]?.provincia || '';
-  if (provinciaGuardada) provinciaSelect.value = provinciaGuardada;
+  if (provinciaGuardada) refs.fields.provincia.input.value = provinciaGuardada;
 
-  section.appendChild(provinciaSelect);
+  section.appendChild(refs.fields.provincia);
 
-  // ── CIUDAD AUTOCOMPLETE ────────────────────────────────────
-  const ciudadLabel = document.createElement('label');
-  ciudadLabel.className   = 'form-field-label';
-  ciudadLabel.textContent = 'Ciudad';
-  section.appendChild(ciudadLabel);
+  // ── LOCALIDAD (autocomplete via form-field) ────────────────
+  refs.fields.localidad = createFormField({
+    label: 'Localidad', name: 'localidad', type: 'autocomplete',
+    provincia: provinciaGuardada,
+    placeholder: provinciaGuardada ? 'Buscá tu localidad...' : 'Primero elegí una provincia',
+  });
+  section.appendChild(refs.fields.localidad);
 
-  const ciudadContainer = document.createElement('div');
-  ciudadContainer.className = 'ciudad-autocomplete-container';
-  section.appendChild(ciudadContainer);
-
-  let ciudadSeleccionada = null;
-
-  function montarCiudad(provincia) {
-    mountCiudadAutocomplete(provincia, ciudadContainer, '', (ciudad) => {
-      ciudadSeleccionada = ciudad;
+  // re-montar localidad cuando cambia provincia
+  refs.fields.provincia.input.addEventListener('change', () => {
+    const nuevaProvincia = refs.fields.provincia.input.value;
+    const localidadField = createFormField({
+      label: 'Localidad', name: 'localidad', type: 'autocomplete',
+      provincia: nuevaProvincia,
+      placeholder: nuevaProvincia ? 'Buscá tu localidad...' : 'Primero elegí una provincia',
     });
-  }
-
-  if (provinciaGuardada) montarCiudad(provinciaGuardada);
-
-  provinciaSelect.addEventListener('change', () => {
-    ciudadSeleccionada = null;
-    montarCiudad(provinciaSelect.value);
+    refs.fields.localidad.replaceWith(localidadField);
+    refs.fields.localidad = localidadField;
   });
 
   // ── BOTÓN AGREGAR ──────────────────────────────────────────
   const agregarBtn = createButton({
-    label:   'Agregar ciudad',
-    icon:    'fa-plus',
-    variant: 'secondary',
-    size:    'sm',
+    label: 'Agregar localidad', icon: 'fa-plus', variant: 'secondary', size: 'sm',
     onClick: () => {
-      const provincia = provinciaSelect.value;
-      if (!provincia || !ciudadSeleccionada) {
-        showToast('Elegí provincia y ciudad', 'warning');
+      const provincia = refs.fields.provincia.input.value;
+      const localidad = refs.fields.localidad.getValue();
+      if (!provincia || !localidad) {
+        showToast('Elegí provincia y localidad', 'warning');
         return;
       }
       const yaExiste = uiState.cobertura.some(
-        c => c.ciudad === ciudadSeleccionada && c.provincia === provincia
+        c => c.localidad === localidad && c.provincia === provincia
       );
       if (yaExiste) {
-        showToast('Esa ciudad ya está en tu cobertura', 'warning');
+        showToast('Esa localidad ya está en tu cobertura', 'warning');
         return;
       }
-      uiState.cobertura.push({ ciudad: ciudadSeleccionada, provincia });
+      uiState.cobertura.push({ localidad, provincia });
       renderCobertura(coberturaContainer, uiState, state, refs);
       validarFormulario(state, refs, uiState);
-      ciudadSeleccionada = null;
-      montarCiudad(provincia);
     }
   });
 
   const agregarContainer = document.createElement('div');
-  agregarContainer.style.marginTop = '8px';
+  agregarContainer.className = 'agregar-cobertura-container';
   agregarContainer.appendChild(agregarBtn);
   section.appendChild(agregarContainer);
 
-  // ── LISTA DE CIUDADES AGREGADAS ────────────────────────────
+  // ── CHIPS DE COBERTURA ─────────────────────────────────────
   const coberturaContainer = document.createElement('div');
   coberturaContainer.className = 'cobertura-list';
-  coberturaContainer.style.marginTop = '12px';
-  refs.coberturaList = coberturaContainer;
   renderCobertura(coberturaContainer, uiState, state, refs);
   section.appendChild(coberturaContainer);
 
   // ── DIRECCIÓN ──────────────────────────────────────────────
   refs.fields.direccion = createFormField({
-    label:       'Dirección de atención',
-    name:        'direccion',
+    label: 'Dirección de atención', name: 'direccion',
     placeholder: 'Ej: Av. San Martín 123, Casilda',
-    helpText:    'Opcional — solo si el cliente viene a tu domicilio o local',
-    value:       state.comercioData.direccion || ''
+    helpText: 'Opcional — solo si el cliente viene a tu domicilio o local',
+    value: state.comercioData.direccion || ''
   });
-
   refs.fields.direccion.input?.addEventListener('input', () => validarFormulario(state, refs, uiState));
   section.appendChild(refs.fields.direccion);
 
   return section;
 }
 
-// ── RENDER CHIPS DE COBERTURA ──────────────────────────────
 function renderCobertura(container, uiState, state, refs) {
   container.innerHTML = '';
+
   if (!uiState.cobertura.length) {
     const empty = document.createElement('p');
     empty.className   = 'form-help';
-    empty.textContent = 'Todavía no agregaste ninguna ciudad.';
+    empty.textContent = 'Todavía no agregaste ninguna localidad.';
     container.appendChild(empty);
     return;
   }
 
   uiState.cobertura.forEach((item, i) => {
     const chip = document.createElement('div');
-    chip.className  = 'cobertura-chip';
-    chip.style.cssText = `
-      display: inline-flex; align-items: center; gap: 6px;
-      background: var(--s-primary-light, #f0fdf4);
-      border: 1px solid var(--s-primary, #16a34a);
-      border-radius: 20px; padding: 4px 10px; margin: 4px;
-      font-size: 0.85rem;
-    `;
+    chip.className = 'cobertura-chip';
 
     const texto = document.createElement('span');
-    texto.textContent = `${item.ciudad}, ${item.provincia}`;
+    texto.textContent = `${item.localidad}, ${item.provincia}`;
 
     const removeBtn = document.createElement('button');
+    removeBtn.className   = 'cobertura-chip-remove';
     removeBtn.innerHTML   = '×';
-    removeBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:1rem;color:#666;padding:0;line-height:1;';
+    removeBtn.setAttribute('aria-label', 'Quitar');
     removeBtn.addEventListener('click', () => {
       uiState.cobertura.splice(i, 1);
       renderCobertura(container, uiState, state, refs);
@@ -328,12 +280,7 @@ function renderCobertura(container, uiState, state, refs) {
 }
 
 function renderSeccionContacto(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = '¿Cómo te contactan?';
-  section.appendChild(h3);
+  const section = crearSeccion('¿Cómo te contactan?');
 
   const help = document.createElement('p');
   help.className   = 'form-help';
@@ -341,56 +288,43 @@ function renderSeccionContacto(state, refs, uiState) {
   section.appendChild(help);
 
   refs.fields.whatsapp = createFormField({
-    label:       'WhatsApp',
-    name:        'whatsapp',
-    required:    true,
+    label: 'WhatsApp', name: 'whatsapp', required: true,
     placeholder: 'Ej: 3412295316',
-    helpText:    'Solo números, sin espacios ni guiones',
-    value:       state.comercioData.whatsapp || ''
+    helpText: 'Solo números, sin espacios ni guiones',
+    value: state.comercioData.whatsapp || ''
   });
 
   refs.fields.telefono = createFormField({
-    label:       'Teléfono',
-    name:        'telefono',
+    label: 'Teléfono', name: 'telefono',
     placeholder: 'Opcional',
-    value:       state.comercioData.telefono || ''
+    value: state.comercioData.telefono || ''
   });
 
   refs.fields.email = createFormField({
-    label:       'Email',
-    name:        'email',
-    type:        'email',
+    label: 'Email', name: 'email', type: 'email',
     placeholder: 'Opcional',
-    value:       state.comercioData.email || ''
+    value: state.comercioData.email || ''
   });
 
   refs.fields.instagram = createFormField({
-    label:       'Instagram',
-    name:        'instagram',
+    label: 'Instagram', name: 'instagram',
     placeholder: '@tuusuario',
-    value:       state.comercioData.instagram || ''
+    value: state.comercioData.instagram || ''
   });
 
   [refs.fields.whatsapp, refs.fields.telefono, refs.fields.email, refs.fields.instagram]
     .forEach(f => f.input?.addEventListener('input', () => validarFormulario(state, refs, uiState)));
 
   section.append(
-    refs.fields.whatsapp,
-    refs.fields.telefono,
-    refs.fields.email,
-    refs.fields.instagram
+    refs.fields.whatsapp, refs.fields.telefono,
+    refs.fields.email, refs.fields.instagram
   );
 
   return section;
 }
 
 function renderSeccionSlug(state, refs, uiState) {
-  const section = document.createElement('div');
-  section.className = 'form-section';
-
-  const h3 = document.createElement('h3');
-  h3.textContent = 'Tu dirección en ÍndiceIA';
-  section.appendChild(h3);
+  const section = crearSeccion('Tu dirección en ÍndiceIA');
 
   const help = document.createElement('p');
   help.className   = 'form-help';
@@ -409,7 +343,6 @@ function renderSeccionSlug(state, refs, uiState) {
   slugInput.className   = 'slug-input';
   slugInput.placeholder = 'tu-nombre';
   slugInput.value       = uiState.slug || '';
-
   refs.slugInput = slugInput;
 
   slugContainer.append(slugPrefix, slugInput);
@@ -432,7 +365,10 @@ function renderSeccionSlug(state, refs, uiState) {
       return;
     }
     updateSlugStatus(refs, 'checking', 'Verificando disponibilidad...');
-    refs.slugValidationTimer = setTimeout(() => validarSlug(slug, refs, uiState, false), 800);
+    refs.slugValidationTimer = setTimeout(async () => {
+      await validarSlug(slug, refs, uiState, false);
+      validarFormulario(state, refs, uiState);
+    }, 800);
   });
 
   return section;
@@ -459,17 +395,14 @@ async function validarSlug(slug, refs, uiState, autoGenerado) {
     uiState.slug       = null;
     return;
   }
-
   try {
     const snap = await getDoc(doc(db, 'landings', slug));
-
     if (!snap.exists()) {
       uiState.slug       = slug;
       uiState.slugValido = true;
       updateSlugStatus(refs, 'available', `✓ Disponible: indiceia.com/${slug}`);
       return;
     }
-
     if (autoGenerado) {
       for (let i = 1; i <= 3; i++) {
         const alt     = `${slug}-${i}`;
@@ -483,11 +416,9 @@ async function validarSlug(slug, refs, uiState, autoGenerado) {
         }
       }
     }
-
     uiState.slugValido = false;
     uiState.slug       = null;
     updateSlugStatus(refs, 'taken', 'Este nombre ya está en uso. Probá con otro.');
-
   } catch (err) {
     console.error('Error validando slug:', err);
     uiState.slugValido = false;
@@ -521,15 +452,12 @@ function validarFormulario(state, refs, uiState) {
     refs.fields.especialidad?.input?.value.trim() &&
     refs.fields.descripcion?.input?.value.trim()  &&
     refs.fields.whatsapp?.input?.value.trim()     &&
-    uiState.cobertura.length > 0;                  // al menos una ciudad
+    uiState.cobertura.length > 0;
 
   const slugValido       = state.slugExiste || uiState.slugValido;
-  const formularioValido = camposValidos && slugValido;
+  const formularioValido = !!(camposValidos && slugValido);
 
-  if (refs.guardarBtn) {
-    formularioValido ? refs.guardarBtn.enable() : refs.guardarBtn.disable();
-  }
-
+  formularioValido ? refs.guardarBtn?.enable() : refs.guardarBtn?.disable();
   return formularioValido;
 }
 
@@ -552,10 +480,10 @@ async function handleGuardar(ctx, state, refs, uiState) {
       descripcion:  refs.fields.descripcion.input.value.trim(),
       experiencia:  refs.fields.experiencia?.input?.value.trim() || null,
 
-      // Ubicación estructurada
-      cobertura:  uiState.cobertura,           // [{ ciudad, provincia }]
-      provincia:  uiState.cobertura[0]?.provincia || null,  // para index.builder
-      ciudad:     uiState.cobertura[0]?.ciudad    || null,  // para index.builder
+      // Ubicación
+      cobertura:  uiState.cobertura,                              // [{ localidad, provincia }]
+      provincia:  uiState.cobertura[0]?.provincia  || null,       // para index.builder
+      localidad:  uiState.cobertura[0]?.localidad  || null,       // para index.builder
       pais:       'Argentina',
       direccion:  refs.fields.direccion?.input?.value.trim() || null,
 
@@ -565,24 +493,20 @@ async function handleGuardar(ctx, state, refs, uiState) {
       email:     refs.fields.email?.input?.value.trim()     || null,
       instagram: refs.fields.instagram?.input?.value.trim() || null,
 
-      // Tipo de entidad
+      // Tipo
       entityType: 'prestador',
     };
 
     if (!state.slugExiste) {
       updates.landing = {
-        activo:    true,
-        nombre:    updates.nombre,
-        slug:      uiState.slug,
-        tipo:      'perfil',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        activo: true, nombre: updates.nombre,
+        slug: uiState.slug, tipo: 'perfil',
+        createdAt: new Date(), updatedAt: new Date()
       };
     } else {
       updates.landing = {
         ...state.comercioData.landing,
-        nombre:    updates.nombre,
-        updatedAt: new Date()
+        nombre: updates.nombre, updatedAt: new Date()
       };
     }
 
@@ -597,10 +521,8 @@ async function handleGuardar(ctx, state, refs, uiState) {
 
       await setDoc(comercioRef, {
         ...updates,
-        duenoId:            ctx.user.uid,
-        fechaCreacion:      new Date(),
-        fechaActualizacion: new Date(),
-        onboardingSteps:    { 'mi-perfil': true },
+        duenoId: ctx.user.uid, fechaCreacion: new Date(), fechaActualizacion: new Date(),
+        onboardingSteps: { 'mi-perfil': true },
         plan: {
           type: 'trial', active: true, trial: true,
           startedAt: now, expiresAt, createdAt: now, updatedAt: now, source: 'system'
@@ -608,33 +530,25 @@ async function handleGuardar(ctx, state, refs, uiState) {
       });
 
       await setDoc(doc(db, 'landings', uiState.slug), {
-        slug:      uiState.slug,
-        comercioId,
-        nombre:    updates.nombre,
-        activo:    true,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        slug: uiState.slug, comercioId,
+        nombre: updates.nombre, activo: true,
+        createdAt: new Date(), updatedAt: new Date()
       });
 
       await updateDoc(doc(db, 'usuarios', ctx.user.uid), {
-        comercioId,
-        'onboardingSteps.mi-perfil': true
+        comercioId, 'onboardingSteps.mi-perfil': true
       });
 
     } else {
       updates['onboardingSteps.mi-perfil'] = true;
       updates.fechaActualizacion           = new Date();
-
       await updateDoc(doc(db, 'entidades', ctx.comercioId), updates);
 
       if (!state.slugExiste) {
         await setDoc(doc(db, 'landings', uiState.slug), {
-          slug:       uiState.slug,
-          comercioId: ctx.comercioId,
-          nombre:     updates.nombre,
-          activo:     true,
-          createdAt:  new Date(),
-          updatedAt:  new Date()
+          slug: uiState.slug, comercioId: ctx.comercioId,
+          nombre: updates.nombre, activo: true,
+          createdAt: new Date(), updatedAt: new Date()
         });
       }
     }
@@ -649,4 +563,16 @@ async function handleGuardar(ctx, state, refs, uiState) {
   } finally {
     refs.guardarBtn.setLoading(false);
   }
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function crearSeccion(titulo) {
+  const section = document.createElement('div');
+  section.className = 'form-section';
+  const h3 = document.createElement('h3');
+  h3.textContent = titulo;
+  section.appendChild(h3);
+  return section;
 }
