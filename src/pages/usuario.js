@@ -69,10 +69,13 @@ function render(ctx, state) {
     localidadSeleccionada: userData.localidad || null,
   };
 
+  // ── Título ────────────────────────────────────────────────
   const title = document.createElement('h2');
+  title.className   = 'page-title';
   title.textContent = 'Datos personales';
   page.appendChild(title);
 
+  // ── Campos ────────────────────────────────────────────────
   const nombre = createFormField({
     label: 'Nombre', name: 'nombre', required: true,
     value: userData.nombre || ''
@@ -125,6 +128,8 @@ function render(ctx, state) {
   function montarLocalidad(provinciaVal, valorActual = '') {
     mountCiudadAutocomplete(provinciaVal, localidadContainer, valorActual, (localidad) => {
       refs.localidadSeleccionada = localidad;
+      // Notificar al botón para que recalcule validate() y getLabel()
+      document.dispatchEvent(new Event('change'));
     });
   }
 
@@ -148,8 +153,8 @@ function render(ctx, state) {
     pais, provincia, localidadLabel, localidadContainer, direccion
   );
 
-  // ── DIRTY STATE ────────────────────────────────────────────
-  const initialState = {
+  // ── SNAPSHOT INICIAL ──────────────────────────────────────
+  const initialSnapshot = {
     nombre:          userData.nombre          || '',
     apellido:        userData.apellido        || '',
     fechaNacimiento: userData.fechaNacimiento ? isoToFecha(userData.fechaNacimiento) : '',
@@ -159,6 +164,7 @@ function render(ctx, state) {
     direccion:       userData.direccion       || '',
   };
 
+  // ── getCurrentState ───────────────────────────────────────
   function getCurrentState() {
     return {
       nombre:          nombre.input.value.trim(),
@@ -171,51 +177,70 @@ function render(ctx, state) {
     };
   }
 
-  function isDirty() {
-    const current = getCurrentState();
-    return Object.keys(initialState).some(k => current[k] !== initialState[k]);
-  }
-
-  // ──────────────────────────────────────────────────────────
-  const btnGuardar = createOnboardingButton({
-    stepName: 'usuario',
-
-    onSave: async ({ persistence }) => {
-      if (!isDirty()) {
-        window.location.href = '/dashboard.html';
-        return false;
-      }
-      const data = {
-        nombre:          nombre.input.value.trim(),
-        apellido:        apellido.input.value.trim(),
-        fechaNacimiento: fechaToISO(fechaNacimiento.input.value),
-        telefono:        telefono.input.value.trim(),
-        pais:            'Argentina',
-        provincia:       provincia.input.value.trim(),
-        localidad:       refs.localidadSeleccionada || '',
-        direccion:       direccion.input.value.trim(),
-      };
-      await persistence.updateUserData(data);
-      return true;
-    },
-
-    validate: () => {
+  // ── dirtyController ───────────────────────────────────────
+  const dirtyController = {
+    hasUnsavedChanges() {
       const current = getCurrentState();
-      const valid = (
-        current.nombre          !== '' &&
-        current.apellido        !== '' &&
-        current.fechaNacimiento !== '' &&
-        current.telefono        !== '' &&
-        current.provincia       !== '' &&
-        current.localidad       !== '' &&
-        current.direccion       !== ''
-      );
-      console.log('🔍 Validación:', valid ? 'OK ✅' : 'FALTAN DATOS ❌');
-      return valid;
+      return Object.keys(initialSnapshot).some(k => current[k] !== initialSnapshot[k]);
+    },
+    markSaved() {
+      const current = getCurrentState();
+      Object.keys(initialSnapshot).forEach(k => {
+        initialSnapshot[k] = current[k];
+      });
     }
-  });
+  };
 
-  page.appendChild(btnGuardar);
+  // ── Botón ─────────────────────────────────────────────────
+  const btnContainer = document.createElement('div');
+  btnContainer.className = 'btn-container';
+
+  btnContainer.appendChild(
+    createOnboardingButton({
+      stepName:   'usuario',
+      redirectTo: '/dashboard.html',
+
+      dirtyController,
+
+      getLabel() {
+        return dirtyController.hasUnsavedChanges()
+          ? 'Guardar datos'
+          : 'Volver al dashboard';
+      },
+
+      validate() {
+        const current = getCurrentState();
+        const valid = (
+          current.nombre          !== '' &&
+          current.apellido        !== '' &&
+          current.fechaNacimiento !== '' &&
+          current.telefono        !== '' &&
+          current.provincia       !== '' &&
+          current.localidad       !== '' &&
+          current.direccion       !== ''
+        );
+        console.log('🔍 Validación:', valid ? 'OK ✅' : 'FALTAN DATOS ❌');
+        return valid;
+      },
+
+      async onSave({ persistence }) {
+        const data = {
+          nombre:          nombre.input.value.trim(),
+          apellido:        apellido.input.value.trim(),
+          fechaNacimiento: fechaToISO(fechaNacimiento.input.value),
+          telefono:        telefono.input.value.trim(),
+          pais:            'Argentina',
+          provincia:       provincia.input.value.trim(),
+          localidad:       refs.localidadSeleccionada || '',
+          direccion:       direccion.input.value.trim(),
+        };
+        await persistence.updateUserData(data);
+        return true;
+      },
+    })
+  );
+
+  page.appendChild(btnContainer);
   console.log('✅ Página usuario renderizada');
 }
 
