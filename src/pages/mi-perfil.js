@@ -262,7 +262,8 @@ function renderCobertura(container, uiState, state, refs) {
     chip.className = 'cobertura-chip';
 
     const texto = document.createElement('span');
-    texto.textContent = `${item.localidad}, ${item.provincia}`;
+    const nombreLocalidad = item.localidad || item.ciudad || '(sin nombre)';
+    texto.textContent = `${nombreLocalidad}, ${item.provincia}`;
 
     const removeBtn = document.createElement('button');
     removeBtn.className   = 'cobertura-chip-remove';
