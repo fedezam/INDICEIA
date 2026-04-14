@@ -1,4 +1,4 @@
-//src/shared/geo-helpers.js
+// src/shared/geo-helpers.js
 
 import vecinos from './vecinos.json';
 import arGeo from './ar-geo-enriched.json';
@@ -24,7 +24,6 @@ for (const prov of Object.values(arGeo)) {
   }
 }
 
-// 👉 ESTA es la función que vamos a usar
 export function getCiudadesCercanas(localidadId) {
   const cercanas = vecinos[localidadId] || [];
 
@@ -33,9 +32,13 @@ export function getCiudadesCercanas(localidadId) {
       ciudad: idToCiudad[localidadId],
       provincia: idToProvincia[localidadId]
     },
-    ...cercanas.slice(0, 3).map(v => ({
-      ciudad: idToCiudad[v.id],
-      provincia: idToProvincia[v.id]
-    }))
+    ...cercanas
+      .slice(0, 3)
+      .map(v => ({
+        ciudad: idToCiudad[v.id],
+        provincia: idToProvincia[v.id]
+      }))
+      // ✅ FIX: descarta vecinos cuyo id no existe en arGeo
+      .filter(v => v.ciudad && v.provincia)
   ];
 }
