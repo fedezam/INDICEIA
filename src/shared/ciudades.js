@@ -94,11 +94,14 @@ export function mountCiudadAutocomplete(provincia, containerEl, valorActual, onC
     selectedIndex = index;
   }
 
-  function selectItem(localidad) {
-    input.value = localidad.nombre;
-    dropdown.style.display = 'none';
-    onChange?.(localidad); // 🔥 ahora devuelve objeto
-  }
+  function selectItem(nombre) {
+   const localidadObj = allLocalidades.find(l => l.nombre === nombre);
+
+  input.value = nombre;
+  dropdown.style.display = 'none';
+
+  onChange?.(localidadObj || nombre);
+}
 
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
