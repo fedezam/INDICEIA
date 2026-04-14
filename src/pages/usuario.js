@@ -21,6 +21,7 @@ import { showToast }              from '/src/skeleton/components/toast/index.js'
 // ==================== SHARED ====================
 import { fillProvinciaSelector }   from '/src/shared/provincias.js';
 import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
+import { getCiudadesCercanas } from '/src/shared/geo-helpers.js';
 
 // ==================== ADAPTER ====================
 const adapter = (options) => createFirebaseAdapter(options);
@@ -61,6 +62,10 @@ async function load(ctx) {
 // ============================================================
 function render(ctx, state) {
   const { userData } = state;
+  if (userData.localidad?.id) {
+  const cercanas = getCiudadesCercanas(userData.localidad.id);
+  console.log('📍 Ciudades cercanas:', cercanas);
+}
 
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
