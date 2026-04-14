@@ -1,3 +1,5 @@
+//src/shared/geo-helpers.js
+
 import vecinos from './vecinos.json';
 import arGeo from './ar-geo-enriched.json';
 
