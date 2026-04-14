@@ -139,3 +139,32 @@
   color: var(--s-gray-600);
 }
 
+/* ==================== SLUG READONLY ==================== */
+.slug-readonly {
+  display: flex;
+  align-items: center;
+  background: var(--s-light, #f8f9fa);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.slug-value {
+  color: var(--s-dark, #343a40);
+  font-weight: 600;
+}
+
+/* ==================== FORM HELP WARNING ==================== */
+.form-help--warning {
+  color: var(--s-warning, #856404);
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: var(--s-radius, 4px);
+  padding: 0.5rem 0.75rem;
+  font-style: normal;
+  font-weight: 500;
+}
+
