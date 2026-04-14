@@ -132,8 +132,10 @@ function render(ctx, state) {
 
   // Slug solo si el comercio no tiene landing todavía
   if (!state.comercioData.landing?.slug) {
-    page.appendChild(renderSeccionSlug(state, refs, uiState));
-  }
+  page.appendChild(renderSeccionSlug(state, refs, uiState));
+  } else {
+  page.appendChild(renderSeccionSlugReadonly(state));
+}
 
   // Botón canónico
   page.appendChild(renderBotonGuardar(ctx, state, refs, uiState));
@@ -287,9 +289,14 @@ function renderSeccionContacto(state, refs, uiState) {
 function renderSeccionRedes(state, refs, uiState) {
   const section = crearSeccion('Redes Sociales');
 
+  const warning = document.createElement('p');
+  warning.className   = 'form-help form-help--warning';
+  warning.textContent = '⚠️ Elegilo con cuidado. Una vez guardado, no se puede cambiar. Es tu identidad en internet.';
+  section.appendChild(warning);
+
   const help = document.createElement('p');
-  help.className = 'form-help';
-  help.textContent = 'Al menos una red social es obligatoria';
+  help.className   = 'form-help';
+  help.textContent = 'Este será tu link público: indiceia.com/tu-comercio';
   section.appendChild(help);
 
   refs.fields.website   = createFormField({ label: 'Sitio Web',  name: 'website',   type: 'url', placeholder: 'https://...',         value: state.comercioData.website   || '' });
@@ -316,6 +323,29 @@ function renderSeccionCategorias(state, refs, uiState) {
   });
 
   section.appendChild(refs.categorySelector);
+  return section;
+}
+function renderSeccionSlugReadonly(state) {
+  const section = crearSeccion('Tu Link Público');
+
+  const linkDisplay = document.createElement('div');
+  linkDisplay.className = 'slug-readonly';
+
+  const prefix = document.createElement('span');
+  prefix.className   = 'slug-prefix';
+  prefix.textContent = 'indiceia.com/';
+
+  const value = document.createElement('span');
+  value.className   = 'slug-value';
+  value.textContent = state.comercioData.landing.slug;
+
+  linkDisplay.append(prefix, value);
+
+  const note = document.createElement('p');
+  note.className   = 'form-help';
+  note.textContent = 'Este es tu link permanente. No se puede modificar.';
+
+  section.append(linkDisplay, note);
   return section;
 }
 
