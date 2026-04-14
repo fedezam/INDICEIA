@@ -1,9 +1,8 @@
 /* ============================================================
    mi-comercio.css
-   Layout y estilos propios de la página
    ============================================================ */
 
-/* ==================== TÍTULO ====================  */
+/* ==================== TÍTULO ==================== */
 .page-title {
   font-size: 1.75rem;
   font-weight: 600;
@@ -11,7 +10,7 @@
   margin-bottom: 2rem;
 }
 
-/* ==================== SECCIONES ====================  */
+/* ==================== SECCIONES ==================== */
 .form-section {
   background: white;
   border: 1px solid var(--s-border, #d2d6de);
@@ -37,14 +36,26 @@
   font-style: italic;
 }
 
-/* ==================== GRID MÉTODOS DE PAGO ====================  */
-.payment-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
+/* ==================== FORM HELP WARNING ==================== */
+.form-help--warning {
+  color: var(--s-warning, #856404);
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: var(--s-radius, 4px);
+  padding: 0.5rem 0.75rem;
+  font-style: normal;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
 }
 
-/* ==================== SLUG INPUT ====================  */
+/* ==================== SLUG INLINE ==================== */
+
+/* Wrapper que envuelve todo el bloque del slug dentro de Datos Básicos */
+.slug-field-wrapper {
+  margin: 0.25rem 0 1.25rem 0;
+}
+
+/* Input editable con prefijo */
 .slug-container {
   display: flex;
   align-items: center;
@@ -52,7 +63,7 @@
   border: 1px solid var(--s-border, #d2d6de);
   border-radius: var(--s-radius, 4px);
   overflow: hidden;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .slug-prefix {
@@ -62,6 +73,7 @@
   color: var(--s-gray, #6c757d);
   border-right: 1px solid var(--s-border, #d2d6de);
   white-space: nowrap;
+  font-family: monospace;
 }
 
 .slug-input {
@@ -77,14 +89,14 @@
   background: rgba(60, 141, 188, 0.05);
 }
 
-/* ==================== SLUG STATUS ====================  */
+/* Status de validación */
 .slug-status {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem;
+  padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
-  min-height: 2rem;
+  min-height: 1.75rem;
 }
 
 .slug-icon {
@@ -95,14 +107,70 @@
   color: var(--s-text, #495057);
 }
 
-/* ==================== BOTÓN CONTAINER ====================  */
+/* Readonly — ya guardado, inmutable */
+.slug-readonly {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--s-light, #f8f9fa);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.slug-value {
+  color: var(--s-dark, #343a40);
+  font-weight: 600;
+}
+
+.slug-lock {
+  margin-left: auto;
+  color: var(--s-gray, #6c757d);
+  font-size: 0.75rem;
+}
+
+/* ==================== GRID MÉTODOS DE PAGO ==================== */
+.payment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+/* ==================== TOGGLE LOCAL FÍSICO ==================== */
+.toggle-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.toggle-wrapper label {
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.toggle-label {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.toggle-helper {
+  font-size: 0.85rem;
+  color: var(--s-gray-600);
+}
+
+/* ==================== BOTÓN CONTAINER ==================== */
 .btn-container {
   margin-top: 2.5rem;
   padding-top: 2rem;
   border-top: 2px solid var(--s-border, #d2d6de);
 }
 
-/* ==================== RESPONSIVE ====================  */
+/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
   .payment-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -117,54 +185,3 @@
     padding: 1rem;
   }
 }
-
-
-.toggle-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 0;
-}
-.toggle-wrapper label {
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-}
-.toggle-label {
-  font-weight: 600;
-  font-size: 1rem;
-}
-.toggle-helper {
-  font-size: 0.85rem;
-  color: var(--s-gray-600);
-}
-
-/* ==================== SLUG READONLY ==================== */
-.slug-readonly {
-  display: flex;
-  align-items: center;
-  background: var(--s-light, #f8f9fa);
-  border: 1px solid var(--s-border, #d2d6de);
-  border-radius: var(--s-radius, 4px);
-  padding: 0.5rem 1rem;
-  margin-bottom: 0.75rem;
-  font-family: monospace;
-  font-size: 0.875rem;
-}
-
-.slug-value {
-  color: var(--s-dark, #343a40);
-  font-weight: 600;
-}
-
-/* ==================== FORM HELP WARNING ==================== */
-.form-help--warning {
-  color: var(--s-warning, #856404);
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: var(--s-radius, 4px);
-  padding: 0.5rem 0.75rem;
-  font-style: normal;
-  font-weight: 500;
-}
-
