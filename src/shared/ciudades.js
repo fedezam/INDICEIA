@@ -41,7 +41,7 @@ export function mountCiudadAutocomplete(provincia, containerEl, valorActual, onC
   input.autocomplete = 'off';
   input.disabled     = !provincia;
 
-  // ⚠️ valorActual ahora puede ser string o objeto
+  // valorActual puede ser string o objeto
   if (typeof valorActual === 'string') {
     input.value = valorActual;
   } else if (valorActual?.nombre) {
@@ -94,14 +94,13 @@ export function mountCiudadAutocomplete(provincia, containerEl, valorActual, onC
     selectedIndex = index;
   }
 
-  function selectItem(nombre) {
-   const localidadObj = allLocalidades.find(l => l.nombre === nombre);
-
-  input.value = nombre;
-  dropdown.style.display = 'none';
-
-  onChange?.(localidadObj || nombre);
-}
+  // ✅ FIX: loc ya es el objeto completo { id, nombre, lat, lng }
+  // no hace falta re-buscarlo
+  function selectItem(loc) {
+    input.value = loc.nombre;
+    dropdown.style.display = 'none';
+    onChange?.(loc);
+  }
 
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
@@ -138,7 +137,7 @@ export function mountCiudadAutocomplete(provincia, containerEl, valorActual, onC
       setActive(Math.max(selectedIndex - 1, 0));
     } else if (e.key === 'Enter' && selectedIndex >= 0) {
       e.preventDefault();
-      selectItem(currentItems[selectedIndex]); // 🔥 usa objeto real
+      selectItem(currentItems[selectedIndex]);
     } else if (e.key === 'Escape') {
       dropdown.style.display = 'none';
     }
