@@ -3,12 +3,12 @@
 // ============================================================
 
 // ==================== SKELETON CORE ====================
-import { runLifecycle }          from '/src/skeleton/lifecycle.js';
-import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
-import { mountLayout }           from '/src/skeleton/layout/index.js';
+import { runLifecycle }            from '/src/skeleton/lifecycle.js';
+import { createFirebaseAdapter }   from '/src/skeleton/adapters/firebaseAdapter.js';
+import { mountLayout }             from '/src/skeleton/layout/index.js';
 import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
 
-// ==================== FIREBASE (caso especial: creación de comercio nuevo) ====================
+// ==================== FIREBASE ====================
 // Firebase directo justificado: setDoc de comercio nuevo, plan trial, landing, usuario
 // Estas operaciones no pueden ir por persistence.updateData() — son escrituras multi-colección
 import { doc, getDoc, setDoc, updateDoc, collection, Timestamp } from 'firebase/firestore';
@@ -81,12 +81,12 @@ runLifecycle({
 // LOAD
 // ============================================================
 async function load(ctx) {
-  const comercioData          = ctx.comercioData || {};
-  const isNewComercio         = !comercioData.nombreComercio;
-  const comercioSlug          = comercioData.landing?.slug || null;
-  const slugDisponible        = !!comercioSlug;
+  const comercioData           = ctx.comercioData || {};
+  const isNewComercio          = !comercioData.nombreComercio;
+  const comercioSlug           = comercioData.landing?.slug || null;
+  const slugDisponible         = !!comercioSlug;
   const selectedPaymentMethods = comercioData.paymentMethods || [];
-  const tieneLocalFisico      = comercioData.tieneLocalFisico !== false; // true por defecto
+  const tieneLocalFisico       = comercioData.tieneLocalFisico !== false; // true por defecto
 
   return { isNewComercio, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
 }
@@ -100,71 +100,137 @@ function render(ctx, state) {
 
   // refs — nodos del DOM que necesitan comunicarse entre secciones
   const refs = {
-    fields:             {},
-    categorySelector:   null,
-    paymentCards:       [],
-    slugInput:          null,
-    slugStatus:         null,
+    fields:              {},
+    categorySelector:    null,
+    paymentCards:        [],
+    slugInput:           null,
+    slugStatus:          null,
     slugValidationTimer: null,
+    ciudadSeleccionada:  null,
   };
 
   // uiState — estado mutable de esta página
   const uiState = {
-    comercioSlug:          state.comercioSlug,
-    slugDisponible:        state.slugDisponible,
+    comercioSlug:           state.comercioSlug,
+    slugDisponible:         state.slugDisponible,
     selectedPaymentMethods: [...state.selectedPaymentMethods],
-    tieneLocalFisico:      state.tieneLocalFisico,
+    tieneLocalFisico:       state.tieneLocalFisico,
   };
 
   // Título
   const title = document.createElement('h2');
   title.textContent = state.isNewComercio ? 'Crear Mi Comercio' : 'Editar Mi Comercio';
-  title.className = 'page-title';
+  title.className   = 'page-title';
   page.appendChild(title);
 
   // Secciones
+  // El slug vive dentro de renderSeccionBasicos — debajo del campo nombre
   page.appendChild(renderSeccionBasicos(state, refs, uiState));
   page.appendChild(renderSeccionUbicacion(state, refs, uiState));
   page.appendChild(renderSeccionContacto(state, refs, uiState));
   page.appendChild(renderSeccionRedes(state, refs, uiState));
   page.appendChild(renderSeccionCategorias(state, refs, uiState));
   page.appendChild(renderSeccionPagos(state, refs, uiState));
-
-  // Slug solo si el comercio no tiene landing todavía
-  if (!state.comercioData.landing?.slug) {
-  page.appendChild(renderSeccionSlug(state, refs, uiState));
-  } else {
-  page.appendChild(renderSeccionSlugReadonly(state));
-}
-
-  // Botón canónico
   page.appendChild(renderBotonGuardar(ctx, state, refs, uiState));
 }
 
 // ============================================================
 // SECCIONES
 // ============================================================
-function renderSeccionBasicos(state, refs, uiState) {
-  const section = crearSeccion('Datos Básicos');
 
+// ------------------------------------------------------------
+// BÁSICOS — incluye slug inline debajo del nombre
+// ------------------------------------------------------------
+function renderSeccionBasicos(state, refs, uiState) {
+  const section    = crearSeccion('Datos Básicos');
+  const tieneSlug  = !!state.comercioData.landing?.slug;
+
+  // ── NOMBRE ───────────────────────────────────────────────
   refs.fields.nombreComercio = createFormField({
     label: 'Nombre del Comercio', name: 'nombreComercio', required: true,
     value: state.comercioData.nombreComercio || ''
   });
+  section.appendChild(refs.fields.nombreComercio);
 
+  // ── SLUG inline ──────────────────────────────────────────
+  // Siempre aparece aquí — editable la primera vez, readonly una vez guardado
+  section.appendChild(
+    tieneSlug
+      ? renderSlugReadonly(state.comercioData.landing.slug)
+      : renderSlugEditable(refs, uiState)
+  );
+
+  // ── DESCRIPCIÓN ──────────────────────────────────────────
   refs.fields.descripcion = createFormField({
     label: 'Descripción', name: 'descripcion', type: 'textarea', required: true,
     placeholder: 'Contanos sobre tu comercio...',
     value: state.comercioData.descripcion || ''
   });
+  section.appendChild(refs.fields.descripcion);
 
-  section.append(refs.fields.nombreComercio, refs.fields.descripcion);
+  agregarListeners([refs.fields.nombreComercio, refs.fields.descripcion], refs, uiState);
+  return section;
+}
 
-  // Auto-generar slug desde el nombre (solo si el comercio no tiene landing)
-  if (!uiState.comercioSlug) {
-    refs.fields.nombreComercio.input.addEventListener('input', () => {
+// ── Slug editable (primera vez) ───────────────────────────────
+function renderSlugEditable(refs, uiState) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'slug-field-wrapper';
+
+  // Aviso: esto es permanente
+  const warning = document.createElement('p');
+  warning.className   = 'form-help form-help--warning';
+  warning.textContent = '⚠️ Tu link público. Elegilo con cuidado — una vez guardado no se puede cambiar.';
+  wrapper.appendChild(warning);
+
+  // Input con prefijo
+  const slugContainer = document.createElement('div');
+  slugContainer.className = 'slug-container';
+
+  const slugPrefix = document.createElement('span');
+  slugPrefix.className   = 'slug-prefix';
+  slugPrefix.textContent = 'indiceia.com/';
+
+  refs.slugInput = document.createElement('input');
+  refs.slugInput.type        = 'text';
+  refs.slugInput.className   = 'slug-input';
+  refs.slugInput.placeholder = 'mi-comercio';
+  refs.slugInput.value       = uiState.comercioSlug || '';
+
+  slugContainer.append(slugPrefix, refs.slugInput);
+  wrapper.appendChild(slugContainer);
+
+  // Status de validación
+  refs.slugStatus = document.createElement('div');
+  refs.slugStatus.className = 'slug-status';
+  refs.slugStatus.innerHTML = `<span class="slug-icon"></span><span class="slug-text"></span>`;
+  wrapper.appendChild(refs.slugStatus);
+
+  // Listener: edición manual del slug
+  refs.slugInput.addEventListener('input', () => {
+    clearTimeout(refs.slugValidationTimer);
+    const slug = refs.slugInput.value.trim();
+    if (slug.length < 3) {
+      updateSlugStatus(refs, 'empty', '');
+      uiState.slugDisponible = false;
+      uiState.comercioSlug   = null;
+      document.dispatchEvent(new Event('change'));
+      return;
+    }
+    updateSlugStatus(refs, 'checking', 'Verificando disponibilidad...');
+    refs.slugValidationTimer = setTimeout(() => validarSlug(slug, refs, uiState, false), 800);
+  });
+
+  // Listener: auto-generar desde el nombre (cuando el slug está vacío)
+  // Se conecta al campo nombre desde acá — necesita que refs.slugInput ya exista
+  // El padre (renderSeccionBasicos) llama a esto antes de agregar el listener de nombre,
+  // por eso usamos un setTimeout 0 para que refs.slugInput ya esté en el DOM
+  setTimeout(() => {
+    const nombreInput = refs.fields.nombreComercio?.input;
+    if (!nombreInput) return;
+    nombreInput.addEventListener('input', () => {
       clearTimeout(refs.slugValidationTimer);
-      const nombre = refs.fields.nombreComercio.input.value.trim();
+      const nombre = nombreInput.value.trim();
       if (nombre.length >= 3 && refs.slugInput) {
         refs.slugValidationTimer = setTimeout(async () => {
           const newSlug = slugify(nombre);
@@ -173,12 +239,44 @@ function renderSeccionBasicos(state, refs, uiState) {
         }, 500);
       }
     });
-  }
+  }, 0);
 
-  agregarListeners([refs.fields.nombreComercio, refs.fields.descripcion], refs, uiState);
-  return section;
+  return wrapper;
 }
 
+// ── Slug readonly (ya guardado) ───────────────────────────────
+function renderSlugReadonly(slug) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'slug-field-wrapper';
+
+  const display = document.createElement('div');
+  display.className = 'slug-readonly';
+
+  const prefix = document.createElement('span');
+  prefix.className   = 'slug-prefix';
+  prefix.textContent = 'indiceia.com/';
+
+  const value = document.createElement('span');
+  value.className   = 'slug-value';
+  value.textContent = slug;
+
+  const lock = document.createElement('span');
+  lock.className = 'slug-lock';
+  lock.innerHTML = '<i class="fas fa-lock"></i>';
+
+  display.append(prefix, value, lock);
+
+  const note = document.createElement('p');
+  note.className   = 'form-help';
+  note.textContent = 'Este es tu link permanente. No se puede modificar.';
+
+  wrapper.append(display, note);
+  return wrapper;
+}
+
+// ------------------------------------------------------------
+// UBICACIÓN
+// ------------------------------------------------------------
 function renderSeccionUbicacion(state, refs, uiState) {
   const section = crearSeccion('Ubicación');
 
@@ -206,8 +304,7 @@ function renderSeccionUbicacion(state, refs, uiState) {
     document.dispatchEvent(new Event('change'));
   });
 
-  toggleWrapper.appendChild(checkbox);
-  toggleWrapper.appendChild(label);
+  toggleWrapper.append(checkbox, label);
   localFisicoContainer.appendChild(toggleWrapper);
   section.appendChild(localFisicoContainer);
 
@@ -237,7 +334,6 @@ function renderSeccionUbicacion(state, refs, uiState) {
   ciudadContainer.className = 'ciudad-autocomplete-container';
   section.appendChild(ciudadContainer);
 
-  // Monta el autocomplete y notifica cambios al botón guardar
   function montarCiudad(provincia, valorActual = '') {
     mountCiudadAutocomplete(provincia, ciudadContainer, valorActual, (ciudad) => {
       refs.ciudadSeleccionada = ciudad;
@@ -268,6 +364,9 @@ function renderSeccionUbicacion(state, refs, uiState) {
   return section;
 }
 
+// ------------------------------------------------------------
+// CONTACTO
+// ------------------------------------------------------------
 function renderSeccionContacto(state, refs, uiState) {
   const section = crearSeccion('Contacto');
 
@@ -286,17 +385,15 @@ function renderSeccionContacto(state, refs, uiState) {
   return section;
 }
 
+// ------------------------------------------------------------
+// REDES SOCIALES
+// ------------------------------------------------------------
 function renderSeccionRedes(state, refs, uiState) {
   const section = crearSeccion('Redes Sociales');
 
-  const warning = document.createElement('p');
-  warning.className   = 'form-help form-help--warning';
-  warning.textContent = '⚠️ Elegilo con cuidado. Una vez guardado, no se puede cambiar. Es tu identidad en internet.';
-  section.appendChild(warning);
-
   const help = document.createElement('p');
   help.className   = 'form-help';
-  help.textContent = 'Este será tu link público: indiceia.com/tu-comercio';
+  help.textContent = 'Al menos una red social es obligatoria.';
   section.appendChild(help);
 
   refs.fields.website   = createFormField({ label: 'Sitio Web',  name: 'website',   type: 'url', placeholder: 'https://...',         value: state.comercioData.website   || '' });
@@ -309,6 +406,9 @@ function renderSeccionRedes(state, refs, uiState) {
   return section;
 }
 
+// ------------------------------------------------------------
+// CATEGORÍAS
+// ------------------------------------------------------------
 function renderSeccionCategorias(state, refs, uiState) {
   const section = crearSeccion('Categorías');
 
@@ -317,7 +417,6 @@ function renderSeccionCategorias(state, refs, uiState) {
     selected: state.comercioData.categories || [],
   });
 
-  // El selector emite evento custom — lo usamos para re-validar
   refs.categorySelector.addEventListener('categories-change', () => {
     document.dispatchEvent(new Event('change'));
   });
@@ -325,30 +424,10 @@ function renderSeccionCategorias(state, refs, uiState) {
   section.appendChild(refs.categorySelector);
   return section;
 }
-function renderSeccionSlugReadonly(state) {
-  const section = crearSeccion('Tu Link Público');
 
-  const linkDisplay = document.createElement('div');
-  linkDisplay.className = 'slug-readonly';
-
-  const prefix = document.createElement('span');
-  prefix.className   = 'slug-prefix';
-  prefix.textContent = 'indiceia.com/';
-
-  const value = document.createElement('span');
-  value.className   = 'slug-value';
-  value.textContent = state.comercioData.landing.slug;
-
-  linkDisplay.append(prefix, value);
-
-  const note = document.createElement('p');
-  note.className   = 'form-help';
-  note.textContent = 'Este es tu link permanente. No se puede modificar.';
-
-  section.append(linkDisplay, note);
-  return section;
-}
-
+// ------------------------------------------------------------
+// MÉTODOS DE PAGO
+// ------------------------------------------------------------
 function renderSeccionPagos(state, refs, uiState) {
   const section = crearSeccion('Métodos de Pago');
 
@@ -381,52 +460,6 @@ function renderSeccionPagos(state, refs, uiState) {
   return section;
 }
 
-function renderSeccionSlug(state, refs, uiState) {
-  const section = crearSeccion('Link Público');
-
-  const help = document.createElement('p');
-  help.className = 'form-help';
-  help.textContent = 'Este será tu link público: indiceia.com/tu-comercio';
-  section.appendChild(help);
-
-  const slugContainer = document.createElement('div');
-  slugContainer.className = 'slug-container';
-
-  const slugPrefix = document.createElement('span');
-  slugPrefix.className = 'slug-prefix';
-  slugPrefix.textContent = 'indiceia.com/';
-
-  refs.slugInput = document.createElement('input');
-  refs.slugInput.type        = 'text';
-  refs.slugInput.className   = 'slug-input';
-  refs.slugInput.placeholder = 'mi-comercio';
-  refs.slugInput.value       = uiState.comercioSlug || '';
-
-  slugContainer.append(slugPrefix, refs.slugInput);
-  section.appendChild(slugContainer);
-
-  refs.slugStatus = document.createElement('div');
-  refs.slugStatus.className = 'slug-status';
-  refs.slugStatus.innerHTML = `<span class="slug-icon"></span><span class="slug-text"></span>`;
-  section.appendChild(refs.slugStatus);
-
-  refs.slugInput.addEventListener('input', () => {
-    clearTimeout(refs.slugValidationTimer);
-    const slug = refs.slugInput.value.trim();
-    if (slug.length < 3) {
-      updateSlugStatus(refs, 'empty', '');
-      uiState.slugDisponible = false;
-      uiState.comercioSlug   = null;
-      document.dispatchEvent(new Event('change'));
-      return;
-    }
-    updateSlugStatus(refs, 'checking', 'Verificando disponibilidad...');
-    refs.slugValidationTimer = setTimeout(() => validarSlug(slug, refs, uiState, false), 800);
-  });
-
-  return section;
-}
-
 // ============================================================
 // BOTÓN GUARDAR — Modo Custom (lógica multi-colección)
 // ============================================================
@@ -445,7 +478,7 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
     },
 
     onSave: async ({ uid, comercioId: ctxComercioId }) => {
-      const updates = getCurrentData(refs, uiState);
+      const updates            = getCurrentData(refs, uiState);
       const originalHasLanding = state.comercioData.landing?.slug;
 
       // Landing data
@@ -458,13 +491,13 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
       } else {
         updates.landing = {
           ...state.comercioData.landing,
-          nombre: updates.nombreComercio,
+          nombre:    updates.nombreComercio,
           updatedAt: new Date()
         };
       }
 
       if (state.isNewComercio) {
-        // ── COMERCIO NUEVO — multi-colección, no puede ir por persistence ──
+        // ── COMERCIO NUEVO — multi-colección ──────────────────
         const comercioRef = ctxComercioId
           ? doc(db, 'entidades', ctxComercioId)
           : doc(collection(db, 'entidades'));
@@ -500,11 +533,10 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
           'onboardingSteps.mi-comercio': true
         });
 
-        // stepMarked: true — ya escribimos onboardingSteps manualmente arriba
         return { success: true, stepMarked: true };
 
       } else {
-        // ── COMERCIO EXISTENTE — updateDoc directo ──
+        // ── COMERCIO EXISTENTE ────────────────────────────────
         await updateDoc(doc(db, 'entidades', ctxComercioId), {
           ...updates,
           'onboardingSteps.mi-comercio': true,
@@ -565,7 +597,7 @@ async function validarSlug(slug, refs, uiState, autoGenerated) {
           uiState.comercioSlug   = alt;
           uiState.slugDisponible = true;
           updateSlugStatus(refs, 'suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`);
-          refs.slugInput.value = alt;
+          if (refs.slugInput) refs.slugInput.value = alt;
           document.dispatchEvent(new Event('change'));
           return;
         }
@@ -588,8 +620,8 @@ async function validarSlug(slug, refs, uiState, autoGenerated) {
 
 function updateSlugStatus(refs, status, message) {
   if (!refs.slugStatus) return;
-  const icon = refs.slugStatus.querySelector('.slug-icon');
-  const text = refs.slugStatus.querySelector('.slug-text');
+  const icon  = refs.slugStatus.querySelector('.slug-icon');
+  const text  = refs.slugStatus.querySelector('.slug-text');
   const icons = {
     checking:   '<i class="fas fa-spinner fa-spin"></i>',
     available:  '<i class="fas fa-check-circle" style="color: var(--s-success)"></i>',
@@ -598,8 +630,8 @@ function updateSlugStatus(refs, status, message) {
     error:      '<i class="fas fa-exclamation-triangle" style="color: var(--s-warning)"></i>',
     empty:      ''
   };
-  icon.innerHTML    = icons[status] || '';
-  text.textContent  = message;
+  icon.innerHTML   = icons[status] || '';
+  text.textContent = message;
 }
 
 // ============================================================
@@ -609,20 +641,20 @@ function updateSlugStatus(refs, status, message) {
 /** Snapshot actual del formulario */
 function getCurrentData(refs, uiState) {
   return {
-    nombreComercio: refs.fields.nombreComercio?.input.value.trim() || '',
-    descripcion:    refs.fields.descripcion?.input.value.trim()    || '',
-    pais:           'Argentina',
-    provincia:      refs.fields.provincia?.input.value.trim()      || '',
-    ciudad: refs.ciudadSeleccionada || refs.fields.ciudad?.input?.value.trim() || '',
-    direccion:      refs.fields.direccion?.input.value.trim()      || '',
-    telefono:       refs.fields.telefono?.input.value.trim()       || '',
-    email:          refs.fields.email?.input.value.trim()          || '',
-    website:        refs.fields.website?.input.value.trim()        || null,
-    instagram:      refs.fields.instagram?.input.value.trim()      || null,
-    facebook:       refs.fields.facebook?.input.value.trim()       || null,
-    whatsapp:       refs.fields.whatsapp?.input.value.trim()       || null,
-    categories:     refs.categorySelector?.getSelected()           || [],
-    paymentMethods: uiState.selectedPaymentMethods,
+    nombreComercio:   refs.fields.nombreComercio?.input.value.trim() || '',
+    descripcion:      refs.fields.descripcion?.input.value.trim()    || '',
+    pais:             'Argentina',
+    provincia:        refs.fields.provincia?.input.value.trim()      || '',
+    ciudad:           refs.ciudadSeleccionada || refs.fields.ciudad?.input?.value.trim() || '',
+    direccion:        refs.fields.direccion?.input.value.trim()      || '',
+    telefono:         refs.fields.telefono?.input.value.trim()       || '',
+    email:            refs.fields.email?.input.value.trim()          || '',
+    website:          refs.fields.website?.input.value.trim()        || null,
+    instagram:        refs.fields.instagram?.input.value.trim()      || null,
+    facebook:         refs.fields.facebook?.input.value.trim()       || null,
+    whatsapp:         refs.fields.whatsapp?.input.value.trim()       || null,
+    categories:       refs.categorySelector?.getSelected()           || [],
+    paymentMethods:   uiState.selectedPaymentMethods,
     tieneLocalFisico: uiState.tieneLocalFisico,
   };
 }
@@ -631,13 +663,12 @@ function getCurrentData(refs, uiState) {
 function isFormValid(refs, uiState, state) {
   const data = getCurrentData(refs, uiState);
 
-  const camposBasicos = data.nombreComercio && data.descripcion &&
-    data.provincia && data.ciudad && data.direccion &&
-    data.telefono  && data.email;
-
+  const camposBasicos  = data.nombreComercio && data.descripcion &&
+                         data.provincia && data.ciudad && data.direccion &&
+                         data.telefono  && data.email;
   const tieneRedSocial = data.website || data.instagram || data.facebook || data.whatsapp;
   const tieneCategorias = data.categories.length > 0;
-  const slugValido = state.comercioData.landing?.slug || uiState.slugDisponible;
+  const slugValido      = state.comercioData.landing?.slug || uiState.slugDisponible;
 
   return !!(camposBasicos && tieneRedSocial && tieneCategorias && slugValido);
 }
