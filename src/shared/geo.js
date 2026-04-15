@@ -1,5 +1,5 @@
 // src/shared/geo.js
-import arGeo from './ar-geo-enriched.json' assert { type: 'json' };
+import arGeo from './ar-geo-enriched.json' with { type: 'json' };
 
 export function getLocalidades(provincia) {
   if (!provincia) return [];

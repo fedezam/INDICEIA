@@ -1,6 +1,6 @@
 // src/shared/ciudades.js
 
-import arGeo from './ar-geo-enriched.json' assert { type: 'json' };
+import arGeo from './ar-geo-enriched.json' with { type: 'json' };
 
 // ── GET LOCALIDADES ───────────────────────────────────────────
 // Devuelve objetos { id, nombre, lat, lng }
