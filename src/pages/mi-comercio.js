@@ -98,7 +98,6 @@ function render(ctx, state) {
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
-  // refs — nodos del DOM que necesitan comunicarse entre secciones
   const refs = {
     fields:              {},
     categorySelector:    null,
@@ -106,10 +105,9 @@ function render(ctx, state) {
     slugInput:           null,
     slugStatus:          null,
     slugValidationTimer: null,
-    ciudadSeleccionada:  null,
+    localidadSeleccionada: null,  // ✅ renombrado de ciudadSeleccionada
   };
 
-  // uiState — estado mutable de esta página
   const uiState = {
     comercioSlug:           state.comercioSlug,
     slugDisponible:         state.slugDisponible,
@@ -117,14 +115,11 @@ function render(ctx, state) {
     tieneLocalFisico:       state.tieneLocalFisico,
   };
 
-  // Título
   const title = document.createElement('h2');
   title.textContent = state.isNewComercio ? 'Crear Mi Comercio' : 'Editar Mi Comercio';
   title.className   = 'page-title';
   page.appendChild(title);
 
-  // Secciones
-  // El slug vive dentro de renderSeccionBasicos — debajo del campo nombre
   page.appendChild(renderSeccionBasicos(state, refs, uiState));
   page.appendChild(renderSeccionUbicacion(state, refs, uiState));
   page.appendChild(renderSeccionContacto(state, refs, uiState));
@@ -138,29 +133,22 @@ function render(ctx, state) {
 // SECCIONES
 // ============================================================
 
-// ------------------------------------------------------------
-// BÁSICOS — incluye slug inline debajo del nombre
-// ------------------------------------------------------------
 function renderSeccionBasicos(state, refs, uiState) {
-  const section    = crearSeccion('Datos Básicos');
-  const tieneSlug  = !!state.comercioData.landing?.slug;
+  const section   = crearSeccion('Datos Básicos');
+  const tieneSlug = !!state.comercioData.landing?.slug;
 
-  // ── NOMBRE ───────────────────────────────────────────────
   refs.fields.nombreComercio = createFormField({
     label: 'Nombre del Comercio', name: 'nombreComercio', required: true,
     value: state.comercioData.nombreComercio || ''
   });
   section.appendChild(refs.fields.nombreComercio);
 
-  // ── SLUG inline ──────────────────────────────────────────
-  // Siempre aparece aquí — editable la primera vez, readonly una vez guardado
   section.appendChild(
     tieneSlug
       ? renderSlugReadonly(state.comercioData.landing.slug)
       : renderSlugEditable(refs, uiState)
   );
 
-  // ── DESCRIPCIÓN ──────────────────────────────────────────
   refs.fields.descripcion = createFormField({
     label: 'Descripción', name: 'descripcion', type: 'textarea', required: true,
     placeholder: 'Contanos sobre tu comercio...',
@@ -172,18 +160,15 @@ function renderSeccionBasicos(state, refs, uiState) {
   return section;
 }
 
-// ── Slug editable (primera vez) ───────────────────────────────
 function renderSlugEditable(refs, uiState) {
   const wrapper = document.createElement('div');
   wrapper.className = 'slug-field-wrapper';
 
-  // Aviso: esto es permanente
   const warning = document.createElement('p');
   warning.className   = 'form-help form-help--warning';
   warning.textContent = '⚠️ Tu link público. Elegilo con cuidado — una vez guardado no se puede cambiar.';
   wrapper.appendChild(warning);
 
-  // Input con prefijo
   const slugContainer = document.createElement('div');
   slugContainer.className = 'slug-container';
 
@@ -200,13 +185,11 @@ function renderSlugEditable(refs, uiState) {
   slugContainer.append(slugPrefix, refs.slugInput);
   wrapper.appendChild(slugContainer);
 
-  // Status de validación
   refs.slugStatus = document.createElement('div');
   refs.slugStatus.className = 'slug-status';
   refs.slugStatus.innerHTML = `<span class="slug-icon"></span><span class="slug-text"></span>`;
   wrapper.appendChild(refs.slugStatus);
 
-  // Listener: edición manual del slug
   refs.slugInput.addEventListener('input', () => {
     clearTimeout(refs.slugValidationTimer);
     const slug = refs.slugInput.value.trim();
@@ -221,10 +204,6 @@ function renderSlugEditable(refs, uiState) {
     refs.slugValidationTimer = setTimeout(() => validarSlug(slug, refs, uiState, false), 800);
   });
 
-  // Listener: auto-generar desde el nombre (cuando el slug está vacío)
-  // Se conecta al campo nombre desde acá — necesita que refs.slugInput ya exista
-  // El padre (renderSeccionBasicos) llama a esto antes de agregar el listener de nombre,
-  // por eso usamos un setTimeout 0 para que refs.slugInput ya esté en el DOM
   setTimeout(() => {
     const nombreInput = refs.fields.nombreComercio?.input;
     if (!nombreInput) return;
@@ -244,7 +223,6 @@ function renderSlugEditable(refs, uiState) {
   return wrapper;
 }
 
-// ── Slug readonly (ya guardado) ───────────────────────────────
 function renderSlugReadonly(slug) {
   const wrapper = document.createElement('div');
   wrapper.className = 'slug-field-wrapper';
@@ -280,7 +258,6 @@ function renderSlugReadonly(slug) {
 function renderSeccionUbicacion(state, refs, uiState) {
   const section = crearSeccion('Ubicación');
 
-  // Toggle: ¿Tenés local físico?
   const localFisicoContainer = document.createElement('div');
   localFisicoContainer.className = 'form-field';
 
@@ -308,23 +285,23 @@ function renderSeccionUbicacion(state, refs, uiState) {
   localFisicoContainer.appendChild(toggleWrapper);
   section.appendChild(localFisicoContainer);
 
-  // ── PAÍS ──────────────────────────────────────────────────
   refs.fields.pais = createFormField({
     label: 'País', name: 'pais', value: 'Argentina', disabled: true
   });
   section.appendChild(refs.fields.pais);
 
-  // ── PROVINCIA ─────────────────────────────────────────────
   refs.fields.provincia = createFormField({
     label: 'Provincia', name: 'provincia', type: 'select', required: true
   });
   fillProvinciaSelector('Argentina', refs.fields.provincia.input);
-  if (state.comercioData.provincia) {
-    refs.fields.provincia.input.value = state.comercioData.provincia;
-  }
+
+  // ✅ provincia viene de localidad.provincia o del campo suelto legacy
+  const provinciaActual = state.comercioData.localidad?.provincia
+    || state.comercioData.provincia
+    || '';
+  if (provinciaActual) refs.fields.provincia.input.value = provinciaActual;
   section.appendChild(refs.fields.provincia);
 
-  // ── CIUDAD (autocomplete) ─────────────────────────────────
   const ciudadLabel = document.createElement('label');
   ciudadLabel.className   = 'form-field-label';
   ciudadLabel.textContent = 'Ciudad *';
@@ -335,23 +312,23 @@ function renderSeccionUbicacion(state, refs, uiState) {
   section.appendChild(ciudadContainer);
 
   function montarCiudad(provincia, valorActual = '') {
-    mountCiudadAutocomplete(provincia, ciudadContainer, valorActual, (ciudad) => {
-      refs.ciudadSeleccionada = ciudad;
+    mountCiudadAutocomplete(provincia, ciudadContainer, valorActual, (localidad) => {
+      // ✅ localidad es el objeto completo { id, nombre, lat, lng }
+      refs.localidadSeleccionada = localidad;
       document.dispatchEvent(new Event('change'));
     });
   }
 
-  const provinciaActual = state.comercioData.provincia || '';
-  const ciudadActual    = state.comercioData.ciudad    || '';
-  if (provinciaActual) montarCiudad(provinciaActual, ciudadActual);
+  // ✅ valor inicial: objeto localidad o string legacy ciudad
+  const localidadActual = state.comercioData.localidad || state.comercioData.ciudad || '';
+  if (provinciaActual) montarCiudad(provinciaActual, localidadActual);
 
   refs.fields.provincia.input.addEventListener('change', () => {
-    refs.ciudadSeleccionada = null;
+    refs.localidadSeleccionada = null;
     montarCiudad(refs.fields.provincia.input.value);
     document.dispatchEvent(new Event('change'));
   });
 
-  // ── DIRECCIÓN ─────────────────────────────────────────────
   refs.fields.direccion = createFormField({
     label: 'Dirección', name: 'direccion', required: true,
     value: state.comercioData.direccion || ''
@@ -461,7 +438,7 @@ function renderSeccionPagos(state, refs, uiState) {
 }
 
 // ============================================================
-// BOTÓN GUARDAR — Modo Custom (lógica multi-colección)
+// BOTÓN GUARDAR
 // ============================================================
 function renderBotonGuardar(ctx, state, refs, uiState) {
   const btnContainer = document.createElement('div');
@@ -481,7 +458,6 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
       const updates            = getCurrentData(refs, uiState);
       const originalHasLanding = state.comercioData.landing?.slug;
 
-      // Landing data
       if (!originalHasLanding) {
         updates.landing = {
           activo: true, nombre: updates.nombreComercio,
@@ -497,7 +473,6 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
       }
 
       if (state.isNewComercio) {
-        // ── COMERCIO NUEVO — multi-colección ──────────────────
         const comercioRef = ctxComercioId
           ? doc(db, 'entidades', ctxComercioId)
           : doc(collection(db, 'entidades'));
@@ -536,7 +511,6 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         return { success: true, stepMarked: true };
 
       } else {
-        // ── COMERCIO EXISTENTE ────────────────────────────────
         await updateDoc(doc(db, 'entidades', ctxComercioId), {
           ...updates,
           'onboardingSteps.mi-comercio': true,
@@ -638,14 +612,26 @@ function updateSlugStatus(refs, status, message) {
 // HELPERS DE FORMULARIO
 // ============================================================
 
-/** Snapshot actual del formulario */
 function getCurrentData(refs, uiState) {
+  const loc      = refs.localidadSeleccionada;
+  const provincia = refs.fields.provincia?.input.value.trim() || '';
+
   return {
     nombreComercio:   refs.fields.nombreComercio?.input.value.trim() || '',
     descripcion:      refs.fields.descripcion?.input.value.trim()    || '',
     pais:             'Argentina',
-    provincia:        refs.fields.provincia?.input.value.trim()      || '',
-    ciudad:           refs.ciudadSeleccionada || refs.fields.ciudad?.input?.value.trim() || '',
+
+    // ✅ localidad como objeto estructurado — provincia incluida adentro
+    localidad: loc
+      ? {
+          id:        loc.id,
+          nombre:    loc.nombre,
+          lat:       loc.lat,
+          lng:       loc.lng,
+          provincia,
+        }
+      : null,
+
     direccion:        refs.fields.direccion?.input.value.trim()      || '',
     telefono:         refs.fields.telefono?.input.value.trim()       || '',
     email:            refs.fields.email?.input.value.trim()          || '',
@@ -659,21 +645,20 @@ function getCurrentData(refs, uiState) {
   };
 }
 
-/** Retorna true si el formulario tiene lo mínimo para guardar */
 function isFormValid(refs, uiState, state) {
   const data = getCurrentData(refs, uiState);
 
+  // ✅ valida localidad.id en lugar de ciudad string
+  const tieneUbicacion = data.localidad?.id && data.direccion;
   const camposBasicos  = data.nombreComercio && data.descripcion &&
-                         data.provincia && data.ciudad && data.direccion &&
-                         data.telefono  && data.email;
-  const tieneRedSocial = data.website || data.instagram || data.facebook || data.whatsapp;
+                         tieneUbicacion && data.telefono && data.email;
+  const tieneRedSocial  = data.website || data.instagram || data.facebook || data.whatsapp;
   const tieneCategorias = data.categories.length > 0;
   const slugValido      = state.comercioData.landing?.slug || uiState.slugDisponible;
 
   return !!(camposBasicos && tieneRedSocial && tieneCategorias && slugValido);
 }
 
-/** Detecta si hay cambios respecto al estado original (para edit mode) */
 function hayDirtyState(refs, uiState, state) {
   const current  = getCurrentData(refs, uiState);
   const original = state.comercioData;
@@ -681,8 +666,8 @@ function hayDirtyState(refs, uiState, state) {
   return (
     current.nombreComercio !== (original.nombreComercio || '') ||
     current.descripcion    !== (original.descripcion    || '') ||
-    current.provincia      !== (original.provincia      || '') ||
-    current.ciudad         !== (original.ciudad         || '') ||
+    // ✅ comparar localidad como objeto
+    JSON.stringify(current.localidad) !== JSON.stringify(original.localidad || null) ||
     current.direccion      !== (original.direccion      || '') ||
     current.telefono       !== (original.telefono       || '') ||
     current.email          !== (original.email          || '') ||
@@ -700,7 +685,6 @@ function hayDirtyState(refs, uiState, state) {
 // UTILS
 // ============================================================
 
-/** Crea una sección de formulario con título */
 function crearSeccion(titulo) {
   const section = document.createElement('div');
   section.className = 'form-section';
@@ -710,7 +694,6 @@ function crearSeccion(titulo) {
   return section;
 }
 
-/** Agrega listeners de change a un array de fields para que el botón re-evalúe */
 function agregarListeners(fields, refs, uiState) {
   fields.forEach(field => {
     field.input.addEventListener('input', () => {
