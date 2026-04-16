@@ -1,12 +1,14 @@
+// ============================================================
 // src/shared/entity-context.js
-// ⟦ROLE⟧ Contexto unificado de entidad: ubicación + rubro
+// ⟦ROLE⟧ Contexto unificado: ubicación + rubro
 // NO LER | NO PROMPTS | NO SIDE EFFECTS
 // ============================================================
 
 import { getGeoContext } from './geo-helpers.js';
-import vocabRaw          from './business-vocabulary.json' with { type: 'json' };
+import vocabRaw from './business-vocabulary.json' with { type: 'json' };
+import arGeoRaw from './ar-geo-enriched.json' with { type: 'json' };
 
-// 🔧 Normalizar vocabulario al cargar (elimina espacios que rompen matches)
+// 🔧 Limpiar espacios en claves/valores del vocabulario (tu JSON los tiene)
 const clean = (str) => typeof str === 'string' ? str.trim() : str;
 
 export const vocab = {
@@ -30,31 +32,29 @@ export const vocab = {
   )
 };
 
-const norm   = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+// 🔧 Limpiar arGeo también por si acaso
+export const arGeo = Object.fromEntries(
+  Object.entries(arGeoRaw).map(([k, v]) => [clean(k), v])
+);
+
+const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 const toPath = (s) => norm(s).replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
 // ============================================================
 // UBICACIÓN
 // ============================================================
 
-// 📝 FORM → FIRESTORE
-export function ubicacionFromForm(refs) {
-  const prov   = refs?.fields?.provincia?.input?.value?.trim() || '';
-  const locObj = refs?.localidadSeleccionada;
-  if (!locObj?.id || !prov) return null;
+export function ubicacionFromForm(formRefs) {
+  const provincia = formRefs.fields?.provincia?.input?.value?.trim() || '';
+  const loc = formRefs.localidadSeleccionada;
+  if (!loc?.id || !provincia) return null;
   return {
     pais: 'Argentina',
-    provincia: prov,
-    localidad: {
-      id: String(locObj.id),
-      nombre: locObj.nombre,
-      lat: Number(locObj.lat),
-      lng: Number(locObj.lng)
-    }
+    provincia,
+    localidad: { id: loc.id, nombre: loc.nombre, lat: loc.lat, lng: loc.lng }
   };
 }
 
-// 🔍 Internal: tolera formato nuevo, legacy o string suelto
 function _resolverUbicacion(data) {
   if (data.ubicacion?.localidad?.id) return data.ubicacion;
   if (data.localidad?.id && data.localidad.nombre) {
@@ -66,28 +66,22 @@ function _resolverUbicacion(data) {
   return null;
 }
 
-// 🧠 FIRESTORE → ENTITY.JSON (con vecinas para LLM)
 export function ubicacionToEntity(data) {
   const ubi = _resolverUbicacion(data);
   if (!ubi?.localidad?.id) return null;
   const geo = getGeoContext(ubi.localidad.id);
   return {
-    pais: ubi.pais,
+    pais: ubi.pais || 'Argentina',
     provincia: ubi.provincia,
     localidad: { id: ubi.localidad.id, nombre: ubi.localidad.nombre, coords: { lat: ubi.localidad.lat, lng: ubi.localidad.lng } },
-    contexto: { vecinas: geo?.cercanas || [] }
+    ...(geo?.cercanas?.length ? { cercanas: geo.cercanas } : {})
   };
 }
 
-// 🔗 FIRESTORE → PATHS/URLS
 export function ubicacionToPaths(data) {
   const ubi = _resolverUbicacion(data);
   if (!ubi?.localidad?.nombre) return { ciudadPath: '', provinciaPath: '', localidadId: null };
-  return {
-    ciudadPath: toPath(ubi.localidad.nombre),
-    provinciaPath: toPath(ubi.provincia),
-    localidadId: ubi.localidad.id || null
-  };
+  return { ciudadPath: toPath(ubi.localidad.nombre), provinciaPath: toPath(ubi.provincia), localidadId: ubi.localidad.id || null };
 }
 
 export function validarUbicacion(data) {
@@ -109,25 +103,24 @@ function _tipoDesdeTag(tag) {
 function _resolverRubroDesdeInput(input) {
   const n = norm(input);
   if (!n) return null;
-  // 1. Exacto
+  // 1. Match exacto en sinónimos
   if (vocab.tags.mapa_sinonimos[n]) {
     const tag = vocab.tags.mapa_sinonimos[n];
     return { tipo: _tipoDesdeTag(tag), tags: [tag] };
   }
-  // 2. Parcial
+  // 2. Match parcial
   const keyMatch = Object.keys(vocab.tags.mapa_sinonimos).find(k => n.includes(k));
   if (keyMatch) {
     const tag = vocab.tags.mapa_sinonimos[keyMatch];
     return { tipo: _tipoDesdeTag(tag), tags: [tag] };
   }
-  // 3. Tag directo
+  // 3. Tag directo en whitelist
   if (vocab.tags.validos.includes(n)) {
     return { tipo: _tipoDesdeTag(n), tags: [n] };
   }
   return null;
 }
 
-// 📝 FORM → FIRESTORE
 export function rubroFromForm(categories = []) {
   if (!Array.isArray(categories)) return { tipo: 'GEN', tags: [] };
   for (const cat of categories) {
@@ -137,7 +130,6 @@ export function rubroFromForm(categories = []) {
   return { tipo: 'GEN', tags: [] };
 }
 
-// 🧠 FIRESTORE → ENTITY.JSON (enriquecido)
 export function rubroToEntity(data) {
   let rubro = data.rubro;
   if (!rubro?.tipo) {
@@ -149,15 +141,9 @@ export function rubroToEntity(data) {
   }
   if (!rubro?.tipo || rubro.tipo === 'GEN') return { tipo: 'GEN', tags: [] };
   const tipoDef = vocab.tipos.find(t => t.codigo === rubro.tipo);
-  return {
-    tipo: rubro.tipo,
-    nombre: tipoDef?.nombre || rubro.tipo,
-    schema_org: tipoDef?.schema_org || 'LocalBusiness',
-    tags: rubro.tags || []
-  };
+  return { tipo: rubro.tipo, nombre: tipoDef?.nombre || rubro.tipo, schema_org: tipoDef?.schema_org || 'LocalBusiness', tags: rubro.tags || [] };
 }
 
-// 📑 FIRESTORE → INDEX (ligero)
 export function rubroToIndex(data) {
   let rubro = data.rubro;
   if (!rubro?.tipo) {
@@ -175,7 +161,7 @@ export function validarRubro(data) {
 }
 
 // ============================================================
-// CONTEXTO UNIFICADO — para entity.json
+// CONTEXTO UNIFICADO
 // ============================================================
 export function buildEntityContext(data) {
   return {
