@@ -9,8 +9,6 @@ import { mountLayout }             from '/src/skeleton/layout/index.js';
 import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
 
 // ==================== FIREBASE ====================
-// Firebase directo justificado: setDoc de comercio nuevo, plan trial, landing, usuario
-// Estas operaciones no pueden ir por persistence.updateData() — son escrituras multi-colección
 import { doc, getDoc, setDoc, updateDoc, collection, Timestamp } from 'firebase/firestore';
 import { db } from '/src/services/firebase/firebase.js';
 
@@ -26,6 +24,7 @@ import { showToast }              from '/src/skeleton/components/toast/index.js'
 
 // ==================== SHARED ====================
 import { fillProvinciaSelector } from '/src/shared/provincias.js';
+import { ubicacionFromForm, rubroFromForm } from '/src/shared/entity-context.js'; // ← NUEVO
 
 import './mi-comercio.css';
 
@@ -86,7 +85,7 @@ async function load(ctx) {
   const comercioSlug           = comercioData.landing?.slug || null;
   const slugDisponible         = !!comercioSlug;
   const selectedPaymentMethods = comercioData.paymentMethods || [];
-  const tieneLocalFisico       = comercioData.tieneLocalFisico !== false; // true por defecto
+  const tieneLocalFisico       = comercioData.tieneLocalFisico !== false;
 
   return { isNewComercio, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
 }
@@ -105,7 +104,7 @@ function render(ctx, state) {
     slugInput:           null,
     slugStatus:          null,
     slugValidationTimer: null,
-    localidadSeleccionada: null,  // ✅ renombrado de ciudadSeleccionada
+    localidadSeleccionada: null,
   };
 
   const uiState = {
@@ -295,8 +294,8 @@ function renderSeccionUbicacion(state, refs, uiState) {
   });
   fillProvinciaSelector('Argentina', refs.fields.provincia.input);
 
-  // ✅ provincia viene de localidad.provincia o del campo suelto legacy
-  const provinciaActual = state.comercioData.localidad?.provincia
+  const provinciaActual = state.comercioData.ubicacion?.provincia
+    || state.comercioData.localidad?.provincia
     || state.comercioData.provincia
     || '';
   if (provinciaActual) refs.fields.provincia.input.value = provinciaActual;
@@ -313,14 +312,15 @@ function renderSeccionUbicacion(state, refs, uiState) {
 
   function montarCiudad(provincia, valorActual = '') {
     mountCiudadAutocomplete(provincia, ciudadContainer, valorActual, (localidad) => {
-      // ✅ localidad es el objeto completo { id, nombre, lat, lng }
       refs.localidadSeleccionada = localidad;
       document.dispatchEvent(new Event('change'));
     });
   }
 
-  // ✅ valor inicial: objeto localidad o string legacy ciudad
-  const localidadActual = state.comercioData.localidad || state.comercioData.ciudad || '';
+  const localidadActual = state.comercioData.ubicacion?.localidad 
+    || state.comercioData.localidad 
+    || state.comercioData.ciudad 
+    || '';
   if (provinciaActual) montarCiudad(provinciaActual, localidadActual);
 
   refs.fields.provincia.input.addEventListener('change', () => {
@@ -613,25 +613,16 @@ function updateSlugStatus(refs, status, message) {
 // ============================================================
 
 function getCurrentData(refs, uiState) {
-  const loc      = refs.localidadSeleccionada;
-  const provincia = refs.fields.provincia?.input.value.trim() || '';
-
   return {
     nombreComercio:   refs.fields.nombreComercio?.input.value.trim() || '',
     descripcion:      refs.fields.descripcion?.input.value.trim()    || '',
-    pais:             'Argentina',
-
-    // ✅ localidad como objeto estructurado — provincia incluida adentro
-    localidad: loc
-      ? {
-          id:        loc.id,
-          nombre:    loc.nombre,
-          lat:       loc.lat,
-          lng:       loc.lng,
-          provincia,
-        }
-      : null,
-
+    
+    // ✅ UBICACIÓN ESTRUCTURADA (con entity-context.js)
+    ubicacion: ubicacionFromForm(refs),
+    
+    // ✅ RUBRO ESTRUCTURADO (con entity-context.js)
+    rubro: rubroFromForm(refs.categorySelector?.getSelected() || []),
+    
     direccion:        refs.fields.direccion?.input.value.trim()      || '',
     telefono:         refs.fields.telefono?.input.value.trim()       || '',
     email:            refs.fields.email?.input.value.trim()          || '',
@@ -648,8 +639,9 @@ function getCurrentData(refs, uiState) {
 function isFormValid(refs, uiState, state) {
   const data = getCurrentData(refs, uiState);
 
-  // ✅ valida localidad.id en lugar de ciudad string
-  const tieneUbicacion = data.localidad?.id && data.direccion;
+  // ✅ valida ubicacion.localidad.id (nuevo formato)
+  const tieneUbicacion = data.ubicacion?.localidad?.id && data.direccion;
+  
   const camposBasicos  = data.nombreComercio && data.descripcion &&
                          tieneUbicacion && data.telefono && data.email;
   const tieneRedSocial  = data.website || data.instagram || data.facebook || data.whatsapp;
@@ -666,8 +658,8 @@ function hayDirtyState(refs, uiState, state) {
   return (
     current.nombreComercio !== (original.nombreComercio || '') ||
     current.descripcion    !== (original.descripcion    || '') ||
-    // ✅ comparar localidad como objeto
-    JSON.stringify(current.localidad) !== JSON.stringify(original.localidad || null) ||
+    // ✅ comparar ubicacion como objeto (con fallback a legacy localidad)
+    JSON.stringify(current.ubicacion) !== JSON.stringify(original.ubicacion || original.localidad || null) ||
     current.direccion      !== (original.direccion      || '') ||
     current.telefono       !== (original.telefono       || '') ||
     current.email          !== (original.email          || '') ||
