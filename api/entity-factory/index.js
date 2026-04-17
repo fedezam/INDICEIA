@@ -12,6 +12,7 @@ import { buildVisual }       from '../../lib/entity-factory/builders/visual.buil
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
 import { resolveDomain }     from '../../lib/entity-factory/domain-resolver.js';
+import { buildEntityContext } from '../../src/shared/entity-context.js'; // ← NUEVO: import
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -132,6 +133,19 @@ export async function buildEntity({ comercioId }) {
   // ── INDEX ─────────────────────────────────────────────────
   await buildIndex(data, comercioId, goods, services);
 
+  // ── ENRIQUECER CONTEXTO PARA ENTITY.JSON (LLM) ─────────────
+  // Usamos entity-context para inyectar geo (vecinas) y rubro (metadata)
+  // sin perder la estructura actual de context (ej: direccion, horarios)
+  const geoCtx = buildEntityContext(data);
+  
+  const enrichedContext = {
+    ...context,
+    // Merge ubicacion: preserva campos existentes (direccion) y agrega/enriquece geo + cercanas
+    ...(geoCtx.ubicacion && { ubicacion: { ...context.ubicacion, ...geoCtx.ubicacion } }),
+    // Inyecta rubro enriquecido
+    ...(geoCtx.rubro && { rubro: geoCtx.rubro }),
+  };
+
   // ── ENTITY JSON ───────────────────────────────────────────
   return {
     meta: {
@@ -156,7 +170,7 @@ export async function buildEntity({ comercioId }) {
       capabilities: { role: 'cognitive_permissions', version: '1.0', optional: true },
     },
     mind,
-    context,
+    context: enrichedContext,  // ← Usamos el contexto enriquecido
     ...(goods         && { goods }),
     ...(services      && { services }),
     ...(professional  && { professional }),
