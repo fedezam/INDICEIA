@@ -212,7 +212,7 @@ function createModalidadItem(m, uiState) {
 // ============================================================
 function getDefaultData(key) {
   switch (key) {
-    case 'delivery':     return { costo: { tipo: 'consultar' } };
+    case 'delivery':     return { enabled: true, costo: { tipo: 'consultar' } };
     case 'correo':       return { empresas: [] };
     case 'transporte':   return { costo: { tipo: 'consultar' } };
     case 'comisionista': return {};
