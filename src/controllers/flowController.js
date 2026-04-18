@@ -56,11 +56,6 @@ const STEP_DEFINITIONS = {
     visibleIf: ctx => ctx.delivery?.enabled === true,
   },
 
-  'horarios-digital': {
-    page:  'horarios',
-    query: { channel: 'digital' },
-    // siempre visible — es el horario universal de atención online
-  },
 
   'ia-config': { page: 'ia-config' },
 
@@ -82,7 +77,6 @@ const PIPELINE_ORDER = {
     'entrega',
     'horarios-presencial',
     'horarios-delivery',
-    'horarios-digital',
     'ia-config',
   ],
   prestador: [
@@ -91,7 +85,6 @@ const PIPELINE_ORDER = {
     'productos',
     'horarios-presencial',
     'horarios-delivery',
-    'horarios-digital',
     'ia-config',
   ],
   profesional: [
