@@ -51,6 +51,12 @@ export default async function handler(req, res) {
     });
 
     // 5. Actualizar índice de ciudad con datos crudos de Firestore
+    console.log('[debug] rawData.tieneLocalFisico:', rawData.tieneLocalFisico);
+    console.log('[debug] rawData.entrega:', JSON.stringify(rawData.entrega));
+    console.log('[debug] rawData.horarios keys:', rawData.horarios ? Object.keys(rawData.horarios) : 'SIN horarios');
+    console.log('[debug] rawData.horarios_presencial:', rawData.horarios_presencial ? 'tiene' : 'SIN horarios_presencial');
+    console.log('[debug] rawData.ubicacion:', JSON.stringify(rawData.ubicacion));
+    console.log('[debug] rawData keys:', Object.keys(rawData));
     const indexResult = await buildIndex(
       rawData,
       comercioId,
