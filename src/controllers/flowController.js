@@ -56,6 +56,11 @@ const STEP_DEFINITIONS = {
     visibleIf: ctx => ctx.delivery?.enabled === true,
   },
 
+  'horarios-digital': {
+    page:  'horarios',
+    query: { channel: 'digital' },
+    // siempre visible — es el horario universal de atención online
+  },
 
   'ia-config': { page: 'ia-config' },
 
@@ -72,19 +77,20 @@ const STEP_DEFINITIONS = {
 const PIPELINE_ORDER = {
   comercio: [
     'mi-comercio',
+    'horarios-presencial',  // primero horarios del local
+    'entrega',              // luego qué modalidades de entrega
+    'horarios-delivery',    // horario de delivery si lo marcó
     'productos',
     'servicios',
-    'entrega',
-    'horarios-presencial',
-    'horarios-delivery',
     'ia-config',
   ],
   prestador: [
     'mi-perfil',
+    'horarios-presencial',
+    'entrega',
+    'horarios-delivery',
     'servicios',
     'productos',
-    'horarios-presencial',
-    'horarios-delivery',
     'ia-config',
   ],
   profesional: [
@@ -104,7 +110,7 @@ function buildFlowContext(userData, comercioData) {
     entityType:       userData.entityType || 'comercio',
     offerType:        userData.offerType  || comercioData?.offerType || {},
     tieneLocalFisico: comercioData?.tieneLocalFisico === true,
-    delivery:         comercioData?.delivery || {},
+    delivery:         comercioData?.entrega?.delivery || {},  // ✅ fix
   };
 }
 
@@ -205,6 +211,7 @@ export async function runFlowController(uid) {
     console.log("🔍 [FlowController] entityType:",      ctx.entityType);
     console.log("🔍 [FlowController] offerType:",       ctx.offerType);
     console.log("🔍 [FlowController] tieneLocalFisico:", ctx.tieneLocalFisico);
+    console.log("🔍 [FlowController] delivery:",        ctx.delivery);
     console.log("🔍 [FlowController] pipeline:",        pipeline.map(s => s.id));
     console.log("🔍 [FlowController] firstIncomplete:", firstIncomplete?.id);
 
@@ -219,7 +226,6 @@ export async function runFlowController(uid) {
     // ── ONBOARDING NORMAL ───────────────────────────────────
     if (firstIncomplete) {
       const targetChannel = firstIncomplete.query?.channel || null;
-      // ya estamos en la página correcta con el canal correcto?
       if (currentPage !== firstIncomplete.page || currentChannel !== targetChannel) {
         window.location.href = buildStepUrl(firstIncomplete);
       }
@@ -237,7 +243,6 @@ export async function runFlowController(uid) {
 
 // ============================================================
 // HELPER POST SAVE
-// backward compatible: acepta string (legacy) o pipeline+stepId (nuevo)
 // ============================================================
 export function redirectAfterSave(pipelineOrStep, currentStepId) {
   if (window.isEditMode) {
@@ -261,6 +266,6 @@ export function redirectAfterSave(pipelineOrStep, currentStepId) {
 }
 
 // ============================================================
-// EXPORTS PARA USO EXTERNO (horarios.js, index.builder.js, etc)
+// EXPORTS PARA USO EXTERNO
 // ============================================================
 export { buildPipeline, buildFlowContext, buildStepUrl, isStepCompleted };
