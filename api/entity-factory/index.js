@@ -131,7 +131,7 @@ export async function buildEntity({ comercioId }) {
   await buildSeo(context, comercioId, savedSeo, slug);
 
   // ── INDEX ─────────────────────────────────────────────────
-  await buildIndex(data, comercioId, goods, services);
+  // buildIndex movido a generate-and-upload-entity con rawData correcto
 
   // ── ENRIQUECER CONTEXTO PARA ENTITY.JSON (LLM) ─────────────
   // Usamos entity-context para inyectar geo (vecinas) y rubro (metadata)
