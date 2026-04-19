@@ -23,18 +23,25 @@ export default async function handler(req, res) {
 
     console.log('Generando entidad para:', comercioId);
 
-    // Resolver slug ANTES de buildEntity
+    // 1. Leer datos crudos de Firestore (para buildIndex)
+    const comercioSnap = await db.collection('entidades').doc(comercioId).get();
+    if (!comercioSnap.exists) {
+      return res.status(404).json({ error: 'Comercio no encontrado' });
+    }
+    const rawData = comercioSnap.data();
+
+    // 2. Resolver slug ANTES de buildEntity
     const landingSnap = await db.collection('landings')
       .where('comercioId', '==', comercioId)
       .limit(1)
       .get();
     const slug = landingSnap.empty ? null : landingSnap.docs[0].id;
 
-    // 1. Generar entidad completa
+    // 3. Generar entidad completa
     const entity = await buildEntity({ comercioId, slug });
     const jsonString = JSON.stringify(entity, null, 2);
 
-    // 2. Subir entity.json a Blob
+    // 4. Subir entity.json a Blob
     const blobPath = `entidades/${comercioId}/entity.json`;
     const { url } = await put(blobPath, jsonString, {
       access: 'public',
@@ -43,15 +50,15 @@ export default async function handler(req, res) {
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    // 3. Actualizar índice de ciudad (upsert del nodo)
+    // 5. Actualizar índice de ciudad con datos crudos de Firestore
     const indexResult = await buildIndex(
-      entity.context,
+      rawData,
       comercioId,
       entity.goods,
       entity.services
     );
 
-    // 4. Enriquecer relaciones si el índice se actualizó
+    // 6. Enriquecer relaciones si el índice se actualizó
     if (indexResult?.url) {
       try {
         const res2 = await fetch(indexResult.url);
@@ -64,12 +71,11 @@ export default async function handler(req, res) {
         );
         console.log(`[entity-factory] ✅ Índice enriquecido: ${indexResult.ciudad} (${indexResult.total} nodos)`);
       } catch (enrichErr) {
-        // No rompemos el pipeline si falla el enriquecimiento
         console.warn('[entity-factory] ⚠️ Enriquecimiento falló (no crítico):', enrichErr.message);
       }
     }
 
-    // 5. Registrar en Firestore
+    // 7. Registrar en Firestore
     await db.collection('entidades').doc(comercioId).update({
       entityPublicUrl: url,
       entityGeneratedAt: new Date().toISOString(),
