@@ -67,8 +67,7 @@ export default async function handler(req, res) {
     // 6. Enriquecer relaciones si el índice se actualizó
     if (indexResult?.url) {
       try {
-        const res2 = await fetch(indexResult.url);
-        const baseIndex = await res2.json();
+        const baseIndex = indexResult.indice;
         await enrichAndSaveCityIndex(
           baseIndex,
           indexResult.pais,
