@@ -31,6 +31,7 @@ export default defineConfig({
         lugares: resolve(__dirname, "src/pages/lugares.html"),
         cobertura: resolve(__dirname, "src/pages/cobertura.html"),
         consultas: resolve(__dirname, "src/pages/consultas.html"),
+        "super-admin": resolve(__dirname, "src/pages/super-admin.html"),
         // Planes
         plans: resolve(__dirname, "src/pages/plans.html"),
         // Pago
