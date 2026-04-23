@@ -1,3 +1,5 @@
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../services/firebase/firebase.js';
 import { listEntidades, loadEntidad } from '../controllers/panelCore.js';
 import { createTable, createEmptyState } from '../skeleton/components/skeletonComponents.js';
 
@@ -9,17 +11,22 @@ export const page = {
   // ============================================================
   // 📥 LOAD
   // ============================================================
-  async load() {
-    try {
-      this.isLoading = true;
-      this.entities = await listEntidades();
-    } catch (err) {
-      console.error('[panel] Error cargando entidades:', err);
-      this.entities = [];
-    } finally {
-      this.isLoading = false;
-    }
-  },
+  async load(context) {
+  if (!context?.user) {
+    window.location.href = '/admin-login';
+    return;
+  }
+
+  const snap = await getDoc(doc(db, 'usuarios', context.user.uid));
+  const role = snap.exists() ? snap.data().role : null;
+
+  if (role !== 'admin') {
+    window.location.href = '/dashboard';
+    return;
+  }
+
+  this.entities = await listEntidades();
+},
 
   // ============================================================
   // 🖼️ RENDER

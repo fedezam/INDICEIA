@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Super Admin Panel</title>
+</head>
+<body>
+  <div id="page-content"></div>
+
+  <script type="module">
+    import { runSkeleton } from '/src/skeleton/skeleton.js';
+    import { page } from '/src/views/superAdminPanel.js';
+    import { firebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
+
+    runSkeleton({
+      page,
+      adapter: firebaseAdapter,
+      options: {
+        loadingMessage: 'Cargando panel...'
+      }
+    });
+  </script>
+</body>
+</html>
