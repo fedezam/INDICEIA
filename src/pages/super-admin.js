@@ -4,6 +4,7 @@ import { renderLayout } from '../skeleton/layout/renderLayout.js';
 import { mountLayout } from '../skeleton/layout/index.js';
 import { auth } from '../services/firebase/firebase.js';
 import { signOut } from 'firebase/auth';
+import './super-admin.css';
 
 renderLayout();
 
