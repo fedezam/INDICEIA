@@ -1,4 +1,5 @@
 // src/views/superAdminPanel.js
+import '../pages/super-admin.css';
 import { listEntidades, loadEntidad } from '../controllers/panelCore.js';
 import { createTable, createEmptyState } from '../skeleton/components/skeletonComponents.js';
 import { buildFlowContext, buildPipeline } from '../controllers/flowController.js';
@@ -186,17 +187,15 @@ function openEditModal({ title, fields, data, onSave }) {
 // ============================================================
 export const page = {
   entities:  [],
-  selected:  null,  // { entidad, user, ctx, pipeline, steps }
+  selected:  null,
   isLoading: false,
 
-  // ──────────────────────────────────────────────────────────
   async load(context) {
     if (!context?.user) { window.location.href = '/admin-login'; return; }
     if (context.userData?.role !== 'admin') { window.location.href = '/dashboard'; return; }
     this.entities = await listEntidades();
   },
 
-  // ──────────────────────────────────────────────────────────
   render() {
     const container = getContainer();
     if (!container) return;
@@ -235,14 +234,17 @@ export const page = {
 
     const table = createTable({
       columns: [
-        { key: 'nombreComercio', label: 'Nombre' },
-        { key: 'id',            label: 'ID' },
-        { key: 'entityType',    label: 'Tipo' },
-        { key: '_fecha',        label: 'Actualización' }
+        { key: '_nombre',    label: 'Nombre' },      // ← fix: normalizado
+        { key: 'id',         label: 'ID' },
+        { key: 'entityType', label: 'Tipo' },
+        { key: '_fecha',     label: 'Actualización' }
       ],
       data: this.entities.map(e => ({
         ...e,
-        _fecha: e.fechaActualizacion ? e.fechaActualizacion.toLocaleDateString('es-AR') : '-'
+        _nombre: e.nombreComercio || e.nombre || '-', // ← fix: fallback a e.nombre
+        _fecha:  e.fechaActualizacion
+                   ? e.fechaActualizacion.toLocaleDateString('es-AR')
+                   : '-'
       })),
       actions: [{ id: 'ver', label: 'Ver', icon: 'fas fa-eye', onClick: (row) => this.openEntity(row.id) }]
     });
@@ -279,7 +281,6 @@ export const page = {
     const { entidad, user, ctx, pipeline, steps } = this.selected;
     const comercioId = entidad.id || Object.keys(this.selected).find(k => k === 'id');
 
-    // ── Back + título ──
     const topbar = document.createElement('div');
     topbar.className = 'sa-topbar';
     topbar.innerHTML = `
@@ -292,30 +293,17 @@ export const page = {
     topbar.querySelector('.sa-btn--back').onclick = () => { this.selected = null; this.render(); };
     container.appendChild(topbar);
 
-    // ── Sección 1: Identidad ──
     this._renderSeccionIdentidad(container, entidad, ctx, comercioId);
-
-    // ── Sección 2: Tipo de entidad ──
     this._renderSeccionTipoEntidad(container, entidad, user, comercioId);
 
-    // ── Sección 3: Catálogo ──
     if (ctx.offerType?.productos || ctx.offerType?.servicios) {
       this._renderSeccionCatalogo(container, entidad, ctx, comercioId);
     }
 
-    // ── Sección 4: Operativa ──
     this._renderSeccionOperativa(container, entidad, ctx, pipeline, comercioId);
-
-    // ── Sección 5: IA ──
     this._renderSeccionIA(container, entidad, comercioId);
-
-    // ── Sección 6: Plan ──
     this._renderSeccionPlan(container, entidad, comercioId);
-
-    // ── Sección 7: Publicación ──
     this._renderSeccionPublicacion(container, entidad, comercioId);
-
-    // ── JSON debug (colapsado) ──
     this._renderJsonDebug(container, this.selected);
   },
 
@@ -325,9 +313,9 @@ export const page = {
   _renderSeccionIdentidad(container, entidad, ctx, comercioId) {
     const { wrap, grid } = makeSection('🏪 Identidad', 'Datos principales de la entidad');
 
-    const isComercio     = ctx.entityType === 'comercio';
-    const isPrestador    = ctx.entityType === 'prestador';
-    const isProfesional  = ctx.entityType === 'profesional';
+    const isComercio    = ctx.entityType === 'comercio';
+    const isPrestador   = ctx.entityType === 'prestador';
+    const isProfesional = ctx.entityType === 'profesional';
 
     const nombre    = entidad.nombreComercio || entidad.nombre || '';
     const hasNombre = !!nombre;
@@ -339,30 +327,30 @@ export const page = {
       status: hasNombre ? 'ok' : 'empty',
       body: `
         <p>${entidad.descripcion || '<em>Sin descripción</em>'}</p>
-        ${entidad.telefono ? `<p>📞 ${entidad.telefono}</p>` : ''}
-        ${entidad.email    ? `<p>✉️ ${entidad.email}</p>`    : ''}
+        ${entidad.telefono  ? `<p>📞 ${entidad.telefono}</p>`  : ''}
+        ${entidad.email     ? `<p>✉️ ${entidad.email}</p>`     : ''}
         ${entidad.direccion ? `<p>📍 ${entidad.direccion}</p>` : ''}
       `,
       onEdit: () => {
         const fields = isComercio ? [
-          { key: 'nombreComercio', label: 'Nombre del Comercio', required: true },
-          { key: 'descripcion',    label: 'Descripción', type: 'textarea', required: true },
-          { key: 'telefono',       label: 'Teléfono' },
-          { key: 'email',          label: 'Email', type: 'email' },
-          { key: 'direccion',      label: 'Dirección' },
-          { key: 'website',        label: 'Website' },
-          { key: 'instagram',      label: 'Instagram' },
-          { key: 'whatsapp',       label: 'WhatsApp' },
-          { key: 'tieneLocalFisico', label: 'Tiene local físico', type: 'boolean' },
-        ] : isProfesional ? [
-          { key: 'nombre',           label: 'Nombre', required: true },
-          { key: 'titulo',           label: 'Título profesional' },
-          { key: 'especialidad',     label: 'Especialidad' },
-          { key: 'descripcion',      label: 'Descripción', type: 'textarea' },
+          { key: 'nombreComercio',   label: 'Nombre del Comercio', required: true },
+          { key: 'descripcion',      label: 'Descripción', type: 'textarea', required: true },
           { key: 'telefono',         label: 'Teléfono' },
           { key: 'email',            label: 'Email', type: 'email' },
+          { key: 'direccion',        label: 'Dirección' },
+          { key: 'website',          label: 'Website' },
+          { key: 'instagram',        label: 'Instagram' },
+          { key: 'whatsapp',         label: 'WhatsApp' },
+          { key: 'tieneLocalFisico', label: 'Tiene local físico', type: 'boolean' },
+        ] : isProfesional ? [
+          { key: 'nombre',               label: 'Nombre', required: true },
+          { key: 'titulo',               label: 'Título profesional' },
+          { key: 'especialidad',         label: 'Especialidad' },
+          { key: 'descripcion',          label: 'Descripción', type: 'textarea' },
+          { key: 'telefono',             label: 'Teléfono' },
+          { key: 'email',                label: 'Email', type: 'email' },
           { key: 'institucionFormadora', label: 'Institución' },
-          { key: 'experiencia',      label: 'Experiencia' },
+          { key: 'experiencia',          label: 'Experiencia' },
         ] : [
           { key: 'nombre',       label: 'Nombre', required: true },
           { key: 'especialidad', label: 'Especialidad' },
@@ -425,7 +413,6 @@ export const page = {
           ],
           data: { entityType: entidad.entityType, serviceType: entidad.serviceType || '' },
           onSave: async (updates) => {
-            // también en usuarios
             await Promise.all([
               updateDoc(doc(db, 'entidades', comercioId), { ...updates, fechaActualizacion: new Date() }),
               user?.uid ? updateDoc(doc(db, 'usuarios', user.uid || entidad.duenoId), { entityType: updates.entityType }) : Promise.resolve()
@@ -437,7 +424,6 @@ export const page = {
       }
     });
 
-    // offerType separado
     const offerCard = makeCard({
       icon:   '📦',
       title:  'Oferta',
@@ -479,28 +465,24 @@ export const page = {
     const { wrap, grid } = makeSection('📦 Catálogo', 'Productos y servicios');
 
     if (ctx.offerType?.productos) {
-      const stats = `${entidad._productosCount || '?'} productos`;
-      const card = makeCard({
+      grid.appendChild(makeCard({
         icon:   '📦',
         title:  'Productos',
-        meta:   stats,
+        meta:   `${entidad._productosCount || '?'} productos`,
         status: 'ok',
         body:   '<p>Gestión de productos en subcolección Firestore</p>',
         onEdit: () => this._openProductosPanel(comercioId)
-      });
-      grid.appendChild(card);
+      }));
     }
 
     if (ctx.offerType?.servicios) {
-      const card = makeCard({
+      grid.appendChild(makeCard({
         icon:   '🛎️',
         title:  'Servicios',
-        meta:   '',
         status: 'ok',
         body:   '<p>Gestión de servicios en subcolección Firestore</p>',
         onEdit: () => this._openServiciosPanel(comercioId)
-      });
-      grid.appendChild(card);
+      }));
     }
 
     container.appendChild(wrap);
@@ -512,7 +494,6 @@ export const page = {
   _renderSeccionOperativa(container, entidad, ctx, pipeline, comercioId) {
     const { wrap, grid } = makeSection('⚙️ Operativa', 'Horarios, entrega y cobertura');
 
-    // Horarios
     const horariosOk = entidad.horarios && Object.keys(entidad.horarios).length > 0;
     grid.appendChild(makeCard({
       icon:   '🕐',
@@ -531,16 +512,13 @@ export const page = {
       })
     }));
 
-    // Entrega (solo si tiene productos)
     if (ctx.offerType?.productos) {
       const entregaOk = entidad.entrega && Object.keys(entidad.entrega).length > 0;
       grid.appendChild(makeCard({
         icon:   '🚚',
         title:  'Entrega',
         status: entregaOk ? 'ok' : 'empty',
-        body:   entregaOk
-          ? `<p>${Object.keys(entidad.entrega).join(', ')}</p>`
-          : '<p>Sin configurar</p>',
+        body:   entregaOk ? `<p>${Object.keys(entidad.entrega).join(', ')}</p>` : '<p>Sin configurar</p>',
         onEdit: () => openEditModal({
           title: 'Editar Entrega (JSON)',
           fields: [{ key: 'entrega', label: 'Entrega', type: 'json' }],
@@ -554,7 +532,6 @@ export const page = {
       }));
     }
 
-    // Lugares y Cobertura (solo profesional)
     if (ctx.entityType === 'profesional') {
       const lugaresOk = entidad.lugares?.length > 0;
       grid.appendChild(makeCard({
@@ -620,7 +597,6 @@ export const page = {
   _renderSeccionIA(container, entidad, comercioId) {
     const { wrap, grid } = makeSection('🤖 Inteligencia Artificial', 'Config de IA y capacidades');
 
-    // aiConfig
     const aiOk = !!entidad.aiConfig;
     grid.appendChild(makeCard({
       icon:   '🤖',
@@ -642,7 +618,6 @@ export const page = {
       })
     }));
 
-    // Capacidades cognitivas
     const cogOk = !!entidad.cognitive_permissions && Object.keys(entidad.cognitive_permissions).length > 0;
     const cogActivas = cogOk
       ? Object.entries(entidad.cognitive_permissions).filter(([,v]) => v?.enabled).map(([,v]) => v.label).join(', ')
@@ -664,7 +639,6 @@ export const page = {
       })
     }));
 
-    // Visual (opcional — siempre visible)
     const visualOk = !!entidad.templateId;
     grid.appendChild(makeCard({
       icon:   '🎨',
@@ -721,8 +695,8 @@ export const page = {
             { value: 'pro',       label: 'Pro' },
             { value: 'highvalue', label: 'High Value' },
           ]},
-          { key: 'liveEnabled',       label: 'Live enabled',       type: 'boolean' },
-          { key: 'commissionEnabled', label: 'Commission enabled',  type: 'boolean' },
+          { key: 'liveEnabled',       label: 'Live enabled',      type: 'boolean' },
+          { key: 'commissionEnabled', label: 'Commission enabled', type: 'boolean' },
         ],
         data: { plan: planId, liveEnabled: !!entidad.liveEnabled, commissionEnabled: !!entidad.commissionEnabled },
         onSave: async (updates) => {
@@ -801,7 +775,7 @@ export const page = {
   // PANELES ESPECIALES: PRODUCTOS / SERVICIOS
   // ──────────────────────────────────────────────────────────
   async _openProductosPanel(comercioId) {
-    const snap = await getDocs(collection(db, 'entidades', comercioId, 'productos'));
+    const snap  = await getDocs(collection(db, 'entidades', comercioId, 'productos'));
     const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     const overlay = document.createElement('div');
@@ -831,12 +805,12 @@ export const page = {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     modal.querySelector('.sa-modal-close').onclick = () => overlay.remove();
-    modal.querySelector('.sa-close').onclick = () => overlay.remove();
+    modal.querySelector('.sa-close').onclick       = () => overlay.remove();
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
   },
 
   async _openServiciosPanel(comercioId) {
-    const snap = await getDocs(collection(db, 'entidades', comercioId, 'servicios'));
+    const snap  = await getDocs(collection(db, 'entidades', comercioId, 'servicios'));
     const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     const overlay = document.createElement('div');
@@ -866,7 +840,7 @@ export const page = {
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     modal.querySelector('.sa-modal-close').onclick = () => overlay.remove();
-    modal.querySelector('.sa-close').onclick = () => overlay.remove();
+    modal.querySelector('.sa-close').onclick       = () => overlay.remove();
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
   }
 };
