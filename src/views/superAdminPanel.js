@@ -1,4 +1,4 @@
-import { doc, getDoc } from 'firebase/firestore';
+// src/views/superAdminPanel.js
 import { db } from '../services/firebase/firebase.js';
 import { listEntidades, loadEntidad } from '../controllers/panelCore.js';
 import { createTable, createEmptyState } from '../skeleton/components/skeletonComponents.js';
@@ -12,21 +12,20 @@ export const page = {
   // 📥 LOAD
   // ============================================================
   async load(context) {
-  if (!context?.user) {
-    window.location.href = '/admin-login';
-    return;
-  }
+    if (!context?.user) {
+      window.location.href = '/admin-login';
+      return;
+    }
 
-  const snap = await getDoc(doc(db, 'usuarios', context.user.uid));
-  const role = snap.exists() ? snap.data().role : null;
+    const { userData } = context;
 
-  if (role !== 'admin') {
-    window.location.href = '/dashboard';
-    return;
-  }
+    if (userData?.role !== 'admin') {
+      window.location.href = '/dashboard';
+      return;
+    }
 
-  this.entities = await listEntidades();
-},
+    this.entities = await listEntidades();
+  },
 
   // ============================================================
   // 🖼️ RENDER
@@ -37,23 +36,21 @@ export const page = {
       document.getElementById('app');
 
     if (!container) {
-      console.warn('[panel] No hay container disponible');
+      console.warn('[superAdminPanel] No hay container disponible');
       return;
     }
 
     container.innerHTML = '';
 
-    // 🔄 Loading state
     if (this.isLoading) {
       container.appendChild(createEmptyState({
         icon: 'fas fa-spinner fa-spin',
         title: 'Cargando...',
-        message: 'Obteniendo entidades desde Firestore'
+        message: 'Obteniendo datos desde Firestore'
       }));
       return;
     }
 
-    // 📋 Listado o detalle
     if (!this.selected) {
       this.renderList(container);
     } else {
@@ -65,6 +62,28 @@ export const page = {
   // 📋 LISTADO
   // ============================================================
   renderList(container) {
+    // Header
+    const header = document.createElement('div');
+    header.style.cssText = `
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    `;
+    header.innerHTML = `
+      <h2 style="margin:0;font-size:1.25rem;">
+        <i class="fas fa-database" style="margin-right:8px;color:var(--s-primary)"></i>
+        Entidades registradas
+        <span style="
+          font-size:0.85rem;
+          font-weight:400;
+          color:var(--s-secondary);
+          margin-left:8px;
+        ">(${this.entities.length})</span>
+      </h2>
+    `;
+    container.appendChild(header);
+
     if (!this.entities.length) {
       container.appendChild(createEmptyState({
         icon: 'fas fa-database',
@@ -77,14 +96,20 @@ export const page = {
     const table = createTable({
       columns: [
         { key: 'nombreComercio', label: 'Nombre' },
-        { key: 'id', label: 'ID' },
-        { key: 'entityType', label: 'Tipo' }
+        { key: 'id',            label: 'ID' },
+        { key: 'entityType',    label: 'Tipo' },
+        { key: '_fecha',        label: 'Actualización' }
       ],
-      data: this.entities,
+      data: this.entities.map(e => ({
+        ...e,
+        _fecha: e.fechaActualizacion
+          ? e.fechaActualizacion.toLocaleDateString('es-AR')
+          : '-'
+      })),
       actions: [{
-        id: 'ver',
-        label: 'Ver',
-        icon: 'fas fa-eye',
+        id:      'ver',
+        label:   'Ver',
+        icon:    'fas fa-eye',
         onClick: (row) => this.openDetail(row.id)
       }]
     });
@@ -102,8 +127,7 @@ export const page = {
     try {
       this.selected = await loadEntidad(id);
     } catch (err) {
-      console.error('[panel] Error cargando entidad:', err);
-
+      console.error('[superAdminPanel] Error cargando entidad:', err);
       this.selected = null;
 
       const container =
@@ -113,8 +137,8 @@ export const page = {
       if (container) {
         container.innerHTML = '';
         container.appendChild(createEmptyState({
-          icon: 'fas fa-exclamation-triangle',
-          title: 'Error',
+          icon:    'fas fa-exclamation-triangle',
+          title:   'Error',
           message: 'No se pudo cargar la entidad (permisos o inexistente)'
         }));
       }
@@ -128,32 +152,69 @@ export const page = {
   },
 
   renderDetail(container) {
+    // Botón volver
     const back = document.createElement('button');
-    back.textContent = '← Volver';
+    back.innerHTML = '<i class="fas fa-arrow-left"></i> Volver';
     back.className = 'btn btn-secondary';
-    back.style.marginBottom = '12px';
-
+    back.style.marginBottom = '16px';
     back.onclick = () => {
       this.selected = null;
       this.render();
     };
-
     container.appendChild(back);
 
-    // 🔍 JSON debug
-    const pre = document.createElement('pre');
-    pre.style.cssText = `
-      background: #111;
-      color: #0f0;
-      padding: 12px;
-      border-radius: 8px;
-      overflow: auto;
-      max-height: 70vh;
-      font-size: 12px;
+    // Título
+    const title = document.createElement('h3');
+    title.style.cssText = 'margin:0 0 12px;font-size:1.1rem;';
+    title.innerHTML = `
+      <i class="fas fa-store" style="margin-right:6px;color:var(--s-primary)"></i>
+      ${this.selected.entidad?.nombreComercio || this.selected.entidad?.id || 'Entidad'}
     `;
+    container.appendChild(title);
 
-    pre.textContent = JSON.stringify(this.selected, null, 2);
+    // Secciones
+    const sections = [
+      { label: 'Entidad',   data: this.selected.entidad },
+      { label: 'Usuario',   data: this.selected.user },
+      { label: 'Contexto',  data: this.selected.ctx },
+      { label: 'Pipeline',  data: this.selected.pipeline },
+      { label: 'Onboarding Steps', data: this.selected.steps }
+    ];
 
-    container.appendChild(pre);
+    sections.forEach(({ label, data }) => {
+      if (!data || !Object.keys(data).length) return;
+
+      const section = document.createElement('details');
+      section.style.marginBottom = '10px';
+      section.open = label === 'Entidad'; // abre el primero por defecto
+
+      const summary = document.createElement('summary');
+      summary.style.cssText = `
+        cursor: pointer;
+        font-weight: 600;
+        padding: 6px 0;
+        color: var(--s-primary);
+        user-select: none;
+      `;
+      summary.textContent = label;
+      section.appendChild(summary);
+
+      const pre = document.createElement('pre');
+      pre.style.cssText = `
+        background: #1a1a2e;
+        color: #a8ff78;
+        padding: 12px 16px;
+        border-radius: 6px;
+        overflow: auto;
+        max-height: 400px;
+        font-size: 12px;
+        margin: 6px 0 0;
+        line-height: 1.5;
+      `;
+      pre.textContent = JSON.stringify(data, null, 2);
+      section.appendChild(pre);
+
+      container.appendChild(section);
+    });
   }
 };
