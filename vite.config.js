@@ -36,6 +36,8 @@ export default defineConfig({
         plans: resolve(__dirname, "src/pages/plans.html"),
         // Pago
         "pago-exitoso": resolve(__dirname, "src/pages/pago-exitoso.html"),
+        // 🆕 PANEL
+        "super-admin": resolve(__dirname, "src/pages/super-admin.html"),
       },
     },
   },
