@@ -1,5 +1,5 @@
 // ============================================================
-// src/pages/mi-perfil/mi-perfil.js
+// src/pages/mi-perfil.js
 // ============================================================
 
 import { runLifecycle }           from '/src/skeleton/lifecycle.js';
@@ -35,16 +35,18 @@ runLifecycle({
 // LOAD
 // ============================================================
 async function load(ctx) {
+  const isEditMode   = window.isEditMode === true;
   const isNuevo      = !ctx.comercioData || !ctx.comercioData.nombre;
   const comercioData = ctx.comercioData || {};
   const slugExiste   = !!comercioData.landing?.slug;
-  return { isNuevo, comercioData, slugExiste };
+  return { isEditMode, isNuevo, comercioData, slugExiste };
 }
 
 // ============================================================
 // RENDER
 // ============================================================
 function render(ctx, state) {
+  const { isEditMode } = state;
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
@@ -136,16 +138,13 @@ function render(ctx, state) {
   btnContainer.appendChild(
     createOnboardingButton({
       stepName: 'mi-perfil',
-      redirectTo: '/src/pages/dashboard.html',
 
-      dirtyController,
+      dirtyController: isEditMode ? dirtyController : undefined,
 
-      // Label dinámico: si no hay cambios, el botón ya comunica que
-      // solo va a volver al dashboard sin escribir nada.
       getLabel() {
-        return dirtyController.hasUnsavedChanges()
-          ? 'Guardar perfil'
-          : 'Volver al dashboard';
+        if (!isEditMode) return 'Continuar';
+        if (isEditMode && dirtyController.hasUnsavedChanges()) return 'Guardar y volver al dashboard';
+        return 'Volver al dashboard';
       },
 
       validate() {
@@ -160,11 +159,8 @@ function render(ctx, state) {
         return !!(camposValidos && slugValido);
       },
 
-      async onSave({ persistence }) {
-        // El dirty check ya lo resolvió update.js antes de llegar aquí.
-        // Si llegamos, hay cambios reales → guardamos.
-        try {
-          const updates = {
+      async onSave({ uid, comercioId, persistence }) {
+        const updates = {
             nombre:       refs.fields.nombre.input.value.trim(),
             especialidad: refs.fields.especialidad.input.value.trim(),
             descripcion:  refs.fields.descripcion.input.value.trim(),
@@ -198,10 +194,10 @@ function render(ctx, state) {
           }
 
           if (state.isNuevo) {
-            const comercioRef = ctx.comercioId
-              ? doc(db, 'entidades', ctx.comercioId)
+            const comercioRef = comercioId
+              ? doc(db, 'entidades', comercioId)
               : doc(collection(db, 'entidades'));
-            const comercioId = comercioRef.id;
+            const nuevoComercioId = comercioRef.id;
 
             const now       = Timestamp.now();
             const expiresAt = Timestamp.fromDate(
@@ -210,7 +206,7 @@ function render(ctx, state) {
 
             await setDoc(comercioRef, {
               ...updates,
-              duenoId: ctx.user.uid,
+              duenoId: uid,
               fechaCreacion: new Date(), fechaActualizacion: new Date(),
               onboardingSteps: { 'mi-perfil': true },
               plan: {
@@ -221,41 +217,37 @@ function render(ctx, state) {
             });
 
             await setDoc(doc(db, 'landings', uiState.slug), {
-              slug: uiState.slug, comercioId,
+              slug: uiState.slug, comercioId: nuevoComercioId,
               nombre: updates.nombre, activo: true,
               createdAt: new Date(), updatedAt: new Date()
             });
 
-            await updateDoc(doc(db, 'usuarios', ctx.user.uid), {
-              comercioId, 'onboardingSteps.mi-perfil': true
+            await updateDoc(doc(db, 'usuarios', uid), {
+              comercioId: nuevoComercioId,
             });
 
           } else {
             updates['onboardingSteps.mi-perfil'] = true;
             updates.fechaActualizacion           = new Date();
-            await updateDoc(doc(db, 'entidades', ctx.comercioId), updates);
+            await updateDoc(doc(db, 'entidades', comercioId), updates);
 
             if (!state.slugExiste) {
               await setDoc(doc(db, 'landings', uiState.slug), {
-                slug: uiState.slug, comercioId: ctx.comercioId,
+                slug: uiState.slug, comercioId,
                 nombre: updates.nombre, activo: true,
                 createdAt: new Date(), updatedAt: new Date()
               });
             }
           }
 
-          showToast('Perfil guardado correctamente', 'success');
-
-          // Retornamos stepMarked=true porque ya escribimos
-          // onboardingSteps directamente en Firestore arriba,
-          // evitando que update.js haga un segundo write.
           return { success: true, stepMarked: true };
+      },
 
-        } catch (err) {
-          console.error('❌ Error guardando perfil:', err);
-          showToast('Error al guardar: ' + err.message, 'error');
-          return false;
-        }
+      onSuccess: () => showToast('Perfil guardado correctamente', 'success'),
+
+      onError: (err) => {
+        console.error('❌ Error guardando perfil:', err);
+        showToast('Error al guardar: ' + err.message, 'error');
       },
     })
   );
