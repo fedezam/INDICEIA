@@ -80,6 +80,7 @@ runLifecycle({
 // LOAD
 // ============================================================
 async function load(ctx) {
+  const isEditMode             = window.isEditMode === true;
   const comercioData           = ctx.comercioData || {};
   const isNewComercio          = !comercioData.nombreComercio;
   const comercioSlug           = comercioData.landing?.slug || null;
@@ -87,7 +88,7 @@ async function load(ctx) {
   const selectedPaymentMethods = comercioData.paymentMethods || [];
   const tieneLocalFisico       = comercioData.tieneLocalFisico !== false;
 
-  return { isNewComercio, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
+  return { isEditMode, isNewComercio, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
 }
 
 // ============================================================
@@ -444,15 +445,26 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
 
+  const isEditMode = state.isEditMode;
+
   const btn = createOnboardingButton({
     stepName: 'mi-comercio',
 
     validate: () => isFormValid(refs, uiState, state),
 
     getLabel: () => {
-      if (ctx.isEditMode && !hayDirtyState(refs, uiState, state)) return 'Volver al dashboard';
-      return state.isNewComercio ? 'Crear comercio' : 'Guardar cambios';
+      if (!isEditMode) return 'Continuar';
+      if (isEditMode && hayDirtyState(refs, uiState, state)) return 'Guardar y volver al dashboard';
+      return 'Volver al dashboard';
     },
+
+    dirtyController: isEditMode ? {
+      hasUnsavedChanges: () => hayDirtyState(refs, uiState, state),
+      markSaved: () => {
+        const current = getCurrentData(refs, uiState);
+        Object.assign(state.comercioData, current);
+      }
+    } : undefined,
 
     onSave: async ({ uid, comercioId: ctxComercioId }) => {
       const updates            = getCurrentData(refs, uiState);
@@ -505,7 +517,6 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
 
         await updateDoc(doc(db, 'usuarios', uid), {
           comercioId,
-          'onboardingSteps.mi-comercio': true
         });
 
         return { success: true, stepMarked: true };
