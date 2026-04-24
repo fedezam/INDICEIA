@@ -5,235 +5,187 @@
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
 
+// ============================================================
+// HELPERS URL
+// ============================================================
+
 function getCurrentPage() {
   const file = window.location.pathname.split("/").pop();
   return file?.replace(".html", "") || "index";
-}
-
-function getCurrentChannel() {
-  return new URLSearchParams(window.location.search).get("channel") || null;
-}
-
-function isEditMode() {
-  return new URLSearchParams(window.location.search).get("edit") === "true";
 }
 
 const PUBLIC_PAGES  = ["login", "registro", "index", ""];
 const NEUTRAL_PAGES = ["skeletonTest"];
 
 // ============================================================
-// STEP DEFINITIONS
+// STEP DEFINITIONS (estático)
 // ============================================================
-const STEP_DEFINITIONS = {
+
+const STEPS = {
   'mi-comercio': { page: 'mi-comercio' },
-
   'mi-perfil': { page: 'mi-perfil' },
-
-  productos: {
-    page: 'productos',
-    visibleIf: ctx => ctx.offerType?.productos === true,
-  },
-
-  servicios: {
-    page: 'servicios',
-    visibleIf: ctx => ctx.offerType?.servicios === true,
-  },
-
-  entrega: {
-    page: 'entrega',
-    visibleIf: ctx => ctx.offerType?.productos === true,
-  },
-
-  'horarios-presencial': {
-    page:      'horarios',
-    query:     { channel: 'presencial' },
-    visibleIf: ctx => ctx.tieneLocalFisico === true,
-  },
-
-  'horarios-delivery': {
-    page:      'horarios',
-    query:     { channel: 'delivery' },
-    visibleIf: ctx => ctx.delivery?.enabled === true,
-  },
-
-  'horarios-digital': {
-    page:  'horarios',
-    query: { channel: 'digital' },
-    // siempre visible — es el horario universal de atención online
-  },
-
-  'ia-config': { page: 'ia-config' },
-
-  // profesional
   'mi-perfil-profesional': { page: 'mi-perfil-profesional' },
-  lugares:   { page: 'lugares' },
-  cobertura: { page: 'cobertura' },
-  consultas: { page: 'consultas' },
+
+  'horarios': { page: 'horarios' },
+  'entrega': { page: 'entrega' },
+
+  'productos': { page: 'productos' },
+  'servicios': { page: 'servicios' },
+
+  'lugares': { page: 'lugares' },
+  'cobertura': { page: 'cobertura' },
+  'consultas': { page: 'consultas' },
+
+  'ia-config': { page: 'ia-config' }
 };
 
 // ============================================================
-// PIPELINE ORDER POR ENTITY TYPE
+// PIPELINES FIJOS
 // ============================================================
-const PIPELINE_ORDER = {
+
+const PIPELINES = {
   comercio: [
     'mi-comercio',
-    'horarios-presencial',  // primero horarios del local
-    'entrega',              // luego qué modalidades de entrega
-    'horarios-delivery',    // horario de delivery si lo marcó
+    'horarios',
+    'entrega',
     'productos',
     'servicios',
-    'ia-config',
+    'ia-config'
   ],
+
   prestador: [
     'mi-perfil',
-    'horarios-presencial',
+    'horarios',
     'entrega',
-    'horarios-delivery',
     'servicios',
     'productos',
-    'ia-config',
+    'ia-config'
   ],
+
   profesional: [
     'mi-perfil-profesional',
     'lugares',
     'cobertura',
     'consultas',
-    'ia-config',
-  ],
+    'ia-config'
+  ]
 };
 
 // ============================================================
-// CONTEXT + PIPELINE BUILDER
+// CORE HELPERS
 // ============================================================
-function buildFlowContext(userData, comercioData) {
-  return {
-    entityType:       userData.entityType || 'comercio',
-    offerType:        userData.offerType  || comercioData?.offerType || {},
-    tieneLocalFisico: comercioData?.tieneLocalFisico === true,
-    delivery:         comercioData?.entrega?.delivery || {},  // ✅ fix
-  };
-}
 
-function buildPipeline(ctx) {
-  const order = PIPELINE_ORDER[ctx.entityType] || PIPELINE_ORDER.comercio;
-  return order
-    .map(id => ({ id, ...STEP_DEFINITIONS[id] }))
-    .filter(step => !step.visibleIf || step.visibleIf(ctx));
-}
-
-// ============================================================
-// STEP URL + PROGRESS
-// ============================================================
-function buildStepUrl(step) {
-  const url = new URL(`/${step.page}.html`, window.location.origin);
-  if (step.query) {
-    Object.entries(step.query).forEach(([k, v]) => url.searchParams.set(k, v));
-  }
-  return `${url.pathname}${url.search}`;
-}
-
-function isStepCompleted(stepId, steps = {}) {
-  if (steps[stepId] === true) return true;
-  // fallback legacy: horarios: true cubre todos los canales de horarios
-  if (stepId.startsWith('horarios') && steps.horarios === true) return true;
-  return false;
+function buildStepUrl(stepId) {
+  const step = STEPS[stepId];
+  return `/${step.page}.html`;
 }
 
 function getFirstIncompleteStep(pipeline, steps) {
-  return pipeline.find(step => !isStepCompleted(step.id, steps));
+  for (const stepId of pipeline) {
+    if (steps[stepId] !== true) return stepId;
+  }
+  return null;
 }
 
 // ============================================================
 // FLOW CONTROLLER
 // ============================================================
+
 export async function runFlowController(uid) {
-  const currentPage    = getCurrentPage();
-  const currentChannel = getCurrentChannel();
+  const currentPage = getCurrentPage();
   if (!uid) return;
 
   if (PUBLIC_PAGES.includes(currentPage))  return;
   if (NEUTRAL_PAGES.includes(currentPage)) return;
 
-  const editMode = isEditMode();
-  window.isEditMode = editMode;
-
   try {
-    // ── 1. USUARIO ──────────────────────────────────────────
+    // ── USUARIO ─────────────────────────────────────────────
     const userSnap = await getDoc(doc(db, "usuarios", uid));
-    if (!userSnap.exists()) { window.location.href = "/login.html"; return; }
+    if (!userSnap.exists()) {
+      window.location.href = "/login.html";
+      return;
+    }
 
-    const userData  = userSnap.data();
-    const userSteps = userData.onboardingSteps || {};
-
-    console.log("🔍 [FlowController] currentPage:", currentPage, "channel:", currentChannel);
-    console.log("🔍 [FlowController] userSteps:",   userSteps);
-    console.log("🔍 [FlowController] comercioId:",  userData.comercioId);
+    const userData = userSnap.data();
 
     // ── STEP: usuario ───────────────────────────────────────
-    if (!userSteps.usuario) {
-      if (currentPage !== "usuario") window.location.href = "/usuario.html";
-      return;
-    }
-
-    // ── STEP: tipo-entidad ──────────────────────────────────
-    if (!userSteps['tipo-entidad']) {
-      if (currentPage !== 'tipo-entidad') window.location.href = '/tipo-entidad.html';
-      return;
-    }
-
-    // ── STEP: identidad (primer paso según entityType) ──────
-    if (!userData.comercioId) {
-      const nextPage = userData.entityType === 'prestador'   ? 'mi-perfil'
-                     : userData.entityType === 'profesional' ? 'mi-perfil-profesional'
-                     : 'mi-comercio';
-      if (currentPage !== nextPage) window.location.href = `/${nextPage}.html`;
-      return;
-    }
-
-    const identityPage = userData.entityType === 'prestador'   ? 'mi-perfil'
-                       : userData.entityType === 'profesional' ? 'mi-perfil-profesional'
-                       : 'mi-comercio';
-
-    // ── 2. COMERCIO ─────────────────────────────────────────
-    const comercioSnap = await getDoc(doc(db, "entidades", userData.comercioId));
-
-    if (!comercioSnap.exists()) {
-      window.location.href = `/${identityPage}.html`;
-      return;
-    }
-
-    const comercioData  = comercioSnap.data();
-    const comercioSteps = comercioData.onboardingSteps || {};
-    const ctx           = buildFlowContext(userData, comercioData);
-    const pipeline      = buildPipeline(ctx);
-    const firstIncomplete = getFirstIncompleteStep(pipeline, comercioSteps);
-
-    console.log("🔍 [FlowController] entityType:",      ctx.entityType);
-    console.log("🔍 [FlowController] offerType:",       ctx.offerType);
-    console.log("🔍 [FlowController] tieneLocalFisico:", ctx.tieneLocalFisico);
-    console.log("🔍 [FlowController] delivery:",        ctx.delivery);
-    console.log("🔍 [FlowController] pipeline:",        pipeline.map(s => s.id));
-    console.log("🔍 [FlowController] firstIncomplete:", firstIncomplete?.id);
-
-    // ── MODO EDICIÓN ────────────────────────────────────────
-    if (editMode) {
-      const editablePages = [...new Set(pipeline.map(s => s.page)), identityPage, 'tipo-entidad', 'usuario'];
-      if (editablePages.includes(currentPage)) return;
-      if (currentPage !== "dashboard") window.location.href = "/dashboard.html";
-      return;
-    }
-
-    // ── ONBOARDING NORMAL ───────────────────────────────────
-    if (firstIncomplete) {
-      const targetChannel = firstIncomplete.query?.channel || null;
-      if (currentPage !== firstIncomplete.page || currentChannel !== targetChannel) {
-        window.location.href = buildStepUrl(firstIncomplete);
+    if (!userData.onboardingSteps?.usuario) {
+      if (currentPage !== "usuario") {
+        window.location.href = "/usuario.html";
       }
       return;
     }
 
+    // ── STEP: tipo-entidad ──────────────────────────────────
+    if (!userData.onboardingSteps?.['tipo-entidad']) {
+      if (currentPage !== "tipo-entidad") {
+        window.location.href = "/tipo-entidad.html";
+      }
+      return;
+    }
+
+    // ── IDENTIDAD ───────────────────────────────────────────
+    if (!userData.comercioId) {
+      const entityType = userData.entityType;
+
+      const firstPage =
+        entityType === "prestador"   ? "mi-perfil" :
+        entityType === "profesional" ? "mi-perfil-profesional" :
+                                      "mi-comercio";
+
+      if (currentPage !== firstPage) {
+        window.location.href = `/${firstPage}.html`;
+      }
+      return;
+    }
+
+    // ── ENTIDAD ─────────────────────────────────────────────
+    const ref = doc(db, "entidades", userData.comercioId);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      window.location.href = "/login.html";
+      return;
+    }
+
+    const data = snap.data();
+
+    // ── INIT ONBOARDING (una sola vez) ──────────────────────
+    if (!data.onboarding || !data.onboarding.pipeline) {
+      const entityType = data.entityType || userData.entityType || "comercio";
+      const pipeline   = PIPELINES[entityType];
+
+      await ref.update({
+        onboarding: {
+          pipeline,
+          steps: {}
+        }
+      });
+
+      window.location.reload();
+      return;
+    }
+
+    const pipeline = data.onboarding.pipeline;
+    const steps    = data.onboarding.steps || {};
+
+    // ── RESOLVER SIGUIENTE STEP ─────────────────────────────
+    const nextStepId = getFirstIncompleteStep(pipeline, steps);
+
     // ── TODO COMPLETO → DASHBOARD ───────────────────────────
-    if (currentPage !== "dashboard") window.location.href = "/dashboard.html";
+    if (!nextStepId) {
+      if (currentPage !== "dashboard") {
+        window.location.href = "/dashboard.html";
+      }
+      return;
+    }
+
+    const targetPage = STEPS[nextStepId].page;
+
+    // ── REDIRECCIÓN ─────────────────────────────────────────
+    if (currentPage !== targetPage) {
+      window.location.href = buildStepUrl(nextStepId);
+    }
 
   } catch (err) {
     console.error("❌ FlowController error:", err);
@@ -242,30 +194,42 @@ export async function runFlowController(uid) {
 }
 
 // ============================================================
-// HELPER POST SAVE
+// POST SAVE
 // ============================================================
-export function redirectAfterSave(pipelineOrStep, currentStepId) {
-  if (window.isEditMode) {
+
+export function redirectAfterSave(pipeline, currentStepId) {
+  const index = pipeline.indexOf(currentStepId);
+  const next  = pipeline[index + 1];
+
+  if (!next) {
     window.location.href = "/dashboard.html";
     return;
   }
 
-  // legacy: string directo
-  if (typeof pipelineOrStep === 'string') {
-    window.location.href = pipelineOrStep
-      ? `/${pipelineOrStep}.html`
-      : '/dashboard.html';
-    return;
-  }
-
-  // nuevo: pipeline (array de steps) + stepId actual
-  const pipeline     = pipelineOrStep;
-  const currentIndex = pipeline.findIndex(s => s.id === currentStepId);
-  const next         = pipeline[currentIndex + 1];
-  window.location.href = next ? buildStepUrl(next) : '/dashboard.html';
+  window.location.href = `/${STEPS[next].page}.html`;
 }
 
 // ============================================================
-// EXPORTS PARA USO EXTERNO
+// MARCAR STEP COMO COMPLETO
 // ============================================================
-export { buildPipeline, buildFlowContext, buildStepUrl, isStepCompleted };
+
+export async function completeStep(uid, stepId) {
+  const userSnap = await getDoc(doc(db, "usuarios", uid));
+  if (!userSnap.exists()) return;
+
+  const { comercioId } = userSnap.data();
+  if (!comercioId) return;
+
+  const ref = doc(db, "entidades", comercioId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return;
+
+  const data = snap.data();
+  const steps = data.onboarding?.steps || {};
+
+  steps[stepId] = true;
+
+  await ref.update({
+    "onboarding.steps": steps
+  });
+}
