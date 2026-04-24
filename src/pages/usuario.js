@@ -10,6 +10,10 @@ import { mountLayout }           from '/src/skeleton/layout/index.js';
 // ==================== FLOW ====================
 import { runFlowController } from '/src/controllers/flowController.js';
 
+// ==================== FIREBASE ====================
+import { doc, updateDoc } from 'firebase/firestore';
+import { db }             from '/src/firebase.js';
+
 // ==================== ESTILOS ====================
 import './usuario.css';
 
@@ -21,7 +25,7 @@ import { showToast }              from '/src/skeleton/components/toast/index.js'
 // ==================== SHARED ====================
 import { fillProvinciaSelector }   from '/src/shared/provincias.js';
 import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
-import { getCiudadesCercanas } from '/src/shared/geo-helpers.js';
+import { getCiudadesCercanas }     from '/src/shared/geo-helpers.js';
 
 // ==================== ADAPTER ====================
 const adapter = (options) => createFirebaseAdapter(options);
@@ -34,16 +38,9 @@ runLifecycle({
   },
 
   async onReady(ctx) {
-    // 1️⃣ FLOW
     await runFlowController(ctx.user.uid);
-
-    // 2️⃣ LAYOUT
     mountLayout(ctx);
-
-    // 3️⃣ LOAD
     const state = await load(ctx);
-
-    // 4️⃣ RENDER
     render(ctx, state);
   }
 });
@@ -52,20 +49,22 @@ runLifecycle({
 // LOAD
 // ============================================================
 async function load(ctx) {
-  const userData = ctx.userData || {};
+  const userData   = ctx.userData || {};
+  const isEditMode = window.isEditMode === true;
   console.log('📦 Usuario cargado:', userData);
-  return { userData };
+  return { userData, isEditMode };
 }
 
 // ============================================================
 // RENDER
 // ============================================================
 function render(ctx, state) {
-  const { userData } = state;
+  const { userData, isEditMode } = state;
+
   if (userData.localidad?.id) {
-  const cercanas = getCiudadesCercanas(userData.localidad.id);
-  console.log('📍 Ciudades cercanas:', cercanas);
-}
+    const cercanas = getCiudadesCercanas(userData.localidad.id);
+    console.log('📍 Ciudades cercanas:', cercanas);
+  }
 
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
@@ -133,7 +132,6 @@ function render(ctx, state) {
   function montarLocalidad(provinciaVal, valorActual = '') {
     mountCiudadAutocomplete(provinciaVal, localidadContainer, valorActual, (localidad) => {
       refs.localidadSeleccionada = localidad;
-      // Notificar al botón para que recalcule validate() y getLabel()
       document.dispatchEvent(new Event('change'));
     });
   }
@@ -158,7 +156,7 @@ function render(ctx, state) {
     pais, provincia, localidadLabel, localidadContainer, direccion
   );
 
-  // ── SNAPSHOT INICIAL ──────────────────────────────────────
+  // ── SNAPSHOT + getCurrentState ────────────────────────────
   const initialSnapshot = {
     nombre:          userData.nombre          || '',
     apellido:        userData.apellido        || '',
@@ -169,7 +167,6 @@ function render(ctx, state) {
     direccion:       userData.direccion       || '',
   };
 
-  // ── getCurrentState ───────────────────────────────────────
   function getCurrentState() {
     return {
       nombre:          nombre.input.value.trim(),
@@ -182,7 +179,7 @@ function render(ctx, state) {
     };
   }
 
-  // ── dirtyController ───────────────────────────────────────
+  // ── dirtyController — solo en editMode ───────────────────
   const dirtyController = {
     hasUnsavedChanges() {
       const current = getCurrentState();
@@ -202,16 +199,11 @@ function render(ctx, state) {
 
   btnContainer.appendChild(
     createOnboardingButton({
-      stepName:   'usuario',
-      redirectTo: '/dashboard.html',
+      stepName: 'usuario',
 
-      dirtyController,
-
-      getLabel() {
-        return dirtyController.hasUnsavedChanges()
-          ? 'Guardar datos'
-          : 'Volver al dashboard';
-      },
+      // Solo en editMode el botón sabe si hay cambios o no.
+      // En onboarding normal no se pasa → el botón siempre guarda.
+      dirtyController: isEditMode ? dirtyController : undefined,
 
       validate() {
         const current = getCurrentState();
@@ -228,7 +220,17 @@ function render(ctx, state) {
         return valid;
       },
 
-      async onSave({ persistence }) {
+      getLabel() {
+        if (!isEditMode) return 'Continuar';
+        return dirtyController.hasUnsavedChanges()
+          ? 'Guardar y volver al dashboard'
+          : 'Volver al dashboard';
+      },
+
+      // FIX: usuario escribe en "usuarios", no en "entidades".
+      // markStepCompleted del botón escribe en entidades → no sirve acá.
+      // Hacemos todo en onSave y retornamos stepMarked: true.
+      async onSave({ uid, persistence }) {
         const data = {
           nombre:          nombre.input.value.trim(),
           apellido:        apellido.input.value.trim(),
@@ -239,9 +241,33 @@ function render(ctx, state) {
           localidad:       refs.localidadSeleccionada || '',
           direccion:       direccion.input.value.trim(),
         };
+
+        // Datos del usuario
         await persistence.updateUserData(data);
-        return true;
+
+        // Step "usuario" vive en usuarios.onboardingSteps, no en entidades
+        await updateDoc(doc(db, 'usuarios', uid), {
+          'onboardingSteps.usuario': true,
+        });
+
+        return { success: true, stepMarked: true };
       },
+
+      onSuccess: () => {
+        showToast(
+          isEditMode ? 'Datos actualizados' : 'Datos guardados',
+          'success'
+        );
+      },
+
+      onError: (err) => {
+        console.error('[usuario] onSave ERROR:', err);
+        showToast('Error al guardar los datos', 'error');
+      },
+
+      // Siempre intenta ir al dashboard.
+      // FlowController redirige al siguiente step si el pipeline no está completo.
+      redirectTo: '/dashboard.html',
     })
   );
 
