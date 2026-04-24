@@ -2,7 +2,7 @@
 // src/controllers/flowController.js
 // ============================================================
 
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
 
 // ============================================================
@@ -22,17 +22,17 @@ const NEUTRAL_PAGES = ["skeletonTest"];
 // ============================================================
 
 const STEPS = {
-  'mi-comercio': { page: 'mi-comercio' },
-  'mi-perfil': { page: 'mi-perfil' },
+  'mi-comercio':           { page: 'mi-comercio' },
+  'mi-perfil':             { page: 'mi-perfil' },
   'mi-perfil-profesional': { page: 'mi-perfil-profesional' },
 
-  'horarios': { page: 'horarios' },
-  'entrega': { page: 'entrega' },
+  'horarios':  { page: 'horarios' },
+  'entrega':   { page: 'entrega' },
 
   'productos': { page: 'productos' },
   'servicios': { page: 'servicios' },
 
-  'lugares': { page: 'lugares' },
+  'lugares':   { page: 'lugares' },
   'cobertura': { page: 'cobertura' },
   'consultas': { page: 'consultas' },
 
@@ -140,7 +140,7 @@ export async function runFlowController(uid) {
     }
 
     // ── ENTIDAD ─────────────────────────────────────────────
-    const ref = doc(db, "entidades", userData.comercioId);
+    const ref  = doc(db, "entidades", userData.comercioId);
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
@@ -151,18 +151,20 @@ export async function runFlowController(uid) {
     const data = snap.data();
 
     // ── INIT ONBOARDING (una sola vez) ──────────────────────
-    if (!data.onboarding || !data.onboarding.pipeline) {
+    if (!data.onboarding?.pipeline) {
       const entityType = data.entityType || userData.entityType || "comercio";
       const pipeline   = PIPELINES[entityType];
 
-      await ref.update({
+      await updateDoc(ref, {
         onboarding: {
           pipeline,
           steps: {}
         }
       });
 
-      window.location.reload();
+      // FIX: navegar al primer step en lugar de reload() para evitar
+      // race condition donde el reload lee el estado viejo de Firestore
+      window.location.href = buildStepUrl(pipeline[0]);
       return;
     }
 
@@ -195,18 +197,36 @@ export async function runFlowController(uid) {
 
 // ============================================================
 // POST SAVE
+// Lee el pipeline desde Firestore — no requiere que la página
+// lo pase como parámetro.
+// Uso en cada form:
+//
+//   import { completeStep, redirectAfterSave } from "../controllers/flowController.js";
+//
+//   await completeStep(uid, "productos");
+//   await redirectAfterSave(uid, "productos");
 // ============================================================
 
-export function redirectAfterSave(pipeline, currentStepId) {
-  const index = pipeline.indexOf(currentStepId);
-  const next  = pipeline[index + 1];
+export async function redirectAfterSave(uid, currentStepId) {
+  const userSnap = await getDoc(doc(db, "usuarios", uid));
+  if (!userSnap.exists()) return;
+
+  const { comercioId } = userSnap.data();
+  if (!comercioId) return;
+
+  const snap = await getDoc(doc(db, "entidades", comercioId));
+  if (!snap.exists()) return;
+
+  const pipeline = snap.data().onboarding?.pipeline || [];
+  const index    = pipeline.indexOf(currentStepId);
+  const next     = pipeline[index + 1];
 
   if (!next) {
     window.location.href = "/dashboard.html";
     return;
   }
 
-  window.location.href = `/${STEPS[next].page}.html`;
+  window.location.href = buildStepUrl(next);
 }
 
 // ============================================================
@@ -220,16 +240,16 @@ export async function completeStep(uid, stepId) {
   const { comercioId } = userSnap.data();
   if (!comercioId) return;
 
-  const ref = doc(db, "entidades", comercioId);
+  const ref  = doc(db, "entidades", comercioId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
 
-  const data = snap.data();
+  const data  = snap.data();
   const steps = data.onboarding?.steps || {};
 
   steps[stepId] = true;
 
-  await ref.update({
+  await updateDoc(ref, {
     "onboarding.steps": steps
   });
 }
