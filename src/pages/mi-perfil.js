@@ -57,72 +57,75 @@ function render(ctx, state) {
     slugValidationTimer: null,
   };
 
+  // Migración: si venía con cobertura[] viejo, convertir al nuevo formato
   const uiState = {
     slug:       state.comercioData.landing?.slug || null,
     slugValido: !!state.comercioData.landing?.slug,
-    cobertura:  state.comercioData.cobertura
-                  ? state.comercioData.cobertura.map(c => ({ ...c }))
-                  : [],
+
+    // Localidad principal — objeto { localidad, provincia, pais }
+    localidad_principal: state.comercioData.localidad_principal || (
+      state.comercioData.cobertura?.[0]
+        ? { ...state.comercioData.cobertura[0], pais: 'Argentina' }
+        : null
+    ),
+
+    // Zona de cobertura — array de { localidad, provincia }
+    zona_cobertura: state.comercioData.zona_cobertura
+      || state.comercioData.cobertura?.slice(1)?.map(c => ({ ...c }))
+      || [],
   };
 
-  // ── Snapshot inicial para dirty detection ─────────────────
-  // Se captura DESPUÉS del load, ANTES de que el usuario toque nada.
-  // Se serializa a JSON para comparación estable.
+  // ── Snapshot inicial para dirty detection ──────────────────
   const initialSnapshot = {
-    nombre:       state.comercioData.nombre       || '',
-    especialidad: state.comercioData.especialidad || '',
-    descripcion:  state.comercioData.descripcion  || '',
-    experiencia:  state.comercioData.experiencia  || '',
-    whatsapp:     state.comercioData.whatsapp     || '',
-    telefono:     state.comercioData.telefono     || '',
-    email:        state.comercioData.email        || '',
-    instagram:    state.comercioData.instagram    || '',
-    direccion:    state.comercioData.direccion    || '',
-    cobertura:    JSON.stringify(state.comercioData.cobertura || []),
-    slug:         state.comercioData.landing?.slug || '',
+    nombre:              state.comercioData.nombre       || '',
+    especialidad:        state.comercioData.especialidad || '',
+    descripcion:         state.comercioData.descripcion  || '',
+    experiencia:         state.comercioData.experiencia  || '',
+    whatsapp:            state.comercioData.whatsapp     || '',
+    telefono:            state.comercioData.telefono     || '',
+    email:               state.comercioData.email        || '',
+    instagram:           state.comercioData.instagram    || '',
+    direccion:           state.comercioData.direccion    || '',
+    localidad_principal: JSON.stringify(uiState.localidad_principal),
+    zona_cobertura:      JSON.stringify(uiState.zona_cobertura),
+    slug:                state.comercioData.landing?.slug || '',
   };
 
-  // ── getCurrentState: lee el DOM en tiempo real ─────────────
   function getCurrentState() {
     return {
-      nombre:       refs.fields.nombre?.input?.value.trim()       || '',
-      especialidad: refs.fields.especialidad?.input?.value.trim() || '',
-      descripcion:  refs.fields.descripcion?.input?.value.trim()  || '',
-      experiencia:  refs.fields.experiencia?.input?.value.trim()  || '',
-      whatsapp:     refs.fields.whatsapp?.input?.value.trim()     || '',
-      telefono:     refs.fields.telefono?.input?.value.trim()     || '',
-      email:        refs.fields.email?.input?.value.trim()        || '',
-      instagram:    refs.fields.instagram?.input?.value.trim()    || '',
-      direccion:    refs.fields.direccion?.input?.value.trim()    || '',
-      cobertura:    JSON.stringify(uiState.cobertura),
-      slug:         uiState.slug || '',
+      nombre:              refs.fields.nombre?.input?.value.trim()       || '',
+      especialidad:        refs.fields.especialidad?.input?.value.trim() || '',
+      descripcion:         refs.fields.descripcion?.input?.value.trim()  || '',
+      experiencia:         refs.fields.experiencia?.input?.value.trim()  || '',
+      whatsapp:            refs.fields.whatsapp?.input?.value.trim()     || '',
+      telefono:            refs.fields.telefono?.input?.value.trim()     || '',
+      email:               refs.fields.email?.input?.value.trim()        || '',
+      instagram:           refs.fields.instagram?.input?.value.trim()    || '',
+      direccion:           refs.fields.direccion?.input?.value.trim()    || '',
+      localidad_principal: JSON.stringify(uiState.localidad_principal),
+      zona_cobertura:      JSON.stringify(uiState.zona_cobertura),
+      slug:                uiState.slug || '',
     };
   }
 
-  // ── dirtyController ───────────────────────────────────────
   const dirtyController = {
     hasUnsavedChanges() {
       const current = getCurrentState();
       return Object.keys(initialSnapshot).some(k => current[k] !== initialSnapshot[k]);
     },
-    // El botón llama a markSaved() después de guardar con éxito.
-    // Actualizamos el snapshot para que si el usuario vuelve a la
-    // página sin recargar, el estado vuelva a estar "limpio".
     markSaved() {
       const current = getCurrentState();
-      Object.keys(initialSnapshot).forEach(k => {
-        initialSnapshot[k] = current[k];
-      });
+      Object.keys(initialSnapshot).forEach(k => { initialSnapshot[k] = current[k]; });
     }
   };
 
-  // ── Título ────────────────────────────────────────────────
+  // ── Título ─────────────────────────────────────────────────
   const title = document.createElement('h2');
   title.className   = 'page-title';
   title.textContent = state.isNuevo ? 'Crear mi perfil' : 'Editar mi perfil';
   page.appendChild(title);
 
-  // ── Secciones ─────────────────────────────────────────────
+  // ── Secciones ──────────────────────────────────────────────
   page.appendChild(renderSeccionIdentidad(state, refs, uiState));
   page.appendChild(renderSeccionUbicacion(state, refs, uiState));
   page.appendChild(renderSeccionContacto(state, refs, uiState));
@@ -131,7 +134,7 @@ function render(ctx, state) {
     page.appendChild(renderSeccionSlug(state, refs, uiState));
   }
 
-  // ── Botón ─────────────────────────────────────────────────
+  // ── Botón ──────────────────────────────────────────────────
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
 
@@ -153,94 +156,98 @@ function render(ctx, state) {
           refs.fields.especialidad?.input?.value.trim() &&
           refs.fields.descripcion?.input?.value.trim()  &&
           refs.fields.whatsapp?.input?.value.trim()     &&
-          uiState.cobertura.length > 0;
+          !!uiState.localidad_principal;
 
         const slugValido = state.slugExiste || uiState.slugValido;
         return !!(camposValidos && slugValido);
       },
 
-      async onSave({ uid, comercioId, persistence }) {
+      async onSave({ uid, comercioId }) {
         const updates = {
-            nombre:       refs.fields.nombre.input.value.trim(),
-            especialidad: refs.fields.especialidad.input.value.trim(),
-            descripcion:  refs.fields.descripcion.input.value.trim(),
-            experiencia:  refs.fields.experiencia?.input?.value.trim() || null,
+          nombre:       refs.fields.nombre.input.value.trim(),
+          especialidad: refs.fields.especialidad.input.value.trim(),
+          descripcion:  refs.fields.descripcion.input.value.trim(),
+          experiencia:  refs.fields.experiencia?.input?.value.trim() || null,
 
-            cobertura:  uiState.cobertura,
-            provincia:  uiState.cobertura[0]?.provincia || null,
-            localidad:  uiState.cobertura[0]?.localidad || null,
-            pais:       'Argentina',
-            direccion:  refs.fields.direccion?.input?.value.trim() || null,
+          localidad_principal: uiState.localidad_principal,
+          zona_cobertura:      uiState.zona_cobertura,
 
-            whatsapp:  refs.fields.whatsapp.input.value.trim(),
-            telefono:  refs.fields.telefono?.input?.value.trim()  || null,
-            email:     refs.fields.email?.input?.value.trim()     || null,
-            instagram: refs.fields.instagram?.input?.value.trim() || null,
+          // Campos planos para compatibilidad con el grafo/índice
+          localidad: uiState.localidad_principal?.localidad || null,
+          provincia: uiState.localidad_principal?.provincia || null,
+          pais:      'Argentina',
 
-            entityType: 'prestador',
+          direccion: refs.fields.direccion?.input?.value.trim() || null,
+
+          whatsapp:  refs.fields.whatsapp.input.value.trim(),
+          telefono:  refs.fields.telefono?.input?.value.trim()  || null,
+          email:     refs.fields.email?.input?.value.trim()     || null,
+          instagram: refs.fields.instagram?.input?.value.trim() || null,
+
+          entityType: 'prestador',
+        };
+
+        if (!state.slugExiste) {
+          updates.landing = {
+            activo: true, nombre: updates.nombre,
+            slug: uiState.slug, tipo: 'perfil',
+            createdAt: new Date(), updatedAt: new Date()
           };
+        } else {
+          updates.landing = {
+            ...state.comercioData.landing,
+            nombre: updates.nombre, updatedAt: new Date()
+          };
+        }
+
+        if (state.isNuevo) {
+          const comercioRef = comercioId
+            ? doc(db, 'entidades', comercioId)
+            : doc(collection(db, 'entidades'));
+          const nuevoComercioId = comercioRef.id;
+
+          const now       = Timestamp.now();
+          const expiresAt = Timestamp.fromDate(
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          );
+
+          await setDoc(comercioRef, {
+            ...updates,
+            duenoId: uid,
+            fechaCreacion: new Date(), fechaActualizacion: new Date(),
+            onboardingSteps: { 'mi-perfil': true },
+            plan: {
+              type: 'trial', active: true, trial: true,
+              startedAt: now, expiresAt, createdAt: now,
+              updatedAt: now, source: 'system'
+            }
+          });
+
+          await setDoc(doc(db, 'landings', uiState.slug), {
+            slug: uiState.slug, comercioId: nuevoComercioId,
+            nombre: updates.nombre, activo: true,
+            createdAt: new Date(), updatedAt: new Date()
+          });
+
+          await updateDoc(doc(db, 'usuarios', uid), {
+            comercioId: nuevoComercioId,
+          });
+
+        } else {
+          updates['onboardingSteps.mi-perfil'] = true;
+          updates.fechaActualizacion           = new Date();
+          await updateDoc(doc(db, 'entidades', comercioId), updates);
 
           if (!state.slugExiste) {
-            updates.landing = {
-              activo: true, nombre: updates.nombre,
-              slug: uiState.slug, tipo: 'perfil',
-              createdAt: new Date(), updatedAt: new Date()
-            };
-          } else {
-            updates.landing = {
-              ...state.comercioData.landing,
-              nombre: updates.nombre, updatedAt: new Date()
-            };
-          }
-
-          if (state.isNuevo) {
-            const comercioRef = comercioId
-              ? doc(db, 'entidades', comercioId)
-              : doc(collection(db, 'entidades'));
-            const nuevoComercioId = comercioRef.id;
-
-            const now       = Timestamp.now();
-            const expiresAt = Timestamp.fromDate(
-              new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-            );
-
-            await setDoc(comercioRef, {
-              ...updates,
-              duenoId: uid,
-              fechaCreacion: new Date(), fechaActualizacion: new Date(),
-              onboardingSteps: { 'mi-perfil': true },
-              plan: {
-                type: 'trial', active: true, trial: true,
-                startedAt: now, expiresAt, createdAt: now,
-                updatedAt: now, source: 'system'
-              }
-            });
-
             await setDoc(doc(db, 'landings', uiState.slug), {
-              slug: uiState.slug, comercioId: nuevoComercioId,
+              slug: uiState.slug, comercioId,
               nombre: updates.nombre, activo: true,
               createdAt: new Date(), updatedAt: new Date()
             });
-
-            await updateDoc(doc(db, 'usuarios', uid), {
-              comercioId: nuevoComercioId,
-            });
-
-          } else {
-            updates['onboardingSteps.mi-perfil'] = true;
-            updates.fechaActualizacion           = new Date();
-            await updateDoc(doc(db, 'entidades', comercioId), updates);
-
-            if (!state.slugExiste) {
-              await setDoc(doc(db, 'landings', uiState.slug), {
-                slug: uiState.slug, comercioId,
-                nombre: updates.nombre, activo: true,
-                createdAt: new Date(), updatedAt: new Date()
-              });
-            }
           }
+        }
 
-          return { success: true, stepMarked: true };
+        return { success: true, stepMarked: true };
       },
 
       onSuccess: () => showToast('Perfil guardado correctamente', 'success'),
@@ -256,7 +263,7 @@ function render(ctx, state) {
 }
 
 // ============================================================
-// SECCIONES
+// SECCIÓN: IDENTIDAD
 // ============================================================
 function renderSeccionIdentidad(state, refs, uiState) {
   const section = crearSeccion('¿Quién sos?');
@@ -317,14 +324,24 @@ function renderSeccionIdentidad(state, refs, uiState) {
   return section;
 }
 
+// ============================================================
+// SECCIÓN: UBICACIÓN (dos bloques)
+// ============================================================
 function renderSeccionUbicacion(state, refs, uiState) {
   const section = crearSeccion('¿Dónde trabajás?');
 
-  const help = document.createElement('p');
-  help.className   = 'form-help';
-  help.textContent = 'Agregá las localidades donde prestás servicio. Podés agregar más de una.';
-  section.appendChild(help);
+  // ============================================================
+  // BLOQUE 1 — Localidad principal
+  // ============================================================
+  const subPrincipal = document.createElement('div');
+  subPrincipal.className = 'ubicacion-bloque';
 
+  const helpPrincipal = document.createElement('p');
+  helpPrincipal.className   = 'form-help';
+  helpPrincipal.textContent = '¿En qué localidad trabajás? Esta es tu dirección principal — donde te encontramos normalmente.';
+  subPrincipal.appendChild(helpPrincipal);
+
+  // Provincia principal
   refs.fields.provincia = createFormField({
     label: 'Provincia', name: 'provincia', type: 'select', required: true
   });
@@ -333,49 +350,166 @@ function renderSeccionUbicacion(state, refs, uiState) {
   refs.fields.provincia.input.prepend(optDefault);
   fillProvinciaSelector('Argentina', refs.fields.provincia.input);
 
-  const provinciaGuardada = state.comercioData.cobertura?.[0]?.provincia || '';
+  const provinciaGuardada = uiState.localidad_principal?.provincia || '';
   if (provinciaGuardada) refs.fields.provincia.input.value = provinciaGuardada;
 
-  section.appendChild(refs.fields.provincia);
+  subPrincipal.appendChild(refs.fields.provincia);
 
+  // Localidad principal (autocomplete)
   refs.fields.localidad = createFormField({
-    label: 'Localidad', name: 'localidad', type: 'autocomplete',
+    label: 'Localidad principal', name: 'localidad',
+    type: 'autocomplete', required: true,
     provincia: provinciaGuardada,
     placeholder: provinciaGuardada ? 'Buscá tu localidad...' : 'Primero elegí una provincia',
+    value: uiState.localidad_principal?.localidad || ''
   });
-  section.appendChild(refs.fields.localidad);
 
+  refs.fields.localidad.input.addEventListener('input', () => {
+    const localidad = refs.fields.localidad.input.value;
+    const provincia = refs.fields.provincia.input.value;
+    if (localidad && provincia) {
+      uiState.localidad_principal = { localidad, provincia, pais: 'Argentina' };
+    } else {
+      uiState.localidad_principal = null;
+    }
+    renderChipPrincipal(chipPrincipalContainer, uiState, refs);
+    document.dispatchEvent(new Event('change'));
+  });
+
+  subPrincipal.appendChild(refs.fields.localidad);
+
+  // Cambio de provincia → reconstruir autocomplete
   refs.fields.provincia.input.addEventListener('change', () => {
     const nuevaProvincia = refs.fields.provincia.input.value;
-    const localidadField = createFormField({
-      label: 'Localidad', name: 'localidad', type: 'autocomplete',
+    uiState.localidad_principal = null;
+
+    const nuevoField = createFormField({
+      label: 'Localidad principal', name: 'localidad',
+      type: 'autocomplete', required: true,
       provincia: nuevaProvincia,
       placeholder: nuevaProvincia ? 'Buscá tu localidad...' : 'Primero elegí una provincia',
     });
-    refs.fields.localidad.replaceWith(localidadField);
-    refs.fields.localidad = localidadField;
+
+    nuevoField.input.addEventListener('input', () => {
+      const localidad = nuevoField.input.value;
+      if (localidad && nuevaProvincia) {
+        uiState.localidad_principal = { localidad, provincia: nuevaProvincia, pais: 'Argentina' };
+      } else {
+        uiState.localidad_principal = null;
+      }
+      renderChipPrincipal(chipPrincipalContainer, uiState, refs);
+      document.dispatchEvent(new Event('change'));
+    });
+
+    refs.fields.localidad.replaceWith(nuevoField);
+    refs.fields.localidad = nuevoField;
+    renderChipPrincipal(chipPrincipalContainer, uiState, refs);
+    document.dispatchEvent(new Event('change'));
   });
 
-  // ── Botón agregar ──────────────────────────────────────────
+  // Chip localidad principal
+  const chipPrincipalContainer = document.createElement('div');
+  chipPrincipalContainer.className = 'chip-principal-container';
+  renderChipPrincipal(chipPrincipalContainer, uiState, refs);
+  subPrincipal.appendChild(chipPrincipalContainer);
+
+  section.appendChild(subPrincipal);
+
+  // ============================================================
+  // BLOQUE 2 — Zona de cobertura (opcional)
+  // ============================================================
+  const subZona = document.createElement('div');
+  subZona.className = 'ubicacion-bloque ubicacion-zona';
+
+  const zonaHeader = document.createElement('div');
+  zonaHeader.className = 'zona-header';
+
+  const zonaTitle = document.createElement('h4');
+  zonaTitle.className   = 'zona-title';
+  zonaTitle.textContent = '¿También trabajás en otras localidades?';
+  zonaHeader.appendChild(zonaTitle);
+
+  const zonaBadge = document.createElement('span');
+  zonaBadge.className   = 'zona-badge-opcional';
+  zonaBadge.textContent = 'Opcional';
+  zonaHeader.appendChild(zonaBadge);
+
+  subZona.appendChild(zonaHeader);
+
+  const helpZona = document.createElement('p');
+  helpZona.className   = 'form-help';
+  helpZona.textContent = 'Si a veces viajás a trabajar a localidades cercanas, podés agregarlas acá para que los clientes de esas zonas también te encuentren. Si solo trabajás en tu localidad, no hace falta completar esto.';
+  subZona.appendChild(helpZona);
+
+  // Provincia zona
+  refs.fields.provinciaZona = createFormField({
+    label: 'Provincia', name: 'provinciaZona', type: 'select'
+  });
+  const optDefaultZona = document.createElement('option');
+  optDefaultZona.value = ''; optDefaultZona.textContent = 'Elegí una provincia...';
+  refs.fields.provinciaZona.input.prepend(optDefaultZona);
+  fillProvinciaSelector('Argentina', refs.fields.provinciaZona.input);
+
+  // Preseleccionar con la misma provincia principal si existe
+  if (provinciaGuardada) refs.fields.provinciaZona.input.value = provinciaGuardada;
+
+  subZona.appendChild(refs.fields.provinciaZona);
+
+  // Localidad zona (autocomplete)
+  refs.fields.localidadZona = createFormField({
+    label: 'Localidad', name: 'localidadZona',
+    type: 'autocomplete',
+    provincia: provinciaGuardada,
+    placeholder: provinciaGuardada ? 'Buscá una localidad...' : 'Primero elegí una provincia',
+  });
+  subZona.appendChild(refs.fields.localidadZona);
+
+  // Cambio provincia zona → reconstruir autocomplete zona
+  refs.fields.provinciaZona.input.addEventListener('change', () => {
+    const nuevaProvincia = refs.fields.provinciaZona.input.value;
+
+    const nuevoField = createFormField({
+      label: 'Localidad', name: 'localidadZona',
+      type: 'autocomplete',
+      provincia: nuevaProvincia,
+      placeholder: nuevaProvincia ? 'Buscá una localidad...' : 'Primero elegí una provincia',
+    });
+
+    refs.fields.localidadZona.replaceWith(nuevoField);
+    refs.fields.localidadZona = nuevoField;
+  });
+
+  // Botón agregar
   const agregarBtn = createButton({
     label: 'Agregar localidad', icon: 'fa-plus', variant: 'secondary', size: 'sm',
     onClick: () => {
-      const provincia = refs.fields.provincia.input.value;
-      const localidad = refs.fields.localidad.getValue();
+      const provincia = refs.fields.provinciaZona.input.value;
+      const localidad = refs.fields.localidadZona.input.value;
+
       if (!provincia || !localidad) {
-        showToast('Elegí provincia y localidad', 'warning');
+        showToast('Elegí provincia y localidad antes de agregar', 'warning');
         return;
       }
-      const yaExiste = uiState.cobertura.some(
+
+      // No duplicar la localidad principal
+      const esPrincipal =
+        uiState.localidad_principal?.localidad === localidad &&
+        uiState.localidad_principal?.provincia === provincia;
+      if (esPrincipal) {
+        showToast('Esa ya es tu localidad principal', 'warning');
+        return;
+      }
+
+      const yaExiste = uiState.zona_cobertura.some(
         c => c.localidad === localidad && c.provincia === provincia
       );
       if (yaExiste) {
-        showToast('Esa localidad ya está en tu cobertura', 'warning');
+        showToast('Esa localidad ya está en tu zona', 'warning');
         return;
       }
-      uiState.cobertura.push({ localidad, provincia });
-      renderCobertura(coberturaContainer, uiState);
-      // Disparar change para que updateState del botón recalcule
+
+      uiState.zona_cobertura.push({ localidad, provincia });
+      renderZonaChips(zonaChipsContainer, uiState);
       document.dispatchEvent(new Event('change'));
     }
   });
@@ -383,13 +517,17 @@ function renderSeccionUbicacion(state, refs, uiState) {
   const agregarContainer = document.createElement('div');
   agregarContainer.className = 'agregar-cobertura-container';
   agregarContainer.appendChild(agregarBtn);
-  section.appendChild(agregarContainer);
+  subZona.appendChild(agregarContainer);
 
-  const coberturaContainer = document.createElement('div');
-  coberturaContainer.className = 'cobertura-list';
-  renderCobertura(coberturaContainer, uiState);
-  section.appendChild(coberturaContainer);
+  // Chips zona
+  const zonaChipsContainer = document.createElement('div');
+  zonaChipsContainer.className = 'zona-chips-container';
+  renderZonaChips(zonaChipsContainer, uiState);
+  subZona.appendChild(zonaChipsContainer);
 
+  section.appendChild(subZona);
+
+  // ── Dirección (opcional) ───────────────────────────────────
   refs.fields.direccion = createFormField({
     label: 'Dirección de atención', name: 'direccion',
     placeholder: 'Ej: Av. San Martín 123, Casilda',
@@ -399,39 +537,89 @@ function renderSeccionUbicacion(state, refs, uiState) {
   section.appendChild(refs.fields.direccion);
 
   return section;
-
-  function renderCobertura(container, uiState) {
-    container.innerHTML = '';
-    if (!uiState.cobertura.length) {
-      const empty = document.createElement('p');
-      empty.className   = 'form-help';
-      empty.textContent = 'Todavía no agregaste ninguna localidad.';
-      container.appendChild(empty);
-      return;
-    }
-    uiState.cobertura.forEach((item, i) => {
-      const chip = document.createElement('div');
-      chip.className = 'cobertura-chip';
-
-      const texto = document.createElement('span');
-      texto.textContent = `${item.localidad || item.ciudad || '(sin nombre)'}, ${item.provincia}`;
-
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'cobertura-chip-remove';
-      removeBtn.innerHTML = '×';
-      removeBtn.setAttribute('aria-label', 'Quitar');
-      removeBtn.addEventListener('click', () => {
-        uiState.cobertura.splice(i, 1);
-        renderCobertura(container, uiState);
-        document.dispatchEvent(new Event('change'));
-      });
-
-      chip.append(texto, removeBtn);
-      container.appendChild(chip);
-    });
-  }
 }
 
+// ── Chip localidad principal ───────────────────────────────
+function renderChipPrincipal(container, uiState, refs) {
+  container.innerHTML = '';
+  if (!uiState.localidad_principal) return;
+
+  const { localidad, provincia } = uiState.localidad_principal;
+
+  const chip = document.createElement('div');
+  chip.className = 'chip-principal';
+
+  const icon = document.createElement('i');
+  icon.className = 'fas fa-map-marker-alt';
+
+  const texto = document.createElement('span');
+  texto.textContent = `${localidad}, ${provincia}`;
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'chip-remove';
+  removeBtn.innerHTML = '×';
+  removeBtn.setAttribute('aria-label', 'Quitar localidad principal');
+  removeBtn.addEventListener('click', () => {
+    uiState.localidad_principal = null;
+    // Limpiar el autocomplete visible
+    const visibleInput = refs.fields.localidad?.querySelector('input[type="text"]');
+    if (visibleInput) visibleInput.value = '';
+    if (refs.fields.localidad?.input) refs.fields.localidad.input.value = '';
+    container.innerHTML = '';
+    document.dispatchEvent(new Event('change'));
+  });
+
+  chip.append(icon, texto, removeBtn);
+  container.appendChild(chip);
+}
+
+// ── Chips zona de cobertura ────────────────────────────────
+function renderZonaChips(container, uiState) {
+  container.innerHTML = '';
+
+  if (!uiState.zona_cobertura.length) {
+    const empty = document.createElement('p');
+    empty.className   = 'zona-chips-empty';
+    empty.textContent = 'No agregaste localidades vecinas todavía — y está perfecto si solo trabajás en tu localidad.';
+    container.appendChild(empty);
+    return;
+  }
+
+  const label = document.createElement('p');
+  label.className   = 'zona-chips-label';
+  label.textContent = 'Localidades donde también trabajás:';
+  container.appendChild(label);
+
+  const list = document.createElement('div');
+  list.className = 'cobertura-list';
+
+  uiState.zona_cobertura.forEach((item, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'cobertura-chip';
+
+    const texto = document.createElement('span');
+    texto.textContent = `${item.localidad}, ${item.provincia}`;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'cobertura-chip-remove';
+    removeBtn.innerHTML = '×';
+    removeBtn.setAttribute('aria-label', 'Quitar');
+    removeBtn.addEventListener('click', () => {
+      uiState.zona_cobertura.splice(i, 1);
+      renderZonaChips(container, uiState);
+      document.dispatchEvent(new Event('change'));
+    });
+
+    chip.append(texto, removeBtn);
+    list.appendChild(chip);
+  });
+
+  container.appendChild(list);
+}
+
+// ============================================================
+// SECCIÓN: CONTACTO
+// ============================================================
 function renderSeccionContacto(state, refs, uiState) {
   const section = crearSeccion('¿Cómo te contactan?');
 
@@ -473,6 +661,9 @@ function renderSeccionContacto(state, refs, uiState) {
   return section;
 }
 
+// ============================================================
+// SECCIÓN: SLUG
+// ============================================================
 function renderSeccionSlug(state, refs, uiState) {
   const section = crearSeccion('Tu dirección en ÍndiceIA');
 
@@ -525,7 +716,7 @@ function renderSeccionSlug(state, refs, uiState) {
 }
 
 // ============================================================
-// SLUG
+// SLUG HELPERS
 // ============================================================
 function slugify(text) {
   return text
