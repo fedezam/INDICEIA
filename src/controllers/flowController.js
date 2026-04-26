@@ -253,3 +253,19 @@ export async function completeStep(uid, stepId) {
     "onboarding.steps": steps
   });
 }
+
+// ============================================================
+// EXPORTS PARA SUPER ADMIN (panelCore)
+// ============================================================
+
+export function buildFlowContext(userData, comercioData) {
+  return {
+    entityType: comercioData.entityType || userData.entityType || 'comercio',
+    comercioId: userData.comercioId || null,
+    onboarding: comercioData.onboarding || {}
+  };
+}
+
+export function buildPipeline(ctx) {
+  return PIPELINES[ctx.entityType] || PIPELINES['comercio'];
+}
