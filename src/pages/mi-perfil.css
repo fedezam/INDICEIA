@@ -44,16 +44,117 @@
   font-style: italic;
 }
 
-/* ==================== COBERTURA ==================== */
+/* ==================== BLOQUES DE UBICACIÓN ==================== */
+.ubicacion-bloque {
+  margin-bottom: 0.5rem;
+}
+
+/* Separador visual entre bloque principal y zona */
+.ubicacion-zona {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed var(--s-border, #d2d6de);
+}
+
+/* Header zona con título + badge Opcional */
+.zona-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.zona-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  margin: 0;
+}
+
+.zona-badge-opcional {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--s-gray, #6c757d);
+  background: var(--s-light, #f8f9fa);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+
+/* ==================== CHIP LOCALIDAD PRINCIPAL ==================== */
+.chip-principal-container {
+  margin-bottom: 0.75rem;
+  min-height: 0;
+}
+
+.chip-principal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--s-primary, #3c8dbc);
+  color: white;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.chip-principal .fa-map-marker-alt {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.chip-principal .chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-size: 1.1rem;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+  margin-left: 2px;
+}
+
+.chip-principal .chip-remove:hover {
+  opacity: 1;
+}
+
+/* ==================== CHIPS ZONA DE COBERTURA ==================== */
+.zona-chips-container {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.zona-chips-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--s-gray, #6c757d);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.5rem 0;
+}
+
+.zona-chips-empty {
+  font-size: 0.85rem;
+  color: var(--s-gray, #6c757d);
+  font-style: italic;
+  margin: 0.25rem 0 0.5rem 0;
+}
+
 .agregar-cobertura-container {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .cobertura-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .cobertura-chip {
@@ -139,11 +240,20 @@
 
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
+  #skeleton-page {
+    padding: 0 1rem;
+  }
+
   .form-section {
     padding: 1rem;
   }
+
   .slug-prefix {
     font-size: 0.75rem;
     padding: 0.5rem;
+  }
+
+  .zona-header {
+    flex-wrap: wrap;
   }
 }
