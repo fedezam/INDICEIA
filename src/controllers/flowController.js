@@ -80,9 +80,9 @@ function buildStepUrl(stepId) {
   return `/${step.page}.html`;
 }
 
-function getFirstIncompleteStep(pipeline, steps) {
+function getFirstIncompleteStep(pipeline, onboardingSteps) {
   for (const stepId of pipeline) {
-    if (steps[stepId] !== true) return stepId;
+    if (onboardingSteps[stepId] !== true) return stepId;
   }
   return null;
 }
@@ -108,7 +108,7 @@ export async function runFlowController(uid) {
 
     const userData = userSnap.data();
 
-    // ── STEP: usuario ───────────────────────────────────────
+    // ── STEP: usuario (vive en usuarios, no en entidades) ───
     if (!userData.onboardingSteps?.usuario) {
       if (currentPage !== "usuario") {
         window.location.href = "/usuario.html";
@@ -116,7 +116,7 @@ export async function runFlowController(uid) {
       return;
     }
 
-    // ── STEP: tipo-entidad ──────────────────────────────────
+    // ── STEP: tipo-entidad (vive en usuarios) ───────────────
     if (!userData.onboardingSteps?.['tipo-entidad']) {
       if (currentPage !== "tipo-entidad") {
         window.location.href = "/tipo-entidad.html";
@@ -124,7 +124,7 @@ export async function runFlowController(uid) {
       return;
     }
 
-    // ── IDENTIDAD ───────────────────────────────────────────
+    // ── SIN ENTIDAD AÚN → primera página del pipeline ───────
     if (!userData.comercioId) {
       const entityType = userData.entityType;
 
@@ -150,29 +150,26 @@ export async function runFlowController(uid) {
 
     const data = snap.data();
 
-    // ── INIT ONBOARDING (una sola vez) ──────────────────────
+    // ── PIPELINE ─────────────────────────────────────────────
+    // Si la entidad no tiene pipeline guardado, lo inicializamos
+    // una sola vez según su entityType.
     if (!data.onboarding?.pipeline) {
       const entityType = data.entityType || userData.entityType || "comercio";
       const pipeline   = PIPELINES[entityType];
 
       await updateDoc(ref, {
-        onboarding: {
-          pipeline,
-          steps: {}
-        }
+        "onboarding.pipeline": pipeline,
       });
 
-      // FIX: navegar al primer step en lugar de reload() para evitar
-      // race condition donde el reload lee el estado viejo de Firestore
-      window.location.href = buildStepUrl(pipeline[0]);
-      return;
+      // Releer para continuar con el pipeline recién guardado
+      data.onboarding = { pipeline };
     }
 
-    const pipeline = data.onboarding.pipeline;
-    const steps    = data.onboarding.steps || {};
+    const pipeline        = data.onboarding.pipeline;
+    const onboardingSteps = data.onboardingSteps || {};
 
     // ── RESOLVER SIGUIENTE STEP ─────────────────────────────
-    const nextStepId = getFirstIncompleteStep(pipeline, steps);
+    const nextStepId = getFirstIncompleteStep(pipeline, onboardingSteps);
 
     // ── TODO COMPLETO → DASHBOARD ───────────────────────────
     if (!nextStepId) {
@@ -197,14 +194,10 @@ export async function runFlowController(uid) {
 
 // ============================================================
 // POST SAVE
-// Lee el pipeline desde Firestore — no requiere que la página
-// lo pase como parámetro.
+// Redirige al siguiente step del pipeline después de guardar.
 // Uso en cada form:
 //
-//   import { completeStep, redirectAfterSave } from "../controllers/flowController.js";
-//
-//   await completeStep(uid, "productos");
-//   await redirectAfterSave(uid, "productos");
+//   await redirectAfterSave(uid, "mi-perfil");
 // ============================================================
 
 export async function redirectAfterSave(uid, currentStepId) {
@@ -231,6 +224,7 @@ export async function redirectAfterSave(uid, currentStepId) {
 
 // ============================================================
 // MARCAR STEP COMO COMPLETO
+// Escribe en entidades/{id}/onboardingSteps.{stepId}
 // ============================================================
 
 export async function completeStep(uid, stepId) {
@@ -240,17 +234,8 @@ export async function completeStep(uid, stepId) {
   const { comercioId } = userSnap.data();
   if (!comercioId) return;
 
-  const ref  = doc(db, "entidades", comercioId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return;
-
-  const data  = snap.data();
-  const steps = data.onboarding?.steps || {};
-
-  steps[stepId] = true;
-
-  await updateDoc(ref, {
-    "onboarding.steps": steps
+  await updateDoc(doc(db, "entidades", comercioId), {
+    [`onboardingSteps.${stepId}`]: true,
   });
 }
 
