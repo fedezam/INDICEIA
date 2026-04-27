@@ -2,16 +2,17 @@
 // src/pages/mi-perfil.js
 // ============================================================
 
-import { runLifecycle }           from '/src/skeleton/lifecycle.js';
-import { createFirebaseAdapter }  from '/src/skeleton/adapters/firebaseAdapter.js';
-import { mountLayout }            from '/src/skeleton/layout/index.js';
-import { runFlowController }      from '/src/controllers/flowController.js';
-import { createFormField }        from '/src/skeleton/components/form-field/index.js';
-import { createButton }           from '/src/skeleton/components/button/index.js';
-import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
-import { showToast }              from '/src/skeleton/components/toast/index.js';
-import { db }                     from '/src/services/firebase/firebase.js';
-import { fillProvinciaSelector }  from '/src/shared/provincias.js';
+import { runLifecycle }            from '/src/skeleton/lifecycle.js';
+import { createFirebaseAdapter }   from '/src/skeleton/adapters/firebaseAdapter.js';
+import { mountLayout }             from '/src/skeleton/layout/index.js';
+import { runFlowController }       from '/src/controllers/flowController.js';
+import { createFormField }         from '/src/skeleton/components/form-field/index.js';
+import { createButton }            from '/src/skeleton/components/button/index.js';
+import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
+import { showToast }               from '/src/skeleton/components/toast/index.js';
+import { db }                      from '/src/services/firebase/firebase.js';
+import { fillProvinciaSelector }   from '/src/shared/provincias.js';
+import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
 import {
   doc, setDoc, updateDoc,
   collection, getDoc, Timestamp
@@ -62,14 +63,12 @@ function render(ctx, state) {
     slug:       state.comercioData.landing?.slug || null,
     slugValido: !!state.comercioData.landing?.slug,
 
-    // Localidad principal — objeto { localidad, provincia, pais }
     localidad_principal: state.comercioData.localidad_principal || (
       state.comercioData.cobertura?.[0]
         ? { ...state.comercioData.cobertura[0], pais: 'Argentina' }
         : null
     ),
 
-    // Zona de cobertura — array de { localidad, provincia }
     zona_cobertura: state.comercioData.zona_cobertura
       || state.comercioData.cobertura?.slice(1)?.map(c => ({ ...c }))
       || [],
@@ -325,10 +324,12 @@ function renderSeccionIdentidad(state, refs, uiState) {
 }
 
 // ============================================================
-// SECCIÓN: UBICACIÓN (dos bloques)
+// SECCIÓN: UBICACIÓN
 // ============================================================
 function renderSeccionUbicacion(state, refs, uiState) {
   const section = crearSeccion('¿Dónde trabajás?');
+
+  const provinciaGuardada = uiState.localidad_principal?.provincia || '';
 
   // ============================================================
   // BLOQUE 1 — Localidad principal
@@ -349,69 +350,62 @@ function renderSeccionUbicacion(state, refs, uiState) {
   optDefault.value = ''; optDefault.textContent = 'Elegí una provincia...';
   refs.fields.provincia.input.prepend(optDefault);
   fillProvinciaSelector('Argentina', refs.fields.provincia.input);
-
-  const provinciaGuardada = uiState.localidad_principal?.provincia || '';
   if (provinciaGuardada) refs.fields.provincia.input.value = provinciaGuardada;
-
   subPrincipal.appendChild(refs.fields.provincia);
 
-  // Localidad principal (autocomplete)
-  refs.fields.localidad = createFormField({
-    label: 'Localidad principal', name: 'localidad',
-    type: 'autocomplete', required: true,
-    provincia: provinciaGuardada,
-    placeholder: provinciaGuardada ? 'Buscá tu localidad...' : 'Primero elegí una provincia',
-    value: uiState.localidad_principal?.localidad || ''
-  });
+  // Label + container autocomplete localidad principal
+  const localidadLabel = document.createElement('label');
+  localidadLabel.className   = 's-label';
+  localidadLabel.textContent = 'Localidad principal *';
+  subPrincipal.appendChild(localidadLabel);
 
-  refs.fields.localidad.input.addEventListener('input', () => {
-    const localidad = refs.fields.localidad.input.value;
-    const provincia = refs.fields.provincia.input.value;
-    if (localidad && provincia) {
-      uiState.localidad_principal = { localidad, provincia, pais: 'Argentina' };
-    } else {
-      uiState.localidad_principal = null;
-    }
-    renderChipPrincipal(chipPrincipalContainer, uiState, refs);
-    document.dispatchEvent(new Event('change'));
-  });
-
-  subPrincipal.appendChild(refs.fields.localidad);
-
-  // Cambio de provincia → reconstruir autocomplete
-  refs.fields.provincia.input.addEventListener('change', () => {
-    const nuevaProvincia = refs.fields.provincia.input.value;
-    uiState.localidad_principal = null;
-
-    const nuevoField = createFormField({
-      label: 'Localidad principal', name: 'localidad',
-      type: 'autocomplete', required: true,
-      provincia: nuevaProvincia,
-      placeholder: nuevaProvincia ? 'Buscá tu localidad...' : 'Primero elegí una provincia',
-    });
-
-    nuevoField.input.addEventListener('input', () => {
-      const localidad = nuevoField.input.value;
-      if (localidad && nuevaProvincia) {
-        uiState.localidad_principal = { localidad, provincia: nuevaProvincia, pais: 'Argentina' };
-      } else {
-        uiState.localidad_principal = null;
-      }
-      renderChipPrincipal(chipPrincipalContainer, uiState, refs);
-      document.dispatchEvent(new Event('change'));
-    });
-
-    refs.fields.localidad.replaceWith(nuevoField);
-    refs.fields.localidad = nuevoField;
-    renderChipPrincipal(chipPrincipalContainer, uiState, refs);
-    document.dispatchEvent(new Event('change'));
-  });
+  const localidadContainer = document.createElement('div');
+  localidadContainer.className = 'ciudad-autocomplete-container';
+  subPrincipal.appendChild(localidadContainer);
 
   // Chip localidad principal
   const chipPrincipalContainer = document.createElement('div');
   chipPrincipalContainer.className = 'chip-principal-container';
-  renderChipPrincipal(chipPrincipalContainer, uiState, refs);
   subPrincipal.appendChild(chipPrincipalContainer);
+
+  // Montar autocomplete principal
+  function montarLocalidadPrincipal(provinciaVal) {
+    mountCiudadAutocomplete(provinciaVal, localidadContainer, '', (loc) => {
+      uiState.localidad_principal = {
+        localidad: loc.nombre,
+        provincia: provinciaVal,
+        pais: 'Argentina'
+      };
+      renderChipPrincipal(chipPrincipalContainer, uiState, montarLocalidadPrincipal, refs);
+      document.dispatchEvent(new Event('change'));
+    });
+  }
+
+  // Si ya tenía provincia guardada, montar con valor previo
+  if (provinciaGuardada) {
+    const localidadGuardada = uiState.localidad_principal?.localidad || '';
+    mountCiudadAutocomplete(provinciaGuardada, localidadContainer, localidadGuardada, (loc) => {
+      uiState.localidad_principal = {
+        localidad: loc.nombre,
+        provincia: provinciaGuardada,
+        pais: 'Argentina'
+      };
+      renderChipPrincipal(chipPrincipalContainer, uiState, montarLocalidadPrincipal, refs);
+      document.dispatchEvent(new Event('change'));
+    });
+  }
+
+  // Chip inicial si ya tenía localidad guardada
+  renderChipPrincipal(chipPrincipalContainer, uiState, montarLocalidadPrincipal, refs);
+
+  // Cambio de provincia → reset y remontar
+  refs.fields.provincia.input.addEventListener('change', () => {
+    const nuevaProvincia = refs.fields.provincia.input.value;
+    uiState.localidad_principal = null;
+    chipPrincipalContainer.innerHTML = '';
+    montarLocalidadPrincipal(nuevaProvincia);
+    document.dispatchEvent(new Event('change'));
+  });
 
   section.appendChild(subPrincipal);
 
@@ -449,49 +443,47 @@ function renderSeccionUbicacion(state, refs, uiState) {
   optDefaultZona.value = ''; optDefaultZona.textContent = 'Elegí una provincia...';
   refs.fields.provinciaZona.input.prepend(optDefaultZona);
   fillProvinciaSelector('Argentina', refs.fields.provinciaZona.input);
-
-  // Preseleccionar con la misma provincia principal si existe
   if (provinciaGuardada) refs.fields.provinciaZona.input.value = provinciaGuardada;
-
   subZona.appendChild(refs.fields.provinciaZona);
 
-  // Localidad zona (autocomplete)
-  refs.fields.localidadZona = createFormField({
-    label: 'Localidad', name: 'localidadZona',
-    type: 'autocomplete',
-    provincia: provinciaGuardada,
-    placeholder: provinciaGuardada ? 'Buscá una localidad...' : 'Primero elegí una provincia',
-  });
-  subZona.appendChild(refs.fields.localidadZona);
+  // Label + container autocomplete zona
+  const localidadZonaLabel = document.createElement('label');
+  localidadZonaLabel.className   = 's-label';
+  localidadZonaLabel.textContent = 'Localidad';
+  subZona.appendChild(localidadZonaLabel);
 
-  // Cambio provincia zona → reconstruir autocomplete zona
-  refs.fields.provinciaZona.input.addEventListener('change', () => {
-    const nuevaProvincia = refs.fields.provinciaZona.input.value;
+  const localidadZonaContainer = document.createElement('div');
+  localidadZonaContainer.className = 'ciudad-autocomplete-container';
+  subZona.appendChild(localidadZonaContainer);
 
-    const nuevoField = createFormField({
-      label: 'Localidad', name: 'localidadZona',
-      type: 'autocomplete',
-      provincia: nuevaProvincia,
-      placeholder: nuevaProvincia ? 'Buscá una localidad...' : 'Primero elegí una provincia',
+  // Estado local de localidad zona seleccionada
+  let localidadZonaSeleccionada = null;
+
+  function montarLocalidadZona(provinciaVal) {
+    localidadZonaSeleccionada = null;
+    mountCiudadAutocomplete(provinciaVal, localidadZonaContainer, '', (loc) => {
+      localidadZonaSeleccionada = { localidad: loc.nombre, provincia: provinciaVal };
     });
+  }
 
-    refs.fields.localidadZona.replaceWith(nuevoField);
-    refs.fields.localidadZona = nuevoField;
+  if (provinciaGuardada) montarLocalidadZona(provinciaGuardada);
+
+  refs.fields.provinciaZona.input.addEventListener('change', () => {
+    montarLocalidadZona(refs.fields.provinciaZona.input.value);
   });
 
-  // Botón agregar
+  // Botón agregar localidad a zona
   const agregarBtn = createButton({
     label: 'Agregar localidad', icon: 'fa-plus', variant: 'secondary', size: 'sm',
     onClick: () => {
       const provincia = refs.fields.provinciaZona.input.value;
-      const localidad = refs.fields.localidadZona.input.value;
+      const localidad = localidadZonaSeleccionada?.localidad;
 
       if (!provincia || !localidad) {
         showToast('Elegí provincia y localidad antes de agregar', 'warning');
         return;
       }
 
-      // No duplicar la localidad principal
       const esPrincipal =
         uiState.localidad_principal?.localidad === localidad &&
         uiState.localidad_principal?.provincia === provincia;
@@ -540,7 +532,7 @@ function renderSeccionUbicacion(state, refs, uiState) {
 }
 
 // ── Chip localidad principal ───────────────────────────────
-function renderChipPrincipal(container, uiState, refs) {
+function renderChipPrincipal(container, uiState, montarFn, refs) {
   container.innerHTML = '';
   if (!uiState.localidad_principal) return;
 
@@ -561,10 +553,7 @@ function renderChipPrincipal(container, uiState, refs) {
   removeBtn.setAttribute('aria-label', 'Quitar localidad principal');
   removeBtn.addEventListener('click', () => {
     uiState.localidad_principal = null;
-    // Limpiar el autocomplete visible
-    const visibleInput = refs.fields.localidad?.querySelector('input[type="text"]');
-    if (visibleInput) visibleInput.value = '';
-    if (refs.fields.localidad?.input) refs.fields.localidad.input.value = '';
+    montarFn(refs.fields.provincia.input.value);
     container.innerHTML = '';
     document.dispatchEvent(new Event('change'));
   });
