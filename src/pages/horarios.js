@@ -1,5 +1,5 @@
 // ============================================================
-// src/pages/horarios/horarios.js
+// src/pages/horarios.js
 // ============================================================
 
 import { runLifecycle }          from '/src/skeleton/lifecycle.js';
