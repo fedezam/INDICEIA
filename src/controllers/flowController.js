@@ -18,48 +18,51 @@ const PUBLIC_PAGES  = ["login", "registro", "index", ""];
 const NEUTRAL_PAGES = ["skeletonTest"];
 
 // ============================================================
-// STEP DEFINITIONS (estático)
+// STEP DEFINITIONS
 // ============================================================
 
 const STEPS = {
-  'mi-comercio':           { page: 'mi-comercio' },
-  'mi-perfil':             { page: 'mi-perfil' },
+  'mi-comercio':           { page: 'mi-comercio'           },
+  'mi-perfil':             { page: 'mi-perfil'             },
   'mi-perfil-profesional': { page: 'mi-perfil-profesional' },
-
-  'horarios':  { page: 'horarios' },
-  'entrega':   { page: 'entrega' },
-
-  'productos': { page: 'productos' },
-  'servicios': { page: 'servicios' },
-
-  'lugares':   { page: 'lugares' },
-  'cobertura': { page: 'cobertura' },
-  'consultas': { page: 'consultas' },
-
-  'ia-config': { page: 'ia-config' }
+  'horarios':              { page: 'horarios'              },
+  'horarios-delivery':     { page: 'horarios-delivery'     },
+  'entrega':               { page: 'entrega'               },
+  'productos':             { page: 'productos'             },
+  'servicios':             { page: 'servicios'             },
+  'lugares':               { page: 'lugares'               },
+  'cobertura':             { page: 'cobertura'             },
+  'consultas':             { page: 'consultas'             },
+  'ia-config':             { page: 'ia-config'             },
 };
 
 // ============================================================
-// PIPELINES FIJOS
+// PIPELINES BASE
 // ============================================================
 
-const PIPELINES = {
+const BASE_PIPELINES = {
   comercio: [
     'mi-comercio',
     'horarios',
     'entrega',
     'productos',
+    'ia-config',
+  ],
+
+  comercio_servicios: [
+    'mi-comercio',
+    'horarios',
+    'entrega',
+    'productos',
     'servicios',
-    'ia-config'
+    'ia-config',
   ],
 
   prestador: [
     'mi-perfil',
     'horarios',
-    'entrega',
     'servicios',
-    'productos',
-    'ia-config'
+    'ia-config',
   ],
 
   profesional: [
@@ -67,17 +70,65 @@ const PIPELINES = {
     'lugares',
     'cobertura',
     'consultas',
-    'ia-config'
-  ]
+    'ia-config',
+  ],
 };
 
 // ============================================================
-// CORE HELPERS
+// PIPELINE MODIFIERS
+// Reciben la entidad y devuelven el pipeline ajustado.
+// Cada modifier es puro — no muta BASE_PIPELINES.
+// Agregar aquí cualquier step condicional futuro.
+// ============================================================
+
+const PIPELINE_MODIFIERS = {
+  comercio: (entidadData) => {
+    const pipeline = [...BASE_PIPELINES.comercio];
+    if (entidadData.entrega?.delivery) {
+      const idx = pipeline.indexOf('entrega');
+      pipeline.splice(idx + 1, 0, 'horarios-delivery');
+    }
+    return pipeline;
+  },
+
+  comercio_servicios: (entidadData) => {
+    const pipeline = [...BASE_PIPELINES.comercio_servicios];
+    if (entidadData.entrega?.delivery) {
+      const idx = pipeline.indexOf('entrega');
+      pipeline.splice(idx + 1, 0, 'horarios-delivery');
+    }
+    return pipeline;
+  },
+
+  prestador: (entidadData) => {
+    return [...BASE_PIPELINES.prestador];
+  },
+
+  profesional: (entidadData) => {
+    return [...BASE_PIPELINES.profesional];
+  },
+};
+
+// ============================================================
+// CALCULAR PIPELINE
+// Siempre derivado — nunca leído de Firestore.
+// ============================================================
+
+function calcularPipeline(entityType, entidadData) {
+  const modifier = PIPELINE_MODIFIERS[entityType];
+  if (!modifier) {
+    console.warn(`[flowController] entityType desconocido: "${entityType}", usando comercio`);
+    return PIPELINE_MODIFIERS.comercio(entidadData);
+  }
+  return modifier(entidadData);
+}
+
+// ============================================================
+// HELPERS
 // ============================================================
 
 function buildStepUrl(stepId) {
-  const step = STEPS[stepId];
-  return `/${step.page}.html`;
+  return `/${STEPS[stepId].page}.html`;
 }
 
 function getFirstIncompleteStep(pipeline, onboardingSteps) {
@@ -108,34 +159,29 @@ export async function runFlowController(uid) {
 
     const userData = userSnap.data();
 
-    // ── STEP: usuario (vive en usuarios, no en entidades) ───
+    // ── STEP: usuario (vive en usuarios) ────────────────────
     if (!userData.onboardingSteps?.usuario) {
-      if (currentPage !== "usuario") {
-        window.location.href = "/usuario.html";
-      }
+      if (currentPage !== "usuario") window.location.href = "/usuario.html";
       return;
     }
 
     // ── STEP: tipo-entidad (vive en usuarios) ───────────────
     if (!userData.onboardingSteps?.['tipo-entidad']) {
-      if (currentPage !== "tipo-entidad") {
-        window.location.href = "/tipo-entidad.html";
-      }
+      if (currentPage !== "tipo-entidad") window.location.href = "/tipo-entidad.html";
       return;
     }
 
     // ── SIN ENTIDAD AÚN → primera página del pipeline ───────
     if (!userData.comercioId) {
-      const entityType = userData.entityType;
+      const entityType = userData.entityType || 'comercio';
 
       const firstPage =
-        entityType === "prestador"   ? "mi-perfil" :
-        entityType === "profesional" ? "mi-perfil-profesional" :
-                                      "mi-comercio";
+        entityType === 'prestador'         ? 'mi-perfil' :
+        entityType === 'profesional'       ? 'mi-perfil-profesional' :
+        entityType === 'comercio_servicios'? 'mi-comercio' :
+                                             'mi-comercio';
 
-      if (currentPage !== firstPage) {
-        window.location.href = `/${firstPage}.html`;
-      }
+      if (currentPage !== firstPage) window.location.href = `/${firstPage}.html`;
       return;
     }
 
@@ -148,34 +194,19 @@ export async function runFlowController(uid) {
       return;
     }
 
-    const data = snap.data();
+    const entidadData    = snap.data();
+    const entityType     = entidadData.entityType || userData.entityType || 'comercio';
+    const onboardingSteps = entidadData.onboardingSteps || {};
 
-    // ── PIPELINE ─────────────────────────────────────────────
-    // Si la entidad no tiene pipeline guardado, lo inicializamos
-    // una sola vez según su entityType.
-    if (!data.onboarding?.pipeline) {
-      const entityType = data.entityType || userData.entityType || "comercio";
-      const pipeline   = PIPELINES[entityType];
-
-      await updateDoc(ref, {
-        "onboarding.pipeline": pipeline,
-      });
-
-      // Releer para continuar con el pipeline recién guardado
-      data.onboarding = { pipeline };
-    }
-
-    const pipeline        = data.onboarding.pipeline;
-    const onboardingSteps = data.onboardingSteps || {};
+    // ── CALCULAR PIPELINE DINÁMICO ───────────────────────────
+    const pipeline = calcularPipeline(entityType, entidadData);
 
     // ── RESOLVER SIGUIENTE STEP ─────────────────────────────
     const nextStepId = getFirstIncompleteStep(pipeline, onboardingSteps);
 
     // ── TODO COMPLETO → DASHBOARD ───────────────────────────
     if (!nextStepId) {
-      if (currentPage !== "dashboard") {
-        window.location.href = "/dashboard.html";
-      }
+      if (currentPage !== "dashboard") window.location.href = "/dashboard.html";
       return;
     }
 
@@ -193,38 +224,9 @@ export async function runFlowController(uid) {
 }
 
 // ============================================================
-// POST SAVE
-// Redirige al siguiente step del pipeline después de guardar.
-// Uso en cada form:
-//
-//   await redirectAfterSave(uid, "mi-perfil");
-// ============================================================
-
-export async function redirectAfterSave(uid, currentStepId) {
-  const userSnap = await getDoc(doc(db, "usuarios", uid));
-  if (!userSnap.exists()) return;
-
-  const { comercioId } = userSnap.data();
-  if (!comercioId) return;
-
-  const snap = await getDoc(doc(db, "entidades", comercioId));
-  if (!snap.exists()) return;
-
-  const pipeline = snap.data().onboarding?.pipeline || [];
-  const index    = pipeline.indexOf(currentStepId);
-  const next     = pipeline[index + 1];
-
-  if (!next) {
-    window.location.href = "/dashboard.html";
-    return;
-  }
-
-  window.location.href = buildStepUrl(next);
-}
-
-// ============================================================
 // MARCAR STEP COMO COMPLETO
-// Escribe en entidades/{id}/onboardingSteps.{stepId}
+// Cada página llama esto en su onSave.
+// Escribe solo en onboardingSteps — el pipeline nunca se guarda.
 // ============================================================
 
 export async function completeStep(uid, stepId) {
@@ -240,6 +242,42 @@ export async function completeStep(uid, stepId) {
 }
 
 // ============================================================
+// REDIRIGIR AL SIGUIENTE STEP
+// Lee el estado actual de la entidad y calcula el próximo step.
+// Uso en cada form después de guardar:
+//
+//   await completeStep(uid, "entrega");
+//   await redirectAfterSave(uid, "entrega");
+// ============================================================
+
+export async function redirectAfterSave(uid, currentStepId) {
+  const userSnap = await getDoc(doc(db, "usuarios", uid));
+  if (!userSnap.exists()) return;
+
+  const { comercioId, entityType: userEntityType } = userSnap.data();
+  if (!comercioId) return;
+
+  const snap = await getDoc(doc(db, "entidades", comercioId));
+  if (!snap.exists()) return;
+
+  const entidadData     = snap.data();
+  const entityType      = entidadData.entityType || userEntityType || 'comercio';
+  const onboardingSteps = entidadData.onboardingSteps || {};
+
+  // Recalcular pipeline con el estado actualizado (ej: entrega ya guardada)
+  const pipeline = calcularPipeline(entityType, entidadData);
+
+  const nextStepId = getFirstIncompleteStep(pipeline, onboardingSteps);
+
+  if (!nextStepId) {
+    window.location.href = "/dashboard.html";
+    return;
+  }
+
+  window.location.href = buildStepUrl(nextStepId);
+}
+
+// ============================================================
 // EXPORTS PARA SUPER ADMIN (panelCore)
 // ============================================================
 
@@ -247,10 +285,9 @@ export function buildFlowContext(userData, comercioData) {
   return {
     entityType: comercioData.entityType || userData.entityType || 'comercio',
     comercioId: userData.comercioId || null,
-    onboarding: comercioData.onboarding || {}
   };
 }
 
 export function buildPipeline(ctx) {
-  return PIPELINES[ctx.entityType] || PIPELINES['comercio'];
+  return calcularPipeline(ctx.entityType, ctx.comercioData || {});
 }
