@@ -1,5 +1,5 @@
 // ============================================================
-// src/pages/tipo-entidad/tipo-entidad.js
+// src/pages/tipo-entidad.js
 // ============================================================
 import { doc, updateDoc }          from "firebase/firestore";
 import { db }                      from "/src/firebase.js";
