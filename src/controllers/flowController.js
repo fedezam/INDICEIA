@@ -37,90 +37,57 @@ const STEPS = {
 };
 
 // ============================================================
-// PIPELINES BASE
-// ============================================================
-
-const BASE_PIPELINES = {
-  comercio: [
-    'mi-comercio',
-    'horarios',
-    'entrega',
-    'productos',
-    'ia-config',
-  ],
-
-  comercio_servicios: [
-    'mi-comercio',
-    'horarios',
-    'entrega',
-    'productos',
-    'servicios',
-    'ia-config',
-  ],
-
-  prestador: [
-    'mi-perfil',
-    'horarios',
-    'servicios',
-    'ia-config',
-  ],
-
-  profesional: [
-    'mi-perfil-profesional',
-    'lugares',
-    'cobertura',
-    'consultas',
-    'ia-config',
-  ],
-};
-
-// ============================================================
-// PIPELINE MODIFIERS
-// Reciben la entidad y devuelven el pipeline ajustado.
-// Cada modifier es puro — no muta BASE_PIPELINES.
-// Agregar aquí cualquier step condicional futuro.
-// ============================================================
-
-const PIPELINE_MODIFIERS = {
-  comercio: (entidadData) => {
-    const pipeline = [...BASE_PIPELINES.comercio];
-    if (entidadData.entrega?.delivery) {
-      const idx = pipeline.indexOf('entrega');
-      pipeline.splice(idx + 1, 0, 'horarios-delivery');
-    }
-    return pipeline;
-  },
-
-  comercio_servicios: (entidadData) => {
-    const pipeline = [...BASE_PIPELINES.comercio_servicios];
-    if (entidadData.entrega?.delivery) {
-      const idx = pipeline.indexOf('entrega');
-      pipeline.splice(idx + 1, 0, 'horarios-delivery');
-    }
-    return pipeline;
-  },
-
-  prestador: (entidadData) => {
-    return [...BASE_PIPELINES.prestador];
-  },
-
-  profesional: (entidadData) => {
-    return [...BASE_PIPELINES.profesional];
-  },
-};
-
-// ============================================================
 // CALCULAR PIPELINE
-// Siempre derivado — nunca leído de Firestore.
+// Deriva el pipeline en tiempo real — nunca se guarda en Firestore.
+//
+// entityType  : 'comercio' | 'prestador' | 'profesional'
+// capacidades : [] | ['productos'] | ['servicios'] | ['productos', 'servicios']
+// entidadData : documento completo de Firestore (para condiciones dinámicas)
 // ============================================================
 
-function calcularPipeline(entityType, entidadData) {
-  const modifier = PIPELINE_MODIFIERS[entityType];
-  if (!modifier) {
-    console.warn(`[flowController] entityType desconocido: "${entityType}", usando comercio`);
-    return PIPELINE_MODIFIERS.comercio(entidadData);
+export function calcularPipeline(entityType, capacidades = [], entidadData = {}) {
+  const steps = [];
+
+  const tieneProductos =
+    entityType === 'comercio' ||
+    capacidades.includes('productos');
+
+  const tieneServicios =
+    entityType === 'prestador' ||
+    (entityType === 'comercio' && capacidades.includes('servicios'));
+
+  // ── IDENTIDAD BASE ────────────────────────────────────────
+  if      (entityType === 'profesional') steps.push('mi-perfil-profesional');
+  else if (entityType === 'prestador')   steps.push('mi-perfil');
+  else                                   steps.push('mi-comercio');
+
+  // ── HORARIOS ──────────────────────────────────────────────
+  // Todos necesitan horarios excepto profesional puro (sin productos)
+  const necesitaHorarios = entityType !== 'profesional' || tieneProductos;
+  if (necesitaHorarios) steps.push('horarios');
+
+  // ── ENTREGA + HORARIOS DELIVERY ───────────────────────────
+  // Solo si tiene productos
+  if (tieneProductos) {
+    steps.push('entrega');
+    if (entidadData.entrega?.delivery) {
+      steps.push('horarios-delivery'); // condicional — solo si delivery está activo
+    }
+    steps.push('productos');
   }
-  return modifier(entidadData);
+
+  // ── SERVICIOS ─────────────────────────────────────────────
+  if (tieneServicios) steps.push('servicios');
+
+  // ── PASOS EXCLUSIVOS DE PROFESIONAL ───────────────────────
+  if (entityType === 'profesional') {
+    steps.push('lugares', 'cobertura', 'consultas');
+  }
+
+  // ── SIEMPRE AL FINAL ──────────────────────────────────────
+  steps.push('ia-config');
+
+  return steps;
 }
 
 // ============================================================
@@ -138,6 +105,12 @@ function getFirstIncompleteStep(pipeline, onboardingSteps) {
   return null;
 }
 
+function getPrimeraPagina(entityType) {
+  if (entityType === 'prestador')   return 'mi-perfil';
+  if (entityType === 'profesional') return 'mi-perfil-profesional';
+  return 'mi-comercio';
+}
+
 // ============================================================
 // FLOW CONTROLLER
 // ============================================================
@@ -150,7 +123,7 @@ export async function runFlowController(uid) {
   if (NEUTRAL_PAGES.includes(currentPage)) return;
 
   try {
-    // ── USUARIO ─────────────────────────────────────────────
+    // ── USUARIO ───────────────────────────────────────────────
     const userSnap = await getDoc(doc(db, "usuarios", uid));
     if (!userSnap.exists()) {
       window.location.href = "/login.html";
@@ -159,33 +132,26 @@ export async function runFlowController(uid) {
 
     const userData = userSnap.data();
 
-    // ── STEP: usuario (vive en usuarios) ────────────────────
+    // ── STEP: usuario (vive en usuarios) ──────────────────────
     if (!userData.onboardingSteps?.usuario) {
       if (currentPage !== "usuario") window.location.href = "/usuario.html";
       return;
     }
 
-    // ── STEP: tipo-entidad (vive en usuarios) ───────────────
+    // ── STEP: tipo-entidad (vive en usuarios) ─────────────────
     if (!userData.onboardingSteps?.['tipo-entidad']) {
       if (currentPage !== "tipo-entidad") window.location.href = "/tipo-entidad.html";
       return;
     }
 
-    // ── SIN ENTIDAD AÚN → primera página del pipeline ───────
+    // ── SIN ENTIDAD AÚN → primera página del pipeline ─────────
     if (!userData.comercioId) {
-      const entityType = userData.entityType || 'comercio';
-
-      const firstPage =
-        entityType === 'prestador'         ? 'mi-perfil' :
-        entityType === 'profesional'       ? 'mi-perfil-profesional' :
-        entityType === 'comercio_servicios'? 'mi-comercio' :
-                                             'mi-comercio';
-
+      const firstPage = getPrimeraPagina(userData.entityType);
       if (currentPage !== firstPage) window.location.href = `/${firstPage}.html`;
       return;
     }
 
-    // ── ENTIDAD ─────────────────────────────────────────────
+    // ── ENTIDAD ───────────────────────────────────────────────
     const ref  = doc(db, "entidades", userData.comercioId);
     const snap = await getDoc(ref);
 
@@ -194,26 +160,25 @@ export async function runFlowController(uid) {
       return;
     }
 
-    const entidadData    = snap.data();
-    const entityType     = entidadData.entityType || userData.entityType || 'comercio';
+    const entidadData     = snap.data();
+    const entityType      = entidadData.entityType  || userData.entityType  || 'comercio';
+    const capacidades     = entidadData.capacidades || userData.capacidades || [];
     const onboardingSteps = entidadData.onboardingSteps || {};
 
-    // ── CALCULAR PIPELINE DINÁMICO ───────────────────────────
-    const pipeline = calcularPipeline(entityType, entidadData);
+    // ── PIPELINE DINÁMICO ─────────────────────────────────────
+    const pipeline = calcularPipeline(entityType, capacidades, entidadData);
 
-    // ── RESOLVER SIGUIENTE STEP ─────────────────────────────
+    // ── RESOLVER SIGUIENTE STEP ───────────────────────────────
     const nextStepId = getFirstIncompleteStep(pipeline, onboardingSteps);
 
-    // ── TODO COMPLETO → DASHBOARD ───────────────────────────
+    // ── TODO COMPLETO → DASHBOARD ─────────────────────────────
     if (!nextStepId) {
       if (currentPage !== "dashboard") window.location.href = "/dashboard.html";
       return;
     }
 
-    const targetPage = STEPS[nextStepId].page;
-
-    // ── REDIRECCIÓN ─────────────────────────────────────────
-    if (currentPage !== targetPage) {
+    // ── REDIRECCIÓN ───────────────────────────────────────────
+    if (currentPage !== STEPS[nextStepId].page) {
       window.location.href = buildStepUrl(nextStepId);
     }
 
@@ -226,7 +191,7 @@ export async function runFlowController(uid) {
 // ============================================================
 // MARCAR STEP COMO COMPLETO
 // Cada página llama esto en su onSave.
-// Escribe solo en onboardingSteps — el pipeline nunca se guarda.
+// Solo escribe en onboardingSteps — el pipeline nunca se persiste.
 // ============================================================
 
 export async function completeStep(uid, stepId) {
@@ -243,30 +208,35 @@ export async function completeStep(uid, stepId) {
 
 // ============================================================
 // REDIRIGIR AL SIGUIENTE STEP
-// Lee el estado actual de la entidad y calcula el próximo step.
-// Uso en cada form después de guardar:
+// Recalcula el pipeline con el estado actualizado de la entidad.
+// Llamar DESPUÉS de que la página haya guardado sus datos.
 //
+// Uso en cada form:
 //   await completeStep(uid, "entrega");
-//   await redirectAfterSave(uid, "entrega");
+//   await redirectAfterSave(uid);
 // ============================================================
 
-export async function redirectAfterSave(uid, currentStepId) {
+export async function redirectAfterSave(uid) {
   const userSnap = await getDoc(doc(db, "usuarios", uid));
   if (!userSnap.exists()) return;
 
-  const { comercioId, entityType: userEntityType } = userSnap.data();
-  if (!comercioId) return;
+  const { comercioId, entityType: userEntityType, capacidades: userCapacidades } = userSnap.data();
+  if (!comercioId) {
+    // Sin entidad todavía — ir a la primera página
+    window.location.href = `/${getPrimeraPagina(userEntityType)}.html`;
+    return;
+  }
 
   const snap = await getDoc(doc(db, "entidades", comercioId));
   if (!snap.exists()) return;
 
   const entidadData     = snap.data();
-  const entityType      = entidadData.entityType || userEntityType || 'comercio';
+  const entityType      = entidadData.entityType  || userEntityType  || 'comercio';
+  const capacidades     = entidadData.capacidades || userCapacidades || [];
   const onboardingSteps = entidadData.onboardingSteps || {};
 
-  // Recalcular pipeline con el estado actualizado (ej: entrega ya guardada)
-  const pipeline = calcularPipeline(entityType, entidadData);
-
+  // Recalcular con estado actualizado (ej: entrega ya guardada → detecta delivery)
+  const pipeline   = calcularPipeline(entityType, capacidades, entidadData);
   const nextStepId = getFirstIncompleteStep(pipeline, onboardingSteps);
 
   if (!nextStepId) {
@@ -283,11 +253,12 @@ export async function redirectAfterSave(uid, currentStepId) {
 
 export function buildFlowContext(userData, comercioData) {
   return {
-    entityType: comercioData.entityType || userData.entityType || 'comercio',
-    comercioId: userData.comercioId || null,
+    entityType:  comercioData.entityType  || userData.entityType  || 'comercio',
+    capacidades: comercioData.capacidades || userData.capacidades || [],
+    comercioId:  userData.comercioId || null,
   };
 }
 
 export function buildPipeline(ctx) {
-  return calcularPipeline(ctx.entityType, ctx.comercioData || {});
+  return calcularPipeline(ctx.entityType, ctx.capacidades || [], ctx.comercioData || {});
 }
