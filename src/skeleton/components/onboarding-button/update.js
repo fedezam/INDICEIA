@@ -86,6 +86,14 @@ export function attachBehavior(button, config) {
   button.addEventListener('click', async () => {
     console.group('🟩 [onboarding-button] click');
 
+    // ─── Dirty check ANTES del spinner — no necesita contexto ──
+    if (dirtyController && !dirtyController.hasUnsavedChanges()) {
+      console.log('[onboarding-button] Sin cambios → redirect directo');
+      window.location.href = redirectTo;
+      console.groupEnd();
+      return;
+    }
+
     const originalHTML = button.innerHTML;
     button.disabled = true;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
@@ -102,14 +110,6 @@ export function attachBehavior(button, config) {
       }
 
       const { persistence, user, comercioId, isEditMode } = ctx;
-
-      // ─── Dirty check: si no hay cambios, redirect directo ───
-      if (dirtyController && !dirtyController.hasUnsavedChanges()) {
-        console.log('[onboarding-button] Sin cambios → redirect directo');
-        window.location.href = redirectTo;
-        console.groupEnd();
-        return;
-      }
 
       let saveSuccess = false;
       let stepAlreadyMarked = false;
