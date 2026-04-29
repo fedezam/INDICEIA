@@ -136,7 +136,7 @@ const page = {
       required: true, value: id.tono
     });
 
-    // Campo partido: prefix editable + sufijo readonly con nombre de entidad
+    // Campo partido: prefix editable + nombre locked + sufijo locked
     const saludoField = this._renderSaludoPartido(id.saludoPrefix);
     this.fields.saludoPartido = saludoField;
 
@@ -153,57 +153,82 @@ const page = {
 
   // ──────────────────────────────────────────────────────────
   // SALUDO PARTIDO
-  // Parte editable libre + sufijo fijo con nombre de entidad.
+  // [ prefijo editable ] [ nombre — locked ] [ sufijo negocio — locked ]
+  // El nombre viene del campo "Nombre de la IA" y no puede editarse acá.
   // El sufijo viene de context.nombre — nunca editable.
   // ──────────────────────────────────────────────────────────
   _renderSaludoPartido(saludoPrefixValue = '') {
+    const nombreIA = this._aiConfig.identidad.nombre;
+
     const sufijo = this._nombreEntidad
       ? `, el asistente de ${this._nombreEntidad}`
       : '';
 
-    // Contenedor que imita s-form-field
+    // Prefijo default si no hay nada guardado
+    if (!saludoPrefixValue) {
+      saludoPrefixValue = '¡Hola! Soy';
+    }
+
+    // ── DOM ──────────────────────────────────────────────
     const wrapper = document.createElement('div');
     wrapper.className = 's-form-field';
 
-    // Label
     const label = document.createElement('label');
     label.className = 's-label';
     label.htmlFor = 'aiSaludoPrefix';
     label.textContent = 'Saludo inicial';
 
-    // Help
     const help = document.createElement('small');
     help.className = 's-help';
-    help.textContent = 'Escribí la bienvenida. El nombre de tu negocio se agrega automáticamente.';
+    help.textContent = 'Editá el saludo. El nombre de tu asistente se incluye automáticamente.';
 
-    // Input editable
+    // Input — solo el prefijo editable
     const input = document.createElement('input');
     input.type = 'text';
     input.id = 'aiSaludoPrefix';
     input.className = 's-input ia-saludo-prefix';
-    input.placeholder = '¡Hola! Soy CuquiIA 🔧';
-    input.maxLength = 120;
+    input.placeholder = '¡Hola! Soy';
+    input.maxLength = 80;
     input.value = saludoPrefixValue;
 
-    // Sufijo readonly
+    // Nombre locked — chip al medio
+    const nombreChip = document.createElement('span');
+    nombreChip.className = 'ia-saludo-locked ia-saludo-nombre';
+    nombreChip.textContent = nombreIA || 'Tu asistente';
+
+    // Sufijo locked
     const sufijoEl = document.createElement('span');
-    sufijoEl.className = 'ia-saludo-sufijo';
+    sufijoEl.className = 'ia-saludo-locked ia-saludo-sufijo';
     sufijoEl.textContent = sufijo;
 
-    // Input wrapper con ambos elementos inline
+    // Input wrapper con las tres partes
     const inputWrapper = document.createElement('div');
     inputWrapper.className = 's-input-wrapper ia-saludo-wrapper';
-    inputWrapper.appendChild(input);
+    inputWrapper.append(input, nombreChip);
     if (sufijo) inputWrapper.appendChild(sufijoEl);
 
-    // Preview en tiempo real
+    // Preview completo
     const preview = document.createElement('div');
     preview.className = 'ia-greeting-preview';
-    preview.textContent = (saludoPrefixValue || '¡Hola!') + sufijo;
 
-    input.addEventListener('input', () => {
-      preview.textContent = (input.value.trim() || '¡Hola!') + sufijo;
-    });
+    const updatePreview = () => {
+      const prefix = input.value.trim() || '¡Hola! Soy';
+      const name = this.fields.nombre?.input?.value.trim() || nombreIA || 'Tu asistente';
+      preview.textContent = `${prefix} ${name}${sufijo}`;
+    };
+    updatePreview();
+
+    // ── Listeners ────────────────────────────────────────
+    input.addEventListener('input', updatePreview);
+
+    // Sync nombre: si cambia el campo "Nombre de la IA", actualiza chip y preview
+    if (this.fields.nombre?.input) {
+      this.fields.nombre.input.addEventListener('input', () => {
+        const newName = this.fields.nombre.input.value.trim();
+        nombreChip.textContent = newName || 'Tu asistente';
+        updatePreview();
+      });
+    }
 
     wrapper.append(label, inputWrapper, help, preview);
 
@@ -393,3 +418,4 @@ runSkeleton({
   adapter: createFirebaseAdapter,
   options: { loadingMessage: 'Cargando configuración IA...' }
 });
+
