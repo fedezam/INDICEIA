@@ -169,16 +169,16 @@ const page = {
   // ──────────────────────────────────────────────────────────
   _getSeccionTitle() {
     const t = this._data.entityType;
-    if (t === 'profesional') return '💼 Mi Perfil Profesional';
-    if (t === 'prestador')   return '👷 Mi Perfil';
-    return '🏪 Mi Comercio';
+    if (t === 'profesional') return 'Mi Especialidad';
+    if (t === 'prestador')   return 'Mis Servicios';
+    return 'Mi Negocio';
   },
 
   _getSeccionDescripcion() {
     const t = this._data.entityType;
-    if (t === 'profesional') return 'Tu especialidad, zona de cobertura y disponibilidad.';
-    if (t === 'prestador')   return 'Tu especialidad, zona y disponibilidad.';
-    return 'Tu estructura base: qué ofrecés, cuándo y cómo.';
+    if (t === 'profesional') return 'Acá configurás todo lo que tu asistente necesita saber: qué vendés, cuándo abrís y cómo entregás.';
+    if (t === 'prestador')   return 'Acá cargás los servicios que ofrecés para que tu asistente los conozca y pueda responder consultas.';
+    return 'Acá configurás todo lo que tu asistente necesita saber: qué vendés, cuándo abrís y cómo entregás.';
   },
 
   // ──────────────────────────────────────────────────────────
@@ -266,7 +266,7 @@ const page = {
     `;
 
     return createCard({
-      title: 'Mi Perfil',
+      title: 'Mi Perfil de Usuario',
       icon: 'fa-user',
       compact: true,
       flat: true,
@@ -361,7 +361,7 @@ const page = {
 
     if (t === 'prestador') {
       return createCard({
-        title: 'Mi Perfil',
+        title: 'Mi Perfil de Servicios',
         icon: 'fa-user-tie',
         content: '<p>Tu nombre, especialidad, zona y datos de contacto</p>',
         action: { type: 'link', url: '/mi-perfil.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
