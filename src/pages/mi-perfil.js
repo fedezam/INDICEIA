@@ -2,10 +2,8 @@
 // src/pages/mi-perfil.js
 // ============================================================
 
-import { runLifecycle }            from '/src/skeleton/lifecycle.js';
+import { runSkeleton }             from '/src/skeleton/skeleton.js';
 import { createFirebaseAdapter }   from '/src/skeleton/adapters/firebaseAdapter.js';
-import { mountLayout }             from '/src/skeleton/layout/index.js';
-import { runFlowController }       from '/src/controllers/flowController.js';
 import { createFormField }         from '/src/skeleton/components/form-field/index.js';
 import { createButton }            from '/src/skeleton/components/button/index.js';
 import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
@@ -19,188 +17,198 @@ import {
 } from 'firebase/firestore';
 import './mi-perfil.css';
 
-const adapter = (options) => createFirebaseAdapter(options);
-
-runLifecycle({
-  adapter,
-  options: { loadingMessage: 'Cargando perfil...' },
-  async onReady(ctx) {
-    await runFlowController(ctx.user.uid);
-    mountLayout(ctx);
-    const state = await load(ctx);
-    render(ctx, state);
-  }
-});
-
 // ============================================================
-// LOAD
+// MÓDULO DE PÁGINA
 // ============================================================
-async function load(ctx) {
-  const isEditMode   = window.isEditMode === true;
-  const isNuevo      = !ctx.comercioData || !ctx.comercioData.nombre;
-  const comercioData = ctx.comercioData || {};
-  const slugExiste   = !!comercioData.landing?.slug;
-  return { isEditMode, isNuevo, comercioData, slugExiste };
-}
+const page = {
 
-// ============================================================
-// RENDER
-// ============================================================
-function render(ctx, state) {
-  const { isEditMode } = state;
-  const page = document.getElementById('skeleton-page');
-  page.innerHTML = '';
+  // Estado en memoria — fuente de verdad para dirtyController
+  _data: {
+    nombre:              '',
+    especialidad:        '',
+    descripcion:         '',
+    experiencia:         '',
+    whatsapp:            '',
+    telefono:            '',
+    email:               '',
+    instagram:           '',
+    direccion:           '',
+    localidad_principal: null,
+    zona_cobertura:      [],
+    slug:                null,
+  },
 
-  const refs = {
+  _originalSnapshot: null,
+  _ctx:              null,
+  _isEditMode:       false,
+  _isNuevo:          false,
+  _slugExiste:       false,
+  _comercioData:     {},
+
+  // Refs DOM — solo para escribir valores iniciales, no para leer estado
+  _refs: {
     fields:              {},
     slugInput:           null,
     slugStatus:          null,
     slugValidationTimer: null,
-  };
+  },
 
-  // Migración: si venía con cobertura[] viejo, convertir al nuevo formato
-  const uiState = {
-    slug:       state.comercioData.landing?.slug || null,
-    slugValido: !!state.comercioData.landing?.slug,
+  // ──────────────────────────────────────────────────────────
+  // LOAD
+  // ──────────────────────────────────────────────────────────
+  async load(ctx) {
+    this._ctx          = ctx;
+    this._isEditMode   = ctx.isEditMode === true;
+    this._comercioData = ctx.comercioData || {};
+    this._isNuevo      = !this._comercioData.nombre;
+    this._slugExiste   = !!this._comercioData.landing?.slug;
 
-    localidad_principal: state.comercioData.localidad_principal || (
-      state.comercioData.cobertura?.[0]
-        ? { ...state.comercioData.cobertura[0], pais: 'Argentina' }
-        : null
-    ),
+    const c = this._comercioData;
 
-    zona_cobertura: state.comercioData.zona_cobertura
-      || state.comercioData.cobertura?.slice(1)?.map(c => ({ ...c }))
-      || [],
-  };
+    // Migración: cobertura[] viejo → nuevo formato
+    const localidad_principal = c.localidad_principal || (
+      c.cobertura?.[0] ? { ...c.cobertura[0], pais: 'Argentina' } : null
+    );
+    const zona_cobertura = c.zona_cobertura
+      || c.cobertura?.slice(1)?.map(x => ({ ...x }))
+      || [];
 
-  // ── Snapshot inicial para dirty detection ──────────────────
-  const initialSnapshot = {
-    nombre:              state.comercioData.nombre       || '',
-    especialidad:        state.comercioData.especialidad || '',
-    descripcion:         state.comercioData.descripcion  || '',
-    experiencia:         state.comercioData.experiencia  || '',
-    whatsapp:            state.comercioData.whatsapp     || '',
-    telefono:            state.comercioData.telefono     || '',
-    email:               state.comercioData.email        || '',
-    instagram:           state.comercioData.instagram    || '',
-    direccion:           state.comercioData.direccion    || '',
-    localidad_principal: JSON.stringify(uiState.localidad_principal),
-    zona_cobertura:      JSON.stringify(uiState.zona_cobertura),
-    slug:                state.comercioData.landing?.slug || '',
-  };
-
-  function getCurrentState() {
-    return {
-      nombre:              refs.fields.nombre?.input?.value.trim()       || '',
-      especialidad:        refs.fields.especialidad?.input?.value.trim() || '',
-      descripcion:         refs.fields.descripcion?.input?.value.trim()  || '',
-      experiencia:         refs.fields.experiencia?.input?.value.trim()  || '',
-      whatsapp:            refs.fields.whatsapp?.input?.value.trim()     || '',
-      telefono:            refs.fields.telefono?.input?.value.trim()     || '',
-      email:               refs.fields.email?.input?.value.trim()        || '',
-      instagram:           refs.fields.instagram?.input?.value.trim()    || '',
-      direccion:           refs.fields.direccion?.input?.value.trim()    || '',
-      localidad_principal: JSON.stringify(uiState.localidad_principal),
-      zona_cobertura:      JSON.stringify(uiState.zona_cobertura),
-      slug:                uiState.slug || '',
+    this._data = {
+      nombre:              c.nombre       || '',
+      especialidad:        c.especialidad || '',
+      descripcion:         c.descripcion  || '',
+      experiencia:         c.experiencia  || '',
+      whatsapp:            c.whatsapp     || '',
+      telefono:            c.telefono     || '',
+      email:               c.email        || '',
+      instagram:           c.instagram    || '',
+      direccion:           c.direccion    || '',
+      localidad_principal,
+      zona_cobertura,
+      slug:                c.landing?.slug || null,
     };
-  }
 
-  const dirtyController = {
-    hasUnsavedChanges() {
-      const current = getCurrentState();
-      return Object.keys(initialSnapshot).some(k => current[k] !== initialSnapshot[k]);
-    },
-    markSaved() {
-      const current = getCurrentState();
-      Object.keys(initialSnapshot).forEach(k => { initialSnapshot[k] = current[k]; });
+    // Snapshot para dirty detection — igual que servicios.js
+    this._originalSnapshot = structuredClone(this._data);
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // RENDER
+  // ──────────────────────────────────────────────────────────
+  render() {
+    const root = document.getElementById('skeleton-page');
+    root.innerHTML = '';
+
+    // Reset refs para este render
+    this._refs = {
+      fields:              {},
+      slugInput:           null,
+      slugStatus:          null,
+      slugValidationTimer: null,
+    };
+
+    const title = document.createElement('h2');
+    title.className   = 'page-title';
+    title.textContent = this._isNuevo ? 'Crear mi perfil' : 'Editar mi perfil';
+    root.appendChild(title);
+
+    root.appendChild(this._renderSeccionIdentidad());
+    root.appendChild(this._renderSeccionUbicacion());
+    root.appendChild(this._renderSeccionContacto());
+
+    if (!this._slugExiste) {
+      root.appendChild(this._renderSeccionSlug());
     }
-  };
 
-  // ── Título ─────────────────────────────────────────────────
-  const title = document.createElement('h2');
-  title.className   = 'page-title';
-  title.textContent = state.isNuevo ? 'Crear mi perfil' : 'Editar mi perfil';
-  page.appendChild(title);
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'btn-container';
+    btnContainer.appendChild(this._renderSaveButton());
+    root.appendChild(btnContainer);
+  },
 
-  // ── Secciones ──────────────────────────────────────────────
-  page.appendChild(renderSeccionIdentidad(state, refs, uiState));
-  page.appendChild(renderSeccionUbicacion(state, refs, uiState));
-  page.appendChild(renderSeccionContacto(state, refs, uiState));
+  // ──────────────────────────────────────────────────────────
+  // DIRTY CONTROLLER — patrón servicios.js
+  // ──────────────────────────────────────────────────────────
+  _buildDirtyController() {
+    return {
+      hasUnsavedChanges: () =>
+        JSON.stringify(this._data) !== JSON.stringify(this._originalSnapshot),
+      markSaved: () => {
+        this._originalSnapshot = structuredClone(this._data);
+      },
+    };
+  },
 
-  if (!state.slugExiste) {
-    page.appendChild(renderSeccionSlug(state, refs, uiState));
-  }
+  // ──────────────────────────────────────────────────────────
+  // SAVE BUTTON
+  // ──────────────────────────────────────────────────────────
+  _renderSaveButton() {
+    const dirtyController = this._buildDirtyController();
 
-  // ── Botón ──────────────────────────────────────────────────
-  const btnContainer = document.createElement('div');
-  btnContainer.className = 'btn-container';
-
-  btnContainer.appendChild(
-    createOnboardingButton({
+    return createOnboardingButton({
       stepName: 'mi-perfil',
 
-      dirtyController: isEditMode ? dirtyController : undefined,
+      dirtyController: this._isEditMode ? dirtyController : undefined,
 
-      getLabel() {
-        if (!isEditMode) return 'Continuar';
-        if (isEditMode && dirtyController.hasUnsavedChanges()) return 'Guardar y volver al dashboard';
+      getLabel: () => {
+        if (!this._isEditMode) return 'Continuar';
+        if (dirtyController.hasUnsavedChanges()) return 'Guardar y volver al dashboard';
         return 'Volver al dashboard';
       },
 
-      validate() {
+      validate: () => {
         const camposValidos =
-          refs.fields.nombre?.input?.value.trim()       &&
-          refs.fields.especialidad?.input?.value.trim() &&
-          refs.fields.descripcion?.input?.value.trim()  &&
-          refs.fields.whatsapp?.input?.value.trim()     &&
-          !!uiState.localidad_principal;
+          this._data.nombre.trim()       &&
+          this._data.especialidad.trim() &&
+          this._data.descripcion.trim()  &&
+          this._data.whatsapp.trim()     &&
+          !!this._data.localidad_principal;
 
-        const slugValido = state.slugExiste || uiState.slugValido;
+        const slugValido = this._slugExiste || !!this._data.slug;
         return !!(camposValidos && slugValido);
       },
 
       async onSave({ uid, comercioId }) {
+        const d = page._data;
+
         const updates = {
-          nombre:       refs.fields.nombre.input.value.trim(),
-          especialidad: refs.fields.especialidad.input.value.trim(),
-          descripcion:  refs.fields.descripcion.input.value.trim(),
-          experiencia:  refs.fields.experiencia?.input?.value.trim() || null,
+          nombre:       d.nombre,
+          especialidad: d.especialidad,
+          descripcion:  d.descripcion,
+          experiencia:  d.experiencia || null,
 
-          localidad_principal: uiState.localidad_principal,
-          zona_cobertura:      uiState.zona_cobertura,
+          localidad_principal: d.localidad_principal,
+          zona_cobertura:      d.zona_cobertura,
 
-          // Campos planos para compatibilidad con el grafo/índice
-          localidad: uiState.localidad_principal?.localidad || null,
-          provincia: uiState.localidad_principal?.provincia || null,
+          localidad: d.localidad_principal?.localidad || null,
+          provincia: d.localidad_principal?.provincia || null,
           pais:      'Argentina',
 
-          direccion: refs.fields.direccion?.input?.value.trim() || null,
+          direccion: d.direccion || null,
 
-          whatsapp:  refs.fields.whatsapp.input.value.trim(),
-          telefono:  refs.fields.telefono?.input?.value.trim()  || null,
-          email:     refs.fields.email?.input?.value.trim()     || null,
-          instagram: refs.fields.instagram?.input?.value.trim() || null,
+          whatsapp:  d.whatsapp,
+          telefono:  d.telefono  || null,
+          email:     d.email     || null,
+          instagram: d.instagram || null,
 
           entityType: 'prestador',
         };
 
-        if (!state.slugExiste) {
+        if (!page._slugExiste) {
           updates.landing = {
             activo: true, nombre: updates.nombre,
-            slug: uiState.slug, tipo: 'perfil',
+            slug: d.slug, tipo: 'perfil',
             createdAt: new Date(), updatedAt: new Date()
           };
         } else {
           updates.landing = {
-            ...state.comercioData.landing,
+            ...page._comercioData.landing,
             nombre: updates.nombre, updatedAt: new Date()
           };
         }
 
-        if (state.isNuevo) {
-          const comercioRef = comercioId
+        if (page._isNuevo) {
+          const comercioRef     = comercioId
             ? doc(db, 'entidades', comercioId)
             : doc(collection(db, 'entidades'));
           const nuevoComercioId = comercioRef.id;
@@ -222,8 +230,8 @@ function render(ctx, state) {
             }
           });
 
-          await setDoc(doc(db, 'landings', uiState.slug), {
-            slug: uiState.slug, comercioId: nuevoComercioId,
+          await setDoc(doc(db, 'landings', d.slug), {
+            slug: d.slug, comercioId: nuevoComercioId,
             nombre: updates.nombre, activo: true,
             createdAt: new Date(), updatedAt: new Date()
           });
@@ -237,9 +245,9 @@ function render(ctx, state) {
           updates.fechaActualizacion           = new Date();
           await updateDoc(doc(db, 'entidades', comercioId), updates);
 
-          if (!state.slugExiste) {
-            await setDoc(doc(db, 'landings', uiState.slug), {
-              slug: uiState.slug, comercioId,
+          if (!page._slugExiste) {
+            await setDoc(doc(db, 'landings', d.slug), {
+              slug: d.slug, comercioId,
               nombre: updates.nombre, activo: true,
               createdAt: new Date(), updatedAt: new Date()
             });
@@ -249,294 +257,439 @@ function render(ctx, state) {
         return { success: true, stepMarked: true };
       },
 
-      onSuccess: () => showToast('Perfil guardado correctamente', 'success'),
+      onSuccess: () => {
+        showToast('Perfil guardado correctamente', 'success');
+        dirtyController.markSaved();
+      },
 
       onError: (err) => {
         console.error('❌ Error guardando perfil:', err);
         showToast('Error al guardar: ' + err.message, 'error');
       },
-    })
-  );
-
-  page.appendChild(btnContainer);
-}
-
-// ============================================================
-// SECCIÓN: IDENTIDAD
-// ============================================================
-function renderSeccionIdentidad(state, refs, uiState) {
-  const section = crearSeccion('¿Quién sos?');
-
-  const help = document.createElement('p');
-  help.className   = 'form-help';
-  help.textContent = 'Estos datos definen cómo te va a presentar tu asistente a los clientes.';
-  section.appendChild(help);
-
-  refs.fields.nombre = createFormField({
-    label: 'Nombre o marca', name: 'nombre', required: true,
-    placeholder: 'Ej: Juan Pérez o Plomería JP',
-    helpText: 'Como te conocen tus clientes — puede ser tu nombre o el nombre de tu marca',
-    value: state.comercioData.nombre || ''
-  });
-
-  refs.fields.especialidad = createFormField({
-    label: 'Especialidad', name: 'especialidad', required: true,
-    placeholder: 'Ej: Plomero, Manicura, Profe de matemáticas',
-    helpText: 'En una línea, qué hacés',
-    value: state.comercioData.especialidad || ''
-  });
-
-  refs.fields.descripcion = createFormField({
-    label: 'Descripción', name: 'descripcion', type: 'textarea',
-    rows: 3, required: true,
-    placeholder: 'Ej: Hago instalaciones y reparaciones de cañerías en hogares y comercios.',
-    helpText: 'Dos o tres líneas que expliquen qué hacés y por qué elegirte',
-    value: state.comercioData.descripcion || ''
-  });
-
-  refs.fields.experiencia = createFormField({
-    label: 'Años de experiencia', name: 'experiencia', type: 'number',
-    placeholder: 'Ej: 10',
-    helpText: 'Opcional — ayuda a generar confianza',
-    value: state.comercioData.experiencia || ''
-  });
-
-  if (!uiState.slug) {
-    refs.fields.nombre.input?.addEventListener('input', () => {
-      clearTimeout(refs.slugValidationTimer);
-      const nombre = refs.fields.nombre.input.value.trim();
-      if (nombre.length >= 3 && refs.slugInput) {
-        refs.slugValidationTimer = setTimeout(async () => {
-          const newSlug = slugify(nombre);
-          refs.slugInput.value = newSlug;
-          await validarSlug(newSlug, refs, uiState, true);
-        }, 500);
-      }
     });
-  }
-
-  section.append(
-    refs.fields.nombre, refs.fields.especialidad,
-    refs.fields.descripcion, refs.fields.experiencia
-  );
-
-  return section;
-}
-
-// ============================================================
-// SECCIÓN: UBICACIÓN
-// ============================================================
-function renderSeccionUbicacion(state, refs, uiState) {
-  const section = crearSeccion('¿Dónde trabajás?');
-
-  const provinciaGuardada = uiState.localidad_principal?.provincia || '';
+  },
 
   // ============================================================
-  // BLOQUE 1 — Localidad principal
+  // SECCIÓN: IDENTIDAD
   // ============================================================
-  const subPrincipal = document.createElement('div');
-  subPrincipal.className = 'ubicacion-bloque';
+  _renderSeccionIdentidad() {
+    const section = crearSeccion('¿Quién sos?');
 
-  const helpPrincipal = document.createElement('p');
-  helpPrincipal.className   = 'form-help';
-  helpPrincipal.textContent = '¿En qué localidad trabajás? Esta es tu dirección principal — donde te encontramos normalmente.';
-  subPrincipal.appendChild(helpPrincipal);
+    const help = document.createElement('p');
+    help.className   = 'form-help';
+    help.textContent = 'Estos datos definen cómo te va a presentar tu asistente a los clientes.';
+    section.appendChild(help);
 
-  // Provincia principal
-  refs.fields.provincia = createFormField({
-    label: 'Provincia', name: 'provincia', type: 'select', required: true
-  });
-  const optDefault = document.createElement('option');
-  optDefault.value = ''; optDefault.textContent = 'Elegí una provincia...';
-  refs.fields.provincia.input.prepend(optDefault);
-  fillProvinciaSelector('Argentina', refs.fields.provincia.input);
-  if (provinciaGuardada) refs.fields.provincia.input.value = provinciaGuardada;
-  subPrincipal.appendChild(refs.fields.provincia);
-
-  // Label + container autocomplete localidad principal
-  const localidadLabel = document.createElement('label');
-  localidadLabel.className   = 's-label';
-  localidadLabel.textContent = 'Localidad principal *';
-  subPrincipal.appendChild(localidadLabel);
-
-  const localidadContainer = document.createElement('div');
-  localidadContainer.className = 'ciudad-autocomplete-container';
-  subPrincipal.appendChild(localidadContainer);
-
-  // Chip localidad principal
-  const chipPrincipalContainer = document.createElement('div');
-  chipPrincipalContainer.className = 'chip-principal-container';
-  subPrincipal.appendChild(chipPrincipalContainer);
-
-  // Montar autocomplete principal
-  function montarLocalidadPrincipal(provinciaVal) {
-    mountCiudadAutocomplete(provinciaVal, localidadContainer, '', (loc) => {
-      uiState.localidad_principal = {
-        localidad: loc.nombre,
-        provincia: provinciaVal,
-        pais: 'Argentina'
-      };
-      renderChipPrincipal(chipPrincipalContainer, uiState, montarLocalidadPrincipal, refs);
-      document.dispatchEvent(new Event('change'));
+    this._refs.fields.nombre = createFormField({
+      label: 'Nombre o marca', name: 'nombre', required: true,
+      placeholder: 'Ej: Juan Pérez o Plomería JP',
+      helpText: 'Como te conocen tus clientes — puede ser tu nombre o el nombre de tu marca',
+      value: this._data.nombre,
+      actions: { onChange: (v) => { this._data.nombre = v.trim(); } }
     });
-  }
 
-  // Si ya tenía provincia guardada, montar con valor previo
-  if (provinciaGuardada) {
-    const localidadGuardada = uiState.localidad_principal?.localidad || '';
-    mountCiudadAutocomplete(provinciaGuardada, localidadContainer, localidadGuardada, (loc) => {
-      uiState.localidad_principal = {
-        localidad: loc.nombre,
-        provincia: provinciaGuardada,
-        pais: 'Argentina'
-      };
-      renderChipPrincipal(chipPrincipalContainer, uiState, montarLocalidadPrincipal, refs);
-      document.dispatchEvent(new Event('change'));
+    this._refs.fields.especialidad = createFormField({
+      label: 'Especialidad', name: 'especialidad', required: true,
+      placeholder: 'Ej: Plomero, Manicura, Profe de matemáticas',
+      helpText: 'En una línea, qué hacés',
+      value: this._data.especialidad,
+      actions: { onChange: (v) => { this._data.especialidad = v.trim(); } }
     });
-  }
 
-  // Chip inicial si ya tenía localidad guardada
-  renderChipPrincipal(chipPrincipalContainer, uiState, montarLocalidadPrincipal, refs);
-
-  // Cambio de provincia → reset y remontar
-  refs.fields.provincia.input.addEventListener('change', () => {
-    const nuevaProvincia = refs.fields.provincia.input.value;
-    uiState.localidad_principal = null;
-    chipPrincipalContainer.innerHTML = '';
-    montarLocalidadPrincipal(nuevaProvincia);
-    document.dispatchEvent(new Event('change'));
-  });
-
-  section.appendChild(subPrincipal);
-
-  // ============================================================
-  // BLOQUE 2 — Zona de cobertura (opcional)
-  // ============================================================
-  const subZona = document.createElement('div');
-  subZona.className = 'ubicacion-bloque ubicacion-zona';
-
-  const zonaHeader = document.createElement('div');
-  zonaHeader.className = 'zona-header';
-
-  const zonaTitle = document.createElement('h4');
-  zonaTitle.className   = 'zona-title';
-  zonaTitle.textContent = '¿También trabajás en otras localidades?';
-  zonaHeader.appendChild(zonaTitle);
-
-  const zonaBadge = document.createElement('span');
-  zonaBadge.className   = 'zona-badge-opcional';
-  zonaBadge.textContent = 'Opcional';
-  zonaHeader.appendChild(zonaBadge);
-
-  subZona.appendChild(zonaHeader);
-
-  const helpZona = document.createElement('p');
-  helpZona.className   = 'form-help';
-  helpZona.textContent = 'Si a veces viajás a trabajar a localidades cercanas, podés agregarlas acá para que los clientes de esas zonas también te encuentren. Si solo trabajás en tu localidad, no hace falta completar esto.';
-  subZona.appendChild(helpZona);
-
-  // Provincia zona
-  refs.fields.provinciaZona = createFormField({
-    label: 'Provincia', name: 'provinciaZona', type: 'select'
-  });
-  const optDefaultZona = document.createElement('option');
-  optDefaultZona.value = ''; optDefaultZona.textContent = 'Elegí una provincia...';
-  refs.fields.provinciaZona.input.prepend(optDefaultZona);
-  fillProvinciaSelector('Argentina', refs.fields.provinciaZona.input);
-  if (provinciaGuardada) refs.fields.provinciaZona.input.value = provinciaGuardada;
-  subZona.appendChild(refs.fields.provinciaZona);
-
-  // Label + container autocomplete zona
-  const localidadZonaLabel = document.createElement('label');
-  localidadZonaLabel.className   = 's-label';
-  localidadZonaLabel.textContent = 'Localidad';
-  subZona.appendChild(localidadZonaLabel);
-
-  const localidadZonaContainer = document.createElement('div');
-  localidadZonaContainer.className = 'ciudad-autocomplete-container';
-  subZona.appendChild(localidadZonaContainer);
-
-  // Estado local de localidad zona seleccionada
-  let localidadZonaSeleccionada = null;
-
-  function montarLocalidadZona(provinciaVal) {
-    localidadZonaSeleccionada = null;
-    mountCiudadAutocomplete(provinciaVal, localidadZonaContainer, '', (loc) => {
-      localidadZonaSeleccionada = { localidad: loc.nombre, provincia: provinciaVal };
+    this._refs.fields.descripcion = createFormField({
+      label: 'Descripción', name: 'descripcion', type: 'textarea',
+      rows: 3, required: true,
+      placeholder: 'Ej: Hago instalaciones y reparaciones de cañerías en hogares y comercios.',
+      helpText: 'Dos o tres líneas que expliquen qué hacés y por qué elegirte',
+      value: this._data.descripcion,
+      actions: { onChange: (v) => { this._data.descripcion = v.trim(); } }
     });
-  }
 
-  if (provinciaGuardada) montarLocalidadZona(provinciaGuardada);
+    this._refs.fields.experiencia = createFormField({
+      label: 'Años de experiencia', name: 'experiencia', type: 'number',
+      placeholder: 'Ej: 10',
+      helpText: 'Opcional — ayuda a generar confianza',
+      value: this._data.experiencia,
+      actions: { onChange: (v) => { this._data.experiencia = v.trim(); } }
+    });
 
-  refs.fields.provinciaZona.input.addEventListener('change', () => {
-    montarLocalidadZona(refs.fields.provinciaZona.input.value);
-  });
-
-  // Botón agregar localidad a zona
-  const agregarBtn = createButton({
-    label: 'Agregar localidad', icon: 'fa-plus', variant: 'secondary', size: 'sm',
-    onClick: () => {
-      const provincia = refs.fields.provinciaZona.input.value;
-      const localidad = localidadZonaSeleccionada?.localidad;
-
-      if (!provincia || !localidad) {
-        showToast('Elegí provincia y localidad antes de agregar', 'warning');
-        return;
-      }
-
-      const esPrincipal =
-        uiState.localidad_principal?.localidad === localidad &&
-        uiState.localidad_principal?.provincia === provincia;
-      if (esPrincipal) {
-        showToast('Esa ya es tu localidad principal', 'warning');
-        return;
-      }
-
-      const yaExiste = uiState.zona_cobertura.some(
-        c => c.localidad === localidad && c.provincia === provincia
-      );
-      if (yaExiste) {
-        showToast('Esa localidad ya está en tu zona', 'warning');
-        return;
-      }
-
-      uiState.zona_cobertura.push({ localidad, provincia });
-      renderZonaChips(zonaChipsContainer, uiState);
-      document.dispatchEvent(new Event('change'));
+    // Auto-slug desde nombre — solo si el slug todavía no existe
+    if (!this._slugExiste) {
+      this._refs.fields.nombre.input?.addEventListener('input', () => {
+        clearTimeout(this._refs.slugValidationTimer);
+        const nombre = this._data.nombre;
+        if (nombre.length >= 3 && this._refs.slugInput) {
+          this._refs.slugValidationTimer = setTimeout(async () => {
+            const newSlug = slugify(nombre);
+            this._refs.slugInput.value = newSlug;
+            await this._validarSlug(newSlug, true);
+          }, 500);
+        }
+      });
     }
-  });
 
-  const agregarContainer = document.createElement('div');
-  agregarContainer.className = 'agregar-cobertura-container';
-  agregarContainer.appendChild(agregarBtn);
-  subZona.appendChild(agregarContainer);
+    section.append(
+      this._refs.fields.nombre,
+      this._refs.fields.especialidad,
+      this._refs.fields.descripcion,
+      this._refs.fields.experiencia,
+    );
 
-  // Chips zona
-  const zonaChipsContainer = document.createElement('div');
-  zonaChipsContainer.className = 'zona-chips-container';
-  renderZonaChips(zonaChipsContainer, uiState);
-  subZona.appendChild(zonaChipsContainer);
+    return section;
+  },
 
-  section.appendChild(subZona);
+  // ============================================================
+  // SECCIÓN: UBICACIÓN
+  // ============================================================
+  _renderSeccionUbicacion() {
+    const section = crearSeccion('¿Dónde trabajás?');
 
-  // ── Dirección (opcional) ───────────────────────────────────
-  refs.fields.direccion = createFormField({
-    label: 'Dirección de atención', name: 'direccion',
-    placeholder: 'Ej: Av. San Martín 123, Casilda',
-    helpText: 'Opcional — solo si el cliente viene a tu domicilio o local',
-    value: state.comercioData.direccion || ''
-  });
-  section.appendChild(refs.fields.direccion);
+    const provinciaGuardada = this._data.localidad_principal?.provincia || '';
 
-  return section;
-}
+    // ── Bloque 1: localidad principal ─────────────────────────
+    const subPrincipal = document.createElement('div');
+    subPrincipal.className = 'ubicacion-bloque';
 
-// ── Chip localidad principal ───────────────────────────────
-function renderChipPrincipal(container, uiState, montarFn, refs) {
+    const helpPrincipal = document.createElement('p');
+    helpPrincipal.className   = 'form-help';
+    helpPrincipal.textContent = '¿En qué localidad trabajás? Esta es tu dirección principal.';
+    subPrincipal.appendChild(helpPrincipal);
+
+    this._refs.fields.provincia = createFormField({
+      label: 'Provincia', name: 'provincia', type: 'select', required: true
+    });
+    const optDefault = document.createElement('option');
+    optDefault.value = ''; optDefault.textContent = 'Elegí una provincia...';
+    this._refs.fields.provincia.input.prepend(optDefault);
+    fillProvinciaSelector('Argentina', this._refs.fields.provincia.input);
+    if (provinciaGuardada) this._refs.fields.provincia.input.value = provinciaGuardada;
+    subPrincipal.appendChild(this._refs.fields.provincia);
+
+    const localidadLabel = document.createElement('label');
+    localidadLabel.className   = 's-label';
+    localidadLabel.textContent = 'Localidad principal *';
+    subPrincipal.appendChild(localidadLabel);
+
+    const localidadContainer = document.createElement('div');
+    localidadContainer.className = 'ciudad-autocomplete-container';
+    subPrincipal.appendChild(localidadContainer);
+
+    const chipPrincipalContainer = document.createElement('div');
+    chipPrincipalContainer.className = 'chip-principal-container';
+    subPrincipal.appendChild(chipPrincipalContainer);
+
+    const montarLocalidadPrincipal = (provinciaVal) => {
+      mountCiudadAutocomplete(provinciaVal, localidadContainer, '', (loc) => {
+        this._data.localidad_principal = {
+          localidad: loc.nombre,
+          provincia: provinciaVal,
+          pais: 'Argentina'
+        };
+        renderChipPrincipal(chipPrincipalContainer, this._data, montarLocalidadPrincipal, this._refs);
+        document.dispatchEvent(new Event('change'));
+      });
+    };
+
+    if (provinciaGuardada) {
+      const localidadGuardada = this._data.localidad_principal?.localidad || '';
+      mountCiudadAutocomplete(provinciaGuardada, localidadContainer, localidadGuardada, (loc) => {
+        this._data.localidad_principal = {
+          localidad: loc.nombre,
+          provincia: provinciaGuardada,
+          pais: 'Argentina'
+        };
+        renderChipPrincipal(chipPrincipalContainer, this._data, montarLocalidadPrincipal, this._refs);
+        document.dispatchEvent(new Event('change'));
+      });
+    }
+
+    renderChipPrincipal(chipPrincipalContainer, this._data, montarLocalidadPrincipal, this._refs);
+
+    this._refs.fields.provincia.input.addEventListener('change', () => {
+      const nuevaProvincia = this._refs.fields.provincia.input.value;
+      this._data.localidad_principal = null;
+      chipPrincipalContainer.innerHTML = '';
+      montarLocalidadPrincipal(nuevaProvincia);
+      document.dispatchEvent(new Event('change'));
+    });
+
+    section.appendChild(subPrincipal);
+
+    // ── Bloque 2: zona de cobertura ───────────────────────────
+    const subZona = document.createElement('div');
+    subZona.className = 'ubicacion-bloque ubicacion-zona';
+
+    const zonaHeader = document.createElement('div');
+    zonaHeader.className = 'zona-header';
+    const zonaTitle = document.createElement('h4');
+    zonaTitle.className   = 'zona-title';
+    zonaTitle.textContent = '¿También trabajás en otras localidades?';
+    zonaHeader.appendChild(zonaTitle);
+    const zonaBadge = document.createElement('span');
+    zonaBadge.className   = 'zona-badge-opcional';
+    zonaBadge.textContent = 'Opcional';
+    zonaHeader.appendChild(zonaBadge);
+    subZona.appendChild(zonaHeader);
+
+    const helpZona = document.createElement('p');
+    helpZona.className   = 'form-help';
+    helpZona.textContent = 'Si a veces viajás a trabajar a localidades cercanas, podés agregarlas acá.';
+    subZona.appendChild(helpZona);
+
+    this._refs.fields.provinciaZona = createFormField({
+      label: 'Provincia', name: 'provinciaZona', type: 'select'
+    });
+    const optDefaultZona = document.createElement('option');
+    optDefaultZona.value = ''; optDefaultZona.textContent = 'Elegí una provincia...';
+    this._refs.fields.provinciaZona.input.prepend(optDefaultZona);
+    fillProvinciaSelector('Argentina', this._refs.fields.provinciaZona.input);
+    if (provinciaGuardada) this._refs.fields.provinciaZona.input.value = provinciaGuardada;
+    subZona.appendChild(this._refs.fields.provinciaZona);
+
+    const localidadZonaLabel = document.createElement('label');
+    localidadZonaLabel.className   = 's-label';
+    localidadZonaLabel.textContent = 'Localidad';
+    subZona.appendChild(localidadZonaLabel);
+
+    const localidadZonaContainer = document.createElement('div');
+    localidadZonaContainer.className = 'ciudad-autocomplete-container';
+    subZona.appendChild(localidadZonaContainer);
+
+    let localidadZonaSeleccionada = null;
+
+    const montarLocalidadZona = (provinciaVal) => {
+      localidadZonaSeleccionada = null;
+      mountCiudadAutocomplete(provinciaVal, localidadZonaContainer, '', (loc) => {
+        localidadZonaSeleccionada = { localidad: loc.nombre, provincia: provinciaVal };
+      });
+    };
+
+    if (provinciaGuardada) montarLocalidadZona(provinciaGuardada);
+
+    this._refs.fields.provinciaZona.input.addEventListener('change', () => {
+      montarLocalidadZona(this._refs.fields.provinciaZona.input.value);
+    });
+
+    const agregarBtn = createButton({
+      label: 'Agregar localidad', icon: 'fa-plus', variant: 'secondary', size: 'sm',
+      onClick: () => {
+        const provincia = this._refs.fields.provinciaZona.input.value;
+        const localidad = localidadZonaSeleccionada?.localidad;
+
+        if (!provincia || !localidad) {
+          showToast('Elegí provincia y localidad antes de agregar', 'warning');
+          return;
+        }
+        const esPrincipal =
+          this._data.localidad_principal?.localidad === localidad &&
+          this._data.localidad_principal?.provincia === provincia;
+        if (esPrincipal) {
+          showToast('Esa ya es tu localidad principal', 'warning');
+          return;
+        }
+        const yaExiste = this._data.zona_cobertura.some(
+          c => c.localidad === localidad && c.provincia === provincia
+        );
+        if (yaExiste) {
+          showToast('Esa localidad ya está en tu zona', 'warning');
+          return;
+        }
+        this._data.zona_cobertura.push({ localidad, provincia });
+        renderZonaChips(zonaChipsContainer, this._data);
+        document.dispatchEvent(new Event('change'));
+      }
+    });
+
+    const agregarContainer = document.createElement('div');
+    agregarContainer.className = 'agregar-cobertura-container';
+    agregarContainer.appendChild(agregarBtn);
+    subZona.appendChild(agregarContainer);
+
+    const zonaChipsContainer = document.createElement('div');
+    zonaChipsContainer.className = 'zona-chips-container';
+    renderZonaChips(zonaChipsContainer, this._data);
+    subZona.appendChild(zonaChipsContainer);
+
+    section.appendChild(subZona);
+
+    // ── Dirección opcional ────────────────────────────────────
+    this._refs.fields.direccion = createFormField({
+      label: 'Dirección de atención', name: 'direccion',
+      placeholder: 'Ej: Av. San Martín 123, Casilda',
+      helpText: 'Opcional — solo si el cliente viene a tu domicilio o local',
+      value: this._data.direccion,
+      actions: { onChange: (v) => { this._data.direccion = v.trim(); } }
+    });
+    section.appendChild(this._refs.fields.direccion);
+
+    return section;
+  },
+
+  // ============================================================
+  // SECCIÓN: CONTACTO
+  // ============================================================
+  _renderSeccionContacto() {
+    const section = crearSeccion('¿Cómo te contactan?');
+
+    const help = document.createElement('p');
+    help.className   = 'form-help';
+    help.textContent = 'El WhatsApp es obligatorio — es el canal principal para que los clientes te contacten.';
+    section.appendChild(help);
+
+    this._refs.fields.whatsapp = createFormField({
+      label: 'WhatsApp', name: 'whatsapp', required: true,
+      placeholder: 'Ej: 3412295316',
+      helpText: 'Solo números, sin espacios ni guiones',
+      value: this._data.whatsapp,
+      actions: { onChange: (v) => { this._data.whatsapp = v.trim(); } }
+    });
+
+    this._refs.fields.telefono = createFormField({
+      label: 'Teléfono', name: 'telefono',
+      placeholder: 'Opcional',
+      value: this._data.telefono,
+      actions: { onChange: (v) => { this._data.telefono = v.trim(); } }
+    });
+
+    this._refs.fields.email = createFormField({
+      label: 'Email', name: 'email', type: 'email',
+      placeholder: 'Opcional',
+      value: this._data.email,
+      actions: { onChange: (v) => { this._data.email = v.trim(); } }
+    });
+
+    this._refs.fields.instagram = createFormField({
+      label: 'Instagram', name: 'instagram',
+      placeholder: '@tuusuario',
+      value: this._data.instagram,
+      actions: { onChange: (v) => { this._data.instagram = v.trim(); } }
+    });
+
+    section.append(
+      this._refs.fields.whatsapp,
+      this._refs.fields.telefono,
+      this._refs.fields.email,
+      this._refs.fields.instagram,
+    );
+
+    return section;
+  },
+
+  // ============================================================
+  // SECCIÓN: SLUG
+  // ============================================================
+  _renderSeccionSlug() {
+    const section = crearSeccion('Tu dirección en ÍndiceIA');
+
+    const help = document.createElement('p');
+    help.className   = 'form-help';
+    help.textContent = 'Esta es la dirección única donde tus clientes van a encontrarte. Se genera automáticamente pero podés cambiarla.';
+    section.appendChild(help);
+
+    const slugContainer = document.createElement('div');
+    slugContainer.className = 'slug-container';
+
+    const slugPrefix = document.createElement('span');
+    slugPrefix.className   = 'slug-prefix';
+    slugPrefix.textContent = 'indiceia.com/';
+
+    const slugInput = document.createElement('input');
+    slugInput.type        = 'text';
+    slugInput.className   = 'slug-input';
+    slugInput.placeholder = 'tu-nombre';
+    slugInput.value       = this._data.slug || '';
+    this._refs.slugInput  = slugInput;
+
+    slugContainer.append(slugPrefix, slugInput);
+    section.appendChild(slugContainer);
+
+    const slugStatus = document.createElement('div');
+    slugStatus.className  = 'slug-status';
+    slugStatus.innerHTML  = '<span class="slug-icon"></span><span class="slug-text"></span>';
+    this._refs.slugStatus = slugStatus;
+    section.appendChild(slugStatus);
+
+    slugInput.addEventListener('input', () => {
+      clearTimeout(this._refs.slugValidationTimer);
+      const slug = slugInput.value.trim().toLowerCase();
+      if (!slug) {
+        this._updateSlugStatus('empty', '');
+        this._data.slug = null;
+        document.dispatchEvent(new Event('change'));
+        return;
+      }
+      this._updateSlugStatus('checking', 'Verificando disponibilidad...');
+      this._refs.slugValidationTimer = setTimeout(async () => {
+        await this._validarSlug(slug, false);
+        document.dispatchEvent(new Event('change'));
+      }, 800);
+    });
+
+    return section;
+  },
+
+  // ============================================================
+  // SLUG HELPERS
+  // ============================================================
+  async _validarSlug(slug, autoGenerado) {
+    if (!slug || slug.length < 3) {
+      this._updateSlugStatus('empty', '');
+      this._data.slug = null;
+      return;
+    }
+    try {
+      const snap = await getDoc(doc(db, 'landings', slug));
+      if (!snap.exists()) {
+        this._data.slug = slug;
+        this._updateSlugStatus('available', `✓ Disponible: indiceia.com/${slug}`);
+        return;
+      }
+      if (autoGenerado) {
+        for (let i = 1; i <= 3; i++) {
+          const alt     = `${slug}-${i}`;
+          const altSnap = await getDoc(doc(db, 'landings', alt));
+          if (!altSnap.exists()) {
+            this._data.slug              = alt;
+            this._refs.slugInput.value   = alt;
+            this._updateSlugStatus('suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`);
+            return;
+          }
+        }
+      }
+      this._data.slug = null;
+      this._updateSlugStatus('taken', 'Este nombre ya está en uso. Probá con otro.');
+    } catch (err) {
+      console.error('Error validando slug:', err);
+      this._data.slug = null;
+      this._updateSlugStatus('error', 'Error al validar. Intentá de nuevo.');
+    }
+  },
+
+  _updateSlugStatus(status, message) {
+    if (!this._refs.slugStatus) return;
+    const icon = this._refs.slugStatus.querySelector('.slug-icon');
+    const text = this._refs.slugStatus.querySelector('.slug-text');
+    const icons = {
+      checking:   '<i class="fas fa-spinner fa-spin"></i>',
+      available:  '<i class="fas fa-check-circle" style="color:var(--s-success)"></i>',
+      suggestion: '<i class="fas fa-info-circle" style="color:var(--s-info)"></i>',
+      taken:      '<i class="fas fa-times-circle" style="color:var(--s-danger)"></i>',
+      error:      '<i class="fas fa-exclamation-triangle" style="color:var(--s-warning)"></i>',
+      empty:      ''
+    };
+    icon.innerHTML   = icons[status] || '';
+    text.textContent = message;
+  },
+};
+
+// ============================================================
+// CHIP LOCALIDAD PRINCIPAL
+// ============================================================
+function renderChipPrincipal(container, data, montarFn, refs) {
   container.innerHTML = '';
-  if (!uiState.localidad_principal) return;
+  if (!data.localidad_principal) return;
 
-  const { localidad, provincia } = uiState.localidad_principal;
+  const { localidad, provincia } = data.localidad_principal;
 
   const chip = document.createElement('div');
   chip.className = 'chip-principal';
@@ -552,7 +705,7 @@ function renderChipPrincipal(container, uiState, montarFn, refs) {
   removeBtn.innerHTML = '×';
   removeBtn.setAttribute('aria-label', 'Quitar localidad principal');
   removeBtn.addEventListener('click', () => {
-    uiState.localidad_principal = null;
+    data.localidad_principal = null;
     montarFn(refs.fields.provincia.input.value);
     container.innerHTML = '';
     document.dispatchEvent(new Event('change'));
@@ -562,14 +715,16 @@ function renderChipPrincipal(container, uiState, montarFn, refs) {
   container.appendChild(chip);
 }
 
-// ── Chips zona de cobertura ────────────────────────────────
-function renderZonaChips(container, uiState) {
+// ============================================================
+// CHIPS ZONA DE COBERTURA
+// ============================================================
+function renderZonaChips(container, data) {
   container.innerHTML = '';
 
-  if (!uiState.zona_cobertura.length) {
+  if (!data.zona_cobertura.length) {
     const empty = document.createElement('p');
     empty.className   = 'zona-chips-empty';
-    empty.textContent = 'No agregaste localidades vecinas todavía — y está perfecto si solo trabajás en tu localidad.';
+    empty.textContent = 'No agregaste localidades vecinas todavía.';
     container.appendChild(empty);
     return;
   }
@@ -582,7 +737,7 @@ function renderZonaChips(container, uiState) {
   const list = document.createElement('div');
   list.className = 'cobertura-list';
 
-  uiState.zona_cobertura.forEach((item, i) => {
+  data.zona_cobertura.forEach((item, i) => {
     const chip = document.createElement('div');
     chip.className = 'cobertura-chip';
 
@@ -594,8 +749,8 @@ function renderZonaChips(container, uiState) {
     removeBtn.innerHTML = '×';
     removeBtn.setAttribute('aria-label', 'Quitar');
     removeBtn.addEventListener('click', () => {
-      uiState.zona_cobertura.splice(i, 1);
-      renderZonaChips(container, uiState);
+      data.zona_cobertura.splice(i, 1);
+      renderZonaChips(container, data);
       document.dispatchEvent(new Event('change'));
     });
 
@@ -604,173 +759,6 @@ function renderZonaChips(container, uiState) {
   });
 
   container.appendChild(list);
-}
-
-// ============================================================
-// SECCIÓN: CONTACTO
-// ============================================================
-function renderSeccionContacto(state, refs, uiState) {
-  const section = crearSeccion('¿Cómo te contactan?');
-
-  const help = document.createElement('p');
-  help.className   = 'form-help';
-  help.textContent = 'El WhatsApp es obligatorio — es el canal principal para que los clientes te contacten.';
-  section.appendChild(help);
-
-  refs.fields.whatsapp = createFormField({
-    label: 'WhatsApp', name: 'whatsapp', required: true,
-    placeholder: 'Ej: 3412295316',
-    helpText: 'Solo números, sin espacios ni guiones',
-    value: state.comercioData.whatsapp || ''
-  });
-
-  refs.fields.telefono = createFormField({
-    label: 'Teléfono', name: 'telefono',
-    placeholder: 'Opcional',
-    value: state.comercioData.telefono || ''
-  });
-
-  refs.fields.email = createFormField({
-    label: 'Email', name: 'email', type: 'email',
-    placeholder: 'Opcional',
-    value: state.comercioData.email || ''
-  });
-
-  refs.fields.instagram = createFormField({
-    label: 'Instagram', name: 'instagram',
-    placeholder: '@tuusuario',
-    value: state.comercioData.instagram || ''
-  });
-
-  section.append(
-    refs.fields.whatsapp, refs.fields.telefono,
-    refs.fields.email, refs.fields.instagram
-  );
-
-  return section;
-}
-
-// ============================================================
-// SECCIÓN: SLUG
-// ============================================================
-function renderSeccionSlug(state, refs, uiState) {
-  const section = crearSeccion('Tu dirección en ÍndiceIA');
-
-  const help = document.createElement('p');
-  help.className   = 'form-help';
-  help.textContent = 'Esta es la dirección única donde tus clientes van a encontrarte. Se genera automáticamente pero podés cambiarla.';
-  section.appendChild(help);
-
-  const slugContainer = document.createElement('div');
-  slugContainer.className = 'slug-container';
-
-  const slugPrefix = document.createElement('span');
-  slugPrefix.className   = 'slug-prefix';
-  slugPrefix.textContent = 'indiceia.com/';
-
-  const slugInput = document.createElement('input');
-  slugInput.type        = 'text';
-  slugInput.className   = 'slug-input';
-  slugInput.placeholder = 'tu-nombre';
-  slugInput.value       = uiState.slug || '';
-  refs.slugInput = slugInput;
-
-  slugContainer.append(slugPrefix, slugInput);
-  section.appendChild(slugContainer);
-
-  const slugStatus = document.createElement('div');
-  slugStatus.className = 'slug-status';
-  slugStatus.innerHTML = '<span class="slug-icon"></span><span class="slug-text"></span>';
-  refs.slugStatus = slugStatus;
-  section.appendChild(slugStatus);
-
-  slugInput.addEventListener('input', () => {
-    clearTimeout(refs.slugValidationTimer);
-    const slug = slugInput.value.trim().toLowerCase();
-    if (!slug) {
-      updateSlugStatus(refs, 'empty', '');
-      uiState.slugValido = false;
-      uiState.slug       = null;
-      document.dispatchEvent(new Event('change'));
-      return;
-    }
-    updateSlugStatus(refs, 'checking', 'Verificando disponibilidad...');
-    refs.slugValidationTimer = setTimeout(async () => {
-      await validarSlug(slug, refs, uiState, false);
-      document.dispatchEvent(new Event('change'));
-    }, 800);
-  });
-
-  return section;
-}
-
-// ============================================================
-// SLUG HELPERS
-// ============================================================
-function slugify(text) {
-  return text
-    .toLowerCase().trim()
-    .replace(/["'`´""'']/g, '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-async function validarSlug(slug, refs, uiState, autoGenerado) {
-  if (!slug || slug.length < 3) {
-    updateSlugStatus(refs, 'empty', '');
-    uiState.slugValido = false;
-    uiState.slug       = null;
-    return;
-  }
-  try {
-    const snap = await getDoc(doc(db, 'landings', slug));
-    if (!snap.exists()) {
-      uiState.slug       = slug;
-      uiState.slugValido = true;
-      updateSlugStatus(refs, 'available', `✓ Disponible: indiceia.com/${slug}`);
-      return;
-    }
-    if (autoGenerado) {
-      for (let i = 1; i <= 3; i++) {
-        const alt     = `${slug}-${i}`;
-        const altSnap = await getDoc(doc(db, 'landings', alt));
-        if (!altSnap.exists()) {
-          uiState.slug         = alt;
-          uiState.slugValido   = true;
-          refs.slugInput.value = alt;
-          updateSlugStatus(refs, 'suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`);
-          return;
-        }
-      }
-    }
-    uiState.slugValido = false;
-    uiState.slug       = null;
-    updateSlugStatus(refs, 'taken', 'Este nombre ya está en uso. Probá con otro.');
-  } catch (err) {
-    console.error('Error validando slug:', err);
-    uiState.slugValido = false;
-    uiState.slug       = null;
-    updateSlugStatus(refs, 'error', 'Error al validar. Intentá de nuevo.');
-  }
-}
-
-function updateSlugStatus(refs, status, message) {
-  if (!refs.slugStatus) return;
-  const icon = refs.slugStatus.querySelector('.slug-icon');
-  const text = refs.slugStatus.querySelector('.slug-text');
-  const icons = {
-    checking:   '<i class="fas fa-spinner fa-spin"></i>',
-    available:  '<i class="fas fa-check-circle" style="color:var(--s-success)"></i>',
-    suggestion: '<i class="fas fa-info-circle" style="color:var(--s-info)"></i>',
-    taken:      '<i class="fas fa-times-circle" style="color:var(--s-danger)"></i>',
-    error:      '<i class="fas fa-exclamation-triangle" style="color:var(--s-warning)"></i>',
-    empty:      ''
-  };
-  icon.innerHTML   = icons[status] || '';
-  text.textContent = message;
 }
 
 // ============================================================
@@ -784,3 +772,23 @@ function crearSeccion(titulo) {
   section.appendChild(h3);
   return section;
 }
+
+function slugify(text) {
+  return text
+    .toLowerCase().trim()
+    .replace(/["'`´""'']/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// ============================================================
+// ARRANQUE
+// ============================================================
+runSkeleton({
+  page,
+  adapter: createFirebaseAdapter,
+  options: { loadingMessage: 'Cargando perfil...' }
+});
