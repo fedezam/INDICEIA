@@ -109,12 +109,13 @@ const page = {
     });
     root.appendChild(formCard);
 
-    const listaCard = createCard({
+    // FIX: guardar referencia al card de lista para poder reemplazarlo correctamente
+    this._listaCard = createCard({
       title: 'Servicios agregados',
       variant: 'warning',
       content: this._renderListaContent()
     });
-    root.appendChild(listaCard);
+    root.appendChild(this._listaCard);
 
     root.appendChild(this._renderSaveButton());
   },
@@ -607,31 +608,16 @@ const page = {
     showToast('Eliminado', 'Servicio eliminado de la lista', 'info');
   },
 
+  // FIX: reemplaza el card raíz usando la referencia guardada en render()
+  // Se eliminó _renderListaContentReal() — era duplicado exacto de _renderListaContent()
   _refreshLista() {
-    const root = document.getElementById('skeleton-page');
-    const oldLista = root.querySelector('#lista-servicios-container').parentElement;
     const newLista = createCard({
       title: 'Servicios agregados',
       variant: 'warning',
-      content: this._renderListaContentReal()
+      content: this._renderListaContent()
     });
-    oldLista.replaceWith(newLista);
-  },
-
-  _renderListaContentReal() {
-    const container = document.createElement('div');
-    container.id = 'lista-servicios-container';
-    if (this._data.serviciosAcumulados.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'lista-vacia';
-      empty.textContent = 'No hay servicios agregados aún';
-      container.appendChild(empty);
-      return container;
-    }
-    this._data.serviciosAcumulados.forEach((servicio, index) => {
-      container.appendChild(this._renderServicioCard(servicio, index));
-    });
-    return container;
+    this._listaCard.replaceWith(newLista);
+    this._listaCard = newLista;
   },
 
   // ──────────────────────────────────────────────────────────
