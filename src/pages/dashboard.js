@@ -430,7 +430,7 @@ const page = {
   },
 
   _renderServiciosCard() {
-    const hasServicios             = this._data.offerType.servicios === true;
+    const hasServicios = this._data.serviciosStats.total > 0;
     const { activos, pausados, total } = this._data.serviciosStats;
 
     if (hasServicios) {
