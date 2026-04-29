@@ -50,7 +50,7 @@ runLifecycle({
 // ============================================================
 async function load(ctx) {
   const userData   = ctx.userData || {};
-  const isEditMode = window.isEditMode === true;
+  const isEditMode = new URLSearchParams(window.location.search).get('edit') === 'true';
   console.log('📦 Usuario cargado:', userData);
   return { userData, isEditMode };
 }
