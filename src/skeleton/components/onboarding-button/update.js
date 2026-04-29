@@ -185,4 +185,8 @@ export function attachBehavior(button, config) {
 
     console.groupEnd();
   });
+
+  // FIX: retornar updateState para que el caller pueda forzar re-evaluación
+  // cuando cambia estado en memoria sin disparar eventos DOM
+  return { updateState };
 }
