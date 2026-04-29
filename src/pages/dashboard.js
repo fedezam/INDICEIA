@@ -24,7 +24,10 @@ const page = {
     offerType:      {},
     serviciosStats: { activos: 0, pausados: 0, total: 0 },
     productosStats: { total: 0, activos: 0, pausados: 0, ultimaActualizacion: null },
-    entityState:    'never'
+    entityState:    'never',
+    entityType:     'comercio',
+    tieneProductos: false,
+    tieneServicios: false
   },
 
   // ──────────────────────────────────────────────────────────
@@ -33,20 +36,22 @@ const page = {
   async load(ctx) {
     await runFlowController(ctx.user?.uid);
 
-    console.group('[dashboard] load()');
-    console.log('ctx.user:', ctx.user?.uid);
-    console.log('ctx.userData:', ctx.userData);
-    console.log('ctx.comercioId:', ctx.comercioId);
-    console.log('ctx.comercioData completo:', ctx.comercioData);
-
     this._data.ctx       = ctx;
     this._data.user      = ctx.user;
     this._data.userData  = ctx.userData || {};
-    this._data.offerType = ctx.comercioData?.offerType || {};
     this._data.comercio  = ctx.comercioData || {};
+    this._data.offerType = ctx.comercioData?.offerType || {};
 
-    console.log('offerType leído:', this._data.offerType);
-    console.groupEnd();
+    // ── Determinar entityType y capacidades ──────────────────
+    const entityType  = ctx.comercioData?.entityType || 'comercio';
+    const capacidades = ctx.comercioData?.capacidades || [];
+
+    this._data.entityType = entityType;
+    this._data.tieneProductos =
+      entityType === 'comercio' || capacidades.includes('productos');
+    this._data.tieneServicios =
+      entityType === 'prestador' ||
+      (entityType === 'comercio' && capacidades.includes('servicios'));
 
     await Promise.all([
       this._loadServiciosStats(),
@@ -60,12 +65,7 @@ const page = {
   // STATS PRODUCTOS
   // ──────────────────────────────────────────────────────────
   async _loadProductosStats(comercioId) {
-    console.group('[dashboard] _loadProductosStats()');
-    if (!comercioId) {
-      console.warn('sin comercioId, productos vacíos');
-      console.groupEnd();
-      return;
-    }
+    if (!comercioId) return;
     try {
       const snap = await getDocs(collection(db, 'entidades', comercioId, 'productos'));
       let activos = 0, pausados = 0, ultimaActualizacion = null;
@@ -84,37 +84,30 @@ const page = {
       if (snap.docs.length > 0) {
         this._data.offerType.productos = true;
       }
-
-      console.log('productosStats:', this._data.productosStats);
     } catch (err) {
       console.error('[dashboard] _loadProductosStats() ERROR:', err);
     }
-    console.groupEnd();
   },
 
   // ──────────────────────────────────────────────────────────
   // STATS SERVICIOS
   // ──────────────────────────────────────────────────────────
   async _loadServiciosStats() {
-    console.group('[dashboard] _loadServiciosStats()');
     try {
       const servicios = await getServicios();
       let activos = 0, pausados = 0;
       servicios.forEach(s => { s.activo === false ? pausados++ : activos++; });
       this._data.serviciosStats = { activos, pausados, total: activos + pausados };
-      console.log('serviciosStats:', this._data.serviciosStats);
     } catch (err) {
       console.error('[dashboard] _loadServiciosStats() ERROR:', err);
       this._data.serviciosStats = { activos: 0, pausados: 0, total: 0 };
     }
-    console.groupEnd();
   },
 
   // ──────────────────────────────────────────────────────────
   // ENTITY STATE
   // ──────────────────────────────────────────────────────────
   _calculateEntityState() {
-    console.group('[dashboard] _calculateEntityState()');
     const c = this._data.comercio;
 
     let lastGen = null;
@@ -126,26 +119,18 @@ const page = {
 
     const lastUpdate = c.fechaActualizacion?.toDate?.() || null;
 
-    console.log('lastGen:', lastGen, '| lastUpdate:', lastUpdate);
-
     if (!lastGen) {
       this._data.entityState = 'never';
-      console.log('entityState → never');
-      console.groupEnd();
       return;
     }
 
     this._data.entityState = (lastUpdate && lastUpdate > lastGen) ? 'outdated' : 'updated';
-    console.log('entityState →', this._data.entityState);
-    console.groupEnd();
   },
 
   // ──────────────────────────────────────────────────────────
   // RENDER
   // ──────────────────────────────────────────────────────────
   render() {
-    console.log('[dashboard] render() | offerType:', this._data.offerType, '| productosStats:', this._data.productosStats);
-
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
 
@@ -155,10 +140,11 @@ const page = {
     if (this._data.entityState === 'never')    root.appendChild(this._renderNeverGeneratedBanner());
 
     root.appendChild(this._renderSeccion(
-      this._data.comercio.entityType === 'prestador' ? '👷 Mi Perfil' : '🏪 Mi Comercio',
-      this._data.comercio.entityType === 'prestador' ? 'Tu especialidad, zona y disponibilidad.' : 'Tu estructura base: qué ofrecés, cuándo y cómo.',
+      this._getSeccionTitle(),
+      this._getSeccionDescripcion(),
       this._renderSeccionComercio()
     ));
+
     root.appendChild(this._renderSeccion(
       '🤖 La IA del Comercio',
       'Configurá el cerebro de tu asistente.',
@@ -176,6 +162,23 @@ const page = {
       'Medí el impacto de tu IA.',
       this._renderSeccionRendimiento()
     ));
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // TÍTULOS SEGÚN ENTITY TYPE
+  // ──────────────────────────────────────────────────────────
+  _getSeccionTitle() {
+    const t = this._data.entityType;
+    if (t === 'profesional') return '💼 Mi Perfil Profesional';
+    if (t === 'prestador')   return '👷 Mi Perfil';
+    return '🏪 Mi Comercio';
+  },
+
+  _getSeccionDescripcion() {
+    const t = this._data.entityType;
+    if (t === 'profesional') return 'Tu especialidad, zona de cobertura y disponibilidad.';
+    if (t === 'prestador')   return 'Tu especialidad, zona y disponibilidad.';
+    return 'Tu estructura base: qué ofrecés, cuándo y cómo.';
   },
 
   // ──────────────────────────────────────────────────────────
@@ -297,53 +300,90 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // SECCIÓN 1 — MI COMERCIO
+  // SECCIÓN 1 — ENTIDAD (dinámico según entityType)
   // ──────────────────────────────────────────────────────────
   _renderSeccionComercio() {
     const grid = document.createElement('div');
     grid.className = 'dashboard-grid';
 
-    grid.appendChild(this._renderMiComercioCard());
-    grid.appendChild(this._renderModeloNegocioCard());
-    grid.appendChild(this._renderProductosCard());
-    grid.appendChild(this._renderServiciosCard());
+    const t = this._data.entityType;
 
-    // Entrega solo visible si el comercio tiene productos
-    if (this._data.offerType.productos === true) {
+    // ── Identidad — siempre presente, varía por tipo ──────
+    grid.appendChild(this._renderMiComercioCard());
+
+    // ── Tipo de entidad — no aplica a profesional ─────────
+    if (t !== 'profesional') {
+      grid.appendChild(this._renderModeloNegocioCard());
+    }
+
+    // ── Productos — solo si aplica ────────────────────────
+    if (this._data.tieneProductos) {
+      grid.appendChild(this._renderProductosCard());
+    }
+
+    // ── Servicios — solo si aplica ────────────────────────
+    if (this._data.tieneServicios) {
+      grid.appendChild(this._renderServiciosCard());
+    }
+
+    // ── Horarios — excepto profesional puro sin productos ─
+    const necesitaHorarios = t !== 'profesional' || this._data.tieneProductos;
+    if (necesitaHorarios) {
+      grid.appendChild(this._renderHorariosCard());
+    }
+
+    // ── Entrega — solo si tiene productos ─────────────────
+    if (this._data.tieneProductos) {
       grid.appendChild(this._renderEntregaCard());
     }
 
-    grid.appendChild(this._renderHorariosCard());
+    // ── Exclusivos de profesional ─────────────────────────
+    if (t === 'profesional') {
+      grid.appendChild(this._renderLugaresCard());
+      grid.appendChild(this._renderCoberturaCard());
+      grid.appendChild(this._renderConsultasCard());
+    }
 
     return grid;
   },
 
   _renderMiComercioCard() {
-  const entityType = this._data.comercio.entityType || 'comercio';
-  if (entityType === 'prestador') {
+    const t = this._data.entityType;
+
+    if (t === 'profesional') {
+      return createCard({
+        title: 'Mi Perfil Profesional',
+        icon: 'fa-user-md',
+        content: '<p>Tu profesión, experiencia y datos de contacto</p>',
+        action: { type: 'link', url: '/mi-perfil-profesional.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+      });
+    }
+
+    if (t === 'prestador') {
+      return createCard({
+        title: 'Mi Perfil',
+        icon: 'fa-user-tie',
+        content: '<p>Tu nombre, especialidad, zona y datos de contacto</p>',
+        action: { type: 'link', url: '/mi-perfil.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+      });
+    }
+
     return createCard({
-      title: 'Mi Perfil',
-      icon: 'fa-user-tie',
-      content: '<p>Tu nombre, especialidad, zona y datos de contacto</p>',
-      action: { type: 'link', url: '/mi-perfil.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+      title: 'Mi Comercio',
+      icon: 'fa-store',
+      content: '<p>Nombre, dirección, contacto y datos generales</p>',
+      action: { type: 'link', url: '/mi-comercio.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
     });
-  }
-  return createCard({
-    title: 'Mi Comercio',
-    icon: 'fa-store',
-    content: '<p>Nombre, dirección, contacto y datos generales</p>',
-    action: { type: 'link', url: '/mi-comercio.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
-  });
-},
+  },
 
   _renderModeloNegocioCard() {
-  return createCard({
-    title: 'Tipo de entidad',
-    icon: 'fa-sitemap',
-    content: '<p>Qué tipo de entidad sos y qué ofrecés: productos, servicios o ambos</p>',
-    action: { type: 'link', url: '/tipo-entidad.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
-  });
-},
+    return createCard({
+      title: 'Tipo de entidad',
+      icon: 'fa-sitemap',
+      content: '<p>Qué tipo de entidad sos y qué ofrecés: productos, servicios o ambos</p>',
+      action: { type: 'link', url: '/tipo-entidad.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+    });
+  },
 
   _renderProductosCard() {
     const hasProductos = this._data.offerType.productos === true;
@@ -384,8 +424,8 @@ const page = {
       title: 'Productos',
       icon: 'fa-box',
       flat: true,
-      content: '<p class="inactive-text">No habilitado</p><p>Vendé artículos físicos o digitales</p>',
-      action: { type: 'link', url: '/tipo-entidad.html?edit=true', label: 'Habilitar', variant: 'outline-primary', size: 'sm' }
+      content: '<p class="inactive-text">Sin productos cargados</p>',
+      action: { type: 'link', url: '/productos.html?edit=true', label: 'Cargar productos', variant: 'outline-primary', size: 'sm' }
     });
   },
 
@@ -414,8 +454,8 @@ const page = {
       title: 'Servicios',
       icon: 'fa-concierge-bell',
       flat: true,
-      content: '<p class="inactive-text">No habilitado</p><p>Ofrecé turnos o atención por hora</p>',
-      action: { type: 'link', url: '/tipo-entidad.html?edit=true', label: 'Habilitar', variant: 'outline-primary', size: 'sm' }
+      content: '<p class="inactive-text">Sin servicios cargados</p>',
+      action: { type: 'link', url: '/servicios.html?edit=true', label: 'Cargar servicios', variant: 'outline-primary', size: 'sm' }
     });
   },
 
@@ -463,7 +503,38 @@ const page = {
       title: 'Horarios',
       icon: 'fa-clock',
       content: `<p>${ok ? 'Configurados ✓' : 'Sin configurar'}</p>`,
-      action: { type: 'link', url: '/horarios.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+      action: { type: 'link', url: '/horarios.html?edit=true', label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
+    });
+  },
+
+  // ── Cards exclusivas de profesional ─────────────────────
+  _renderLugaresCard() {
+    const ok = this._data.comercio.onboardingSteps?.lugares === true;
+    return createCard({
+      title: 'Lugares de Atención',
+      icon: 'fa-map-marker-alt',
+      content: `<p>${ok ? 'Configurados ✓' : 'Sin configurar'}</p>`,
+      action: { type: 'link', url: '/lugares.html?edit=true', label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
+    });
+  },
+
+  _renderCoberturaCard() {
+    const ok = this._data.comercio.onboardingSteps?.cobertura === true;
+    return createCard({
+      title: 'Zona de Cobertura',
+      icon: 'fa-map-marked-alt',
+      content: `<p>${ok ? 'Configurada ✓' : 'Sin configurar'}</p>`,
+      action: { type: 'link', url: '/cobertura.html?edit=true', label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
+    });
+  },
+
+  _renderConsultasCard() {
+    const ok = this._data.comercio.onboardingSteps?.consultas === true;
+    return createCard({
+      title: 'Consultas',
+      icon: 'fa-question-circle',
+      content: `<p>${ok ? 'Configuradas ✓' : 'Sin configurar'}</p>`,
+      action: { type: 'link', url: '/consultas.html?edit=true', label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
     });
   },
 
@@ -487,7 +558,7 @@ const page = {
       icon: 'fa-robot',
       variant: 'primary',
       content: '<p>Personalidad, tono y comportamiento del asistente</p>',
-      action: { type: 'link', url: '/ia-config.html?edit=true', label: 'Editar', variant: 'primary',   size: 'sm' }
+      action: { type: 'link', url: '/ia-config.html?edit=true', label: 'Editar', variant: 'primary', size: 'sm' }
     });
   },
 
@@ -535,7 +606,7 @@ const page = {
       variant: 'primary',
       highlight: true,
       content: '<p>Personalizá la apariencia y estética de tu IA</p>',
-      action: { type: 'link', url: '/visual.html', label: 'Acceder', variant: 'primary',   size: 'sm' }
+      action: { type: 'link', url: '/visual.html', label: 'Acceder', variant: 'primary', size: 'sm' }
     });
   },
 
@@ -600,7 +671,7 @@ const page = {
         type: 'link',
         url: '/link-publico.html',
         label: 'Ver link y QR',
-        variant: 'primary',   size: 'sm'
+        variant: 'primary', size: 'sm'
       }
     });
   },
@@ -683,8 +754,6 @@ const page = {
     btn.setLoading(true);
 
     try {
-      console.log('[dashboard] Generando entidad para:', this._data.comercio.id);
-
       const response = await fetch('/api/generate-and-upload-entity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -692,7 +761,6 @@ const page = {
       });
 
       const text = await response.text();
-      console.log('[dashboard] API status:', response.status);
 
       let data;
       try {
