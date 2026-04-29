@@ -18,7 +18,7 @@
 }
 
 /* ── Saludo partido ───────────────────────────────────────── */
-/* Wrapper que agrupa input editable + sufijo readonly inline  */
+/* Wrapper: [ prefix editable ] [ nombre locked ] [ sufijo locked ] */
 .ia-saludo-wrapper {
   display: flex;
   align-items: center;
@@ -50,14 +50,11 @@
   border: none !important;
 }
 
-/* Sufijo readonly — visualmente separado, no editable */
-.ia-saludo-sufijo {
+/* ── Chips locked (base compartida) ───────────────────────── */
+.ia-saludo-locked {
   flex-shrink: 0;
   padding: 0 10px;
   font-size: 0.875rem;
-  color: var(--s-secondary, #6c757d);
-  background-color: #e9ecef;
-  border-left: 1px solid var(--s-border, #d2d6de);
   white-space: nowrap;
   line-height: var(--s-input-height, 38px);
   height: var(--s-input-height, 38px);
@@ -65,6 +62,20 @@
   align-items: center;
   user-select: none;
   cursor: default;
+  border-left: 1px solid var(--s-border, #d2d6de);
+}
+
+/* Nombre locked — destacado */
+.ia-saludo-nombre {
+  font-weight: 600;
+  color: var(--s-primary, #3c8dbc);
+  background-color: var(--s-light, #f4f4f4);
+}
+
+/* Sufijo locked — muted */
+.ia-saludo-sufijo {
+  color: var(--s-secondary, #6c757d);
+  background-color: #e9ecef;
 }
 
 /* ── Preview del saludo ───────────────────────────────────── */
@@ -87,9 +98,8 @@
     grid-template-columns: 1fr;
   }
 
-  /* En mobile el sufijo puede truncarse con ellipsis */
-  .ia-saludo-sufijo {
-    max-width: 140px;
+  .ia-saludo-locked {
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
