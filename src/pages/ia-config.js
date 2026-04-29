@@ -339,8 +339,17 @@ const page = {
         const requiredFields = ['nombre', 'personalidad', 'tono'];
         const fieldsOk = requiredFields.every(k => this.fields[k]?.input.value.trim());
         const saludoOk = this.fields.saludoPartido?.getValue().length > 0;
-        return fieldsOk && saludoOk;
-      },
+        console.log('[ia-config] validate:', {
+        nombre:       this.fields.nombre?.input?.value,
+        personalidad: this.fields.personalidad?.input?.value,
+        tono:         this.fields.tono?.input?.value,
+        saludo:       this.fields.saludoPartido?.getValue(),
+        fieldsOk,
+        saludoOk,
+        result: fieldsOk && saludoOk
+     });
+     return fieldsOk && saludoOk;
+   },
 
       onSave: async ({ comercioId }) => {
         if (!comercioId) throw new Error('No hay comercioId');
