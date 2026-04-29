@@ -47,6 +47,8 @@ export function createOnboardingButton(config) {
   }
 
   const button = renderButton();
-  attachBehavior(button, config);
+  // FIX: capturar updateState y colgarlo en el elemento para llamado externo
+  const { updateState } = attachBehavior(button, config);
+  button._updateState = updateState;
   return button;
 }
