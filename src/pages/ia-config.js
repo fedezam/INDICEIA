@@ -45,6 +45,8 @@ const page = {
   fields: {},
   _aiConfig: {},
   _nombreEntidad: '',
+  _entityType: '',
+  _tieneProductos: false,
 
   // ──────────────────────────────────────────────────────────
   // LOAD
@@ -52,8 +54,13 @@ const page = {
   async load(ctx) {
     const raw = ctx.comercioData?.aiConfig || {};
 
-    // Nombre real de la entidad — fuente de verdad para el sufijo del saludo
     this._nombreEntidad = ctx.comercioData?.nombre || '';
+    this._entityType    = ctx.comercioData?.entityType || 'comercio';
+
+    const capacidades = ctx.comercioData?.capacidades || [];
+    this._tieneProductos =
+      this._entityType === 'comercio' ||
+      capacidades.includes('productos');
 
     // Normaliza estructura — soporta legacy plano y nueva estructura anidada
     this._aiConfig = {
@@ -62,7 +69,7 @@ const page = {
         idioma:        raw.identidad?.idioma        || raw.aiLanguage    || 'es-AR',
         personalidad:  raw.identidad?.personalidad  || raw.aiPersonality || '',
         tono:          raw.identidad?.tono          || raw.aiTone        || '',
-        saludoPrefix:  raw.identidad?.saludoPrefix  || ''   // solo la parte editable
+        saludoPrefix:  raw.identidad?.saludoPrefix  || ''
       },
       comportamiento: {
         proactividad:      raw.comportamiento?.proactividad      || raw.proactividad      || '',
@@ -136,7 +143,6 @@ const page = {
       required: true, value: id.tono
     });
 
-    // Campo partido: prefix editable + nombre locked + sufijo locked
     const saludoField = this._renderSaludoPartido(id.saludoPrefix);
     this.fields.saludoPartido = saludoField;
 
@@ -154,8 +160,6 @@ const page = {
   // ──────────────────────────────────────────────────────────
   // SALUDO PARTIDO
   // [ prefijo editable ] [ nombre — locked ] [ sufijo negocio — locked ]
-  // El nombre viene del campo "Nombre de la IA" y no puede editarse acá.
-  // El sufijo viene de context.nombre — nunca editable.
   // ──────────────────────────────────────────────────────────
   _renderSaludoPartido(saludoPrefixValue = '') {
     const nombreIA = this._aiConfig.identidad.nombre;
@@ -164,12 +168,10 @@ const page = {
       ? `, el asistente de ${this._nombreEntidad}`
       : '';
 
-    // Prefijo default si no hay nada guardado
     if (!saludoPrefixValue) {
       saludoPrefixValue = '¡Hola! Soy';
     }
 
-    // ── DOM ──────────────────────────────────────────────
     const wrapper = document.createElement('div');
     wrapper.className = 's-form-field';
 
@@ -182,7 +184,6 @@ const page = {
     help.className = 's-help';
     help.textContent = 'Editá el saludo. El nombre de tu asistente se incluye automáticamente.';
 
-    // Input — solo el prefijo editable
     const input = document.createElement('input');
     input.type = 'text';
     input.id = 'aiSaludoPrefix';
@@ -191,23 +192,19 @@ const page = {
     input.maxLength = 80;
     input.value = saludoPrefixValue;
 
-    // Nombre locked — chip al medio
     const nombreChip = document.createElement('span');
     nombreChip.className = 'ia-saludo-locked ia-saludo-nombre';
     nombreChip.textContent = nombreIA || 'Tu asistente';
 
-    // Sufijo locked
     const sufijoEl = document.createElement('span');
     sufijoEl.className = 'ia-saludo-locked ia-saludo-sufijo';
     sufijoEl.textContent = sufijo;
 
-    // Input wrapper con las tres partes
     const inputWrapper = document.createElement('div');
     inputWrapper.className = 's-input-wrapper ia-saludo-wrapper';
     inputWrapper.append(input, nombreChip);
     if (sufijo) inputWrapper.appendChild(sufijoEl);
 
-    // Preview completo
     const preview = document.createElement('div');
     preview.className = 'ia-greeting-preview';
 
@@ -218,10 +215,8 @@ const page = {
     };
     updatePreview();
 
-    // ── Listeners ────────────────────────────────────────
     input.addEventListener('input', updatePreview);
 
-    // Sync nombre: si cambia el campo "Nombre de la IA", actualiza chip y preview
     if (this.fields.nombre?.input) {
       this.fields.nombre.input.addEventListener('input', () => {
         const newName = this.fields.nombre.input.value.trim();
@@ -232,7 +227,6 @@ const page = {
 
     wrapper.append(label, inputWrapper, help, preview);
 
-    // Exponer input para validate y getValue
     return {
       wrapper,
       input,
@@ -279,47 +273,57 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // CONTINGENCIAS
+  // CONTINGENCIAS — condicional según entityType
   // ──────────────────────────────────────────────────────────
   _renderContingenciasCard() {
     const container = document.createElement('div');
     container.className = 'ia-grid';
     const c = this._aiConfig.contingencias;
 
+    // Todos los tipos: ¿qué hacer si no hay precio?
     this.fields.sinPrecio = createFormField({
       id: 'sinPrecio', label: 'Si no hay precio',
       type: 'select',
+      helpText: 'Aplica a productos y servicios sin precio cargado.',
       options: [
         { value: '',          label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'informar',  label: 'Informar que no hay precio' },
-        { value: 'consultar', label: 'Pedir consulta al dueño'    }
+        { value: 'informar',  label: 'Informar que no hay precio disponible' },
+        { value: 'consultar', label: 'Pedir consulta al dueño' }
       ],
       value: c.sinPrecio
     });
 
-    this.fields.sinStock = createFormField({
-      id: 'sinStock', label: 'Si no hay stock',
-      type: 'select',
-      options: [
-        { value: '',                   label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'informar',           label: 'Informar que no hay stock'   },
-        { value: 'ofrecerAlternativa', label: 'Ofrecer alternativa similar' }
-      ],
-      value: c.sinStock
-    });
+    container.appendChild(this.fields.sinPrecio);
 
-    this.fields.localCerrado = createFormField({
-      id: 'localCerrado', label: 'Si el local está cerrado',
-      type: 'select',
-      options: [
-        { value: '',             label: 'Seleccionar', disabled: true, hidden: true },
-        { value: 'informar',     label: 'Informar horario' },
-        { value: 'tomarMensaje', label: 'Tomar mensaje'    }
-      ],
-      value: c.localCerrado
-    });
+    // Solo si tiene productos (comercio o prestador con productos)
+    if (this._tieneProductos) {
+      this.fields.sinStock = createFormField({
+        id: 'sinStock', label: 'Si no hay stock',
+        type: 'select',
+        options: [
+          { value: '',                   label: 'Seleccionar', disabled: true, hidden: true },
+          { value: 'informar',           label: 'Informar que no hay stock' },
+          { value: 'ofrecerAlternativa', label: 'Ofrecer alternativa similar' }
+        ],
+        value: c.sinStock
+      });
+      container.appendChild(this.fields.sinStock);
+    }
 
-    container.append(this.fields.sinPrecio, this.fields.sinStock, this.fields.localCerrado);
+    // Solo comercio
+    if (this._entityType === 'comercio') {
+      this.fields.localCerrado = createFormField({
+        id: 'localCerrado', label: 'Si el local está cerrado',
+        type: 'select',
+        options: [
+          { value: '',             label: 'Seleccionar', disabled: true, hidden: true },
+          { value: 'informar',     label: 'Informar horario' },
+          { value: 'tomarMensaje', label: 'Tomar mensaje' }
+        ],
+        value: c.localCerrado
+      });
+      container.appendChild(this.fields.localCerrado);
+    }
 
     return createCard({ title: 'Contingencias', icon: 'fa-exclamation-triangle', content: container });
   },
@@ -343,6 +347,19 @@ const page = {
 
         const v = (id) => document.getElementById(id)?.value || '';
 
+        // Contingencias — solo incluye los campos que aplican a este entityType
+        const contingencias = {
+          sinPrecio: v('sinPrecio') || ''
+        };
+
+        if (this._tieneProductos) {
+          contingencias.sinStock = v('sinStock') || '';
+        }
+
+        if (this._entityType === 'comercio') {
+          contingencias.localCerrado = v('localCerrado') || '';
+        }
+
         const raw = {
           aiConfig: {
             identidad: {
@@ -350,17 +367,13 @@ const page = {
               idioma:        v('aiLanguage'),
               personalidad:  v('aiPersonality'),
               tono:          v('aiTone'),
-              saludoPrefix:  this.fields.saludoPartido?.getValue() || '' // solo la parte editable
+              saludoPrefix:  this.fields.saludoPartido?.getValue() || ''
             },
             comportamiento: {
               proactividad:      v('proactividad'),
               formatoRespuestas: v('formatoRespuestas')
             },
-            contingencias: {
-              sinPrecio:    v('sinPrecio'),
-              sinStock:     v('sinStock'),
-              localCerrado: v('localCerrado')
-            }
+            contingencias
           }
         };
 
@@ -418,4 +431,3 @@ runSkeleton({
   adapter: createFirebaseAdapter,
   options: { loadingMessage: 'Cargando configuración IA...' }
 });
-
