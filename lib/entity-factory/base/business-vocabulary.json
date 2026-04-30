@@ -19,6 +19,7 @@
     { "codigo": "INM", "nombre": "Inmobiliaria / Propiedades",       "schema_org": "RealEstateAgent",     "tier_default": "B" },
     { "codigo": "EVT", "nombre": "Eventos / Catering / Salón",       "schema_org": "EventVenue",          "tier_default": "C" },
     { "codigo": "TRV", "nombre": "Turismo / Agencia de Viajes",      "schema_org": "TravelAgency",        "tier_default": "B" }
+    { "codigo": "OFI", "nombre": "Oficios / Servicios del Hogar", "schema_org": "HomeAndConstructionBusiness", "tier_default": "C" }
   ],
 
   "tags": {
@@ -27,7 +28,8 @@
       "salud", "bienestar", "estetica", "deportes", "farmacia",
       "legal", "contabilidad", "tech", "educacion", "diseno",
       "construccion", "hogar", "vehiculos", "electricidad",
-      "mascotas", "inmobiliaria", "eventos", "turismo"
+      "mascotas", "inmobiliaria", "eventos", "turismo",
+      "oficios"
     ],
 
     "mapa_sinonimos": {
@@ -251,6 +253,21 @@
       "hostel":           "turismo",
       "travel":           "turismo",
       "tour":             "turismo"
+
+      "plomero":    "oficios",
+      "gasista":    "oficios",
+      "gasfiter":   "oficios",
+      "albanil":    "oficios",
+      "albañil":    "oficios",
+      "pintor":     "oficios",
+      "carpintero": "oficios",
+      "cerrajero":  "oficios",
+      "techista":   "oficios",
+      "herrero":    "oficios",
+      "soldador":   "oficios",
+      "plomeria":   "oficios",
+      "plomería":   "oficios"
+
     }
   },
 
@@ -270,7 +287,8 @@
     "MAS": ["mascotas"],
     "INM": ["inmobiliaria"],
     "EVT": ["eventos"],
-    "TRV": ["turismo"]
+    "TRV": ["turismo"],
+    "OFI": ["oficios"]
   },
 
   "notas": {
