@@ -189,8 +189,6 @@
       "construcción":     "construccion",
       "carpinteria":      "construccion",
       "pintureria":       "construccion",
-      "plomeria":         "construccion",
-      "plomería":         "construccion",
       "albanileria":      "construccion",
       "obra":             "construccion",
       "hardware":         "construccion",
@@ -252,7 +250,7 @@
       "hotel":            "turismo",
       "hostel":           "turismo",
       "travel":           "turismo",
-      "tour":             "turismo"
+      "tour":             "turismo",
 
       "plomero":    "oficios",
       "gasista":    "oficios",
