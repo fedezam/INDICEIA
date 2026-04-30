@@ -57,7 +57,7 @@ async function buildComercio(comercioRef, data, context, referralCode, slug) {
 
 async function buildPrestador(comercioRef, data, context, referralCode, slug) {
   const goods    = null;
-  const services = await buildServices(comercioRef, data);
+  const services = await buildServices(comercioRef, context);
 
   const templateId  = data.templateId || null;
   const savedVisual = { visualHash: data.visualHash || null, visualHtmlUrl: data.visualHtmlUrl || null };
