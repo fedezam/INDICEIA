@@ -18,7 +18,7 @@
     { "codigo": "MAS", "nombre": "Veterinaria / Pet Shop",           "schema_org": "VeterinaryCare",      "tier_default": "C" },
     { "codigo": "INM", "nombre": "Inmobiliaria / Propiedades",       "schema_org": "RealEstateAgent",     "tier_default": "B" },
     { "codigo": "EVT", "nombre": "Eventos / Catering / Salón",       "schema_org": "EventVenue",          "tier_default": "C" },
-    { "codigo": "TRV", "nombre": "Turismo / Agencia de Viajes",      "schema_org": "TravelAgency",        "tier_default": "B" }
+    { "codigo": "TRV", "nombre": "Turismo / Agencia de Viajes",      "schema_org": "TravelAgency",        "tier_default": "B" },
     { "codigo": "OFI", "nombre": "Oficios / Servicios del Hogar", "schema_org": "HomeAndConstructionBusiness", "tier_default": "C" }
   ],
 
