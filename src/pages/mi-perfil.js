@@ -180,6 +180,19 @@ const page = {
           localidad_principal: d.localidad_principal,
           zona_cobertura:      d.zona_cobertura,
 
+          // ✅ FIX: ubicacion estructurada igual que mi-comercio.js
+          ubicacion: {
+            pais:      d.localidad_principal?.pais || 'Argentina',
+            provincia: d.localidad_principal?.provincia || '',
+            localidad: {
+              id:     d.localidad_principal?.id       || null,
+              nombre: d.localidad_principal?.localidad || '',
+              lat:    d.localidad_principal?.lat       || null,
+              lng:    d.localidad_principal?.lng       || null,
+            }
+          },
+
+          // legacy — mantenemos para compatibilidad con código viejo
           localidad: d.localidad_principal?.localidad || null,
           provincia: d.localidad_principal?.provincia || null,
           pais:      'Argentina',
@@ -380,10 +393,14 @@ const page = {
 
     const montarLocalidadPrincipal = (provinciaVal) => {
       mountCiudadAutocomplete(provinciaVal, localidadContainer, '', (loc) => {
+        // ✅ FIX: guardar objeto completo con id, lat, lng
         this._data.localidad_principal = {
           localidad: loc.nombre,
           provincia: provinciaVal,
-          pais: 'Argentina'
+          pais:      'Argentina',
+          id:        loc.id,
+          lat:       loc.lat,
+          lng:       loc.lng,
         };
         renderChipPrincipal(chipPrincipalContainer, this._data, montarLocalidadPrincipal, this._refs);
         document.dispatchEvent(new Event('change'));
@@ -393,10 +410,14 @@ const page = {
     if (provinciaGuardada) {
       const localidadGuardada = this._data.localidad_principal?.localidad || '';
       mountCiudadAutocomplete(provinciaGuardada, localidadContainer, localidadGuardada, (loc) => {
+        // ✅ FIX: guardar objeto completo con id, lat, lng
         this._data.localidad_principal = {
           localidad: loc.nombre,
           provincia: provinciaGuardada,
-          pais: 'Argentina'
+          pais:      'Argentina',
+          id:        loc.id,
+          lat:       loc.lat,
+          lng:       loc.lng,
         };
         renderChipPrincipal(chipPrincipalContainer, this._data, montarLocalidadPrincipal, this._refs);
         document.dispatchEvent(new Event('change'));
