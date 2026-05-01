@@ -5,6 +5,7 @@
 import { runSkeleton }             from '/src/skeleton/skeleton.js';
 import { createFirebaseAdapter }   from '/src/skeleton/adapters/firebaseAdapter.js';
 import { createFormField }         from '/src/skeleton/components/form-field/index.js';
+import { createCheckboxGroup }     from '/src/skeleton/components/checkbox-group/index.js';
 import { createButton }            from '/src/skeleton/components/button/index.js';
 import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }               from '/src/skeleton/components/toast/index.js';
@@ -28,6 +29,7 @@ const page = {
     especialidad:        '',
     descripcion:         '',
     experiencia:         '',
+    atiende_urgencias:   false,
     whatsapp:            '',
     telefono:            '',
     email:               '',
@@ -78,6 +80,7 @@ const page = {
       especialidad:        c.especialidad || '',
       descripcion:         c.descripcion  || '',
       experiencia:         c.experiencia  || '',
+      atiende_urgencias:   c.atiende_urgencias === true,
       whatsapp:            c.whatsapp     || '',
       telefono:            c.telefono     || '',
       email:               c.email        || '',
@@ -176,6 +179,7 @@ const page = {
           especialidad: d.especialidad,
           descripcion:  d.descripcion,
           experiencia:  d.experiencia || null,
+          atiende_urgencias: d.atiende_urgencias === true || null,
 
           localidad_principal: d.localidad_principal,
           zona_cobertura:      d.zona_cobertura,
@@ -346,9 +350,32 @@ const page = {
       this._refs.fields.especialidad,
       this._refs.fields.descripcion,
       this._refs.fields.experiencia,
+      this._renderUrgenciasField(),
     );
 
     return section;
+  },
+
+  // ============================================================
+  // CAMPO: URGENCIAS
+  // ============================================================
+  _renderUrgenciasField() {
+    const field = createCheckboxGroup({
+      label: 'Urgencias',
+      name:  'atiende_urgencias',
+      value: this._data.atiende_urgencias ? ['si'] : [],
+      options: [{
+        value:       'si',
+        label:       'Atiendo emergencias fuera de horario',
+        description: 'Si marcás esta opción, tu asistente les avisará a los clientes que pueden contactarte ante una urgencia, aunque estés fuera de tu horario habitual. Vos decidís si atendés o no — el asistente solo da el aviso.'
+      }]
+    });
+
+    field.addEventListener('change', () => {
+      this._data.atiende_urgencias = field.getValue().includes('si');
+    });
+
+    return field;
   },
 
   // ============================================================
