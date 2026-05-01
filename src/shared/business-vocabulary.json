@@ -19,6 +19,7 @@
     { "codigo": "MAS", "nombre": "Veterinaria / Pet Shop",           "schema_org": "VeterinaryCare",      "tier_default": "C" },
     { "codigo": "INM", "nombre": "Inmobiliaria / Propiedades",       "schema_org": "RealEstateAgent",     "tier_default": "B" },
     { "codigo": "EVT", "nombre": "Eventos / Catering / Salón",       "schema_org": "EventVenue",          "tier_default": "C" },
+    { "codigo": "OFI", "nombre": "Oficios / Servicios del Hogar",    "schema_org": "HomeAndConstructionBusiness", "tier_default": "C" },
     { "codigo": "TRV", "nombre": "Turismo / Agencia de Viajes",      "schema_org": "TravelAgency",        "tier_default": "B" }
   ],
 
@@ -28,7 +29,7 @@
       "salud", "bienestar", "estetica", "deportes", "farmacia",
       "legal", "contabilidad", "tech", "educacion", "diseno",
       "construccion", "hogar", "vehiculos", "electricidad",
-      "mascotas", "inmobiliaria", "eventos", "turismo"
+      "mascotas", "inmobiliaria", "eventos", "turismo", "oficios"
     ],
 
     "mapa_sinonimos": {
@@ -188,8 +189,6 @@
       "construcción":     "construccion",
       "carpinteria":      "construccion",
       "pintureria":       "construccion",
-      "plomeria":         "construccion",
-      "plomería":         "construccion",
       "albanileria":      "construccion",
       "obra":             "construccion",
       "hardware":         "construccion",
@@ -245,6 +244,20 @@
       "fiesta":           "eventos",
       "event":            "eventos",
 
+      "plomeria":   "oficios",
+      "plomería":   "oficios",
+      "plomero":    "oficios",
+      "gasista":    "oficios",
+      "albanil":    "oficios",
+      "albañil":    "oficios",
+      "pintor":     "oficios",
+      "carpintero": "oficios",
+      "cerrajero":  "oficios",
+      "techista":   "oficios",
+      "herrero":    "oficios",
+      "soldador":   "oficios",
+
+
       "viajes":           "turismo",
       "turismo":          "turismo",
       "agencia":          "turismo",
@@ -271,7 +284,8 @@
     "MAS": ["mascotas"],
     "INM": ["inmobiliaria"],
     "EVT": ["eventos"],
-    "TRV": ["turismo"]
+    "TRV": ["turismo"].
+    "OFI": ["oficios"]
   },
 
   "notas": {
