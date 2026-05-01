@@ -12,6 +12,7 @@ import { showToast }               from '/src/skeleton/components/toast/index.js
 import { db }                      from '/src/services/firebase/firebase.js';
 import { fillProvinciaSelector }   from '/src/shared/provincias.js';
 import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
+import { rubroFromForm }           from '/src/shared/entity-context.js';
 import {
   doc, setDoc, updateDoc,
   collection, getDoc, Timestamp
@@ -177,6 +178,7 @@ const page = {
         const updates = {
           nombre:       d.nombre,
           especialidad: d.especialidad,
+          rubro:        rubroFromForm([d.especialidad]),
           descripcion:  d.descripcion,
           experiencia:  d.experiencia || null,
           atiende_urgencias: d.atiende_urgencias === true || null,
