@@ -1,3 +1,4 @@
+// api/hora.js
 export default function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   
@@ -11,13 +12,12 @@ export default function handler(req, res) {
     minute: '2-digit'
   });
 
-  const accept = req.headers['accept'] || '';
-  
-  if (accept.includes('text/html')) {
-    res.setHeader('Content-Type', 'text/html');
-    res.status(200).send(`<html><body><h1>Hora en Argentina</h1><p>${ahora}</p></body></html>`);
-  } else {
-    res.setHeader('Content-Type', 'application/json');
-    res.status(200).json({ datetime: ahora, timestamp: Date.now() });
-  }
+  res.setHeader('Content-Type', 'text/html');
+  res.status(200).send(`<!DOCTYPE html>
+<html>
+<head><title>Hora Argentina</title></head>
+<body>
+<p>${ahora}</p>
+</body>
+</html>`);
 }
