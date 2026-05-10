@@ -74,12 +74,31 @@ function ensureHorariosStructure(horariosData) {
 }
 
 // ============================================================
+// MODE
+// ============================================================
+function getMode() {
+  return new URLSearchParams(window.location.search).get('mode');
+}
+
+// ============================================================
 // LOAD
 // ============================================================
 async function load(ctx) {
-  const horarios         = ensureHorariosStructure(ctx.comercioData?.horarios);
-  const tieneLocalFisico = ctx.comercioData?.tieneLocalFisico !== false; // true por defecto
-  return { horarios, tieneLocalFisico };
+  const isDelivery = getMode() === 'delivery';
+
+  const horariosData = isDelivery
+    ? ctx.comercioData?.horariosDelivery
+    : ctx.comercioData?.horarios;
+
+  const horarios = ensureHorariosStructure(horariosData);
+
+  const tieneLocalFisico = ctx.comercioData?.tieneLocalFisico !== false;
+
+  return {
+    horarios,
+    tieneLocalFisico,
+    isDelivery
+  };
 }
 
 // ============================================================
@@ -98,26 +117,45 @@ function render(ctx, state) {
     markSaved:         () => Object.assign(originalSnapshot, structuredClone(uiState.horarios))
   };
 
-  // ── HEADER — cambia según tieneLocalFisico ────────────────
+  // ── HEADER — cambia según isDelivery / tieneLocalFisico ───
   const header = document.createElement('div');
   header.className = 'page-header';
-  header.innerHTML = state.tieneLocalFisico
-    ? `<h2><i class="fas fa-clock"></i> Horarios de Atención</h2>
-       <p>Configurá cuándo está abierto tu comercio</p>`
-    : `<h2><i class="fas fa-clock"></i> Horarios de Respuesta</h2>
-       <p>Configurá en qué horarios podés atender consultas por WhatsApp</p>`;
+
+  if (state.isDelivery) {
+    header.innerHTML = `
+      <h2><i class="fas fa-motorcycle"></i> Horarios de Delivery</h2>
+      <p>Configurá cuándo pueden realizarse entregas</p>
+    `;
+  }
+  else if (state.tieneLocalFisico) {
+    header.innerHTML = `
+      <h2><i class="fas fa-clock"></i> Horarios de Atención</h2>
+      <p>Configurá cuándo está abierto tu comercio</p>
+    `;
+  }
+  else {
+    header.innerHTML = `
+      <h2><i class="fas fa-clock"></i> Horarios de Respuesta</h2>
+      <p>Configurá en qué horarios podés atender consultas por WhatsApp</p>
+    `;
+  }
+
   page.appendChild(header);
 
-  // ── AI CARD — cambia según tieneLocalFisico ───────────────
+  // ── AI CARD — cambia según isDelivery / tieneLocalFisico ──
+  const aiCardContent = state.isDelivery
+    ? 'Tu asistente sabrá cuándo podés realizar entregas y comunicará los horarios a tus clientes automáticamente.'
+    : state.tieneLocalFisico
+      ? 'Tu asistente sabrá cuándo puede atender clientes en el local y gestionar pedidos automáticamente.'
+      : 'Tu asistente sabrá cuándo podés responder consultas y avisará a los clientes si estás fuera de horario.';
+
   page.appendChild(createCard({
     title:     '¡Tu IA conocerá tus horarios!',
     icon:      'fa-robot',
     variant:   'info',
     highlight: true,
     compact:   true,
-    content: state.tieneLocalFisico
-      ? 'Tu asistente sabrá cuándo puede atender clientes en el local y gestionar pedidos automáticamente.'
-      : 'Tu asistente sabrá cuándo podés responder consultas y avisará a los clientes si estás fuera de horario.'
+    content: aiCardContent
   }));
 
   // ── GRID DE DÍAS ──────────────────────────────────────────
@@ -132,15 +170,20 @@ function render(ctx, state) {
 
   page.appendChild(grid);
 
-  
+
   // ── BOTÓN GUARDAR ─────────────────────────────────────────
   const btnContainer = document.createElement('div');
   btnContainer.style.marginTop = '30px';
 
   btnContainer.appendChild(createOnboardingButton({
-    stepName: 'horarios',
+    stepName: state.isDelivery
+      ? 'horarios-delivery'
+      : 'horarios',
     validate: () => DAYS.some(day => !uiState.horarios[day].closed),
-    getData:  () => ({ horarios: uiState.horarios, comercioId: ctx.comercioId }),
+    getData:  () => ({
+      [state.isDelivery ? 'horariosDelivery' : 'horarios']: uiState.horarios,
+      comercioId: ctx.comercioId
+    }),
     dirtyController,
     getLabel: () => {
       if (ctx.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
@@ -199,7 +242,6 @@ function createDayHeader(day, isOpen, uiState, refs, tieneLocalFisico) {
   checkbox.id      = `toggle_${day}`;
   checkbox.checked = isOpen;
 
-  // Label del estado cambia según tieneLocalFisico
   const openLabel   = tieneLocalFisico ? 'Abierto'   : 'Disponible';
   const closedLabel = tieneLocalFisico ? 'Cerrado'   : 'No disponible';
 
@@ -378,8 +420,7 @@ function createPeriodSection({ day, period, label, icon, data, uiState, refs }) 
 }
 
 // ============================================================
-// TIME INPUT — dos selects: hora (00-23) + minutos (00/15/30/45)
-// Elimina la ambigüedad AM/PM del input[type="time"] nativo
+// TIME INPUT
 // ============================================================
 function createTimeInput({ id, label, value, onChange }) {
   const group = document.createElement('div');
@@ -390,7 +431,6 @@ function createTimeInput({ id, label, value, onChange }) {
   labelEl.textContent = label;
   group.appendChild(labelEl);
 
-  // Parsear valor actual (ej: "09:30" → h=9, m=30)
   const [hStr = '09', mStr = '00'] = (value || '09:00').split(':');
   const currentH = parseInt(hStr, 10);
   const currentM = parseInt(mStr, 10);
@@ -398,7 +438,6 @@ function createTimeInput({ id, label, value, onChange }) {
   const row = document.createElement('div');
   row.className = 'time-selects-row';
 
-  // ── Select horas ──
   const selectH = document.createElement('select');
   selectH.id = `${id}_h`;
   selectH.className = 'time-select';
@@ -414,7 +453,6 @@ function createTimeInput({ id, label, value, onChange }) {
   separator.className = 'time-separator';
   separator.textContent = ':';
 
-  // ── Select minutos (cada 15 min; podés cambiar a cada 5 o 30) ──
   const MINUTES = ['00', '15', '30', '45'];
   const selectM = document.createElement('select');
   selectM.className = 'time-select';
@@ -422,7 +460,6 @@ function createTimeInput({ id, label, value, onChange }) {
     const opt = document.createElement('option');
     opt.value = m;
     opt.textContent = m;
-    // redondear al cuarto más cercano si el valor guardado no es múltiplo de 15
     if (parseInt(m, 10) === Math.round(currentM / 15) * 15 % 60) opt.selected = true;
     selectM.appendChild(opt);
   });
