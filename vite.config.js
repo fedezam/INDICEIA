@@ -31,6 +31,7 @@ export default defineConfig({
         servicios: resolve(__dirname, "src/pages/servicios.html"),
 
         "ia-config": resolve(__dirname, "src/pages/ia-config.html"),
+        "llm-parser-test": resolve(__dirname, "src/pages/llm-parser-test.html"),
 
         dashboard: resolve(__dirname, "src/pages/dashboard.html"),
         visual: resolve(__dirname, "src/pages/visual.html"),
