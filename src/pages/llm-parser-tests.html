@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ÍndiceIA · LLM Parser Test</title>
+
+  <!-- META TAGS -->
+  <meta name="test-meta-name" content="TEST_META_NAME_OK" />
+  <meta property="test:og:property" content="TEST_META_PROPERTY_OK" />
+
+  <!-- SCRIPT JSON-LD -->
+  <script type="application/ld+json" id="test-jsonld">
+  { "test": "TEST_JSONLD_OK", "location": "head > script[type=application/ld+json]" }
+  </script>
+
+  <!-- SCRIPT LER+JSON (custom type) -->
+  <script type="application/ler+json" id="test-ler">
+  { "test": "TEST_LER_JSON_OK", "location": "head > script[type=application/ler+json]" }
+  </script>
+
+  <!-- SCRIPT TEXT/PLAIN -->
+  <script type="text/plain" id="test-script-plain">
+  TEST_SCRIPT_TEXT_PLAIN_OK
+  </script>
+
+  <!-- LINK REL ALTERNATE -->
+  <link rel="alternate" type="application/ler+json" href="https://example.com/TEST_LINK_ALTERNATE_OK" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a0a0a;
+      color: #00ff88;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    h1 { font-size: 1.2rem; color: #fff; margin-bottom: 2rem; border-bottom: 1px solid #333; padding-bottom: 1rem; }
+    .section { margin-bottom: 1.5rem; border: 1px solid #1a1a1a; padding: 1rem; border-radius: 4px; }
+    .label { font-size: 0.7rem; color: #555; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.1em; }
+    [data-test], pre, code, textarea, details, blockquote, aside, figure, figcaption, address, mark, output, samp {
+      background: #111;
+      padding: 0.5rem;
+      border-radius: 2px;
+      font-size: 0.85rem;
+      word-break: break-all;
+    }
+    details summary { cursor: pointer; color: #888; }
+    template { display: block; background: #111; padding: 0.5rem; }
+    noscript { display: block; background: #111; padding: 0.5rem; }
+  </style>
+</head>
+
+<body>
+
+  <h1>ÍndiceIA · LLM Parser Test — qué tags leés realmente?</h1>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- HEADINGS                                        -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Headings</div>
+    <h1 data-test="h1">TEST_H1_OK</h1>
+    <h2 data-test="h2">TEST_H2_OK</h2>
+    <h3 data-test="h3">TEST_H3_OK</h3>
+    <h4 data-test="h4">TEST_H4_OK</h4>
+    <h5 data-test="h5">TEST_H5_OK</h5>
+    <h6 data-test="h6">TEST_H6_OK</h6>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- PARAGRAPHS & TEXT                               -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Text containers</div>
+    <p data-test="p">TEST_P_OK</p>
+    <span data-test="span">TEST_SPAN_OK</span><br/>
+    <strong data-test="strong">TEST_STRONG_OK</strong><br/>
+    <em data-test="em">TEST_EM_OK</em><br/>
+    <small data-test="small">TEST_SMALL_OK</small><br/>
+    <b data-test="b">TEST_B_OK</b><br/>
+    <i data-test="i">TEST_I_OK</i><br/>
+    <mark data-test="mark">TEST_MARK_OK</mark><br/>
+    <output data-test="output">TEST_OUTPUT_OK</output><br/>
+    <samp data-test="samp">TEST_SAMP_OK</samp><br/>
+    <address data-test="address">TEST_ADDRESS_OK</address>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- CODE & PRE                                      -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Code blocks</div>
+    <pre data-test="pre">TEST_PRE_OK</pre>
+    <code data-test="code">TEST_CODE_OK</code><br/>
+    <pre><code data-test="pre-code">TEST_PRE_CODE_OK</code></pre>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- DIV & SEMANTIC LAYOUT                           -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Divs & semantic layout</div>
+    <div data-test="div">TEST_DIV_OK</div>
+    <section data-test="section"><p>TEST_SECTION_OK</p></section>
+    <article data-test="article"><p>TEST_ARTICLE_OK</p></article>
+    <aside data-test="aside">TEST_ASIDE_OK</aside>
+    <main data-test="main-inner"><p>TEST_MAIN_OK</p></main>
+    <header data-test="header"><p>TEST_HEADER_OK</p></header>
+    <footer data-test="footer"><p>TEST_FOOTER_OK</p></footer>
+    <nav data-test="nav"><p>TEST_NAV_OK</p></nav>
+    <figure data-test="figure">
+      <figcaption data-test="figcaption">TEST_FIGCAPTION_OK</figcaption>
+      TEST_FIGURE_OK
+    </figure>
+    <blockquote data-test="blockquote">TEST_BLOCKQUOTE_OK</blockquote>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- HIDDEN / DISPLAY NONE                           -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Hidden elements</div>
+    <div data-test="display-none" style="display:none">TEST_DISPLAY_NONE_OK</div>
+    <div data-test="visibility-hidden" style="visibility:hidden">TEST_VISIBILITY_HIDDEN_OK</div>
+    <div data-test="opacity-zero" style="opacity:0">TEST_OPACITY_ZERO_OK</div>
+    <div data-test="aria-hidden" aria-hidden="true">TEST_ARIA_HIDDEN_OK</div>
+    <div data-test="hidden-attr" hidden>TEST_HIDDEN_ATTR_OK</div>
+    <div data-test="offscreen" style="position:absolute;left:-9999px">TEST_OFFSCREEN_OK</div>
+    <div data-test="height-zero" style="height:0;overflow:hidden">TEST_HEIGHT_ZERO_OK</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- FORM ELEMENTS                                   -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Form elements</div>
+    <textarea data-test="textarea" readonly>TEST_TEXTAREA_OK</textarea><br/>
+    <input data-test="input" type="text" value="TEST_INPUT_VALUE_OK" readonly /><br/>
+    <input data-test="input-hidden" type="hidden" value="TEST_INPUT_HIDDEN_OK" />
+    <label data-test="label">TEST_LABEL_OK</label>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- LISTS                                           -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Lists</div>
+    <ul data-test="ul"><li data-test="li">TEST_UL_LI_OK</li></ul>
+    <ol data-test="ol"><li>TEST_OL_LI_OK</li></ol>
+    <dl data-test="dl"><dt>TEST_DT_OK</dt><dd>TEST_DD_OK</dd></dl>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- TABLE                                           -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Table</div>
+    <table data-test="table">
+      <thead><tr><th data-test="th">TEST_TH_OK</th></tr></thead>
+      <tbody><tr><td data-test="td">TEST_TD_OK</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- DETAILS / SUMMARY                               -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Details / Summary</div>
+    <details data-test="details">
+      <summary data-test="summary">TEST_SUMMARY_OK</summary>
+      TEST_DETAILS_CONTENT_OK
+    </details>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SCRIPT IN BODY                                  -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Script tags in body</div>
+    <script type="application/json" id="test-body-json">
+    { "test": "TEST_BODY_SCRIPT_JSON_OK", "location": "body > script[type=application/json]" }
+    </script>
+    <script type="text/plain" id="test-body-plain">TEST_BODY_SCRIPT_PLAIN_OK</script>
+    <script type="application/ld+json" id="test-body-jsonld">
+    { "test": "TEST_BODY_JSONLD_OK", "location": "body > script[type=application/ld+json]" }
+    </script>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- NOSCRIPT                                        -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Noscript</div>
+    <noscript>TEST_NOSCRIPT_OK</noscript>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- TEMPLATE                                        -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Template tag</div>
+    <template id="test-template">TEST_TEMPLATE_OK</template>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- COMMENTS                                        -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <!-- TEST_HTML_COMMENT_OK -->
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- DATA ATTRIBUTES                                 -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Data attributes (en el tag, no en el contenido)</div>
+    <div data-payload='{"test":"TEST_DATA_ATTRIBUTE_JSON_OK"}'>contenedor con data-payload</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- LINKS & ANCHORS                                 -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <div class="section">
+    <div class="label">Links</div>
+    <a href="https://example.com/TEST_HREF_OK" data-test="anchor">TEST_ANCHOR_TEXT_OK</a>
+  </div>
+
+</body>
+</html>
