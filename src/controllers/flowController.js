@@ -10,8 +10,19 @@ import { db } from "../firebase.js";
 // ============================================================
 
 function getCurrentPage() {
+
   const file = window.location.pathname.split("/").pop();
-  return file?.replace(".html", "") || "index";
+  const page = file?.replace(".html", "") || "index";
+
+  // horarios delivery usa la misma página física
+  if (
+    page === 'horarios' &&
+    new URLSearchParams(window.location.search).get('mode') === 'delivery'
+  ) {
+    return 'horarios-delivery';
+  }
+
+  return page;
 }
 
 const PUBLIC_PAGES = ["login", "registro", "index", ""];
@@ -40,6 +51,7 @@ const STEPS = {
 // ============================================================
 
 export function calcularPipeline(entityType, capacidades = [], entidadData = {}) {
+
   const steps = [];
 
   const tieneProductos =
@@ -50,26 +62,59 @@ export function calcularPipeline(entityType, capacidades = [], entidadData = {})
     entityType === 'prestador' ||
     (entityType === 'comercio' && capacidades.includes('servicios'));
 
+  // ───────────────────────────────────────────────────────────
+  // PRIMER STEP
+  // ───────────────────────────────────────────────────────────
+
   if      (entityType === 'profesional') steps.push('mi-perfil-profesional');
   else if (entityType === 'prestador')   steps.push('mi-perfil');
   else                                   steps.push('mi-comercio');
 
-  const necesitaHorarios = entityType !== 'profesional' || tieneProductos;
-  if (necesitaHorarios) steps.push('horarios');
+  // ───────────────────────────────────────────────────────────
+  // HORARIOS
+  // ───────────────────────────────────────────────────────────
+
+  const necesitaHorarios =
+    entityType !== 'profesional' || tieneProductos;
+
+  if (necesitaHorarios) {
+    steps.push('horarios');
+  }
+
+  // ───────────────────────────────────────────────────────────
+  // PRODUCTOS / DELIVERY
+  // ───────────────────────────────────────────────────────────
 
   if (tieneProductos) {
+
     steps.push('entrega');
+
     if (entidadData.entrega?.delivery) {
       steps.push('horarios-delivery');
     }
+
     steps.push('productos');
   }
 
-  if (tieneServicios) steps.push('servicios');
+  // ───────────────────────────────────────────────────────────
+  // SERVICIOS
+  // ───────────────────────────────────────────────────────────
+
+  if (tieneServicios) {
+    steps.push('servicios');
+  }
+
+  // ───────────────────────────────────────────────────────────
+  // PROFESIONALES
+  // ───────────────────────────────────────────────────────────
 
   if (entityType === 'profesional') {
     steps.push('lugares', 'cobertura', 'consultas');
   }
+
+  // ───────────────────────────────────────────────────────────
+  // FINAL
+  // ───────────────────────────────────────────────────────────
 
   steps.push('ia-config');
 
@@ -82,6 +127,7 @@ export function calcularPipeline(entityType, capacidades = [], entidadData = {})
 
 function buildStepUrl(stepId) {
 
+  // horarios delivery reutiliza horarios.html
   if (stepId === 'horarios-delivery') {
     return '/horarios.html?mode=delivery';
   }
@@ -90,15 +136,26 @@ function buildStepUrl(stepId) {
 }
 
 function getFirstIncompleteStep(pipeline, onboardingSteps) {
+
   for (const stepId of pipeline) {
-    if (onboardingSteps[stepId] !== true) return stepId;
+    if (onboardingSteps[stepId] !== true) {
+      return stepId;
+    }
   }
+
   return null;
 }
 
 function getPrimeraPagina(entityType) {
-  if (entityType === 'prestador')   return 'mi-perfil';
-  if (entityType === 'profesional') return 'mi-perfil-profesional';
+
+  if (entityType === 'prestador') {
+    return 'mi-perfil';
+  }
+
+  if (entityType === 'profesional') {
+    return 'mi-perfil-profesional';
+  }
+
   return 'mi-comercio';
 }
 
@@ -107,14 +164,26 @@ function getPrimeraPagina(entityType) {
 // ============================================================
 
 export async function runFlowController(uid) {
+
   const currentPage = getCurrentPage();
+
   if (!uid) return;
 
   if (PUBLIC_PAGES.includes(currentPage)) return;
-  if (new URLSearchParams(window.location.search).get('edit') === 'true') return;
+
+  // modo edición bypass onboarding
+  if (new URLSearchParams(window.location.search).get('edit') === 'true') {
+    return;
+  }
 
   try {
+
+    // ─────────────────────────────────────────────────────────
+    // USER
+    // ─────────────────────────────────────────────────────────
+
     const userSnap = await getDoc(doc(db, "usuarios", uid));
+
     if (!userSnap.exists()) {
       window.location.href = "/login.html";
       return;
@@ -122,21 +191,50 @@ export async function runFlowController(uid) {
 
     const userData = userSnap.data();
 
+    // ─────────────────────────────────────────────────────────
+    // STEP USUARIO
+    // ─────────────────────────────────────────────────────────
+
     if (!userData.onboardingSteps?.usuario) {
-      if (currentPage !== "usuario") window.location.href = "/usuario.html";
+
+      if (currentPage !== "usuario") {
+        window.location.href = "/usuario.html";
+      }
+
       return;
     }
+
+    // ─────────────────────────────────────────────────────────
+    // STEP TIPO ENTIDAD
+    // ─────────────────────────────────────────────────────────
 
     if (!userData.onboardingSteps?.['tipo-entidad']) {
-      if (currentPage !== "tipo-entidad") window.location.href = "/tipo-entidad.html";
+
+      if (currentPage !== "tipo-entidad") {
+        window.location.href = "/tipo-entidad.html";
+      }
+
       return;
     }
 
+    // ─────────────────────────────────────────────────────────
+    // SIN COMERCIO
+    // ─────────────────────────────────────────────────────────
+
     if (!userData.comercioId) {
+
       const firstPage = getPrimeraPagina(userData.entityType);
-      if (currentPage !== firstPage) window.location.href = `/${firstPage}.html`;
+
+      if (currentPage !== firstPage) {
+        window.location.href = `/${firstPage}.html`;
+      }
+
       return;
     }
+
+    // ─────────────────────────────────────────────────────────
+    // ENTIDAD
+    // ─────────────────────────────────────────────────────────
 
     const ref  = doc(db, "entidades", userData.comercioId);
     const snap = await getDoc(ref);
@@ -146,25 +244,59 @@ export async function runFlowController(uid) {
       return;
     }
 
-    const entidadData     = snap.data();
-    const entityType      = entidadData.entityType  || userData.entityType  || 'comercio';
-    const capacidades     = entidadData.capacidades || userData.capacidades || [];
-    const onboardingSteps = entidadData.onboardingSteps || {};
+    const entidadData = snap.data();
 
-    const pipeline   = calcularPipeline(entityType, capacidades, entidadData);
-    const nextStepId = getFirstIncompleteStep(pipeline, onboardingSteps);
+    const entityType =
+      entidadData.entityType ||
+      userData.entityType ||
+      'comercio';
+
+    const capacidades =
+      entidadData.capacidades ||
+      userData.capacidades ||
+      [];
+
+    const onboardingSteps =
+      entidadData.onboardingSteps || {};
+
+    // ─────────────────────────────────────────────────────────
+    // PIPELINE
+    // ─────────────────────────────────────────────────────────
+
+    const pipeline = calcularPipeline(
+      entityType,
+      capacidades,
+      entidadData
+    );
+
+    const nextStepId =
+      getFirstIncompleteStep(pipeline, onboardingSteps);
+
+    // ─────────────────────────────────────────────────────────
+    // ONBOARDING COMPLETO
+    // ─────────────────────────────────────────────────────────
 
     if (!nextStepId) {
-      if (currentPage !== "dashboard") window.location.href = "/dashboard.html";
+
+      if (currentPage !== "dashboard") {
+        window.location.href = "/dashboard.html";
+      }
+
       return;
     }
 
-    if (currentPage !== STEPS[nextStepId].page) {
+    // ─────────────────────────────────────────────────────────
+    // REDIRECT
+    // ─────────────────────────────────────────────────────────
+
+    if (currentPage !== nextStepId) {
       window.location.href = buildStepUrl(nextStepId);
     }
 
   } catch (err) {
+
     console.error("❌ FlowController error:", err);
+
     window.location.href = "/login.html";
   }
 }
@@ -174,10 +306,13 @@ export async function runFlowController(uid) {
 // ============================================================
 
 export async function completeStep(uid, stepId) {
+
   const userSnap = await getDoc(doc(db, "usuarios", uid));
+
   if (!userSnap.exists()) return;
 
   const { comercioId } = userSnap.data();
+
   if (!comercioId) return;
 
   await updateDoc(doc(db, "entidades", comercioId), {
@@ -190,27 +325,55 @@ export async function completeStep(uid, stepId) {
 // ============================================================
 
 export async function redirectAfterSave(uid) {
+
   const userSnap = await getDoc(doc(db, "usuarios", uid));
+
   if (!userSnap.exists()) return;
 
-  const { comercioId, entityType: userEntityType, capacidades: userCapacidades } = userSnap.data();
+  const {
+    comercioId,
+    entityType: userEntityType,
+    capacidades: userCapacidades
+  } = userSnap.data();
+
   if (!comercioId) {
-    window.location.href = `/${getPrimeraPagina(userEntityType)}.html`;
+
+    window.location.href =
+      `/${getPrimeraPagina(userEntityType)}.html`;
+
     return;
   }
 
   const snap = await getDoc(doc(db, "entidades", comercioId));
+
   if (!snap.exists()) return;
 
-  const entidadData     = snap.data();
-  const entityType      = entidadData.entityType  || userEntityType  || 'comercio';
-  const capacidades     = entidadData.capacidades || userCapacidades || [];
-  const onboardingSteps = entidadData.onboardingSteps || {};
+  const entidadData = snap.data();
 
-  const pipeline   = calcularPipeline(entityType, capacidades, entidadData);
-  const nextStepId = getFirstIncompleteStep(pipeline, onboardingSteps);
+  const entityType =
+    entidadData.entityType ||
+    userEntityType ||
+    'comercio';
+
+  const capacidades =
+    entidadData.capacidades ||
+    userCapacidades ||
+    [];
+
+  const onboardingSteps =
+    entidadData.onboardingSteps || {};
+
+  const pipeline = calcularPipeline(
+    entityType,
+    capacidades,
+    entidadData
+  );
+
+  const nextStepId =
+    getFirstIncompleteStep(pipeline, onboardingSteps);
 
   if (!nextStepId) {
+
     window.location.href = "/dashboard.html";
     return;
   }
@@ -223,13 +386,28 @@ export async function redirectAfterSave(uid) {
 // ============================================================
 
 export function buildFlowContext(userData, comercioData) {
+
   return {
-    entityType:  comercioData.entityType  || userData.entityType  || 'comercio',
-    capacidades: comercioData.capacidades || userData.capacidades || [],
-    comercioId:  userData.comercioId || null,
+    entityType:
+      comercioData.entityType ||
+      userData.entityType ||
+      'comercio',
+
+    capacidades:
+      comercioData.capacidades ||
+      userData.capacidades ||
+      [],
+
+    comercioId:
+      userData.comercioId || null,
   };
 }
 
 export function buildPipeline(ctx) {
-  return calcularPipeline(ctx.entityType, ctx.capacidades || [], ctx.comercioData || {});
+
+  return calcularPipeline(
+    ctx.entityType,
+    ctx.capacidades || [],
+    ctx.comercioData || {}
+  );
 }
