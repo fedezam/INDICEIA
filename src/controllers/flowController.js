@@ -81,6 +81,11 @@ export function calcularPipeline(entityType, capacidades = [], entidadData = {})
 // ============================================================
 
 function buildStepUrl(stepId) {
+
+  if (stepId === 'horarios-delivery') {
+    return '/horarios.html?mode=delivery';
+  }
+
   return `/${STEPS[stepId].page}.html`;
 }
 
