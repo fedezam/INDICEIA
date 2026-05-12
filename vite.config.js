@@ -33,6 +33,7 @@ export default defineConfig({
         "ia-config": resolve(__dirname, "src/pages/ia-config.html"),
         "llm-parser-test": resolve(__dirname, "src/pages/llm-parser-test.html"),
         "ler-browser-test": resolve(__dirname, "src/pages/ler-browser-test.html"),
+        "entidad-pizeria-la-esquina": resolve(__dirname, "src/pages/carga/y/habita/entidad-pizeria-la-esquina.html"),
 
         dashboard: resolve(__dirname, "src/pages/dashboard.html"),
         visual: resolve(__dirname, "src/pages/visual.html"),
