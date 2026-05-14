@@ -1,6 +1,7 @@
 // /api/entity/[id].js
 // ⟦ROLE⟧ Proxy de entidad. Lee Blob estático → inyecta horaActual → devuelve JSON fresco.
 
+import { getHoraActual } from '../../lib/utils/getHoraActual.js';
 import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
@@ -43,19 +44,15 @@ export default async function handler(req, res) {
 
     const entity = await blobRes.json();
 
-    // 3. Obtener hora actual de Argentina
-    const horaRes = await fetch('https://indiceia.vercel.app/api/hora');
-    const horaActual = horaRes.ok
-      ? (await horaRes.json()).datetime
-      : new Date().toLocaleString('sv-SE', { timeZone: 'America/Argentina/Buenos_Aires' });
+    // 3. Inyectar horaActual — sin fetch externo
+    const horaActual = getHoraActual();
 
-    // 4. Inyectar horaActual en el root — el mind la lee directo
     const enriched = {
       horaActual,
       ...entity,
     };
 
-    // 5. Cache corto — la hora cambia, no tiene sentido cachear mucho
+    // 4. Cache corto — la hora cambia cada minuto
     res.setHeader('Cache-Control', 'public, max-age=60');
     return res.status(200).json(enriched);
 
