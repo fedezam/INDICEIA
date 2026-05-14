@@ -36,6 +36,7 @@ export default async function handler(req, res) {
       entityType: data.entityType || 'comercio',
       ubicacion:  data.ubicacion  || {},
     };
+    const entityUrl = `https://indiceia.vercel.app/api/entity/${comercioId}`;
     const miniPrompt = buildPrompt(context, data.entityPublicUrl);
 
     // ── goods ──
