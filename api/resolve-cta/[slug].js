@@ -37,7 +37,7 @@ export default async function handler(req, res) {
       ubicacion:  data.ubicacion  || {},
     };
     const entityUrl = `https://indiceia.vercel.app/api/entity/${comercioId}`;
-    const miniPrompt = buildPrompt(context, data.entityPublicUrl);
+    const miniPrompt = buildPrompt(context, entityUrl);
 
     // ── goods ──
     const snapshot = await comercioRef.collection('productos').get();
