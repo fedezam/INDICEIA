@@ -12,7 +12,7 @@ import { buildVisual }       from '../../lib/entity-factory/builders/visual.buil
 import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder.js';
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
 import { resolveDomain }     from '../../lib/entity-factory/domain-resolver.js';
-import { buildEntityContext } from '../../src/shared/entity-context.js'; // ← NUEVO: import
+import { buildEntityContext } from '../../src/shared/entity-context.js';
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -35,6 +35,17 @@ async function resolveReferralCode(comercioId, duenoId) {
     }
   }
   return comercioId.substring(0, 8).toUpperCase();
+}
+
+// ─── Merge defensivo ──────────────────────────────────────────
+// Elimina claves con valor undefined antes de mergear,
+// evitando pisar valores válidos del objeto base.
+function safeMerge(base, override) {
+  if (!override) return base;
+  const clean = Object.fromEntries(
+    Object.entries(override).filter(([, v]) => v !== undefined)
+  );
+  return { ...base, ...clean };
 }
 
 // ─── BUILDERS POR ENTITYTYPE ──────────────────────────────────
@@ -74,9 +85,8 @@ async function buildPrestador(comercioRef, data, context, referralCode, slug) {
 async function buildProfesionalEntity(comercioRef, data, context, referralCode, slug) {
   const goods        = null;
   const services     = null;
-  const professional = buildProfessional(data); // síncrono — lee directo de data
+  const professional = buildProfessional(data);
 
-  // Visual opcional — solo si tiene templateId asignado
   const templateId  = data.templateId || null;
   const savedVisual = { visualHash: data.visualHash || null, visualHtmlUrl: data.visualHtmlUrl || null };
   const visual      = await buildVisual(context, comercioRef, data.comercioId, slug, templateId, savedVisual);
@@ -101,7 +111,7 @@ export async function buildEntity({ comercioId }) {
   const data       = snap.data();
   const entityType = data.entityType || 'comercio';
 
-  // Slug siempre desde Firestore
+  // Slug desde Firestore — fuente de verdad única
   const slug         = data.landing?.slug || null;
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
   const context      = buildContext(data, comercioId, referralCode);
@@ -130,19 +140,16 @@ export async function buildEntity({ comercioId }) {
   const savedSeo = { seoHash: data.seoHash || null, seoHtmlUrl: data.seoHtmlUrl || null };
   await buildSeo(context, comercioId, savedSeo, slug);
 
-  // ── INDEX ─────────────────────────────────────────────────
-  // buildIndex movido a generate-and-upload-entity con rawData correcto
-
-  // ── ENRIQUECER CONTEXTO PARA ENTITY.JSON (LLM) ─────────────
-  // Usamos entity-context para inyectar geo (vecinas) y rubro (metadata)
-  // sin perder la estructura actual de context (ej: direccion, horarios)
+  // ── ENRIQUECER CONTEXTO PARA ENTITY.JSON (LLM) ────────────
+  // safeMerge filtra undefined antes de mergear — evita pisar
+  // valores válidos de context.ubicacion con claves vacías de geoCtx.
   const geoCtx = buildEntityContext(data);
-  
+
   const enrichedContext = {
     ...context,
-    // Merge ubicacion: preserva campos existentes (direccion) y agrega/enriquece geo + cercanas
-    ...(geoCtx.ubicacion && { ubicacion: { ...context.ubicacion, ...geoCtx.ubicacion } }),
-    // Inyecta rubro enriquecido
+    ...(geoCtx.ubicacion && {
+      ubicacion: safeMerge(context.ubicacion, geoCtx.ubicacion),
+    }),
     ...(geoCtx.rubro && { rubro: geoCtx.rubro }),
   };
 
@@ -170,7 +177,7 @@ export async function buildEntity({ comercioId }) {
       capabilities: { role: 'cognitive_permissions', version: '1.0', optional: true },
     },
     mind,
-    context: enrichedContext,  // ← Usamos el contexto enriquecido
+    context: enrichedContext,
     ...(goods         && { goods }),
     ...(services      && { services }),
     ...(professional  && { professional }),
