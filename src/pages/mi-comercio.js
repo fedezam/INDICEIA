@@ -1,693 +1,903 @@
 // ============================================================
-// src/pages/mi-comercio.js
+// src/pages/mi-perfil.js
 // ============================================================
 
-// ==================== SKELETON CORE ====================
-import { runLifecycle }            from '/src/skeleton/lifecycle.js';
+import { runSkeleton }             from '/src/skeleton/skeleton.js';
 import { createFirebaseAdapter }   from '/src/skeleton/adapters/firebaseAdapter.js';
-import { mountLayout }             from '/src/skeleton/layout/index.js';
+import { createFormField }         from '/src/skeleton/components/form-field/index.js';
+import { createCheckboxGroup }     from '/src/skeleton/components/checkbox-group/index.js';
+import { createButton }            from '/src/skeleton/components/button/index.js';
+import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
+import { showToast }               from '/src/skeleton/components/toast/index.js';
+import { db }                      from '/src/services/firebase/firebase.js';
+import { fillProvinciaSelector }   from '/src/shared/provincias.js';
 import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
+import { rubroFromForm }           from '/src/shared/entity-context.js';
+import {
+  doc, setDoc, updateDoc,
+  collection, getDoc, Timestamp
+} from 'firebase/firestore';
+import './mi-perfil.css';
 
-// ==================== FIREBASE ====================
-import { doc, getDoc, setDoc, updateDoc, collection, Timestamp } from 'firebase/firestore';
-import { db } from '/src/services/firebase/firebase.js';
+// ============================================================
+// MÓDULO DE PÁGINA
+// ============================================================
+const page = {
 
-// ==================== FLOW ====================
-import { runFlowController } from '/src/controllers/flowController.js';
-
-// ==================== COMPONENTES ====================
-import { createFormField }        from '/src/skeleton/components/form-field/index.js';
-import { createCard }             from '/src/skeleton/components/card/index.js';
-import { createCategorySelector } from '/src/skeleton/components/category-selector/index.js';
-import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
-import { showToast }              from '/src/skeleton/components/toast/index.js';
-
-// ==================== SHARED ====================
-import { fillProvinciaSelector } from '/src/shared/provincias.js';
-import { ubicacionFromForm, rubroFromForm } from '/src/shared/entity-context.js'; // ← NUEVO
-
-import './mi-comercio.css';
-
-// ==================== DATOS ESTÁTICOS ====================
-const CATEGORIAS_COMUNES = [
-  "Panadería", "Carnicería", "Verdulería", "Kiosco", "Supermercado", "Restaurante",
-  "Cafetería", "Pizzería", "Heladería", "Bar", "Ropa", "Zapatería", "Belleza",
-  "Peluquería", "Gimnasio", "Farmacia", "Ferretería", "Librería", "Juguetería",
-  "Electrónica", "Mascotas", "Óptica", "Limpieza", "Regalería", "Tienda de deportes"
-];
-
-const METODOS_PAGO = [
-  { id: 'efectivo',        nombre: 'Efectivo',        icon: 'fa-money-bill'   },
-  { id: 'tarjeta_debito',  nombre: 'Tarjeta Débito',  icon: 'fa-credit-card'  },
-  { id: 'tarjeta_credito', nombre: 'Tarjeta Crédito', icon: 'fa-credit-card'  },
-  { id: 'transferencia',   nombre: 'Transferencia',   icon: 'fa-exchange-alt' },
-  { id: 'mercadopago',     nombre: 'Mercado Pago',    icon: 'fa-wallet'       },
-  { id: 'qr',              nombre: 'QR',              icon: 'fa-qrcode'       }
-];
-
-// ==================== HELPERS ====================
-function slugify(text) {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/["'`´""'']/g, '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-// ==================== ADAPTER ====================
-const adapter = (options) => createFirebaseAdapter(options);
-
-// ==================== LIFECYCLE ====================
-runLifecycle({
-  adapter,
-  options: {
-    loadingMessage: 'Cargando datos del comercio...',
+  _data: {
+    nombre:              '',
+    especialidad:        '',
+    descripcion:         '',
+    experiencia:         '',
+    modalidad_trabajo:   null,   // 'local' | 'domicilio'
+    atiende_urgencias:   false,
+    whatsapp:            '',
+    telefono:            '',
+    email:               '',
+    instagram:           '',
+    direccion:           '',
+    localidad_principal: null,
+    zona_cobertura:      [],
+    slug:                null,
   },
 
-  async onReady(ctx) {
-    await runFlowController(ctx.user.uid);
-    mountLayout(ctx);
-    const state = await load(ctx);
-    render(ctx, state);
-  }
-});
+  _originalSnapshot: null,
+  _ctx:              null,
+  _isEditMode:       false,
+  _isNuevo:          false,
+  _slugExiste:       false,
+  _comercioData:     {},
 
-// ============================================================
-// LOAD
-// ============================================================
-async function load(ctx) {
-  const isEditMode             = window.isEditMode === true;
-  const comercioData           = ctx.comercioData || {};
-  const isNewComercio          = !comercioData.nombreComercio;
-  const comercioSlug           = comercioData.landing?.slug || null;
-  const slugDisponible         = !!comercioSlug;
-  const selectedPaymentMethods = comercioData.paymentMethods || [];
-  const tieneLocalFisico       = comercioData.tieneLocalFisico !== false;
-
-  return { isEditMode, isNewComercio, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
-}
-
-// ============================================================
-// RENDER
-// ============================================================
-function render(ctx, state) {
-  const page = document.getElementById('skeleton-page');
-  page.innerHTML = '';
-
-  const refs = {
+  _refs: {
     fields:              {},
-    categorySelector:    null,
-    paymentCards:        [],
     slugInput:           null,
     slugStatus:          null,
     slugValidationTimer: null,
-    localidadSeleccionada: null,
-  };
+  },
 
-  const uiState = {
-    comercioSlug:           state.comercioSlug,
-    slugDisponible:         state.slugDisponible,
-    selectedPaymentMethods: [...state.selectedPaymentMethods],
-    tieneLocalFisico:       state.tieneLocalFisico,
-  };
+  // ──────────────────────────────────────────────────────────
+  // LOAD
+  // ──────────────────────────────────────────────────────────
+  async load(ctx) {
+    this._ctx          = ctx;
+    this._isEditMode   = ctx.isEditMode === true;
+    this._comercioData = ctx.comercioData || {};
+    this._isNuevo      = !this._comercioData.nombre;
+    this._slugExiste   = !!this._comercioData.landing?.slug;
 
-  const title = document.createElement('h2');
-  title.textContent = state.isNewComercio ? 'Crear Mi Comercio' : 'Editar Mi Comercio';
-  title.className   = 'page-title';
-  page.appendChild(title);
+    const c = this._comercioData;
 
-  page.appendChild(renderSeccionBasicos(state, refs, uiState));
-  page.appendChild(renderSeccionUbicacion(state, refs, uiState));
-  page.appendChild(renderSeccionContacto(state, refs, uiState));
-  page.appendChild(renderSeccionRedes(state, refs, uiState));
-  page.appendChild(renderSeccionCategorias(state, refs, uiState));
-  page.appendChild(renderSeccionPagos(state, refs, uiState));
-  page.appendChild(renderBotonGuardar(ctx, state, refs, uiState));
-}
+    const localidad_principal = c.localidad_principal || (
+      c.cobertura?.[0] ? { ...c.cobertura[0], pais: 'Argentina' } : null
+    );
+    const zona_cobertura = c.zona_cobertura
+      || c.cobertura?.slice(1)?.map(x => ({ ...x }))
+      || [];
 
-// ============================================================
-// SECCIONES
-// ============================================================
+    this._data = {
+      nombre:              c.nombre             || '',
+      especialidad:        c.especialidad        || '',
+      descripcion:         c.descripcion         || '',
+      experiencia:         c.experiencia         || '',
+      modalidad_trabajo:   c.modalidad_trabajo   || null,
+      atiende_urgencias:   c.atiende_urgencias === true,
+      whatsapp:            c.whatsapp            || '',
+      telefono:            c.telefono            || '',
+      email:               c.email              || '',
+      instagram:           c.instagram           || '',
+      direccion:           c.direccion           || '',
+      localidad_principal,
+      zona_cobertura,
+      slug:                c.landing?.slug       || null,
+    };
 
-function renderSeccionBasicos(state, refs, uiState) {
-  const section   = crearSeccion('Datos Básicos');
-  const tieneSlug = !!state.comercioData.landing?.slug;
+    this._originalSnapshot = structuredClone(this._data);
+  },
 
-  refs.fields.nombreComercio = createFormField({
-    label: 'Nombre del Comercio', name: 'nombreComercio', required: true,
-    value: state.comercioData.nombreComercio || ''
-  });
-  section.appendChild(refs.fields.nombreComercio);
+  // ──────────────────────────────────────────────────────────
+  // RENDER
+  // ──────────────────────────────────────────────────────────
+  render() {
+    const root = document.getElementById('skeleton-page');
+    root.innerHTML = '';
 
-  section.appendChild(
-    tieneSlug
-      ? renderSlugReadonly(state.comercioData.landing.slug)
-      : renderSlugEditable(refs, uiState)
-  );
+    this._refs = {
+      fields:              {},
+      slugInput:           null,
+      slugStatus:          null,
+      slugValidationTimer: null,
+    };
 
-  refs.fields.descripcion = createFormField({
-    label: 'Descripción', name: 'descripcion', type: 'textarea', required: true,
-    placeholder: 'Contanos sobre tu comercio...',
-    value: state.comercioData.descripcion || ''
-  });
-  section.appendChild(refs.fields.descripcion);
+    const title = document.createElement('h2');
+    title.className   = 'page-title';
+    title.textContent = this._isNuevo ? 'Crear mi perfil' : 'Editar mi perfil';
+    root.appendChild(title);
 
-  agregarListeners([refs.fields.nombreComercio, refs.fields.descripcion], refs, uiState);
-  return section;
-}
+    root.appendChild(this._renderSeccionIdentidad());
+    root.appendChild(this._renderSeccionModalidadTrabajo());
+    root.appendChild(this._renderSeccionUbicacion());
+    root.appendChild(this._renderSeccionContacto());
 
-function renderSlugEditable(refs, uiState) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'slug-field-wrapper';
-
-  const warning = document.createElement('p');
-  warning.className   = 'form-help form-help--warning';
-  warning.textContent = '⚠️ Tu link público. Elegilo con cuidado — una vez guardado no se puede cambiar.';
-  wrapper.appendChild(warning);
-
-  const slugContainer = document.createElement('div');
-  slugContainer.className = 'slug-container';
-
-  const slugPrefix = document.createElement('span');
-  slugPrefix.className   = 'slug-prefix';
-  slugPrefix.textContent = 'indiceia.com/';
-
-  refs.slugInput = document.createElement('input');
-  refs.slugInput.type        = 'text';
-  refs.slugInput.className   = 'slug-input';
-  refs.slugInput.placeholder = 'mi-comercio';
-  refs.slugInput.value       = uiState.comercioSlug || '';
-
-  slugContainer.append(slugPrefix, refs.slugInput);
-  wrapper.appendChild(slugContainer);
-
-  refs.slugStatus = document.createElement('div');
-  refs.slugStatus.className = 'slug-status';
-  refs.slugStatus.innerHTML = `<span class="slug-icon"></span><span class="slug-text"></span>`;
-  wrapper.appendChild(refs.slugStatus);
-
-  refs.slugInput.addEventListener('input', () => {
-    clearTimeout(refs.slugValidationTimer);
-    const slug = refs.slugInput.value.trim();
-    if (slug.length < 3) {
-      updateSlugStatus(refs, 'empty', '');
-      uiState.slugDisponible = false;
-      uiState.comercioSlug   = null;
-      document.dispatchEvent(new Event('change'));
-      return;
+    if (!this._slugExiste) {
+      root.appendChild(this._renderSeccionSlug());
     }
-    updateSlugStatus(refs, 'checking', 'Verificando disponibilidad...');
-    refs.slugValidationTimer = setTimeout(() => validarSlug(slug, refs, uiState, false), 800);
-  });
 
-  setTimeout(() => {
-    const nombreInput = refs.fields.nombreComercio?.input;
-    if (!nombreInput) return;
-    nombreInput.addEventListener('input', () => {
-      clearTimeout(refs.slugValidationTimer);
-      const nombre = nombreInput.value.trim();
-      if (nombre.length >= 3 && refs.slugInput) {
-        refs.slugValidationTimer = setTimeout(async () => {
-          const newSlug = slugify(nombre);
-          refs.slugInput.value = newSlug;
-          await validarSlug(newSlug, refs, uiState, true);
-        }, 500);
-      }
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'btn-container';
+    btnContainer.appendChild(this._renderSaveButton());
+    root.appendChild(btnContainer);
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // DIRTY CONTROLLER
+  // ──────────────────────────────────────────────────────────
+  _buildDirtyController() {
+    return {
+      hasUnsavedChanges: () =>
+        JSON.stringify(this._data) !== JSON.stringify(this._originalSnapshot),
+      markSaved: () => {
+        this._originalSnapshot = structuredClone(this._data);
+      },
+    };
+  },
+
+  // ============================================================
+  // SECCIÓN: IDENTIDAD
+  // ============================================================
+  _renderSeccionIdentidad() {
+    const section = crearSeccion('¿Quién sos?');
+
+    const help = document.createElement('p');
+    help.className   = 'form-help';
+    help.textContent = 'Estos datos definen cómo te va a presentar tu asistente a los clientes.';
+    section.appendChild(help);
+
+    this._refs.fields.nombre = createFormField({
+      label: 'Nombre o marca', name: 'nombre', required: true,
+      placeholder: 'Ej: Juan Pérez o Plomería JP',
+      helpText: 'Como te conocen tus clientes — puede ser tu nombre o el nombre de tu marca',
+      value: this._data.nombre,
+      actions: { onChange: (v) => { this._data.nombre = v.trim(); } }
     });
-  }, 0);
 
-  return wrapper;
-}
+    this._refs.fields.especialidad = createFormField({
+      label: 'Especialidad', name: 'especialidad', required: true,
+      placeholder: 'Ej: Plomero, Manicura, Profe de matemáticas',
+      helpText: 'En una línea, qué hacés',
+      value: this._data.especialidad,
+      actions: { onChange: (v) => { this._data.especialidad = v.trim(); } }
+    });
 
-function renderSlugReadonly(slug) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'slug-field-wrapper';
+    this._refs.fields.descripcion = createFormField({
+      label: 'Descripción', name: 'descripcion', type: 'textarea',
+      rows: 3, required: true,
+      placeholder: 'Ej: Hago instalaciones y reparaciones de cañerías en hogares y comercios.',
+      helpText: 'Dos o tres líneas que expliquen qué hacés y por qué elegirte',
+      value: this._data.descripcion,
+      actions: { onChange: (v) => { this._data.descripcion = v.trim(); } }
+    });
 
-  const display = document.createElement('div');
-  display.className = 'slug-readonly';
+    this._refs.fields.experiencia = createFormField({
+      label: 'Años de experiencia', name: 'experiencia', type: 'number',
+      placeholder: 'Ej: 10',
+      helpText: 'Opcional — ayuda a generar confianza',
+      value: this._data.experiencia,
+      actions: { onChange: (v) => { this._data.experiencia = v.trim(); } }
+    });
 
-  const prefix = document.createElement('span');
-  prefix.className   = 'slug-prefix';
-  prefix.textContent = 'indiceia.com/';
+    if (!this._slugExiste) {
+      this._refs.fields.nombre.input?.addEventListener('input', () => {
+        clearTimeout(this._refs.slugValidationTimer);
+        const nombre = this._data.nombre;
+        if (nombre.length >= 3 && this._refs.slugInput) {
+          this._refs.slugValidationTimer = setTimeout(async () => {
+            const newSlug = slugify(nombre);
+            this._refs.slugInput.value = newSlug;
+            await this._validarSlug(newSlug, true);
+          }, 500);
+        }
+      });
+    }
 
-  const value = document.createElement('span');
-  value.className   = 'slug-value';
-  value.textContent = slug;
+    section.append(
+      this._refs.fields.nombre,
+      this._refs.fields.especialidad,
+      this._refs.fields.descripcion,
+      this._refs.fields.experiencia,
+      this._renderUrgenciasField(),
+    );
 
-  const lock = document.createElement('span');
-  lock.className = 'slug-lock';
-  lock.innerHTML = '<i class="fas fa-lock"></i>';
+    return section;
+  },
 
-  display.append(prefix, value, lock);
+  // ============================================================
+  // SECCIÓN: MODALIDAD DE TRABAJO (pivote)
+  // ============================================================
+  _renderSeccionModalidadTrabajo() {
+    const section = crearSeccion('¿Cómo trabajás?');
+    section.classList.add('seccion-modalidad-trabajo');
 
-  const note = document.createElement('p');
-  note.className   = 'form-help';
-  note.textContent = 'Este es tu link permanente. No se puede modificar.';
+    const help = document.createElement('p');
+    help.className   = 'form-help';
+    help.textContent = 'Esto define qué información le mostramos a tus clientes sobre dónde y cómo atendés.';
+    section.appendChild(help);
 
-  wrapper.append(display, note);
-  return wrapper;
-}
+    const opciones = [
+      {
+        value: 'domicilio',
+        label: 'Voy al domicilio del cliente',
+        icon:  '🏠',
+        help:  'Plomero, electricista, manicura a domicilio, profe particular...',
+      },
+      {
+        value: 'local',
+        label: 'Tengo local / taller / consultorio',
+        icon:  '🏪',
+        help:  'Estética, mecánico, reparación de PC, médico...',
+      },
+    ];
 
-// ------------------------------------------------------------
-// UBICACIÓN
-// ------------------------------------------------------------
-function renderSeccionUbicacion(state, refs, uiState) {
-  const section = crearSeccion('Ubicación');
+    opciones.forEach(opt => {
+      const row = document.createElement('label');
+      row.className = 'radio-modalidad-trabajo';
+      row.innerHTML = `
+        <input type="radio" name="modalidad_trabajo" value="${opt.value}"
+          ${this._data.modalidad_trabajo === opt.value ? 'checked' : ''}>
+        <div>
+          <strong>${opt.icon} ${opt.label}</strong>
+          <span>${opt.help}</span>
+        </div>
+      `;
+      const radio = row.querySelector('input');
+      radio.addEventListener('change', () => {
+        this._data.modalidad_trabajo = opt.value;
+        // Re-render reactivo de la sección ubicación
+        const old = document.querySelector('.seccion-ubicacion');
+        if (old) old.replaceWith(this._renderSeccionUbicacion());
+      });
+      section.appendChild(row);
+    });
 
-  const localFisicoContainer = document.createElement('div');
-  localFisicoContainer.className = 'form-field';
+    return section;
+  },
 
-  const toggleWrapper = document.createElement('div');
-  toggleWrapper.className = 'toggle-wrapper';
+  // ============================================================
+  // SECCIÓN: UBICACIÓN (reactiva a modalidad_trabajo)
+  // ============================================================
+  _renderSeccionUbicacion() {
+    const tieneLocal = this._data.modalidad_trabajo === 'local';
 
-  const checkbox = document.createElement('input');
-  checkbox.type    = 'checkbox';
-  checkbox.id      = 'tieneLocalFisico';
-  checkbox.checked = uiState.tieneLocalFisico;
+    const section = crearSeccion(
+      tieneLocal ? '¿Dónde está tu local?' : '¿Desde dónde trabajás?'
+    );
+    section.classList.add('seccion-ubicacion');
 
-  const label = document.createElement('label');
-  label.htmlFor = 'tieneLocalFisico';
-  label.innerHTML = `
-    <span class="toggle-label">¿Tenés local físico?</span>
-    <span class="toggle-helper">Marcá si atendés clientes en un local</span>
-  `;
+    const provinciaGuardada = this._data.localidad_principal?.provincia || '';
 
-  checkbox.addEventListener('change', (e) => {
-    uiState.tieneLocalFisico = e.target.checked;
-    document.dispatchEvent(new Event('change'));
-  });
+    // ── Localidad principal ────────────────────────────────────
+    const subPrincipal = document.createElement('div');
+    subPrincipal.className = 'ubicacion-bloque';
 
-  toggleWrapper.append(checkbox, label);
-  localFisicoContainer.appendChild(toggleWrapper);
-  section.appendChild(localFisicoContainer);
+    const helpPrincipal = document.createElement('p');
+    helpPrincipal.className   = 'form-help';
+    helpPrincipal.textContent = tieneLocal
+      ? '¿En qué localidad está tu local?'
+      : '¿En qué localidad estás basado?';
+    subPrincipal.appendChild(helpPrincipal);
 
-  refs.fields.pais = createFormField({
-    label: 'País', name: 'pais', value: 'Argentina', disabled: true
-  });
-  section.appendChild(refs.fields.pais);
+    this._refs.fields.provincia = createFormField({
+      label: 'Provincia', name: 'provincia', type: 'select', required: true
+    });
+    const optDefault = document.createElement('option');
+    optDefault.value = ''; optDefault.textContent = 'Elegí una provincia...';
+    this._refs.fields.provincia.input.prepend(optDefault);
+    fillProvinciaSelector('Argentina', this._refs.fields.provincia.input);
+    if (provinciaGuardada) this._refs.fields.provincia.input.value = provinciaGuardada;
+    subPrincipal.appendChild(this._refs.fields.provincia);
 
-  refs.fields.provincia = createFormField({
-    label: 'Provincia', name: 'provincia', type: 'select', required: true
-  });
-  fillProvinciaSelector('Argentina', refs.fields.provincia.input);
+    const localidadLabel = document.createElement('label');
+    localidadLabel.className   = 's-label';
+    localidadLabel.textContent = 'Localidad principal *';
+    subPrincipal.appendChild(localidadLabel);
 
-  const provinciaActual = state.comercioData.ubicacion?.provincia
-    || state.comercioData.localidad?.provincia
-    || state.comercioData.provincia
-    || '';
-  if (provinciaActual) refs.fields.provincia.input.value = provinciaActual;
-  section.appendChild(refs.fields.provincia);
+    const localidadContainer = document.createElement('div');
+    localidadContainer.className = 'ciudad-autocomplete-container';
+    subPrincipal.appendChild(localidadContainer);
 
-  const ciudadLabel = document.createElement('label');
-  ciudadLabel.className   = 'form-field-label';
-  ciudadLabel.textContent = 'Ciudad *';
-  section.appendChild(ciudadLabel);
+    const chipPrincipalContainer = document.createElement('div');
+    chipPrincipalContainer.className = 'chip-principal-container';
+    subPrincipal.appendChild(chipPrincipalContainer);
 
-  const ciudadContainer = document.createElement('div');
-  ciudadContainer.className = 'ciudad-autocomplete-container';
-  section.appendChild(ciudadContainer);
+    const montarLocalidadPrincipal = (provinciaVal) => {
+      mountCiudadAutocomplete(provinciaVal, localidadContainer, '', (loc) => {
+        this._data.localidad_principal = {
+          localidad: loc.nombre,
+          provincia: provinciaVal,
+          pais:      'Argentina',
+          id:        loc.id,
+          lat:       loc.lat,
+          lng:       loc.lng,
+        };
+        renderChipPrincipal(chipPrincipalContainer, this._data, montarLocalidadPrincipal, this._refs);
+        document.dispatchEvent(new Event('change'));
+      });
+    };
 
-  function montarCiudad(provincia, valorActual = '') {
-    mountCiudadAutocomplete(provincia, ciudadContainer, valorActual, (localidad) => {
-      refs.localidadSeleccionada = localidad;
+    if (provinciaGuardada) {
+      const localidadGuardada = this._data.localidad_principal?.localidad || '';
+      mountCiudadAutocomplete(provinciaGuardada, localidadContainer, localidadGuardada, (loc) => {
+        this._data.localidad_principal = {
+          localidad: loc.nombre,
+          provincia: provinciaGuardada,
+          pais:      'Argentina',
+          id:        loc.id,
+          lat:       loc.lat,
+          lng:       loc.lng,
+        };
+        renderChipPrincipal(chipPrincipalContainer, this._data, montarLocalidadPrincipal, this._refs);
+        document.dispatchEvent(new Event('change'));
+      });
+    }
+
+    renderChipPrincipal(chipPrincipalContainer, this._data, montarLocalidadPrincipal, this._refs);
+
+    this._refs.fields.provincia.input.addEventListener('change', () => {
+      const nuevaProvincia = this._refs.fields.provincia.input.value;
+      this._data.localidad_principal = null;
+      chipPrincipalContainer.innerHTML = '';
+      montarLocalidadPrincipal(nuevaProvincia);
       document.dispatchEvent(new Event('change'));
     });
-  }
 
-  const localidadActual = state.comercioData.ubicacion?.localidad 
-    || state.comercioData.localidad 
-    || state.comercioData.ciudad 
-    || '';
-  if (provinciaActual) montarCiudad(provinciaActual, localidadActual);
+    section.appendChild(subPrincipal);
 
-  refs.fields.provincia.input.addEventListener('change', () => {
-    refs.localidadSeleccionada = null;
-    montarCiudad(refs.fields.provincia.input.value);
-    document.dispatchEvent(new Event('change'));
-  });
+    // ── Dirección: solo si tiene local ────────────────────────
+    if (tieneLocal) {
+      this._refs.fields.direccion = createFormField({
+        label: 'Dirección del local', name: 'direccion', required: true,
+        placeholder: 'Ej: Av. San Martín 123',
+        helpText: 'La dirección exacta donde te atienden los clientes',
+        value: this._data.direccion,
+        actions: { onChange: (v) => { this._data.direccion = v.trim(); } }
+      });
+      section.appendChild(this._refs.fields.direccion);
+    }
 
-  refs.fields.direccion = createFormField({
-    label: 'Dirección', name: 'direccion', required: true,
-    value: state.comercioData.direccion || ''
-  });
-  refs.fields.direccion.input.addEventListener('input', () => {
-    document.dispatchEvent(new Event('change'));
-  });
-  section.appendChild(refs.fields.direccion);
+    // ── Zona de cobertura: solo si va a domicilio ─────────────
+    if (!tieneLocal) {
+      section.appendChild(this._renderZonaCobertura(provinciaGuardada));
+    }
 
-  return section;
-}
+    return section;
+  },
 
-// ------------------------------------------------------------
-// CONTACTO
-// ------------------------------------------------------------
-function renderSeccionContacto(state, refs, uiState) {
-  const section = crearSeccion('Contacto');
+  // ============================================================
+  // ZONA DE COBERTURA (solo para modalidad domicilio)
+  // ============================================================
+  _renderZonaCobertura(provinciaGuardada) {
+    const subZona = document.createElement('div');
+    subZona.className = 'ubicacion-bloque ubicacion-zona';
 
-  refs.fields.telefono = createFormField({
-    label: 'Teléfono', name: 'telefono', type: 'tel', required: true,
-    placeholder: '+54 9 11 1234-5678', value: state.comercioData.telefono || ''
-  });
+    const zonaHeader = document.createElement('div');
+    zonaHeader.className = 'zona-header';
+    const zonaTitle = document.createElement('h4');
+    zonaTitle.className   = 'zona-title';
+    zonaTitle.textContent = '¿También trabajás en otras localidades?';
+    zonaHeader.appendChild(zonaTitle);
+    const zonaBadge = document.createElement('span');
+    zonaBadge.className   = 'zona-badge-opcional';
+    zonaBadge.textContent = 'Opcional';
+    zonaHeader.appendChild(zonaBadge);
+    subZona.appendChild(zonaHeader);
 
-  refs.fields.email = createFormField({
-    label: 'Email', name: 'email', type: 'email', required: true,
-    placeholder: 'contacto@ejemplo.com', value: state.comercioData.email || ''
-  });
+    const helpZona = document.createElement('p');
+    helpZona.className   = 'form-help';
+    helpZona.textContent = 'Si a veces viajás a trabajar a localidades cercanas, podés agregarlas acá.';
+    subZona.appendChild(helpZona);
 
-  section.append(refs.fields.telefono, refs.fields.email);
-  agregarListeners([refs.fields.telefono, refs.fields.email], refs, uiState);
-  return section;
-}
+    this._refs.fields.provinciaZona = createFormField({
+      label: 'Provincia', name: 'provinciaZona', type: 'select'
+    });
+    const optDefaultZona = document.createElement('option');
+    optDefaultZona.value = ''; optDefaultZona.textContent = 'Elegí una provincia...';
+    this._refs.fields.provinciaZona.input.prepend(optDefaultZona);
+    fillProvinciaSelector('Argentina', this._refs.fields.provinciaZona.input);
+    if (provinciaGuardada) this._refs.fields.provinciaZona.input.value = provinciaGuardada;
+    subZona.appendChild(this._refs.fields.provinciaZona);
 
-// ------------------------------------------------------------
-// REDES SOCIALES
-// ------------------------------------------------------------
-function renderSeccionRedes(state, refs, uiState) {
-  const section = crearSeccion('Redes Sociales');
+    const localidadZonaLabel = document.createElement('label');
+    localidadZonaLabel.className   = 's-label';
+    localidadZonaLabel.textContent = 'Localidad';
+    subZona.appendChild(localidadZonaLabel);
 
-  const help = document.createElement('p');
-  help.className   = 'form-help';
-  help.textContent = 'Al menos una red social es obligatoria.';
-  section.appendChild(help);
+    const localidadZonaContainer = document.createElement('div');
+    localidadZonaContainer.className = 'ciudad-autocomplete-container';
+    subZona.appendChild(localidadZonaContainer);
 
-  refs.fields.website   = createFormField({ label: 'Sitio Web',  name: 'website',   type: 'url', placeholder: 'https://...',         value: state.comercioData.website   || '' });
-  refs.fields.instagram = createFormField({ label: 'Instagram',  name: 'instagram',              placeholder: '@usuario',             value: state.comercioData.instagram || '' });
-  refs.fields.facebook  = createFormField({ label: 'Facebook',   name: 'facebook',               placeholder: 'facebook.com/usuario', value: state.comercioData.facebook  || '' });
-  refs.fields.whatsapp  = createFormField({ label: 'WhatsApp',   name: 'whatsapp',  type: 'tel', placeholder: '+54 9 11 1234-5678',   value: state.comercioData.whatsapp  || '' });
+    let localidadZonaSeleccionada = null;
 
-  section.append(refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp);
-  agregarListeners([refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp], refs, uiState);
-  return section;
-}
+    const montarLocalidadZona = (provinciaVal) => {
+      localidadZonaSeleccionada = null;
+      mountCiudadAutocomplete(provinciaVal, localidadZonaContainer, '', (loc) => {
+        localidadZonaSeleccionada = { localidad: loc.nombre, provincia: provinciaVal };
+      });
+    };
 
-// ------------------------------------------------------------
-// CATEGORÍAS
-// ------------------------------------------------------------
-function renderSeccionCategorias(state, refs, uiState) {
-  const section = crearSeccion('Categorías');
+    if (provinciaGuardada) montarLocalidadZona(provinciaGuardada);
 
-  refs.categorySelector = createCategorySelector({
-    options:  CATEGORIAS_COMUNES,
-    selected: state.comercioData.categories || [],
-  });
+    this._refs.fields.provinciaZona.input.addEventListener('change', () => {
+      montarLocalidadZona(this._refs.fields.provinciaZona.input.value);
+    });
 
-  refs.categorySelector.addEventListener('categories-change', () => {
-    document.dispatchEvent(new Event('change'));
-  });
-
-  section.appendChild(refs.categorySelector);
-  return section;
-}
-
-// ------------------------------------------------------------
-// MÉTODOS DE PAGO
-// ------------------------------------------------------------
-function renderSeccionPagos(state, refs, uiState) {
-  const section = crearSeccion('Métodos de Pago');
-
-  const grid = document.createElement('div');
-  grid.className = 'payment-grid';
-
-  METODOS_PAGO.forEach(metodo => {
-    const isSelected = uiState.selectedPaymentMethods.includes(metodo.id);
-
-    const card = createCard({
-      title: metodo.nombre, icon: metodo.icon, variant: 'info',
-      selectable: true, selected: isSelected, compact: true,
+    const agregarBtn = createButton({
+      label: 'Agregar localidad', icon: 'fa-plus', variant: 'secondary', size: 'sm',
       onClick: () => {
-        card.toggle();
-        if (card.isSelected()) {
-          if (!uiState.selectedPaymentMethods.includes(metodo.id))
-            uiState.selectedPaymentMethods.push(metodo.id);
-        } else {
-          uiState.selectedPaymentMethods = uiState.selectedPaymentMethods.filter(id => id !== metodo.id);
+        const provincia = this._refs.fields.provinciaZona.input.value;
+        const localidad = localidadZonaSeleccionada?.localidad;
+
+        if (!provincia || !localidad) {
+          showToast('Elegí provincia y localidad antes de agregar', 'warning');
+          return;
         }
+        const esPrincipal =
+          this._data.localidad_principal?.localidad === localidad &&
+          this._data.localidad_principal?.provincia === provincia;
+        if (esPrincipal) {
+          showToast('Esa ya es tu localidad principal', 'warning');
+          return;
+        }
+        const yaExiste = this._data.zona_cobertura.some(
+          c => c.localidad === localidad && c.provincia === provincia
+        );
+        if (yaExiste) {
+          showToast('Esa localidad ya está en tu zona', 'warning');
+          return;
+        }
+        this._data.zona_cobertura.push({ localidad, provincia });
+        renderZonaChips(zonaChipsContainer, this._data);
         document.dispatchEvent(new Event('change'));
       }
     });
 
-    refs.paymentCards.push(card);
-    grid.appendChild(card);
-  });
+    const agregarContainer = document.createElement('div');
+    agregarContainer.className = 'agregar-cobertura-container';
+    agregarContainer.appendChild(agregarBtn);
+    subZona.appendChild(agregarContainer);
 
-  section.appendChild(grid);
-  return section;
-}
+    const zonaChipsContainer = document.createElement('div');
+    zonaChipsContainer.className = 'zona-chips-container';
+    renderZonaChips(zonaChipsContainer, this._data);
+    subZona.appendChild(zonaChipsContainer);
 
-// ============================================================
-// BOTÓN GUARDAR
-// ============================================================
-function renderBotonGuardar(ctx, state, refs, uiState) {
-  const btnContainer = document.createElement('div');
-  btnContainer.className = 'btn-container';
+    return subZona;
+  },
 
-  const isEditMode = state.isEditMode;
+  // ============================================================
+  // CAMPO: URGENCIAS
+  // ============================================================
+  _renderUrgenciasField() {
+    const field = createCheckboxGroup({
+      label: 'Urgencias',
+      name:  'atiende_urgencias',
+      value: this._data.atiende_urgencias ? ['si'] : [],
+      options: [{
+        value:       'si',
+        label:       'Atiendo emergencias fuera de horario',
+        description: 'Si marcás esta opción, tu asistente les avisará a los clientes que pueden contactarte ante una urgencia, aunque estés fuera de tu horario habitual. Vos decidís si atendés o no — el asistente solo da el aviso.'
+      }]
+    });
 
-  const btn = createOnboardingButton({
-    stepName: 'mi-comercio',
+    field.addEventListener('change', () => {
+      this._data.atiende_urgencias = field.getValue().includes('si');
+    });
 
-    validate: () => isFormValid(refs, uiState, state),
+    return field;
+  },
 
-    getLabel: () => {
-      if (!isEditMode) return 'Continuar';
-      if (isEditMode && hayDirtyState(refs, uiState, state)) return 'Guardar y volver al dashboard';
-      return 'Volver al dashboard';
-    },
+  // ============================================================
+  // SECCIÓN: CONTACTO
+  // ============================================================
+  _renderSeccionContacto() {
+    const section = crearSeccion('¿Cómo te contactan?');
 
-    dirtyController: isEditMode ? {
-      hasUnsavedChanges: () => hayDirtyState(refs, uiState, state),
-      markSaved: () => {
-        const current = getCurrentData(refs, uiState);
-        Object.assign(state.comercioData, current);
+    const help = document.createElement('p');
+    help.className   = 'form-help';
+    help.textContent = 'El WhatsApp es obligatorio — es el canal principal para que los clientes te contacten.';
+    section.appendChild(help);
+
+    this._refs.fields.whatsapp = createFormField({
+      label: 'WhatsApp', name: 'whatsapp', required: true,
+      placeholder: 'Ej: 3412295316',
+      helpText: 'Solo números, sin espacios ni guiones',
+      value: this._data.whatsapp,
+      actions: { onChange: (v) => { this._data.whatsapp = v.trim(); } }
+    });
+
+    this._refs.fields.telefono = createFormField({
+      label: 'Teléfono', name: 'telefono',
+      placeholder: 'Opcional',
+      value: this._data.telefono,
+      actions: { onChange: (v) => { this._data.telefono = v.trim(); } }
+    });
+
+    this._refs.fields.email = createFormField({
+      label: 'Email', name: 'email', type: 'email',
+      placeholder: 'Opcional',
+      value: this._data.email,
+      actions: { onChange: (v) => { this._data.email = v.trim(); } }
+    });
+
+    this._refs.fields.instagram = createFormField({
+      label: 'Instagram', name: 'instagram',
+      placeholder: '@tuusuario',
+      value: this._data.instagram,
+      actions: { onChange: (v) => { this._data.instagram = v.trim(); } }
+    });
+
+    section.append(
+      this._refs.fields.whatsapp,
+      this._refs.fields.telefono,
+      this._refs.fields.email,
+      this._refs.fields.instagram,
+    );
+
+    return section;
+  },
+
+  // ============================================================
+  // SECCIÓN: SLUG
+  // ============================================================
+  _renderSeccionSlug() {
+    const section = crearSeccion('Tu dirección en ÍndiceIA');
+
+    const help = document.createElement('p');
+    help.className   = 'form-help';
+    help.textContent = 'Esta es la dirección única donde tus clientes van a encontrarte. Se genera automáticamente pero podés cambiarla.';
+    section.appendChild(help);
+
+    const slugContainer = document.createElement('div');
+    slugContainer.className = 'slug-container';
+
+    const slugPrefix = document.createElement('span');
+    slugPrefix.className   = 'slug-prefix';
+    slugPrefix.textContent = 'indiceia.com/';
+
+    const slugInput = document.createElement('input');
+    slugInput.type        = 'text';
+    slugInput.className   = 'slug-input';
+    slugInput.placeholder = 'tu-nombre';
+    slugInput.value       = this._data.slug || '';
+    this._refs.slugInput  = slugInput;
+
+    slugContainer.append(slugPrefix, slugInput);
+    section.appendChild(slugContainer);
+
+    const slugStatus = document.createElement('div');
+    slugStatus.className  = 'slug-status';
+    slugStatus.innerHTML  = '<span class="slug-icon"></span><span class="slug-text"></span>';
+    this._refs.slugStatus = slugStatus;
+    section.appendChild(slugStatus);
+
+    slugInput.addEventListener('input', () => {
+      clearTimeout(this._refs.slugValidationTimer);
+      const slug = slugInput.value.trim().toLowerCase();
+      if (!slug) {
+        this._updateSlugStatus('empty', '');
+        this._data.slug = null;
+        document.dispatchEvent(new Event('change'));
+        return;
       }
-    } : undefined,
+      this._updateSlugStatus('checking', 'Verificando disponibilidad...');
+      this._refs.slugValidationTimer = setTimeout(async () => {
+        await this._validarSlug(slug, false);
+        document.dispatchEvent(new Event('change'));
+      }, 800);
+    });
 
-    onSave: async ({ uid, comercioId: ctxComercioId }) => {
-      const updates            = getCurrentData(refs, uiState);
-      const originalHasLanding = state.comercioData.landing?.slug;
+    return section;
+  },
 
-      if (!originalHasLanding) {
-        updates.landing = {
-          activo: true, nombre: updates.nombreComercio,
-          slug: uiState.comercioSlug, tipo: 'default',
-          createdAt: new Date(), updatedAt: new Date()
-        };
-      } else {
-        updates.landing = {
-          ...state.comercioData.landing,
-          nombre:    updates.nombreComercio,
-          updatedAt: new Date()
-        };
+  // ============================================================
+  // SLUG HELPERS
+  // ============================================================
+  async _validarSlug(slug, autoGenerado) {
+    if (!slug || slug.length < 3) {
+      this._updateSlugStatus('empty', '');
+      this._data.slug = null;
+      return;
+    }
+    try {
+      const snap = await getDoc(doc(db, 'landings', slug));
+      if (!snap.exists()) {
+        this._data.slug = slug;
+        this._updateSlugStatus('available', `✓ Disponible: indiceia.com/${slug}`);
+        return;
       }
+      if (autoGenerado) {
+        for (let i = 1; i <= 3; i++) {
+          const alt     = `${slug}-${i}`;
+          const altSnap = await getDoc(doc(db, 'landings', alt));
+          if (!altSnap.exists()) {
+            this._data.slug              = alt;
+            this._refs.slugInput.value   = alt;
+            this._updateSlugStatus('suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`);
+            return;
+          }
+        }
+      }
+      this._data.slug = null;
+      this._updateSlugStatus('taken', 'Este nombre ya está en uso. Probá con otro.');
+    } catch (err) {
+      console.error('Error validando slug:', err);
+      this._data.slug = null;
+      this._updateSlugStatus('error', 'Error al validar. Intentá de nuevo.');
+    }
+  },
 
-      if (state.isNewComercio) {
-        const comercioRef = ctxComercioId
-          ? doc(db, 'entidades', ctxComercioId)
-          : doc(collection(db, 'entidades'));
-        const comercioId = comercioRef.id;
+  _updateSlugStatus(status, message) {
+    if (!this._refs.slugStatus) return;
+    const icon = this._refs.slugStatus.querySelector('.slug-icon');
+    const text = this._refs.slugStatus.querySelector('.slug-text');
+    const icons = {
+      checking:   '<i class="fas fa-spinner fa-spin"></i>',
+      available:  '<i class="fas fa-check-circle" style="color:var(--s-success)"></i>',
+      suggestion: '<i class="fas fa-info-circle" style="color:var(--s-info)"></i>',
+      taken:      '<i class="fas fa-times-circle" style="color:var(--s-danger)"></i>',
+      error:      '<i class="fas fa-exclamation-triangle" style="color:var(--s-warning)"></i>',
+      empty:      ''
+    };
+    icon.innerHTML   = icons[status] || '';
+    text.textContent = message;
+  },
 
-        await setDoc(comercioRef, {
-          ...updates,
-          duenoId:            uid,
-          fechaCreacion:      new Date(),
-          fechaActualizacion: new Date(),
-          onboardingSteps:    { 'mi-comercio': true }
-        });
+  // ============================================================
+  // SAVE BUTTON
+  // ============================================================
+  _renderSaveButton() {
+    const dirtyController = this._buildDirtyController();
 
-        const now       = Timestamp.now();
-        const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
+    return createOnboardingButton({
+      stepName: 'mi-perfil',
 
-        await updateDoc(comercioRef, {
-          plan: {
-            type: 'trial', active: true, trial: true,
-            startedAt: now, expiresAt, createdAt: now, updatedAt: now, source: 'system'
+      dirtyController: this._isEditMode ? dirtyController : undefined,
+
+      getLabel: () => {
+        if (!this._isEditMode) return 'Continuar';
+        if (dirtyController.hasUnsavedChanges()) return 'Guardar y volver al dashboard';
+        return 'Volver al dashboard';
+      },
+
+      validate: () => {
+        const tieneLocal = this._data.modalidad_trabajo === 'local';
+
+        const camposBase =
+          this._data.nombre.trim()       &&
+          this._data.especialidad.trim() &&
+          this._data.descripcion.trim()  &&
+          this._data.whatsapp.trim()     &&
+          !!this._data.localidad_principal &&
+          !!this._data.modalidad_trabajo;
+
+        const camposModalidad = tieneLocal
+          ? !!this._data.direccion?.trim()   // local requiere dirección
+          : true;                            // domicilio no la requiere
+
+        const slugValido = this._slugExiste || !!this._data.slug;
+
+        return !!(camposBase && camposModalidad && slugValido);
+      },
+
+      async onSave({ uid, comercioId }) {
+        const d          = page._data;
+        const tieneLocal = d.modalidad_trabajo === 'local';
+
+        const updates = {
+          nombre:       d.nombre,
+          especialidad: d.especialidad,
+          rubro:        rubroFromForm([d.especialidad]),
+          descripcion:  d.descripcion,
+          experiencia:  d.experiencia || null,
+
+          // modalidad_trabajo: solo se guarda si es 'local'
+          // si va a domicilio, el LLM infiere por ausencia del campo
+          ...(tieneLocal && { modalidad_trabajo: 'local' }),
+
+          // atiende_urgencias: solo se guarda si es true
+          ...(d.atiende_urgencias === true && { atiende_urgencias: true }),
+
+          localidad_principal: d.localidad_principal,
+
+          ubicacion: {
+            pais:      d.localidad_principal?.pais || 'Argentina',
+            provincia: d.localidad_principal?.provincia || '',
+            localidad: {
+              id:     d.localidad_principal?.id       || null,
+              nombre: d.localidad_principal?.localidad || '',
+              lat:    d.localidad_principal?.lat       || null,
+              lng:    d.localidad_principal?.lng       || null,
+            }
           },
-          fechaActualizacion: new Date()
-        });
 
-        await setDoc(doc(db, 'landings', uiState.comercioSlug), {
-          slug: uiState.comercioSlug, comercioId,
-          nombre: updates.nombreComercio, activo: true,
-          createdAt: new Date(), updatedAt: new Date()
-        });
+          // legacy
+          localidad: d.localidad_principal?.localidad || null,
+          provincia: d.localidad_principal?.provincia || null,
+          pais:      'Argentina',
 
-        await updateDoc(doc(db, 'usuarios', uid), {
-          comercioId,
-        });
+          // dirección: solo si tiene local
+          ...(tieneLocal && d.direccion ? { direccion: d.direccion } : {}),
 
-        return { success: true, stepMarked: true };
+          // zona_cobertura: solo si va a domicilio y tiene zonas cargadas
+          ...(!tieneLocal && d.zona_cobertura.length > 0
+            ? { zona_cobertura: d.zona_cobertura }
+            : {}
+          ),
 
-      } else {
-        await updateDoc(doc(db, 'entidades', ctxComercioId), {
-          ...updates,
-          'onboardingSteps.mi-comercio': true,
-          fechaActualizacion: new Date()
-        });
+          whatsapp:  d.whatsapp,
+          telefono:  d.telefono  || null,
+          email:     d.email     || null,
+          instagram: d.instagram || null,
 
-        if (!originalHasLanding) {
-          await setDoc(doc(db, 'landings', uiState.comercioSlug), {
-            slug: uiState.comercioSlug, comercioId: ctxComercioId,
-            nombre: updates.nombreComercio, activo: true,
+          entityType: 'prestador',
+        };
+
+        if (!page._slugExiste) {
+          updates.landing = {
+            activo: true, nombre: updates.nombre,
+            slug: d.slug, tipo: 'perfil',
+            createdAt: new Date(), updatedAt: new Date()
+          };
+        } else {
+          updates.landing = {
+            ...page._comercioData.landing,
+            nombre: updates.nombre, updatedAt: new Date()
+          };
+        }
+
+        if (page._isNuevo) {
+          const comercioRef     = comercioId
+            ? doc(db, 'entidades', comercioId)
+            : doc(collection(db, 'entidades'));
+          const nuevoComercioId = comercioRef.id;
+
+          const now       = Timestamp.now();
+          const expiresAt = Timestamp.fromDate(
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          );
+
+          await setDoc(comercioRef, {
+            ...updates,
+            duenoId: uid,
+            fechaCreacion: new Date(), fechaActualizacion: new Date(),
+            onboardingSteps: { 'mi-perfil': true },
+            plan: {
+              type: 'trial', active: true, trial: true,
+              startedAt: now, expiresAt, createdAt: now,
+              updatedAt: now, source: 'system'
+            }
+          });
+
+          await setDoc(doc(db, 'landings', d.slug), {
+            slug: d.slug, comercioId: nuevoComercioId,
+            nombre: updates.nombre, activo: true,
             createdAt: new Date(), updatedAt: new Date()
           });
+
+          await updateDoc(doc(db, 'usuarios', uid), {
+            comercioId: nuevoComercioId,
+          });
+
+        } else {
+          updates['onboardingSteps.mi-perfil'] = true;
+          updates.fechaActualizacion           = new Date();
+          await updateDoc(doc(db, 'entidades', comercioId), updates);
+
+          if (!page._slugExiste) {
+            await setDoc(doc(db, 'landings', d.slug), {
+              slug: d.slug, comercioId,
+              nombre: updates.nombre, activo: true,
+              createdAt: new Date(), updatedAt: new Date()
+            });
+          }
         }
 
         return { success: true, stepMarked: true };
-      }
-    },
+      },
 
-    onSuccess: () => showToast('Comercio guardado correctamente', 'success'),
-    onError:   (err) => {
-      console.error('❌ Error guardando:', err);
-      showToast('Error al guardar: ' + err.message, 'error');
-    },
+      onSuccess: () => {
+        showToast('Perfil guardado correctamente', 'success');
+        dirtyController.markSaved();
+      },
+
+      onError: (err) => {
+        console.error('❌ Error guardando perfil:', err);
+        showToast('Error al guardar: ' + err.message, 'error');
+      },
+    });
+  },
+};
+
+// ============================================================
+// CHIP LOCALIDAD PRINCIPAL
+// ============================================================
+function renderChipPrincipal(container, data, montarFn, refs) {
+  container.innerHTML = '';
+  if (!data.localidad_principal) return;
+
+  const { localidad, provincia } = data.localidad_principal;
+
+  const chip = document.createElement('div');
+  chip.className = 'chip-principal';
+
+  const icon = document.createElement('i');
+  icon.className = 'fas fa-map-marker-alt';
+
+  const texto = document.createElement('span');
+  texto.textContent = `${localidad}, ${provincia}`;
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'chip-remove';
+  removeBtn.innerHTML = '×';
+  removeBtn.setAttribute('aria-label', 'Quitar localidad principal');
+  removeBtn.addEventListener('click', () => {
+    data.localidad_principal = null;
+    montarFn(refs.fields.provincia.input.value);
+    container.innerHTML = '';
+    document.dispatchEvent(new Event('change'));
   });
 
-  btnContainer.appendChild(btn);
-  return btnContainer;
+  chip.append(icon, texto, removeBtn);
+  container.appendChild(chip);
 }
 
 // ============================================================
-// VALIDACIÓN SLUG
+// CHIPS ZONA DE COBERTURA
 // ============================================================
-async function validarSlug(slug, refs, uiState, autoGenerated) {
-  if (!slug || slug.length < 3) {
-    updateSlugStatus(refs, 'empty', '');
-    uiState.slugDisponible = false;
-    uiState.comercioSlug   = null;
-    document.dispatchEvent(new Event('change'));
+function renderZonaChips(container, data) {
+  container.innerHTML = '';
+
+  if (!data.zona_cobertura.length) {
+    const empty = document.createElement('p');
+    empty.className   = 'zona-chips-empty';
+    empty.textContent = 'No agregaste localidades vecinas todavía.';
+    container.appendChild(empty);
     return;
   }
 
-  try {
-    const landingSnap = await getDoc(doc(db, 'landings', slug));
+  const label = document.createElement('p');
+  label.className   = 'zona-chips-label';
+  label.textContent = 'Localidades donde también trabajás:';
+  container.appendChild(label);
 
-    if (!landingSnap.exists()) {
-      uiState.comercioSlug   = slug;
-      uiState.slugDisponible = true;
-      updateSlugStatus(refs, 'available', `✓ Disponible: indiceia.com/${slug}`);
+  const list = document.createElement('div');
+  list.className = 'cobertura-list';
+
+  data.zona_cobertura.forEach((item, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'cobertura-chip';
+
+    const texto = document.createElement('span');
+    texto.textContent = `${item.localidad}, ${item.provincia}`;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'cobertura-chip-remove';
+    removeBtn.innerHTML = '×';
+    removeBtn.setAttribute('aria-label', 'Quitar');
+    removeBtn.addEventListener('click', () => {
+      data.zona_cobertura.splice(i, 1);
+      renderZonaChips(container, data);
       document.dispatchEvent(new Event('change'));
-      return;
-    }
+    });
 
-    if (autoGenerated) {
-      for (let i = 1; i <= 3; i++) {
-        const alt     = `${slug}-${i}`;
-        const altSnap = await getDoc(doc(db, 'landings', alt));
-        if (!altSnap.exists()) {
-          uiState.comercioSlug   = alt;
-          uiState.slugDisponible = true;
-          updateSlugStatus(refs, 'suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`);
-          if (refs.slugInput) refs.slugInput.value = alt;
-          document.dispatchEvent(new Event('change'));
-          return;
-        }
-      }
-    }
+    chip.append(texto, removeBtn);
+    list.appendChild(chip);
+  });
 
-    uiState.slugDisponible = false;
-    uiState.comercioSlug   = null;
-    updateSlugStatus(refs, 'taken', 'Este nombre ya está en uso. Probá con otro.');
-    document.dispatchEvent(new Event('change'));
-
-  } catch (err) {
-    console.error('Error validando slug:', err);
-    uiState.slugDisponible = false;
-    uiState.comercioSlug   = null;
-    updateSlugStatus(refs, 'error', 'Error al validar. Intentá de nuevo.');
-    document.dispatchEvent(new Event('change'));
-  }
-}
-
-function updateSlugStatus(refs, status, message) {
-  if (!refs.slugStatus) return;
-  const icon  = refs.slugStatus.querySelector('.slug-icon');
-  const text  = refs.slugStatus.querySelector('.slug-text');
-  const icons = {
-    checking:   '<i class="fas fa-spinner fa-spin"></i>',
-    available:  '<i class="fas fa-check-circle" style="color: var(--s-success)"></i>',
-    suggestion: '<i class="fas fa-info-circle" style="color: var(--s-info)"></i>',
-    taken:      '<i class="fas fa-times-circle" style="color: var(--s-danger)"></i>',
-    error:      '<i class="fas fa-exclamation-triangle" style="color: var(--s-warning)"></i>',
-    empty:      ''
-  };
-  icon.innerHTML   = icons[status] || '';
-  text.textContent = message;
-}
-
-// ============================================================
-// HELPERS DE FORMULARIO
-// ============================================================
-
-function getCurrentData(refs, uiState) {
-  return {
-    nombreComercio:   refs.fields.nombreComercio?.input.value.trim() || '',
-    descripcion:      refs.fields.descripcion?.input.value.trim()    || '',
-    
-    // ✅ UBICACIÓN ESTRUCTURADA (con entity-context.js)
-    ubicacion: ubicacionFromForm(refs),
-    
-    // ✅ RUBRO ESTRUCTURADO (con entity-context.js)
-    rubro: rubroFromForm(refs.categorySelector?.getSelected() || []),
-    
-    direccion:        refs.fields.direccion?.input.value.trim()      || '',
-    telefono:         refs.fields.telefono?.input.value.trim()       || '',
-    email:            refs.fields.email?.input.value.trim()          || '',
-    website:          refs.fields.website?.input.value.trim()        || null,
-    instagram:        refs.fields.instagram?.input.value.trim()      || null,
-    facebook:         refs.fields.facebook?.input.value.trim()       || null,
-    whatsapp:         refs.fields.whatsapp?.input.value.trim()       || null,
-    categories:       refs.categorySelector?.getSelected()           || [],
-    paymentMethods:   uiState.selectedPaymentMethods,
-    tieneLocalFisico: uiState.tieneLocalFisico,
-  };
-}
-
-function isFormValid(refs, uiState, state) {
-  const data = getCurrentData(refs, uiState);
-
-  // ✅ valida ubicacion.localidad.id (nuevo formato)
-  const tieneUbicacion = data.ubicacion?.localidad?.id && data.direccion;
-  
-  const camposBasicos  = data.nombreComercio && data.descripcion &&
-                         tieneUbicacion && data.telefono && data.email;
-  const tieneRedSocial  = data.website || data.instagram || data.facebook || data.whatsapp;
-  const tieneCategorias = data.categories.length > 0;
-  const slugValido      = state.comercioData.landing?.slug || uiState.slugDisponible;
-
-  return !!(camposBasicos && tieneRedSocial && tieneCategorias && slugValido);
-}
-
-function hayDirtyState(refs, uiState, state) {
-  const current  = getCurrentData(refs, uiState);
-  const original = state.comercioData;
-
-  return (
-    current.nombreComercio !== (original.nombreComercio || '') ||
-    current.descripcion    !== (original.descripcion    || '') ||
-    // ✅ comparar ubicacion como objeto (con fallback a legacy localidad)
-    JSON.stringify(current.ubicacion) !== JSON.stringify(original.ubicacion || original.localidad || null) ||
-    current.direccion      !== (original.direccion      || '') ||
-    current.telefono       !== (original.telefono       || '') ||
-    current.email          !== (original.email          || '') ||
-    current.website        !== (original.website        || null) ||
-    current.instagram      !== (original.instagram      || null) ||
-    current.facebook       !== (original.facebook       || null) ||
-    current.whatsapp       !== (original.whatsapp       || null) ||
-    JSON.stringify(current.categories)     !== JSON.stringify(original.categories     || []) ||
-    JSON.stringify(current.paymentMethods) !== JSON.stringify(original.paymentMethods || []) ||
-    current.tieneLocalFisico !== (original.tieneLocalFisico !== false)
-  );
+  container.appendChild(list);
 }
 
 // ============================================================
 // UTILS
 // ============================================================
-
 function crearSeccion(titulo) {
   const section = document.createElement('div');
   section.className = 'form-section';
@@ -697,10 +907,22 @@ function crearSeccion(titulo) {
   return section;
 }
 
-function agregarListeners(fields, refs, uiState) {
-  fields.forEach(field => {
-    field.input.addEventListener('input', () => {
-      document.dispatchEvent(new Event('change'));
-    });
-  });
+function slugify(text) {
+  return text
+    .toLowerCase().trim()
+    .replace(/["'`´""'']/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
+
+// ============================================================
+// ARRANQUE
+// ============================================================
+runSkeleton({
+  page,
+  adapter: createFirebaseAdapter,
+  options: { loadingMessage: 'Cargando perfil...' }
+});
