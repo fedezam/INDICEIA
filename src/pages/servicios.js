@@ -16,12 +16,12 @@ import { showToast }              from '/src/skeleton/components/toast/index.js'
 // ==================== FIREBASE ====================
 import { db }                     from '/src/services/firebase/firebase.js';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { 
-  writeBatch, 
-  doc, 
-  collection, 
+import {
+  writeBatch,
+  doc,
+  collection,
   getDocs,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore';
 
 // ==================== ESTILOS ====================
@@ -38,7 +38,7 @@ const page = {
     draft: {}
   },
 
-  _comercioId: null,
+  _comercioId:       null,
   _originalSnapshot: [],
 
   // ──────────────────────────────────────────────────────────
@@ -66,14 +66,13 @@ const page = {
 
     try {
       const serviciosRef = collection(db, 'entidades', this._comercioId, 'servicios');
-      const snapshot = await getDocs(serviciosRef);
+      const snapshot     = await getDocs(serviciosRef);
       this._data.serviciosAcumulados = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
     } catch (err) {
       if (err.code === 'permission-denied') {
-        console.log('Sin servicios previos, iniciando vacío.');
         this._data.serviciosAcumulados = [];
       } else {
         console.error('Error cargando servicios:', err);
@@ -81,7 +80,7 @@ const page = {
       }
     }
 
-    this._data.draft = {};
+    this._data.draft       = {};
     this._originalSnapshot = structuredClone(this._data.serviciosAcumulados);
   },
 
@@ -97,21 +96,19 @@ const page = {
     root.appendChild(title);
 
     const hint = document.createElement('p');
-    hint.className = 'page-hint';
+    hint.className   = 'page-hint';
     hint.textContent = 'Definí todos los servicios que ofrecés. Podés crear varios y después guardarlos todos juntos.';
     root.appendChild(hint);
 
     const formCard = createCard({
-      title: 'Crear nuevo servicio',
+      title:   'Crear nuevo servicio',
       variant: 'primary',
-      noHeader: false,
       content: this._renderFormContent()
     });
     root.appendChild(formCard);
 
-    // FIX: guardar referencia al card de lista para poder reemplazarlo correctamente
     this._listaCard = createCard({
-      title: 'Servicios agregados',
+      title:   'Servicios agregados',
       variant: 'warning',
       content: this._renderListaContent()
     });
@@ -127,10 +124,16 @@ const page = {
     const container = document.createElement('div');
     container.className = 'form-content';
 
-    const nombre = createFormField({
-      id: 'svc-nombre',
-      label: '¿Qué servicio ofrecés? *',
-      helpText: 'El nombre tal como lo conocen tus clientes. Ej: "Corte de pelo", "Consulta médica"',
+    // ── Tipo de servicio (pivote) ─────────────────────────────
+    container.appendChild(this._renderTipoServicioField());
+
+    // ── Nombre ───────────────────────────────────────────────
+    this._formRefs = this._formRefs || {};
+
+    this._formRefs.nombre = createFormField({
+      id:       'svc-nombre',
+      label:    '¿Cómo se llama este servicio? *',
+      helpText: 'El nombre tal como lo conocen tus clientes. Ej: "Corte de pelo", "Depilación definitiva"',
       required: true,
       actions: {
         onChange: (v) => {
@@ -139,12 +142,14 @@ const page = {
         }
       }
     });
+    container.appendChild(this._formRefs.nombre);
 
-    const descripcion = createFormField({
-      id: 'svc-descripcion',
-      label: 'Descripción',
-      type: 'textarea',
-      rows: 3,
+    // ── Descripción ──────────────────────────────────────────
+    this._formRefs.descripcion = createFormField({
+      id:       'svc-descripcion',
+      label:    'Descripción',
+      type:     'textarea',
+      rows:     3,
       helpText: 'Agregá detalles que ayuden a entender mejor el servicio',
       actions: {
         onChange: (v) => {
@@ -153,17 +158,20 @@ const page = {
         }
       }
     });
+    container.appendChild(this._formRefs.descripcion);
 
-    const modalidad     = this._renderModalidadField();
-    const precio        = this._renderPrecioField();
-    const disponibilidad = this._renderDisponibilidadField();
-    const imagen        = this._renderImagenField();
+    // ── Precio / Items — se renderiza según tipo ──────────────
+    this._precioContainer = document.createElement('div');
+    this._precioContainer.className = 'precio-container';
+    this._precioContainer.appendChild(this._renderPrecioSegunTipo());
+    container.appendChild(this._precioContainer);
 
-    const duracion = createFormField({
-      id: 'svc-duracion',
-      label: 'Duración aproximada (minutos)',
-      type: 'number',
-      helpText: 'Si no podés estimarla, dejalo vacío',
+    // ── Duración ─────────────────────────────────────────────
+    this._formRefs.duracion = createFormField({
+      id:       'svc-duracion',
+      label:    'Duración aproximada (minutos)',
+      type:     'number',
+      helpText: 'Opcional — si no podés estimarla, dejalo vacío',
       actions: {
         onChange: (v) => {
           const num = Number(v);
@@ -171,27 +179,21 @@ const page = {
         }
       }
     });
+    container.appendChild(this._formRefs.duracion);
 
-    const variantes = createFormField({
-      id: 'svc-variantes',
-      label: 'Variantes del servicio',
-      type: 'textarea',
-      rows: 4,
-      helpText: 'Una por línea. Ej: Básico 30min $500',
-      actions: {
-        onChange: (v) => {
-          const lineas = v.split('\n').map(l => l.trim()).filter(Boolean);
-          lineas.length > 0 ? (this._data.draft.variantes = lineas) : delete this._data.draft.variantes;
-        }
-      }
-    });
+    // ── Disponibilidad ───────────────────────────────────────
+    container.appendChild(this._renderDisponibilidadField());
 
-    const notas = createFormField({
-      id: 'svc-notas',
-      label: 'Notas adicionales',
-      type: 'textarea',
-      rows: 4,
-      helpText: 'Requisitos, URLs, direcciones, horarios especiales, etc.',
+    // ── Imagen ───────────────────────────────────────────────
+    container.appendChild(this._renderImagenField());
+
+    // ── Notas ────────────────────────────────────────────────
+    this._formRefs.notas = createFormField({
+      id:       'svc-notas',
+      label:    'Notas adicionales',
+      type:     'textarea',
+      rows:     3,
+      helpText: 'Requisitos, aclaraciones, horarios especiales, etc.',
       actions: {
         onChange: (v) => {
           const trimmed = v.trim();
@@ -199,160 +201,93 @@ const page = {
         }
       }
     });
+    container.appendChild(this._formRefs.notas);
 
-    const btnAgregar = createButton({
-      label: 'Agregar este servicio',
+    // ── Botón agregar ────────────────────────────────────────
+    container.appendChild(createButton({
+      label:   'Agregar este servicio',
       variant: 'success',
-      icon: 'fa-plus',
-      block: true,
+      icon:    'fa-plus',
+      block:   true,
       onClick: () => this._agregarServicio()
-    });
-
-    container.append(nombre, descripcion, modalidad, precio, disponibilidad, imagen, duracion, variantes, notas, btnAgregar);
-
-    this._formRefs = { nombre, descripcion, duracion, variantes, notas };
+    }));
 
     return container;
   },
 
   // ──────────────────────────────────────────────────────────
-  // CAMPO IMAGEN
+  // TIPO DE SERVICIO (pivote simple / complejo)
   // ──────────────────────────────────────────────────────────
-  _renderImagenField() {
+  _renderTipoServicioField() {
     const wrapper = document.createElement('div');
     wrapper.className = 's-form-field campo-compuesto';
 
     const label = document.createElement('label');
-    label.className = 's-label';
-    label.textContent = 'Foto del servicio (opcional)';
+    label.className   = 's-label';
+    label.textContent = '¿Qué tipo de servicio es? *';
     wrapper.appendChild(label);
-
-    const help = document.createElement('small');
-    help.className = 's-help';
-    help.textContent = 'Subí una foto de un trabajo realizado o pegá un link de Instagram, Google Fotos, etc.';
-    wrapper.appendChild(help);
-
-    // Preview
-    const preview = document.createElement('div');
-    preview.className = 'imagen-preview' + (this._data.draft.imagen ? ' imagen-preview--visible' : '');
-    if (this._data.draft.imagen) {
-      preview.innerHTML = `<img src="${this._data.draft.imagen}" alt="preview" style="max-width:100%;border-radius:8px;margin-bottom:8px;"/><button class="imagen-preview-remove" title="Quitar imagen" style="display:block;margin-bottom:8px"><i class="fas fa-times"></i> Quitar foto</button>`;
-      preview.querySelector('.imagen-preview-remove').addEventListener('click', () => {
-        this._data.draft.imagen = '';
-        this.render();
-      });
-    }
-    wrapper.appendChild(preview);
-
-    // Botón subir desde dispositivo
-    const fileInput = document.createElement('input');
-    fileInput.type   = 'file';
-    fileInput.accept = 'image/*';
-    fileInput.style.display = 'none';
-    wrapper.appendChild(fileInput);
-
-    const btnSubir = document.createElement('button');
-    btnSubir.type      = 'button';
-    btnSubir.className = 'imagen-upload-btn';
-    btnSubir.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 16px;border:1px dashed #ccc;border-radius:8px;background:none;cursor:pointer;font-size:14px;margin-bottom:8px;';
-    btnSubir.innerHTML = `<i class="fas fa-camera"></i> Subir foto desde mi dispositivo`;
-    btnSubir.addEventListener('click', () => fileInput.click());
-    wrapper.appendChild(btnSubir);
-
-    fileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      btnSubir.disabled  = true;
-      btnSubir.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Subiendo...`;
-      try {
-        const url = await this._subirImagenServicio(file);
-        this._data.draft.imagen = url;
-        showToast('Foto cargada', 'La imagen se guardó correctamente', 'success');
-        this.render();
-      } catch (err) {
-        console.error(err);
-        showToast('Error', 'No se pudo subir la imagen', 'error');
-        btnSubir.disabled  = false;
-        btnSubir.innerHTML = `<i class="fas fa-camera"></i> Subir foto desde mi dispositivo`;
-      }
-    });
-
-    // Separador
-    const sep = document.createElement('div');
-    sep.style.cssText = 'text-align:center;color:#999;font-size:12px;margin:4px 0';
-    sep.textContent = 'o pegá un link directo';
-    wrapper.appendChild(sep);
-
-    // Campo URL
-    const urlInput = document.createElement('input');
-    urlInput.type        = 'url';
-    urlInput.className   = 'imagen-url-input';
-    urlInput.placeholder = 'https://...';
-    urlInput.value       = this._data.draft.imagen || '';
-    urlInput.style.cssText = 'width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;';
-    urlInput.addEventListener('input', () => {
-      this._data.draft.imagen = urlInput.value.trim();
-    });
-    wrapper.appendChild(urlInput);
-
-    this._imagenUrlInput = urlInput;
-
-    return wrapper;
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // CAMPOS COMPUESTOS
-  // ──────────────────────────────────────────────────────────
-  _renderModalidadField() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 's-form-field campo-compuesto';
-
-    const label = document.createElement('label');
-    label.className = 's-label';
-    label.textContent = '¿Cómo se presta este servicio? *';
-    wrapper.appendChild(label);
-
-    const help = document.createElement('small');
-    help.className = 's-help';
-    help.textContent = 'Podés marcar más de una opción';
-    wrapper.appendChild(help);
 
     const opciones = [
-      { value: 'presencial',  label: 'Presencial',      help: 'El cliente viene a tu local' },
-      { value: 'a_domicilio', label: 'A domicilio',      help: 'Vos vas al domicilio del cliente' },
-      { value: 'remoto',      label: 'Remoto (online)',  help: 'Por videollamada o internet' }
+      {
+        value: 'simple',
+        label: 'Servicio simple',
+        help:  'Precio único para todos los clientes. Ej: Corte de pelo, Consulta, Cavitación.',
+      },
+      {
+        value: 'complejo',
+        label: 'Servicio con opciones',
+        help:  'El precio varía según lo que elija el cliente — por zona, tamaño, tipo, etc. Ej: Depilación definitiva.',
+      },
     ];
 
-    this._modalidadCheckboxes = [];
+    this._tipoCheckboxes = [];
 
     opciones.forEach(opt => {
       const row = document.createElement('label');
-      row.className = 'checkbox-con-explicacion';
+      row.className = 'radio-tipo-servicio';
       row.innerHTML = `
-        <input type="checkbox" value="${opt.value}">
-        <div><strong>${opt.label}</strong><span>${opt.help}</span></div>
+        <input type="radio" name="svc-tipo" value="${opt.value}"
+          ${(this._data.draft.tipo || 'simple') === opt.value ? 'checked' : ''}>
+        <div>
+          <strong>${opt.label}</strong>
+          <span>${opt.help}</span>
+        </div>
       `;
-      const cb = row.querySelector('input');
-      this._modalidadCheckboxes.push(cb);
-      cb.addEventListener('change', () => this._updateModalidad());
+      const radio = row.querySelector('input');
+      radio.addEventListener('change', () => {
+        this._data.draft.tipo = opt.value;
+        // Limpiar precio/items al cambiar tipo
+        delete this._data.draft.precio;
+        delete this._data.draft.items;
+        delete this._data.draft.unidad;
+        // Re-render solo el bloque de precio/items
+        this._precioContainer.innerHTML = '';
+        this._precioContainer.appendChild(this._renderPrecioSegunTipo());
+      });
+      this._tipoCheckboxes = this._tipoCheckboxes || [];
       wrapper.appendChild(row);
     });
 
     return wrapper;
   },
 
-  _updateModalidad() {
-    const vals = this._modalidadCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
-    if (vals.length === 0) delete this._data.draft.modalidad;
-    else this._data.draft.modalidad = vals;
+  // ──────────────────────────────────────────────────────────
+  // PRECIO SEGÚN TIPO
+  // ──────────────────────────────────────────────────────────
+  _renderPrecioSegunTipo() {
+    const tipo = this._data.draft.tipo || 'simple';
+    return tipo === 'complejo'
+      ? this._renderItemsField()
+      : this._renderPrecioSimpleField();
   },
 
-  _renderPrecioField() {
+  // ── Precio simple ─────────────────────────────────────────
+  _renderPrecioSimpleField() {
     const wrapper = document.createElement('div');
     wrapper.className = 's-form-field campo-compuesto';
 
     const label = document.createElement('label');
-    label.className = 's-label';
+    label.className   = 's-label';
     label.textContent = 'Precio';
     wrapper.appendChild(label);
 
@@ -373,7 +308,7 @@ const page = {
     const radioFijo = radioFijoWrapper.querySelector('input');
 
     const inputPrecio = createFormField({
-      id: 'svc-precio-valor',
+      id:   'svc-precio-valor',
       type: 'number',
       placeholder: 'Ej: 5000',
       actions: {
@@ -386,6 +321,14 @@ const page = {
       }
     });
     inputPrecio.disable();
+
+    // Restaurar estado del draft si existe
+    if (this._data.draft.precio?.tipo === 'fijo') {
+      radioFijo.checked     = true;
+      radioConsultar.checked = false;
+      inputPrecio.setValue(this._data.draft.precio.valor || '');
+      inputPrecio.enable();
+    }
 
     radioConsultar.addEventListener('change', () => {
       if (radioConsultar.checked) {
@@ -410,23 +353,138 @@ const page = {
     return wrapper;
   },
 
-  _renderDisponibilidadField() {
+  // ── Items (servicio complejo) ─────────────────────────────
+  _renderItemsField() {
     const wrapper = document.createElement('div');
-    wrapper.className = 's-form-field campo-compuesto campo-obligatorio';
+    wrapper.className = 's-form-field campo-compuesto';
 
     const label = document.createElement('label');
-    label.className = 's-label';
+    label.className   = 's-label';
+    label.textContent = 'Opciones y precios';
+    wrapper.appendChild(label);
+
+    // Unidad
+    const unidadField = createFormField({
+      id:          'svc-unidad',
+      label:       '¿De qué depende el precio?',
+      placeholder: 'Ej: zona del cuerpo, tamaño, tipo de material',
+      helpText:    'Describí en pocas palabras qué define el precio de cada opción',
+      value:       this._data.draft.unidad || '',
+      actions: {
+        onChange: (v) => {
+          const trimmed = v.trim();
+          trimmed ? (this._data.draft.unidad = trimmed) : delete this._data.draft.unidad;
+        }
+      }
+    });
+    wrapper.appendChild(unidadField);
+
+    // Lista de items
+    if (!this._data.draft.items) this._data.draft.items = [];
+
+    const itemsContainer = document.createElement('div');
+    itemsContainer.className = 'items-list';
+
+    const renderItems = () => {
+      itemsContainer.innerHTML = '';
+
+      if (!this._data.draft.items.length) {
+        const empty = document.createElement('p');
+        empty.className   = 'items-empty';
+        empty.textContent = 'Todavía no agregaste opciones.';
+        itemsContainer.appendChild(empty);
+        return;
+      }
+
+      this._data.draft.items.forEach((item, i) => {
+        const row = document.createElement('div');
+        row.className = 'item-row';
+
+        const nombreSpan = document.createElement('span');
+        nombreSpan.className   = 'item-nombre';
+        nombreSpan.textContent = item.n;
+
+        const precioSpan = document.createElement('span');
+        precioSpan.className   = 'item-precio';
+        precioSpan.textContent = item.p ? `$${item.p.toLocaleString('es-AR')}` : 'A consultar';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'item-remove';
+        removeBtn.innerHTML = '×';
+        removeBtn.addEventListener('click', () => {
+          this._data.draft.items.splice(i, 1);
+          renderItems();
+        });
+
+        row.append(nombreSpan, precioSpan, removeBtn);
+        itemsContainer.appendChild(row);
+      });
+    };
+
+    renderItems();
+    wrapper.appendChild(itemsContainer);
+
+    // Agregar item
+    const addRow = document.createElement('div');
+    addRow.className = 'item-add-row';
+
+    const inputNombre = document.createElement('input');
+    inputNombre.type        = 'text';
+    inputNombre.className   = 'item-input item-input--nombre';
+    inputNombre.placeholder = 'Ej: Axilas';
+
+    const inputPrecio = document.createElement('input');
+    inputPrecio.type        = 'number';
+    inputPrecio.className   = 'item-input item-input--precio';
+    inputPrecio.placeholder = 'Precio (opcional)';
+
+    const addBtn = createButton({
+      label:   'Agregar',
+      variant: 'secondary',
+      size:    'sm',
+      icon:    'fa-plus',
+      onClick: () => {
+        const nombre = inputNombre.value.trim();
+        if (!nombre) {
+          showToast('Escribí el nombre de la opción', 'warning');
+          return;
+        }
+        const precio = Number(inputPrecio.value);
+        const newItem = { n: nombre };
+        if (precio > 0) newItem.p = precio;
+        this._data.draft.items.push(newItem);
+        inputNombre.value  = '';
+        inputPrecio.value  = '';
+        renderItems();
+      }
+    });
+
+    addRow.append(inputNombre, inputPrecio, addBtn);
+    wrapper.appendChild(addRow);
+
+    return wrapper;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // DISPONIBILIDAD
+  // ──────────────────────────────────────────────────────────
+  _renderDisponibilidadField() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 's-form-field campo-compuesto';
+
+    const label = document.createElement('label');
+    label.className   = 's-label';
     label.textContent = '¿Cuándo está disponible? *';
     wrapper.appendChild(label);
 
     const help = document.createElement('small');
-    help.className = 's-help';
-    help.textContent = 'Seleccioná solo UNA opción';
+    help.className   = 's-help';
+    help.textContent = 'Seleccioná solo una opción';
     wrapper.appendChild(help);
 
     const opciones = [
-      { value: 'inmediata',   label: 'Inmediata',    help: 'Sin turno, por orden de llegada' },
-      { value: 'a_coordinar', label: 'A coordinar',  help: 'Requiere turno o agenda previa' }
+      { value: 'inmediata',   label: 'Inmediata',   help: 'Sin turno, por orden de llegada' },
+      { value: 'a_coordinar', label: 'A coordinar', help: 'Requiere turno o agenda previa'  },
     ];
 
     this._disponibilidadCheckboxes = [];
@@ -452,15 +510,94 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
+  // IMAGEN
+  // ──────────────────────────────────────────────────────────
+  _renderImagenField() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 's-form-field campo-compuesto';
+
+    const label = document.createElement('label');
+    label.className   = 's-label';
+    label.textContent = 'Foto del servicio (opcional)';
+    wrapper.appendChild(label);
+
+    const help = document.createElement('small');
+    help.className   = 's-help';
+    help.textContent = 'Subí una foto de un trabajo realizado o pegá un link de Instagram, Google Fotos, etc.';
+    wrapper.appendChild(help);
+
+    const preview = document.createElement('div');
+    preview.className = 'imagen-preview' + (this._data.draft.imagen ? ' imagen-preview--visible' : '');
+    if (this._data.draft.imagen) {
+      preview.innerHTML = `<img src="${this._data.draft.imagen}" alt="preview" style="max-width:100%;border-radius:8px;margin-bottom:8px;"/>
+        <button class="imagen-preview-remove"><i class="fas fa-times"></i> Quitar foto</button>`;
+      preview.querySelector('.imagen-preview-remove').addEventListener('click', () => {
+        this._data.draft.imagen = '';
+        this.render();
+      });
+    }
+    wrapper.appendChild(preview);
+
+    const fileInput = document.createElement('input');
+    fileInput.type    = 'file';
+    fileInput.accept  = 'image/*';
+    fileInput.style.display = 'none';
+    wrapper.appendChild(fileInput);
+
+    const btnSubir = document.createElement('button');
+    btnSubir.type      = 'button';
+    btnSubir.className = 'imagen-upload-btn';
+    btnSubir.innerHTML = `<i class="fas fa-camera"></i> Subir foto desde mi dispositivo`;
+    btnSubir.addEventListener('click', () => fileInput.click());
+    wrapper.appendChild(btnSubir);
+
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      btnSubir.disabled  = true;
+      btnSubir.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Subiendo...`;
+      try {
+        const url = await this._subirImagenServicio(file);
+        this._data.draft.imagen = url;
+        showToast('Foto cargada correctamente', 'success');
+        this.render();
+      } catch (err) {
+        console.error(err);
+        showToast('No se pudo subir la imagen', 'error');
+        btnSubir.disabled  = false;
+        btnSubir.innerHTML = `<i class="fas fa-camera"></i> Subir foto desde mi dispositivo`;
+      }
+    });
+
+    const sep = document.createElement('div');
+    sep.className   = 'imagen-sep';
+    sep.textContent = 'o pegá un link directo';
+    wrapper.appendChild(sep);
+
+    const urlInput = document.createElement('input');
+    urlInput.type        = 'url';
+    urlInput.className   = 'imagen-url-input';
+    urlInput.placeholder = 'https://...';
+    urlInput.value       = this._data.draft.imagen || '';
+    urlInput.addEventListener('input', () => {
+      this._data.draft.imagen = urlInput.value.trim();
+    });
+    wrapper.appendChild(urlInput);
+
+    this._imagenUrlInput = urlInput;
+    return wrapper;
+  },
+
+  // ──────────────────────────────────────────────────────────
   // LISTA
   // ──────────────────────────────────────────────────────────
   _renderListaContent() {
     const container = document.createElement('div');
     container.id = 'lista-servicios-container';
 
-    if (this._data.serviciosAcumulados.length === 0) {
+    if (!this._data.serviciosAcumulados.length) {
       const empty = document.createElement('p');
-      empty.className = 'lista-vacia';
+      empty.className   = 'lista-vacia';
       empty.textContent = 'No hay servicios agregados aún';
       container.appendChild(empty);
       return container;
@@ -474,38 +611,98 @@ const page = {
   },
 
   _renderServicioCard(servicio, index) {
-    const activo = servicio.activo !== false;
-    const modalidadTexto = Array.isArray(servicio.modalidad)
-      ? servicio.modalidad.join(' + ')
-      : servicio.modalidad || '—';
-    const disponibilidadTexto = servicio.disponibilidad === 'inmediata'
-      ? 'Inmediata (sin turno)' : 'A coordinar (con turno)';
-    const precioTexto = servicio.precio ? `$${servicio.precio.valor}` : 'A consultar';
-    const duracionTexto = servicio.duracion_minutos ? `${servicio.duracion_minutos} min` : null;
+    const activo   = servicio.activo !== false;
+    const esSimple = servicio.tipo !== 'complejo';
 
     const contentDiv = document.createElement('div');
 
-    // Imagen si existe
     if (servicio.imagen) {
-      const img = document.createElement('img');
-      img.src   = servicio.imagen;
-      img.alt   = servicio.nombre;
-      img.style.cssText = 'width:100%;max-height:180px;object-fit:cover;border-radius:8px;margin-bottom:12px;';
+      const img     = document.createElement('img');
+      img.src       = servicio.imagen;
+      img.alt       = servicio.nombre;
+      img.className = 'servicio-imagen';
       contentDiv.appendChild(img);
     }
 
-    contentDiv.innerHTML += `
-      <div class="servicio-detalles">
-        <div class="detalle-item"><span class="detalle-label">Modalidad:</span><span class="detalle-valor">${modalidadTexto}</span></div>
-        <div class="detalle-item"><span class="detalle-label">Disponibilidad:</span><span class="detalle-valor">${disponibilidadTexto}</span></div>
-        <div class="detalle-item"><span class="detalle-label">Precio:</span><span class="detalle-valor">${precioTexto}</span></div>
-        ${duracionTexto ? `<div class="detalle-item"><span class="detalle-label">Duración:</span><span class="detalle-valor">${duracionTexto}</span></div>` : ''}
-      </div>
-      ${servicio.descripcion ? `<p class="servicio-descripcion">${servicio.descripcion}</p>` : ''}
-      ${servicio.variantes?.length > 0 ? `<div class="servicio-extra"><strong>Variantes:</strong><ul>${servicio.variantes.map(v => `<li>${v}</li>`).join('')}</ul></div>` : ''}
-      ${servicio.notas ? `<div class="servicio-extra"><strong>Notas:</strong><p>${servicio.notas}</p></div>` : ''}
-    `;
+    // Tags
+    const tags = document.createElement('div');
+    tags.className = 'servicio-tags';
 
+    // Tipo
+    const tagTipo = document.createElement('span');
+    tagTipo.className   = `servicio-tag servicio-tag--${esSimple ? 'simple' : 'complejo'}`;
+    tagTipo.textContent = esSimple ? 'Simple' : 'Con opciones';
+    tags.appendChild(tagTipo);
+
+    // Disponibilidad
+    if (servicio.disponibilidad) {
+      const tagDisp = document.createElement('span');
+      tagDisp.className   = 'servicio-tag servicio-tag--disp';
+      tagDisp.textContent = servicio.disponibilidad === 'inmediata' ? 'Sin turno' : 'Con turno';
+      tags.appendChild(tagDisp);
+    }
+
+    // Precio (solo simple)
+    if (esSimple) {
+      const tagPrecio = document.createElement('span');
+      tagPrecio.className   = 'servicio-tag servicio-tag--precio';
+      tagPrecio.textContent = servicio.precio?.valor
+        ? `$${servicio.precio.valor.toLocaleString('es-AR')}`
+        : 'A consultar';
+      tags.appendChild(tagPrecio);
+    }
+
+    // Duración
+    if (servicio.duracion_minutos) {
+      const tagDur = document.createElement('span');
+      tagDur.className   = 'servicio-tag servicio-tag--dur';
+      tagDur.textContent = `${servicio.duracion_minutos} min`;
+      tags.appendChild(tagDur);
+    }
+
+    contentDiv.appendChild(tags);
+
+    // Descripción
+    if (servicio.descripcion) {
+      const desc = document.createElement('p');
+      desc.className   = 'servicio-descripcion';
+      desc.textContent = servicio.descripcion;
+      contentDiv.appendChild(desc);
+    }
+
+    // Items (complejo)
+    if (!esSimple && servicio.items?.length) {
+      const itemsDiv = document.createElement('div');
+      itemsDiv.className = 'servicio-items';
+
+      if (servicio.unidad) {
+        const unidadP = document.createElement('p');
+        unidadP.className   = 'servicio-unidad';
+        unidadP.textContent = `Varía según: ${servicio.unidad}`;
+        itemsDiv.appendChild(unidadP);
+      }
+
+      const ul = document.createElement('ul');
+      servicio.items.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item.p
+          ? `${item.n} — $${item.p.toLocaleString('es-AR')}`
+          : `${item.n} — A consultar`;
+        ul.appendChild(li);
+      });
+      itemsDiv.appendChild(ul);
+      contentDiv.appendChild(itemsDiv);
+    }
+
+    // Notas
+    if (servicio.notas) {
+      const notas = document.createElement('p');
+      notas.className   = 'servicio-notas';
+      notas.textContent = servicio.notas;
+      contentDiv.appendChild(notas);
+    }
+
+    // Acciones
     const actionsWrapper = document.createElement('div');
     actionsWrapper.className = 'servicio-acciones';
     actionsWrapper.append(
@@ -516,7 +713,7 @@ const page = {
     contentDiv.appendChild(actionsWrapper);
 
     return createCard({
-      title: `${servicio.nombre} ${activo ? '' : '(Pausado)'}`,
+      title:   `${servicio.nombre} ${activo ? '' : '(Pausado)'}`,
       variant: activo ? 'success' : 'secondary',
       compact: true,
       content: contentDiv
@@ -524,11 +721,29 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
+  // VALIDACIÓN DRAFT
+  // ──────────────────────────────────────────────────────────
+  _isDraftValid() {
+    const d        = this._data.draft;
+    const tieneNombre = !!d.nombre?.trim();
+    const tieneDisp   = !!d.disponibilidad;
+
+    if (d.tipo === 'complejo') {
+      return tieneNombre && tieneDisp && d.items?.length > 0;
+    }
+
+    return tieneNombre && tieneDisp;
+  },
+
+  // ──────────────────────────────────────────────────────────
   // ACCIONES
   // ──────────────────────────────────────────────────────────
   _agregarServicio() {
     if (!this._isDraftValid()) {
-      showToast('Campos obligatorios', 'Completá: Nombre, Modalidad y Disponibilidad', 'warning');
+      const msg = this._data.draft.tipo === 'complejo'
+        ? 'Completá: Nombre, al menos una opción y Disponibilidad'
+        : 'Completá: Nombre y Disponibilidad';
+      showToast('Campos obligatorios', msg, 'warning');
       return;
     }
     if (this._data.draft.activo === undefined) this._data.draft.activo = true;
@@ -539,62 +754,44 @@ const page = {
     showToast('✅ Servicio agregado', 'Podés crear otro o guardar cuando termines', 'success');
   },
 
-  _isDraftValid() {
-    return !!(
-      this._data.draft.nombre?.trim() &&
-      this._data.draft.modalidad?.length > 0 &&
-      this._data.draft.disponibilidad
-    );
-  },
-
   _limpiarFormulario() {
     if (this._formRefs) {
       Object.values(this._formRefs).forEach(field => { if (field?.setValue) field.setValue(''); });
     }
-    if (this._modalidadCheckboxes) this._modalidadCheckboxes.forEach(cb => cb.checked = false);
     if (this._precioRefs) {
       this._precioRefs.radioConsultar.checked = true;
-      this._precioRefs.radioFijo.checked = false;
+      this._precioRefs.radioFijo.checked      = false;
       this._precioRefs.inputPrecio.setValue('');
       this._precioRefs.inputPrecio.disable();
     }
-    if (this._disponibilidadCheckboxes) this._disponibilidadCheckboxes.forEach(cb => cb.checked = false);
+    if (this._disponibilidadCheckboxes) {
+      this._disponibilidadCheckboxes.forEach(cb => cb.checked = false);
+    }
     if (this._imagenUrlInput) this._imagenUrlInput.value = '';
     this._data.draft.imagen = '';
+    // Reset tipo a simple
+    this._data.draft.tipo = 'simple';
+    // Re-render form para resetear precio container
+    const formCard = document.querySelector('.s-card--primary');
+    if (formCard) {
+      const content = formCard.querySelector('.form-content');
+      if (content) content.replaceWith(this._renderFormContent());
+    }
   },
 
   _editarServicio(index) {
     const servicio = this._data.serviciosAcumulados[index];
     this._data.draft = structuredClone(servicio);
-    this._cargarDraftEnFormulario();
     this._data.serviciosAcumulados.splice(index, 1);
     this._refreshLista();
+    // Re-render form completo para cargar draft
+    const formCard = document.querySelector('.s-card--primary');
+    if (formCard) {
+      const content = formCard.querySelector('.form-content');
+      if (content) content.replaceWith(this._renderFormContent());
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast('Modo edición', 'Modificá los campos y agregá el servicio nuevamente', 'info');
-  },
-
-  _cargarDraftEnFormulario() {
-    const d = this._data.draft;
-    if (this._formRefs.nombre)      this._formRefs.nombre.setValue(d.nombre || '');
-    if (this._formRefs.descripcion) this._formRefs.descripcion.setValue(d.descripcion || '');
-    if (this._formRefs.duracion)    this._formRefs.duracion.setValue(d.duracion_minutos || '');
-    if (this._formRefs.variantes)   this._formRefs.variantes.setValue(d.variantes?.join('\n') || '');
-    if (this._formRefs.notas)       this._formRefs.notas.setValue(d.notas || '');
-    if (this._imagenUrlInput)       this._imagenUrlInput.value = d.imagen || '';
-
-    if (this._modalidadCheckboxes) {
-      const vals = Array.isArray(d.modalidad) ? d.modalidad : (d.modalidad ? [d.modalidad] : []);
-      this._modalidadCheckboxes.forEach(cb => { cb.checked = vals.includes(cb.value); });
-    }
-    if (d.precio?.tipo === 'fijo' && this._precioRefs) {
-      this._precioRefs.radioFijo.checked = true;
-      this._precioRefs.radioConsultar.checked = false;
-      this._precioRefs.inputPrecio.setValue(d.precio.valor);
-      this._precioRefs.inputPrecio.enable();
-    }
-    if (this._disponibilidadCheckboxes && d.disponibilidad) {
-      this._disponibilidadCheckboxes.forEach(cb => { cb.checked = cb.value === d.disponibilidad; });
-    }
   },
 
   _toggleServicio(index) {
@@ -608,11 +805,9 @@ const page = {
     showToast('Eliminado', 'Servicio eliminado de la lista', 'info');
   },
 
-  // FIX: reemplaza el card raíz usando la referencia guardada en render()
-  // Se eliminó _renderListaContentReal() — era duplicado exacto de _renderListaContent()
   _refreshLista() {
     const newLista = createCard({
-      title: 'Servicios agregados',
+      title:   'Servicios agregados',
       variant: 'warning',
       content: this._renderListaContent()
     });
@@ -653,7 +848,7 @@ const page = {
       onSave: async ({ uid, comercioId }) => {
         if (!comercioId) throw new Error('No hay comercioId para guardar servicios');
 
-        const batch = writeBatch(db);
+        const batch        = writeBatch(db);
         const comercioRef  = doc(db, 'entidades', comercioId);
         const serviciosRef = collection(db, 'entidades', comercioId, 'servicios');
         const existentes   = await getDocs(serviciosRef);
@@ -672,7 +867,6 @@ const page = {
         });
 
         await batch.commit();
-        console.log(`✅ Guardados ${this._data.serviciosAcumulados.length} servicios`);
         return true;
       },
 
