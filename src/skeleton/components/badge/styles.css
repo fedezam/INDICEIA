@@ -1,3 +1,5 @@
+/* src/skeleton/components/badge/styles.css */
+
 .s-badge {
   display: inline-flex;
   align-items: center;
@@ -14,7 +16,7 @@
   color: var(--s-dark, #495057);
 }
 
-/* ── Variantes (usa las variables del theme) ──────────────── */
+/* ── Variantes (usan variables del theme) ─────────────────── */
 .s-badge-primary   { background: var(--s-primary); color: #fff; }
 .s-badge-secondary { background: var(--s-secondary); color: #fff; }
 .s-badge-success   { background: var(--s-success); color: #fff; }
@@ -22,7 +24,7 @@
 .s-badge-warning   { background: var(--s-warning); color: #fff; }
 .s-badge-info      { background: var(--s-info); color: #fff; }
 
-/* ── Outline ─────────────────────────────────────────────── */
+/* ── Outline (fondo transparente, borde coloreado) ────────── */
 .s-badge--outline.s-badge-primary   { background: transparent; border-color: var(--s-primary); color: var(--s-primary); }
 .s-badge--outline.s-badge-secondary { background: transparent; border-color: var(--s-secondary); color: var(--s-secondary); }
 .s-badge--outline.s-badge-success   { background: transparent; border-color: var(--s-success); color: var(--s-success); }
