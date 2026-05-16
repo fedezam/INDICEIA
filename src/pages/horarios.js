@@ -92,7 +92,10 @@ async function load(ctx) {
 
   const horarios = ensureHorariosStructure(horariosData);
 
-  const tieneLocalFisico = ctx.comercioData?.tieneLocalFisico !== false;
+  const entityType = ctx.comercioData?.entityType || 'comercio';
+  const tieneLocalFisico = entityType === 'comercio'
+    ? ctx.comercioData?.tieneLocalFisico !== false
+    : ctx.comercioData?.modalidad_trabajo === 'local';
 
   return {
     horarios,
@@ -130,13 +133,13 @@ function render(ctx, state) {
   else if (state.tieneLocalFisico) {
     header.innerHTML = `
       <h2><i class="fas fa-clock"></i> Horarios de Atención</h2>
-      <p>Configurá cuándo está abierto tu comercio</p>
+      <p>Configurá cuándo está abierto tu local</p>
     `;
   }
   else {
     header.innerHTML = `
-      <h2><i class="fas fa-clock"></i> Horarios de Respuesta</h2>
-      <p>Configurá en qué horarios podés atender consultas por WhatsApp</p>
+      <h2><i class="fas fa-clock"></i> Horarios de Trabajo</h2>
+      <p>Configurá en qué horarios trabajás habitualmente</p>
     `;
   }
 
@@ -146,8 +149,8 @@ function render(ctx, state) {
   const aiCardContent = state.isDelivery
     ? 'Tu asistente sabrá cuándo podés realizar entregas y comunicará los horarios a tus clientes automáticamente.'
     : state.tieneLocalFisico
-      ? 'Tu asistente sabrá cuándo puede atender clientes en el local y gestionar pedidos automáticamente.'
-      : 'Tu asistente sabrá cuándo podés responder consultas y avisará a los clientes si estás fuera de horario.';
+      ? 'Tu asistente sabrá cuándo está abierto tu local y se lo comunicará a tus clientes automáticamente.'
+      : 'Tu asistente sabrá en qué horarios trabajás y avisará a los clientes si contactan fuera de ese horario.';
 
   page.appendChild(createCard({
     title:     '¡Tu IA conocerá tus horarios!',
