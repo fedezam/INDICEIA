@@ -7,14 +7,15 @@ import { runSkeleton }             from '/src/skeleton/skeleton.js';
 import { createFirebaseAdapter }   from '/src/skeleton/adapters/firebaseAdapter.js';
 
 // ==================== COMPONENTES ====================
-import { createFormField }        from '/src/skeleton/components/form-field/index.js';
-import { createButton }           from '/src/skeleton/components/button/index.js';
-import { createCard }             from '/src/skeleton/components/card/index.js';
-import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
-import { showToast }              from '/src/skeleton/components/toast/index.js';
+import { createFormField }         from '/src/skeleton/components/form-field/index.js';
+import { createButton }            from '/src/skeleton/components/button/index.js';
+import { createCard }              from '/src/skeleton/components/card/index.js';
+import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
+import { createCheckboxGroup }     from '/src/skeleton/components/checkbox-group/index.js'; // ← Ya lo tenías, solo confirmamos
+import { showToast }               from '/src/skeleton/components/toast/index.js';
 
 // ==================== FIREBASE ====================
-import { db }                     from '/src/services/firebase/firebase.js';
+import { db }                      from '/src/services/firebase/firebase.js';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   writeBatch,
@@ -219,56 +220,40 @@ const page = {
   // TIPO DE SERVICIO (pivote simple / complejo)
   // ──────────────────────────────────────────────────────────
   _renderTipoServicioField() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 's-form-field campo-compuesto';
-
-    const label = document.createElement('label');
-    label.className   = 's-label';
-    label.textContent = '¿Qué tipo de servicio es? *';
-    wrapper.appendChild(label);
-
-    const opciones = [
-      {
-        value: 'simple',
-        label: 'Servicio simple',
-        help:  'Precio único para todos los clientes. Ej: Corte de pelo, Consulta, Cavitación.',
-      },
-      {
-        value: 'complejo',
-        label: 'Servicio con opciones',
-        help:  'El precio varía según lo que elija el cliente — por zona, tamaño, tipo, etc. Ej: Depilación definitiva.',
-      },
-    ];
-
-    this._tipoCheckboxes = [];
-
-    opciones.forEach(opt => {
-      const row = document.createElement('label');
-      row.className = 'radio-tipo-servicio';
-      row.innerHTML = `
-        <input type="radio" name="svc-tipo" value="${opt.value}"
-          ${(this._data.draft.tipo || 'simple') === opt.value ? 'checked' : ''}>
-        <div>
-          <strong>${opt.label}</strong>
-          <span>${opt.help}</span>
-        </div>
-      `;
-      const radio = row.querySelector('input');
-      radio.addEventListener('change', () => {
-        this._data.draft.tipo = opt.value;
-        // Limpiar precio/items al cambiar tipo
-        delete this._data.draft.precio;
-        delete this._data.draft.items;
-        delete this._data.draft.unidad;
-        // Re-render solo el bloque de precio/items
-        this._precioContainer.innerHTML = '';
-        this._precioContainer.appendChild(this._renderPrecioSegunTipo());
-      });
-      this._tipoCheckboxes = this._tipoCheckboxes || [];
-      wrapper.appendChild(row);
+    // ← MIGRADO: usa checkbox-group con mode: 'single' (comportamiento radio)
+    return createCheckboxGroup({
+      label: '¿Qué tipo de servicio es? *',
+      name: 'svc-tipo',
+      required: true,
+      mode: 'single', // ← Clave: selección única
+      orientation: 'vertical',
+      options: [
+        {
+          value: 'simple',
+          label: 'Servicio simple',
+          description: 'Precio único para todos los clientes. Ej: Corte de pelo, Consulta, Cavitación.'
+        },
+        {
+          value: 'complejo',
+          label: 'Servicio con opciones',
+          description: 'El precio varía según lo que elija el cliente — por zona, tamaño, tipo, etc. Ej: Depilación definitiva.'
+        }
+      ],
+      value: this._data.draft.tipo || 'simple',
+      actions: {
+        onChange: (value) => {
+          this._data.draft.tipo = value;
+          // Limpiar precio/items al cambiar tipo
+          delete this._data.draft.precio;
+          delete this._data.draft.items;
+          delete this._data.draft.unidad;
+          // Re-render solo el bloque de precio/items
+          this._precioContainer.innerHTML = '';
+          this._precioContainer.appendChild(this._renderPrecioSegunTipo());
+          document.dispatchEvent(new Event('change'));
+        }
+      }
     });
-
-    return wrapper;
   },
 
   // ──────────────────────────────────────────────────────────
@@ -469,44 +454,37 @@ const page = {
   // DISPONIBILIDAD
   // ──────────────────────────────────────────────────────────
   _renderDisponibilidadField() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 's-form-field campo-compuesto';
-
-    const label = document.createElement('label');
-    label.className   = 's-label';
-    label.textContent = '¿Cuándo está disponible? *';
-    wrapper.appendChild(label);
-
-    const help = document.createElement('small');
-    help.className   = 's-help';
-    help.textContent = 'Seleccioná solo una opción';
-    wrapper.appendChild(help);
-
-    const opciones = [
-      { value: 'inmediata',   label: 'Inmediata',   help: 'Sin turno, por orden de llegada' },
-      { value: 'a_coordinar', label: 'A coordinar', help: 'Requiere turno o agenda previa'  },
-    ];
-
-    this._disponibilidadCheckboxes = [];
-
-    opciones.forEach(opt => {
-      const row = document.createElement('label');
-      row.className = 'checkbox-con-explicacion';
-      row.innerHTML = `
-        <input type="checkbox" name="disponibilidad" value="${opt.value}">
-        <div><strong>${opt.label}</strong><span>${opt.help}</span></div>
-      `;
-      const cb = row.querySelector('input');
-      this._disponibilidadCheckboxes.push(cb);
-      cb.addEventListener('change', (e) => {
-        this._disponibilidadCheckboxes.forEach(other => { if (other !== e.target) other.checked = false; });
-        if (e.target.checked) this._data.draft.disponibilidad = e.target.value;
-        else delete this._data.draft.disponibilidad;
-      });
-      wrapper.appendChild(row);
+    // ← MIGRADO: usa checkbox-group con mode: 'single'
+    return createCheckboxGroup({
+      label: '¿Cuándo está disponible? *',
+      name: 'disponibilidad',
+      required: true,
+      mode: 'single', // ← Clave: selección única
+      orientation: 'vertical',
+      options: [
+        {
+          value: 'inmediata',
+          label: 'Inmediata',
+          description: 'Sin turno, por orden de llegada'
+        },
+        {
+          value: 'a_coordinar',
+          label: 'A coordinar',
+          description: 'Requiere turno o agenda previa'
+        }
+      ],
+      value: this._data.draft.disponibilidad || null,
+      actions: {
+        onChange: (value) => {
+          if (value) {
+            this._data.draft.disponibilidad = value;
+          } else {
+            delete this._data.draft.disponibilidad;
+          }
+          document.dispatchEvent(new Event('change'));
+        }
+      }
     });
-
-    return wrapper;
   },
 
   // ──────────────────────────────────────────────────────────
@@ -764,13 +742,22 @@ const page = {
       this._precioRefs.inputPrecio.setValue('');
       this._precioRefs.inputPrecio.disable();
     }
-    if (this._disponibilidadCheckboxes) {
-      this._disponibilidadCheckboxes.forEach(cb => cb.checked = false);
-    }
+    
+    // ← MIGRADO: limpiar campos que ahora son componentes checkbox-group
+    // Buscamos por name y usamos su API si existe
+    const limpiarCheckboxGroup = (name) => {
+      const field = document.querySelector(`[data-field-id] [name="${name}"]`)?.closest('[data-field-id]');
+      if (field?.setValue) field.setValue([]); // o null para mode: 'single'
+    };
+    limpiarCheckboxGroup('svc-tipo');
+    limpiarCheckboxGroup('disponibilidad');
+    
     if (this._imagenUrlInput) this._imagenUrlInput.value = '';
     this._data.draft.imagen = '';
+    
     // Reset tipo a simple
     this._data.draft.tipo = 'simple';
+    
     // Re-render form para resetear precio container
     const formCard = document.querySelector('.s-card--primary');
     if (formCard) {
