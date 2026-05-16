@@ -10,11 +10,13 @@ export function updateCheckboxGroup(dom, config = {}) {
     value = [],
     required = false,
     disabled = false,
-    orientation = 'vertical' // vertical | horizontal
+    orientation = 'vertical', // vertical | horizontal
+    mode = 'multiple'         // ← NUEVO: 'multiple' (default) o 'single'
   } = config;
 
   const fieldId = `sk-checkbox-group-${++idCounter}`;
   dom.wrapper.dataset.fieldId = fieldId;
+  dom.wrapper.dataset.mode = mode; // ← Guardamos el modo para usar en index.js
 
   dom.legend.textContent = label;
   dom.wrapper.classList.toggle('is-required', required);
@@ -33,7 +35,17 @@ export function updateCheckboxGroup(dom, config = {}) {
     input.name      = name;
     input.value     = opt.value;
     input.id        = optionId;
-    input.checked   = value.includes(opt.value);
+    
+    // ← Lógica de checked según modo
+    if (mode === 'single') {
+      // En modo single, value puede ser string o null
+      input.checked = value === opt.value;
+    } else {
+      // En modo multiple, value es array (o fallback a array)
+      const vals = Array.isArray(value) ? value : (value != null ? [value] : []);
+      input.checked = vals.includes(opt.value);
+    }
+    
     input.disabled  = disabled;
     input.className = 'sk-checkbox-group__input';
 
