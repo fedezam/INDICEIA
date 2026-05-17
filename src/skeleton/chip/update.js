@@ -1,33 +1,30 @@
-// src/skeleton/components/chip/update.js
 export function updateChip(dom, config = {}) {
-  const { chip, content, closeBtn } = dom;
+  const { wrapper, content, closeBtn } = dom;
   const {
     text = '',
     icon = '',
-    removable = false,
     variant = 'secondary',
     size = 'medium',
-    onRemove,
-    onClick
+    removable = false,
+    onClick,
+    onRemove
   } = config;
 
-  // Reset clases base
-  chip.className = 's-chip';
-  chip.classList.add(`s-chip--${variant}`);
-  chip.classList.add(`s-chip--${size}`);
-  if (removable) chip.classList.add('s-chip--removable');
+  // 1. Resetear clases base
+  wrapper.className = 's-chip';
+  wrapper.classList.add(`s-chip--${variant}`);
+  wrapper.classList.add(`s-chip--${size}`);
+  if (removable) wrapper.classList.add('s-chip--removable');
 
-  // Limpiar contenido previo
+  // 2. Limpiar y reconstruir contenido
   content.innerHTML = '';
 
-  // Icono (Font Awesome)
   if (icon) {
     const i = document.createElement('i');
     i.className = `fas ${icon} s-chip__icon`;
     content.appendChild(i);
   }
 
-  // Texto
   if (text) {
     const span = document.createElement('span');
     span.className = 's-chip__text';
@@ -35,33 +32,28 @@ export function updateChip(dom, config = {}) {
     content.appendChild(span);
   }
 
-  // Botón de cerrar
-  closeBtn.style.display = removable ? 'inline-flex' : 'none';
+  // 3. Configurar botón de cerrar
   if (removable) {
+    closeBtn.style.display = 'inline-flex';
     closeBtn.onclick = (e) => {
-      e.stopPropagation();
-      onRemove?.(chip, e);
-      chip.remove();
-    };
-  }
-
-  // Click general en el chip
-  if (onClick) {
-    chip.style.cursor = 'pointer';
-    chip.onclick = (e) => {
-      if (!e.target.closest('.s-chip__close')) {
-        onClick(chip, e);
-      }
+      e.stopPropagation(); // Evita que se dispare el onClick del chip
+      onRemove && onRemove(wrapper, e);
+      // Por defecto elimina el elemento del DOM, salvo que se prevenga
+      if (!e.defaultPrevented) wrapper.remove();
     };
   } else {
-    chip.style.cursor = 'default';
-    chip.onclick = null;
+    closeBtn.style.display = 'none';
+    closeBtn.onclick = null;
   }
 
-  // Accesibilidad: aria-label si tiene icono
-  if (icon && !text) {
-    chip.setAttribute('aria-label', config.ariaLabel || 'Chip');
+  // 4. Configurar click general
+  if (onClick) {
+    wrapper.style.cursor = 'pointer';
+    wrapper.onclick = (e) => onClick(wrapper, e);
+  } else {
+    wrapper.style.cursor = 'default';
+    wrapper.onclick = null;
   }
 
-  return chip;
+  return wrapper;
 }
