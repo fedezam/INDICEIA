@@ -1,0 +1,89 @@
+/* src/skeleton/components/autocomplete/styles.css */
+.s-autocomplete {
+  position: relative;
+  width: 100%;
+  font-family: inherit;
+}
+
+.s-autocomplete__input {
+  width: 100%;
+  height: var(--s-input-height, 38px);
+  padding: 0.47rem var(--s-input-padding-x, 12px);
+  font-size: 0.95rem;
+  color: var(--s-dark, #343a40);
+  background: var(--s-card-bg, #ffffff);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.s-autocomplete__input:focus {
+  border-color: var(--s-primary, #3c8dbc);
+  outline: none;
+  box-shadow: 0 0 0 0.2rem var(--s-focus-ring, rgba(60, 141, 188, 0.3));
+}
+
+.s-autocomplete__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--s-card-bg, #ffffff);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  box-shadow: var(--s-box-shadow, 0 4px 12px rgba(0,0,0,0.1));
+  z-index: 1000;
+  display: none;
+}
+
+/* Scrollbar styling */
+.s-autocomplete__dropdown::-webkit-scrollbar { width: 6px; }
+.s-autocomplete__dropdown::-webkit-scrollbar-track { background: transparent; }
+.s-autocomplete__dropdown::-webkit-scrollbar-thumb { background: var(--s-border, #d2d6de); border-radius: 3px; }
+
+.s-autocomplete__option {
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--s-dark, #343a40);
+  transition: background 0.15s;
+}
+
+.s-autocomplete__option:hover,
+.s-autocomplete__option--active {
+  background: rgba(60, 141, 188, 0.08);
+  color: var(--s-primary, #3c8dbc);
+}
+
+.s-autocomplete__empty {
+  padding: 0.8rem 1rem;
+  font-size: 0.85rem;
+  color: var(--s-gray, #6c757d);
+  font-style: italic;
+}
+
+/* Accesibilidad oculta */
+.s-autocomplete__status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Estados */
+.s-autocomplete.is-invalid .s-autocomplete__input {
+  border-color: var(--s-danger, #dc3545);
+}
+
+.s-autocomplete.is-disabled .s-autocomplete__input {
+  background: var(--s-light, #e9ecef);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
