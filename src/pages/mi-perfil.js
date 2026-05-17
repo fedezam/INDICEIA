@@ -24,12 +24,12 @@ import './mi-perfil.css';
 // ============================================================
 const page = {
 
-  // Estado en memoria — fuente de verdad para dirtyController
   _data: {
     nombre:              '',
     especialidad:        '',
     descripcion:         '',
     experiencia:         '',
+    modalidad_trabajo:   null,   // 'local' | 'domicilio'
     atiende_urgencias:   false,
     whatsapp:            '',
     telefono:            '',
@@ -48,7 +48,6 @@ const page = {
   _slugExiste:       false,
   _comercioData:     {},
 
-  // Refs DOM — solo para escribir valores iniciales, no para leer estado
   _refs: {
     fields:              {},
     slugInput:           null,
@@ -68,7 +67,6 @@ const page = {
 
     const c = this._comercioData;
 
-    // Migración: cobertura[] viejo → nuevo formato
     const localidad_principal = c.localidad_principal || (
       c.cobertura?.[0] ? { ...c.cobertura[0], pais: 'Argentina' } : null
     );
@@ -77,22 +75,22 @@ const page = {
       || [];
 
     this._data = {
-      nombre:              c.nombre       || '',
-      especialidad:        c.especialidad || '',
-      descripcion:         c.descripcion  || '',
-      experiencia:         c.experiencia  || '',
+      nombre:              c.nombre             || '',
+      especialidad:        c.especialidad        || '',
+      descripcion:         c.descripcion         || '',
+      experiencia:         c.experiencia         || '',
+      modalidad_trabajo:   c.modalidad_trabajo   || null,
       atiende_urgencias:   c.atiende_urgencias === true,
-      whatsapp:            c.whatsapp     || '',
-      telefono:            c.telefono     || '',
-      email:               c.email        || '',
-      instagram:           c.instagram    || '',
-      direccion:           c.direccion    || '',
+      whatsapp:            c.whatsapp            || '',
+      telefono:            c.telefono            || '',
+      email:               c.email              || '',
+      instagram:           c.instagram           || '',
+      direccion:           c.direccion           || '',
       localidad_principal,
       zona_cobertura,
-      slug:                c.landing?.slug || null,
+      slug:                c.landing?.slug       || null,
     };
 
-    // Snapshot para dirty detection — igual que servicios.js
     this._originalSnapshot = structuredClone(this._data);
   },
 
@@ -103,7 +101,6 @@ const page = {
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
 
-    // Reset refs para este render
     this._refs = {
       fields:              {},
       slugInput:           null,
@@ -117,6 +114,7 @@ const page = {
     root.appendChild(title);
 
     root.appendChild(this._renderSeccionIdentidad());
+    root.appendChild(this._renderSeccionModalidadTrabajo());
     root.appendChild(this._renderSeccionUbicacion());
     root.appendChild(this._renderSeccionContacto());
 
@@ -131,7 +129,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // DIRTY CONTROLLER — patrón servicios.js
+  // DIRTY CONTROLLER
   // ──────────────────────────────────────────────────────────
   _buildDirtyController() {
     return {
@@ -141,151 +139,6 @@ const page = {
         this._originalSnapshot = structuredClone(this._data);
       },
     };
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // SAVE BUTTON
-  // ──────────────────────────────────────────────────────────
-  _renderSaveButton() {
-    const dirtyController = this._buildDirtyController();
-
-    return createOnboardingButton({
-      stepName: 'mi-perfil',
-
-      dirtyController: this._isEditMode ? dirtyController : undefined,
-
-      getLabel: () => {
-        if (!this._isEditMode) return 'Continuar';
-        if (dirtyController.hasUnsavedChanges()) return 'Guardar y volver al dashboard';
-        return 'Volver al dashboard';
-      },
-
-      validate: () => {
-        const camposValidos =
-          this._data.nombre.trim()       &&
-          this._data.especialidad.trim() &&
-          this._data.descripcion.trim()  &&
-          this._data.whatsapp.trim()     &&
-          !!this._data.localidad_principal;
-
-        const slugValido = this._slugExiste || !!this._data.slug;
-        return !!(camposValidos && slugValido);
-      },
-
-      async onSave({ uid, comercioId }) {
-        const d = page._data;
-
-        const updates = {
-          nombre:       d.nombre,
-          especialidad: d.especialidad,
-          rubro:        rubroFromForm([d.especialidad]),
-          descripcion:  d.descripcion,
-          experiencia:  d.experiencia || null,
-          atiende_urgencias: d.atiende_urgencias === true || null,
-
-          localidad_principal: d.localidad_principal,
-          zona_cobertura:      d.zona_cobertura,
-
-          // ✅ FIX: ubicacion estructurada igual que mi-comercio.js
-          ubicacion: {
-            pais:      d.localidad_principal?.pais || 'Argentina',
-            provincia: d.localidad_principal?.provincia || '',
-            localidad: {
-              id:     d.localidad_principal?.id       || null,
-              nombre: d.localidad_principal?.localidad || '',
-              lat:    d.localidad_principal?.lat       || null,
-              lng:    d.localidad_principal?.lng       || null,
-            }
-          },
-
-          // legacy — mantenemos para compatibilidad con código viejo
-          localidad: d.localidad_principal?.localidad || null,
-          provincia: d.localidad_principal?.provincia || null,
-          pais:      'Argentina',
-
-          direccion: d.direccion || null,
-
-          whatsapp:  d.whatsapp,
-          telefono:  d.telefono  || null,
-          email:     d.email     || null,
-          instagram: d.instagram || null,
-
-          entityType: 'prestador',
-        };
-
-        if (!page._slugExiste) {
-          updates.landing = {
-            activo: true, nombre: updates.nombre,
-            slug: d.slug, tipo: 'perfil',
-            createdAt: new Date(), updatedAt: new Date()
-          };
-        } else {
-          updates.landing = {
-            ...page._comercioData.landing,
-            nombre: updates.nombre, updatedAt: new Date()
-          };
-        }
-
-        if (page._isNuevo) {
-          const comercioRef     = comercioId
-            ? doc(db, 'entidades', comercioId)
-            : doc(collection(db, 'entidades'));
-          const nuevoComercioId = comercioRef.id;
-
-          const now       = Timestamp.now();
-          const expiresAt = Timestamp.fromDate(
-            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          );
-
-          await setDoc(comercioRef, {
-            ...updates,
-            duenoId: uid,
-            fechaCreacion: new Date(), fechaActualizacion: new Date(),
-            onboardingSteps: { 'mi-perfil': true },
-            plan: {
-              type: 'trial', active: true, trial: true,
-              startedAt: now, expiresAt, createdAt: now,
-              updatedAt: now, source: 'system'
-            }
-          });
-
-          await setDoc(doc(db, 'landings', d.slug), {
-            slug: d.slug, comercioId: nuevoComercioId,
-            nombre: updates.nombre, activo: true,
-            createdAt: new Date(), updatedAt: new Date()
-          });
-
-          await updateDoc(doc(db, 'usuarios', uid), {
-            comercioId: nuevoComercioId,
-          });
-
-        } else {
-          updates['onboardingSteps.mi-perfil'] = true;
-          updates.fechaActualizacion           = new Date();
-          await updateDoc(doc(db, 'entidades', comercioId), updates);
-
-          if (!page._slugExiste) {
-            await setDoc(doc(db, 'landings', d.slug), {
-              slug: d.slug, comercioId,
-              nombre: updates.nombre, activo: true,
-              createdAt: new Date(), updatedAt: new Date()
-            });
-          }
-        }
-
-        return { success: true, stepMarked: true };
-      },
-
-      onSuccess: () => {
-        showToast('Perfil guardado correctamente', 'success');
-        dirtyController.markSaved();
-      },
-
-      onError: (err) => {
-        console.error('❌ Error guardando perfil:', err);
-        showToast('Error al guardar: ' + err.message, 'error');
-      },
-    });
   },
 
   // ============================================================
@@ -332,7 +185,6 @@ const page = {
       actions: { onChange: (v) => { this._data.experiencia = v.trim(); } }
     });
 
-    // Auto-slug desde nombre — solo si el slug todavía no existe
     if (!this._slugExiste) {
       this._refs.fields.nombre.input?.addEventListener('input', () => {
         clearTimeout(this._refs.slugValidationTimer);
@@ -359,42 +211,78 @@ const page = {
   },
 
   // ============================================================
-  // CAMPO: URGENCIAS
+  // SECCIÓN: MODALIDAD DE TRABAJO (pivote)
   // ============================================================
-  _renderUrgenciasField() {
-    const field = createCheckboxGroup({
-      label: 'Urgencias',
-      name:  'atiende_urgencias',
-      value: this._data.atiende_urgencias ? ['si'] : [],
-      options: [{
-        value:       'si',
-        label:       'Atiendo emergencias fuera de horario',
-        description: 'Si marcás esta opción, tu asistente les avisará a los clientes que pueden contactarte ante una urgencia, aunque estés fuera de tu horario habitual. Vos decidís si atendés o no — el asistente solo da el aviso.'
-      }]
+  _renderSeccionModalidadTrabajo() {
+    const section = crearSeccion('¿Cómo trabajás?');
+    section.classList.add('seccion-modalidad-trabajo');
+
+    const help = document.createElement('p');
+    help.className   = 'form-help';
+    help.textContent = 'Esto define qué información le mostramos a tus clientes sobre dónde y cómo atendés.';
+    section.appendChild(help);
+
+    const opciones = [
+      {
+        value: 'domicilio',
+        label: 'Voy al domicilio del cliente',
+        icon:  '🏠',
+        help:  'Plomero, electricista, manicura a domicilio, profe particular...',
+      },
+      {
+        value: 'local',
+        label: 'Tengo local / taller / consultorio',
+        icon:  '🏪',
+        help:  'Estética, mecánico, reparación de PC, médico...',
+      },
+    ];
+
+    opciones.forEach(opt => {
+      const row = document.createElement('label');
+      row.className = 'radio-modalidad-trabajo';
+      row.innerHTML = `
+        <input type="radio" name="modalidad_trabajo" value="${opt.value}"
+          ${this._data.modalidad_trabajo === opt.value ? 'checked' : ''}>
+        <div>
+          <strong>${opt.icon} ${opt.label}</strong>
+          <span>${opt.help}</span>
+        </div>
+      `;
+      const radio = row.querySelector('input');
+      radio.addEventListener('change', () => {
+        this._data.modalidad_trabajo = opt.value;
+        // Re-render reactivo de la sección ubicación
+        const old = document.querySelector('.seccion-ubicacion');
+        if (old) old.replaceWith(this._renderSeccionUbicacion());
+      });
+      section.appendChild(row);
     });
 
-    field.addEventListener('change', () => {
-      this._data.atiende_urgencias = field.getValue().includes('si');
-    });
-
-    return field;
+    return section;
   },
 
   // ============================================================
-  // SECCIÓN: UBICACIÓN
+  // SECCIÓN: UBICACIÓN (reactiva a modalidad_trabajo)
   // ============================================================
   _renderSeccionUbicacion() {
-    const section = crearSeccion('¿Dónde trabajás?');
+    const tieneLocal = this._data.modalidad_trabajo === 'local';
+
+    const section = crearSeccion(
+      tieneLocal ? '¿Dónde está tu local?' : '¿Desde dónde trabajás?'
+    );
+    section.classList.add('seccion-ubicacion');
 
     const provinciaGuardada = this._data.localidad_principal?.provincia || '';
 
-    // ── Bloque 1: localidad principal ─────────────────────────
+    // ── Localidad principal ────────────────────────────────────
     const subPrincipal = document.createElement('div');
     subPrincipal.className = 'ubicacion-bloque';
 
     const helpPrincipal = document.createElement('p');
     helpPrincipal.className   = 'form-help';
-    helpPrincipal.textContent = '¿En qué localidad trabajás? Esta es tu dirección principal.';
+    helpPrincipal.textContent = tieneLocal
+      ? '¿En qué localidad está tu local?'
+      : '¿En qué localidad estás basado?';
     subPrincipal.appendChild(helpPrincipal);
 
     this._refs.fields.provincia = createFormField({
@@ -422,7 +310,6 @@ const page = {
 
     const montarLocalidadPrincipal = (provinciaVal) => {
       mountCiudadAutocomplete(provinciaVal, localidadContainer, '', (loc) => {
-        // ✅ FIX: guardar objeto completo con id, lat, lng
         this._data.localidad_principal = {
           localidad: loc.nombre,
           provincia: provinciaVal,
@@ -439,7 +326,6 @@ const page = {
     if (provinciaGuardada) {
       const localidadGuardada = this._data.localidad_principal?.localidad || '';
       mountCiudadAutocomplete(provinciaGuardada, localidadContainer, localidadGuardada, (loc) => {
-        // ✅ FIX: guardar objeto completo con id, lat, lng
         this._data.localidad_principal = {
           localidad: loc.nombre,
           provincia: provinciaGuardada,
@@ -465,7 +351,30 @@ const page = {
 
     section.appendChild(subPrincipal);
 
-    // ── Bloque 2: zona de cobertura ───────────────────────────
+    // ── Dirección: solo si tiene local ────────────────────────
+    if (tieneLocal) {
+      this._refs.fields.direccion = createFormField({
+        label: 'Dirección del local', name: 'direccion', required: true,
+        placeholder: 'Ej: Av. San Martín 123',
+        helpText: 'La dirección exacta donde te atienden los clientes',
+        value: this._data.direccion,
+        actions: { onChange: (v) => { this._data.direccion = v.trim(); } }
+      });
+      section.appendChild(this._refs.fields.direccion);
+    }
+
+    // ── Zona de cobertura: solo si va a domicilio ─────────────
+    if (!tieneLocal) {
+      section.appendChild(this._renderZonaCobertura(provinciaGuardada));
+    }
+
+    return section;
+  },
+
+  // ============================================================
+  // ZONA DE COBERTURA (solo para modalidad domicilio)
+  // ============================================================
+  _renderZonaCobertura(provinciaGuardada) {
     const subZona = document.createElement('div');
     subZona.className = 'ubicacion-bloque ubicacion-zona';
 
@@ -560,19 +469,29 @@ const page = {
     renderZonaChips(zonaChipsContainer, this._data);
     subZona.appendChild(zonaChipsContainer);
 
-    section.appendChild(subZona);
+    return subZona;
+  },
 
-    // ── Dirección opcional ────────────────────────────────────
-    this._refs.fields.direccion = createFormField({
-      label: 'Dirección de atención', name: 'direccion',
-      placeholder: 'Ej: Av. San Martín 123, Casilda',
-      helpText: 'Opcional — solo si el cliente viene a tu domicilio o local',
-      value: this._data.direccion,
-      actions: { onChange: (v) => { this._data.direccion = v.trim(); } }
+  // ============================================================
+  // CAMPO: URGENCIAS
+  // ============================================================
+  _renderUrgenciasField() {
+    const field = createCheckboxGroup({
+      label: 'Urgencias',
+      name:  'atiende_urgencias',
+      value: this._data.atiende_urgencias ? ['si'] : [],
+      options: [{
+        value:       'si',
+        label:       'Atiendo emergencias fuera de horario',
+        description: 'Si marcás esta opción, tu asistente les avisará a los clientes que pueden contactarte ante una urgencia, aunque estés fuera de tu horario habitual. Vos decidís si atendés o no — el asistente solo da el aviso.'
+      }]
     });
-    section.appendChild(this._refs.fields.direccion);
 
-    return section;
+    field.addEventListener('change', () => {
+      this._data.atiende_urgencias = field.getValue().includes('si');
+    });
+
+    return field;
   },
 
   // ============================================================
@@ -729,6 +648,171 @@ const page = {
     };
     icon.innerHTML   = icons[status] || '';
     text.textContent = message;
+  },
+
+  // ============================================================
+  // SAVE BUTTON
+  // ============================================================
+  _renderSaveButton() {
+    const dirtyController = this._buildDirtyController();
+
+    return createOnboardingButton({
+      stepName: 'mi-perfil',
+
+      dirtyController: this._isEditMode ? dirtyController : undefined,
+
+      getLabel: () => {
+        if (!this._isEditMode) return 'Continuar';
+        if (dirtyController.hasUnsavedChanges()) return 'Guardar y volver al dashboard';
+        return 'Volver al dashboard';
+      },
+
+      validate: () => {
+        const tieneLocal = this._data.modalidad_trabajo === 'local';
+
+        const camposBase =
+          this._data.nombre.trim()       &&
+          this._data.especialidad.trim() &&
+          this._data.descripcion.trim()  &&
+          this._data.whatsapp.trim()     &&
+          !!this._data.localidad_principal &&
+          !!this._data.modalidad_trabajo;
+
+        const camposModalidad = tieneLocal
+          ? !!this._data.direccion?.trim()   // local requiere dirección
+          : true;                            // domicilio no la requiere
+
+        const slugValido = this._slugExiste || !!this._data.slug;
+
+        return !!(camposBase && camposModalidad && slugValido);
+      },
+
+      async onSave({ uid, comercioId }) {
+        const d          = page._data;
+        const tieneLocal = d.modalidad_trabajo === 'local';
+
+        const updates = {
+          nombre:       d.nombre,
+          especialidad: d.especialidad,
+          rubro:        rubroFromForm([d.especialidad]),
+          descripcion:  d.descripcion,
+          experiencia:  d.experiencia || null,
+
+          // modalidad_trabajo: solo se guarda si es 'local'
+          // si va a domicilio, el LLM infiere por ausencia del campo
+          ...(tieneLocal && { modalidad_trabajo: 'local' }),
+
+          // atiende_urgencias: solo se guarda si es true
+          ...(d.atiende_urgencias === true && { atiende_urgencias: true }),
+
+          localidad_principal: d.localidad_principal,
+
+          ubicacion: {
+            pais:      d.localidad_principal?.pais || 'Argentina',
+            provincia: d.localidad_principal?.provincia || '',
+            localidad: {
+              id:     d.localidad_principal?.id       || null,
+              nombre: d.localidad_principal?.localidad || '',
+              lat:    d.localidad_principal?.lat       || null,
+              lng:    d.localidad_principal?.lng       || null,
+            }
+          },
+
+          // legacy
+          localidad: d.localidad_principal?.localidad || null,
+          provincia: d.localidad_principal?.provincia || null,
+          pais:      'Argentina',
+
+          // dirección: solo si tiene local
+          ...(tieneLocal && d.direccion ? { direccion: d.direccion } : {}),
+
+          // zona_cobertura: solo si va a domicilio y tiene zonas cargadas
+          ...(!tieneLocal && d.zona_cobertura.length > 0
+            ? { zona_cobertura: d.zona_cobertura }
+            : {}
+          ),
+
+          whatsapp:  d.whatsapp,
+          telefono:  d.telefono  || null,
+          email:     d.email     || null,
+          instagram: d.instagram || null,
+
+          entityType: 'prestador',
+        };
+
+        if (!page._slugExiste) {
+          updates.landing = {
+            activo: true, nombre: updates.nombre,
+            slug: d.slug, tipo: 'perfil',
+            createdAt: new Date(), updatedAt: new Date()
+          };
+        } else {
+          updates.landing = {
+            ...page._comercioData.landing,
+            nombre: updates.nombre, updatedAt: new Date()
+          };
+        }
+
+        if (page._isNuevo) {
+          const comercioRef     = comercioId
+            ? doc(db, 'entidades', comercioId)
+            : doc(collection(db, 'entidades'));
+          const nuevoComercioId = comercioRef.id;
+
+          const now       = Timestamp.now();
+          const expiresAt = Timestamp.fromDate(
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          );
+
+          await setDoc(comercioRef, {
+            ...updates,
+            duenoId: uid,
+            fechaCreacion: new Date(), fechaActualizacion: new Date(),
+            onboardingSteps: { 'mi-perfil': true },
+            plan: {
+              type: 'trial', active: true, trial: true,
+              startedAt: now, expiresAt, createdAt: now,
+              updatedAt: now, source: 'system'
+            }
+          });
+
+          await setDoc(doc(db, 'landings', d.slug), {
+            slug: d.slug, comercioId: nuevoComercioId,
+            nombre: updates.nombre, activo: true,
+            createdAt: new Date(), updatedAt: new Date()
+          });
+
+          await updateDoc(doc(db, 'usuarios', uid), {
+            comercioId: nuevoComercioId,
+          });
+
+        } else {
+          updates['onboardingSteps.mi-perfil'] = true;
+          updates.fechaActualizacion           = new Date();
+          await updateDoc(doc(db, 'entidades', comercioId), updates);
+
+          if (!page._slugExiste) {
+            await setDoc(doc(db, 'landings', d.slug), {
+              slug: d.slug, comercioId,
+              nombre: updates.nombre, activo: true,
+              createdAt: new Date(), updatedAt: new Date()
+            });
+          }
+        }
+
+        return { success: true, stepMarked: true };
+      },
+
+      onSuccess: () => {
+        showToast('Perfil guardado correctamente', 'success');
+        dirtyController.markSaved();
+      },
+
+      onError: (err) => {
+        console.error('❌ Error guardando perfil:', err);
+        showToast('Error al guardar: ' + err.message, 'error');
+      },
+    });
   },
 };
 
