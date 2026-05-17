@@ -29,26 +29,24 @@ runLifecycle({
 // LOAD
 // ============================================================
 async function load(ctx) {
-  const entityType  = ctx.userData?.entityType  || null;
-  const capacidades = ctx.userData?.capacidades || [];
-  const isEditMode  = window.isEditMode === true;
+  const entityType      = ctx.userData?.entityType      || null;
+  const capacidades     = ctx.userData?.capacidades     || [];
+  const modalidad_trabajo = ctx.userData?.modalidad_trabajo || null;
+  const isEditMode      = window.isEditMode === true;
 
-  // ── Reconstruir selectedOffer desde entityType + capacidades ──
   let selectedOffer = null;
   if (entityType === 'profesional') selectedOffer = 'profesional';
   else if (entityType === 'prestador') selectedOffer = 'servicios';
-  else if (entityType === 'comercio') selectedOffer = 'productos';
+  else if (entityType === 'comercio')  selectedOffer = 'productos';
 
-  // ── Capacidades extras seleccionadas ──────────────────────
-  // En upgradeMode: qué tiene y qué le falta
-  const tieneProductos = entityType === 'comercio' || capacidades.includes('productos');
-  const tieneServicios = entityType === 'prestador' || capacidades.includes('servicios');
-
-  const upgradeMode = isEditMode && !!entityType;
+  const tieneProductos = entityType === 'comercio'   || capacidades.includes('productos');
+  const tieneServicios = entityType === 'prestador'  || capacidades.includes('servicios');
+  const upgradeMode    = isEditMode && !!entityType;
 
   return {
     entityType,
     capacidades,
+    modalidad_trabajo,
     selectedOffer,
     isEditMode,
     upgradeMode,
@@ -64,9 +62,8 @@ function render(ctx, state) {
   const page = document.getElementById("skeleton-page");
   page.innerHTML = "";
 
-  let selectedOffer = state.selectedOffer;
-
-  // Capacidades extras seleccionadas (set mutable)
+  let selectedOffer       = state.selectedOffer;
+  let modalidad_trabajo   = state.modalidad_trabajo;  // 'local' | null
   const selectedCapacidades = new Set(state.capacidades);
 
   // ── Header ────────────────────────────────────────────────
@@ -94,27 +91,24 @@ function render(ctx, state) {
   const opcionesQ1 = [
     {
       key:      'productos',
-      entityType: 'comercio',
       title:    'Vendo productos',
       icon:     'fa-box',
       variant:  'primary',
       desc:     'Tenés un negocio, local o tienda donde vendés artículos físicos o digitales.',
       ejemplos: 'Kiosco, ferretería, ropa, panadería, verdulería, electrónica.',
-      disabled: state.upgradeMode, // en upgradeMode no se puede cambiar el tipo principal
+      disabled: state.upgradeMode,
     },
     {
       key:      'servicios',
-      entityType: 'prestador',
       title:    'Ofrezco servicios',
       icon:     'fa-hands-helping',
       variant:  'info',
       desc:     'Tu trabajo es lo que hacés, no lo que vendés. Tus clientes te contratan por tu tiempo, habilidad o conocimiento.',
-      ejemplos: 'Plomero, manicura, peluquería, profe particular, electricista.',
+      ejemplos: 'Plomero, manicura, peluquería, profe particular, electricista, estética.',
       disabled: state.upgradeMode,
     },
     {
       key:      'profesional',
-      entityType: 'profesional',
       title:    'Soy profesional matriculado',
       icon:     'fa-user-md',
       variant:  'warning',
@@ -171,24 +165,38 @@ function render(ctx, state) {
         if (key !== active) card.deselect?.();
       });
 
+      // Si cambia de servicios a otra cosa, resetear modalidad
+      if (active !== 'servicios') modalidad_trabajo = null;
+
       selectedOffer = active;
 
-      // Mostrar/ocultar capacidades según tipo seleccionado
-      actualizarCapacidades(selectedOffer, capacidadesContainer, selectedCapacidades);
+      actualizarCapacidades(
+        selectedOffer,
+        capacidadesContainer,
+        selectedCapacidades,
+        (val) => { modalidad_trabajo = val; },
+        modalidad_trabajo,
+      );
 
       document.dispatchEvent(new Event('change'));
     }, 0);
   });
 
   // ============================================================
-  // PREGUNTA 2 — Capacidades extras (opcional)
+  // PREGUNTA 2 — Modalidad + Capacidades extras
   // ============================================================
   const capacidadesContainer = document.createElement("div");
   capacidadesContainer.className = "te-capacidades";
   page.appendChild(capacidadesContainer);
 
   // Render inicial
-  actualizarCapacidades(selectedOffer, capacidadesContainer, selectedCapacidades);
+  actualizarCapacidades(
+    selectedOffer,
+    capacidadesContainer,
+    selectedCapacidades,
+    (val) => { modalidad_trabajo = val; },
+    modalidad_trabajo,
+  );
 
   // ── Texto ayuda ───────────────────────────────────────────
   if (!state.upgradeMode) {
@@ -201,22 +209,26 @@ function render(ctx, state) {
   // ── Dirty check ───────────────────────────────────────────
   const snapshot = {
     selectedOffer,
-    capacidades: JSON.stringify([...selectedCapacidades].sort()),
+    modalidad_trabajo:  state.modalidad_trabajo,
+    capacidades:        JSON.stringify([...selectedCapacidades].sort()),
   };
 
   const dirtyController = {
     hasUnsavedChanges: () =>
-      selectedOffer !== snapshot.selectedOffer ||
+      selectedOffer     !== snapshot.selectedOffer     ||
+      modalidad_trabajo !== snapshot.modalidad_trabajo ||
       JSON.stringify([...selectedCapacidades].sort()) !== snapshot.capacidades,
     markSaved: () => {
-      snapshot.selectedOffer = selectedOffer;
-      snapshot.capacidades   = JSON.stringify([...selectedCapacidades].sort());
+      snapshot.selectedOffer     = selectedOffer;
+      snapshot.modalidad_trabajo = modalidad_trabajo;
+      snapshot.capacidades       = JSON.stringify([...selectedCapacidades].sort());
     }
   };
 
   // ── Label dinámico ────────────────────────────────────────
   function getLabel() {
     if (!selectedOffer) return 'Seleccioná una opción para continuar';
+    if (selectedOffer === 'servicios' && !modalidad_trabajo) return 'Indicá cómo trabajás para continuar';
     if (state.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
     if (state.isEditMode) return 'Guardar y continuar';
     return 'Continuar';
@@ -226,35 +238,50 @@ function render(ctx, state) {
   const btn = createOnboardingButton({
     stepName: 'tipo-entidad',
 
-    validate: () => !!selectedOffer,
+    validate: () => {
+      if (!selectedOffer) return false;
+      // prestador requiere modalidad_trabajo definida
+      if (selectedOffer === 'servicios' && !modalidad_trabajo) return false;
+      return true;
+    },
 
     getLabel,
 
     dirtyController: state.isEditMode ? dirtyController : undefined,
 
     onSave: async ({ uid, comercioId }) => {
-      // entityType: string simple derivado de la selección principal
-      const entityType =
+      const entityType = 
         selectedOffer === 'profesional' ? 'profesional' :
         selectedOffer === 'servicios'   ? 'prestador'   :
                                          'comercio';
 
-      // capacidades: array de extras
       const capacidades = [...selectedCapacidades];
 
-      // Guardar en usuarios
-      await updateDoc(doc(db, 'usuarios', uid), {
+      // Armar updates — omitir modalidad_trabajo si no aplica
+      const userUpdates = {
         entityType,
         capacidades,
         'onboardingSteps.tipo-entidad': true,
-      });
+      };
 
-      // Guardar en entidad si ya existe
+      // modalidad_trabajo: solo se guarda si es 'local'
+      // si va a domicilio, no existe — el LLM infiere por ausencia
+      if (entityType === 'prestador' && modalidad_trabajo === 'local') {
+        userUpdates.modalidad_trabajo = 'local';
+      } else if (entityType === 'prestador') {
+        userUpdates.modalidad_trabajo = null; // limpiar si cambió
+      }
+
+      await updateDoc(doc(db, 'usuarios', uid), userUpdates);
+
       if (comercioId) {
-        await updateDoc(doc(db, 'entidades', comercioId), {
-          entityType,
-          capacidades,
-        });
+        const entidadUpdates = { entityType, capacidades };
+        if (entityType === 'prestador' && modalidad_trabajo === 'local') {
+          entidadUpdates.modalidad_trabajo = 'local';
+        } else if (entityType === 'prestador') {
+          entidadUpdates.modalidad_trabajo = null;
+        }
+        await updateDoc(doc(db, 'entidades', comercioId), entidadUpdates);
       }
 
       return { success: true, stepMarked: true };
@@ -272,19 +299,100 @@ function render(ctx, state) {
 }
 
 // ============================================================
-// CAPACIDADES EXTRAS
-// Muestra opciones adicionales según el tipo principal elegido.
+// CAPACIDADES + MODALIDAD DE TRABAJO
 // ============================================================
-function actualizarCapacidades(selectedOffer, container, selectedCapacidades) {
+function actualizarCapacidades(selectedOffer, container, selectedCapacidades, onModalidadChange, modalidadActual) {
   container.innerHTML = '';
 
   if (!selectedOffer) return;
 
-  // Qué capacidades extras tiene sentido ofrecer según el tipo principal
+  // ── Pregunta de modalidad — solo para prestadores ─────────
+  if (selectedOffer === 'servicios') {
+    const labelModalidad = document.createElement('p');
+    labelModalidad.className   = 'te-label';
+    labelModalidad.textContent = '¿Cómo prestás tus servicios?';
+    container.appendChild(labelModalidad);
+
+    const cardsModalidad = document.createElement('div');
+    cardsModalidad.className = 'te-cards';
+    container.appendChild(cardsModalidad);
+
+    const opcionesModalidad = [
+      {
+        value:    'local',
+        title:    'Tengo local / taller / consultorio',
+        icon:     'fa-store',
+        variant:  'primary',
+        desc:     'Mis clientes vienen a donde yo estoy.',
+        ejemplos: 'Estética, mecánico, peluquería, reparación de PC, consultorio.',
+      },
+      {
+        value:    null,
+        title:    'Voy al lugar del cliente',
+        icon:     'fa-route',
+        variant:  'info',
+        desc:     'Yo me desplazo al domicilio o lugar acordado.',
+        ejemplos: 'Plomero, electricista, manicura a domicilio, profe particular.',
+      },
+    ];
+
+    const modalidadCards = {};
+
+    opcionesModalidad.forEach(op => {
+      const content = document.createElement('div');
+      content.innerHTML = `
+        <p class="te-card-desc">${op.desc}</p>
+        <p class="te-card-ejemplos"><strong>Ejemplos:</strong> ${op.ejemplos}</p>
+      `;
+
+      const isSelected =
+        op.value === 'local'
+          ? modalidadActual === 'local'
+          : modalidadActual === null || modalidadActual === 'domicilio';
+
+      // Solo pre-seleccionar si había un valor guardado
+      const preSelected = modalidadActual !== null
+        ? (op.value === 'local' ? modalidadActual === 'local' : modalidadActual !== 'local')
+        : false;
+
+      const card = createCard({
+        title:      op.title,
+        icon:       op.icon,
+        variant:    op.variant,
+        selectable: true,
+        selected:   preSelected,
+        content,
+      });
+
+      modalidadCards[op.value ?? 'domicilio'] = card;
+      cardsModalidad.appendChild(card);
+    });
+
+    cardsModalidad.addEventListener('click', () => {
+      setTimeout(() => {
+        let activeKey = null;
+        Object.entries(modalidadCards).forEach(([key, card]) => {
+          if (card.isSelected?.()) activeKey = key;
+        });
+
+        if (!activeKey) return;
+
+        Object.entries(modalidadCards).forEach(([key, card]) => {
+          if (key !== activeKey) card.deselect?.();
+        });
+
+        const valor = activeKey === 'local' ? 'local' : null;
+        onModalidadChange(valor);
+        document.dispatchEvent(new Event('change'));
+      }, 0);
+    });
+  }
+
+  // ── Capacidades extras ────────────────────────────────────
   const opcionesExtras = {
-    productos:    [{ key: 'servicios', label: 'También ofrezco servicios', icon: 'fa-hands-helping', desc: 'Agregá servicios a tu comercio. Ej: instalación, reparación, asesoramiento.' }],
-    servicios:    [{ key: 'productos', label: 'También vendo productos',   icon: 'fa-box',           desc: 'Vendé productos además de tus servicios. Ej: insumos, materiales, kits.' }],
-    profesional:  [{ key: 'productos', label: 'También vendo productos',   icon: 'fa-box',           desc: 'Vendé productos relacionados a tu profesión. Ej: libros, kits, materiales.' }],
+    productos:   [{ key: 'servicios', label: 'También ofrezco servicios', icon: 'fa-hands-helping', desc: 'Agregá servicios a tu comercio. Ej: instalación, reparación, asesoramiento.' }],
+    servicios:   [{ key: 'productos', label: 'También vendo productos',   icon: 'fa-box',           desc: 'Vendé productos además de tus servicios. Ej: insumos, materiales, kits.' }],
+    profesional: [{ key: 'productos', label: 'También vendo productos',   icon: 'fa-box',           desc: 'Vendé productos relacionados a tu profesión. Ej: libros, kits, materiales.' }],
   };
 
   const extras = opcionesExtras[selectedOffer];
@@ -314,11 +422,8 @@ function actualizarCapacidades(selectedOffer, container, selectedCapacidades) {
 
     card.addEventListener('click', () => {
       setTimeout(() => {
-        if (card.isSelected?.()) {
-          selectedCapacidades.add(op.key);
-        } else {
-          selectedCapacidades.delete(op.key);
-        }
+        if (card.isSelected?.()) selectedCapacidades.add(op.key);
+        else selectedCapacidades.delete(op.key);
         document.dispatchEvent(new Event('change'));
       }, 0);
     });
