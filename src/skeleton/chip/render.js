@@ -1,22 +1,21 @@
-// src/skeleton/components/chip/render.js
 export function renderChip() {
-  const chip = document.createElement('span');
-  chip.className = 's-chip';
-  chip.setAttribute('role', 'status');
+  const wrapper = document.createElement('span');
+  wrapper.className = 's-chip';
+  wrapper.setAttribute('role', 'status');
 
-  // Contenedor interno para icono + texto (flex)
+  // Contenedor interno para Icono + Texto
   const content = document.createElement('span');
   content.className = 's-chip__content';
-  chip.appendChild(content);
+  wrapper.appendChild(content);
 
-  // Botón de cerrar (se muestra/oculta según config)
+  // Botón de cerrar (oculto por defecto)
   const closeBtn = document.createElement('button');
   closeBtn.className = 's-chip__close';
   closeBtn.setAttribute('type', 'button');
-  closeBtn.setAttribute('aria-label', 'Remover');
+  closeBtn.setAttribute('aria-label', 'Eliminar');
   closeBtn.innerHTML = '&times;';
-  closeBtn.style.display = 'none'; // Se activa en update si removable: true
-  chip.appendChild(closeBtn);
+  closeBtn.style.display = 'none'; 
+  wrapper.appendChild(closeBtn);
 
-  return { chip, content, closeBtn };
+  return { wrapper, content, closeBtn };
 }
