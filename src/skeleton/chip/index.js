@@ -1,22 +1,21 @@
-// src/skeleton/components/chip/index.js
 import './styles.css';
 import { renderChip } from './render.js';
 import { updateChip } from './update.js';
 
 /**
- * Crea un chip (etiqueta interactiva pequeña)
+ * Crea un Chip (etiqueta interactiva o estática)
  * @param {Object} config
- * @param {string} config.text - Texto principal del chip
- * @param {string} [config.icon] - Icono de Font Awesome (ej: 'fa-map-marker-alt')
- * @param {boolean} [config.removable=false] - Si muestra botón de cerrar
+ * @param {string} config.text - Texto del chip
+ * @param {string} [config.icon] - Clase de icono (ej: 'fa-map-marker-alt')
  * @param {'primary'|'secondary'|'success'|'danger'|'warning'|'info'} [config.variant='secondary'] - Estilo visual
  * @param {'small'|'medium'|'large'} [config.size='medium'] - Tamaño
- * @param {Function} [config.onRemove] - Callback al hacer click en cerrar
+ * @param {boolean} [config.removable=false] - Si muestra botón de eliminar
  * @param {Function} [config.onClick] - Callback al hacer click en el chip
- * @returns {HTMLElement} Elemento chip
+ * @param {Function} [config.onRemove] - Callback al hacer click en la X
+ * @returns {HTMLElement}
  */
 export function createChip(config = {}) {
-  const chip = renderChip();
-  updateChip(chip, config);
-  return chip;
+  const dom = renderChip();
+  updateChip(dom, config);
+  return dom.wrapper;
 }
