@@ -1,183 +1,37 @@
 /* ============================================================
-   mi-perfil.css
-   SOLO layout, spacing y posicionamiento.
-   Lo visual (colores, bordes, tipografía, estados) lo maneja el skeleton.
+   mi-perfil.css — SOLO layout y spacing
    ============================================================ */
+#skeleton-page { max-width: 640px; margin: 0 auto; padding: var(--s-spacing-lg); display: flex; flex-direction: column; gap: var(--s-spacing-lg); }
+.page-title { margin: 0 0 var(--s-spacing) 0; font-size: 1.75rem; font-weight: 600; color: var(--s-dark, #343a40); }
 
-/* ==================== PÁGINA ==================== */
-#skeleton-page {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: var(--s-page-padding, 1.5rem);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-section-gap, 1.5rem);
-}
+.form-section { background: white; border: 1px solid var(--s-border, #d2d6de); border-radius: var(--s-radius, 4px); padding: var(--s-spacing-lg); display: flex; flex-direction: column; gap: var(--s-spacing); box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+.form-section > h3 { margin: 0 0 var(--s-spacing-sm) 0; padding-bottom: var(--s-spacing-sm); border-bottom: 2px solid var(--s-border); font-size: 1.25rem; font-weight: 600; color: var(--s-dark); }
+.form-help { margin: 0 0 var(--s-spacing-sm) 0; font-size: 0.875rem; color: var(--s-gray, #6c757d); font-style: italic; }
 
-.page-title {
-  margin: 0 0 var(--s-title-margin-bottom, 1rem) 0;
-  /* Sin font-size/color: lo define el skeleton para h2 */
-}
+.ubicacion-bloque { display: flex; flex-direction: column; gap: var(--s-spacing); padding: var(--s-spacing-sm) 0; }
+.ubicacion-zona { margin-top: var(--s-spacing-lg); padding-top: var(--s-spacing-lg); border-top: 1px dashed var(--s-border); }
 
-/* ==================== SECCIONES ==================== */
-.form-section {
-  /* Sin background/border/shadow: si el skeleton usa cards, ya lo aplica */
-  padding: var(--s-section-padding, 1.5rem);
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-field-gap, 1rem);
-}
+.zona-header { display: flex; align-items: center; gap: var(--s-spacing-sm); flex-wrap: wrap; }
+.zona-title { margin: 0; font-size: 1rem; font-weight: 600; color: var(--s-dark); }
+.zona-badge-opcional { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--s-gray); background: var(--s-light); border: 1px solid var(--s-border); border-radius: 20px; padding: 2px 8px; }
 
-.form-section > h3 {
-  margin: 0 0 var(--s-subtitle-margin-bottom, 0.75rem) 0;
-  padding-bottom: var(--s-subtitle-padding-bottom, 0.5rem);
-  border-bottom: var(--s-subtitle-border, 2px solid var(--s-border));
-  /* Sin font-size/color: lo define el skeleton para h3 */
-}
+.chip-principal-container, .zona-chips-container { display: flex; flex-wrap: wrap; gap: var(--s-spacing-sm); align-items: center; min-height: 0; }
+.zona-chips-label { font-size: 0.8rem; font-weight: 600; color: var(--s-gray); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 var(--s-spacing-sm) 0; }
+.zona-chips-empty { font-size: 0.85rem; color: var(--s-gray); font-style: italic; margin: 0.25rem 0 var(--s-spacing-sm) 0; }
+.cobertura-list { display: flex; flex-wrap: wrap; gap: var(--s-spacing-sm); margin-bottom: var(--s-spacing-sm); }
 
-.form-help {
-  margin: 0 0 var(--s-help-margin-bottom, 0.5rem) 0;
-  /* Sin font-style/color: lo define el skeleton para texto de ayuda */
-}
+.slug-container { display: flex; align-items: stretch; gap: 0; }
+.slug-prefix { display: flex; align-items: center; padding: 0 var(--s-input-padding-x); background: var(--s-light); border-right: 1px solid var(--s-border); white-space: nowrap; font-size: 0.875rem; color: var(--s-gray); }
+.slug-input { flex: 1; min-width: 0; border: none; outline: none; padding: 0.5rem var(--s-input-padding-x); font-family: monospace; font-size: 0.875rem; }
+.slug-input:focus { background: rgba(60,141,188,0.05); }
+.slug-status { display: flex; align-items: center; gap: var(--s-spacing-sm); padding: var(--s-spacing-sm); font-size: 0.875rem; min-height: 2rem; }
 
-/* ==================== BLOQUES DE UBICACIÓN ==================== */
-.ubicacion-bloque {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-field-gap, 1rem);
-  padding: var(--s-block-padding, 0.5rem 0);
-}
+.btn-container { margin-top: var(--s-spacing-xl); padding-top: var(--s-spacing-lg); border-top: 2px solid var(--s-border); display: flex; justify-content: flex-end; }
 
-.ubicacion-zona {
-  margin-top: var(--s-section-divider-margin, 1.5rem);
-  padding-top: var(--s-section-divider-padding, 1.5rem);
-  border-top: var(--s-divider-style, 1px dashed var(--s-border));
-}
-
-/* ==================== ZONA HEADER ==================== */
-.zona-header {
-  display: flex;
-  align-items: center;
-  gap: var(--s-inline-gap, 0.5rem);
-  flex-wrap: wrap;
-}
-
-.zona-title {
-  margin: 0;
-  /* Sin font-size/color: lo define el skeleton */
-}
-
-.zona-badge-opcional {
-  /* Sin estilos visuales: si el skeleton tiene "badge", usar esa clase */
-  /* Esto es solo para posicionamiento */
-  align-self: center;
-}
-
-/* ==================== CHIPS ==================== */
-.chip-principal-container,
-.zona-chips-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-chip-gap, 0.5rem);
-  align-items: center;
-  min-height: 0; /* Evita colapso en flex */
-}
-
-.chip-principal,
-.cobertura-chip {
-  /* Sin background/color/border-radius: si el skeleton tiene "chip", usar esa clase */
-  /* Esto es solo para layout del chip custom */
-  display: inline-flex;
-  align-items: center;
-  gap: var(--s-chip-inline-gap, 0.5rem);
-  padding: var(--s-chip-padding, 0.375rem 0.75rem);
-}
-
-.chip-principal .chip-remove,
-.cobertura-chip .cobertura-chip-remove {
-  /* Solo reset de botón para que no rompa el layout */
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  min-width: 1em;
-}
-
-/* ==================== AUTOCOMPLETE CIUDAD ==================== */
-.ciudad-autocomplete-container {
-  /* Sin estilos de input: el s-form-field ya los aplica */
-  /* Solo spacing */
-  margin-bottom: var(--s-field-gap, 1rem);
-}
-
-/* ==================== SLUG ==================== */
-.slug-container {
-  display: flex;
-  align-items: stretch; /* Para que el input ocupe altura completa */
-  gap: 0;
-  /* Sin border/background: el input del skeleton ya lo tiene */
-}
-
-.slug-prefix {
-  /* Solo layout: sin colores ni bordes */
-  display: flex;
-  align-items: center;
-  padding: 0 var(--s-input-padding-x, 0.75rem);
-  white-space: nowrap;
-  /* El color/fondo lo hereda del contenedor o lo define el skeleton si hay clase */
-}
-
-.slug-input {
-  /* Reset mínimo para que el input nativo no rompa el flex */
-  flex: 1;
-  min-width: 0; /* Permite shrink en flex */
-  border: none; /* El skeleton aplica bordes al contenedor o al input */
-  outline: none;
-  padding: var(--s-input-padding-y, 0.5rem) var(--s-input-padding-x, 0.75rem);
-  font-family: inherit; /* Respeta la tipografía del skeleton */
-}
-
-.slug-status {
-  display: flex;
-  align-items: center;
-  gap: var(--s-inline-gap, 0.5rem);
-  min-height: 1.5rem; /* Espacio reservado para mensajes */
-  padding: var(--s-status-padding, 0.25rem 0);
-}
-
-/* ==================== BOTÓN ==================== */
-.btn-container {
-  margin-top: var(--s-footer-margin-top, 2rem);
-  padding-top: var(--s-footer-padding-top, 1.5rem);
-  border-top: var(--s-divider-style, 2px solid var(--s-border));
-  display: flex;
-  justify-content: flex-end; /* Alinear botón a la derecha */
-}
-
-/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
-  #skeleton-page {
-    padding: var(--s-page-padding-mobile, 1rem);
-  }
-
-  .form-section {
-    padding: var(--s-section-padding-mobile, 1rem);
-  }
-
-  .zona-header {
-    gap: var(--s-inline-gap-mobile, 0.375rem);
-  }
-
-  .slug-prefix {
-    padding: 0 var(--s-input-padding-x-mobile, 0.5rem);
-  }
-
-  .btn-container {
-    justify-content: stretch; /* Botón full-width en mobile */
-  }
+  #skeleton-page { padding: var(--s-spacing); }
+  .form-section { padding: var(--s-spacing); }
+  .zona-header { gap: var(--s-spacing-sm); }
+  .slug-prefix { font-size: 0.75rem; padding: 0.5rem; }
+  .btn-container { justify-content: stretch; }
 }
