@@ -1,4 +1,6 @@
-/* src/skeleton/components/chip/styles.css */
+/* ============================================================
+   Chip Component
+   ============================================================ */
 
 .s-chip {
   display: inline-flex;
@@ -11,11 +13,13 @@
   line-height: 1;
   border: 1px solid transparent;
   transition: all 0.2s ease;
+  user-select: none;
   background: var(--s-light, #e9ecef);
   color: var(--s-dark, #495057);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
-/* ── Variantes (usan variables del theme) ─────────────────── */
+/* ── Variantes ─────────────────────────────────────────────── */
 .s-chip--primary   { background: var(--s-primary); color: #fff; border-color: var(--s-primary); }
 .s-chip--secondary { background: var(--s-secondary); color: #fff; border-color: var(--s-secondary); }
 .s-chip--success   { background: var(--s-success); color: #fff; border-color: var(--s-success); }
@@ -23,34 +27,32 @@
 .s-chip--warning   { background: var(--s-warning); color: #fff; border-color: var(--s-warning); }
 .s-chip--info      { background: var(--s-info); color: #fff; border-color: var(--s-info); }
 
-/* ── Tamaños ─────────────────────────────────────────────── */
+/* ── Tamaños ───────────────────────────────────────────────── */
 .s-chip--small  { padding: 0.2em 0.6em; font-size: 0.7rem; }
 .s-chip--medium { padding: 0.3em 0.8em; font-size: 0.8rem; }
 .s-chip--large  { padding: 0.4em 1em; font-size: 0.9rem; }
 
-/* ── Removable: hover en el botón de cerrar ───────────────── */
-.s-chip--removable .s-chip__close {
+/* ── Botón Cerrar ─────────────────────────────────────────── */
+.s-chip__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: inherit;
   opacity: 0.7;
   cursor: pointer;
-  font-size: 1.1em;
+  font-size: 1.2em;
   line-height: 1;
   padding: 0;
-  margin: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1em;
-  height: 1em;
+  margin-left: 0.2em;
   border-radius: 50%;
   transition: opacity 0.15s, background 0.15s;
 }
 
-.s-chip--removable .s-chip__close:hover {
+.s-chip__close:hover {
   opacity: 1;
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.15);
 }
 
 /* ── Estructura interna ──────────────────────────────────── */
@@ -58,6 +60,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4em;
+  pointer-events: none; /* El click lo maneja el wrapper */
 }
 
 .s-chip__icon {
@@ -67,20 +70,4 @@
 
 .s-chip__text {
   white-space: nowrap;
-}
-
-/* ── Interactive (si tiene onClick) ───────────────────────── */
-.s-chip[style*="pointer"] {
-  cursor: pointer;
-}
-
-.s-chip[style*="pointer"]:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-/* ── Focus para accesibilidad ────────────────────────────── */
-.s-chip:focus {
-  outline: 2px solid var(--s-primary, #3c8dbc);
-  outline-offset: 2px;
 }
