@@ -33,6 +33,7 @@ const page = {
   },
   _comercioId:       null,
   _originalSnapshot: [],
+  _formCard:         null, // ← NUEVO: referencia directa al card del formulario
 
   async _subirImagenServicio(file) {
     if (!this._comercioId) throw new Error('Sin comercioId');
@@ -74,12 +75,13 @@ const page = {
     hint.textContent = 'Definí todos los servicios que ofrecés. Podés crear varios y después guardarlos todos juntos.';
     root.appendChild(hint);
 
-    const formCard = createCard({
+    // ← FIX: guardar referencia directa al formCard
+    this._formCard = createCard({
       title:   'Crear nuevo servicio',
       variant: 'primary',
       content: this._renderFormContent()
     });
-    root.appendChild(formCard);
+    root.appendChild(this._formCard);
 
     this._listaCard = createCard({
       title:   'Servicios agregados',
@@ -537,16 +539,18 @@ const page = {
     showToast('✅ Servicio agregado', 'Podés crear otro o guardar cuando termines', 'success');
   },
 
+  // ← FIX: usar referencia directa this._formCard
   _limpiarFormulario() {
-    const formContent = document.querySelector('.s-card--primary .form-content');
+    const formContent = this._formCard?.querySelector('.form-content');
     if (formContent) formContent.replaceWith(this._renderFormContent());
   },
 
+  // ← FIX: usar referencia directa this._formCard
   _editarServicio(index) {
     this._data.draft = structuredClone(this._data.serviciosAcumulados[index]);
     this._data.serviciosAcumulados.splice(index, 1);
     this._refreshLista();
-    const formContent = document.querySelector('.s-card--primary .form-content');
+    const formContent = this._formCard?.querySelector('.form-content');
     if (formContent) formContent.replaceWith(this._renderFormContent());
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast('Modo edición', 'Modificá los campos y agregá el servicio nuevamente', 'info');
