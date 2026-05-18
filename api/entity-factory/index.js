@@ -117,7 +117,7 @@ export async function buildEntity({ comercioId }) {
   const context      = buildContext(data, comercioId, referralCode);
 
   // Domain — efímero, solo para mind y meta
-  const domainMeta   = resolveDomain(context);
+  const domainMeta = resolveDomain(context, data);
   context.domain_tag = domainMeta.domain_tag;
 
   // ── Builder según entityType ──────────────────────────────
