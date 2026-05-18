@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
     // ── miniPrompt ──
     const context = {
-      nombre:     data.nombreComercio,
+      nombreComercio: data.nombre || data.nombreComercio,
       entityType: data.entityType || 'comercio',
       ubicacion:  data.ubicacion  || {},
     };
