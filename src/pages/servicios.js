@@ -33,7 +33,7 @@ const page = {
   },
   _comercioId:       null,
   _originalSnapshot: [],
-  _formCard:         null, // ← NUEVO: referencia directa al card del formulario
+  _formCard:         null,
 
   async _subirImagenServicio(file) {
     if (!this._comercioId) throw new Error('Sin comercioId');
@@ -75,7 +75,6 @@ const page = {
     hint.textContent = 'Definí todos los servicios que ofrecés. Podés crear varios y después guardarlos todos juntos.';
     root.appendChild(hint);
 
-    // ← FIX: guardar referencia directa al formCard
     this._formCard = createCard({
       title:   'Crear nuevo servicio',
       variant: 'primary',
@@ -110,6 +109,7 @@ const page = {
     container.appendChild(this._renderDisponibilidadField());
     container.appendChild(this._renderImagenField());
     container.appendChild(this._renderNotasField());
+    container.appendChild(this._renderSemanticNotesField()); // ← NEW
 
     container.appendChild(createButton({
       label:   'Agregar este servicio',
@@ -183,6 +183,26 @@ const page = {
       rows:     3,
       helpText: 'Requisitos, aclaraciones, horarios especiales, etc.',
       actions:  { onChange: (v) => { const t = v.trim(); t ? (this._data.draft.notas = t) : delete this._data.draft.notas; } }
+    });
+  },
+
+  // ← NEW: Campo semántico (texto libre → array)
+  _renderSemanticNotesField() {
+    const draftNotes = this._data.draft.semantic_notes?.join('\n') || '';
+    return createFormField({
+      label:    'Aclaraciones importantes sobre este servicio',
+      type:     'textarea',
+      rows:     4,
+      value:    draftNotes,
+      helpText: 'Escribí una aclaración por línea.\nEj:\n• Requiere evaluación previa\n• Evitar exposición solar inmediata',
+      actions:  {
+        onChange: (v) => {
+          const notes = v.split('\n').map(l => l.trim()).filter(Boolean);
+          notes.length > 0
+            ? (this._data.draft.semantic_notes = notes)
+            : delete this._data.draft.semantic_notes;
+        }
+      }
     });
   },
 
@@ -472,6 +492,27 @@ const page = {
       contentDiv.appendChild(desc);
     }
 
+    // ← NEW: Render de semantic_notes
+    if (servicio.semantic_notes?.length) {
+      const notesDiv = document.createElement('div');
+      notesDiv.className = 'servicio-semantic-notes';
+      
+      const title = document.createElement('small');
+      title.className = 'servicio-semantic-notes-title';
+      title.textContent = '⚠️ Aclaraciones importantes:';
+      notesDiv.appendChild(title);
+
+      const ul = document.createElement('ul');
+      ul.className = 'servicio-semantic-notes-list';
+      servicio.semantic_notes.forEach(note => {
+        const li = document.createElement('li');
+        li.textContent = note;
+        ul.appendChild(li);
+      });
+      notesDiv.appendChild(ul);
+      contentDiv.appendChild(notesDiv);
+    }
+
     if (!esSimple && servicio.items?.length) {
       const itemsDiv = document.createElement('div');
       itemsDiv.className = 'servicio-items';
@@ -539,13 +580,11 @@ const page = {
     showToast('✅ Servicio agregado', 'Podés crear otro o guardar cuando termines', 'success');
   },
 
-  // ← FIX: usar referencia directa this._formCard
   _limpiarFormulario() {
     const formContent = this._formCard?.querySelector('.form-content');
     if (formContent) formContent.replaceWith(this._renderFormContent());
   },
 
-  // ← FIX: usar referencia directa this._formCard
   _editarServicio(index) {
     this._data.draft = structuredClone(this._data.serviciosAcumulados[index]);
     this._data.serviciosAcumulados.splice(index, 1);
