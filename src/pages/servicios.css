@@ -65,6 +65,24 @@
   padding-left: var(--s-spacing);
 }
 
+/* ← NEW: Notas semánticas (solo layout) */
+.servicio-semantic-notes {
+  margin: var(--s-spacing-sm) 0;
+  padding: var(--s-spacing-sm) var(--s-spacing);
+}
+.servicio-semantic-notes-title {
+  display: block;
+  margin-bottom: var(--s-spacing-xs);
+}
+.servicio-semantic-notes-list {
+  margin: 0;
+  padding-left: var(--s-spacing);
+  list-style: disc;
+}
+.servicio-semantic-notes-list li {
+  margin-bottom: 4px;
+}
+
 /* Acciones */
 .servicio-acciones {
   display: flex;
