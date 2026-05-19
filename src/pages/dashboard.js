@@ -42,7 +42,6 @@ const page = {
     this._data.comercio  = ctx.comercioData || {};
     this._data.offerType = ctx.comercioData?.offerType || {};
 
-    // ── Determinar entityType y capacidades ──────────────────
     const entityType  = ctx.comercioData?.entityType || 'comercio';
     const capacidades = ctx.comercioData?.capacidades || [];
 
@@ -332,6 +331,11 @@ const page = {
       grid.appendChild(this._renderHorariosCard());
     }
 
+    // ── Horarios Delivery — solo si tiene delivery ────────
+    if (this._data.comercio.entrega?.delivery) {
+      grid.appendChild(this._renderHorariosDeliveryCard());
+    }
+
     // ── Entrega — solo si tiene productos ─────────────────
     if (this._data.tieneProductos) {
       grid.appendChild(this._renderEntregaCard());
@@ -472,9 +476,9 @@ const page = {
       a_coordinar:  'A coordinar',
     };
 
-    const entrega    = this._data.comercio.entrega || {};
+    const entrega     = this._data.comercio.entrega || {};
     const modalidades = Object.keys(entrega);
-    const content    = document.createElement('div');
+    const content     = document.createElement('div');
 
     if (modalidades.length > 0) {
       const lista = document.createElement('ul');
@@ -502,8 +506,36 @@ const page = {
     return createCard({
       title: 'Horarios',
       icon: 'fa-clock',
-      content: `<p>${ok ? 'Configurados ✓' : 'Sin configurar'}</p>`,
-      action: { type: 'link', url: '/horarios.html?edit=true', label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
+      content: `
+        <p>Indicá en qué días y horarios está abierto tu local para que tus clientes siempre sepan cuándo pueden visitarte o contactarte.</p>
+        <p>${ok ? 'Configurados ✓' : 'Sin configurar'}</p>
+      `,
+      action: {
+        type: 'link',
+        url: '/horarios.html?edit=true',
+        label: ok ? 'Editar' : 'Configurar',
+        variant: ok ? 'secondary' : 'outline-primary',
+        size: 'sm'
+      }
+    });
+  },
+
+  _renderHorariosDeliveryCard() {
+    const ok = this._data.comercio.onboardingSteps?.['horarios-delivery'] === true;
+    return createCard({
+      title: 'Horarios de Delivery',
+      icon: 'fa-motorcycle',
+      content: `
+        <p>Indicá en qué días y horarios hacés entregas a domicilio para que tu asistente informe correctamente a tus clientes.</p>
+        <p>${ok ? 'Configurados ✓' : 'Sin configurar'}</p>
+      `,
+      action: {
+        type: 'link',
+        url: '/horarios.html?mode=delivery&edit=true',
+        label: ok ? 'Editar' : 'Configurar',
+        variant: ok ? 'secondary' : 'outline-primary',
+        size: 'sm'
+      }
     });
   },
 
@@ -815,8 +847,8 @@ const page = {
 
     document.body.appendChild(modal);
 
-    const checkbox    = modal.querySelector('#acceptHVTerms');
-    const actionsDiv  = modal.querySelector('.modal-actions');
+    const checkbox   = modal.querySelector('#acceptHVTerms');
+    const actionsDiv = modal.querySelector('.modal-actions');
 
     const cancelBtn = createButton({
       label:   'Cancelar',
