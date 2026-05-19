@@ -356,8 +356,9 @@ function createTimeInput({ id, label, value, onChange, isClose = false, openValu
   labelEl.textContent = label;
   group.appendChild(labelEl);
 
+  // Normalizar value — puede venir como "25:00" (extendido) → mostrar como "01"
   const [hStr = '09', mStr = '00'] = (value || '09:00').split(':');
-  const currentH = parseInt(hStr, 10);
+  const currentH = parseInt(hStr, 10) % 24;
   const currentM = parseInt(mStr, 10);
 
   const row = document.createElement('div');
@@ -366,31 +367,12 @@ function createTimeInput({ id, label, value, onChange, isClose = false, openValu
   const selectH = document.createElement('select');
   selectH.id = `${id}_h`;
   selectH.className = 'time-select';
-
-  if (isClose && openValue) {
-    // Selector extendido: desde openH+1 hasta openH+8
-    const openH = parseInt((openValue || '00:00').split(':')[0], 10);
-    for (let i = 1; i <= 8; i++) {
-      const h = openH + i;
-      const opt = document.createElement('option');
-      opt.value = String(h).padStart(2, '0');
-      // Label: si h >= 24 mostrar como día siguiente
-      const displayH = h >= 24 ? h - 24 : h;
-      opt.textContent = h >= 24
-        ? `${String(displayH).padStart(2, '0')} (día sig.)`
-        : String(h).padStart(2, '0');
-      if (h === currentH) opt.selected = true;
-      selectH.appendChild(opt);
-    }
-  } else {
-    // Selector normal: 0-23
-    for (let h = 0; h < 24; h++) {
-      const opt = document.createElement('option');
-      opt.value = String(h).padStart(2, '0');
-      opt.textContent = String(h).padStart(2, '0');
-      if (h === currentH) opt.selected = true;
-      selectH.appendChild(opt);
-    }
+  for (let h = 0; h < 24; h++) {
+    const opt = document.createElement('option');
+    opt.value = String(h).padStart(2, '0');
+    opt.textContent = String(h).padStart(2, '0');
+    if (h === currentH) opt.selected = true;
+    selectH.appendChild(opt);
   }
 
   const separator = document.createElement('span');
@@ -409,8 +391,19 @@ function createTimeInput({ id, label, value, onChange, isClose = false, openValu
   });
 
   const notify = () => {
-    const val = `${selectH.value}:${selectM.value}`;
-    onChange(val);
+    const h = parseInt(selectH.value, 10);
+
+    if (isClose && openValue) {
+      const openH = parseInt((openValue || '00:00').split(':')[0], 10) % 24;
+      if (h <= openH) {
+        // Cierre cruza medianoche → guardar como hora extendida
+        onChange(`${String(h + 24).padStart(2, '0')}:${selectM.value}`);
+        document.dispatchEvent(new Event('change'));
+        return;
+      }
+    }
+
+    onChange(`${selectH.value}:${selectM.value}`);
     document.dispatchEvent(new Event('change'));
   };
 
