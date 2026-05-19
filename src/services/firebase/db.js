@@ -101,8 +101,20 @@ export async function updateComercioData(updates) {
   const comercioId = await getComercioId();
   const comercioRef = doc(db, 'entidades', comercioId);
 
-  console.log('📦 updateComercioData:', JSON.stringify(updates, null, 2));
+  // Campos que requieren reemplazo total (no merge)
+  const FULL_REPLACE_FIELDS = ['horarios', 'horariosDelivery'];
 
+  const fullReplaceKeys = Object.keys(updates).filter(k => FULL_REPLACE_FIELDS.includes(k));
+
+  if (fullReplaceKeys.length) {
+    // Paso 1: borrar los campos completos
+    const deletions = Object.fromEntries(
+      fullReplaceKeys.map(k => [k, deleteField()])
+    );
+    await updateDoc(comercioRef, deletions);
+  }
+
+  // Paso 2: escribir todo limpio
   await updateDoc(comercioRef, {
     ...updates,
     fechaActualizacion: serverTimestamp()
