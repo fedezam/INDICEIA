@@ -79,6 +79,9 @@ const page = {
         sinPrecio:    raw.contingencias?.sinPrecio    || raw.sinPrecio    || '',
         sinStock:     raw.contingencias?.sinStock     || raw.sinStock     || '',
         localCerrado: raw.contingencias?.localCerrado || raw.localCerrado || ''
+      },
+      contexto: {
+        global_ai_context: raw.contexto?.global_ai_context || [] // ← NEW
       }
     };
   },
@@ -110,6 +113,7 @@ const page = {
     root.appendChild(this._renderIdentidadCard());
     root.appendChild(this._renderComportamientoCard());
     root.appendChild(this._renderContingenciasCard());
+    root.appendChild(this._renderContextoCard()); // ← NEW
     root.appendChild(this._renderSaveButton());
   },
 
@@ -329,6 +333,46 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
+  // ← NEW: CONTEXTO OPERATIVO GLOBAL
+  // ──────────────────────────────────────────────────────────
+  _renderContextoCard() {
+    const container = document.createElement('div');
+    const ctx = this._aiConfig.contexto;
+
+    // Convertir array → string para el textarea
+    const draftValue = ctx.global_ai_context?.join('\n') || '';
+
+    this.fields.globalContext = createFormField({
+      id: 'globalAiContext',
+      label: 'Instrucciones generales para la IA',
+      type: 'textarea',
+      rows: 5,
+      value: draftValue,
+      helpText: 'Escribí una idea por línea. Estas reglas aplican a TODOS los servicios.\nEj:\n• Cada cuerpo responde de manera distinta\n• Los resultados dependen de hábitos y constancia\n• La edad y genética influyen en los tiempos',
+      actions: {
+        onChange: (v) => {
+          // string → array limpio, sin vacíos
+          const lines = v.split('\n').map(l => l.trim()).filter(Boolean);
+          if (lines.length > 0) {
+            this._aiConfig.contexto.global_ai_context = lines;
+          } else {
+            delete this._aiConfig.contexto.global_ai_context;
+          }
+        }
+      }
+    });
+
+    container.appendChild(this.fields.globalContext);
+
+    return createCard({
+      title: 'Contexto operativo',
+      icon: 'fa-compass',
+      variant: 'secondary',
+      content: container
+    });
+  },
+
+  // ──────────────────────────────────────────────────────────
   // SAVE BUTTON
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
@@ -340,16 +384,16 @@ const page = {
         const fieldsOk = requiredFields.every(k => this.fields[k]?.input.value.trim());
         const saludoOk = this.fields.saludoPartido?.getValue().length > 0;
         console.log('[ia-config] validate:', {
-        nombre:       this.fields.nombre?.input?.value,
-        personalidad: this.fields.personalidad?.input?.value,
-        tono:         this.fields.tono?.input?.value,
-        saludo:       this.fields.saludoPartido?.getValue(),
-        fieldsOk,
-        saludoOk,
-        result: fieldsOk && saludoOk
-     });
-     return fieldsOk && saludoOk;
-   },
+          nombre:       this.fields.nombre?.input?.value,
+          personalidad: this.fields.personalidad?.input?.value,
+          tono:         this.fields.tono?.input?.value,
+          saludo:       this.fields.saludoPartido?.getValue(),
+          fieldsOk,
+          saludoOk,
+          result: fieldsOk && saludoOk
+        });
+        return fieldsOk && saludoOk;
+      },
 
       onSave: async ({ comercioId }) => {
         if (!comercioId) throw new Error('No hay comercioId');
@@ -369,6 +413,12 @@ const page = {
           contingencias.localCerrado = v('localCerrado') || '';
         }
 
+        // ← NEW: contexto global (solo si existe)
+        const contexto = {};
+        if (this._aiConfig.contexto?.global_ai_context?.length) {
+          contexto.global_ai_context = this._aiConfig.contexto.global_ai_context;
+        }
+
         const raw = {
           aiConfig: {
             identidad: {
@@ -382,7 +432,8 @@ const page = {
               proactividad:      v('proactividad'),
               formatoRespuestas: v('formatoRespuestas')
             },
-            contingencias
+            contingencias,
+            ...(Object.keys(contexto).length > 0 && { contexto }) // ← solo si hay datos
           }
         };
 
@@ -420,7 +471,8 @@ const page = {
       formatoRespuestas: v('formatoRespuestas'),
       sinPrecio:         v('sinPrecio'),
       sinStock:          v('sinStock'),
-      localCerrado:      v('localCerrado')
+      localCerrado:      v('localCerrado'),
+      globalContext:     this._aiConfig.contexto?.global_ai_context?.join('\n') || ''
     });
   },
 
