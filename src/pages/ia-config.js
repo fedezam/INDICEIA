@@ -333,13 +333,11 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // ← NEW: CONTEXTO OPERATIVO GLOBAL
+  // ← NEW: CONTEXTO OPERATIVO GLOBAL + PREVIEW DINÁMICO
   // ──────────────────────────────────────────────────────────
   _renderContextoCard() {
     const container = document.createElement('div');
     const ctx = this._aiConfig.contexto;
-
-    // Convertir array → string para el textarea
     const draftValue = ctx.global_ai_context?.join('\n') || '';
 
     this.fields.globalContext = createFormField({
@@ -348,10 +346,9 @@ const page = {
       type: 'textarea',
       rows: 5,
       value: draftValue,
-      helpText: 'Escribí una idea por línea. Estas reglas aplican a TODOS los servicios.\nEj:\n• Cada cuerpo responde de manera distinta\n• Los resultados dependen de hábitos y constancia\n• La edad y genética influyen en los tiempos',
+      helpText: 'Escribí una idea por línea. Estas reglas aplican a TODOS los servicios.\nEj:\n• Cada cuerpo responde de manera distinta\n• Los resultados dependen de hábitos y constancia',
       actions: {
         onChange: (v) => {
-          // string → array limpio, sin vacíos
           const lines = v.split('\n').map(l => l.trim()).filter(Boolean);
           if (lines.length > 0) {
             this._aiConfig.contexto.global_ai_context = lines;
@@ -363,6 +360,34 @@ const page = {
     });
 
     container.appendChild(this.fields.globalContext);
+
+    // ── Preview dinámico ──────────────────────────────────
+    const preview = document.createElement('div');
+    preview.className = 'ia-contexto-preview';
+
+    const updatePreview = () => {
+      const val = this.fields.globalContext?.input?.value || '';
+      const lines = val.split('\n').map(l => l.trim()).filter(Boolean);
+
+      if (!lines.length) {
+        preview.innerHTML = '<span class="ia-contexto-preview-empty">Aún no hay reglas definidas</span>';
+        return;
+      }
+
+      preview.innerHTML = `
+        <small class="ia-contexto-preview-title">🔮 Así lo verá la IA:</small>
+        <ul class="ia-contexto-preview-list">
+          ${lines.slice(0, 3).map(l => `<li>${l}</li>`).join('')}
+          ${lines.length > 3 ? `<li><em>… y ${lines.length - 3} más</em></li>` : ''}
+        </ul>
+      `;
+    };
+
+    updatePreview();
+    this.fields.globalContext?.input?.addEventListener('input', updatePreview);
+
+    container.appendChild(preview);
+    // ───────────────────────────────────────────────────────
 
     return createCard({
       title: 'Contexto operativo',
@@ -400,7 +425,6 @@ const page = {
 
         const v = (id) => document.getElementById(id)?.value || '';
 
-        // Contingencias — solo incluye los campos que aplican a este entityType
         const contingencias = {
           sinPrecio: v('sinPrecio') || ''
         };
@@ -433,7 +457,7 @@ const page = {
               formatoRespuestas: v('formatoRespuestas')
             },
             contingencias,
-            ...(Object.keys(contexto).length > 0 && { contexto }) // ← solo si hay datos
+            ...(Object.keys(contexto).length > 0 && { contexto })
           }
         };
 
