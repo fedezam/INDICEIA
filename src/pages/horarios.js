@@ -322,31 +322,6 @@ function createModeToggle(day, isContinuous, uiState, refs) {
   return wrapper;
 }
 
-function createContinuousSchedule(day, uiState) {
-  const schedule = uiState.horarios[day];
-  const wrapper  = document.createElement('div');
-  wrapper.className = 'continuous-schedule';
-
-  const title = document.createElement('h4');
-  title.textContent = 'Horario de atención';
-  wrapper.appendChild(title);
-
-  const timeWrapper = document.createElement('div');
-  timeWrapper.className = 'time-inputs';
-
-  timeWrapper.appendChild(createTimeInput({
-    id: `open_${day}`, label: 'Apertura', value: schedule.open,
-    onChange: (v) => { schedule.open = v; document.dispatchEvent(new Event('change')); }
-  }));
-  timeWrapper.appendChild(createTimeInput({
-    id: `close_${day}`, label: 'Cierre', value: schedule.close,
-    onChange: (v) => { schedule.close = v; document.dispatchEvent(new Event('change')); }
-  }));
-
-  wrapper.appendChild(timeWrapper);
-  return wrapper;
-}
-
 function createSplitSchedule(day, uiState, refs) {
   const schedule = uiState.horarios[day];
   const wrapper  = document.createElement('div');
@@ -369,6 +344,118 @@ function createSplitSchedule(day, uiState, refs) {
   return wrapper;
 }
 
+// ============================================================
+// TIME INPUT
+// ============================================================
+function createTimeInput({ id, label, value, onChange, isClose = false, openValue = null }) {
+  const group = document.createElement('div');
+  group.className = 'time-group';
+
+  const labelEl = document.createElement('label');
+  labelEl.setAttribute('for', `${id}_h`);
+  labelEl.textContent = label;
+  group.appendChild(labelEl);
+
+  const [hStr = '09', mStr = '00'] = (value || '09:00').split(':');
+  const currentH = parseInt(hStr, 10);
+  const currentM = parseInt(mStr, 10);
+
+  const row = document.createElement('div');
+  row.className = 'time-selects-row';
+
+  const selectH = document.createElement('select');
+  selectH.id = `${id}_h`;
+  selectH.className = 'time-select';
+
+  if (isClose && openValue) {
+    // Selector extendido: desde openH+1 hasta openH+8
+    const openH = parseInt((openValue || '00:00').split(':')[0], 10);
+    for (let i = 1; i <= 8; i++) {
+      const h = openH + i;
+      const opt = document.createElement('option');
+      opt.value = String(h).padStart(2, '0');
+      // Label: si h >= 24 mostrar como día siguiente
+      const displayH = h >= 24 ? h - 24 : h;
+      opt.textContent = h >= 24
+        ? `${String(displayH).padStart(2, '0')} (día sig.)`
+        : String(h).padStart(2, '0');
+      if (h === currentH) opt.selected = true;
+      selectH.appendChild(opt);
+    }
+  } else {
+    // Selector normal: 0-23
+    for (let h = 0; h < 24; h++) {
+      const opt = document.createElement('option');
+      opt.value = String(h).padStart(2, '0');
+      opt.textContent = String(h).padStart(2, '0');
+      if (h === currentH) opt.selected = true;
+      selectH.appendChild(opt);
+    }
+  }
+
+  const separator = document.createElement('span');
+  separator.className = 'time-separator';
+  separator.textContent = ':';
+
+  const MINUTES = ['00', '15', '30', '45'];
+  const selectM = document.createElement('select');
+  selectM.className = 'time-select';
+  MINUTES.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m;
+    if (parseInt(m, 10) === Math.round(currentM / 15) * 15 % 60) opt.selected = true;
+    selectM.appendChild(opt);
+  });
+
+  const notify = () => {
+    const val = `${selectH.value}:${selectM.value}`;
+    onChange(val);
+    document.dispatchEvent(new Event('change'));
+  };
+
+  selectH.addEventListener('change', notify);
+  selectM.addEventListener('change', notify);
+
+  row.appendChild(selectH);
+  row.appendChild(separator);
+  row.appendChild(selectM);
+  group.appendChild(row);
+  return group;
+}
+
+// ============================================================
+// CONTINUOUS SCHEDULE
+// ============================================================
+function createContinuousSchedule(day, uiState) {
+  const schedule = uiState.horarios[day];
+  const wrapper  = document.createElement('div');
+  wrapper.className = 'continuous-schedule';
+
+  const title = document.createElement('h4');
+  title.textContent = 'Horario de atención';
+  wrapper.appendChild(title);
+
+  const timeWrapper = document.createElement('div');
+  timeWrapper.className = 'time-inputs';
+
+  timeWrapper.appendChild(createTimeInput({
+    id: `open_${day}`, label: 'Apertura', value: schedule.open,
+    onChange: (v) => { schedule.open = v; document.dispatchEvent(new Event('change')); }
+  }));
+  timeWrapper.appendChild(createTimeInput({
+    id: `close_${day}`, label: 'Cierre', value: schedule.close,
+    onChange: (v) => { schedule.close = v; document.dispatchEvent(new Event('change')); },
+    isClose: true, openValue: schedule.open
+  }));
+
+  wrapper.appendChild(timeWrapper);
+  return wrapper;
+}
+
+// ============================================================
+// PERIOD SECTION
+// ============================================================
 function createPeriodSection({ day, period, label, icon, data, uiState, refs }) {
   const section = document.createElement('div');
   section.className = 'schedule-period';
@@ -415,72 +502,12 @@ function createPeriodSection({ day, period, label, icon, data, uiState, refs }) 
   }));
   timeWrapper.appendChild(createTimeInput({
     id: `${period}_close_${day}`, label: 'Cierre', value: data.close,
-    onChange: (v) => { data.close = v; document.dispatchEvent(new Event('change')); }
+    onChange: (v) => { data.close = v; document.dispatchEvent(new Event('change')); },
+    isClose: true, openValue: data.open
   }));
 
   section.appendChild(timeWrapper);
   return section;
-}
-
-// ============================================================
-// TIME INPUT
-// ============================================================
-function createTimeInput({ id, label, value, onChange }) {
-  const group = document.createElement('div');
-  group.className = 'time-group';
-
-  const labelEl = document.createElement('label');
-  labelEl.setAttribute('for', `${id}_h`);
-  labelEl.textContent = label;
-  group.appendChild(labelEl);
-
-  const [hStr = '09', mStr = '00'] = (value || '09:00').split(':');
-  const currentH = parseInt(hStr, 10);
-  const currentM = parseInt(mStr, 10);
-
-  const row = document.createElement('div');
-  row.className = 'time-selects-row';
-
-  const selectH = document.createElement('select');
-  selectH.id = `${id}_h`;
-  selectH.className = 'time-select';
-  for (let h = 0; h < 24; h++) {
-    const opt = document.createElement('option');
-    opt.value = String(h).padStart(2, '0');
-    opt.textContent = String(h).padStart(2, '0');
-    if (h === currentH) opt.selected = true;
-    selectH.appendChild(opt);
-  }
-
-  const separator = document.createElement('span');
-  separator.className = 'time-separator';
-  separator.textContent = ':';
-
-  const MINUTES = ['00', '15', '30', '45'];
-  const selectM = document.createElement('select');
-  selectM.className = 'time-select';
-  MINUTES.forEach(m => {
-    const opt = document.createElement('option');
-    opt.value = m;
-    opt.textContent = m;
-    if (parseInt(m, 10) === Math.round(currentM / 15) * 15 % 60) opt.selected = true;
-    selectM.appendChild(opt);
-  });
-
-  const notify = () => {
-    const val = `${selectH.value}:${selectM.value}`;
-    onChange(val);
-    document.dispatchEvent(new Event('change'));
-  };
-
-  selectH.addEventListener('change', notify);
-  selectM.addEventListener('change', notify);
-
-  row.appendChild(selectH);
-  row.appendChild(separator);
-  row.appendChild(selectM);
-  group.appendChild(row);
-  return group;
 }
 
 // ============================================================
