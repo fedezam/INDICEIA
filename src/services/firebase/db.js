@@ -101,6 +101,8 @@ export async function updateComercioData(updates) {
   const comercioId = await getComercioId();
   const comercioRef = doc(db, 'entidades', comercioId);
 
+  console.log('📦 updateComercioData:', JSON.stringify(updates, null, 2));
+
   await updateDoc(comercioRef, {
     ...updates,
     fechaActualizacion: serverTimestamp()
