@@ -25,7 +25,6 @@
   gap: var(--s-spacing);
 }
 
-/* Contenedor variable (simple/complejo) */
 .variable-container {
   margin: var(--s-spacing) 0;
 }
@@ -48,7 +47,6 @@
   padding: var(--s-spacing-lg);
 }
 
-/* Tags del servicio */
 .servicio-tags {
   display: flex;
   flex-wrap: wrap;
@@ -56,7 +54,6 @@
   margin-bottom: var(--s-spacing-sm);
 }
 
-/* Contenido del servicio */
 .servicio-imagen {
   width: 100%;
   max-height: 200px;
@@ -76,7 +73,7 @@
   padding-left: var(--s-spacing);
 }
 
-/* ── Notas semánticas (semantic_notes) ───────────────────── */
+/* ── Notas semánticas ───────────────────────────────────── */
 .servicio-semantic-notes {
   margin: var(--s-spacing-sm) 0;
   padding: var(--s-spacing-sm) var(--s-spacing);
@@ -94,7 +91,6 @@
   margin-bottom: 4px;
 }
 
-/* UI de carga de semantic_notes en el formulario */
 .semantic-notes-list {
   margin: var(--s-spacing-sm) 0;
   padding: 0;
@@ -127,7 +123,7 @@
   min-width: 0;
 }
 
-/* ── Acciones del servicio ───────────────────────────────── */
+/* ── Acciones ───────────────────────────────────────────── */
 .servicio-acciones {
   display: flex;
   gap: var(--s-spacing-sm);
@@ -137,7 +133,7 @@
   border-top: 1px solid var(--s-border);
 }
 
-/* ── Sección de items (servicio complejo) ────────────────── */
+/* ── Sección de items (complejo) ────────────────────────── */
 .items-section {
   display: flex;
   flex-direction: column;
@@ -147,20 +143,17 @@
   font-weight: 600;
   margin: 0;
 }
-
 .items-list {
   display: flex;
   flex-direction: column;
   gap: var(--s-spacing-sm);
 }
-
 .item-row {
   display: flex;
   align-items: center;
   gap: var(--s-spacing-sm);
   flex-wrap: wrap;
 }
-
 .item-info {
   flex: 1;
   min-width: 0;
@@ -168,16 +161,13 @@
   flex-direction: column;
   gap: 2px;
 }
-
 .item-nombre {
   font-weight: 500;
 }
-
 .item-meta {
   font-size: 0.875rem;
   opacity: 0.8;
 }
-
 .item-remove {
   background: none;
   border: none;
@@ -187,13 +177,10 @@
   font-size: 1.2rem;
   line-height: 1;
 }
-
 .items-empty {
   font-style: italic;
   padding: var(--s-spacing-sm);
 }
-
-/* Form para agregar item */
 .item-add-form {
   display: flex;
   gap: var(--s-spacing-sm);
@@ -203,7 +190,6 @@
   padding-top: var(--s-spacing-sm);
   border-top: 1px dashed var(--s-border);
 }
-
 .item-input {
   flex: 1;
   min-width: 120px;
@@ -215,7 +201,7 @@
   min-width: 100px;
 }
 
-/* ── Imagen ──────────────────────────────────────────────── */
+/* ── Imagen ─────────────────────────────────────────────── */
 .imagen-preview {
   margin-bottom: var(--s-spacing-sm);
 }
@@ -235,25 +221,149 @@
   width: 100%;
 }
 
-/* ── Responsive ──────────────────────────────────────────── */
+/* ── IMPORT / EXPORT ────────────────────────────────────── */
+.import-instrucciones {
+  margin-bottom: var(--s-spacing);
+}
+.import-instrucciones ol {
+  margin: var(--s-spacing-sm) 0;
+  padding-left: var(--s-spacing-lg);
+}
+.import-hint {
+  margin-top: var(--s-spacing-sm);
+  font-style: italic;
+}
+
+.import-btns {
+  display: flex;
+  gap: var(--s-spacing-sm);
+  flex-wrap: wrap;
+  margin: var(--s-spacing) 0;
+}
+
+.import-separator {
+  text-align: center;
+  margin: var(--s-spacing-lg) 0;
+  position: relative;
+}
+.import-separator::before,
+.import-separator::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: var(--s-border);
+}
+.import-separator::before { left: 0; }
+.import-separator::after { right: 0; }
+.import-separator span {
+  background: var(--s-card-bg, #fff);
+  padding: 0 var(--s-spacing-sm);
+  position: relative;
+  z-index: 1;
+}
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed var(--s-border);
+  border-radius: var(--s-radius);
+  padding: var(--s-spacing-lg);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+.upload-zone.dragover {
+  border-color: var(--s-primary);
+}
+.upload-icon {
+  font-size: 2rem;
+  margin-bottom: var(--s-spacing-sm);
+}
+.upload-text {
+  margin: 0;
+  font-weight: 500;
+}
+.upload-subtext {
+  margin: var(--s-spacing-xs) 0 0;
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+.upload-formats {
+  margin-top: var(--s-spacing-sm);
+}
+.format-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ── MODAL DUPLICADOS ───────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--s-spacing);
+}
+.modal-duplicados {
+  max-width: 500px;
+  width: 100%;
+  padding: var(--s-spacing-lg);
+  border-radius: var(--s-radius);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-spacing);
+}
+.modal-duplicados h3 {
+  margin: 0;
+}
+.modal-nuevos,
+.modal-pregunta {
+  margin: 0;
+}
+.modal-duplicados-lista ul {
+  margin: var(--s-spacing-sm) 0 0;
+  padding-left: var(--s-spacing-lg);
+}
+.modal-btns {
+  display: flex;
+  gap: var(--s-spacing-sm);
+  flex-wrap: wrap;
+  margin-top: var(--s-spacing);
+  padding-top: var(--s-spacing);
+  border-top: 1px solid var(--s-border);
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 768px) {
   #skeleton-page {
     padding: var(--s-spacing);
   }
 
-  .servicio-acciones {
-    width: 100%;
-  }
-  .servicio-acciones button {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .item-row,
+  .servicio-acciones,
+  .import-btns,
+  .modal-btns,
   .item-add-form,
   .semantic-note-add-row {
     flex-direction: column;
-    align-items: stretch;
+  }
+
+  .servicio-acciones button,
+  .import-btns button,
+  .modal-btns button {
+    width: 100%;
+  }
+
+  .item-row,
+  .import-separator::before,
+  .import-separator::after {
+    display: none;
   }
 
   .item-input,
@@ -267,5 +377,9 @@
 
   .item-meta {
     text-align: left;
+  }
+
+  .modal-duplicados {
+    padding: var(--s-spacing);
   }
 }
