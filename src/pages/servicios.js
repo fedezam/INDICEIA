@@ -25,6 +25,8 @@ import {
 import './servicios.css';
 
 const storage = getStorage();
+const XLSX = window.XLSX;
+const TEMPLATE_FIRMA = 'indiceia_servicios_v1';
 
 // ============================================================
 // MODELO DRAFT
@@ -121,6 +123,7 @@ const page = {
     });
     root.appendChild(this._listaCard);
 
+    root.appendChild(this._renderImportCard());
     root.appendChild(this._renderSaveButton());
   },
 
@@ -798,6 +801,410 @@ const page = {
     const newLista = createCard({ title: 'Servicios agregados', variant: 'warning', content: this._renderListaContent() });
     this._listaCard.replaceWith(newLista);
     this._listaCard = newLista;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // IMPORT CARD
+  // ──────────────────────────────────────────────────────────
+  _renderImportCard() {
+    const container = document.createElement('div');
+
+    const instrucciones = document.createElement('div');
+    instrucciones.className = 'import-instrucciones';
+    instrucciones.innerHTML = `
+      <p>Para cargar varios servicios a la vez:</p>
+      <ol>
+        <li>Descargá la plantilla según el tipo de servicio</li>
+        <li>Completá tus servicios en el archivo</li>
+        <li>Subí el archivo completado</li>
+      </ol>
+      <p class="import-hint"><i class="fas fa-info-circle"></i> Podés agregar columnas extra a la derecha — se guardan como atributos semánticos y el asistente las usa para responder preguntas.</p>
+    `;
+    container.appendChild(instrucciones);
+
+    // ── Botones de descarga ────────────────────────────────
+    const btnsContainer = document.createElement('div');
+    btnsContainer.className = 'import-btns';
+
+    const tieneSimples   = this._data.serviciosAcumulados.some(s => s.tipo !== 'complejo');
+    const tieneComplejos = this._data.serviciosAcumulados.some(s => s.tipo === 'complejo');
+
+    btnsContainer.appendChild(createButton({
+      label:   tieneSimples   ? 'Exportar mis servicios simples'   : 'Descargar plantilla — Servicios simples',
+      variant: 'secondary',
+      icon:    'fa-download',
+      onClick: () => tieneSimples ? this._exportarSimples() : this._descargarPlantillaSimples()
+    }));
+
+    btnsContainer.appendChild(createButton({
+      label:   tieneComplejos ? 'Exportar mis servicios complejos' : 'Descargar plantilla — Servicios complejos',
+      variant: 'secondary',
+      icon:    'fa-download',
+      onClick: () => tieneComplejos ? this._exportarComplejos() : this._descargarPlantillaComplejos()
+    }));
+
+    container.appendChild(btnsContainer);
+
+    // ── Upload zone ────────────────────────────────────────
+    const sep = document.createElement('div');
+    sep.className = 'import-separator';
+    sep.innerHTML = '<span>Una vez completada, subí la plantilla acá</span>';
+    container.appendChild(sep);
+
+    const uploadZone = document.createElement('div');
+    uploadZone.className = 'upload-zone';
+    uploadZone.innerHTML = `
+      <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+      <p class="upload-text"><strong>Arrastrá tu plantilla aquí</strong></p>
+      <p class="upload-subtext">o hacé clic para seleccionar</p>
+      <div class="upload-formats"><span class="format-badge">.xlsx</span></div>
+    `;
+
+    const fileInput = document.createElement('input');
+    fileInput.type    = 'file';
+    fileInput.accept  = '.xlsx';
+    fileInput.style.display = 'none';
+
+    uploadZone.addEventListener('click',     () => fileInput.click());
+    uploadZone.addEventListener('dragover',  e  => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', ()  => uploadZone.classList.remove('dragover'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) this._parseFile(file);
+    });
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) this._parseFile(file);
+    });
+
+    container.append(uploadZone, fileInput);
+    return createCard({ title: 'Importar desde Excel', icon: 'fa-file-excel', content: container });
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // EXPORT — plantillas vacías
+  // ──────────────────────────────────────────────────────────
+  _descargarPlantillaSimples() {
+    if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['codigo','nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion','semantic_notes'],
+      ['','Corte de pelo','Corte y secado clásico','a_coordinar','fijo','5000','30',''],
+    ]);
+    this._agregarValidaciones(ws, 2, 100);
+    ws['!cols'] = [{ wch:14 },{ wch:28 },{ wch:40 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:12 },{ wch:50 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'servicios_simples');
+    this._agregarMeta(wb);
+    XLSX.writeFile(wb, 'plantilla_servicios_simples.xlsx');
+  },
+
+  _descargarPlantillaComplejos() {
+    if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([
+      ['codigo','nombre','descripcion','disponibilidad','item_nombre','item_precio','item_duracion','semantic_notes'],
+      ['SVC001','Depilación definitiva','Láser diodo...','a_coordinar','Axilas','5000','30','Rasurar zona antes de la sesión'],
+      ['SVC001','','','','Rostro','8000','60',''],
+      ['SVC001','','','','Piernas','','90',''],
+    ]);
+    ws['!cols'] = [{ wch:14 },{ wch:28 },{ wch:40 },{ wch:16 },{ wch:22 },{ wch:14 },{ wch:14 },{ wch:50 }];
+    this._agregarMeta(wb);
+    XLSX.utils.book_append_sheet(wb, ws, 'servicios_complejos');
+    XLSX.writeFile(wb, 'plantilla_servicios_complejos.xlsx');
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // EXPORT — con datos existentes
+  // ──────────────────────────────────────────────────────────
+  _exportarSimples() {
+    if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
+    const simples = this._data.serviciosAcumulados.filter(s => s.tipo !== 'complejo');
+    const CAMPOS  = ['codigo','nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion','semantic_notes'];
+
+    const rows = simples.map(s => {
+      const row = {
+        codigo:         s.codigo        || this._generateCodigo(),
+        nombre:         s.nombre        || '',
+        descripcion:    s.descripcion   || '',
+        disponibilidad: s.disponibilidad || '',
+        precio_tipo:    s.precio?.tipo  || 'consultar',
+        precio_valor:   s.precio?.valor || '',
+        duracion:       s.duracion      || '',
+        semantic_notes: (s.semantic_notes || []).join(' | '),
+      };
+      // Atributos extra
+      if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { row[k] = v; });
+      return row;
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows, { header: CAMPOS });
+    this._agregarValidaciones(ws, 2, rows.length + 1);
+    ws['!cols'] = [{ wch:14 },{ wch:28 },{ wch:40 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:12 },{ wch:50 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'servicios_simples');
+    this._agregarMeta(wb);
+    XLSX.writeFile(wb, 'mis_servicios_simples.xlsx');
+    showToast(`${simples.length} servicios simples exportados`, 'success');
+  },
+
+  _exportarComplejos() {
+    if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
+    const complejos = this._data.serviciosAcumulados.filter(s => s.tipo === 'complejo');
+    const rows = [];
+
+    complejos.forEach(s => {
+      const codigo = s.codigo || this._generateCodigo();
+      const items  = s.items || [];
+      items.forEach((item, i) => {
+        const row = {
+          codigo,
+          nombre:         i === 0 ? (s.nombre        || '') : '',
+          descripcion:    i === 0 ? (s.descripcion   || '') : '',
+          disponibilidad: i === 0 ? (s.disponibilidad || '') : '',
+          item_nombre:    item.nombre   || '',
+          item_precio:    item.precio   || '',
+          item_duracion:  item.duracion || '',
+          semantic_notes: i === 0 ? (s.semantic_notes || []).join(' | ') : '',
+        };
+        if (s.atributos && i === 0) Object.entries(s.atributos).forEach(([k, v]) => { row[k] = v; });
+        rows.push(row);
+      });
+    });
+
+    const CAMPOS = ['codigo','nombre','descripcion','disponibilidad','item_nombre','item_precio','item_duracion','semantic_notes'];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows, { header: CAMPOS });
+    ws['!cols'] = [{ wch:14 },{ wch:28 },{ wch:40 },{ wch:16 },{ wch:22 },{ wch:14 },{ wch:14 },{ wch:50 }];
+    this._agregarMeta(wb);
+    XLSX.utils.book_append_sheet(wb, ws, 'servicios_complejos');
+    XLSX.writeFile(wb, 'mis_servicios_complejos.xlsx');
+    showToast(`${complejos.length} servicios complejos exportados`, 'success');
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // PARSE — lee el xlsx y detecta duplicados
+  // ──────────────────────────────────────────────────────────
+  _parseFile(file) {
+    if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'binary' });
+
+        // Validar firma
+        const metaSheet = wb.Sheets['_indiceia_meta'];
+        if (!metaSheet) { showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return; }
+        const firma = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
+        if (firma?.[0]?.[0] !== TEMPLATE_FIRMA) { showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return; }
+
+        const importados = [];
+
+        // ── Simples ──────────────────────────────────────
+        const wsSimples = wb.Sheets['servicios_simples'];
+        if (wsSimples) {
+          const CAMPOS_BASE = ['codigo','nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion','semantic_notes'];
+          const rows = XLSX.utils.sheet_to_json(wsSimples, { defval: '' });
+          rows.forEach(row => {
+            if (!row.nombre?.trim()) return;
+            const s = {
+              codigo:         String(row.codigo || this._generateCodigo()),
+              tipo:           'simple',
+              nombre:         String(row.nombre).trim(),
+              descripcion:    String(row.descripcion || '').trim(),
+              disponibilidad: ['inmediata','a_coordinar'].includes(row.disponibilidad) ? row.disponibilidad : 'a_coordinar',
+              precio: row.precio_tipo === 'fijo' && row.precio_valor
+                ? { tipo: 'fijo', valor: Number(row.precio_valor) || 0 }
+                : { tipo: 'consultar' },
+              duracion:       Number(row.duracion) || null,
+              semantic_notes: row.semantic_notes ? String(row.semantic_notes).split('|').map(n => n.trim()).filter(Boolean) : [],
+              atributos:      {},
+              activo:         true,
+            };
+            Object.keys(row).forEach(col => {
+              if (!CAMPOS_BASE.includes(col) && row[col] !== '') s.atributos[col] = String(row[col]).trim();
+            });
+            importados.push(s);
+          });
+        }
+
+        // ── Complejos ─────────────────────────────────────
+        const wsComplejos = wb.Sheets['servicios_complejos'];
+        if (wsComplejos) {
+          const CAMPOS_BASE = ['codigo','nombre','descripcion','disponibilidad','item_nombre','item_precio','item_duracion','semantic_notes'];
+          const rows = XLSX.utils.sheet_to_json(wsComplejos, { defval: '' });
+          const grupos = new Map();
+          rows.forEach(row => {
+            if (!row.codigo) return;
+            const codigo = String(row.codigo).trim();
+            if (!grupos.has(codigo)) {
+              grupos.set(codigo, {
+                codigo,
+                tipo:           'complejo',
+                nombre:         String(row.nombre || '').trim(),
+                descripcion:    String(row.descripcion || '').trim(),
+                disponibilidad: ['inmediata','a_coordinar'].includes(row.disponibilidad) ? row.disponibilidad : 'a_coordinar',
+                semantic_notes: row.semantic_notes ? String(row.semantic_notes).split('|').map(n => n.trim()).filter(Boolean) : [],
+                atributos:      {},
+                items:          [],
+                activo:         true,
+              });
+              Object.keys(row).forEach(col => {
+                if (!CAMPOS_BASE.includes(col) && row[col] !== '') grupos.get(codigo).atributos[col] = String(row[col]).trim();
+              });
+            }
+            if (row.item_nombre?.trim()) {
+              grupos.get(codigo).items.push({
+                nombre:   String(row.item_nombre).trim(),
+                precio:   Number(row.item_precio)   || null,
+                duracion: Number(row.item_duracion) || null,
+              });
+            }
+          });
+          grupos.forEach(s => { if (s.nombre && s.items.length) importados.push(s); });
+        }
+
+        if (!importados.length) { showToast('No se encontraron servicios válidos en el archivo', 'warning'); return; }
+
+        // ── Detectar duplicados ───────────────────────────
+        const nombresExistentes = new Set(this._data.serviciosAcumulados.map(s => s.nombre.toLowerCase()));
+        const duplicados = importados.filter(s => nombresExistentes.has(s.nombre.toLowerCase()));
+        const nuevos     = importados.filter(s => !nombresExistentes.has(s.nombre.toLowerCase()));
+
+        if (!duplicados.length) {
+          // Sin duplicados — agregar directo
+          this._data.serviciosAcumulados.push(...nuevos);
+          this._refreshLista();
+          showToast(`${nuevos.length} servicios importados`, 'success');
+          return;
+        }
+
+        // ── Modal de duplicados ───────────────────────────
+        this._mostrarModalDuplicados({ duplicados, nuevos, importados });
+
+      } catch (err) {
+        console.error('[servicios] _parseFile() ERROR:', err);
+        showToast('No se pudo leer el archivo', 'error');
+      }
+    };
+    reader.readAsBinaryString(file);
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // MODAL DUPLICADOS
+  // ──────────────────────────────────────────────────────────
+  _mostrarModalDuplicados({ duplicados, nuevos, importados }) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-duplicados';
+
+    const title = document.createElement('h3');
+    title.textContent = 'Servicios duplicados encontrados';
+    modal.appendChild(title);
+
+    if (nuevos.length) {
+      const nuevosList = document.createElement('p');
+      nuevosList.className = 'modal-nuevos';
+      nuevosList.innerHTML = `<strong>${nuevos.length} nuevos</strong> (se van a agregar): ${nuevos.map(s => s.nombre).join(', ')}`;
+      modal.appendChild(nuevosList);
+    }
+
+    const dupList = document.createElement('div');
+    dupList.className = 'modal-duplicados-lista';
+    dupList.innerHTML = `<p><strong>${duplicados.length} ya existen:</strong></p>`;
+    const ul = document.createElement('ul');
+    duplicados.forEach(s => {
+      const li = document.createElement('li');
+      li.textContent = s.nombre;
+      ul.appendChild(li);
+    });
+    dupList.appendChild(ul);
+    modal.appendChild(dupList);
+
+    const pregunta = document.createElement('p');
+    pregunta.className = 'modal-pregunta';
+    pregunta.textContent = '¿Qué querés hacer con los duplicados?';
+    modal.appendChild(pregunta);
+
+    const btns = document.createElement('div');
+    btns.className = 'modal-btns';
+
+    const cerrar = () => document.body.removeChild(overlay);
+
+    btns.appendChild(createButton({
+      label:   'Sobreescribir duplicados',
+      variant: 'warning',
+      icon:    'fa-sync',
+      onClick: () => {
+        // Reemplazar existentes + agregar nuevos
+        duplicados.forEach(dup => {
+          const idx = this._data.serviciosAcumulados.findIndex(s => s.nombre.toLowerCase() === dup.nombre.toLowerCase());
+          if (idx >= 0) this._data.serviciosAcumulados[idx] = dup;
+        });
+        this._data.serviciosAcumulados.push(...nuevos);
+        this._refreshLista();
+        showToast(`${duplicados.length} sobreescritos, ${nuevos.length} nuevos agregados`, 'success');
+        cerrar();
+      }
+    }));
+
+    btns.appendChild(createButton({
+      label:   'Agregar como nuevos',
+      variant: 'primary',
+      icon:    'fa-plus',
+      onClick: () => {
+        this._data.serviciosAcumulados.push(...importados);
+        this._refreshLista();
+        showToast(`${importados.length} servicios agregados`, 'success');
+        cerrar();
+      }
+    }));
+
+    btns.appendChild(createButton({
+      label:   'Cancelar',
+      variant: 'secondary',
+      icon:    'fa-times',
+      onClick: cerrar
+    }));
+
+    modal.appendChild(btns);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // HELPERS
+  // ──────────────────────────────────────────────────────────
+  _generateCodigo() {
+    return `SVC${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+  },
+
+  _agregarMeta(wb) {
+    const metaWs = XLSX.utils.aoa_to_sheet([[TEMPLATE_FIRMA]]);
+    XLSX.utils.book_append_sheet(wb, metaWs, '_indiceia_meta');
+  },
+
+  // Agrega validación de dropdown en columna disponibilidad (col D = índice 3)
+  // y precio_tipo (col E = índice 4) para servicios simples
+  _agregarValidaciones(ws, rowStart, rowEnd) {
+    if (!ws['!dataValidations']) ws['!dataValidations'] = [];
+    // disponibilidad — col D
+    ws['!dataValidations'].push({
+      sqref: `D${rowStart}:D${rowEnd}`,
+      type: 'list',
+      formula1: '"inmediata,a_coordinar"',
+      showDropDown: false,
+    });
+    // precio_tipo — col E
+    ws['!dataValidations'].push({
+      sqref: `E${rowStart}:E${rowEnd}`,
+      type: 'list',
+      formula1: '"consultar,fijo"',
+      showDropDown: false,
+    });
   },
 
   // ──────────────────────────────────────────────────────────
