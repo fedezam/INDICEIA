@@ -889,30 +889,93 @@ const page = {
   _descargarPlantillaSimples() {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([
-      ['codigo','nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion','semantic_notes'],
-      ['','Corte de pelo','Corte y secado clásico','a_coordinar','fijo','5000','30',''],
+
+    // Hoja instrucciones
+    const wsInstr = XLSX.utils.aoa_to_sheet([
+      ['📋 PLANTILLA DE SERVICIOS SIMPLES — ÍndiceIA'],
+      [''],
+      ['Un servicio simple tiene un único precio y duración.'],
+      ['Ejemplos: Corte de pelo, Consulta médica, Limpieza de cutis.'],
+      [''],
+      ['COLUMNAS:'],
+      ['  nombre        → Nombre del servicio (obligatorio)'],
+      ['  descripcion   → Descripción breve (opcional)'],
+      ['  disponibilidad → "inmediata" o "a_coordinar" (obligatorio)'],
+      ['  precio_tipo   → "consultar" o "fijo" (obligatorio)'],
+      ['  precio_valor  → Solo si precio_tipo es "fijo". Ej: 5000'],
+      ['  duracion_min  → Duración en minutos (opcional). Dejar vacío si no aplica.'],
+      ['  nota_1, nota_2, ... → Aclaraciones para la IA (opcional, una por columna)'],
+      ['  columnas_extra → Cualquier columna adicional se guarda como atributo semántico'],
+      [''],
+      ['Completá tus servicios en la hoja "servicios" y subí el archivo.'],
     ]);
-    this._agregarValidaciones(ws, 2, 100);
-    ws['!cols'] = [{ wch:14 },{ wch:28 },{ wch:40 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:12 },{ wch:50 }];
-    XLSX.utils.book_append_sheet(wb, ws, 'servicios_simples');
-    this._agregarMeta(wb);
+    wsInstr['!cols'] = [{ wch: 70 }];
+    XLSX.utils.book_append_sheet(wb, wsInstr, '📖 Instrucciones');
+
+    // Hoja de datos
+    const headers = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min','nota_1','nota_2'];
+    const ejemplo = ['Corte de pelo','Corte y secado clásico','a_coordinar','fijo','5000','30','Incluye lavado',''];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ejemplo]);
+    this._agregarValidacionesSimples(ws, 2, 100);
+    ws['!cols'] = [{ wch:28 },{ wch:38 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:13 },{ wch:35 },{ wch:35 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'servicios');
+    this._agregarMeta(wb, 'simples');
     XLSX.writeFile(wb, 'plantilla_servicios_simples.xlsx');
+    showToast('Plantilla descargada', 'success');
   },
 
   _descargarPlantillaComplejos() {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([
-      ['codigo','nombre','descripcion','disponibilidad','item_nombre','item_precio','item_duracion','semantic_notes'],
-      ['SVC001','Depilación definitiva','Láser diodo...','a_coordinar','Axilas','5000','30','Rasurar zona antes de la sesión'],
-      ['SVC001','','','','Rostro','8000','60',''],
-      ['SVC001','','','','Piernas','','90',''],
+
+    // Hoja instrucciones
+    const wsInstr = XLSX.utils.aoa_to_sheet([
+      ['📋 PLANTILLA DE SERVICIOS CON VARIANTES — ÍndiceIA'],
+      [''],
+      ['Un servicio con variantes tiene múltiples opciones, cada una con su precio y duración.'],
+      ['Ejemplos: Depilación definitiva (Axilas, Rostro, Piernas), Tintura (Con gorra, Con tiritas).'],
+      [''],
+      ['CÓMO COMPLETAR:'],
+      ['  → Fila de SERVICIO: completá nombre, descripcion y disponibilidad. Dejá variante/precio/duracion vacíos.'],
+      ['  → Fila de VARIANTE: dejá nombre/descripcion/disponibilidad vacíos. Completá variante, precio y duracion.'],
+      ['  → Las variantes que siguen a un servicio pertenecen a ese servicio.'],
+      [''],
+      ['COLUMNAS:'],
+      ['  nombre        → Nombre del servicio padre (solo en la fila del servicio)'],
+      ['  descripcion   → Descripción del servicio (solo en la fila del servicio)'],
+      ['  disponibilidad → "inmediata" o "a_coordinar" (solo en la fila del servicio)'],
+      ['  variante      → Nombre de la variante (solo en filas de variante). Ej: Axilas'],
+      ['  precio        → Precio de la variante (opcional). Dejar vacío = "a consultar"'],
+      ['  duracion_min  → Duración en minutos de la variante (opcional)'],
+      ['  nota_1, nota_2, ... → Aclaraciones para la IA del servicio (solo en fila del servicio)'],
+      [''],
+      ['Completá tus servicios en la hoja "servicios" y subí el archivo.'],
     ]);
-    ws['!cols'] = [{ wch:14 },{ wch:28 },{ wch:40 },{ wch:16 },{ wch:22 },{ wch:14 },{ wch:14 },{ wch:50 }];
-    this._agregarMeta(wb);
-    XLSX.utils.book_append_sheet(wb, ws, 'servicios_complejos');
+    wsInstr['!cols'] = [{ wch: 80 }];
+    XLSX.utils.book_append_sheet(wb, wsInstr, '📖 Instrucciones');
+
+    // Hoja de datos con ejemplo
+    const headers = ['nombre','descripcion','disponibilidad','variante','precio','duracion_min','nota_1','nota_2'];
+    const rows = [
+      headers,
+      // Servicio padre
+      ['Depilación definitiva','Láser diodo. Requiere múltiples sesiones.','a_coordinar','','','','Rasurar la zona antes de la sesión','No aplicar sobre tatuajes'],
+      // Variantes
+      ['','','','Entrecejo','7500','5','',''],
+      ['','','','Bozo','7500','5','',''],
+      ['','','','Piernas completas','','60','',''],
+      // Segundo servicio
+      ['Tintura','Coloración completa con productos profesionales.','a_coordinar','','','','',''],
+      ['','','','Con gorra','5000','60','',''],
+      ['','','','Con tiritas','6500','90','',''],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    this._agregarValidacionesComplejos(ws, 2, 100);
+    ws['!cols'] = [{ wch:28 },{ wch:38 },{ wch:16 },{ wch:22 },{ wch:12 },{ wch:13 },{ wch:35 },{ wch:35 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'servicios');
+    this._agregarMeta(wb, 'complejos');
     XLSX.writeFile(wb, 'plantilla_servicios_complejos.xlsx');
+    showToast('Plantilla descargada', 'success');
   },
 
   // ──────────────────────────────────────────────────────────
@@ -921,19 +984,19 @@ const page = {
   _exportarSimples() {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
     const simples = this._data.serviciosAcumulados.filter(s => s.tipo !== 'complejo');
-    const CAMPOS  = ['codigo','nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion','semantic_notes'];
+    const CAMPOS  = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
 
     const rows = simples.map(s => {
       const row = {
-        codigo:         s.codigo        || this._generateCodigo(),
-        nombre:         s.nombre        || '',
-        descripcion:    s.descripcion   || '',
+        nombre:         s.nombre         || '',
+        descripcion:    s.descripcion    || '',
         disponibilidad: s.disponibilidad || '',
-        precio_tipo:    s.precio?.tipo  || 'consultar',
-        precio_valor:   s.precio?.valor || '',
-        duracion:       s.duracion      || '',
-        semantic_notes: (s.semantic_notes || []).join(' | '),
+        precio_tipo:    s.precio?.tipo   || 'consultar',
+        precio_valor:   s.precio?.valor  || '',
+        duracion_min:   s.duracion       || '',
       };
+      // Notas como columnas separadas
+      (s.semantic_notes || []).forEach((nota, i) => { row[`nota_${i + 1}`] = nota; });
       // Atributos extra
       if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { row[k] = v; });
       return row;
@@ -941,10 +1004,10 @@ const page = {
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(rows, { header: CAMPOS });
-    this._agregarValidaciones(ws, 2, rows.length + 1);
-    ws['!cols'] = [{ wch:14 },{ wch:28 },{ wch:40 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:12 },{ wch:50 }];
-    XLSX.utils.book_append_sheet(wb, ws, 'servicios_simples');
-    this._agregarMeta(wb);
+    this._agregarValidacionesSimples(ws, 2, rows.length + 1);
+    ws['!cols'] = [{ wch:28 },{ wch:38 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:13 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'servicios');
+    this._agregarMeta(wb, 'simples');
     XLSX.writeFile(wb, 'mis_servicios_simples.xlsx');
     showToast(`${simples.length} servicios simples exportados`, 'success');
   },
@@ -955,30 +1018,39 @@ const page = {
     const rows = [];
 
     complejos.forEach(s => {
-      const codigo = s.codigo || this._generateCodigo();
-      const items  = s.items || [];
-      items.forEach((item, i) => {
-        const row = {
-          codigo,
-          nombre:         i === 0 ? (s.nombre        || '') : '',
-          descripcion:    i === 0 ? (s.descripcion   || '') : '',
-          disponibilidad: i === 0 ? (s.disponibilidad || '') : '',
-          item_nombre:    item.nombre   || '',
-          item_precio:    item.precio   || '',
-          item_duracion:  item.duracion || '',
-          semantic_notes: i === 0 ? (s.semantic_notes || []).join(' | ') : '',
-        };
-        if (s.atributos && i === 0) Object.entries(s.atributos).forEach(([k, v]) => { row[k] = v; });
-        rows.push(row);
+      // Fila padre
+      const filaPadre = {
+        nombre:         s.nombre         || '',
+        descripcion:    s.descripcion    || '',
+        disponibilidad: s.disponibilidad || '',
+        variante:       '',
+        precio:         '',
+        duracion_min:   '',
+      };
+      (s.semantic_notes || []).forEach((nota, i) => { filaPadre[`nota_${i + 1}`] = nota; });
+      if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { filaPadre[k] = v; });
+      rows.push(filaPadre);
+
+      // Filas variantes
+      (s.items || []).forEach(item => {
+        rows.push({
+          nombre:       '',
+          descripcion:  '',
+          disponibilidad: '',
+          variante:     item.nombre   || '',
+          precio:       item.precio   || '',
+          duracion_min: item.duracion || '',
+        });
       });
     });
 
-    const CAMPOS = ['codigo','nombre','descripcion','disponibilidad','item_nombre','item_precio','item_duracion','semantic_notes'];
+    const CAMPOS = ['nombre','descripcion','disponibilidad','variante','precio','duracion_min'];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(rows, { header: CAMPOS });
-    ws['!cols'] = [{ wch:14 },{ wch:28 },{ wch:40 },{ wch:16 },{ wch:22 },{ wch:14 },{ wch:14 },{ wch:50 }];
-    this._agregarMeta(wb);
-    XLSX.utils.book_append_sheet(wb, ws, 'servicios_complejos');
+    this._agregarValidacionesComplejos(ws, 2, rows.length + 1);
+    ws['!cols'] = [{ wch:28 },{ wch:38 },{ wch:16 },{ wch:22 },{ wch:12 },{ wch:13 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'servicios');
+    this._agregarMeta(wb, 'complejos');
     XLSX.writeFile(wb, 'mis_servicios_complejos.xlsx');
     showToast(`${complejos.length} servicios complejos exportados`, 'success');
   },
@@ -997,19 +1069,36 @@ const page = {
         const metaSheet = wb.Sheets['_indiceia_meta'];
         if (!metaSheet) { showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return; }
         const firma = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
-        if (firma?.[0]?.[0] !== TEMPLATE_FIRMA) { showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return; }
+        const tipoPlantilla = firma?.[0]?.[0]; // 'indiceia_servicios_simples_v1' o 'indiceia_servicios_complejos_v1'
+        if (!tipoPlantilla?.startsWith('indiceia_servicios_')) {
+          showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return;
+        }
+
+        const ws = wb.Sheets['servicios'];
+        if (!ws) { showToast('No se encontró la hoja "servicios" en el archivo', 'error'); return; }
+
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        if (!rows.length) { showToast('La plantilla está vacía', 'warning'); return; }
 
         const importados = [];
+        const esComplejo = tipoPlantilla.includes('complejos');
 
-        // ── Simples ──────────────────────────────────────
-        const wsSimples = wb.Sheets['servicios_simples'];
-        if (wsSimples) {
-          const CAMPOS_BASE = ['codigo','nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion','semantic_notes'];
-          const rows = XLSX.utils.sheet_to_json(wsSimples, { defval: '' });
+        if (!esComplejo) {
+          // ── SIMPLES ─────────────────────────────────────
+          const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
           rows.forEach(row => {
-            if (!row.nombre?.trim()) return;
-            const s = {
-              codigo:         String(row.codigo || this._generateCodigo()),
+            if (!String(row.nombre || '').trim()) return;
+            // Notas: columnas nota_1, nota_2, ... + cualquier columna extra
+            const notas = [];
+            const atributos = {};
+            Object.keys(row).forEach(col => {
+              if (CAMPOS_BASE.includes(col)) return;
+              const val = String(row[col] || '').trim();
+              if (!val) return;
+              if (/^nota_\d+$/i.test(col)) notas.push(val);
+              else atributos[col] = val;
+            });
+            importados.push({
               tipo:           'simple',
               nombre:         String(row.nombre).trim(),
               descripcion:    String(row.descripcion || '').trim(),
@@ -1017,52 +1106,57 @@ const page = {
               precio: row.precio_tipo === 'fijo' && row.precio_valor
                 ? { tipo: 'fijo', valor: Number(row.precio_valor) || 0 }
                 : { tipo: 'consultar' },
-              duracion:       Number(row.duracion) || null,
-              semantic_notes: row.semantic_notes ? String(row.semantic_notes).split('|').map(n => n.trim()).filter(Boolean) : [],
-              atributos:      {},
-              activo:         true,
-            };
-            Object.keys(row).forEach(col => {
-              if (!CAMPOS_BASE.includes(col) && row[col] !== '') s.atributos[col] = String(row[col]).trim();
+              duracion:       Number(row.duracion_min) || null,
+              semantic_notes: notas,
+              atributos,
+              activo: true,
             });
-            importados.push(s);
           });
-        }
 
-        // ── Complejos ─────────────────────────────────────
-        const wsComplejos = wb.Sheets['servicios_complejos'];
-        if (wsComplejos) {
-          const CAMPOS_BASE = ['codigo','nombre','descripcion','disponibilidad','item_nombre','item_precio','item_duracion','semantic_notes'];
-          const rows = XLSX.utils.sheet_to_json(wsComplejos, { defval: '' });
-          const grupos = new Map();
+        } else {
+          // ── COMPLEJOS — agrupar por indentación ──────────
+          // Fila padre: tiene nombre, descripcion, disponibilidad; variante vacía
+          // Fila variante: nombre/descripcion/disponibilidad vacíos; variante llena
+          const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','variante','precio','duracion_min'];
+          let padreActual = null;
+
           rows.forEach(row => {
-            if (!row.codigo) return;
-            const codigo = String(row.codigo).trim();
-            if (!grupos.has(codigo)) {
-              grupos.set(codigo, {
-                codigo,
+            const nombre   = String(row.nombre   || '').trim();
+            const variante = String(row.variante || '').trim();
+
+            if (nombre) {
+              // Es fila padre — guardar anterior si existe
+              if (padreActual) importados.push(padreActual);
+              const notas = [];
+              const atributos = {};
+              Object.keys(row).forEach(col => {
+                if (CAMPOS_BASE.includes(col)) return;
+                const val = String(row[col] || '').trim();
+                if (!val) return;
+                if (/^nota_\d+$/i.test(col)) notas.push(val);
+                else atributos[col] = val;
+              });
+              padreActual = {
                 tipo:           'complejo',
-                nombre:         String(row.nombre || '').trim(),
+                nombre,
                 descripcion:    String(row.descripcion || '').trim(),
                 disponibilidad: ['inmediata','a_coordinar'].includes(row.disponibilidad) ? row.disponibilidad : 'a_coordinar',
-                semantic_notes: row.semantic_notes ? String(row.semantic_notes).split('|').map(n => n.trim()).filter(Boolean) : [],
-                atributos:      {},
+                semantic_notes: notas,
+                atributos,
                 items:          [],
                 activo:         true,
-              });
-              Object.keys(row).forEach(col => {
-                if (!CAMPOS_BASE.includes(col) && row[col] !== '') grupos.get(codigo).atributos[col] = String(row[col]).trim();
-              });
-            }
-            if (row.item_nombre?.trim()) {
-              grupos.get(codigo).items.push({
-                nombre:   String(row.item_nombre).trim(),
-                precio:   Number(row.item_precio)   || null,
-                duracion: Number(row.item_duracion) || null,
+              };
+            } else if (variante && padreActual) {
+              // Es fila variante
+              padreActual.items.push({
+                nombre:   variante,
+                precio:   Number(row.precio)      || null,
+                duracion: Number(row.duracion_min) || null,
               });
             }
           });
-          grupos.forEach(s => { if (s.nombre && s.items.length) importados.push(s); });
+          // Último servicio
+          if (padreActual?.items.length) importados.push(padreActual);
         }
 
         if (!importados.length) { showToast('No se encontraron servicios válidos en el archivo', 'warning'); return; }
@@ -1073,14 +1167,12 @@ const page = {
         const nuevos     = importados.filter(s => !nombresExistentes.has(s.nombre.toLowerCase()));
 
         if (!duplicados.length) {
-          // Sin duplicados — agregar directo
           this._data.serviciosAcumulados.push(...nuevos);
           this._refreshLista();
-          showToast(`${nuevos.length} servicios importados`, 'success');
+          showToast(`${nuevos.length} servicios importados correctamente`, 'success');
           return;
         }
 
-        // ── Modal de duplicados ───────────────────────────
         this._mostrarModalDuplicados({ duplicados, nuevos, importados });
 
       } catch (err) {
@@ -1182,28 +1274,32 @@ const page = {
     return `SVC${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
   },
 
-  _agregarMeta(wb) {
-    const metaWs = XLSX.utils.aoa_to_sheet([[TEMPLATE_FIRMA]]);
+  _agregarMeta(wb, tipo) {
+    // tipo: 'simples' | 'complejos'
+    const firma = `indiceia_servicios_${tipo}_v1`;
+    const metaWs = XLSX.utils.aoa_to_sheet([[firma]]);
     XLSX.utils.book_append_sheet(wb, metaWs, '_indiceia_meta');
   },
 
-  // Agrega validación de dropdown en columna disponibilidad (col D = índice 3)
-  // y precio_tipo (col E = índice 4) para servicios simples
-  _agregarValidaciones(ws, rowStart, rowEnd) {
+  // Dropdowns para plantilla simples: disponibilidad (col C) y precio_tipo (col D)
+  _agregarValidacionesSimples(ws, rowStart, rowEnd) {
     if (!ws['!dataValidations']) ws['!dataValidations'] = [];
-    // disponibilidad — col D
+    ws['!dataValidations'].push({
+      sqref: `C${rowStart}:C${rowEnd}`,
+      type: 'list', formula1: '"inmediata,a_coordinar"', showDropDown: false,
+    });
     ws['!dataValidations'].push({
       sqref: `D${rowStart}:D${rowEnd}`,
-      type: 'list',
-      formula1: '"inmediata,a_coordinar"',
-      showDropDown: false,
+      type: 'list', formula1: '"consultar,fijo"', showDropDown: false,
     });
-    // precio_tipo — col E
+  },
+
+  // Dropdown para plantilla complejos: disponibilidad (col C)
+  _agregarValidacionesComplejos(ws, rowStart, rowEnd) {
+    if (!ws['!dataValidations']) ws['!dataValidations'] = [];
     ws['!dataValidations'].push({
-      sqref: `E${rowStart}:E${rowEnd}`,
-      type: 'list',
-      formula1: '"consultar,fijo"',
-      showDropDown: false,
+      sqref: `C${rowStart}:C${rowEnd}`,
+      type: 'list', formula1: '"inmediata,a_coordinar"', showDropDown: false,
     });
   },
 
