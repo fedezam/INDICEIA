@@ -14,7 +14,7 @@
   margin-bottom: var(--s-spacing-lg);
 }
 
-/* Campos y contenedores */
+/* ── Campos y contenedores ───────────────────────────────── */
 .campo-compuesto {
   margin-bottom: var(--s-spacing);
 }
@@ -25,7 +25,18 @@
   gap: var(--s-spacing);
 }
 
-/* Lista de servicios */
+/* Contenedor variable (simple/complejo) */
+.variable-container {
+  margin: var(--s-spacing) 0;
+}
+
+.simple-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-spacing);
+}
+
+/* ── Lista de servicios ──────────────────────────────────── */
 #lista-servicios-container {
   display: flex;
   flex-direction: column;
@@ -60,12 +71,12 @@
   margin: var(--s-spacing-sm) 0;
 }
 
-.servicio-items ul {
+.servicio-items-lista ul {
   margin: 0;
   padding-left: var(--s-spacing);
 }
 
-/* ← NEW: Notas semánticas (solo layout) */
+/* ── Notas semánticas (semantic_notes) ───────────────────── */
 .servicio-semantic-notes {
   margin: var(--s-spacing-sm) 0;
   padding: var(--s-spacing-sm) var(--s-spacing);
@@ -83,7 +94,40 @@
   margin-bottom: 4px;
 }
 
-/* Acciones */
+/* UI de carga de semantic_notes en el formulario */
+.semantic-notes-list {
+  margin: var(--s-spacing-sm) 0;
+  padding: 0;
+  list-style: none;
+}
+.semantic-note-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-spacing-sm);
+  padding: var(--s-spacing-xs) var(--s-spacing-sm);
+  margin-bottom: var(--s-spacing-xs);
+}
+.semantic-note-remove {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.semantic-note-add-row {
+  display: flex;
+  gap: var(--s-spacing-sm);
+  align-items: center;
+}
+.semantic-note-input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Acciones del servicio ───────────────────────────────── */
 .servicio-acciones {
   display: flex;
   gap: var(--s-spacing-sm);
@@ -93,14 +137,21 @@
   border-top: 1px solid var(--s-border);
 }
 
-/* Items complejos */
-.precio-container { margin-bottom: var(--s-spacing); }
+/* ── Sección de items (servicio complejo) ────────────────── */
+.items-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-spacing-sm);
+}
+.items-section-title {
+  font-weight: 600;
+  margin: 0;
+}
 
 .items-list {
   display: flex;
   flex-direction: column;
   gap: var(--s-spacing-sm);
-  margin-bottom: var(--s-spacing);
 }
 
 .item-row {
@@ -110,36 +161,111 @@
   flex-wrap: wrap;
 }
 
-.item-nombre { flex: 1; min-width: 120px; }
-.item-precio { min-width: 100px; text-align: right; }
+.item-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-nombre {
+  font-weight: 500;
+}
+
+.item-meta {
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
 
 .item-remove {
-  background: none; border: none; padding: 0; margin: 0;
-  cursor: pointer; font-size: 1.2rem; line-height: 1;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
-.item-add-row {
-  display: flex; gap: var(--s-spacing-sm); align-items: center; flex-wrap: wrap;
+.items-empty {
+  font-style: italic;
+  padding: var(--s-spacing-sm);
 }
 
-.item-input { flex: 1; min-width: 120px; }
+/* Form para agregar item */
+.item-add-form {
+  display: flex;
+  gap: var(--s-spacing-sm);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: var(--s-spacing-sm);
+  padding-top: var(--s-spacing-sm);
+  border-top: 1px dashed var(--s-border);
+}
 
-/* Imagen */
-.imagen-preview { margin-bottom: var(--s-spacing-sm); }
+.item-input {
+  flex: 1;
+  min-width: 120px;
+}
+.item-input--nombre { flex: 2; }
+.item-input--precio,
+.item-input--duracion {
+  flex: 1;
+  min-width: 100px;
+}
+
+/* ── Imagen ──────────────────────────────────────────────── */
+.imagen-preview {
+  margin-bottom: var(--s-spacing-sm);
+}
 .imagen-preview-remove {
-  background: none; border: none; padding: 0; cursor: pointer;
-  color: inherit; font-size: 0.9rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font-size: 0.9rem;
 }
-.imagen-sep { text-align: center; margin: var(--s-spacing-sm) 0; }
-.imagen-url-input { width: 100%; }
+.imagen-sep {
+  text-align: center;
+  margin: var(--s-spacing-sm) 0;
+}
+.imagen-url-input {
+  width: 100%;
+}
 
-/* Responsive */
+/* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
-  #skeleton-page { padding: var(--s-spacing); }
+  #skeleton-page {
+    padding: var(--s-spacing);
+  }
 
-  .servicio-acciones { width: 100%; }
-  .servicio-acciones button { flex: 1; min-width: 0; }
+  .servicio-acciones {
+    width: 100%;
+  }
+  .servicio-acciones button {
+    flex: 1;
+    min-width: 0;
+  }
 
-  .item-row, .item-add-row { flex-direction: column; align-items: stretch; }
-  .item-precio { text-align: left; }
+  .item-row,
+  .item-add-form,
+  .semantic-note-add-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .item-input,
+  .item-input--nombre,
+  .item-input--precio,
+  .item-input--duracion,
+  .semantic-note-input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .item-meta {
+    text-align: left;
+  }
 }
