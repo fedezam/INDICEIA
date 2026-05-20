@@ -26,14 +26,46 @@ import './servicios.css';
 
 const storage = getStorage();
 
+// ============================================================
+// MODELO DRAFT
+// {
+//   tipo: 'simple' | 'complejo'
+//   nombre: string
+//   descripcion: string
+//   disponibilidad: 'inmediata' | 'a_coordinar' | null
+//   semantic_notes: string[]
+//   imagen: string
+//
+//   // solo tipo simple:
+//   precio: { tipo: 'fijo'|'consultar', valor?: number } | null
+//   duracion: number | null
+//
+//   // solo tipo complejo:
+//   items: [{ nombre, precio, duracion }]
+// }
+// ============================================================
+
+const _draftVacio = () => ({
+  tipo:           'simple',
+  nombre:         '',
+  descripcion:    '',
+  disponibilidad: null,
+  semantic_notes: [],
+  imagen:         '',
+  precio:         null,
+  duracion:       null,
+  items:          [],
+});
+
 const page = {
   _data: {
     serviciosAcumulados: [],
-    draft: { tipo: 'simple' }
+    draft: _draftVacio(),
   },
   _comercioId:       null,
   _originalSnapshot: [],
   _formCard:         null,
+  _listaCard:        null,
 
   async _subirImagenServicio(file) {
     if (!this._comercioId) throw new Error('Sin comercioId');
@@ -47,18 +79,18 @@ const page = {
     this._comercioId = ctx.comercioId;
     if (!this._comercioId) {
       this._data.serviciosAcumulados = [];
-      this._data.draft = { tipo: 'simple' };
+      this._data.draft = _draftVacio();
       return;
     }
     try {
       const serviciosRef = collection(db, 'entidades', this._comercioId, 'servicios');
       const snapshot     = await getDocs(serviciosRef);
-      this._data.serviciosAcumulados = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      this._data.serviciosAcumulados = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     } catch (err) {
       console.error('Error cargando servicios:', err);
       this._data.serviciosAcumulados = [];
     }
-    this._data.draft       = { tipo: 'simple' };
+    this._data.draft       = _draftVacio();
     this._originalSnapshot = structuredClone(this._data.serviciosAcumulados);
   },
 
@@ -92,24 +124,37 @@ const page = {
     root.appendChild(this._renderSaveButton());
   },
 
+  // ──────────────────────────────────────────────────────────
+  // FORM PRINCIPAL
+  // ──────────────────────────────────────────────────────────
   _renderFormContent() {
     const container = document.createElement('div');
     container.className = 'form-content';
 
+    // 1. Tipo de servicio
     container.appendChild(this._renderTipoServicioField());
+
+    // 2. Nombre + descripción + disponibilidad (siempre visibles)
     container.appendChild(this._renderNombreField());
     container.appendChild(this._renderDescripcionField());
-
-    this._precioContainer = document.createElement('div');
-    this._precioContainer.className = 'precio-container';
-    this._precioContainer.appendChild(this._renderPrecioSegunTipo());
-    container.appendChild(this._precioContainer);
-
-    container.appendChild(this._renderDuracionField());
     container.appendChild(this._renderDisponibilidadField());
+
+    // 3. Sección variable según tipo
+    const variableContainer = document.createElement('div');
+    variableContainer.className = 'variable-container';
+    variableContainer.appendChild(
+      this._data.draft.tipo === 'complejo'
+        ? this._renderItemsSection()
+        : this._renderSimpleFields()
+    );
+    container.appendChild(variableContainer);
+
+    // 4. Opcionales comunes
+    container.appendChild(this._renderUrgenciasField());
     container.appendChild(this._renderImagenField());
     container.appendChild(this._renderSemanticNotesField());
 
+    // 5. Botón agregar
     container.appendChild(createButton({
       label:   'Agregar este servicio',
       variant: 'success',
@@ -127,20 +172,25 @@ const page = {
       name:        'svc-tipo',
       required:    true,
       mode:        'single',
-      orientation: 'vertical',
+      orientation: 'horizontal',
       options: [
-        { value: 'simple',   label: 'Servicio simple',       description: 'Precio único para todos los clientes.' },
-        { value: 'complejo', label: 'Servicio con opciones', description: 'El precio varía según zona, tamaño, tipo, etc.' }
+        { value: 'simple',   label: '⚡ Servicio simple',   description: 'Un precio, una duración.' },
+        { value: 'complejo', label: '🔀 Con variantes',     description: 'Depilación, tintura... tiene opciones.' }
       ],
       value: this._data.draft.tipo || 'simple',
       actions: {
         onChange: (value) => {
-          this._data.draft.tipo = value;
-          delete this._data.draft.precio;
-          delete this._data.draft.items;
-          delete this._data.draft.unidad;
-          this._precioContainer.innerHTML = '';
-          this._precioContainer.appendChild(this._renderPrecioSegunTipo());
+          this._data.draft.tipo    = value;
+          this._data.draft.precio  = null;
+          this._data.draft.duracion = null;
+          this._data.draft.items   = [];
+          const vc = this._formCard?.querySelector('.variable-container');
+          if (vc) vc.replaceWith((() => {
+            const d = document.createElement('div');
+            d.className = 'variable-container';
+            d.appendChild(value === 'complejo' ? this._renderItemsSection() : this._renderSimpleFields());
+            return d;
+          })());
           document.dispatchEvent(new Event('change'));
         }
       }
@@ -151,8 +201,9 @@ const page = {
     return createFormField({
       label:    '¿Cómo se llama este servicio? *',
       required: true,
-      helpText: 'Ej: "Corte de pelo", "Depilación definitiva"',
-      actions:  { onChange: (v) => { const t = v.trim(); t ? (this._data.draft.nombre = t) : delete this._data.draft.nombre; } }
+      helpText: 'Ej: "Corte de pelo", "Depilación definitiva", "Tintura"',
+      value:    this._data.draft.nombre,
+      actions:  { onChange: (v) => { this._data.draft.nombre = v.trim(); } }
     });
   },
 
@@ -160,109 +211,44 @@ const page = {
     return createFormField({
       label:    'Descripción',
       type:     'textarea',
-      rows:     3,
-      helpText: 'Agregá detalles que ayuden a entender mejor el servicio',
-      actions:  { onChange: (v) => { const t = v.trim(); t ? (this._data.draft.descripcion = t) : delete this._data.draft.descripcion; } }
+      rows:     2,
+      helpText: 'Breve descripción del servicio',
+      value:    this._data.draft.descripcion,
+      actions:  { onChange: (v) => { this._data.draft.descripcion = v.trim(); } }
     });
   },
 
-  _renderDuracionField() {
-    return createFormField({
-      label:    'Duración aproximada (minutos)',
-      type:     'number',
-      helpText: 'Opcional — si no podés estimarla, dejalo vacío',
-      actions:  { onChange: (v) => { const n = Number(v); n > 0 ? (this._data.draft.duracion_minutos = n) : delete this._data.draft.duracion_minutos; } }
-    });
-  },
-
-  // ── SEMANTIC NOTES — input dinámico ──────────────────────────
-  _renderSemanticNotesField() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 's-form-field campo-compuesto';
-
-    const label = document.createElement('label');
-    label.className   = 's-label';
-    label.textContent = 'Aclaraciones para la IA (opcionales)';
-    wrapper.appendChild(label);
-
-    const help = document.createElement('small');
-    help.className   = 's-help';
-    help.textContent = 'Agregá detalles que ayuden a responder mejor preguntas sobre este servicio. Una aclaración por línea.';
-    wrapper.appendChild(help);
-
-    // lista de notas cargadas
-    const list = document.createElement('ul');
-    list.className = 'semantic-notes-list';
-
-    const renderList = () => {
-      list.innerHTML = '';
-      const notes = this._data.draft.semantic_notes || [];
-      notes.forEach((note, i) => {
-        const li = document.createElement('li');
-        li.className = 'semantic-note-item';
-
-        const text = document.createElement('span');
-        text.textContent = note;
-        li.appendChild(text);
-
-        const removeBtn = document.createElement('button');
-        removeBtn.type      = 'button';
-        removeBtn.className = 'semantic-note-remove';
-        removeBtn.innerHTML = '×';
-        removeBtn.addEventListener('click', () => {
-          this._data.draft.semantic_notes.splice(i, 1);
-          if (!this._data.draft.semantic_notes.length) delete this._data.draft.semantic_notes;
-          renderList();
-        });
-        li.appendChild(removeBtn);
-        list.appendChild(li);
-      });
-    };
-
-    renderList();
-    wrapper.appendChild(list);
-
-    // fila input + botón
-    const addRow = document.createElement('div');
-    addRow.className = 'semantic-note-add-row';
-
-    const input = document.createElement('input');
-    input.type        = 'text';
-    input.className   = 'semantic-note-input';
-    input.placeholder = 'Ej: Evitar exposición solar 72hs después del tratamiento';
-
-    const addBtn = createButton({
-      label:   'Agregar',
-      variant: 'secondary',
-      size:    'sm',
-      icon:    'fa-plus',
-      onClick: () => {
-        const val = input.value.trim();
-        if (!val) return;
-        if (!this._data.draft.semantic_notes) this._data.draft.semantic_notes = [];
-        this._data.draft.semantic_notes.push(val);
-        input.value = '';
-        input.focus();
-        renderList();
+  _renderDisponibilidadField() {
+    return createCheckboxGroup({
+      label:    '¿Cuándo está disponible? *',
+      name:     'disponibilidad',
+      required: true,
+      mode:     'single',
+      options: [
+        { value: 'inmediata',   label: 'Inmediata',   description: 'Sin turno, por orden de llegada' },
+        { value: 'a_coordinar', label: 'A coordinar', description: 'Requiere turno o agenda previa'  }
+      ],
+      value: this._data.draft.disponibilidad || null,
+      actions: {
+        onChange: (value) => {
+          this._data.draft.disponibilidad = value || null;
+          document.dispatchEvent(new Event('change'));
+        }
       }
     });
-
-    // agregar con Enter
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
-    });
-
-    addRow.appendChild(input);
-    addRow.appendChild(addBtn);
-    wrapper.appendChild(addRow);
-
-    return wrapper;
   },
 
-  _renderPrecioSegunTipo() {
-    return this._data.draft.tipo === 'complejo'
-      ? this._renderItemsField()
-      : this._renderPrecioSimpleField();
+  // ──────────────────────────────────────────────────────────
+  // SERVICIO SIMPLE — precio + duración directos
+  // ──────────────────────────────────────────────────────────
+  _renderSimpleFields() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'simple-fields';
+
+    wrapper.appendChild(this._renderPrecioSimpleField());
+    wrapper.appendChild(this._renderDuracionField());
+
+    return wrapper;
   },
 
   _renderPrecioSimpleField() {
@@ -289,7 +275,7 @@ const page = {
             this._data.draft.precio = { tipo: 'fijo', valor: Number(this._precioInput?.getValue() || 0) };
             this._precioInput?.enable();
           } else {
-            delete this._data.draft.precio;
+            this._data.draft.precio = null;
             this._precioInput?.disable();
             this._precioInput?.setValue('');
           }
@@ -317,20 +303,34 @@ const page = {
     return wrapper;
   },
 
-  _renderItemsField() {
+  _renderDuracionField() {
+    return createFormField({
+      label:    'Duración aproximada (minutos)',
+      type:     'number',
+      helpText: 'Opcional',
+      value:    this._data.draft.duracion || '',
+      actions:  { onChange: (v) => { const n = Number(v); this._data.draft.duracion = n > 0 ? n : null; } }
+    });
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // SERVICIO COMPLEJO — items con herencia
+  // ──────────────────────────────────────────────────────────
+  _renderItemsSection() {
     const wrapper = document.createElement('div');
-    wrapper.className = 's-form-field campo-compuesto';
+    wrapper.className = 'items-section';
 
-    wrapper.appendChild(createFormField({
-      label:       '¿De qué depende el precio?',
-      placeholder: 'Ej: zona del cuerpo, tamaño, tipo de material',
-      helpText:    'Describí en pocas palabras qué define el precio de cada opción',
-      value:       this._data.draft.unidad || '',
-      actions:     { onChange: (v) => { const t = v.trim(); t ? (this._data.draft.unidad = t) : delete this._data.draft.unidad; } }
-    }));
+    const sectionTitle = document.createElement('p');
+    sectionTitle.className = 'items-section-title';
+    sectionTitle.textContent = 'Variantes del servicio';
+    wrapper.appendChild(sectionTitle);
 
-    if (!this._data.draft.items) this._data.draft.items = [];
+    const help = document.createElement('small');
+    help.className   = 's-help';
+    help.textContent = 'Cada variante puede tener su propio precio y duración. Lo que no completes se muestra como "a consultar".';
+    wrapper.appendChild(help);
 
+    // Lista de items ya cargados
     const itemsContainer = document.createElement('div');
     itemsContainer.className = 'items-list';
 
@@ -339,19 +339,41 @@ const page = {
       if (!this._data.draft.items.length) {
         const empty = document.createElement('p');
         empty.className   = 'items-empty';
-        empty.textContent = 'Todavía no agregaste opciones.';
+        empty.textContent = 'Todavía no agregaste variantes.';
         itemsContainer.appendChild(empty);
         return;
       }
       this._data.draft.items.forEach((item, i) => {
         const row = document.createElement('div');
         row.className = 'item-row';
-        row.appendChild(Object.assign(document.createElement('span'), { className: 'item-nombre', textContent: item.n }));
-        row.appendChild(Object.assign(document.createElement('span'), { className: 'item-precio', textContent: item.p ? `$${item.p.toLocaleString('es-AR')}` : 'A consultar' }));
+
+        const info = document.createElement('div');
+        info.className = 'item-info';
+
+        const nombre = document.createElement('span');
+        nombre.className   = 'item-nombre';
+        nombre.textContent = item.nombre;
+        info.appendChild(nombre);
+
+        const meta = document.createElement('span');
+        meta.className = 'item-meta';
+        const partes = [];
+        if (item.precio)   partes.push(`$${item.precio.toLocaleString('es-AR')}`);
+        else               partes.push('A consultar');
+        if (item.duracion) partes.push(`${item.duracion} min`);
+        meta.textContent = partes.join(' · ');
+        info.appendChild(meta);
+
+        row.appendChild(info);
+
         const removeBtn = document.createElement('button');
+        removeBtn.type      = 'button';
         removeBtn.className = 'item-remove';
         removeBtn.innerHTML = '×';
-        removeBtn.addEventListener('click', () => { this._data.draft.items.splice(i, 1); renderItems(); });
+        removeBtn.addEventListener('click', () => {
+          this._data.draft.items.splice(i, 1);
+          renderItems();
+        });
         row.appendChild(removeBtn);
         itemsContainer.appendChild(row);
       });
@@ -360,53 +382,81 @@ const page = {
     renderItems();
     wrapper.appendChild(itemsContainer);
 
-    const addRow = document.createElement('div');
-    addRow.className = 'item-add-row';
+    // Mini-form para agregar item
+    const addForm = document.createElement('div');
+    addForm.className = 'item-add-form';
 
-    const inputNombre = Object.assign(document.createElement('input'), { type: 'text',   className: 'item-input item-input--nombre', placeholder: 'Ej: Axilas' });
-    const inputPrecio = Object.assign(document.createElement('input'), { type: 'number', className: 'item-input item-input--precio', placeholder: 'Precio (opcional)' });
+    const inputNombre = document.createElement('input');
+    inputNombre.type        = 'text';
+    inputNombre.className   = 'item-input item-input--nombre';
+    inputNombre.placeholder = 'Nombre de la variante *  (ej: Axilas)';
+
+    const inputPrecio = document.createElement('input');
+    inputPrecio.type        = 'number';
+    inputPrecio.className   = 'item-input item-input--precio';
+    inputPrecio.placeholder = 'Precio (opcional)';
+
+    const inputDuracion = document.createElement('input');
+    inputDuracion.type        = 'number';
+    inputDuracion.className   = 'item-input item-input--duracion';
+    inputDuracion.placeholder = 'Duración en min (opcional)';
 
     const addBtn = createButton({
-      label: 'Agregar', variant: 'secondary', size: 'sm', icon: 'fa-plus',
+      label:   'Agregar variante',
+      variant: 'secondary',
+      size:    'sm',
+      icon:    'fa-plus',
       onClick: () => {
-        const nombre = inputNombre.value.trim();
-        if (!nombre) return showToast('Escribí el nombre de la opción', 'warning');
-        const precio  = Number(inputPrecio.value);
-        const newItem = { n: nombre };
-        if (precio > 0) newItem.p = precio;
-        this._data.draft.items.push(newItem);
-        inputNombre.value = '';
-        inputPrecio.value = '';
+        const nombre   = inputNombre.value.trim();
+        const precio   = Number(inputPrecio.value) || null;
+        const duracion = Number(inputDuracion.value) || null;
+
+        if (!nombre) {
+          showToast('Falta el nombre de la variante', 'warning');
+          return;
+        }
+
+        this._data.draft.items.push({ nombre, precio, duracion });
+        inputNombre.value   = '';
+        inputPrecio.value   = '';
+        inputDuracion.value = '';
+        inputNombre.focus();
         renderItems();
       }
     });
 
-    addRow.append(inputNombre, inputPrecio, addBtn);
-    wrapper.appendChild(addRow);
+    // Agregar con Enter en el campo nombre
+    inputNombre.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
+    });
+
+    addForm.appendChild(inputNombre);
+    addForm.appendChild(inputPrecio);
+    addForm.appendChild(inputDuracion);
+    addForm.appendChild(addBtn);
+    wrapper.appendChild(addForm);
+
     return wrapper;
   },
 
-  _renderDisponibilidadField() {
+  // ──────────────────────────────────────────────────────────
+  // URGENCIAS
+  // ──────────────────────────────────────────────────────────
+  _renderUrgenciasField() {
     return createCheckboxGroup({
-      label:    '¿Cuándo está disponible? *',
-      name:     'disponibilidad',
-      required: true,
-      mode:     'single',
-      options: [
-        { value: 'inmediata',   label: 'Inmediata',   description: 'Sin turno, por orden de llegada' },
-        { value: 'a_coordinar', label: 'A coordinar', description: 'Requiere turno o agenda previa'  }
-      ],
-      value: this._data.draft.disponibilidad || null,
-      actions: {
-        onChange: (value) => {
-          if (value) this._data.draft.disponibilidad = value;
-          else delete this._data.draft.disponibilidad;
-          document.dispatchEvent(new Event('change'));
-        }
-      }
+      label: 'Urgencias', name: 'atiende_urgencias',
+      value: this._data.draft.atiende_urgencias ? ['si'] : [],
+      options: [{
+        value: 'si', label: 'Atiendo emergencias fuera de horario',
+        description: 'Si marcás esta opción, tu asistente les avisará a los clientes que pueden contactarte ante una urgencia...'
+      }],
+      actions: { onChange: (values) => { this._data.draft.atiende_urgencias = values.includes('si'); } }
     });
   },
 
+  // ──────────────────────────────────────────────────────────
+  // IMAGEN
+  // ──────────────────────────────────────────────────────────
   _renderImagenField() {
     const wrapper = document.createElement('div');
     wrapper.className = 's-form-field campo-compuesto';
@@ -418,7 +468,7 @@ const page = {
 
     const help = document.createElement('small');
     help.className   = 's-help';
-    help.textContent = 'Subí una foto de un trabajo realizado o pegá un link de Instagram, Google Fotos, etc.';
+    help.textContent = 'Subí una foto de un trabajo realizado o pegá un link.';
     wrapper.appendChild(help);
 
     const preview = document.createElement('div');
@@ -479,6 +529,122 @@ const page = {
     return wrapper;
   },
 
+  // ──────────────────────────────────────────────────────────
+  // SEMANTIC NOTES
+  // ──────────────────────────────────────────────────────────
+  _renderSemanticNotesField() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 's-form-field campo-compuesto';
+
+    const label = document.createElement('label');
+    label.className   = 's-label';
+    label.textContent = 'Aclaraciones para la IA (opcionales)';
+    wrapper.appendChild(label);
+
+    const help = document.createElement('small');
+    help.className   = 's-help';
+    help.textContent = 'Detalles que ayuden a responder mejor preguntas sobre este servicio.';
+    wrapper.appendChild(help);
+
+    const list = document.createElement('ul');
+    list.className = 'semantic-notes-list';
+
+    const renderList = () => {
+      list.innerHTML = '';
+      const notes = this._data.draft.semantic_notes || [];
+      notes.forEach((note, i) => {
+        const li = document.createElement('li');
+        li.className = 'semantic-note-item';
+        const text = document.createElement('span');
+        text.textContent = note;
+        li.appendChild(text);
+        const removeBtn = document.createElement('button');
+        removeBtn.type      = 'button';
+        removeBtn.className = 'semantic-note-remove';
+        removeBtn.innerHTML = '×';
+        removeBtn.addEventListener('click', () => {
+          this._data.draft.semantic_notes.splice(i, 1);
+          if (!this._data.draft.semantic_notes.length) delete this._data.draft.semantic_notes;
+          renderList();
+        });
+        li.appendChild(removeBtn);
+        list.appendChild(li);
+      });
+    };
+
+    renderList();
+    wrapper.appendChild(list);
+
+    const addRow = document.createElement('div');
+    addRow.className = 'semantic-note-add-row';
+
+    const input = document.createElement('input');
+    input.type        = 'text';
+    input.className   = 'semantic-note-input';
+    input.placeholder = 'Ej: Evitar exposición solar 72hs después del tratamiento';
+
+    const addBtn = createButton({
+      label: 'Agregar', variant: 'secondary', size: 'sm', icon: 'fa-plus',
+      onClick: () => {
+        const val = input.value.trim();
+        if (!val) return;
+        if (!this._data.draft.semantic_notes) this._data.draft.semantic_notes = [];
+        this._data.draft.semantic_notes.push(val);
+        input.value = '';
+        input.focus();
+        renderList();
+      }
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
+    });
+
+    addRow.appendChild(input);
+    addRow.appendChild(addBtn);
+    wrapper.appendChild(addRow);
+
+    return wrapper;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // VALIDACIÓN Y AGREGAR
+  // ──────────────────────────────────────────────────────────
+  _isDraftValid() {
+    const d = this._data.draft;
+    if (!d.nombre?.trim())    return false;
+    if (!d.disponibilidad)    return false;
+    if (d.tipo === 'complejo') return d.items.length > 0;
+    return true;
+  },
+
+  _agregarServicio() {
+    if (!this._isDraftValid()) {
+      const msg = this._data.draft.tipo === 'complejo'
+        ? 'Completá: Nombre, Disponibilidad y al menos una variante'
+        : 'Completá: Nombre y Disponibilidad';
+      showToast(msg, 'warning');
+      return;
+    }
+
+    const servicio = structuredClone(this._data.draft);
+    servicio.activo = true;
+
+    // Para servicio simple, normalizamos precio
+    if (servicio.tipo === 'simple' && !servicio.precio) {
+      servicio.precio = { tipo: 'consultar' };
+    }
+
+    this._data.serviciosAcumulados.push(servicio);
+    this._data.draft = _draftVacio();
+    this._limpiarFormulario();
+    this._refreshLista();
+    showToast('✅ Servicio agregado. Podés crear otro o guardar cuando termines.', 'success');
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // LISTA DE SERVICIOS
+  // ──────────────────────────────────────────────────────────
   _renderListaContent() {
     const container = document.createElement('div');
     container.id = 'lista-servicios-container';
@@ -498,8 +664,8 @@ const page = {
   },
 
   _renderServicioCard(servicio, index) {
-    const activo   = servicio.activo !== false;
-    const esSimple = servicio.tipo !== 'complejo';
+    const activo    = servicio.activo !== false;
+    const esComplejo = servicio.tipo === 'complejo';
 
     const contentDiv = document.createElement('div');
 
@@ -514,7 +680,11 @@ const page = {
     const tags = document.createElement('div');
     tags.className = 'servicio-tags';
 
-    tags.appendChild(createBadge({ text: esSimple ? 'Simple' : 'Con opciones', variant: esSimple ? 'info' : 'warning', size: 'small' }));
+    tags.appendChild(createBadge({
+      text:    esComplejo ? 'Con variantes' : 'Simple',
+      variant: esComplejo ? 'warning' : 'info',
+      size:    'small'
+    }));
 
     if (servicio.disponibilidad) {
       tags.appendChild(createBadge({
@@ -524,16 +694,15 @@ const page = {
       }));
     }
 
-    if (esSimple) {
+    if (!esComplejo) {
       tags.appendChild(createBadge({
         text:    servicio.precio?.valor ? `$${servicio.precio.valor.toLocaleString('es-AR')}` : 'A consultar',
         variant: servicio.precio?.valor ? 'success' : 'secondary',
         size:    'small'
       }));
-    }
-
-    if (servicio.duracion_minutos) {
-      tags.appendChild(createBadge({ text: `⏱️ ${servicio.duracion_minutos} min`, variant: 'secondary', size: 'small' }));
+      if (servicio.duracion) {
+        tags.appendChild(createBadge({ text: `⏱️ ${servicio.duracion} min`, variant: 'secondary', size: 'small' }));
+      }
     }
 
     contentDiv.appendChild(tags);
@@ -545,15 +714,32 @@ const page = {
       contentDiv.appendChild(desc);
     }
 
+    // Items del servicio complejo
+    if (esComplejo && servicio.items?.length) {
+      const itemsDiv = document.createElement('div');
+      itemsDiv.className = 'servicio-items-lista';
+
+      const ul = document.createElement('ul');
+      servicio.items.forEach(item => {
+        const li = document.createElement('li');
+        const partes = [item.nombre];
+        if (item.precio)   partes.push(`$${item.precio.toLocaleString('es-AR')}`);
+        else               partes.push('A consultar');
+        if (item.duracion) partes.push(`${item.duracion} min`);
+        li.textContent = partes.join(' · ');
+        ul.appendChild(li);
+      });
+      itemsDiv.appendChild(ul);
+      contentDiv.appendChild(itemsDiv);
+    }
+
     if (servicio.semantic_notes?.length) {
       const notesDiv = document.createElement('div');
       notesDiv.className = 'servicio-semantic-notes';
-
       const title = document.createElement('small');
       title.className   = 'servicio-semantic-notes-title';
       title.textContent = '🧠 Aclaraciones para la IA:';
       notesDiv.appendChild(title);
-
       const ul = document.createElement('ul');
       ul.className = 'servicio-semantic-notes-list';
       servicio.semantic_notes.forEach(note => {
@@ -563,25 +749,6 @@ const page = {
       });
       notesDiv.appendChild(ul);
       contentDiv.appendChild(notesDiv);
-    }
-
-    if (!esSimple && servicio.items?.length) {
-      const itemsDiv = document.createElement('div');
-      itemsDiv.className = 'servicio-items';
-      if (servicio.unidad) {
-        const unidadP = document.createElement('p');
-        unidadP.className   = 'servicio-unidad';
-        unidadP.textContent = `Varía según: ${servicio.unidad}`;
-        itemsDiv.appendChild(unidadP);
-      }
-      const ul = document.createElement('ul');
-      servicio.items.forEach(item => {
-        const li = document.createElement('li');
-        li.textContent = item.p ? `${item.n} — $${item.p.toLocaleString('es-AR')}` : `${item.n} — A consultar`;
-        ul.appendChild(li);
-      });
-      itemsDiv.appendChild(ul);
-      contentDiv.appendChild(itemsDiv);
     }
 
     const actionsWrapper = document.createElement('div');
@@ -601,30 +768,6 @@ const page = {
     });
   },
 
-  _isDraftValid() {
-    const d = this._data.draft;
-    if (d.tipo === 'complejo') return !!d.nombre?.trim() && !!d.disponibilidad && d.items?.length > 0;
-    return !!d.nombre?.trim() && !!d.disponibilidad;
-  },
-
-  _agregarServicio() {
-    if (!this._isDraftValid()) {
-      showToast('Campos obligatorios',
-        this._data.draft.tipo === 'complejo'
-          ? 'Completá: Nombre, al menos una opción y Disponibilidad'
-          : 'Completá: Nombre y Disponibilidad',
-        'warning'
-      );
-      return;
-    }
-    if (this._data.draft.activo === undefined) this._data.draft.activo = true;
-    this._data.serviciosAcumulados.push(structuredClone(this._data.draft));
-    this._data.draft = { tipo: 'simple' };
-    this._limpiarFormulario();
-    this._refreshLista();
-    showToast('✅ Servicio agregado', 'Podés crear otro o guardar cuando termines', 'success');
-  },
-
   _limpiarFormulario() {
     const formContent = this._formCard?.querySelector('.form-content');
     if (formContent) formContent.replaceWith(this._renderFormContent());
@@ -637,7 +780,7 @@ const page = {
     const formContent = this._formCard?.querySelector('.form-content');
     if (formContent) formContent.replaceWith(this._renderFormContent());
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast('Modo edición', 'Modificá los campos y agregá el servicio nuevamente', 'info');
+    showToast('Modo edición — modificá y volvé a agregar el servicio', 'info');
   },
 
   _toggleServicio(index) {
@@ -648,7 +791,7 @@ const page = {
   _eliminarServicio(index) {
     this._data.serviciosAcumulados.splice(index, 1);
     this._refreshLista();
-    showToast('Eliminado', 'Servicio eliminado de la lista', 'info');
+    showToast('Servicio eliminado de la lista', 'info');
   },
 
   _refreshLista() {
@@ -657,6 +800,9 @@ const page = {
     this._listaCard = newLista;
   },
 
+  // ──────────────────────────────────────────────────────────
+  // SAVE BUTTON
+  // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
     const dirtyController = {
       hasUnsavedChanges: () => JSON.stringify(this._data.serviciosAcumulados) !== JSON.stringify(this._originalSnapshot),
@@ -683,14 +829,17 @@ const page = {
         existentes.docs.forEach(docSnap => batch.delete(docSnap.ref));
         this._data.serviciosAcumulados.forEach(servicio => {
           const { id, ...data } = servicio;
-          batch.set(doc(collection(db, 'entidades', comercioId, 'servicios')), { ...data, fechaActualizacion: serverTimestamp() });
+          batch.set(doc(collection(db, 'entidades', comercioId, 'servicios')), {
+            ...data,
+            fechaActualizacion: serverTimestamp()
+          });
         });
         batch.update(comercioRef, { 'onboardingSteps.servicios': true, fechaActualizacion: serverTimestamp() });
         await batch.commit();
         return true;
       },
-      onSuccess: () => showToast('💾 Servicios guardados', 'Redirigiendo...', 'success'),
-      onError:   (err) => { console.error('Error guardando servicios:', err); showToast('Error al guardar', err.message, 'error'); }
+      onSuccess: () => showToast('💾 Servicios guardados', 'success'),
+      onError:   (err) => { console.error('Error guardando servicios:', err); showToast('Error al guardar: ' + err.message, 'error'); }
     });
   }
 };
