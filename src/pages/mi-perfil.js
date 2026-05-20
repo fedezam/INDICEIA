@@ -13,6 +13,7 @@ import { createAutocomplete }      from '/src/skeleton/components/autocomplete/i
 import { showToast }               from '/src/skeleton/components/toast/index.js';
 import { db }                      from '/src/services/firebase/firebase.js';
 import { fillProvinciaSelector }   from '/src/shared/provincias.js';
+import { getLocalidades }          from '/src/shared/ciudades.js';
 import { rubroFromForm }           from '/src/shared/entity-context.js';
 import {
   doc, setDoc, updateDoc,
@@ -215,12 +216,14 @@ const page = {
     const autocompleteField = createAutocomplete({
       placeholder: 'Escribí el nombre de la localidad...',
       minChars: 2, debounceMs: 400, maxResults: 8, required: true,
+      
       fetchOptions: async (query) => {
         const provincia = this._refs.fields.provincia.input.value;
         if (!provincia) return [];
-        // Usá tu función existente de búsqueda (adaptala si es necesario)
-        return await buscarCiudades(provincia, query);
-      },
+        return getLocalidades(provincia).filter(l =>
+          l.nombre.toLowerCase().includes(query.toLowerCase())
+       );
+     },
       formatOption: (loc) => loc.nombre,
       getValue: (loc) => loc,
       onSelect: (loc) => {
@@ -319,8 +322,10 @@ const page = {
       fetchOptions: async (query) => {
         const provincia = this._refs.fields.provinciaZona.input.value;
         if (!provincia) return [];
-        return await buscarCiudades(provincia, query);
-      },
+        return getLocalidades(provincia).filter(l =>
+          l.nombre.toLowerCase().includes(query.toLowerCase())
+        );
+    },
       formatOption: (loc) => loc.nombre,
       getValue: (loc) => loc,
       onSelect: (loc) => { localidadZonaSeleccionada = loc; }
