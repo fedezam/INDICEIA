@@ -108,8 +108,7 @@ const page = {
     container.appendChild(this._renderDuracionField());
     container.appendChild(this._renderDisponibilidadField());
     container.appendChild(this._renderImagenField());
-    container.appendChild(this._renderNotasField());
-    container.appendChild(this._renderSemanticNotesField()); // ← NEW
+    container.appendChild(this._renderSemanticNotesField());
 
     container.appendChild(createButton({
       label:   'Agregar este servicio',
@@ -176,34 +175,88 @@ const page = {
     });
   },
 
-  _renderNotasField() {
-    return createFormField({
-      label:    'Notas adicionales',
-      type:     'textarea',
-      rows:     3,
-      helpText: 'Requisitos, aclaraciones, horarios especiales, etc.',
-      actions:  { onChange: (v) => { const t = v.trim(); t ? (this._data.draft.notas = t) : delete this._data.draft.notas; } }
-    });
-  },
-
-  // ← NEW: Campo semántico (texto libre → array)
+  // ── SEMANTIC NOTES — input dinámico ──────────────────────────
   _renderSemanticNotesField() {
-    const draftNotes = this._data.draft.semantic_notes?.join('\n') || '';
-    return createFormField({
-      label:    'Aclaraciones importantes sobre este servicio',
-      type:     'textarea',
-      rows:     4,
-      value:    draftNotes,
-      helpText: 'Escribí una aclaración por línea.\nEj:\n• Requiere evaluación previa\n• Evitar exposición solar inmediata',
-      actions:  {
-        onChange: (v) => {
-          const notes = v.split('\n').map(l => l.trim()).filter(Boolean);
-          notes.length > 0
-            ? (this._data.draft.semantic_notes = notes)
-            : delete this._data.draft.semantic_notes;
-        }
+    const wrapper = document.createElement('div');
+    wrapper.className = 's-form-field campo-compuesto';
+
+    const label = document.createElement('label');
+    label.className   = 's-label';
+    label.textContent = 'Aclaraciones para la IA (opcionales)';
+    wrapper.appendChild(label);
+
+    const help = document.createElement('small');
+    help.className   = 's-help';
+    help.textContent = 'Agregá detalles que ayuden a responder mejor preguntas sobre este servicio. Una aclaración por línea.';
+    wrapper.appendChild(help);
+
+    // lista de notas cargadas
+    const list = document.createElement('ul');
+    list.className = 'semantic-notes-list';
+
+    const renderList = () => {
+      list.innerHTML = '';
+      const notes = this._data.draft.semantic_notes || [];
+      notes.forEach((note, i) => {
+        const li = document.createElement('li');
+        li.className = 'semantic-note-item';
+
+        const text = document.createElement('span');
+        text.textContent = note;
+        li.appendChild(text);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type      = 'button';
+        removeBtn.className = 'semantic-note-remove';
+        removeBtn.innerHTML = '×';
+        removeBtn.addEventListener('click', () => {
+          this._data.draft.semantic_notes.splice(i, 1);
+          if (!this._data.draft.semantic_notes.length) delete this._data.draft.semantic_notes;
+          renderList();
+        });
+        li.appendChild(removeBtn);
+        list.appendChild(li);
+      });
+    };
+
+    renderList();
+    wrapper.appendChild(list);
+
+    // fila input + botón
+    const addRow = document.createElement('div');
+    addRow.className = 'semantic-note-add-row';
+
+    const input = document.createElement('input');
+    input.type        = 'text';
+    input.className   = 'semantic-note-input';
+    input.placeholder = 'Ej: Evitar exposición solar 72hs después del tratamiento';
+
+    const addBtn = createButton({
+      label:   'Agregar',
+      variant: 'secondary',
+      size:    'sm',
+      icon:    'fa-plus',
+      onClick: () => {
+        const val = input.value.trim();
+        if (!val) return;
+        if (!this._data.draft.semantic_notes) this._data.draft.semantic_notes = [];
+        this._data.draft.semantic_notes.push(val);
+        input.value = '';
+        input.focus();
+        renderList();
       }
     });
+
+    // agregar con Enter
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
+    });
+
+    addRow.appendChild(input);
+    addRow.appendChild(addBtn);
+    wrapper.appendChild(addRow);
+
+    return wrapper;
   },
 
   _renderPrecioSegunTipo() {
@@ -492,14 +545,13 @@ const page = {
       contentDiv.appendChild(desc);
     }
 
-    // ← NEW: Render de semantic_notes
     if (servicio.semantic_notes?.length) {
       const notesDiv = document.createElement('div');
       notesDiv.className = 'servicio-semantic-notes';
-      
+
       const title = document.createElement('small');
-      title.className = 'servicio-semantic-notes-title';
-      title.textContent = '⚠️ Aclaraciones importantes:';
+      title.className   = 'servicio-semantic-notes-title';
+      title.textContent = '🧠 Aclaraciones para la IA:';
       notesDiv.appendChild(title);
 
       const ul = document.createElement('ul');
@@ -530,13 +582,6 @@ const page = {
       });
       itemsDiv.appendChild(ul);
       contentDiv.appendChild(itemsDiv);
-    }
-
-    if (servicio.notas) {
-      const notas = document.createElement('p');
-      notas.className   = 'servicio-notas';
-      notas.textContent = servicio.notas;
-      contentDiv.appendChild(notas);
     }
 
     const actionsWrapper = document.createElement('div');
