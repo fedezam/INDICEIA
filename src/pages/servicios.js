@@ -26,7 +26,6 @@ import './servicios.css';
 
 const storage = getStorage();
 const XLSX = window.XLSX;
-const TEMPLATE_FIRMA = 'indiceia_servicios_v1';
 
 // ============================================================
 // MODELO DRAFT
@@ -37,38 +36,78 @@ const TEMPLATE_FIRMA = 'indiceia_servicios_v1';
 //   disponibilidad: 'inmediata' | 'a_coordinar' | null
 //   semantic_notes: string[]
 //   imagen: string
+//   atiende_urgencias: boolean
 //
-//   // solo tipo simple:
+//   // solo tipo simple (o hijo de complejo):
 //   precio: { tipo: 'fijo'|'consultar', valor?: number } | null
 //   duracion: number | null
 //
-//   // solo tipo complejo:
-//   items: [{ nombre, precio, duracion }]
+//   // solo tipo complejo (padre):
+//   _tempId: string   ← ID local hasta que se guarda en Firestore
+// }
+//
+// Hijos en serviciosAcumulados:
+// {
+//   tipo: 'simple'
+//   _parentTempId: string  ← referencia al _tempId del padre (o parent_id si ya existe)
+//   parent_id: string      ← se asigna al guardar en Firestore
+//   ...campos de servicio simple
 // }
 // ============================================================
 
 const _draftVacio = () => ({
-  tipo:           'simple',
-  nombre:         '',
-  descripcion:    '',
-  disponibilidad: null,
-  semantic_notes: [],
-  imagen:         '',
-  precio:         null,
-  duracion:       null,
-  items:          [],
+  tipo:               'simple',
+  nombre:             '',
+  descripcion:        '',
+  disponibilidad:     null,
+  semantic_notes:     [],
+  imagen:             '',
+  atiende_urgencias:  false,
+  precio:             null,
+  duracion:           null,
 });
+
+const _draftVarianteVacio = (parentRef) => ({
+  tipo:               'simple',
+  nombre:             '',
+  descripcion:        '',
+  disponibilidad:     null,
+  semantic_notes:     [],
+  precio:             null,
+  duracion:           null,
+  _parentTempId:      parentRef,   // _tempId del padre (o id real si ya existe)
+});
+
+const _generarTempId = () => `tmp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
 const page = {
   _data: {
     serviciosAcumulados: [],
-    draft: _draftVacio(),
+    draft:               _draftVacio(),
+    draftVariante:       null,   // { parentRef, fields } — null = form cerrado
   },
   _comercioId:       null,
   _originalSnapshot: [],
   _formCard:         null,
   _listaCard:        null,
 
+  // ──────────────────────────────────────────────────────────
+  // HELPERS DE ACCESO
+  // ──────────────────────────────────────────────────────────
+  _getPadres() {
+    return this._data.serviciosAcumulados.filter(s => !s._parentTempId && !s.parent_id);
+  },
+
+  _getHijos(parentRef) {
+    // parentRef puede ser _tempId (local) o id real (Firestore)
+    return this._data.serviciosAcumulados.filter(
+      s => s._parentTempId === parentRef || s.parent_id === parentRef
+    );
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // CARGA
+  // ──────────────────────────────────────────────────────────
   async _subirImagenServicio(file) {
     if (!this._comercioId) throw new Error('Sin comercioId');
     const filename = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
@@ -92,10 +131,14 @@ const page = {
       console.error('Error cargando servicios:', err);
       this._data.serviciosAcumulados = [];
     }
-    this._data.draft       = _draftVacio();
-    this._originalSnapshot = structuredClone(this._data.serviciosAcumulados);
+    this._data.draft               = _draftVacio();
+    this._data.draftVariante       = null;
+    this._originalSnapshot         = structuredClone(this._data.serviciosAcumulados);
   },
 
+  // ──────────────────────────────────────────────────────────
+  // RENDER PRINCIPAL
+  // ──────────────────────────────────────────────────────────
   render() {
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
@@ -109,13 +152,11 @@ const page = {
     hint.textContent = 'Definí todos los servicios que ofrecés.';
     root.appendChild(hint);
 
-    // ── CAMBIO 3: Import va primero ──────────────────────────
     root.appendChild(this._renderImportCard());
 
-    // ── Separador visual ─────────────────────────────────────
     const sep = document.createElement('p');
-    sep.className   = 'page-hint';
-    sep.textContent = 'O cargá servicios de a uno manualmente:';
+    sep.className       = 'page-hint';
+    sep.textContent     = 'O cargá servicios de a uno manualmente:';
     sep.style.marginTop = 'var(--s-spacing-lg)';
     root.appendChild(sep);
 
@@ -137,38 +178,46 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // FORM PRINCIPAL
+  // FORM PRINCIPAL — padre
   // ──────────────────────────────────────────────────────────
   _renderFormContent() {
     const container = document.createElement('div');
     container.className = 'form-content';
 
-    // 1. Tipo de servicio
+    const esComplejo = this._data.draft.tipo === 'complejo';
+
+    // 1. Tipo
     container.appendChild(this._renderTipoServicioField());
 
-    // 2. Nombre + descripción + disponibilidad (siempre visibles)
+    // 2. Nombre
     container.appendChild(this._renderNombreField());
+
+    // 3. Descripción
     container.appendChild(this._renderDescripcionField());
+
+    // 4. Disponibilidad
     container.appendChild(this._renderDisponibilidadField());
 
-    // 3. Sección variable según tipo
-    const variableContainer = document.createElement('div');
-    variableContainer.className = 'variable-container';
-    variableContainer.appendChild(
-      this._data.draft.tipo === 'complejo'
-        ? this._renderItemsSection()
-        : this._renderSimpleFields()
-    );
-    container.appendChild(variableContainer);
+    // 5. Si simple → precio + duración
+    if (!esComplejo) {
+      const variableContainer = document.createElement('div');
+      variableContainer.className = 'variable-container';
+      variableContainer.appendChild(this._renderSimpleFields());
+      container.appendChild(variableContainer);
+    }
 
-    // 4. Opcionales comunes
-    container.appendChild(this._renderUrgenciasField());
-    container.appendChild(this._renderImagenField());
+    // 6. Semantic notes (sube antes de imagen/urgencias)
     container.appendChild(this._renderSemanticNotesField());
 
-    // 5. Botón agregar
+    // 7. Urgencias
+    container.appendChild(this._renderUrgenciasField());
+
+    // 8. Imagen
+    container.appendChild(this._renderImagenField());
+
+    // 9. Botón agregar
     container.appendChild(createButton({
-      label:   'Agregar este servicio',
+      label:   esComplejo ? 'Crear servicio con variantes' : 'Agregar este servicio',
       variant: 'success',
       icon:    'fa-plus',
       block:   true,
@@ -186,23 +235,21 @@ const page = {
       mode:        'single',
       orientation: 'horizontal',
       options: [
-        { value: 'simple',   label: '⚡ Servicio simple',   description: 'Un precio, una duración.' },
-        { value: 'complejo', label: '🔀 Con variantes',     description: 'Depilación, tintura... tiene opciones.' }
+        { value: 'simple',   label: '⚡ Servicio simple',  description: 'Un precio, una duración.' },
+        { value: 'complejo', label: '🔀 Con variantes',    description: 'Depilación, tintura... tiene opciones.' }
       ],
       value: this._data.draft.tipo || 'simple',
       actions: {
         onChange: (value) => {
-          this._data.draft.tipo    = value;
-          this._data.draft.precio  = null;
+          this._data.draft.tipo     = value;
+          this._data.draft.precio   = null;
           this._data.draft.duracion = null;
-          this._data.draft.items   = [];
-          const vc = this._formCard?.querySelector('.variable-container');
-          if (vc) vc.replaceWith((() => {
-            const d = document.createElement('div');
-            d.className = 'variable-container';
-            d.appendChild(value === 'complejo' ? this._renderItemsSection() : this._renderSimpleFields());
-            return d;
-          })());
+          // Pre-cargar disponibilidad para complejos
+          if (value === 'complejo') {
+            this._data.draft.disponibilidad = 'a_coordinar';
+          }
+          const formContent = this._formCard?.querySelector('.form-content');
+          if (formContent) formContent.replaceWith(this._renderFormContent());
           document.dispatchEvent(new Event('change'));
         }
       }
@@ -219,18 +266,20 @@ const page = {
     });
   },
 
-  _renderDescripcionField() {
+  _renderDescripcionField(draft = null) {
+    const d = draft || this._data.draft;
     return createFormField({
       label:    'Descripción',
       type:     'textarea',
       rows:     2,
       helpText: 'Breve descripción del servicio',
-      value:    this._data.draft.descripcion,
-      actions:  { onChange: (v) => { this._data.draft.descripcion = v.trim(); } }
+      value:    d.descripcion,
+      actions:  { onChange: (v) => { d.descripcion = v.trim(); } }
     });
   },
 
-  _renderDisponibilidadField() {
+  _renderDisponibilidadField(draft = null) {
+    const d = draft || this._data.draft;
     return createCheckboxGroup({
       label:    '¿Cuándo está disponible? *',
       name:     'disponibilidad',
@@ -240,10 +289,10 @@ const page = {
         { value: 'inmediata',   label: 'Inmediata',   description: 'Sin turno, por orden de llegada' },
         { value: 'a_coordinar', label: 'A coordinar', description: 'Requiere turno o agenda previa'  }
       ],
-      value: this._data.draft.disponibilidad || null,
+      value: d.disponibilidad || null,
       actions: {
         onChange: (value) => {
-          this._data.draft.disponibilidad = value || null;
+          d.disponibilidad = value || null;
           document.dispatchEvent(new Event('change'));
         }
       }
@@ -251,19 +300,19 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // SERVICIO SIMPLE — precio + duración directos
+  // SERVICIO SIMPLE — precio + duración
   // ──────────────────────────────────────────────────────────
-  _renderSimpleFields() {
+  _renderSimpleFields(draft = null) {
+    const d = draft || this._data.draft;
     const wrapper = document.createElement('div');
     wrapper.className = 'simple-fields';
-
-    wrapper.appendChild(this._renderPrecioSimpleField());
-    wrapper.appendChild(this._renderDuracionField());
-
+    wrapper.appendChild(this._renderPrecioSimpleField(d));
+    wrapper.appendChild(this._renderDuracionField(d));
     return wrapper;
   },
 
-  _renderPrecioSimpleField() {
+  _renderPrecioSimpleField(draft = null) {
+    const d = draft || this._data.draft;
     const wrapper = document.createElement('div');
     wrapper.className = 's-form-field campo-compuesto';
 
@@ -271,6 +320,8 @@ const page = {
     label.className   = 's-label';
     label.textContent = 'Precio';
     wrapper.appendChild(label);
+
+    let precioInput;
 
     const precioGroup = createCheckboxGroup({
       name:        'svc-precio',
@@ -280,179 +331,135 @@ const page = {
         { value: 'consultar', label: 'A consultar' },
         { value: 'fijo',      label: 'Precio fijo'  }
       ],
-      value: this._data.draft.precio?.tipo || 'consultar',
+      value: d.precio?.tipo || 'consultar',
       actions: {
         onChange: (val) => {
           if (val === 'fijo') {
-            this._data.draft.precio = { tipo: 'fijo', valor: Number(this._precioInput?.getValue() || 0) };
-            this._precioInput?.enable();
+            d.precio = { tipo: 'fijo', valor: Number(precioInput?.getValue() || 0) };
+            precioInput?.enable();
           } else {
-            this._data.draft.precio = null;
-            this._precioInput?.disable();
-            this._precioInput?.setValue('');
+            d.precio = null;
+            precioInput?.disable();
+            precioInput?.setValue('');
           }
           document.dispatchEvent(new Event('change'));
         }
       }
     });
 
-    this._precioInput = createFormField({
+    precioInput = createFormField({
       type:        'number',
       placeholder: 'Ej: 5000',
-      disabled:    this._data.draft.precio?.tipo !== 'fijo',
-      value:       this._data.draft.precio?.valor || '',
+      disabled:    d.precio?.tipo !== 'fijo',
+      value:       d.precio?.valor || '',
       actions: {
         onChange: (v) => {
-          if (this._data.draft.precio?.tipo === 'fijo') {
-            this._data.draft.precio.valor = Number(v);
-          }
+          if (d.precio?.tipo === 'fijo') d.precio.valor = Number(v);
         }
       }
     });
 
+    // Guardar referencia solo para el draft principal
+    if (!draft) this._precioInput = precioInput;
+
     wrapper.appendChild(precioGroup);
-    wrapper.appendChild(this._precioInput);
+    wrapper.appendChild(precioInput);
     return wrapper;
   },
 
-  _renderDuracionField() {
+  _renderDuracionField(draft = null) {
+    const d = draft || this._data.draft;
     return createFormField({
       label:    'Duración aproximada (minutos)',
       type:     'number',
       helpText: 'Opcional',
-      value:    this._data.draft.duracion || '',
-      actions:  { onChange: (v) => { const n = Number(v); this._data.draft.duracion = n > 0 ? n : null; } }
+      value:    d.duracion || '',
+      actions:  { onChange: (v) => { const n = Number(v); d.duracion = n > 0 ? n : null; } }
     });
   },
 
   // ──────────────────────────────────────────────────────────
-  // SERVICIO COMPLEJO — items con herencia
+  // SEMANTIC NOTES — reutilizable con draft externo
   // ──────────────────────────────────────────────────────────
-  _renderItemsSection() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'items-section';
+  _renderSemanticNotesField(draft = null) {
+    const d = draft || this._data.draft;
 
-    const sectionTitle = document.createElement('p');
-    sectionTitle.className = 'items-section-title';
-    sectionTitle.textContent = 'Variantes del servicio';
-    wrapper.appendChild(sectionTitle);
+    const wrapper = document.createElement('div');
+    wrapper.className = 's-form-field campo-compuesto';
+
+    const label = document.createElement('label');
+    label.className   = 's-label';
+    label.textContent = 'Aclaraciones para la IA (opcionales)';
+    wrapper.appendChild(label);
 
     const help = document.createElement('small');
     help.className   = 's-help';
-    help.textContent = 'Cada variante puede tener su propio precio y duración. Lo que no completes se muestra como "a consultar".';
+    help.textContent = 'Detalles que ayuden a responder mejor preguntas sobre este servicio.';
     wrapper.appendChild(help);
 
-    // Lista de items ya cargados
-    const itemsContainer = document.createElement('div');
-    itemsContainer.className = 'items-list';
+    const list = document.createElement('ul');
+    list.className = 'semantic-notes-list';
 
-    const renderItems = () => {
-      itemsContainer.innerHTML = '';
-      if (!this._data.draft.items.length) {
-        const empty = document.createElement('p');
-        empty.className   = 'items-empty';
-        empty.textContent = 'Todavía no agregaste variantes.';
-        itemsContainer.appendChild(empty);
-        return;
-      }
-      this._data.draft.items.forEach((item, i) => {
-        const row = document.createElement('div');
-        row.className = 'item-row';
-
-        const info = document.createElement('div');
-        info.className = 'item-info';
-
-        const nombre = document.createElement('span');
-        nombre.className   = 'item-nombre';
-        nombre.textContent = item.nombre;
-        info.appendChild(nombre);
-
-        const meta = document.createElement('span');
-        meta.className = 'item-meta';
-        const partes = [];
-        if (item.precio)   partes.push(`$${item.precio.toLocaleString('es-AR')}`);
-        else               partes.push('A consultar');
-        if (item.duracion) partes.push(`${item.duracion} min`);
-        meta.textContent = partes.join(' · ');
-        info.appendChild(meta);
-
-        row.appendChild(info);
-
+    const renderList = () => {
+      list.innerHTML = '';
+      const notes = d.semantic_notes || [];
+      notes.forEach((note, i) => {
+        const li = document.createElement('li');
+        li.className = 'semantic-note-item';
+        const text = document.createElement('span');
+        text.textContent = note;
+        li.appendChild(text);
         const removeBtn = document.createElement('button');
         removeBtn.type      = 'button';
-        removeBtn.className = 'item-remove';
+        removeBtn.className = 'semantic-note-remove';
         removeBtn.innerHTML = '×';
         removeBtn.addEventListener('click', () => {
-          this._data.draft.items.splice(i, 1);
-          renderItems();
+          d.semantic_notes.splice(i, 1);
+          if (!d.semantic_notes.length) d.semantic_notes = [];
+          renderList();
         });
-        row.appendChild(removeBtn);
-        itemsContainer.appendChild(row);
+        li.appendChild(removeBtn);
+        list.appendChild(li);
       });
     };
 
-    renderItems();
-    wrapper.appendChild(itemsContainer);
+    renderList();
+    wrapper.appendChild(list);
 
-    // Mini-form para agregar item
-    const addForm = document.createElement('div');
-    addForm.className = 'item-add-form';
+    const addRow = document.createElement('div');
+    addRow.className = 'semantic-note-add-row';
 
-    const inputNombre = document.createElement('input');
-    inputNombre.type        = 'text';
-    inputNombre.className   = 'item-input item-input--nombre';
-    inputNombre.placeholder = 'Nombre de la variante *  (ej: Axilas)';
-
-    const inputPrecio = document.createElement('input');
-    inputPrecio.type        = 'number';
-    inputPrecio.className   = 'item-input item-input--precio';
-    inputPrecio.placeholder = 'Precio (opcional)';
-
-    const inputDuracion = document.createElement('input');
-    inputDuracion.type        = 'number';
-    inputDuracion.className   = 'item-input item-input--duracion';
-    inputDuracion.placeholder = 'Duración en min (opcional)';
+    const input = document.createElement('input');
+    input.type        = 'text';
+    input.className   = 'semantic-note-input';
+    input.placeholder = 'Ej: Evitar exposición solar 72hs después del tratamiento';
 
     const addBtn = createButton({
-      label:   'Agregar variante',
-      variant: 'secondary',
-      size:    'sm',
-      icon:    'fa-plus',
+      label: 'Agregar', variant: 'secondary', size: 'sm', icon: 'fa-plus',
       onClick: () => {
-        const nombre   = inputNombre.value.trim();
-        const precio   = Number(inputPrecio.value) || null;
-        const duracion = Number(inputDuracion.value) || null;
-
-        if (!nombre) {
-          showToast('Falta el nombre de la variante', 'warning');
-          return;
-        }
-
-        this._data.draft.items.push({ nombre, precio, duracion });
-        inputNombre.value   = '';
-        inputPrecio.value   = '';
-        inputDuracion.value = '';
-        inputNombre.focus();
-        renderItems();
+        const val = input.value.trim();
+        if (!val) return;
+        if (!d.semantic_notes) d.semantic_notes = [];
+        d.semantic_notes.push(val);
+        input.value = '';
+        input.focus();
+        renderList();
       }
     });
 
-    // Agregar con Enter en el campo nombre
-    inputNombre.addEventListener('keydown', (e) => {
+    input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
     });
 
-    addForm.appendChild(inputNombre);
-    addForm.appendChild(inputPrecio);
-    addForm.appendChild(inputDuracion);
-    addForm.appendChild(addBtn);
-    wrapper.appendChild(addForm);
+    addRow.appendChild(input);
+    addRow.appendChild(addBtn);
+    wrapper.appendChild(addRow);
 
     return wrapper;
   },
 
   // ──────────────────────────────────────────────────────────
-  // URGENCIAS
+  // URGENCIAS + IMAGEN (sin cambios)
   // ──────────────────────────────────────────────────────────
   _renderUrgenciasField() {
     return createCheckboxGroup({
@@ -466,9 +473,6 @@ const page = {
     });
   },
 
-  // ──────────────────────────────────────────────────────────
-  // IMAGEN
-  // ──────────────────────────────────────────────────────────
   _renderImagenField() {
     const wrapper = document.createElement('div');
     wrapper.className = 's-form-field campo-compuesto';
@@ -530,128 +534,128 @@ const page = {
     sep.textContent = 'o pegá un link directo';
     wrapper.appendChild(sep);
 
-    this._imagenUrlInput             = document.createElement('input');
-    this._imagenUrlInput.type        = 'url';
-    this._imagenUrlInput.className   = 'imagen-url-input';
-    this._imagenUrlInput.placeholder = 'https://...';
-    this._imagenUrlInput.value       = this._data.draft.imagen || '';
-    this._imagenUrlInput.addEventListener('input', () => { this._data.draft.imagen = this._imagenUrlInput.value.trim(); });
-    wrapper.appendChild(this._imagenUrlInput);
+    const imagenUrlInput             = document.createElement('input');
+    imagenUrlInput.type        = 'url';
+    imagenUrlInput.className   = 'imagen-url-input';
+    imagenUrlInput.placeholder = 'https://...';
+    imagenUrlInput.value       = this._data.draft.imagen || '';
+    imagenUrlInput.addEventListener('input', () => { this._data.draft.imagen = imagenUrlInput.value.trim(); });
+    wrapper.appendChild(imagenUrlInput);
 
     return wrapper;
   },
 
   // ──────────────────────────────────────────────────────────
-  // SEMANTIC NOTES
-  // ──────────────────────────────────────────────────────────
-  _renderSemanticNotesField() {
-    const wrapper = document.createElement('div');
-    wrapper.className = 's-form-field campo-compuesto';
-
-    const label = document.createElement('label');
-    label.className   = 's-label';
-    label.textContent = 'Aclaraciones para la IA (opcionales)';
-    wrapper.appendChild(label);
-
-    const help = document.createElement('small');
-    help.className   = 's-help';
-    help.textContent = 'Detalles que ayuden a responder mejor preguntas sobre este servicio.';
-    wrapper.appendChild(help);
-
-    const list = document.createElement('ul');
-    list.className = 'semantic-notes-list';
-
-    const renderList = () => {
-      list.innerHTML = '';
-      const notes = this._data.draft.semantic_notes || [];
-      notes.forEach((note, i) => {
-        const li = document.createElement('li');
-        li.className = 'semantic-note-item';
-        const text = document.createElement('span');
-        text.textContent = note;
-        li.appendChild(text);
-        const removeBtn = document.createElement('button');
-        removeBtn.type      = 'button';
-        removeBtn.className = 'semantic-note-remove';
-        removeBtn.innerHTML = '×';
-        removeBtn.addEventListener('click', () => {
-          this._data.draft.semantic_notes.splice(i, 1);
-          if (!this._data.draft.semantic_notes.length) delete this._data.draft.semantic_notes;
-          renderList();
-        });
-        li.appendChild(removeBtn);
-        list.appendChild(li);
-      });
-    };
-
-    renderList();
-    wrapper.appendChild(list);
-
-    const addRow = document.createElement('div');
-    addRow.className = 'semantic-note-add-row';
-
-    const input = document.createElement('input');
-    input.type        = 'text';
-    input.className   = 'semantic-note-input';
-    input.placeholder = 'Ej: Evitar exposición solar 72hs después del tratamiento';
-
-    const addBtn = createButton({
-      label: 'Agregar', variant: 'secondary', size: 'sm', icon: 'fa-plus',
-      onClick: () => {
-        const val = input.value.trim();
-        if (!val) return;
-        if (!this._data.draft.semantic_notes) this._data.draft.semantic_notes = [];
-        this._data.draft.semantic_notes.push(val);
-        input.value = '';
-        input.focus();
-        renderList();
-      }
-    });
-
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); addBtn.click(); }
-    });
-
-    addRow.appendChild(input);
-    addRow.appendChild(addBtn);
-    wrapper.appendChild(addRow);
-
-    return wrapper;
-  },
-
-  // ──────────────────────────────────────────────────────────
-  // VALIDACIÓN Y AGREGAR
+  // VALIDACIÓN Y AGREGAR SERVICIO PADRE
   // ──────────────────────────────────────────────────────────
   _isDraftValid() {
     const d = this._data.draft;
-    if (!d.nombre?.trim())    return false;
-    if (!d.disponibilidad)    return false;
-    if (d.tipo === 'complejo') return d.items.length > 0;
+    if (!d.nombre?.trim())  return false;
+    if (!d.disponibilidad)  return false;
     return true;
   },
 
   _agregarServicio() {
     if (!this._isDraftValid()) {
-      const msg = this._data.draft.tipo === 'complejo'
-        ? 'Completá: Nombre, Disponibilidad y al menos una variante'
-        : 'Completá: Nombre y Disponibilidad';
-      showToast(msg, 'warning');
+      showToast('Completá: Nombre y Disponibilidad', 'warning');
       return;
     }
 
     const servicio = structuredClone(this._data.draft);
     servicio.activo = true;
 
-    // Para servicio simple, normalizamos precio
-    if (servicio.tipo === 'simple' && !servicio.precio) {
-      servicio.precio = { tipo: 'consultar' };
+    if (servicio.tipo === 'complejo') {
+      // Asignar ID temporal local para referencias de hijos
+      servicio._tempId = _generarTempId();
+    } else {
+      // Servicio simple: normalizar precio
+      if (!servicio.precio) servicio.precio = { tipo: 'consultar' };
     }
 
     this._data.serviciosAcumulados.push(servicio);
     this._data.draft = _draftVacio();
     this._limpiarFormulario();
     this._refreshLista();
-    showToast('✅ Servicio agregado. Podés crear otro o guardar cuando termines.', 'success');
+
+    const msg = servicio.tipo === 'complejo'
+      ? '✅ Servicio creado. Ahora podés agregarle variantes desde la lista.'
+      : '✅ Servicio agregado. Podés crear otro o guardar cuando termines.';
+    showToast(msg, 'success');
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // FORM DE VARIANTE (hijo)
+  // ──────────────────────────────────────────────────────────
+  _renderVarianteForm(parentRef, refreshCallback) {
+    const draft = _draftVarianteVacio(parentRef);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'variante-form';
+
+    const titulo = document.createElement('p');
+    titulo.className   = 'variante-form-title';
+    titulo.textContent = 'Nueva variante';
+    wrapper.appendChild(titulo);
+
+    // Nombre
+    wrapper.appendChild(createFormField({
+      label:    '¿Cómo se llama esta variante? *',
+      required: true,
+      helpText: 'Ej: "Axilas", "Piernas completas", "Con tiritas"',
+      value:    draft.nombre,
+      actions:  { onChange: (v) => { draft.nombre = v.trim(); } }
+    }));
+
+    // Descripción
+    wrapper.appendChild(this._renderDescripcionField(draft));
+
+    // Disponibilidad
+    wrapper.appendChild(this._renderDisponibilidadField(draft));
+
+    // Precio + duración
+    wrapper.appendChild(this._renderSimpleFields(draft));
+
+    // Semantic notes
+    wrapper.appendChild(this._renderSemanticNotesField(draft));
+
+    // Botones
+    const btns = document.createElement('div');
+    btns.className = 'variante-form-btns';
+
+    btns.appendChild(createButton({
+      label:   'Agregar variante',
+      variant: 'success',
+      icon:    'fa-plus',
+      onClick: () => {
+        if (!draft.nombre?.trim()) {
+          showToast('El nombre de la variante es obligatorio', 'warning');
+          return;
+        }
+        if (!draft.disponibilidad) {
+          showToast('Elegí la disponibilidad de la variante', 'warning');
+          return;
+        }
+        if (!draft.precio) draft.precio = { tipo: 'consultar' };
+        draft.activo = true;
+        this._data.serviciosAcumulados.push(structuredClone(draft));
+        this._data.draftVariante = null;
+        refreshCallback();
+        showToast('✅ Variante agregada', 'success');
+      }
+    }));
+
+    btns.appendChild(createButton({
+      label:   'Cancelar',
+      variant: 'secondary',
+      icon:    'fa-times',
+      onClick: () => {
+        this._data.draftVariante = null;
+        refreshCallback();
+      }
+    }));
+
+    wrapper.appendChild(btns);
+    return wrapper;
   },
 
   // ──────────────────────────────────────────────────────────
@@ -661,7 +665,9 @@ const page = {
     const container = document.createElement('div');
     container.id = 'lista-servicios-container';
 
-    if (!this._data.serviciosAcumulados.length) {
+    const padres = this._getPadres();
+
+    if (!padres.length) {
       const empty = document.createElement('p');
       empty.className   = 'lista-vacia';
       empty.textContent = 'No hay servicios agregados aún';
@@ -669,15 +675,19 @@ const page = {
       return container;
     }
 
-    this._data.serviciosAcumulados.forEach((servicio, index) => {
-      container.appendChild(this._renderServicioCard(servicio, index));
+    padres.forEach((servicio, index) => {
+      const idx = this._data.serviciosAcumulados.indexOf(servicio);
+      container.appendChild(this._renderServicioCard(servicio, idx));
     });
+
     return container;
   },
 
   _renderServicioCard(servicio, index) {
-    const activo    = servicio.activo !== false;
+    const activo     = servicio.activo !== false;
     const esComplejo = servicio.tipo === 'complejo';
+    const parentRef  = servicio._tempId || servicio.id;
+    const hijos      = esComplejo ? this._getHijos(parentRef) : [];
 
     const contentDiv = document.createElement('div');
 
@@ -689,6 +699,7 @@ const page = {
       contentDiv.appendChild(img);
     }
 
+    // Badges
     const tags = document.createElement('div');
     tags.className = 'servicio-tags';
 
@@ -726,25 +737,131 @@ const page = {
       contentDiv.appendChild(desc);
     }
 
-    // Items del servicio complejo
-    if (esComplejo && servicio.items?.length) {
-      const itemsDiv = document.createElement('div');
-      itemsDiv.className = 'servicio-items-lista';
+    // ── Hijos del servicio complejo ──────────────────────
+    if (esComplejo) {
+      const hijosContainer = document.createElement('div');
+      hijosContainer.className = 'servicio-hijos';
 
-      const ul = document.createElement('ul');
-      servicio.items.forEach(item => {
-        const li = document.createElement('li');
-        const partes = [item.nombre];
-        if (item.precio)   partes.push(`$${item.precio.toLocaleString('es-AR')}`);
-        else               partes.push('A consultar');
-        if (item.duracion) partes.push(`${item.duracion} min`);
-        li.textContent = partes.join(' · ');
-        ul.appendChild(li);
-      });
-      itemsDiv.appendChild(ul);
-      contentDiv.appendChild(itemsDiv);
+      const renderHijos = () => {
+        hijosContainer.innerHTML = '';
+
+        const hijosActuales = this._getHijos(parentRef);
+
+        if (hijosActuales.length) {
+          const hijosList = document.createElement('div');
+          hijosList.className = 'hijos-list';
+
+          hijosActuales.forEach((hijo) => {
+            const hijoIdx = this._data.serviciosAcumulados.indexOf(hijo);
+            const hijoRow = document.createElement('div');
+            hijoRow.className = 'hijo-row';
+
+            const hijoInfo = document.createElement('div');
+            hijoInfo.className = 'hijo-info';
+
+            const hijoBadges = document.createElement('div');
+            hijoBadges.className = 'hijo-badges';
+
+            hijoBadges.appendChild(createBadge({
+              text:    hijo.precio?.valor ? `$${hijo.precio.valor.toLocaleString('es-AR')}` : 'A consultar',
+              variant: hijo.precio?.valor ? 'success' : 'secondary',
+              size:    'small'
+            }));
+            if (hijo.duracion) {
+              hijoBadges.appendChild(createBadge({ text: `⏱️ ${hijo.duracion} min`, variant: 'secondary', size: 'small' }));
+            }
+            if (hijo.disponibilidad) {
+              hijoBadges.appendChild(createBadge({
+                text:    hijo.disponibilidad === 'inmediata' ? 'Sin turno' : 'Con turno',
+                variant: hijo.disponibilidad === 'inmediata' ? 'success' : 'info',
+                size:    'small'
+              }));
+            }
+
+            hijoInfo.appendChild(hijoBadges);
+
+            if (hijo.descripcion) {
+              const hijoDesc = document.createElement('p');
+              hijoDesc.className   = 'hijo-descripcion';
+              hijoDesc.textContent = hijo.descripcion;
+              hijoInfo.appendChild(hijoDesc);
+            }
+
+            if (hijo.semantic_notes?.length) {
+              const sn = document.createElement('small');
+              sn.className   = 'hijo-semantic';
+              sn.textContent = `🧠 ${hijo.semantic_notes.join(' · ')}`;
+              hijoInfo.appendChild(sn);
+            }
+
+            const hijoAcciones = document.createElement('div');
+            hijoAcciones.className = 'hijo-acciones';
+            hijoAcciones.appendChild(createButton({
+              label: 'Editar', variant: 'primary', size: 'sm', icon: 'fa-pencil',
+              onClick: () => this._editarServicio(hijoIdx)
+            }));
+            hijoAcciones.appendChild(createButton({
+              label:   hijo.activo !== false ? 'Pausar' : 'Activar',
+              variant: hijo.activo !== false ? 'warning' : 'success',
+              size:    'sm',
+              icon:    hijo.activo !== false ? 'fa-pause' : 'fa-play',
+              onClick: () => { this._toggleServicio(hijoIdx); renderHijos(); }
+            }));
+            hijoAcciones.appendChild(createButton({
+              label: 'Eliminar', variant: 'danger', size: 'sm', icon: 'fa-trash',
+              onClick: () => { this._eliminarServicio(hijoIdx); renderHijos(); }
+            }));
+
+            hijoRow.appendChild(hijoInfo);
+            hijoRow.appendChild(hijoAcciones);
+
+            // Card interna por hijo
+            hijosList.appendChild(createCard({
+              title:   hijo.nombre + (hijo.activo === false ? ' (Pausado)' : ''),
+              variant: hijo.activo !== false ? 'success' : 'secondary',
+              compact: true,
+              content: hijoRow
+            }));
+          });
+
+          hijosContainer.appendChild(hijosList);
+        } else {
+          const emptyHijos = document.createElement('p');
+          emptyHijos.className   = 'hijos-empty';
+          emptyHijos.textContent = 'Este servicio todavía no tiene variantes.';
+          hijosContainer.appendChild(emptyHijos);
+        }
+
+        // Form inline de nueva variante (si está activo para este padre)
+        const dv = this._data.draftVariante;
+        if (dv && dv.parentRef === parentRef) {
+          hijosContainer.appendChild(
+            this._renderVarianteForm(parentRef, () => renderHijos())
+          );
+        } else {
+          // Botón para abrir el form
+          const btnAgregar = createButton({
+            label:   '+ Agregar variante',
+            variant: 'primary',
+            size:    'sm',
+            icon:    'fa-plus',
+            onClick: () => {
+              this._data.draftVariante = { parentRef };
+              renderHijos();
+            }
+          });
+          const btnWrapper = document.createElement('div');
+          btnWrapper.className = 'hijos-add-btn';
+          btnWrapper.appendChild(btnAgregar);
+          hijosContainer.appendChild(btnWrapper);
+        }
+      };
+
+      renderHijos();
+      contentDiv.appendChild(hijosContainer);
     }
 
+    // Semantic notes del padre
     if (servicio.semantic_notes?.length) {
       const notesDiv = document.createElement('div');
       notesDiv.className = 'servicio-semantic-notes';
@@ -763,12 +880,19 @@ const page = {
       contentDiv.appendChild(notesDiv);
     }
 
+    // Acciones del padre
     const actionsWrapper = document.createElement('div');
     actionsWrapper.className = 'servicio-acciones';
     actionsWrapper.append(
       createButton({ label: 'Editar',   variant: 'primary', size: 'sm', icon: 'fa-pencil', onClick: () => this._editarServicio(index) }),
-      createButton({ label: activo ? 'Pausar' : 'Activar', variant: activo ? 'warning' : 'success', size: 'sm', icon: activo ? 'fa-pause' : 'fa-play', onClick: () => this._toggleServicio(index) }),
-      createButton({ label: 'Eliminar', variant: 'danger',  size: 'sm', icon: 'fa-trash',  onClick: () => this._eliminarServicio(index) })
+      createButton({
+        label:   activo ? 'Pausar' : 'Activar',
+        variant: activo ? 'warning' : 'success',
+        size:    'sm',
+        icon:    activo ? 'fa-pause' : 'fa-play',
+        onClick: () => this._toggleServicio(index)
+      }),
+      createButton({ label: 'Eliminar', variant: 'danger',  size: 'sm', icon: 'fa-trash',  onClick: () => this._eliminarServicioConHijos(index, parentRef) })
     );
     contentDiv.appendChild(actionsWrapper);
 
@@ -780,13 +904,17 @@ const page = {
     });
   },
 
+  // ──────────────────────────────────────────────────────────
+  // ACCIONES LISTA
+  // ──────────────────────────────────────────────────────────
   _limpiarFormulario() {
     const formContent = this._formCard?.querySelector('.form-content');
     if (formContent) formContent.replaceWith(this._renderFormContent());
   },
 
   _editarServicio(index) {
-    this._data.draft = structuredClone(this._data.serviciosAcumulados[index]);
+    const servicio = this._data.serviciosAcumulados[index];
+    this._data.draft = structuredClone(servicio);
     this._data.serviciosAcumulados.splice(index, 1);
     this._refreshLista();
     const formContent = this._formCard?.querySelector('.form-content');
@@ -803,7 +931,23 @@ const page = {
   _eliminarServicio(index) {
     this._data.serviciosAcumulados.splice(index, 1);
     this._refreshLista();
-    showToast('Servicio eliminado de la lista', 'info');
+    showToast('Variante eliminada', 'info');
+  },
+
+  // Eliminar padre + todos sus hijos
+  _eliminarServicioConHijos(index, parentRef) {
+    const hijos = this._getHijos(parentRef);
+    hijos.forEach(hijo => {
+      const hi = this._data.serviciosAcumulados.indexOf(hijo);
+      if (hi >= 0) this._data.serviciosAcumulados.splice(hi, 1);
+    });
+    // index puede haber cambiado tras eliminar hijos — buscar de nuevo
+    const padreIdx = this._data.serviciosAcumulados.findIndex(
+      s => (s._tempId === parentRef) || (s.id === parentRef)
+    );
+    if (padreIdx >= 0) this._data.serviciosAcumulados.splice(padreIdx, 1);
+    this._refreshLista();
+    showToast('Servicio y sus variantes eliminados', 'info');
   },
 
   _refreshLista() {
@@ -813,7 +957,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // IMPORT CARD
+  // IMPORT CARD (sin cambios)
   // ──────────────────────────────────────────────────────────
   _renderImportCard() {
     const container = document.createElement('div');
@@ -831,11 +975,10 @@ const page = {
     `;
     container.appendChild(instrucciones);
 
-    // ── Botones de descarga ────────────────────────────────
     const btnsContainer = document.createElement('div');
     btnsContainer.className = 'import-btns';
 
-    const tieneSimples   = this._data.serviciosAcumulados.some(s => s.tipo !== 'complejo');
+    const tieneSimples   = this._data.serviciosAcumulados.some(s => s.tipo !== 'complejo' && !s._parentTempId && !s.parent_id);
     const tieneComplejos = this._data.serviciosAcumulados.some(s => s.tipo === 'complejo');
 
     btnsContainer.appendChild(createButton({
@@ -854,7 +997,6 @@ const page = {
 
     container.appendChild(btnsContainer);
 
-    // ── Upload zone ────────────────────────────────────────
     const sep = document.createElement('div');
     sep.className = 'import-separator';
     sep.innerHTML = '<span>Una vez completada, subí la plantilla acá</span>';
@@ -893,13 +1035,11 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // EXPORT — plantillas vacías
+  // EXPORT (sin cambios funcionales — actualizado para nuevo modelo)
   // ──────────────────────────────────────────────────────────
   _descargarPlantillaSimples() {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
     const wb = XLSX.utils.book_new();
-
-    // Hoja instrucciones
     const wsInstr = XLSX.utils.aoa_to_sheet([
       ['📋 PLANTILLA DE SERVICIOS SIMPLES — ÍndiceIA'],
       [''],
@@ -914,14 +1054,11 @@ const page = {
       ['  precio_valor  → Solo si precio_tipo es "fijo". Ej: 5000'],
       ['  duracion_min  → Duración en minutos (opcional). Dejar vacío si no aplica.'],
       ['  nota_1, nota_2, ... → Aclaraciones para la IA (opcional, una por columna)'],
-      ['  columnas_extra → Cualquier columna adicional se guarda como atributo semántico'],
       [''],
       ['Completá tus servicios en la hoja "servicios" y subí el archivo.'],
     ]);
     wsInstr['!cols'] = [{ wch: 70 }];
     XLSX.utils.book_append_sheet(wb, wsInstr, '📖 Instrucciones');
-
-    // Hoja de datos
     const headers = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min','nota_1','nota_2'];
     const ejemplo = ['Corte de pelo','Corte y secado clásico','a_coordinar','fijo','5000','30','Incluye lavado',''];
     const ws = XLSX.utils.aoa_to_sheet([headers, ejemplo]);
@@ -936,8 +1073,6 @@ const page = {
   _descargarPlantillaComplejos() {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
     const wb = XLSX.utils.book_new();
-
-    // Hoja instrucciones
     const wsInstr = XLSX.utils.aoa_to_sheet([
       ['📋 PLANTILLA DE SERVICIOS CON VARIANTES — ÍndiceIA'],
       [''],
@@ -962,18 +1097,13 @@ const page = {
     ]);
     wsInstr['!cols'] = [{ wch: 80 }];
     XLSX.utils.book_append_sheet(wb, wsInstr, '📖 Instrucciones');
-
-    // Hoja de datos con ejemplo
     const headers = ['nombre','descripcion','disponibilidad','variante','precio','duracion_min','nota_1','nota_2'];
     const rows = [
       headers,
-      // Servicio padre
       ['Depilación definitiva','Láser diodo. Requiere múltiples sesiones.','a_coordinar','','','','Rasurar la zona antes de la sesión','No aplicar sobre tatuajes'],
-      // Variantes
       ['','','','Entrecejo','7500','5','',''],
       ['','','','Bozo','7500','5','',''],
       ['','','','Piernas completas','','60','',''],
-      // Segundo servicio
       ['Tintura','Coloración completa con productos profesionales.','a_coordinar','','','','',''],
       ['','','','Con gorra','5000','60','',''],
       ['','','','Con tiritas','6500','90','',''],
@@ -987,14 +1117,10 @@ const page = {
     showToast('Plantilla descargada', 'success');
   },
 
-  // ──────────────────────────────────────────────────────────
-  // EXPORT — con datos existentes
-  // ──────────────────────────────────────────────────────────
   _exportarSimples() {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
-    const simples = this._data.serviciosAcumulados.filter(s => s.tipo !== 'complejo');
+    const simples = this._data.serviciosAcumulados.filter(s => s.tipo !== 'complejo' && !s._parentTempId && !s.parent_id);
     const CAMPOS  = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
-
     const rows = simples.map(s => {
       const row = {
         nombre:         s.nombre         || '',
@@ -1004,13 +1130,10 @@ const page = {
         precio_valor:   s.precio?.valor  || '',
         duracion_min:   s.duracion       || '',
       };
-      // Notas como columnas separadas
       (s.semantic_notes || []).forEach((nota, i) => { row[`nota_${i + 1}`] = nota; });
-      // Atributos extra
       if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { row[k] = v; });
       return row;
     });
-
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(rows, { header: CAMPOS });
     this._agregarValidacionesSimples(ws, 2, rows.length + 1);
@@ -1023,11 +1146,10 @@ const page = {
 
   _exportarComplejos() {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
-    const complejos = this._data.serviciosAcumulados.filter(s => s.tipo === 'complejo');
+    const padres = this._data.serviciosAcumulados.filter(s => s.tipo === 'complejo');
     const rows = [];
-
-    complejos.forEach(s => {
-      // Fila padre
+    padres.forEach(s => {
+      const parentRef = s._tempId || s.id;
       const filaPadre = {
         nombre:         s.nombre         || '',
         descripcion:    s.descripcion    || '',
@@ -1039,20 +1161,17 @@ const page = {
       (s.semantic_notes || []).forEach((nota, i) => { filaPadre[`nota_${i + 1}`] = nota; });
       if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { filaPadre[k] = v; });
       rows.push(filaPadre);
-
-      // Filas variantes
-      (s.items || []).forEach(item => {
+      this._getHijos(parentRef).forEach(hijo => {
         rows.push({
-          nombre:       '',
-          descripcion:  '',
-          disponibilidad: '',
-          variante:     item.nombre   || '',
-          precio:       item.precio   || '',
-          duracion_min: item.duracion || '',
+          nombre:        '',
+          descripcion:   '',
+          disponibilidad:'',
+          variante:      hijo.nombre   || '',
+          precio:        hijo.precio?.valor || '',
+          duracion_min:  hijo.duracion || '',
         });
       });
     });
-
     const CAMPOS = ['nombre','descripcion','disponibilidad','variante','precio','duracion_min'];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(rows, { header: CAMPOS });
@@ -1061,11 +1180,11 @@ const page = {
     XLSX.utils.book_append_sheet(wb, ws, 'servicios');
     this._agregarMeta(wb, 'complejos');
     XLSX.writeFile(wb, 'mis_servicios_complejos.xlsx');
-    showToast(`${complejos.length} servicios complejos exportados`, 'success');
+    showToast(`${padres.length} servicios complejos exportados`, 'success');
   },
 
   // ──────────────────────────────────────────────────────────
-  // PARSE — lee el xlsx y detecta duplicados
+  // PARSE xlsx (actualizado: hijos con _parentTempId)
   // ──────────────────────────────────────────────────────────
   _parseFile(file) {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
@@ -1074,7 +1193,6 @@ const page = {
       try {
         const wb = XLSX.read(e.target.result, { type: 'binary' });
 
-        // Validar firma
         const metaSheet = wb.Sheets['_indiceia_meta'];
         if (!metaSheet) { showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return; }
         const firma = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
@@ -1093,7 +1211,6 @@ const page = {
         const esComplejo = tipoPlantilla.includes('complejos');
 
         if (!esComplejo) {
-          // ── SIMPLES ─────────────────────────────────────
           const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
           rows.forEach(row => {
             if (!String(row.nombre || '').trim()) return;
@@ -1122,7 +1239,6 @@ const page = {
           });
 
         } else {
-          // ── COMPLEJOS ────────────────────────────────────
           const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','variante','precio','duracion_min'];
           let padreActual = null;
 
@@ -1148,31 +1264,42 @@ const page = {
                 disponibilidad: ['inmediata','a_coordinar'].includes(row.disponibilidad) ? row.disponibilidad : 'a_coordinar',
                 semantic_notes: notas,
                 atributos,
-                items:          [],
+                _tempId:        _generarTempId(),
                 activo:         true,
               };
+              importados.push(padreActual);
             } else if (variante && padreActual) {
-              padreActual.items.push({
-                nombre:   variante,
-                precio:   Number(row.precio)      || null,
-                duracion: Number(row.duracion_min) || null,
+              // Hijo como doc separado
+              importados.push({
+                tipo:          'simple',
+                nombre:        variante,
+                descripcion:   '',
+                disponibilidad: padreActual.disponibilidad,
+                precio:        Number(row.precio) ? { tipo: 'fijo', valor: Number(row.precio) } : { tipo: 'consultar' },
+                duracion:      Number(row.duracion_min) || null,
+                semantic_notes: [],
+                _parentTempId: padreActual._tempId,
+                activo:        true,
               });
             }
           });
-          if (padreActual?.items.length) importados.push(padreActual);
         }
 
         if (!importados.length) { showToast('No se encontraron servicios válidos en el archivo', 'warning'); return; }
 
-        // ── Detectar duplicados ───────────────────────────
-        const nombresExistentes = new Set(this._data.serviciosAcumulados.map(s => s.nombre.toLowerCase()));
-        const duplicados = importados.filter(s => nombresExistentes.has(s.nombre.toLowerCase()));
-        const nuevos     = importados.filter(s => !nombresExistentes.has(s.nombre.toLowerCase()));
+        const nombresExistentes = new Set(
+          this._getPadres().map(s => s.nombre.toLowerCase())
+        );
+        const duplicados = importados.filter(s => s.tipo === 'complejo'
+          ? nombresExistentes.has(s.nombre.toLowerCase())
+          : !s._parentTempId && nombresExistentes.has(s.nombre.toLowerCase())
+        );
+        const nuevos = importados.filter(s => !duplicados.includes(s));
 
         if (!duplicados.length) {
           this._data.serviciosAcumulados.push(...nuevos);
           this._refreshLista();
-          showToast(`${nuevos.length} servicios importados correctamente`, 'success');
+          showToast(`${importados.filter(s=>!s._parentTempId).length} servicios importados correctamente`, 'success');
           return;
         }
 
@@ -1187,7 +1314,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // MODAL DUPLICADOS
+  // MODAL DUPLICADOS (sin cambios)
   // ──────────────────────────────────────────────────────────
   _mostrarModalDuplicados({ duplicados, nuevos, importados }) {
     const overlay = document.createElement('div');
@@ -1203,15 +1330,16 @@ const page = {
     if (nuevos.length) {
       const nuevosList = document.createElement('p');
       nuevosList.className = 'modal-nuevos';
-      nuevosList.innerHTML = `<strong>${nuevos.length} nuevos</strong> (se van a agregar): ${nuevos.map(s => s.nombre).join(', ')}`;
+      nuevosList.innerHTML = `<strong>${nuevos.filter(s=>!s._parentTempId).length} nuevos</strong> (se van a agregar): ${nuevos.filter(s=>!s._parentTempId).map(s => s.nombre).join(', ')}`;
       modal.appendChild(nuevosList);
     }
 
     const dupList = document.createElement('div');
     dupList.className = 'modal-duplicados-lista';
-    dupList.innerHTML = `<p><strong>${duplicados.length} ya existen:</strong></p>`;
+    const padresDup = duplicados.filter(s => !s._parentTempId);
+    dupList.innerHTML = `<p><strong>${padresDup.length} ya existen:</strong></p>`;
     const ul = document.createElement('ul');
-    duplicados.forEach(s => {
+    padresDup.forEach(s => {
       const li = document.createElement('li');
       li.textContent = s.nombre;
       ul.appendChild(li);
@@ -1226,7 +1354,6 @@ const page = {
 
     const btns = document.createElement('div');
     btns.className = 'modal-btns';
-
     const cerrar = () => document.body.removeChild(overlay);
 
     btns.appendChild(createButton({
@@ -1234,13 +1361,23 @@ const page = {
       variant: 'warning',
       icon:    'fa-sync',
       onClick: () => {
-        duplicados.forEach(dup => {
-          const idx = this._data.serviciosAcumulados.findIndex(s => s.nombre.toLowerCase() === dup.nombre.toLowerCase());
-          if (idx >= 0) this._data.serviciosAcumulados[idx] = dup;
+        duplicados.filter(s=>!s._parentTempId).forEach(dup => {
+          const idx = this._data.serviciosAcumulados.findIndex(
+            s => s.nombre.toLowerCase() === dup.nombre.toLowerCase() && !s._parentTempId && !s.parent_id
+          );
+          if (idx >= 0) {
+            // Eliminar hijos del padre existente
+            const oldRef = this._data.serviciosAcumulados[idx]._tempId || this._data.serviciosAcumulados[idx].id;
+            this._getHijos(oldRef).forEach(h => {
+              const hi = this._data.serviciosAcumulados.indexOf(h);
+              if (hi >= 0) this._data.serviciosAcumulados.splice(hi, 1);
+            });
+            this._data.serviciosAcumulados[idx] = dup;
+          }
         });
         this._data.serviciosAcumulados.push(...nuevos);
         this._refreshLista();
-        showToast(`${duplicados.length} sobreescritos, ${nuevos.length} nuevos agregados`, 'success');
+        showToast(`Duplicados sobreescritos, ${nuevos.filter(s=>!s._parentTempId).length} nuevos agregados`, 'success');
         cerrar();
       }
     }));
@@ -1252,16 +1389,13 @@ const page = {
       onClick: () => {
         this._data.serviciosAcumulados.push(...importados);
         this._refreshLista();
-        showToast(`${importados.length} servicios agregados`, 'success');
+        showToast(`${importados.filter(s=>!s._parentTempId).length} servicios agregados`, 'success');
         cerrar();
       }
     }));
 
     btns.appendChild(createButton({
-      label:   'Cancelar',
-      variant: 'secondary',
-      icon:    'fa-times',
-      onClick: cerrar
+      label: 'Cancelar', variant: 'secondary', icon: 'fa-times', onClick: cerrar
     }));
 
     modal.appendChild(btns);
@@ -1272,10 +1406,6 @@ const page = {
   // ──────────────────────────────────────────────────────────
   // HELPERS
   // ──────────────────────────────────────────────────────────
-  _generateCodigo() {
-    return `SVC${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
-  },
-
   _agregarMeta(wb, tipo) {
     const firma = `indiceia_servicios_${tipo}_v1`;
     const metaWs = XLSX.utils.aoa_to_sheet([[firma]]);
@@ -1284,29 +1414,19 @@ const page = {
 
   _agregarValidacionesSimples(ws, rowStart, rowEnd) {
     if (!ws['!dataValidations']) ws['!dataValidations'] = [];
-    ws['!dataValidations'].push({
-      sqref: `C${rowStart}:C${rowEnd}`,
-      type: 'list', formula1: '"inmediata,a_coordinar"', showDropDown: false,
-    });
-    ws['!dataValidations'].push({
-      sqref: `D${rowStart}:D${rowEnd}`,
-      type: 'list', formula1: '"consultar,fijo"', showDropDown: false,
-    });
+    ws['!dataValidations'].push({ sqref: `C${rowStart}:C${rowEnd}`, type: 'list', formula1: '"inmediata,a_coordinar"', showDropDown: false });
+    ws['!dataValidations'].push({ sqref: `D${rowStart}:D${rowEnd}`, type: 'list', formula1: '"consultar,fijo"',        showDropDown: false });
   },
 
   _agregarValidacionesComplejos(ws, rowStart, rowEnd) {
     if (!ws['!dataValidations']) ws['!dataValidations'] = [];
-    ws['!dataValidations'].push({
-      sqref: `C${rowStart}:C${rowEnd}`,
-      type: 'list', formula1: '"inmediata,a_coordinar"', showDropDown: false,
-    });
+    ws['!dataValidations'].push({ sqref: `C${rowStart}:C${rowEnd}`, type: 'list', formula1: '"inmediata,a_coordinar"', showDropDown: false });
   },
 
   // ──────────────────────────────────────────────────────────
-  // SAVE BUTTON
+  // SAVE — resuelve _tempId → parent_id real
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
-    // ── CAMBIO 1: dirty controller simplificado ──────────────
     const dirtyController = {
       hasUnsavedChanges: () =>
         JSON.stringify(this._data.serviciosAcumulados) !== JSON.stringify(this._originalSnapshot),
@@ -1317,18 +1437,12 @@ const page = {
 
     return createOnboardingButton({
       stepName: 'servicios',
-
-      // Siempre válido — el botón nunca está disabled
       validate: () => true,
-
-      // ── CAMBIO 1: label dinámico ─────────────────────────
       getLabel: () => dirtyController.hasUnsavedChanges()
         ? 'Guardar y volver al dashboard'
         : 'Volver al dashboard',
-
       dirtyController,
 
-      // ── CAMBIO 2: guardado progresivo (diff) ─────────────
       onSave: async ({ uid, comercioId }) => {
         if (!comercioId) throw new Error('No hay comercioId para guardar servicios');
 
@@ -1336,26 +1450,59 @@ const page = {
         const comercioRef = doc(db, 'entidades', comercioId);
         const colRef      = collection(db, 'entidades', comercioId, 'servicios');
 
-        // IDs que existían al cargar
+        // IDs reales que existían al cargar
         const idsOriginales = new Set(
           this._originalSnapshot.filter(s => s.id).map(s => s.id)
         );
-        // IDs que siguen presentes ahora
         const idsActuales = new Set(
           this._data.serviciosAcumulados.filter(s => s.id).map(s => s.id)
         );
 
         // Eliminar los que ya no están
         idsOriginales.forEach(id => {
-          if (!idsActuales.has(id)) {
-            batch.delete(doc(colRef, id));
+          if (!idsActuales.has(id)) batch.delete(doc(colRef, id));
+        });
+
+        // Mapa: _tempId → ref real de Firestore (para resolver hijos)
+        const tempIdToRef = {};
+
+        // Primer paso: asignar refs a padres nuevos (sin id)
+        this._data.serviciosAcumulados.forEach(servicio => {
+          if (!servicio.id && servicio.tipo === 'complejo' && servicio._tempId) {
+            tempIdToRef[servicio._tempId] = doc(colRef);
           }
         });
 
-        // Upsert: actualizar existentes + crear nuevos
+        // Segundo paso: guardar todo
         this._data.serviciosAcumulados.forEach(servicio => {
-          const { id, ...data } = servicio;
-          const ref = id ? doc(colRef, id) : doc(colRef);
+          const { id, _tempId, _parentTempId, ...data } = servicio;
+
+          let ref;
+          if (id) {
+            // Doc existente
+            ref = doc(colRef, id);
+          } else if (_tempId && tempIdToRef[_tempId]) {
+            // Padre nuevo — usar ref pre-asignado
+            ref = tempIdToRef[_tempId];
+          } else {
+            // Simple nuevo o hijo nuevo
+            ref = doc(colRef);
+          }
+
+          // Resolver parent_id para hijos
+          if (_parentTempId) {
+            // Si el padre ya tiene ID real
+            const padreExistente = this._data.serviciosAcumulados.find(
+              s => s.id === _parentTempId
+            );
+            if (padreExistente) {
+              data.parent_id = padreExistente.id;
+            } else if (tempIdToRef[_parentTempId]) {
+              // Padre nuevo — usar el id del ref pre-asignado
+              data.parent_id = tempIdToRef[_parentTempId].id;
+            }
+          }
+
           batch.set(ref, { ...data, fechaActualizacion: serverTimestamp() });
         });
 
