@@ -29,7 +29,18 @@ const XLSX = window.XLSX;
 
 // ============================================================
 // MODELO DRAFT
+// {
+//   tipo: 'simple' | 'complejo'
+//   nombre, descripcion, disponibilidad, semantic_notes,
+//   imagen, atiende_urgencias
+//   precio, duracion
+//   _variantes: []          ← variantes acumuladas inline
+//   _varianteFormOpen: bool ← mini-form abierto/cerrado
+//   _editingParentRef: str  ← _tempId o id del padre que se edita (null si no)
+//   _editingChildRef: bool  ← true si se edita un hijo
+// }
 // ============================================================
+
 const _draftVacio = () => ({
   tipo:               'simple',
   nombre:             '',
@@ -40,8 +51,10 @@ const _draftVacio = () => ({
   atiende_urgencias:  false,
   precio:             null,
   duracion:           null,
-  _variantes:         [],      // ← variantes acumuladas inline
-  _varianteFormOpen:  false,   // ← mini-form abierto/cerrado
+  _variantes:         [],
+  _varianteFormOpen:  false,
+  _editingParentRef:  null,
+  _editingChildRef:   false,
 });
 
 const _draftVarianteVacio = (parentRef) => ({
@@ -166,15 +179,38 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // FORM PRINCIPAL — padre
+  // FORM PRINCIPAL
   // ──────────────────────────────────────────────────────────
   _renderFormContent() {
     const container = document.createElement('div');
     container.className = 'form-content';
 
-    const esComplejo = this._data.draft.tipo === 'complejo';
+    const esComplejo    = this._data.draft.tipo === 'complejo';
+    const editandoPadre = !!this._data.draft._editingParentRef;
+    const editandoHijo  = !!this._data.draft._editingChildRef;
+    const editando      = editandoPadre || editandoHijo;
 
-    container.appendChild(this._renderTipoServicioField());
+    // ── Banner de modo edición ──
+    if (editando) {
+      const banner = document.createElement('div');
+      banner.className = 'edit-banner';
+      if (editandoHijo) {
+        const parentRef = this._data.draft._parentTempId || this._data.draft.parent_id;
+        const padre = this._data.serviciosAcumulados.find(
+          s => (s._tempId === parentRef || s.id === parentRef)
+        );
+        banner.innerHTML = `<i class="fas fa-pencil"></i> Editando variante${padre ? ` de <strong>${padre.nombre}</strong>` : ''}. Los cambios se aplican al guardar.`;
+      } else {
+        banner.innerHTML = `<i class="fas fa-pencil"></i> Editando <strong>${this._data.draft.nombre || 'servicio'}</strong>. Los cambios se aplican al guardar.`;
+      }
+      container.appendChild(banner);
+    }
+
+    // ── Tipo (ocultar en modo edición) ──
+    if (!editando) {
+      container.appendChild(this._renderTipoServicioField());
+    }
+
     container.appendChild(this._renderNombreField());
     container.appendChild(this._renderDescripcionField());
     container.appendChild(this._renderDisponibilidadField());
@@ -190,31 +226,41 @@ const page = {
     container.appendChild(this._renderUrgenciasField());
     container.appendChild(this._renderImagenField());
 
-    // ── Sección de variantes inline (solo para complejos) ──
+    // ── Variantes inline (solo complejos) ──
     if (esComplejo) {
-      const variantesSection = this._renderVariantesInlineSection();
-      container.appendChild(variantesSection);
+      container.appendChild(this._renderVariantesInlineSection());
     }
 
-    // ── Botón agregar ──
+    // ── Botón contextual ──
     if (esComplejo) {
       const cantVariantes = this._data.draft._variantes.length;
-      const label = cantVariantes > 0
-        ? `Crear servicio con ${cantVariantes} variante${cantVariantes > 1 ? 's' : ''}`
-        : 'Crear servicio con variantes';
+
+      let label, variant;
+      if (editandoPadre) {
+        label   = cantVariantes > 0
+          ? `Guardar cambios (+ ${cantVariantes} variante${cantVariantes > 1 ? 's' : ''} nueva${cantVariantes > 1 ? 's' : ''})`
+          : 'Guardar cambios';
+        variant = 'success';
+      } else {
+        label   = cantVariantes > 0
+          ? `Crear servicio con ${cantVariantes} variante${cantVariantes > 1 ? 's' : ''}`
+          : 'Crear servicio con variantes';
+        variant = cantVariantes > 0 ? 'success' : 'secondary';
+      }
 
       container.appendChild(createButton({
         label,
-        variant: cantVariantes > 0 ? 'success' : 'secondary',
-        icon:    'fa-check',
-        block:   true,
+        variant,
+        icon:  'fa-check',
+        block: true,
         onClick: () => this._agregarServicio()
       }));
+
     } else {
       container.appendChild(createButton({
-        label:   'Agregar este servicio',
+        label:   editando ? 'Guardar cambios' : 'Agregar este servicio',
         variant: 'success',
-        icon:    'fa-plus',
+        icon:    editando ? 'fa-check' : 'fa-plus',
         block:   true,
         onClick: () => this._agregarServicio()
       }));
@@ -243,7 +289,6 @@ const page = {
           if (value === 'complejo') {
             this._data.draft.disponibilidad = 'a_coordinar';
           } else {
-            // Al volver a simple, limpiar variantes
             this._data.draft._variantes = [];
             this._data.draft._varianteFormOpen = false;
           }
@@ -373,7 +418,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // SEMANTIC NOTES
+  // SEMANTIC NOTES — reutilizable con draft externo
   // ──────────────────────────────────────────────────────────
   _renderSemanticNotesField(draft = null) {
     const d = draft || this._data.draft;
@@ -540,7 +585,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // VARIANTES INLINE (nuevo)
+  // VARIANTES INLINE (dentro del form)
   // ──────────────────────────────────────────────────────────
   _renderVariantesInlineSection() {
     const section = document.createElement('div');
@@ -568,7 +613,7 @@ const page = {
 
     const help = document.createElement('small');
     help.className   = 's-help';
-    help.textContent = 'Cada variante puede tener su propio precio y duración. Ej: "Axilas", "Piernas completas", "Con gorra".';
+    help.textContent = 'Cada variante puede tener su propio precio, duración y aclaraciones. Ej: "Axilas", "Piernas completas", "Con gorra".';
     section.appendChild(help);
 
     // ── Lista de variantes ya agregadas ──
@@ -622,6 +667,13 @@ const page = {
           desc.className   = 'variante-inline-desc';
           desc.textContent = variante.descripcion;
           info.appendChild(desc);
+        }
+
+        if (variante.semantic_notes?.length) {
+          const sn = document.createElement('small');
+          sn.className   = 'variante-inline-desc';
+          sn.textContent = `🧠 ${variante.semantic_notes.join(' · ')}`;
+          info.appendChild(sn);
         }
 
         item.appendChild(info);
@@ -760,7 +812,7 @@ const page = {
       actions:  { onChange: (v) => { const n = Number(v); draft.duracion = n > 0 ? n : null; } }
     }));
 
-    // ── Semantic notes (nuevo) ──
+    // Semantic notes
     form.appendChild(this._renderSemanticNotesField(draft));
 
     // Botones
@@ -778,7 +830,6 @@ const page = {
           return;
         }
         if (!draft.disponibilidad) {
-          // Heredar disponibilidad del padre si no se eligió
           draft.disponibilidad = this._data.draft.disponibilidad || 'a_coordinar';
         }
         if (!draft.precio) draft.precio = { tipo: 'consultar' };
@@ -804,7 +855,7 @@ const page = {
     return form;
   },
 
-  // ── Rebuild helpers (reemplazan solo la sección, no el form completo) ──
+  // ── Rebuild helpers ──
   _rebuildFormContent() {
     const formContent = this._formCard?.querySelector('.form-content');
     if (formContent) formContent.replaceWith(this._renderFormContent());
@@ -815,7 +866,6 @@ const page = {
     if (section) {
       section.replaceWith(this._renderVariantesInlineSection());
     } else {
-      // La sección no existe todavía (estamos entrando en modo complejo)
       this._rebuildFormContent();
     }
   },
@@ -836,10 +886,12 @@ const page = {
       return;
     }
 
-    const esComplejo = this._data.draft.tipo === 'complejo';
+    const esComplejo    = this._data.draft.tipo === 'complejo';
+    const editandoPadre = !!this._data.draft._editingParentRef;
+    const editandoHijo  = !!this._data.draft._editingChildRef;
 
-    // Validar que complejos tengan al menos una variante
-    if (esComplejo && this._data.draft._variantes.length === 0) {
+    // Solo exigir variantes al CREAR un complejo nuevo
+    if (esComplejo && !editandoPadre && this._data.draft._variantes.length === 0) {
       showToast('Agregá al menos una variante antes de crear el servicio', 'warning');
       return;
     }
@@ -848,18 +900,23 @@ const page = {
     servicio.activo = true;
 
     if (esComplejo) {
-      const tempId = _generarTempId();
-      servicio._tempId = tempId;
+      // Preservar _tempId al editar (mantiene vínculo con hijos existentes)
+      if (editandoPadre) {
+        servicio._tempId = this._data.draft._editingParentRef;
+      } else {
+        servicio._tempId = _generarTempId();
+      }
 
-      // Extraer variantes del draft y crear como hijos
       const variantes = servicio._variantes || [];
       delete servicio._variantes;
       delete servicio._varianteFormOpen;
+      delete servicio._editingParentRef;
+      delete servicio._editingChildRef;
 
       // Push padre
       this._data.serviciosAcumulados.push(servicio);
 
-      // Push cada variante como hijo
+      // Push cada variante nueva como hijo
       variantes.forEach(v => {
         this._data.serviciosAcumulados.push({
           tipo:           'simple',
@@ -868,20 +925,31 @@ const page = {
           disponibilidad: v.disponibilidad || servicio.disponibilidad,
           precio:         v.precio || { tipo: 'consultar' },
           duracion:       v.duracion || null,
-          semantic_notes: [],
-          _parentTempId:  tempId,
+          semantic_notes: v.semantic_notes || [],
+          _parentTempId:  servicio._tempId,
           activo:         true,
         });
       });
 
-      showToast(`✅ Servicio con ${variantes.length} variante${variantes.length > 1 ? 's' : ''} creado`, 'success');
+      if (editandoPadre) {
+        showToast(variantes.length
+          ? `✅ Servicio actualizado con ${variantes.length} variante${variantes.length > 1 ? 's' : ''} nueva${variantes.length > 1 ? 's' : ''}`
+          : '✅ Servicio actualizado', 'success');
+      } else {
+        showToast(`✅ Servicio con ${variantes.length} variante${variantes.length > 1 ? 's' : ''} creado`, 'success');
+      }
 
     } else {
       if (!servicio.precio) servicio.precio = { tipo: 'consultar' };
       delete servicio._variantes;
       delete servicio._varianteFormOpen;
+      delete servicio._editingParentRef;
+      delete servicio._editingChildRef;
+
       this._data.serviciosAcumulados.push(servicio);
-      showToast('✅ Servicio agregado. Podés crear otro o guardar cuando termines.', 'success');
+      showToast(editandoHijo
+        ? '✅ Variante actualizada'
+        : '✅ Servicio agregado. Podés crear otro o guardar cuando termines.', 'success');
     }
 
     this._data.draft = _draftVacio();
@@ -890,7 +958,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // FORM DE VARIANTE (para la lista — agregar a servicios ya guardados)
+  // FORM DE VARIANTE (lista — agregar a servicios ya guardados)
   // ──────────────────────────────────────────────────────────
   _renderVarianteForm(parentRef, refreshCallback) {
     const draft = _draftVarianteVacio(parentRef);
@@ -974,7 +1042,7 @@ const page = {
       return container;
     }
 
-    padres.forEach((servicio, index) => {
+    padres.forEach((servicio) => {
       const idx = this._data.serviciosAcumulados.indexOf(servicio);
       container.appendChild(this._renderServicioCard(servicio, idx));
     });
@@ -1208,22 +1276,17 @@ const page = {
     const servicio = this._data.serviciosAcumulados[index];
     const esHijo   = servicio._parentTempId || servicio.parent_id;
 
-    // Si es un hijo, buscar el nombre del padre para contexto
-    let nombrePadre = null;
-    if (esHijo) {
-      const parentRef = servicio._parentTempId || servicio.parent_id;
-      const padre = this._data.serviciosAcumulados.find(
-        s => (s._tempId === parentRef || s.id === parentRef)
-      );
-      nombrePadre = padre?.nombre || null;
-    }
-
     this._data.draft = structuredClone(servicio);
 
-    // Limpiar campos que no aplican al draft principal
+    // Marcar modo edición y preservar referencias
+    if (esHijo) {
+      this._data.draft._editingChildRef = true;
+    } else if (servicio.tipo === 'complejo') {
+      this._data.draft._editingParentRef = servicio._tempId || servicio.id;
+    }
+
+    // Limpiar campos que no aplican al draft
     delete this._data.draft.id;
-    delete this._data.draft._parentTempId;
-    delete this._data.draft.parent_id;
     if (!this._data.draft._variantes) this._data.draft._variantes = [];
     if (!this._data.draft._varianteFormOpen) this._data.draft._varianteFormOpen = false;
 
@@ -1233,10 +1296,14 @@ const page = {
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    if (esHijo && nombrePadre) {
-      showToast(`Editando variante de "${nombrePadre}" — modificá y volvé a agregar`, 'info');
+    if (esHijo) {
+      const parentRef = servicio._parentTempId || servicio.parent_id;
+      const padre = this._data.serviciosAcumulados.find(
+        s => (s._tempId === parentRef || s.id === parentRef)
+      );
+      showToast(`Editando variante de "${padre?.nombre || 'servicio'}" — modificá y guardá`, 'info');
     } else {
-      showToast('Modo edición — modificá y volvé a agregar el servicio', 'info');
+      showToast('Modo edición — modificá y guardá', 'info');
     }
   },
 
@@ -1704,7 +1771,6 @@ const page = {
             this._data.serviciosAcumulados[idx] = dup;
           }
         });
-        // Agregar hijos de los duplicados
         const hijosDuplicados = importados.filter(s => s._parentTempId && duplicados.some(d => d._tempId === s._parentTempId));
         this._data.serviciosAcumulados.push(...nuevos, ...hijosDuplicados);
         this._refreshLista();
