@@ -106,8 +106,18 @@ const page = {
 
     const hint = document.createElement('p');
     hint.className   = 'page-hint';
-    hint.textContent = 'Definí todos los servicios que ofrecés. Podés crear varios y después guardarlos todos juntos.';
+    hint.textContent = 'Definí todos los servicios que ofrecés.';
     root.appendChild(hint);
+
+    // ── CAMBIO 3: Import va primero ──────────────────────────
+    root.appendChild(this._renderImportCard());
+
+    // ── Separador visual ─────────────────────────────────────
+    const sep = document.createElement('p');
+    sep.className   = 'page-hint';
+    sep.textContent = 'O cargá servicios de a uno manualmente:';
+    sep.style.marginTop = 'var(--s-spacing-lg)';
+    root.appendChild(sep);
 
     this._formCard = createCard({
       title:   'Crear nuevo servicio',
@@ -123,7 +133,6 @@ const page = {
     });
     root.appendChild(this._listaCard);
 
-    root.appendChild(this._renderImportCard());
     root.appendChild(this._renderSaveButton());
   },
 
@@ -812,7 +821,7 @@ const page = {
     const instrucciones = document.createElement('div');
     instrucciones.className = 'import-instrucciones';
     instrucciones.innerHTML = `
-      <p>Para cargar varios servicios a la vez:</p>
+      <p>Si tenés muchos servicios, la forma más rápida es cargarlos desde Excel:</p>
       <ol>
         <li>Descargá la plantilla según el tipo de servicio</li>
         <li>Completá tus servicios en el archivo</li>
@@ -1069,7 +1078,7 @@ const page = {
         const metaSheet = wb.Sheets['_indiceia_meta'];
         if (!metaSheet) { showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return; }
         const firma = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
-        const tipoPlantilla = firma?.[0]?.[0]; // 'indiceia_servicios_simples_v1' o 'indiceia_servicios_complejos_v1'
+        const tipoPlantilla = firma?.[0]?.[0];
         if (!tipoPlantilla?.startsWith('indiceia_servicios_')) {
           showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return;
         }
@@ -1088,7 +1097,6 @@ const page = {
           const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
           rows.forEach(row => {
             if (!String(row.nombre || '').trim()) return;
-            // Notas: columnas nota_1, nota_2, ... + cualquier columna extra
             const notas = [];
             const atributos = {};
             Object.keys(row).forEach(col => {
@@ -1114,9 +1122,7 @@ const page = {
           });
 
         } else {
-          // ── COMPLEJOS — agrupar por indentación ──────────
-          // Fila padre: tiene nombre, descripcion, disponibilidad; variante vacía
-          // Fila variante: nombre/descripcion/disponibilidad vacíos; variante llena
+          // ── COMPLEJOS ────────────────────────────────────
           const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','variante','precio','duracion_min'];
           let padreActual = null;
 
@@ -1125,7 +1131,6 @@ const page = {
             const variante = String(row.variante || '').trim();
 
             if (nombre) {
-              // Es fila padre — guardar anterior si existe
               if (padreActual) importados.push(padreActual);
               const notas = [];
               const atributos = {};
@@ -1147,7 +1152,6 @@ const page = {
                 activo:         true,
               };
             } else if (variante && padreActual) {
-              // Es fila variante
               padreActual.items.push({
                 nombre:   variante,
                 precio:   Number(row.precio)      || null,
@@ -1155,7 +1159,6 @@ const page = {
               });
             }
           });
-          // Último servicio
           if (padreActual?.items.length) importados.push(padreActual);
         }
 
@@ -1231,7 +1234,6 @@ const page = {
       variant: 'warning',
       icon:    'fa-sync',
       onClick: () => {
-        // Reemplazar existentes + agregar nuevos
         duplicados.forEach(dup => {
           const idx = this._data.serviciosAcumulados.findIndex(s => s.nombre.toLowerCase() === dup.nombre.toLowerCase());
           if (idx >= 0) this._data.serviciosAcumulados[idx] = dup;
@@ -1275,13 +1277,11 @@ const page = {
   },
 
   _agregarMeta(wb, tipo) {
-    // tipo: 'simples' | 'complejos'
     const firma = `indiceia_servicios_${tipo}_v1`;
     const metaWs = XLSX.utils.aoa_to_sheet([[firma]]);
     XLSX.utils.book_append_sheet(wb, metaWs, '_indiceia_meta');
   },
 
-  // Dropdowns para plantilla simples: disponibilidad (col C) y precio_tipo (col D)
   _agregarValidacionesSimples(ws, rowStart, rowEnd) {
     if (!ws['!dataValidations']) ws['!dataValidations'] = [];
     ws['!dataValidations'].push({
@@ -1294,7 +1294,6 @@ const page = {
     });
   },
 
-  // Dropdown para plantilla complejos: disponibilidad (col C)
   _agregarValidacionesComplejos(ws, rowStart, rowEnd) {
     if (!ws['!dataValidations']) ws['!dataValidations'] = [];
     ws['!dataValidations'].push({
@@ -1307,42 +1306,73 @@ const page = {
   // SAVE BUTTON
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
+    // ── CAMBIO 1: dirty controller simplificado ──────────────
     const dirtyController = {
-      hasUnsavedChanges: () => JSON.stringify(this._data.serviciosAcumulados) !== JSON.stringify(this._originalSnapshot),
-      markSaved:         () => { this._originalSnapshot = structuredClone(this._data.serviciosAcumulados); }
+      hasUnsavedChanges: () =>
+        JSON.stringify(this._data.serviciosAcumulados) !== JSON.stringify(this._originalSnapshot),
+      markSaved: () => {
+        this._originalSnapshot = structuredClone(this._data.serviciosAcumulados);
+      }
     };
 
     return createOnboardingButton({
-      stepName:        'servicios',
-      validate:        () => !dirtyController.hasUnsavedChanges() || this._data.serviciosAcumulados.length > 0,
+      stepName: 'servicios',
+
+      // Siempre válido — el botón nunca está disabled
+      validate: () => true,
+
+      // ── CAMBIO 1: label dinámico ─────────────────────────
+      getLabel: () => dirtyController.hasUnsavedChanges()
+        ? 'Guardar y volver al dashboard'
+        : 'Volver al dashboard',
+
       dirtyController,
-      getLabel: () => {
-        if (!dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
-        const n = this._data.serviciosAcumulados.length;
-        return n === 0 ? 'Agregá al menos un servicio'
-          : n === 1   ? 'Guardar y continuar (1 servicio)'
-          :             `Guardar y continuar (${n} servicios)`;
-      },
+
+      // ── CAMBIO 2: guardado progresivo (diff) ─────────────
       onSave: async ({ uid, comercioId }) => {
         if (!comercioId) throw new Error('No hay comercioId para guardar servicios');
-        const batch        = writeBatch(db);
-        const comercioRef  = doc(db, 'entidades', comercioId);
-        const serviciosRef = collection(db, 'entidades', comercioId, 'servicios');
-        const existentes   = await getDocs(serviciosRef);
-        existentes.docs.forEach(docSnap => batch.delete(docSnap.ref));
+
+        const batch       = writeBatch(db);
+        const comercioRef = doc(db, 'entidades', comercioId);
+        const colRef      = collection(db, 'entidades', comercioId, 'servicios');
+
+        // IDs que existían al cargar
+        const idsOriginales = new Set(
+          this._originalSnapshot.filter(s => s.id).map(s => s.id)
+        );
+        // IDs que siguen presentes ahora
+        const idsActuales = new Set(
+          this._data.serviciosAcumulados.filter(s => s.id).map(s => s.id)
+        );
+
+        // Eliminar los que ya no están
+        idsOriginales.forEach(id => {
+          if (!idsActuales.has(id)) {
+            batch.delete(doc(colRef, id));
+          }
+        });
+
+        // Upsert: actualizar existentes + crear nuevos
         this._data.serviciosAcumulados.forEach(servicio => {
           const { id, ...data } = servicio;
-          batch.set(doc(collection(db, 'entidades', comercioId, 'servicios')), {
-            ...data,
-            fechaActualizacion: serverTimestamp()
-          });
+          const ref = id ? doc(colRef, id) : doc(colRef);
+          batch.set(ref, { ...data, fechaActualizacion: serverTimestamp() });
         });
-        batch.update(comercioRef, { 'onboardingSteps.servicios': true, fechaActualizacion: serverTimestamp() });
+
+        batch.update(comercioRef, {
+          'onboardingSteps.servicios': true,
+          fechaActualizacion: serverTimestamp()
+        });
+
         await batch.commit();
         return true;
       },
+
       onSuccess: () => showToast('💾 Servicios guardados', 'success'),
-      onError:   (err) => { console.error('Error guardando servicios:', err); showToast('Error al guardar: ' + err.message, 'error'); }
+      onError:   (err) => {
+        console.error('Error guardando servicios:', err);
+        showToast('Error al guardar: ' + err.message, 'error');
+      }
     });
   }
 };
