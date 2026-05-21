@@ -108,7 +108,7 @@ export async function runMiComercioPage(pageModule) {
 
       // Actualizar header
       updateHeaderInfo(
-        comercioData.nombreComercio || 'Mi Comercio',
+        comercioData.nombre || 'Mi Comercio',
         { nombre: 'Trial', color: '#6366f1' }
       );
 
