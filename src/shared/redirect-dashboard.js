@@ -57,7 +57,7 @@ export async function redirectToNextStep() {
             userDoc.data().direccion
           ),
           comercio: !!(
-            comercioData.nombreComercio &&
+            (comercioData.nombre || comercioData.nombreComercio) &&
             comercioData.rubro &&
             comercioData.descripcion &&
             comercioData.direccion
