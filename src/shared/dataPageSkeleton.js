@@ -91,7 +91,7 @@ export async function runDataPage(pageModule) {
           : { plan: 'trial' };
 
         updateHeaderInfo(
-          comercioData.nombreComercio || 'Mi comercio',
+          comercioData.nombre || comercioData.nombreComercio || 'Mi comercio',
           PLANS[comercioData.plan || 'trial']
         );
 
