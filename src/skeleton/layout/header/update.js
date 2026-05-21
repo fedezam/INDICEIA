@@ -15,7 +15,7 @@ export function updateHeader({ userData, comercioData }) {
   // Nombre comercio (arriba derecha)
   const commerceEl = document.getElementById('headerCommerceName');
   if (commerceEl && comercioData) {
-    commerceEl.textContent = comercioData.nombreComercio || 'Mi Comercio';
+    commerceEl.textContent = comercioData.nombre || comercioData.nombreComercio || 'Mi Comercio';
   }
 
   // Badge plan (abajo derecha)
