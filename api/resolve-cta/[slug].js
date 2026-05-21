@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
     // ── miniPrompt ──
     const context = {
-      nombreComercio: data.nombre || data.nombreComercio,
+      nombre:     data.nombre || data.nombreComercio,
       entityType: data.entityType || 'comercio',
       ubicacion:  data.ubicacion  || {},
     };
@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       ok:              true,
       slug,
       comercioId,
-      nombreComercio:  data.nombreComercio,
+      nombre:          data.nombre || data.nombreComercio,
       descripcion:     data.descripcion     || '',
       entityPublicUrl: data.entityPublicUrl,
       seoHtmlUrl:      data.seoHtmlUrl      || null,
