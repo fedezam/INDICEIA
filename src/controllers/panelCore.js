@@ -78,7 +78,7 @@ export async function listEntidades({ maxResults = 100 } = {}) {
       const d = doc.data();
       return {
         id: doc.id,
-        nombreComercio: d.nombreComercio || '',
+        nombreComercio: d.nombre || d.nombreComercio || '',
         duenoId: d.duenoId || null,
         entityType: d.entityType || 'comercio',
         fechaActualizacion: d.fechaActualizacion?.toDate?.() || null
