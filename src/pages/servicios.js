@@ -61,6 +61,7 @@ const _varianteInlineVacia = () => ({
   disponibilidad: null,
   precio:         null,
   duracion:       null,
+  semantic_notes: [],
 });
 
 const _generarTempId = () => `tmp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -758,6 +759,9 @@ const page = {
       value:    '',
       actions:  { onChange: (v) => { const n = Number(v); draft.duracion = n > 0 ? n : null; } }
     }));
+
+    // ── Semantic notes (nuevo) ──
+    form.appendChild(this._renderSemanticNotesField(draft));
 
     // Botones
     const btns = document.createElement('div');
