@@ -523,7 +523,7 @@ const page = {
         const updates = {
           nombre: d.nombre, especialidad: d.especialidad, rubro: rubroFromForm([d.especialidad]),
           descripcion: d.descripcion, experiencia: d.experiencia || null,
-          ...(tieneLocal && { modalidad_trabajo: 'local' }),
+          modalidad_trabajo: d.modalidad_trabajo,
           ...(d.atiende_urgencias === true && { atiende_urgencias: true }),
           localidad_principal: d.localidad_principal,
           ubicacion: { pais: d.localidad_principal?.pais || 'Argentina', provincia: d.localidad_principal?.provincia || '', localidad: { id: d.localidad_principal?.id || null, nombre: d.localidad_principal?.localidad || '', lat: d.localidad_principal?.lat || null, lng: d.localidad_principal?.lng || null } },
