@@ -29,16 +29,6 @@ const XLSX = window.XLSX;
 
 // ============================================================
 // MODELO DRAFT
-// {
-//   tipo: 'simple' | 'complejo'
-//   nombre, descripcion, disponibilidad, semantic_notes,
-//   imagen, atiende_urgencias
-//   precio, duracion
-//   _variantes: []          ← variantes acumuladas inline
-//   _varianteFormOpen: bool ← mini-form abierto/cerrado
-//   _editingParentRef: str  ← _tempId o id del padre que se edita (null si no)
-//   _editingChildRef: bool  ← true si se edita un hijo
-// }
 // ============================================================
 
 const _draftVacio = () => ({
@@ -53,8 +43,9 @@ const _draftVacio = () => ({
   duracion:           null,
   _variantes:         [],
   _varianteFormOpen:  false,
-  _editingParentRef:  null,
-  _editingChildRef:   false,
+  _editingParentRef:  null, // ID (real o temp) del padre que se está editando
+  _editingChildRef:   false, // Boolean: ¿estamos editando un hijo?
+  _parentTempId:      null,  // Solo usado si el draft actual ES un hijo en edición
 });
 
 const _draftVarianteVacio = (parentRef) => ({
@@ -65,7 +56,7 @@ const _draftVarianteVacio = (parentRef) => ({
   semantic_notes:     [],
   precio:             null,
   duracion:           null,
-  _parentTempId:      parentRef,
+  _parentTempId:      parentRef, // Referencia al padre (temp o real)
 });
 
 const _varianteInlineVacia = () => ({
@@ -101,8 +92,9 @@ const page = {
   },
 
   _getHijos(parentRef) {
+    // Un hijo pertenece a un padre si su _parentTempId (memoria) o parent_id (DB) coincide
     return this._data.serviciosAcumulados.filter(
-      s => s._parentTempId === parentRef || s.parent_id === parentRef
+      s => (s._parentTempId === parentRef || s.parent_id === parentRef)
     );
   },
 
@@ -127,6 +119,7 @@ const page = {
     try {
       const serviciosRef = collection(db, 'entidades', this._comercioId, 'servicios');
       const snapshot     = await getDocs(serviciosRef);
+      // Mapeamos asegurando que los campos existan
       this._data.serviciosAcumulados = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     } catch (err) {
       console.error('Error cargando servicios:', err);
@@ -142,6 +135,7 @@ const page = {
   // ──────────────────────────────────────────────────────────
   render() {
     const root = document.getElementById('skeleton-page');
+    if (!root) return; 
     root.innerHTML = '';
 
     const title = document.createElement('h2');
@@ -195,6 +189,7 @@ const page = {
       const banner = document.createElement('div');
       banner.className = 'edit-banner';
       if (editandoHijo) {
+        // Buscar el nombre del padre para mostrarlo
         const parentRef = this._data.draft._parentTempId || this._data.draft.parent_id;
         const padre = this._data.serviciosAcumulados.find(
           s => (s._tempId === parentRef || s.id === parentRef)
@@ -206,7 +201,7 @@ const page = {
       container.appendChild(banner);
     }
 
-    // ── Tipo (ocultar en modo edición) ──
+    // ── Tipo (ocultar en modo edición para evitar cambios de estructura drásticos) ──
     if (!editando) {
       container.appendChild(this._renderTipoServicioField());
     }
@@ -418,7 +413,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // SEMANTIC NOTES — reutilizable con draft externo
+  // SEMANTIC NOTES
   // ──────────────────────────────────────────────────────────
   _renderSemanticNotesField(draft = null) {
     const d = draft || this._data.draft;
@@ -648,7 +643,7 @@ const page = {
 
         if (variante.duracion) {
           badges.appendChild(createBadge({
-            text: `⏱️ {variante.duracion} min`, variant: 'secondary', size: 'small'
+            text: `⏱️ ${variante.duracion} min`, variant: 'secondary', size: 'small'
           }));
         }
 
@@ -908,10 +903,13 @@ const page = {
       }
 
       const variantes = servicio._variantes || [];
+      
+      // Limpieza estricta antes de pushear
       delete servicio._variantes;
       delete servicio._varianteFormOpen;
       delete servicio._editingParentRef;
       delete servicio._editingChildRef;
+      delete servicio._parentTempId; // No debería tener, pero por seguridad
 
       // Push padre
       this._data.serviciosAcumulados.push(servicio);
@@ -926,7 +924,7 @@ const page = {
           precio:         v.precio || { tipo: 'consultar' },
           duracion:       v.duracion || null,
           semantic_notes: v.semantic_notes || [],
-          _parentTempId:  servicio._tempId,
+          _parentTempId:  servicio._tempId, // Vinculación temporal
           activo:         true,
         });
       });
@@ -940,12 +938,16 @@ const page = {
       }
 
     } else {
+      // Lógica para Servicio Simple (o Hijo editado como simple)
       if (!servicio.precio) servicio.precio = { tipo: 'consultar' };
+      
+      // Limpieza
       delete servicio._variantes;
       delete servicio._varianteFormOpen;
       delete servicio._editingParentRef;
       delete servicio._editingChildRef;
-
+      // Mantener _parentTempId si es un hijo
+      
       this._data.serviciosAcumulados.push(servicio);
       showToast(editandoHijo
         ? '✅ Variante actualizada'
@@ -1086,7 +1088,7 @@ const page = {
 
     if (!esComplejo) {
       tags.appendChild(createBadge({
-        text:    servicio.precio?.valor ? `$$$${servicio.precio.valor.toLocaleString('es-AR')}` : 'A consultar',
+        text:    servicio.precio?.valor ? `$${servicio.precio.valor.toLocaleString('es-AR')}` : 'A consultar',
         variant: servicio.precio?.valor ? 'success' : 'secondary',
         size:    'small'
       }));
@@ -1281,15 +1283,17 @@ const page = {
     // Marcar modo edición y preservar referencias
     if (esHijo) {
       this._data.draft._editingChildRef = true;
+      // Asegurar que el draft tenga la referencia al padre correcta
+      this._data.draft._parentTempId = servicio._parentTempId || servicio.parent_id;
     } else if (servicio.tipo === 'complejo') {
       this._data.draft._editingParentRef = servicio._tempId || servicio.id;
     }
 
-    // Limpiar campos que no aplican al draft
-    delete this._data.draft.id;
+    // Inicializar arrays si faltan
     if (!this._data.draft._variantes) this._data.draft._variantes = [];
     if (!this._data.draft._varianteFormOpen) this._data.draft._varianteFormOpen = false;
 
+    // Eliminar de la lista temporalmente para que no aparezca duplicado mientras se edita
     this._data.serviciosAcumulados.splice(index, 1);
     this._refreshLista();
     this._rebuildFormContent();
@@ -1319,23 +1323,34 @@ const page = {
   },
 
   _eliminarServicioConHijos(index, parentRef) {
+    // 1. Eliminar hijos asociados
     const hijos = this._getHijos(parentRef);
+    // Iterar al revés o filtrar para evitar problemas de índices al eliminar
     hijos.forEach(hijo => {
       const hi = this._data.serviciosAcumulados.indexOf(hijo);
       if (hi >= 0) this._data.serviciosAcumulados.splice(hi, 1);
     });
+
+    // 2. Eliminar padre
+    // Recalcular índice del padre porque pudo cambiar al borrar hijos
     const padreIdx = this._data.serviciosAcumulados.findIndex(
       s => (s._tempId === parentRef) || (s.id === parentRef)
     );
-    if (padreIdx >= 0) this._data.serviciosAcumulados.splice(padreIdx, 1);
+    
+    if (padreIdx >= 0) {
+      this._data.serviciosAcumulados.splice(padreIdx, 1);
+    }
+    
     this._refreshLista();
     showToast('Servicio y sus variantes eliminados', 'info');
   },
 
   _refreshLista() {
     const newLista = createCard({ title: 'Servicios agregados', variant: 'warning', content: this._renderListaContent() });
-    this._listaCard.replaceWith(newLista);
-    this._listaCard = newLista;
+    if (this._listaCard) {
+      this._listaCard.replaceWith(newLista);
+      this._listaCard = newLista;
+    }
   },
 
   // ──────────────────────────────────────────────────────────
@@ -1847,6 +1862,7 @@ const page = {
         const comercioRef = doc(db, 'entidades', comercioId);
         const colRef      = collection(db, 'entidades', comercioId, 'servicios');
 
+        // Identificar documentos a eliminar (los que estaban y ya no están)
         const idsOriginales = new Set(
           this._originalSnapshot.filter(s => s.id).map(s => s.id)
         );
@@ -1858,14 +1874,17 @@ const page = {
           if (!idsActuales.has(id)) batch.delete(doc(colRef, id));
         });
 
+        // Mapa para resolver referencias temporales a reales durante el batch
         const tempIdToRef = {};
 
+        // 1. Pre-crear referencias para padres nuevos (complejos)
         this._data.serviciosAcumulados.forEach(servicio => {
           if (!servicio.id && servicio.tipo === 'complejo' && servicio._tempId) {
             tempIdToRef[servicio._tempId] = doc(colRef);
           }
         });
 
+        // 2. Procesar todos los servicios
         this._data.serviciosAcumulados.forEach(servicio => {
           const { id, _tempId, _parentTempId, ...data } = servicio;
 
@@ -1878,13 +1897,17 @@ const page = {
             ref = doc(colRef);
           }
 
+          // Resolver parent_id
           if (_parentTempId) {
+            // Caso A: El padre ya existe en DB (tiene ID real)
             const padreExistente = this._data.serviciosAcumulados.find(
               s => s.id === _parentTempId
             );
             if (padreExistente) {
               data.parent_id = padreExistente.id;
-            } else if (tempIdToRef[_parentTempId]) {
+            } 
+            // Caso B: El padre es nuevo (tiene TempID mapeado)
+            else if (tempIdToRef[_parentTempId]) {
               data.parent_id = tempIdToRef[_parentTempId].id;
             }
           }
