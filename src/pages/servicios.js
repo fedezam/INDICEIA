@@ -1514,144 +1514,269 @@ const page = {
     showToast('Plantilla descargada', 'success');
   },
 
-    // ──────────────────────────────────────────────────────────
-  // EXPORT CORREGIDO (Soporta N notas y notas en variantes)
   // ──────────────────────────────────────────────────────────
-  _exportarSimples() {
-    if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
-    const simples = this._data.serviciosAcumulados.filter(s => s.tipo !== 'complejo' && !s._parentTempId && !s.parent_id);
-    
-    // Determinamos dinámicamente cuántas columnas de nota necesitamos
-    let maxNotas = 0;
-    simples.forEach(s => {
-      if (s.semantic_notes && s.semantic_notes.length > maxNotas) {
-        maxNotas = s.semantic_notes.length;
+// EXPORT / IMPORT CORREGIDO (N notas, descripcion en hijos)
+// ──────────────────────────────────────────────────────────
+_exportarSimples() {
+  if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
+  const simples = this._data.serviciosAcumulados.filter(s => s.tipo !== 'complejo' && !s._parentTempId && !s.parent_id);
+
+  let maxNotas = 0;
+  simples.forEach(s => {
+    if (s.semantic_notes?.length > maxNotas) maxNotas = s.semantic_notes.length;
+  });
+
+  const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
+  const headersNotas = Array.from({ length: Math.max(maxNotas, 1) }, (_, i) => `nota_${i + 1}`);
+  const HEADERS = [...CAMPOS_BASE, ...headersNotas];
+
+  const rows = simples.map(s => {
+    const row = {
+      nombre:         s.nombre         || '',
+      descripcion:    s.descripcion    || '',
+      disponibilidad: s.disponibilidad || '',
+      precio_tipo:    s.precio?.tipo   || 'consultar',
+      precio_valor:   s.precio?.valor  || '',
+      duracion_min:   s.duracion       || '',
+    };
+    (s.semantic_notes || []).forEach((nota, i) => { row[`nota_${i + 1}`] = nota; });
+    if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { row[k] = v; });
+    return row;
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows, { header: HEADERS });
+  this._agregarValidacionesSimples(ws, 2, rows.length + 1);
+  const colWidths = [{ wch:28 },{ wch:38 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:13 }];
+  headersNotas.forEach(() => colWidths.push({ wch: 35 }));
+  ws['!cols'] = colWidths;
+  XLSX.utils.book_append_sheet(wb, ws, 'servicios');
+  this._agregarMeta(wb, 'simples');
+  XLSX.writeFile(wb, 'mis_servicios_simples.xlsx');
+  showToast(`${simples.length} servicios simples exportados`, 'success');
+},
+
+_exportarComplejos() {
+  if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
+  const padres = this._data.serviciosAcumulados.filter(s => s.tipo === 'complejo');
+
+  let maxNotasPadre = 0;
+  let maxNotasHijo  = 0;
+
+  padres.forEach(p => {
+    if (p.semantic_notes?.length > maxNotasPadre) maxNotasPadre = p.semantic_notes.length;
+    this._getHijos(p._tempId || p.id).forEach(h => {
+      if (h.semantic_notes?.length > maxNotasHijo) maxNotasHijo = h.semantic_notes.length;
+    });
+  });
+
+  const headersNotasPadre = Array.from({ length: Math.max(maxNotasPadre, 1) }, (_, i) => `nota_padre_${i + 1}`);
+  const headersNotasHijo  = Array.from({ length: Math.max(maxNotasHijo,  1) }, (_, i) => `nota_variante_${i + 1}`);
+
+  const HEADERS = [
+    'nombre', 'descripcion', 'disponibilidad',
+    ...headersNotasPadre,
+    'variante', 'descripcion_variante', 'precio', 'duracion_min',
+    ...headersNotasHijo
+  ];
+
+  const rows = [];
+  padres.forEach(s => {
+    const parentRef = s._tempId || s.id;
+
+    const filaPadre = {
+      nombre:               s.nombre         || '',
+      descripcion:          s.descripcion    || '',
+      disponibilidad:       s.disponibilidad || '',
+      variante:             '',
+      descripcion_variante: '',
+      precio:               '',
+      duracion_min:         '',
+    };
+    (s.semantic_notes || []).forEach((nota, i) => { filaPadre[`nota_padre_${i + 1}`] = nota; });
+    if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { filaPadre[k] = v; });
+    rows.push(filaPadre);
+
+    this._getHijos(parentRef).forEach(hijo => {
+      const filaHijo = {
+        nombre:               '',
+        descripcion:          '',
+        disponibilidad:       '',
+        variante:             hijo.nombre        || '',
+        descripcion_variante: hijo.descripcion   || '',
+        precio:               hijo.precio?.valor || '',
+        duracion_min:         hijo.duracion      || '',
+      };
+      (hijo.semantic_notes || []).forEach((nota, i) => { filaHijo[`nota_variante_${i + 1}`] = nota; });
+      rows.push(filaHijo);
+    });
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows, { header: HEADERS });
+  this._agregarValidacionesComplejos(ws, 2, rows.length + 1);
+  const colWidths = [{ wch:28 },{ wch:38 },{ wch:16 }];
+  headersNotasPadre.forEach(() => colWidths.push({ wch: 30 }));
+  colWidths.push({ wch:22 },{ wch:38 },{ wch:12 },{ wch:13 });
+  headersNotasHijo.forEach(() => colWidths.push({ wch: 30 }));
+  ws['!cols'] = colWidths;
+  XLSX.utils.book_append_sheet(wb, ws, 'servicios');
+  this._agregarMeta(wb, 'complejos');
+  XLSX.writeFile(wb, 'mis_servicios_complejos.xlsx');
+  showToast(`${padres.length} servicios complejos exportados`, 'success');
+},
+
+_parseFile(file) {
+  if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+
+      const metaSheet = wb.Sheets['_indiceia_meta'];
+      if (!metaSheet) { showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return; }
+      const firma = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
+      const tipoPlantilla = firma?.[0]?.[0];
+      if (!tipoPlantilla?.startsWith('indiceia_servicios_')) {
+        showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return;
       }
-    });
 
-    const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
-    // Generamos headers dinámicos: nota_1, nota_2, ... nota_N
-    const headersNotas = Array.from({ length: Math.max(maxNotas, 2) }, (_, i) => `nota_${i + 1}`);
-    const HEADERS = [...CAMPOS_BASE, ...headersNotas];
+      const ws = wb.Sheets['servicios'];
+      if (!ws) { showToast('No se encontró la hoja "servicios" en el archivo', 'error'); return; }
 
-    const rows = simples.map(s => {
-      const row = {
-        nombre:         s.nombre         || '',
-        descripcion:    s.descripcion    || '',
-        disponibilidad: s.disponibilidad || '',
-        precio_tipo:    s.precio?.tipo   || 'consultar',
-        precio_valor:   s.precio?.valor  || '',
-        duracion_min:   s.duracion       || '',
-      };
-      // Rellenamos las notas dinámicamente
-      (s.semantic_notes || []).forEach((nota, i) => {
-        row[`nota_${i + 1}`] = nota;
-      });
-      
-      if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { row[k] = v; });
-      return row;
-    });
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!rows.length) { showToast('La plantilla está vacía', 'warning'); return; }
 
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(rows, { header: HEADERS });
-    this._agregarValidacionesSimples(ws, 2, rows.length + 1);
-    
-    // Ajuste de ancho de columnas dinámico
-    const colWidths = [{ wch:28 },{ wch:38 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:13 }];
-    headersNotas.forEach(() => colWidths.push({ wch: 35 })); // Ancho fijo para notas
-    ws['!cols'] = colWidths;
+      const importados  = [];
+      const esComplejo  = tipoPlantilla.includes('complejos');
 
-    XLSX.utils.book_append_sheet(wb, ws, 'servicios');
-    this._agregarMeta(wb, 'simples');
-    XLSX.writeFile(wb, 'mis_servicios_simples.xlsx');
-    showToast(`${simples.length} servicios simples exportados`, 'success');
-  },
-
-  _exportarComplejos() {
-    if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
-    const padres = this._data.serviciosAcumulados.filter(s => s.tipo === 'complejo');
-    
-    // Calculamos el máximo de notas para padres y para hijos por separado
-    let maxNotasPadre = 0;
-    let maxNotasHijo = 0;
-    
-    padres.forEach(p => {
-      if (p.semantic_notes && p.semantic_notes.length > maxNotasPadre) maxNotasPadre = p.semantic_notes.length;
-      const hijos = this._getHijos(p._tempId || p.id);
-      hijos.forEach(h => {
-        if (h.semantic_notes && h.semantic_notes.length > maxNotasHijo) maxNotasHijo = h.semantic_notes.length;
-      });
-    });
-
-    // Headers dinámicos
-    const headersNotasPadre = Array.from({ length: Math.max(maxNotasPadre, 2) }, (_, i) => `nota_padre_${i + 1}`);
-    const headersNotasHijo = Array.from({ length: Math.max(maxNotasHijo, 0) }, (_, i) => `nota_variante_${i + 1}`);
-    
-    const HEADERS = [
-      'nombre', 'descripcion', 'disponibilidad', 
-      ...headersNotasPadre, 
-      'variante', 'precio', 'duracion_min', 
-      ...headersNotasHijo
-    ];
-
-    const rows = [];
-    padres.forEach(s => {
-      const parentRef = s._tempId || s.id;
-      
-      // Fila del Padre
-      const filaPadre = {
-        nombre:         s.nombre         || '',
-        descripcion:    s.descripcion    || '',
-        disponibilidad: s.disponibilidad || '',
-        variante:       '',
-        precio:         '',
-        duracion_min:   '',
-      };
-      
-      // Notas del Padre
-      (s.semantic_notes || []).forEach((nota, i) => {
-        filaPadre[`nota_padre_${i + 1}`] = nota;
-      });
-      
-      if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { filaPadre[k] = v; });
-      rows.push(filaPadre);
-
-      // Filas de Hijos
-      this._getHijos(parentRef).forEach(hijo => {
-        const filaHijo = {
-          nombre:        '',
-          descripcion:   '',
-          disponibilidad:'',
-          variante:      hijo.nombre   || '',
-          precio:        hijo.precio?.valor || '',
-          duracion_min:  hijo.duracion || '',
-        };
-        
-        // Notas del Hijo
-        (hijo.semantic_notes || []).forEach((nota, i) => {
-          filaHijo[`nota_variante_${i + 1}`] = nota;
+      if (!esComplejo) {
+        const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
+        rows.forEach(row => {
+          if (!String(row.nombre || '').trim()) return;
+          const notas = [];
+          const atributos = {};
+          Object.keys(row).forEach(col => {
+            if (CAMPOS_BASE.includes(col)) return;
+            const val = String(row[col] || '').trim();
+            if (!val) return;
+            if (/^nota_\d+$/i.test(col)) { notas.push(val); }
+            else { atributos[col] = val; }
+          });
+          importados.push({
+            tipo:           'simple',
+            nombre:         String(row.nombre).trim(),
+            descripcion:    String(row.descripcion || '').trim(),
+            disponibilidad: ['inmediata','a_coordinar'].includes(row.disponibilidad) ? row.disponibilidad : 'a_coordinar',
+            precio:         row.precio_tipo === 'fijo' && row.precio_valor
+                              ? { tipo: 'fijo', valor: Number(row.precio_valor) || 0 }
+                              : { tipo: 'consultar' },
+            duracion:       Number(row.duracion_min) || null,
+            semantic_notes: notas,
+            atributos,
+            activo: true,
+          });
         });
-        
-        rows.push(filaHijo);
-      });
-    });
 
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(rows, { header: HEADERS });
-    this._agregarValidacionesComplejos(ws, 2, rows.length + 1);
-    
-    // Anchos de columna
-    const colWidths = [{ wch:28 },{ wch:38 },{ wch:16 }];
-    headersNotasPadre.forEach(() => colWidths.push({ wch: 30 }));
-    colWidths.push({ wch:22 },{ wch:12 },{ wch:13 });
-    headersNotasHijo.forEach(() => colWidths.push({ wch: 30 }));
-    ws['!cols'] = colWidths;
+      } else {
+        const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','variante','descripcion_variante','precio','duracion_min'];
+        let padreActual = null;
 
-    XLSX.utils.book_append_sheet(wb, ws, 'servicios');
-    this._agregarMeta(wb, 'complejos');
-    XLSX.writeFile(wb, 'mis_servicios_complejos.xlsx');
-    showToast(`${padres.length} servicios complejos exportados`, 'success');
-  },
+        rows.forEach(row => {
+          const nombre   = String(row.nombre   || '').trim();
+          const variante = String(row.variante || '').trim();
+
+          if (nombre) {
+            const notasPadre = [];
+            const atributos  = {};
+            Object.keys(row).forEach(col => {
+              if (CAMPOS_BASE.includes(col)) return;
+              const val = String(row[col] || '').trim();
+              if (!val) return;
+              if      (/^nota_padre_\d+$/i.test(col))    { notasPadre.push(val); }
+              else if (/^nota_variante_\d+$/i.test(col)) { /* ignorar en fila padre */ }
+              else                                        { atributos[col] = val; }
+            });
+
+            padreActual = {
+              tipo:           'complejo',
+              nombre,
+              descripcion:    String(row.descripcion || '').trim(),
+              disponibilidad: ['inmediata','a_coordinar'].includes(row.disponibilidad) ? row.disponibilidad : 'a_coordinar',
+              semantic_notes: notasPadre,
+              atributos,
+              _tempId:        _generarTempId(),
+              activo:         true,
+            };
+            importados.push(padreActual);
+
+            // fila con nombre Y variante a la vez
+            if (variante) {
+              const notasHijo = [];
+              Object.keys(row).forEach(col => {
+                if (/^nota_variante_\d+$/i.test(col)) {
+                  const val = String(row[col] || '').trim();
+                  if (val) notasHijo.push(val);
+                }
+              });
+              importados.push({
+                tipo:           'simple',
+                nombre:         variante,
+                descripcion:    String(row.descripcion_variante || '').trim(),
+                disponibilidad: padreActual.disponibilidad,
+                precio:         Number(row.precio) ? { tipo: 'fijo', valor: Number(row.precio) } : { tipo: 'consultar' },
+                duracion:       Number(row.duracion_min) || null,
+                semantic_notes: notasHijo,
+                _parentTempId:  padreActual._tempId,
+                activo:         true,
+              });
+            }
+
+          } else if (variante && padreActual) {
+            const notasHijo = [];
+            Object.keys(row).forEach(col => {
+              if (/^nota_variante_\d+$/i.test(col)) {
+                const val = String(row[col] || '').trim();
+                if (val) notasHijo.push(val);
+              }
+            });
+            importados.push({
+              tipo:           'simple',
+              nombre:         variante,
+              descripcion:    String(row.descripcion_variante || '').trim(),
+              disponibilidad: padreActual.disponibilidad,
+              precio:         Number(row.precio) ? { tipo: 'fijo', valor: Number(row.precio) } : { tipo: 'consultar' },
+              duracion:       Number(row.duracion_min) || null,
+              semantic_notes: notasHijo,
+              _parentTempId:  padreActual._tempId,
+              activo:         true,
+            });
+          }
+        });
+      }
+
+      if (!importados.length) { showToast('No se encontraron servicios válidos en el archivo', 'warning'); return; }
+
+      const nombresExistentes = new Set(this._getPadres().map(s => s.nombre.toLowerCase()));
+      const duplicados = importados.filter(s => !s._parentTempId && nombresExistentes.has(s.nombre.toLowerCase()));
+      const nuevos     = importados.filter(s => !duplicados.includes(s));
+
+      if (!duplicados.length) {
+        this._data.serviciosAcumulados.push(...nuevos);
+        this._refreshLista();
+        showToast(`${importados.filter(s => !s._parentTempId).length} servicios importados correctamente`, 'success');
+        return;
+      }
+
+      this._mostrarModalDuplicados({ duplicados, nuevos, importados });
+
+    } catch (err) {
+      console.error('[servicios] _parseFile() ERROR:', err);
+      showToast('No se pudo leer el archivo', 'error');
+    }
+  };
+  reader.readAsBinaryString(file);
+},
 
   // ──────────────────────────────────────────────────────────
   // PARSE xlsx CORREGIDO (Lee N notas y notas en variantes)
