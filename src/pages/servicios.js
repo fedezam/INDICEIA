@@ -1514,10 +1514,26 @@ const page = {
     showToast('Plantilla descargada', 'success');
   },
 
+    // ──────────────────────────────────────────────────────────
+  // EXPORT CORREGIDO (Soporta N notas y notas en variantes)
+  // ──────────────────────────────────────────────────────────
   _exportarSimples() {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
     const simples = this._data.serviciosAcumulados.filter(s => s.tipo !== 'complejo' && !s._parentTempId && !s.parent_id);
-    const CAMPOS  = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
+    
+    // Determinamos dinámicamente cuántas columnas de nota necesitamos
+    let maxNotas = 0;
+    simples.forEach(s => {
+      if (s.semantic_notes && s.semantic_notes.length > maxNotas) {
+        maxNotas = s.semantic_notes.length;
+      }
+    });
+
+    const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
+    // Generamos headers dinámicos: nota_1, nota_2, ... nota_N
+    const headersNotas = Array.from({ length: Math.max(maxNotas, 2) }, (_, i) => `nota_${i + 1}`);
+    const HEADERS = [...CAMPOS_BASE, ...headersNotas];
+
     const rows = simples.map(s => {
       const row = {
         nombre:         s.nombre         || '',
@@ -1527,14 +1543,24 @@ const page = {
         precio_valor:   s.precio?.valor  || '',
         duracion_min:   s.duracion       || '',
       };
-      (s.semantic_notes || []).forEach((nota, i) => { row[`nota_${i + 1}`] = nota; });
+      // Rellenamos las notas dinámicamente
+      (s.semantic_notes || []).forEach((nota, i) => {
+        row[`nota_${i + 1}`] = nota;
+      });
+      
       if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { row[k] = v; });
       return row;
     });
+
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(rows, { header: CAMPOS });
+    const ws = XLSX.utils.json_to_sheet(rows, { header: HEADERS });
     this._agregarValidacionesSimples(ws, 2, rows.length + 1);
-    ws['!cols'] = [{ wch:28 },{ wch:38 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:13 }];
+    
+    // Ajuste de ancho de columnas dinámico
+    const colWidths = [{ wch:28 },{ wch:38 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:13 }];
+    headersNotas.forEach(() => colWidths.push({ wch: 35 })); // Ancho fijo para notas
+    ws['!cols'] = colWidths;
+
     XLSX.utils.book_append_sheet(wb, ws, 'servicios');
     this._agregarMeta(wb, 'simples');
     XLSX.writeFile(wb, 'mis_servicios_simples.xlsx');
@@ -1544,9 +1570,35 @@ const page = {
   _exportarComplejos() {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
     const padres = this._data.serviciosAcumulados.filter(s => s.tipo === 'complejo');
+    
+    // Calculamos el máximo de notas para padres y para hijos por separado
+    let maxNotasPadre = 0;
+    let maxNotasHijo = 0;
+    
+    padres.forEach(p => {
+      if (p.semantic_notes && p.semantic_notes.length > maxNotasPadre) maxNotasPadre = p.semantic_notes.length;
+      const hijos = this._getHijos(p._tempId || p.id);
+      hijos.forEach(h => {
+        if (h.semantic_notes && h.semantic_notes.length > maxNotasHijo) maxNotasHijo = h.semantic_notes.length;
+      });
+    });
+
+    // Headers dinámicos
+    const headersNotasPadre = Array.from({ length: Math.max(maxNotasPadre, 2) }, (_, i) => `nota_padre_${i + 1}`);
+    const headersNotasHijo = Array.from({ length: Math.max(maxNotasHijo, 0) }, (_, i) => `nota_variante_${i + 1}`);
+    
+    const HEADERS = [
+      'nombre', 'descripcion', 'disponibilidad', 
+      ...headersNotasPadre, 
+      'variante', 'precio', 'duracion_min', 
+      ...headersNotasHijo
+    ];
+
     const rows = [];
     padres.forEach(s => {
       const parentRef = s._tempId || s.id;
+      
+      // Fila del Padre
       const filaPadre = {
         nombre:         s.nombre         || '',
         descripcion:    s.descripcion    || '',
@@ -1555,25 +1607,46 @@ const page = {
         precio:         '',
         duracion_min:   '',
       };
-      (s.semantic_notes || []).forEach((nota, i) => { filaPadre[`nota_${i + 1}`] = nota; });
+      
+      // Notas del Padre
+      (s.semantic_notes || []).forEach((nota, i) => {
+        filaPadre[`nota_padre_${i + 1}`] = nota;
+      });
+      
       if (s.atributos) Object.entries(s.atributos).forEach(([k, v]) => { filaPadre[k] = v; });
       rows.push(filaPadre);
+
+      // Filas de Hijos
       this._getHijos(parentRef).forEach(hijo => {
-        rows.push({
+        const filaHijo = {
           nombre:        '',
           descripcion:   '',
           disponibilidad:'',
           variante:      hijo.nombre   || '',
           precio:        hijo.precio?.valor || '',
           duracion_min:  hijo.duracion || '',
+        };
+        
+        // Notas del Hijo
+        (hijo.semantic_notes || []).forEach((nota, i) => {
+          filaHijo[`nota_variante_${i + 1}`] = nota;
         });
+        
+        rows.push(filaHijo);
       });
     });
-    const CAMPOS = ['nombre','descripcion','disponibilidad','variante','precio','duracion_min'];
+
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(rows, { header: CAMPOS });
+    const ws = XLSX.utils.json_to_sheet(rows, { header: HEADERS });
     this._agregarValidacionesComplejos(ws, 2, rows.length + 1);
-    ws['!cols'] = [{ wch:28 },{ wch:38 },{ wch:16 },{ wch:22 },{ wch:12 },{ wch:13 }];
+    
+    // Anchos de columna
+    const colWidths = [{ wch:28 },{ wch:38 },{ wch:16 }];
+    headersNotasPadre.forEach(() => colWidths.push({ wch: 30 }));
+    colWidths.push({ wch:22 },{ wch:12 },{ wch:13 });
+    headersNotasHijo.forEach(() => colWidths.push({ wch: 30 }));
+    ws['!cols'] = colWidths;
+
     XLSX.utils.book_append_sheet(wb, ws, 'servicios');
     this._agregarMeta(wb, 'complejos');
     XLSX.writeFile(wb, 'mis_servicios_complejos.xlsx');
@@ -1581,7 +1654,7 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // PARSE xlsx
+  // PARSE xlsx CORREGIDO (Lee N notas y notas en variantes)
   // ──────────────────────────────────────────────────────────
   _parseFile(file) {
     if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
@@ -1608,18 +1681,27 @@ const page = {
         const esComplejo = tipoPlantilla.includes('complejos');
 
         if (!esComplejo) {
+          // Lógica para SIMPLES: Detecta cualquier columna nota_N
           const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
           rows.forEach(row => {
             if (!String(row.nombre || '').trim()) return;
+            
             const notas = [];
             const atributos = {};
+            
             Object.keys(row).forEach(col => {
               if (CAMPOS_BASE.includes(col)) return;
               const val = String(row[col] || '').trim();
               if (!val) return;
-              if (/^nota_\d+$/i.test(col)) notas.push(val);
-              else atributos[col] = val;
+              
+              // Detecta nota_1, nota_2, nota_10, etc.
+              if (/^nota_\d+$/i.test(col)) {
+                notas.push(val);
+              } else {
+                atributos[col] = val;
+              }
             });
+
             importados.push({
               tipo:           'simple',
               nombre:         String(row.nombre).trim(),
@@ -1629,13 +1711,14 @@ const page = {
                 ? { tipo: 'fijo', valor: Number(row.precio_valor) || 0 }
                 : { tipo: 'consultar' },
               duracion:       Number(row.duracion_min) || null,
-              semantic_notes: notas,
+              semantic_notes: notas, // Array completo de notas
               atributos,
               activo: true,
             });
           });
 
         } else {
+          // Lógica para COMPLEJOS: Detecta nota_padre_N y nota_variante_N
           const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','variante','precio','duracion_min'];
           let padreActual = null;
 
@@ -1644,30 +1727,47 @@ const page = {
             const variante = String(row.variante || '').trim();
 
             if (nombre) {
+              // Es una fila de PADRE
               if (padreActual) importados.push(padreActual);
-              const notas = [];
+              
+              const notasPadre = [];
               const atributos = {};
+              
               Object.keys(row).forEach(col => {
                 if (CAMPOS_BASE.includes(col)) return;
                 const val = String(row[col] || '').trim();
                 if (!val) return;
-                if (/^nota_\d+$/i.test(col)) notas.push(val);
-                else atributos[col] = val;
+                
+                if (/^nota_padre_\d+$/i.test(col)) {
+                  notasPadre.push(val);
+                } else if (/^nota_variante_\d+$/i.test(col)) {
+                  // Ignoramos notas de variante en la fila del padre
+                } else {
+                  atributos[col] = val;
+                }
               });
+
               padreActual = {
                 tipo:           'complejo',
                 nombre,
                 descripcion:    String(row.descripcion || '').trim(),
                 disponibilidad: ['inmediata','a_coordinar'].includes(row.disponibilidad) ? row.disponibilidad : 'a_coordinar',
-                semantic_notes: notas,
+                semantic_notes: notasPadre,
                 atributos,
                 _tempId:        _generarTempId(),
                 activo:         true,
               };
               importados.push(padreActual);
 
-              // Si la fila tiene nombre Y variante, crear también el hijo
+              // Si la fila tiene nombre Y variante, crear también el hijo inmediatamente
               if (variante) {
+                const notasHijo = [];
+                Object.keys(row).forEach(col => {
+                   if (/^nota_variante_\d+$/i.test(col)) {
+                     notasHijo.push(String(row[col] || '').trim());
+                   }
+                });
+
                 importados.push({
                   tipo:          'simple',
                   nombre:        variante,
@@ -1675,13 +1775,21 @@ const page = {
                   disponibilidad: padreActual.disponibilidad,
                   precio:        Number(row.precio) ? { tipo: 'fijo', valor: Number(row.precio) } : { tipo: 'consultar' },
                   duracion:      Number(row.duracion_min) || null,
-                  semantic_notes: [],
+                  semantic_notes: notasHijo, // Notas específicas del hijo
                   _parentTempId: padreActual._tempId,
                   activo:        true,
                 });
               }
 
             } else if (variante && padreActual) {
+              // Es una fila de HIJO
+              const notasHijo = [];
+              Object.keys(row).forEach(col => {
+                 if (/^nota_variante_\d+$/i.test(col)) {
+                   notasHijo.push(String(row[col] || '').trim());
+                 }
+              });
+
               importados.push({
                 tipo:          'simple',
                 nombre:        variante,
@@ -1689,7 +1797,7 @@ const page = {
                 disponibilidad: padreActual.disponibilidad,
                 precio:        Number(row.precio) ? { tipo: 'fijo', valor: Number(row.precio) } : { tipo: 'consultar' },
                 duracion:      Number(row.duracion_min) || null,
-                semantic_notes: [],
+                semantic_notes: notasHijo,
                 _parentTempId: padreActual._tempId,
                 activo:        true,
               });
@@ -1724,7 +1832,6 @@ const page = {
     };
     reader.readAsBinaryString(file);
   },
-
   // ──────────────────────────────────────────────────────────
   // MODAL DUPLICADOS
   // ──────────────────────────────────────────────────────────
