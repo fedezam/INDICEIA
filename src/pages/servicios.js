@@ -1778,185 +1778,7 @@ _parseFile(file) {
   reader.readAsBinaryString(file);
 },
 
-  // ──────────────────────────────────────────────────────────
-  // PARSE xlsx CORREGIDO (Lee N notas y notas en variantes)
-  // ──────────────────────────────────────────────────────────
-  _parseFile(file) {
-    if (!XLSX) { showToast('Librería XLSX no cargada', 'error'); return; }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const wb = XLSX.read(e.target.result, { type: 'binary' });
-
-        const metaSheet = wb.Sheets['_indiceia_meta'];
-        if (!metaSheet) { showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return; }
-        const firma = XLSX.utils.sheet_to_json(metaSheet, { header: 1 });
-        const tipoPlantilla = firma?.[0]?.[0];
-        if (!tipoPlantilla?.startsWith('indiceia_servicios_')) {
-          showToast('Usá la plantilla oficial de ÍndiceIA', 'error'); return;
-        }
-
-        const ws = wb.Sheets['servicios'];
-        if (!ws) { showToast('No se encontró la hoja "servicios" en el archivo', 'error'); return; }
-
-        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-        if (!rows.length) { showToast('La plantilla está vacía', 'warning'); return; }
-
-        const importados = [];
-        const esComplejo = tipoPlantilla.includes('complejos');
-
-        if (!esComplejo) {
-          // Lógica para SIMPLES: Detecta cualquier columna nota_N
-          const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','precio_tipo','precio_valor','duracion_min'];
-          rows.forEach(row => {
-            if (!String(row.nombre || '').trim()) return;
-            
-            const notas = [];
-            const atributos = {};
-            
-            Object.keys(row).forEach(col => {
-              if (CAMPOS_BASE.includes(col)) return;
-              const val = String(row[col] || '').trim();
-              if (!val) return;
-              
-              // Detecta nota_1, nota_2, nota_10, etc.
-              if (/^nota_\d+$/i.test(col)) {
-                notas.push(val);
-              } else {
-                atributos[col] = val;
-              }
-            });
-
-            importados.push({
-              tipo:           'simple',
-              nombre:         String(row.nombre).trim(),
-              descripcion:    String(row.descripcion || '').trim(),
-              disponibilidad: ['inmediata','a_coordinar'].includes(row.disponibilidad) ? row.disponibilidad : 'a_coordinar',
-              precio: row.precio_tipo === 'fijo' && row.precio_valor
-                ? { tipo: 'fijo', valor: Number(row.precio_valor) || 0 }
-                : { tipo: 'consultar' },
-              duracion:       Number(row.duracion_min) || null,
-              semantic_notes: notas, // Array completo de notas
-              atributos,
-              activo: true,
-            });
-          });
-
-        } else {
-          // Lógica para COMPLEJOS: Detecta nota_padre_N y nota_variante_N
-          const CAMPOS_BASE = ['nombre','descripcion','disponibilidad','variante','precio','duracion_min'];
-          let padreActual = null;
-
-          rows.forEach(row => {
-            const nombre   = String(row.nombre   || '').trim();
-            const variante = String(row.variante || '').trim();
-
-            if (nombre) {
-              // Es una fila de PADRE
-              if (padreActual) importados.push(padreActual);
-              
-              const notasPadre = [];
-              const atributos = {};
-              
-              Object.keys(row).forEach(col => {
-                if (CAMPOS_BASE.includes(col)) return;
-                const val = String(row[col] || '').trim();
-                if (!val) return;
-                
-                if (/^nota_padre_\d+$/i.test(col)) {
-                  notasPadre.push(val);
-                } else if (/^nota_variante_\d+$/i.test(col)) {
-                  // Ignoramos notas de variante en la fila del padre
-                } else {
-                  atributos[col] = val;
-                }
-              });
-
-              padreActual = {
-                tipo:           'complejo',
-                nombre,
-                descripcion:    String(row.descripcion || '').trim(),
-                disponibilidad: ['inmediata','a_coordinar'].includes(row.disponibilidad) ? row.disponibilidad : 'a_coordinar',
-                semantic_notes: notasPadre,
-                atributos,
-                _tempId:        _generarTempId(),
-                activo:         true,
-              };
-              importados.push(padreActual);
-
-              // Si la fila tiene nombre Y variante, crear también el hijo inmediatamente
-              if (variante) {
-                const notasHijo = [];
-                Object.keys(row).forEach(col => {
-                   if (/^nota_variante_\d+$/i.test(col)) {
-                     notasHijo.push(String(row[col] || '').trim());
-                   }
-                });
-
-                importados.push({
-                  tipo:          'simple',
-                  nombre:        variante,
-                  descripcion:   '',
-                  disponibilidad: padreActual.disponibilidad,
-                  precio:        Number(row.precio) ? { tipo: 'fijo', valor: Number(row.precio) } : { tipo: 'consultar' },
-                  duracion:      Number(row.duracion_min) || null,
-                  semantic_notes: notasHijo, // Notas específicas del hijo
-                  _parentTempId: padreActual._tempId,
-                  activo:        true,
-                });
-              }
-
-            } else if (variante && padreActual) {
-              // Es una fila de HIJO
-              const notasHijo = [];
-              Object.keys(row).forEach(col => {
-                 if (/^nota_variante_\d+$/i.test(col)) {
-                   notasHijo.push(String(row[col] || '').trim());
-                 }
-              });
-
-              importados.push({
-                tipo:          'simple',
-                nombre:        variante,
-                descripcion:   '',
-                disponibilidad: padreActual.disponibilidad,
-                precio:        Number(row.precio) ? { tipo: 'fijo', valor: Number(row.precio) } : { tipo: 'consultar' },
-                duracion:      Number(row.duracion_min) || null,
-                semantic_notes: notasHijo,
-                _parentTempId: padreActual._tempId,
-                activo:        true,
-              });
-            }
-          });
-          if (padreActual) importados.push(padreActual);
-        }
-
-        if (!importados.length) { showToast('No se encontraron servicios válidos en el archivo', 'warning'); return; }
-
-        const nombresExistentes = new Set(
-          this._getPadres().map(s => s.nombre.toLowerCase())
-        );
-        const duplicados = importados.filter(s =>
-          !s._parentTempId && nombresExistentes.has(s.nombre.toLowerCase())
-        );
-        const nuevos = importados.filter(s => !duplicados.includes(s));
-
-        if (!duplicados.length) {
-          this._data.serviciosAcumulados.push(...nuevos);
-          this._refreshLista();
-          showToast(`${importados.filter(s=>!s._parentTempId).length} servicios importados correctamente`, 'success');
-          return;
-        }
-
-        this._mostrarModalDuplicados({ duplicados, nuevos, importados });
-
-      } catch (err) {
-        console.error('[servicios] _parseFile() ERROR:', err);
-        showToast('No se pudo leer el archivo', 'error');
-      }
-    };
-    reader.readAsBinaryString(file);
-  },
+ 
   // ──────────────────────────────────────────────────────────
   // MODAL DUPLICADOS
   // ──────────────────────────────────────────────────────────
@@ -2078,7 +1900,6 @@ _parseFile(file) {
         this._originalSnapshot = structuredClone(this._data.serviciosAcumulados);
       }
     };
-
     return createOnboardingButton({
       stepName: 'servicios',
       validate: () => true,
@@ -2086,27 +1907,22 @@ _parseFile(file) {
         ? 'Guardar y volver al dashboard'
         : 'Volver al dashboard',
       dirtyController,
-
       onSave: async ({ uid, comercioId }) => {
         if (!comercioId) throw new Error('No hay comercioId para guardar servicios');
-
         const batch       = writeBatch(db);
         const comercioRef = doc(db, 'entidades', comercioId);
         const colRef      = collection(db, 'entidades', comercioId, 'servicios');
 
-        // Identificar documentos a eliminar (los que estaban y ya no están)
         const idsOriginales = new Set(
           this._originalSnapshot.filter(s => s.id).map(s => s.id)
         );
         const idsActuales = new Set(
           this._data.serviciosAcumulados.filter(s => s.id).map(s => s.id)
         );
-
         idsOriginales.forEach(id => {
           if (!idsActuales.has(id)) batch.delete(doc(colRef, id));
         });
 
-        // Mapa para resolver referencias temporales a reales durante el batch
         const tempIdToRef = {};
 
         // 1. Pre-crear referencias para padres nuevos (complejos)
@@ -2131,17 +1947,15 @@ _parseFile(file) {
 
           // Resolver parent_id
           if (_parentTempId) {
-            // Caso A: El padre ya existe en DB (tiene ID real)
             const padreExistente = this._data.serviciosAcumulados.find(
               s => s.id === _parentTempId
             );
             if (padreExistente) {
               data.parent_id = padreExistente.id;
-            } 
-            // Caso B: El padre es nuevo (tiene TempID mapeado)
-            else if (tempIdToRef[_parentTempId]) {
+            } else if (tempIdToRef[_parentTempId]) {
               data.parent_id = tempIdToRef[_parentTempId].id;
             }
+            // si no encuentra ninguno, no asigna — evita el crash
           }
 
           batch.set(ref, { ...data, fechaActualizacion: serverTimestamp() });
@@ -2155,7 +1969,6 @@ _parseFile(file) {
         await batch.commit();
         return true;
       },
-
       onSuccess: () => showToast('💾 Servicios guardados', 'success'),
       onError:   (err) => {
         console.error('Error guardando servicios:', err);
