@@ -1933,13 +1933,10 @@ _parseFile(file) {
         // 1. Pre-crear referencias — cualquier servicio con _tempId
         this._data.serviciosAcumulados.forEach(servicio => {
           if (servicio._tempId) {
-            if (!servicio.id) {
-              tempIdToRef[servicio._tempId] = doc(colRef);
-           } else {
-              tempIdToRef[servicio._tempId] = doc(colRef, servicio.id);
-            }
-          }
-        });
+            const ref = !servicio.id ? doc(colRef) : doc(colRef, servicio.id);
+            tempIdToRef[servicio._tempId] = ref;
+         }
+       });
 
         // 2. Procesar todos los servicios
         this._data.serviciosAcumulados.forEach(servicio => {
@@ -1970,7 +1967,7 @@ _parseFile(file) {
             if (padreExistente) {
               data.parent_id = padreExistente.id;
             } else if (tempIdToRef[_parentTempId]) {
-              data.parent_id = tempIdToRef[_parentTempId].id;
+              data.parent_id = tempIdToRef[_parentTempId].id || tempIdToRef[_parentTempId].path?.split('/').pop();
             }
             // si no encuentra ninguno, no asigna — evita el crash
           }
