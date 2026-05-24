@@ -1925,10 +1925,16 @@ _parseFile(file) {
 
         const tempIdToRef = {};
 
-        // 1. Pre-crear referencias para padres nuevos (complejos)
+        // 1. Pre-crear referencias — padres nuevos Y existentes reimportados
         this._data.serviciosAcumulados.forEach(servicio => {
-          if (!servicio.id && servicio.tipo === 'complejo' && servicio._tempId) {
-            tempIdToRef[servicio._tempId] = doc(colRef);
+          if (servicio.tipo === 'complejo' && servicio._tempId) {
+            if (!servicio.id) {
+              // Padre nuevo — crear ref nueva
+              tempIdToRef[servicio._tempId] = doc(colRef);
+            } else {
+              // Padre existente reimportado — mapear _tempId → ref real
+              tempIdToRef[servicio._tempId] = doc(colRef, servicio.id);
+            }
           }
         });
 
