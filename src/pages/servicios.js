@@ -1960,9 +1960,13 @@ _parseFile(file) {
 
           // Resolver parent_id
           if (_parentTempId) {
+            console.log('  → buscando padre, _parentTempId:', _parentTempId);
+            console.log('  → tempIdToRef keys:', Object.keys(tempIdToRef));
             const padreExistente = this._data.serviciosAcumulados.find(
               s => s.id === _parentTempId
             );
+            console.log('  → padreExistente:', padreExistente?.nombre, padreExistente?.id);
+            console.log('  → tempIdToRef match:', tempIdToRef[_parentTempId]);
             if (padreExistente) {
               data.parent_id = padreExistente.id;
             } else if (tempIdToRef[_parentTempId]) {
@@ -1970,15 +1974,12 @@ _parseFile(file) {
             }
             // si no encuentra ninguno, no asigna — evita el crash
           }
-
           batch.set(ref, { ...data, fechaActualizacion: serverTimestamp() });
         });
-
         batch.update(comercioRef, {
           'onboardingSteps.servicios': true,
           fechaActualizacion: serverTimestamp()
         });
-
         await batch.commit();
         return true;
       },
