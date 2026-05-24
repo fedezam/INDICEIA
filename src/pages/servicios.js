@@ -1942,6 +1942,10 @@ _parseFile(file) {
         this._data.serviciosAcumulados.forEach(servicio => {
           const { id, _tempId, _parentTempId, ...data } = servicio;
 
+          // DEBUG — sacalo después de resolver
+           console.log('procesando:', servicio.nombre, { id, _tempId, _parentTempId });
+
+
           let ref;
           if (id) {
             ref = doc(colRef, id);
