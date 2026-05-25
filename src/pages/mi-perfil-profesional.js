@@ -248,28 +248,51 @@ function renderSeccionIdentidad(state, uiState) {
 // ============================================================
 function renderSeccionCredenciales(state, uiState) {
   const section = document.createElement('div');
+  
   const matriculaNumero = createFormField({
-    label: 'Número de matrícula', name: 'matricula-numero', required: true,
-    placeholder: 'Ej: 12345', helpText: 'El número que te otorgó el colegio profesional',
+    label: 'Número de matrícula',
+    name: 'matricula-numero',
+    required: true,
+    type: 'tel',
+    inputmode: 'numeric',
+    maxlength: 10,
+    placeholder: 'Ej: 12345',
+    helpText: 'Ingresá solo números. El prefijo (MP, MN, etc.) se genera automáticamente.',
     value: uiState.matricula.numero,
   });
+  
   matriculaNumero.input?.addEventListener('input', e => {
-    uiState.matricula = { ...uiState.matricula, numero: e.target.value };
+    // Sanitización estricta: solo dígitos
+    const clean = e.target.value.replace(/\D/g, '');
+    
+    // Feedback inmediato en el DOM
+    e.target.value = clean;
+    
+    // Actualización del estado interno
+    uiState.matricula = {
+      ...uiState.matricula,
+      numero: clean
+    };
   });
 
   const organismoOptions = (ORGANISMOS_MATRICULA[state.categoria] || []).map(o => ({ value: o, label: o }));
   const matriculaOrganismo = createFormField({
-    label: 'Organismo que emite la matrícula', name: 'matricula-organismo', type: 'select', required: true,
+    label: 'Organismo que emite la matrícula', 
+    name: 'matricula-organismo', 
+    type: 'select', 
+    required: true,
     options: [{ value: '', label: 'Seleccioná el organismo' }, ...organismoOptions],
     value: uiState.matricula.organismo,
   });
+  
   matriculaOrganismo.input?.addEventListener('change', e => {
     uiState.matricula = { ...uiState.matricula, organismo: e.target.value };
   });
 
   section.append(
     createCard({
-      title: 'Matrícula profesional', icon: 'fa-id-card',
+      title: 'Matrícula profesional', 
+      icon: 'fa-id-card',
       content: (() => {
         const c = document.createElement('div');
         const help = document.createElement('p');
