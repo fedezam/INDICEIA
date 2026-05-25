@@ -159,7 +159,7 @@ const page = {
     section.appendChild(help);
 
     const opciones = [
-      { value: 'domicilio', label: 'Voy al domicilio del cliente', icon: '🏠', help: 'Plomero, electricista, manicura a domicilio...' },
+      { value: 'a_domicilio', label: 'Voy al domicilio del cliente', icon: '🏠', help: 'Plomero, electricista, manicura a domicilio...' },
       { value: 'local', label: 'Tengo local / taller / consultorio', icon: '🏪', help: 'Estética, mecánico, reparación de PC...' }
     ];
 
