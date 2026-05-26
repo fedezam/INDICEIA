@@ -10,8 +10,14 @@ import { createButton }          from '/src/skeleton/components/button/index.js'
 import { createCard }            from '/src/skeleton/components/card/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }             from '/src/skeleton/components/toast/index.js';
-import { db }                    from '/src/services/firebase/firebase.js';
-import { doc, updateDoc }        from 'firebase/firestore';
+import { 
+  db, 
+  doc, 
+  updateDoc, 
+  collection, 
+  setDoc, 
+  Timestamp 
+} from '/src/services/firebase/firebase.js'; // Ajusta según tu export real de firebase
 import './mi-perfil-profesional.css';
 
 // ============================================================
@@ -142,7 +148,6 @@ function render(ctx, state) {
   btnContainer.appendChild(
     createOnboardingButton({
       stepName: 'mi-perfil-profesional',
-
       dirtyController: isEditMode ? dirtyController : undefined,
 
       validate() {
@@ -161,23 +166,68 @@ function render(ctx, state) {
           : 'Volver al dashboard';
       },
 
-      async onSave({ uid, comercioId, persistence }) {
-        if (!comercioId) throw new Error('Sin comercioId');
+      async onSave({ uid, comercioId }) {
+        const d = uiState;
+        const now = new Date();
 
-        await persistence.updateData({
-          nombre:              uiState.nombre.trim(),
-          especialidad:        uiState.especialidad.trim(),
-          descripcion:         uiState.descripcion.trim(),
-          experiencia:         uiState.experiencia.trim(),
-          titulo:              uiState.titulo.trim(),
-          matricula:           uiState.matricula,
-          institucionFormadora: uiState.institucionFormadora.trim(),
-          idiomas:             uiState.idiomas,
+        const updates = {
+          nombre:              d.nombre.trim(),
+          especialidad:        d.especialidad.trim(),
+          descripcion:         d.descripcion.trim(),
+          experiencia:         d.experiencia.trim(),
+          titulo:              d.titulo.trim(),
+          matricula:           d.matricula,
+          institucionFormadora: d.institucionFormadora.trim(),
+          idiomas:             d.idiomas,
           entityType:          'profesional',
           categoria:           state.categoria,
-        });
+          fechaActualizacion:  now,
+          'onboardingSteps.mi-perfil-profesional': true
+        };
 
-        return { success: true, stepMarked: true };
+        try {
+          let targetComercioId = comercioId;
+
+          if (state.isNuevo || !targetComercioId) {
+            // ── CREACIÓN: Generar nuevo documento si no hay comercioId ──
+            const comercioRef = doc(collection(db, 'entidades'));
+            targetComercioId = comercioRef.id;
+
+            await setDoc(comercioRef, {
+              ...updates,
+              duenoId: uid,
+              fechaCreacion: now,
+              plan: { 
+                type: 'trial', 
+                active: true, 
+                trial: true, 
+                startedAt: Timestamp.now(),
+                expiresAt: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+                createdAt: Timestamp.now(),
+                updatedAt: Timestamp.now(),
+                source: 'system'
+              }
+            });
+
+            // Vincular usuario al nuevo comercio
+            await updateDoc(doc(db, 'usuarios', uid), {
+              comercioId: targetComercioId
+            });
+
+            console.log(`[mi-perfil-profesional] Nueva entidad creada: ${targetComercioId}`);
+
+          } else {
+            // ── ACTUALIZACIÓN: Usar comercioId existente ──
+            await updateDoc(doc(db, 'entidades', targetComercioId), updates);
+            console.log(`[mi-perfil-profesional] Entidad actualizada: ${targetComercioId}`);
+          }
+
+          return { success: true, stepMarked: true };
+
+        } catch (err) {
+          console.error('[mi-perfil-profesional] Error en persistencia:', err);
+          throw err;
+        }
       },
 
       onSuccess: () => showToast(
@@ -248,7 +298,7 @@ function renderSeccionIdentidad(state, uiState) {
 // ============================================================
 function renderSeccionCredenciales(state, uiState) {
   const section = document.createElement('div');
-  
+
   const matriculaNumero = createFormField({
     label: 'Número de matrícula',
     name: 'matricula-numero',
@@ -260,38 +310,30 @@ function renderSeccionCredenciales(state, uiState) {
     helpText: 'Ingresá solo números. El prefijo (MP, MN, etc.) se genera automáticamente.',
     value: uiState.matricula.numero,
   });
-  
+
   matriculaNumero.input?.addEventListener('input', e => {
-    // Sanitización estricta: solo dígitos
     const clean = e.target.value.replace(/\D/g, '');
-    
-    // Feedback inmediato en el DOM
     e.target.value = clean;
-    
-    // Actualización del estado interno
-    uiState.matricula = {
-      ...uiState.matricula,
-      numero: clean
-    };
+    uiState.matricula = { ...uiState.matricula, numero: clean };
   });
 
   const organismoOptions = (ORGANISMOS_MATRICULA[state.categoria] || []).map(o => ({ value: o, label: o }));
   const matriculaOrganismo = createFormField({
-    label: 'Organismo que emite la matrícula', 
-    name: 'matricula-organismo', 
-    type: 'select', 
+    label: 'Organismo que emite la matrícula',
+    name: 'matricula-organismo',
+    type: 'select',
     required: true,
     options: [{ value: '', label: 'Seleccioná el organismo' }, ...organismoOptions],
     value: uiState.matricula.organismo,
   });
-  
+
   matriculaOrganismo.input?.addEventListener('change', e => {
     uiState.matricula = { ...uiState.matricula, organismo: e.target.value };
   });
 
   section.append(
     createCard({
-      title: 'Matrícula profesional', 
+      title: 'Matrícula profesional',
       icon: 'fa-id-card',
       content: (() => {
         const c = document.createElement('div');
@@ -327,7 +369,6 @@ function renderSeccionFormacion(state, uiState) {
   });
   institucion.input?.addEventListener('input', e => { uiState.institucionFormadora = e.target.value; });
 
-  // Idiomas — checkboxes manuales
   const idiomasWrapper = document.createElement('div');
   idiomasWrapper.className = 's-form-field';
   const idiomasLabel = document.createElement('label');
