@@ -1,7 +1,7 @@
 /* ============================================================
    src/pages/lugares/lugares.css
    Coherente con mi-perfil.css y horarios.css
-   SOLO layout, spacing y posicionamiento.
+   SOLO layout, spacing y posicionamiento + estilos base inputs.
    ============================================================ */
 
 #skeleton-page {
@@ -26,20 +26,74 @@
   padding: var(--s-spacing-sm);
   margin-bottom: var(--s-spacing);
   border-radius: var(--s-radius);
+  background-color: var(--s-info-bg, #e3f2fd);
+  color: var(--s-info-text, #0d47a1);
   display: flex;
   align-items: center;
   gap: var(--s-spacing-sm);
+  font-size: 0.9rem;
 }
 
 .seccion-label {
   font-weight: 600;
   margin: var(--s-spacing) 0 var(--s-spacing-sm);
+  color: var(--s-dark);
 }
 
-/* ── Grid de Horarios (Estilo Tarjetas Diarias) ───────────── */
+/* ── Inputs Nativos (Provincia, Ciudad, Dirección) ────────── */
+/* Como no usan createFormField, les damos estilo manual para igualar al Skeleton */
+
+.form-field-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--s-dark);
+  margin-bottom: 6px;
+}
+
+.form-field-input,
+.ciudad-autocomplete-container input {
+  width: 100%;
+  height: var(--s-input-height, 38px);
+  padding: 0.47rem var(--s-input-padding-x, 12px);
+  font-size: 0.95rem;
+  color: var(--s-dark);
+  background: var(--s-card-bg, #ffffff);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  margin-bottom: var(--s-spacing-xs);
+}
+
+.form-field-input:focus,
+.ciudad-autocomplete-container input:focus {
+  border-color: var(--s-primary, #3c8dbc);
+  outline: none;
+  box-shadow: 0 0 0 0.2rem var(--s-focus-ring, rgba(60, 141, 188, 0.3));
+}
+
+/* Estilo específico para el select de provincia */
+select.form-field-input {
+  appearance: none;
+  /* Flecha SVG inline para consistencia */
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px top 50%;
+  background-size: 10px auto;
+  padding-right: 30px; /* Espacio para la flecha */
+}
+
+/* Contenedor de autocompletado de ciudad */
+.ciudad-autocomplete-container {
+  position: relative;
+  margin-bottom: var(--s-spacing-xs);
+}
+
+/* ── Grid de Horarios (Tarjetas Diarias) ──────────────────── */
 .horarios-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: var(--s-spacing-sm);
   margin: var(--s-spacing-sm) 0;
 }
@@ -48,7 +102,10 @@
   border: 1px solid var(--s-border);
   border-radius: var(--s-radius);
   overflow: hidden;
+  background: var(--s-card-bg);
   transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .day-card.active {
@@ -60,6 +117,12 @@
   padding: var(--s-spacing-sm);
   cursor: pointer;
   user-select: none;
+  border-bottom: 1px solid transparent;
+}
+
+.day-card.active .day-header {
+  border-bottom-color: var(--s-border);
+  background-color: var(--s-bg-subtle, #f8f9fa);
 }
 
 .day-toggle {
@@ -69,50 +132,59 @@
 }
 
 .day-toggle input[type="checkbox"] {
-  display: none; /* Ocultamos el checkbox nativo, usamos el label/card como trigger */
+  display: none; 
 }
 
 .day-name {
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.9rem;
+  color: var(--s-dark);
 }
 
 .status-badge {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
-/* Estado activo/inactivo visual */
+/* Badges de estado coloreados */
 .day-card:not(.active) .status-badge {
-  opacity: 0.6;
+  background-color: var(--s-secondary-bg, #e9ecef);
+  color: var(--s-secondary-text, #6c757d);
+}
+
+.day-card.active .status-badge {
+  background-color: var(--s-success-bg, #d4edda);
+  color: var(--s-success-text, #155724);
 }
 
 .day-body {
   padding: var(--s-spacing-sm);
-  border-top: 1px solid var(--s-border);
-  background: var(--s-bg-subtle);
+  background: var(--s-card-bg);
+  flex-grow: 1;
 }
 
 .day-body.disabled {
   display: none;
 }
 
-/* ── Contenido del Día (Horarios) ─────────────────────────── */
+/* ── Contenido del Día (Horarios Internos) ────────────────── */
 .day-content {
   display: flex;
   flex-direction: column;
-  gap: var(--s-spacing-sm);
+  gap: var(--s-spacing-xs);
 }
 
 .schedule-type-toggle {
   display: flex;
   align-items: center;
   gap: var(--s-spacing-xs);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   margin-bottom: var(--s-spacing-xs);
+  color: var(--s-gray);
 }
 
 .content-separator {
@@ -124,15 +196,17 @@
 .schedule-period {
   display: flex;
   flex-direction: column;
-  gap: var(--s-spacing-xs);
+  gap: 4px;
 }
 
 .period-header {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
+  color: var(--s-gray);
   display: flex;
   align-items: center;
   gap: 6px;
+  text-transform: uppercase;
 }
 
 .time-inputs {
@@ -144,12 +218,12 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .time-group label {
-  font-size: 0.75rem;
-  opacity: 0.8;
+  font-size: 0.7rem;
+  color: var(--s-gray);
 }
 
 .time-selects-row {
@@ -158,17 +232,21 @@
   gap: 4px;
 }
 
+/* Selectores de hora pequeños */
 .time-select {
   width: 100%;
-  padding: 4px;
-  font-size: 0.9rem;
+  padding: 4px 2px;
+  font-size: 0.85rem;
   border: 1px solid var(--s-border);
   border-radius: 4px;
   background: var(--s-card-bg);
+  color: var(--s-dark);
+  height: 32px; /* Más bajos que los inputs grandes */
 }
 
 .time-separator {
   font-weight: bold;
+  color: var(--s-gray);
 }
 
 /* ── Lista de Lugares ────────────────────────────────────── */
@@ -182,6 +260,7 @@
   text-align: center;
   padding: var(--s-spacing-lg);
   opacity: 0.7;
+  color: var(--s-gray);
 }
 
 .lugar-detalle {
@@ -190,10 +269,24 @@
   gap: var(--s-spacing-sm);
   font-size: 0.9rem;
   margin-bottom: var(--s-spacing-xs);
+  color: var(--s-dark);
+}
+
+.lugar-detalle i {
+  color: var(--s-primary);
+  margin-top: 2px;
+  width: 16px;
+  text-align: center;
 }
 
 .lugar-contacto {
   flex-wrap: wrap;
+  color: var(--s-gray);
+}
+
+.lugar-horarios {
+  font-size: 0.85rem;
+  color: var(--s-gray);
 }
 
 .lugar-acciones {
@@ -224,5 +317,9 @@
 
   .lugar-acciones button {
     width: 100%;
+  }
+  
+  .time-selects-row {
+    flex-wrap: wrap;
   }
 }
