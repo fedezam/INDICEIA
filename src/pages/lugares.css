@@ -1,57 +1,228 @@
-.page-header { margin-bottom: 20px; text-align: center; }
-.page-header h2 { margin: 0 0 8px 0; color: var(--s-dark); font-size: 24px; font-weight: 600; }
-.page-header h2 i { margin-right: 8px; color: var(--s-primary); }
-.page-header p { margin: 0; color: var(--s-gray); font-size: 14px; }
+/* ============================================================
+   src/pages/lugares/lugares.css
+   Coherente con mi-perfil.css y horarios.css
+   SOLO layout, spacing y posicionamiento.
+   ============================================================ */
 
-.dias-grid {
+#skeleton-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--s-spacing-lg);
+}
+
+.page-header {
+  margin-bottom: var(--s-spacing-lg);
+  text-align: center;
+}
+
+/* ── Formulario ───────────────────────────────────────────── */
+.form-content {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
+  flex-direction: column;
+  gap: var(--s-spacing);
 }
 
-.dia-btn {
-  padding: 6px 14px;
-  border-radius: 99px;
-  border: 1.5px solid var(--s-border);
-  background: none;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--s-gray);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.dia-btn.active {
-  background: var(--s-primary);
-  border-color: var(--s-primary);
-  color: #fff;
-}
-
-.horario-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 4px;
-}
-
-.lugar-info { margin-bottom: 12px; }
-
-.lugar-detalle {
-  font-size: 13px;
-  color: var(--s-gray);
-  padding: 4px 0;
+.edit-banner {
+  padding: var(--s-spacing-sm);
+  margin-bottom: var(--s-spacing);
+  border-radius: var(--s-radius);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--s-spacing-sm);
 }
 
-.lugar-detalle i { color: var(--s-primary); width: 14px; }
+.seccion-label {
+  font-weight: 600;
+  margin: var(--s-spacing) 0 var(--s-spacing-sm);
+}
 
-.lugar-actions {
+/* ── Grid de Horarios (Estilo Tarjetas Diarias) ───────────── */
+.horarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--s-spacing-sm);
+  margin: var(--s-spacing-sm) 0;
+}
+
+.day-card {
+  border: 1px solid var(--s-border);
+  border-radius: var(--s-radius);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.day-card.active {
+  border-color: var(--s-primary);
+  box-shadow: 0 0 0 1px var(--s-primary);
+}
+
+.day-header {
+  padding: var(--s-spacing-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.day-toggle {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.btn-container { margin-top: 24px; }
+.day-toggle input[type="checkbox"] {
+  display: none; /* Ocultamos el checkbox nativo, usamos el label/card como trigger */
+}
+
+.day-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Estado activo/inactivo visual */
+.day-card:not(.active) .status-badge {
+  opacity: 0.6;
+}
+
+.day-body {
+  padding: var(--s-spacing-sm);
+  border-top: 1px solid var(--s-border);
+  background: var(--s-bg-subtle);
+}
+
+.day-body.disabled {
+  display: none;
+}
+
+/* ── Contenido del Día (Horarios) ─────────────────────────── */
+.day-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-spacing-sm);
+}
+
+.schedule-type-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s-spacing-xs);
+  font-size: 0.85rem;
+  margin-bottom: var(--s-spacing-xs);
+}
+
+.content-separator {
+  margin: var(--s-spacing-xs) 0;
+  border: none;
+  border-top: 1px dashed var(--s-border);
+}
+
+.schedule-period {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-spacing-xs);
+}
+
+.period-header {
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.time-inputs {
+  display: flex;
+  gap: var(--s-spacing-xs);
+}
+
+.time-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.time-group label {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.time-selects-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.time-select {
+  width: 100%;
+  padding: 4px;
+  font-size: 0.9rem;
+  border: 1px solid var(--s-border);
+  border-radius: 4px;
+  background: var(--s-card-bg);
+}
+
+.time-separator {
+  font-weight: bold;
+}
+
+/* ── Lista de Lugares ────────────────────────────────────── */
+#lista-lugares-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-spacing);
+}
+
+.lista-vacia {
+  text-align: center;
+  padding: var(--s-spacing-lg);
+  opacity: 0.7;
+}
+
+.lugar-detalle {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-spacing-sm);
+  font-size: 0.9rem;
+  margin-bottom: var(--s-spacing-xs);
+}
+
+.lugar-contacto {
+  flex-wrap: wrap;
+}
+
+.lugar-acciones {
+  display: flex;
+  gap: var(--s-spacing-sm);
+  margin-top: var(--s-spacing);
+  padding-top: var(--s-spacing);
+  border-top: 1px solid var(--s-border);
+}
+
+.btn-container {
+  margin-top: var(--s-spacing-lg);
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  #skeleton-page {
+    padding: var(--s-spacing);
+  }
+
+  .horarios-grid {
+    grid-template-columns: 1fr; /* Una columna en móvil */
+  }
+
+  .lugar-acciones {
+    flex-direction: column;
+  }
+
+  .lugar-acciones button {
+    width: 100%;
+  }
+}
