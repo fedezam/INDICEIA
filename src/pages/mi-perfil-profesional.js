@@ -1,23 +1,15 @@
 // ============================================================
 // src/pages/mi-perfil-profesional.js
 // ============================================================
-import { runLifecycle }          from '/src/skeleton/lifecycle.js';
-import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
-import { mountLayout }           from '/src/skeleton/layout/index.js';
-import { runFlowController }     from '/src/controllers/flowController.js';
-import { createFormField }       from '/src/skeleton/components/form-field/index.js';
-import { createButton }          from '/src/skeleton/components/button/index.js';
-import { createCard }            from '/src/skeleton/components/card/index.js';
+import { runSkeleton }            from '/src/skeleton/skeleton.js';
+import { createFirebaseAdapter }  from '/src/skeleton/adapters/firebaseAdapter.js';
+import { mountLayout }            from '/src/skeleton/layout/index.js';
+import { createFormField }        from '/src/skeleton/components/form-field/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
-import { showToast }             from '/src/skeleton/components/toast/index.js';
-import { 
-  db, 
-  doc, 
-  updateDoc, 
-  collection, 
-  setDoc, 
-  Timestamp 
-} from '/src/services/firebase/firebase.js'; // Ajusta según tu export real de firebase
+import { createCard }             from '/src/skeleton/components/card/index.js';
+import { showToast }              from '/src/skeleton/components/toast/index.js';
+import { db }                     from '/src/services/firebase/firebase.js';
+import { doc, updateDoc, collection, setDoc, Timestamp } from 'firebase/firestore';
 import './mi-perfil-profesional.css';
 
 // ============================================================
@@ -47,294 +39,180 @@ const ORGANISMOS_MATRICULA = {
 const IDIOMAS = ['Español', 'Inglés', 'Portugués', 'Italiano', 'Francés', 'Alemán'];
 
 // ============================================================
-const adapter = (options) => createFirebaseAdapter(options);
-
-runLifecycle({
-  adapter,
-  options: { loadingMessage: 'Cargando perfil profesional...' },
-  async onReady(ctx) {
-    await runFlowController(ctx.user.uid);
-    mountLayout(ctx);
-    const state = await load(ctx);
-    render(ctx, state);
-  }
-});
-
+// PAGE OBJECT — patrón canónico runSkeleton
 // ============================================================
-// LOAD
-// ============================================================
-async function load(ctx) {
-  const data       = ctx.comercioData || {};
-  const isNuevo    = !data.nombre;
-  const categoria  = ctx.userData?.categoria || 'salud';
-  const isEditMode = window.isEditMode === true;
-  return {
-    isNuevo,
-    isEditMode,
-    categoria,
-    data: {
-      nombre:        data.nombre        || '',
-      especialidad:  data.especialidad  || '',
-      descripcion:   data.descripcion   || '',
-      experiencia:   data.experiencia   || '',
-      titulo:        data.titulo        || '',
-      matricula:     data.matricula     || { numero: '', organismo: '' },
-      institucionFormadora: data.institucionFormadora || '',
-      idiomas:       data.idiomas       || [],
-    }
-  };
-}
+const page = {
+  _data: {
+    nombre: '', especialidad: '', descripcion: '', experiencia: '',
+    titulo: '', matricula: { numero: '', organismo: '' },
+    institucionFormadora: '', idiomas: [],
+  },
+  _originalSnapshot: null,
+  _ctx:          null,
+  _isEditMode:   false,
+  _isNuevo:      false,
+  _categoria:    'salud',
+  _comercioData: {},
 
-// ============================================================
-// RENDER
-// ============================================================
-function render(ctx, state) {
-  const { data, isEditMode } = state;
-  const page = document.getElementById('skeleton-page');
-  page.innerHTML = '';
-  const uiState = structuredClone(data);
+  // ──────────────────────────────────────────────────────────
+  // LOAD
+  // ──────────────────────────────────────────────────────────
+  async load(ctx) {
+    this._ctx          = ctx;
+    this._isEditMode   = ctx.isEditMode === true;
+    this._comercioData = ctx.comercioData || {};
+    this._isNuevo      = !this._comercioData.nombre;
+    this._categoria    = ctx.userData?.categoria || 'salud';
 
-  // Header
-  const header = document.createElement('div');
-  header.className = 'page-header';
-  header.innerHTML = `<h2><i class="fas fa-user-md"></i> ${state.isNuevo ? 'Crear perfil profesional' : 'Editar perfil profesional'}</h2><p>Estos datos definen cómo te va a presentar tu asistente a los pacientes o clientes.</p>`;
-  page.appendChild(header);
-
-  page.appendChild(renderSeccionIdentidad(state, uiState));
-  page.appendChild(renderSeccionCredenciales(state, uiState));
-  page.appendChild(renderSeccionFormacion(state, uiState));
-
-  // ── Snapshot inicial para dirty detection ─────────────────
-  const initialSnapshot = {
-    nombre:       uiState.nombre || '',
-    especialidad: uiState.especialidad || '',
-    descripcion:  uiState.descripcion || '',
-    experiencia:  uiState.experiencia || '',
-    titulo:       uiState.titulo || '',
-    matricula:    JSON.stringify(uiState.matricula || { numero: '', organismo: '' }),
-    institucionFormadora: uiState.institucionFormadora || '',
-    idiomas:      JSON.stringify(uiState.idiomas || [])
-  };
-
-  // ── getCurrentState ───────────────────────────────────────
-  function getCurrentState() {
-    return {
-      nombre:       uiState.nombre?.trim() || '',
-      especialidad: uiState.especialidad?.trim() || '',
-      descripcion:  uiState.descripcion?.trim() || '',
-      experiencia:  uiState.experiencia?.trim() || '',
-      titulo:       uiState.titulo?.trim() || '',
-      matricula:    JSON.stringify(uiState.matricula || { numero: '', organismo: '' }),
-      institucionFormadora: uiState.institucionFormadora?.trim() || '',
-      idiomas:      JSON.stringify(uiState.idiomas || [])
+    const c = this._comercioData;
+    this._data = {
+      nombre:               c.nombre               || '',
+      especialidad:         c.especialidad          || '',
+      descripcion:          c.descripcion           || '',
+      experiencia:          c.experiencia           || '',
+      titulo:               c.titulo                || '',
+      matricula:            c.matricula             || { numero: '', organismo: '' },
+      institucionFormadora: c.institucionFormadora  || '',
+      idiomas:              c.idiomas               || [],
     };
-  }
+    this._originalSnapshot = structuredClone(this._data);
+  },
 
-  // ── dirtyController ───────────────────────────────────────
-  const dirtyController = {
-    hasUnsavedChanges() {
-      const current = getCurrentState();
-      return Object.keys(initialSnapshot).some(k => current[k] !== initialSnapshot[k]);
-    },
-    markSaved() {
-      const current = getCurrentState();
-      Object.keys(initialSnapshot).forEach(k => initialSnapshot[k] = current[k]);
-    }
-  };
+  // ──────────────────────────────────────────────────────────
+  // RENDER
+  // ──────────────────────────────────────────────────────────
+  render() {
+    const root = document.getElementById('skeleton-page');
+    root.innerHTML = '';
 
-  // ── Botón guardar ─────────────────────────────────────────
-  const btnContainer = document.createElement('div');
-  btnContainer.className = 'btn-container';
-  btnContainer.appendChild(
-    createOnboardingButton({
-      stepName: 'mi-perfil-profesional',
-      dirtyController: isEditMode ? dirtyController : undefined,
+    const header = document.createElement('div');
+    header.className = 'page-header';
+    header.innerHTML = `
+      <h2><i class="fas fa-user-md"></i> ${this._isNuevo ? 'Crear perfil profesional' : 'Editar perfil profesional'}</h2>
+      <p>Estos datos definen cómo te va a presentar tu asistente a los pacientes o clientes.</p>
+    `;
+    root.appendChild(header);
 
-      validate() {
-        return !!(
-          uiState.nombre?.trim() &&
-          uiState.especialidad?.trim() &&
-          uiState.matricula?.numero?.trim() &&
-          uiState.matricula?.organismo?.trim()
-        );
+    root.appendChild(this._renderSeccionIdentidad());
+    root.appendChild(this._renderSeccionCredenciales());
+    root.appendChild(this._renderSeccionFormacion());
+
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'btn-container';
+    btnContainer.appendChild(this._renderSaveButton());
+    root.appendChild(btnContainer);
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // DIRTY CONTROLLER
+  // ──────────────────────────────────────────────────────────
+  _buildDirtyController() {
+    const snapshot = () => ({
+      nombre:               this._data.nombre?.trim()               || '',
+      especialidad:         this._data.especialidad?.trim()         || '',
+      descripcion:          this._data.descripcion?.trim()          || '',
+      experiencia:          this._data.experiencia?.trim()          || '',
+      titulo:               this._data.titulo?.trim()               || '',
+      matricula:            JSON.stringify(this._data.matricula     || { numero: '', organismo: '' }),
+      institucionFormadora: this._data.institucionFormadora?.trim() || '',
+      idiomas:              JSON.stringify(this._data.idiomas       || []),
+    });
+    const initial = snapshot();
+    return {
+      hasUnsavedChanges: () => {
+        const current = snapshot();
+        return Object.keys(initial).some(k => current[k] !== initial[k]);
       },
-
-      getLabel() {
-        if (!isEditMode) return 'Continuar';
-        return dirtyController.hasUnsavedChanges()
-          ? 'Guardar perfil'
-          : 'Volver al dashboard';
+      markSaved: () => {
+        const current = snapshot();
+        Object.keys(initial).forEach(k => { initial[k] = current[k]; });
       },
+    };
+  },
 
-      async onSave({ uid, comercioId }) {
-        const d = uiState;
-        const now = new Date();
+  // ──────────────────────────────────────────────────────────
+  // SECCIÓN: IDENTIDAD
+  // ──────────────────────────────────────────────────────────
+  _renderSeccionIdentidad() {
+    const d = this._data;
+    const section = document.createElement('div');
 
-        const updates = {
-          nombre:              d.nombre.trim(),
-          especialidad:        d.especialidad.trim(),
-          descripcion:         d.descripcion.trim(),
-          experiencia:         d.experiencia.trim(),
-          titulo:              d.titulo.trim(),
-          matricula:           d.matricula,
-          institucionFormadora: d.institucionFormadora.trim(),
-          idiomas:             d.idiomas,
-          entityType:          'profesional',
-          categoria:           state.categoria,
-          fechaActualizacion:  now,
-          'onboardingSteps.mi-perfil-profesional': true
-        };
+    const nombre = createFormField({
+      label: 'Nombre completo', name: 'nombre', required: true,
+      placeholder: 'Dr. Juan García',
+      helpText: 'Como te conocen tus pacientes o clientes',
+      value: d.nombre,
+    });
+    nombre.input?.addEventListener('input', e => { d.nombre = e.target.value; });
 
-        try {
-          let targetComercioId = comercioId;
+    const especialidadOptions = (ESPECIALIDADES[this._categoria] || []).map(e => ({ value: e, label: e }));
+    const especialidad = createFormField({
+      label: 'Especialidad', name: 'especialidad', type: 'select', required: true,
+      placeholder: 'Seleccioná tu especialidad',
+      options: [{ value: '', label: 'Seleccioná tu especialidad' }, ...especialidadOptions],
+      value: d.especialidad,
+    });
+    especialidad.input?.addEventListener('change', e => { d.especialidad = e.target.value; });
 
-          if (state.isNuevo || !targetComercioId) {
-            // ── CREACIÓN: Generar nuevo documento si no hay comercioId ──
-            const comercioRef = doc(collection(db, 'entidades'));
-            targetComercioId = comercioRef.id;
+    const descripcion = createFormField({
+      label: 'Descripción', name: 'descripcion', type: 'textarea', rows: 3,
+      placeholder: 'Ej: Médico clínico con enfoque en medicina preventiva y atención personalizada.',
+      helpText: 'Dos o tres líneas que expliquen tu enfoque y por qué elegirte',
+      value: d.descripcion,
+    });
+    descripcion.input?.addEventListener('input', e => { d.descripcion = e.target.value; });
 
-            await setDoc(comercioRef, {
-              ...updates,
-              duenoId: uid,
-              fechaCreacion: now,
-              plan: { 
-                type: 'trial', 
-                active: true, 
-                trial: true, 
-                startedAt: Timestamp.now(),
-                expiresAt: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
-                createdAt: Timestamp.now(),
-                updatedAt: Timestamp.now(),
-                source: 'system'
-              }
-            });
+    const experiencia = createFormField({
+      label: 'Años de experiencia', name: 'experiencia', type: 'number',
+      placeholder: 'Ej: 10', helpText: 'Opcional — ayuda a generar confianza',
+      value: d.experiencia,
+    });
+    experiencia.input?.addEventListener('input', e => { d.experiencia = e.target.value; });
 
-            // Vincular usuario al nuevo comercio
-            await updateDoc(doc(db, 'usuarios', uid), {
-              comercioId: targetComercioId
-            });
-
-            console.log(`[mi-perfil-profesional] Nueva entidad creada: ${targetComercioId}`);
-
-          } else {
-            // ── ACTUALIZACIÓN: Usar comercioId existente ──
-            await updateDoc(doc(db, 'entidades', targetComercioId), updates);
-            console.log(`[mi-perfil-profesional] Entidad actualizada: ${targetComercioId}`);
-          }
-
-          return { success: true, stepMarked: true };
-
-        } catch (err) {
-          console.error('[mi-perfil-profesional] Error en persistencia:', err);
-          throw err;
-        }
-      },
-
-      onSuccess: () => showToast(
-        isEditMode ? 'Perfil actualizado' : 'Perfil guardado',
-        'success'
-      ),
-
-      onError: (err) => {
-        console.error('[mi-perfil-profesional] onSave ERROR:', err);
-        showToast('Error al guardar el perfil', 'error');
-      },
-    })
-  );
-  page.appendChild(btnContainer);
-}
-
-// ============================================================
-// SECCIÓN: IDENTIDAD
-// ============================================================
-function renderSeccionIdentidad(state, uiState) {
-  const section = document.createElement('div');
-  const nombre = createFormField({
-    label: 'Nombre completo', name: 'nombre', required: true,
-    placeholder: 'Dr. Juan García', helpText: 'Como te conocen tus pacientes o clientes',
-    value: uiState.nombre,
-  });
-  nombre.input?.addEventListener('input', e => { uiState.nombre = e.target.value; });
-
-  const especialidadOptions = (ESPECIALIDADES[state.categoria] || []).map(e => ({ value: e, label: e }));
-  const especialidad = createFormField({
-    label: 'Especialidad', name: 'especialidad', type: 'select', required: true,
-    placeholder: 'Seleccioná tu especialidad',
-    options: [{ value: '', label: 'Seleccioná tu especialidad' }, ...especialidadOptions],
-    value: uiState.especialidad,
-  });
-  especialidad.input?.addEventListener('change', e => { uiState.especialidad = e.target.value; });
-
-  const descripcion = createFormField({
-    label: 'Descripción', name: 'descripcion', type: 'textarea', rows: 3, required: false,
-    placeholder: 'Ej: Médico clínico con enfoque en medicina preventiva y atención personalizada.',
-    helpText: 'Dos o tres líneas que expliquen tu enfoque y por qué elegirte',
-    value: uiState.descripcion,
-  });
-  descripcion.input?.addEventListener('input', e => { uiState.descripcion = e.target.value; });
-
-  const experiencia = createFormField({
-    label: 'Años de experiencia', name: 'experiencia', type: 'number', required: false,
-    placeholder: 'Ej: 10', helpText: 'Opcional — ayuda a generar confianza',
-    value: uiState.experiencia,
-  });
-  experiencia.input?.addEventListener('input', e => { uiState.experiencia = e.target.value; });
-
-  section.append(
-    createCard({
+    section.appendChild(createCard({
       title: '¿Quién sos?', icon: 'fa-user-md',
       content: (() => {
         const c = document.createElement('div');
         c.append(nombre, especialidad, descripcion, experiencia);
         return c;
       })()
-    })
-  );
-  return section;
-}
+    }));
+    return section;
+  },
 
-// ============================================================
-// SECCIÓN: CREDENCIALES
-// ============================================================
-function renderSeccionCredenciales(state, uiState) {
-  const section = document.createElement('div');
+  // ──────────────────────────────────────────────────────────
+  // SECCIÓN: CREDENCIALES
+  // ──────────────────────────────────────────────────────────
+  _renderSeccionCredenciales() {
+    const d = this._data;
+    const section = document.createElement('div');
 
-  const matriculaNumero = createFormField({
-    label: 'Número de matrícula',
-    name: 'matricula-numero',
-    required: true,
-    type: 'tel',
-    inputmode: 'numeric',
-    maxlength: 10,
-    placeholder: 'Ej: 12345',
-    helpText: 'Ingresá solo números. El prefijo (MP, MN, etc.) se genera automáticamente.',
-    value: uiState.matricula.numero,
-  });
+    const matriculaNumero = createFormField({
+      label: 'Número de matrícula', name: 'matricula-numero',
+      required: true, type: 'tel', inputmode: 'numeric', maxlength: 10,
+      placeholder: 'Ej: 12345',
+      helpText: 'Ingresá solo números. El prefijo (MP, MN, etc.) se genera automáticamente.',
+      value: d.matricula.numero,
+    });
+    matriculaNumero.input?.addEventListener('input', e => {
+      const clean = e.target.value.replace(/\D/g, '');
+      e.target.value = clean;
+      d.matricula = { ...d.matricula, numero: clean };
+    });
 
-  matriculaNumero.input?.addEventListener('input', e => {
-    const clean = e.target.value.replace(/\D/g, '');
-    e.target.value = clean;
-    uiState.matricula = { ...uiState.matricula, numero: clean };
-  });
+    const organismoOptions = (ORGANISMOS_MATRICULA[this._categoria] || []).map(o => ({ value: o, label: o }));
+    const matriculaOrganismo = createFormField({
+      label: 'Organismo que emite la matrícula', name: 'matricula-organismo',
+      type: 'select', required: true,
+      options: [{ value: '', label: 'Seleccioná el organismo' }, ...organismoOptions],
+      value: d.matricula.organismo,
+    });
+    matriculaOrganismo.input?.addEventListener('change', e => {
+      d.matricula = { ...d.matricula, organismo: e.target.value };
+    });
 
-  const organismoOptions = (ORGANISMOS_MATRICULA[state.categoria] || []).map(o => ({ value: o, label: o }));
-  const matriculaOrganismo = createFormField({
-    label: 'Organismo que emite la matrícula',
-    name: 'matricula-organismo',
-    type: 'select',
-    required: true,
-    options: [{ value: '', label: 'Seleccioná el organismo' }, ...organismoOptions],
-    value: uiState.matricula.organismo,
-  });
-
-  matriculaOrganismo.input?.addEventListener('change', e => {
-    uiState.matricula = { ...uiState.matricula, organismo: e.target.value };
-  });
-
-  section.append(
-    createCard({
-      title: 'Matrícula profesional',
-      icon: 'fa-id-card',
+    section.appendChild(createCard({
+      title: 'Matrícula profesional', icon: 'fa-id-card',
       content: (() => {
         const c = document.createElement('div');
         const help = document.createElement('p');
@@ -343,67 +221,169 @@ function renderSeccionCredenciales(state, uiState) {
         c.append(help, matriculaNumero, matriculaOrganismo);
         return c;
       })()
-    })
-  );
-  return section;
-}
+    }));
+    return section;
+  },
 
-// ============================================================
-// SECCIÓN: FORMACIÓN E IDIOMAS
-// ============================================================
-function renderSeccionFormacion(state, uiState) {
-  const section = document.createElement('div');
-  const titulo = createFormField({
-    label: 'Título universitario', name: 'titulo', required: false,
-    placeholder: 'Ej: Médico Cirujano — UBA',
-    helpText: 'Tu título de grado y la universidad donde lo obtuviste',
-    value: uiState.titulo,
-  });
-  titulo.input?.addEventListener('input', e => { uiState.titulo = e.target.value; });
+  // ──────────────────────────────────────────────────────────
+  // SECCIÓN: FORMACIÓN E IDIOMAS
+  // ──────────────────────────────────────────────────────────
+  _renderSeccionFormacion() {
+    const d = this._data;
+    const section = document.createElement('div');
 
-  const institucion = createFormField({
-    label: 'Institución donde te formaste', name: 'institucionFormadora', required: false,
-    placeholder: 'Ej: Hospital Italiano de Buenos Aires',
-    helpText: 'Residencia, fellowship o especialización principal',
-    value: uiState.institucionFormadora,
-  });
-  institucion.input?.addEventListener('input', e => { uiState.institucionFormadora = e.target.value; });
-
-  const idiomasWrapper = document.createElement('div');
-  idiomasWrapper.className = 's-form-field';
-  const idiomasLabel = document.createElement('label');
-  idiomasLabel.className = 's-label';
-  idiomasLabel.textContent = 'Idiomas en que atendés';
-  idiomasWrapper.appendChild(idiomasLabel);
-
-  const idiomasGrid = document.createElement('div');
-  idiomasGrid.className = 'idiomas-grid';
-  IDIOMAS.forEach(idioma => {
-    const row = document.createElement('label');
-    row.className = 'idioma-row';
-    const cb = document.createElement('input');
-    cb.type    = 'checkbox';
-    cb.value   = idioma;
-    cb.checked = uiState.idiomas.includes(idioma);
-    cb.addEventListener('change', () => {
-      if (cb.checked) uiState.idiomas = [...uiState.idiomas, idioma];
-      else            uiState.idiomas = uiState.idiomas.filter(i => i !== idioma);
+    const titulo = createFormField({
+      label: 'Título universitario', name: 'titulo',
+      placeholder: 'Ej: Médico Cirujano — UBA',
+      helpText: 'Tu título de grado y la universidad donde lo obtuviste',
+      value: d.titulo,
     });
-    row.appendChild(cb);
-    row.appendChild(document.createTextNode(` ${idioma}`));
-    idiomasGrid.appendChild(row);
-  });
-  idiomasWrapper.appendChild(idiomasGrid);
+    titulo.input?.addEventListener('input', e => { d.titulo = e.target.value; });
 
-  section.append(
-    createCard({
+    const institucion = createFormField({
+      label: 'Institución donde te formaste', name: 'institucionFormadora',
+      placeholder: 'Ej: Hospital Italiano de Buenos Aires',
+      helpText: 'Residencia, fellowship o especialización principal',
+      value: d.institucionFormadora,
+    });
+    institucion.input?.addEventListener('input', e => { d.institucionFormadora = e.target.value; });
+
+    // Idiomas — checkboxes manuales
+    const idiomasWrapper = document.createElement('div');
+    idiomasWrapper.className = 's-form-field';
+    const idiomasLabel = document.createElement('label');
+    idiomasLabel.className = 's-label';
+    idiomasLabel.textContent = 'Idiomas en que atendés';
+    idiomasWrapper.appendChild(idiomasLabel);
+
+    const idiomasGrid = document.createElement('div');
+    idiomasGrid.className = 'idiomas-grid';
+    IDIOMAS.forEach(idioma => {
+      const row = document.createElement('label');
+      row.className = 'idioma-row';
+      const cb = document.createElement('input');
+      cb.type    = 'checkbox';
+      cb.value   = idioma;
+      cb.checked = d.idiomas.includes(idioma);
+      cb.addEventListener('change', () => {
+        if (cb.checked) d.idiomas = [...d.idiomas, idioma];
+        else            d.idiomas = d.idiomas.filter(i => i !== idioma);
+      });
+      row.appendChild(cb);
+      row.appendChild(document.createTextNode(` ${idioma}`));
+      idiomasGrid.appendChild(row);
+    });
+    idiomasWrapper.appendChild(idiomasGrid);
+
+    section.appendChild(createCard({
       title: 'Formación e idiomas', icon: 'fa-graduation-cap',
       content: (() => {
         const c = document.createElement('div');
         c.append(titulo, institucion, idiomasWrapper);
         return c;
       })()
-    })
-  );
-  return section;
-}
+    }));
+    return section;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // SAVE BUTTON
+  // ──────────────────────────────────────────────────────────
+  _renderSaveButton() {
+    const dirtyController = this._buildDirtyController();
+
+    return createOnboardingButton({
+      stepName: 'mi-perfil-profesional',
+      dirtyController: this._isEditMode ? dirtyController : undefined,
+
+      validate: () => !!(
+        this._data.nombre?.trim()                &&
+        this._data.especialidad?.trim()          &&
+        this._data.matricula?.numero?.trim()     &&
+        this._data.matricula?.organismo?.trim()
+      ),
+
+      getLabel: () => {
+        if (!this._isEditMode) return 'Continuar';
+        return dirtyController.hasUnsavedChanges()
+          ? 'Guardar perfil'
+          : 'Volver al dashboard';
+      },
+
+      async onSave({ uid, comercioId }) {
+        const d   = page._data;
+        const now = new Date();
+
+        const updates = {
+          nombre:               d.nombre.trim(),
+          especialidad:         d.especialidad.trim(),
+          descripcion:          d.descripcion.trim(),
+          experiencia:          d.experiencia.trim(),
+          titulo:               d.titulo.trim(),
+          matricula:            d.matricula,
+          institucionFormadora: d.institucionFormadora.trim(),
+          idiomas:              d.idiomas,
+          entityType:           'profesional',
+          categoria:            page._categoria,
+          fechaActualizacion:   now,
+          'onboardingSteps.mi-perfil-profesional': true,
+        };
+
+        if (page._isNuevo || !comercioId) {
+          const comercioRef     = comercioId
+            ? doc(db, 'entidades', comercioId)
+            : doc(collection(db, 'entidades'));
+          const nuevoComercioId = comercioRef.id;
+          const ts              = Timestamp.now();
+
+          await setDoc(comercioRef, {
+            ...updates,
+            duenoId:        uid,
+            fechaCreacion:  now,
+            onboardingSteps: { 'mi-perfil-profesional': true },
+            plan: {
+              type: 'trial', active: true, trial: true,
+              startedAt: ts,
+              expiresAt: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+              createdAt: ts, updatedAt: ts, source: 'system',
+            },
+          });
+
+          await updateDoc(doc(db, 'usuarios', uid), {
+            comercioId: nuevoComercioId,
+          });
+
+          console.log(`[mi-perfil-profesional] Nueva entidad creada: ${nuevoComercioId}`);
+
+        } else {
+          await updateDoc(doc(db, 'entidades', comercioId), updates);
+          console.log(`[mi-perfil-profesional] Entidad actualizada: ${comercioId}`);
+        }
+
+        return { success: true, stepMarked: true };
+      },
+
+      onSuccess: () => {
+        showToast(
+          this._isEditMode ? 'Perfil actualizado' : 'Perfil guardado',
+          'success'
+        );
+        dirtyController.markSaved();
+      },
+
+      onError: (err) => {
+        console.error('[mi-perfil-profesional] onSave ERROR:', err);
+        showToast('Error al guardar el perfil', 'error');
+      },
+    });
+  },
+};
+
+// ============================================================
+// ARRANQUE
+// ============================================================
+runSkeleton({
+  page,
+  adapter: createFirebaseAdapter,
+  options: { loadingMessage: 'Cargando perfil profesional...' },
+});
