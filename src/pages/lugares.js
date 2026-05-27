@@ -672,7 +672,7 @@ const page = {
     this._listaCard = newLista;
   },
 
-  // ──────────────────────────────────────────────────────────
+    // ──────────────────────────────────────────────────────────
   // SAVE BUTTON
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
@@ -686,26 +686,39 @@ const page = {
 
     return createOnboardingButton({
       stepName: 'lugares',
-      validate:  () => this._lugares.length > 0,
-      getLabel:  () => {
-        if (this._lugares.length === 0) return 'Agregá al menos un lugar';
+      validate: () => this._lugares.length > 0,
+      getLabel: () => {
+        if (!dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
         const n = this._lugares.length;
         return `Guardar${n > 1 ? ` (${n} lugares)` : ''} y continuar`;
       },
       dirtyController,
-      onSave: async ({ persistence }) => {
+      onSave: async ({ uid, comercioId }) => {
+        if (!comercioId) throw new Error('No hay comercioId para guardar lugares');
+
         const payload = this._lugares.map(({ _tempId, _editingRef, ...rest }) => rest);
-        await persistence.updateData({ lugares: payload });
-        return { success: true, stepMarked: true };
+
+        const batch = writeBatch(db);
+        const ref = doc(db, 'entidades', comercioId);
+        batch.update(ref, {
+          lugares: payload,
+          'onboardingSteps.lugares': true,
+          fechaActualizacion: serverTimestamp()
+        });
+        await batch.commit();
+
+        return true;
       },
       onSuccess: () => {
-        showToast('Lugares guardados', 'success');
+        showToast('💾 Lugares guardados', 'success');
         dirtyController.markSaved();
       },
-      onError: err => showToast('Error: ' + err.message, 'error'),
+      onError: err => {
+        console.error('[lugares] Error guardando:', err);
+        showToast('Error al guardar: ' + err.message, 'error');
+      }
     });
   },
-};
 
 // ============================================================
 // ARRANQUE
