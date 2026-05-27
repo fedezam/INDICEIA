@@ -1,5 +1,5 @@
 // ============================================================
-// src/pages/lugares/lugares.js
+// src/pages/lugares.js
 // ============================================================
 
 import { runSkeleton }            from '/src/skeleton/skeleton.js';
