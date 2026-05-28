@@ -41,9 +41,10 @@ function render(ctx, initialConsultas) {
   page.innerHTML = '';
 
   // Estado reactivo local
+  // _editingId: null si estamos creando, string si estamos editando
   const uiState = {
     consultas: structuredClone(initialConsultas),
-    draft: {}
+    draft: { _editingId: null } 
   };
   const originalSnapshot = structuredClone(initialConsultas);
 
@@ -51,21 +52,21 @@ function render(ctx, initialConsultas) {
   header.className = 'page-header';
   header.innerHTML = `
     <h2><i class="fas fa-calendar-check"></i> Tipos de consulta</h2>
-    <p>Definí qué tipo de consultas ofrecés, con duración y precio orientativo.</p>
+    <p>Definí qué tipo de consultas ofrecés, con duración y precio.</p>
   `;
   page.appendChild(header);
 
-  // Formulario de carga
+  // Formulario de carga/edición
   page.appendChild(renderFormConsulta(uiState));
 
-  // Lista de consultas cargadas
+  // Lista de consultas cargadas (borrador local)
   const listaContainer = document.createElement('div');
   listaContainer.id = 'lista-consultas';
   listaContainer.className = 'lista-consultas-container';
   page.appendChild(listaContainer);
   refreshLista(uiState);
 
-  // Botón dinámico de guardado
+  // Botón dinámico de guardado final
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
   btnContainer.appendChild(_renderSaveButton(uiState, originalSnapshot));
@@ -73,7 +74,7 @@ function render(ctx, initialConsultas) {
 }
 
 // ============================================================
-// SAVE BUTTON (Dinámico y Atómico)
+// SAVE BUTTON FINAL (DB)
 // ============================================================
 function _renderSaveButton(uiState, originalSnapshot) {
   const hasChanges = () => JSON.stringify(uiState.consultas) !== JSON.stringify(originalSnapshot);
@@ -112,10 +113,11 @@ function _renderSaveButton(uiState, originalSnapshot) {
 }
 
 // ============================================================
-// FORMULARIO DE CARGA
+// FORMULARIO DE CARGA / EDICIÓN
 // ============================================================
 function renderFormConsulta(uiState) {
   const draft = uiState.draft;
+  const isEditing = !!draft._editingId;
 
   const nombre = createFormField({
     label: '¿Qué tipo de consulta es?',
@@ -123,6 +125,7 @@ function renderFormConsulta(uiState) {
     required: true,
     placeholder: 'Ej: Primera consulta, Consulta de seguimiento',
     helpText: 'El nombre tal como lo vas a presentar a tus pacientes',
+    value: draft.nombre || '',
   });
   nombre.input?.addEventListener('input', e => { draft.nombre = e.target.value.trim(); });
 
@@ -132,6 +135,7 @@ function renderFormConsulta(uiState) {
     type: 'textarea',
     rows: 2,
     placeholder: 'Ej: Incluye anamnesis y diagnóstico inicial.',
+    value: draft.descripcion || '',
   });
   descripcion.input?.addEventListener('input', e => { draft.descripcion = e.target.value.trim(); });
 
@@ -141,38 +145,46 @@ function renderFormConsulta(uiState) {
     type: 'number',
     placeholder: 'Ej: 30',
     helpText: 'Ayuda al paciente a organizarse',
+    value: draft.duracion_minutos || '',
   });
   duracion.input?.addEventListener('input', e => {
     const n = parseInt(e.target.value);
     draft.duracion_minutos = n > 0 ? n : null;
   });
 
-  // Precio con Moneda Explícita
+  // Precio con Semántica Corregida
   const precioWrapper = document.createElement('div');
   precioWrapper.className = 's-form-field';
   const precioLabel = document.createElement('label');
   precioLabel.className = 's-label';
-  precioLabel.textContent = 'Precio';
+  precioLabel.textContent = 'Precio'; // ← Cambio semántico
   precioWrapper.appendChild(precioLabel);
 
   const radioConsultar = document.createElement('label');
   radioConsultar.className = 'radio-option';
-  radioConsultar.innerHTML = `<input type="radio" name="consulta-precio" value="consultar" checked><div><strong>A consultar</strong><span>Depende de la cobertura o se define al turno</span></div>`;
+  radioConsultar.innerHTML = `<input type="radio" name="consulta-precio" value="consultar"><div><strong>A consultar</strong><span>El precio se define al coordinar el turno</span></div>`;
 
   const radioFijo = document.createElement('label');
   radioFijo.className = 'radio-option';
-  radioFijo.innerHTML = `<input type="radio" name="consulta-precio" value="fijo"><div><strong>Precio orientativo</strong><span>Para pacientes particulares</span></div>`;
+  radioFijo.innerHTML = `<input type="radio" name="consulta-precio" value="fijo"><div><strong>Precio fijo</strong><span>Valor establecido (ej. por colegio médico)</span></div>`;
 
   const inputPrecio = createFormField({
-    label: 'Precio orientativo',
+    label: 'Monto',
     name: 'consulta-precio-valor',
     type: 'number',
     placeholder: 'Ej: 5000',
   });
-  inputPrecio.style.display = 'none';
-
-  // Default: moneda ARS
-  const defaultMoneda = 'ARS';
+  
+  // Determinar estado inicial de los radios
+  const isFijo = draft.precio?.tipo === 'fijo';
+  if (isFijo) {
+    radioFijo.querySelector('input').checked = true;
+    inputPrecio.style.display = 'block';
+    inputPrecio.input.value = draft.precio.valor || '';
+  } else {
+    radioConsultar.querySelector('input').checked = true;
+    inputPrecio.style.display = 'none';
+  }
 
   radioConsultar.querySelector('input').addEventListener('change', () => {
     delete draft.precio;
@@ -180,23 +192,22 @@ function renderFormConsulta(uiState) {
   });
   
   radioFijo.querySelector('input').addEventListener('change', () => {
-    draft.precio = { tipo: 'fijo', valor: 0, moneda: defaultMoneda };
+    draft.precio = { tipo: 'fijo', valor: parseInt(inputPrecio.input.value) || 0, moneda: 'ARS' };
     inputPrecio.style.display = 'block';
   });
   
   inputPrecio.input?.addEventListener('input', e => {
-    if (draft.precio) {
+    if (draft.precio && draft.precio.tipo === 'fijo') {
       draft.precio.valor = parseInt(e.target.value) || 0;
-      draft.precio.moneda = defaultMoneda; // Asegurar moneda al editar
     }
   });
 
   precioWrapper.append(radioConsultar, radioFijo, inputPrecio);
 
-  const btnAgregar = createButton({
-    label: 'Agregar tipo de consulta',
-    variant: 'success',
-    icon: 'fa-plus',
+  const btnAction = createButton({
+    label: isEditing ? 'Actualizar consulta' : 'Agregar tipo de consulta',
+    variant: isEditing ? 'primary' : 'success',
+    icon: isEditing ? 'fa-check' : 'fa-plus',
     block: true,
     onClick: () => {
       if (!draft.nombre) {
@@ -206,45 +217,72 @@ function renderFormConsulta(uiState) {
       
       // Normalizar precio si está vacío
       if (!draft.precio) {
-        draft.precio = { tipo: 'consultar', moneda: defaultMoneda };
-      } else if (draft.precio.tipo === 'fijo') {
-        draft.precio.moneda = defaultMoneda;
+        draft.precio = { tipo: 'consultar', moneda: 'ARS' };
       }
 
-      // Generar ID único
-      const nuevaConsulta = {
-        id: crypto.randomUUID(),
-        ...structuredClone(draft)
-      };
+      if (isEditing) {
+        // Actualizar existente
+        const idx = uiState.consultas.findIndex(c => c.id === draft._editingId);
+        if (idx >= 0) {
+          // Mantener el ID original
+          const updated = { ...draft, id: draft._editingId };
+          delete updated._editingId;
+          uiState.consultas[idx] = updated;
+          showToast('Consulta actualizada', 'success');
+        }
+      } else {
+        // Crear nueva
+        const nuevaConsulta = {
+          id: crypto.randomUUID(),
+          ...structuredClone(draft)
+        };
+        delete nuevaConsulta._editingId;
+        uiState.consultas.push(nuevaConsulta);
+        showToast('Tipo de consulta agregado', 'success');
+      }
 
-      uiState.consultas.push(nuevaConsulta);
-      uiState.draft = {};
-      
-      // Limpiar form visualmente
-      if (nombre.input) nombre.input.value = '';
-      if (descripcion.input) descripcion.input.value = '';
-      if (duracion.input) duracion.input.value = '';
-      radioConsultar.querySelector('input').checked = true;
-      inputPrecio.style.display = 'none';
-      
+      // Resetear draft
+      uiState.draft = { _editingId: null };
       refreshLista(uiState);
-      showToast('Tipo de consulta agregado', 'success');
+      
+      // Re-renderizar formulario para limpiarlo y volver a modo "Agregar"
+      const formCard = document.querySelector('.s-card--primary'); // Asumiendo que es la primera card primary
+      if (formCard) {
+         // Una forma simple es re-renderizar todo el form content
+         const newForm = renderFormConsulta(uiState);
+         formCard.replaceWith(newForm);
+      }
     }
   });
 
-  const content = document.createElement('div');
-  content.append(nombre, descripcion, duracion, precioWrapper, btnAgregar);
+  let content = document.createElement('div');
+  content.append(nombre, descripcion, duracion, precioWrapper, btnAction);
+
+  if (isEditing) {
+    const btnCancel = createButton({
+      label: 'Cancelar edición',
+      variant: 'secondary',
+      icon: 'fa-times',
+      block: true,
+      onClick: () => {
+        uiState.draft = { _editingId: null };
+        const formCard = document.querySelector('.s-card--primary');
+        if (formCard) formCard.replaceWith(renderFormConsulta(uiState));
+      }
+    });
+    content.appendChild(btnCancel);
+  }
 
   return createCard({
-    title: 'Agregar tipo de consulta',
-    icon: 'fa-plus-circle',
+    title: isEditing ? 'Editando consulta' : 'Agregar tipo de consulta',
+    icon: isEditing ? 'fa-pencil' : 'fa-plus-circle',
     variant: 'primary',
     content,
   });
 }
 
 // ============================================================
-// LISTA DE CONSULTAS
+// LISTA DE CONSULTAS (Con Editar/Eliminar)
 // ============================================================
 function refreshLista(uiState) {
   const listaContainer = document.getElementById('lista-consultas');
@@ -286,7 +324,29 @@ function refreshLista(uiState) {
     const actions = document.createElement('div');
     actions.className = 'consulta-actions';
     
-    // Eliminar por ID, no por índice
+    // Botón Editar
+    actions.appendChild(createButton({
+      label: 'Editar',
+      variant: 'primary',
+      size: 'sm',
+      icon: 'fa-pencil',
+      onClick: () => {
+        // Cargar en draft para editar
+        uiState.draft = {
+          ...structuredClone(consulta),
+          _editingId: consulta.id
+        };
+        
+        // Re-renderizar formulario arriba
+        const formCard = document.querySelector('.s-card--primary');
+        if (formCard) formCard.replaceWith(renderFormConsulta(uiState));
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('Modo edición activado', 'info');
+      }
+    }));
+
+    // Botón Eliminar
     actions.appendChild(createButton({
       label: 'Eliminar',
       variant: 'danger',
