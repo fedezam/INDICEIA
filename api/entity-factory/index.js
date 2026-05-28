@@ -13,6 +13,7 @@ import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
 import { resolveDomain }     from '../../lib/entity-factory/domain-resolver.js';
 import { buildEntityContext } from '../../src/shared/entity-context.js';
+import { normalizeEntityData } from '../../lib/entity-factory/normalizers/normalizeEntityData.js'; // ← NUEVO
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -38,8 +39,6 @@ async function resolveReferralCode(comercioId, duenoId) {
 }
 
 // ─── Merge defensivo ──────────────────────────────────────────
-// Elimina claves con valor undefined antes de mergear,
-// evitando pisar valores válidos del objeto base.
 function safeMerge(base, override) {
   if (!override) return base;
   const clean = Object.fromEntries(
@@ -108,7 +107,7 @@ export async function buildEntity({ comercioId }) {
   const snap        = await comercioRef.get();
   if (!snap.exists) throw new Error(`Entidad ${comercioId} no encontrada`);
 
-  const data       = snap.data();
+  const data       = normalizeEntityData(snap.data()); // ← CAMBIO: era snap.data()
   const entityType = data.entityType || 'comercio';
 
   // Slug desde Firestore — fuente de verdad única
@@ -141,8 +140,6 @@ export async function buildEntity({ comercioId }) {
   await buildSeo(context, comercioId, savedSeo, slug);
 
   // ── ENRIQUECER CONTEXTO PARA ENTITY.JSON (LLM) ────────────
-  // safeMerge filtra undefined antes de mergear — evita pisar
-  // valores válidos de context.ubicacion con claves vacías de geoCtx.
   const geoCtx = buildEntityContext(data);
 
   const enrichedContext = {
