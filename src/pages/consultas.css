@@ -1,27 +1,75 @@
-.page-header { margin-bottom: 20px; text-align: center; }
-.page-header h2 { margin: 0 0 8px 0; color: var(--s-dark); font-size: 24px; font-weight: 600; }
-.page-header h2 i { margin-right: 8px; color: var(--s-primary); }
-.page-header p { margin: 0; color: var(--s-gray); font-size: 14px; }
+/* ============================================================
+   src/pages/consultas.css
+   Coherente con skeleton y páginas anteriores
+   ============================================================ */
 
+#skeleton-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--s-spacing-lg);
+}
+
+.page-header {
+  margin-bottom: var(--s-spacing-lg);
+  text-align: center;
+}
+
+/* ── Opciones de Precio (Radio Buttons) ───────────────────── */
 .radio-option {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 10px 0;
+  gap: var(--s-spacing-sm);
+  padding: var(--s-spacing-sm) 0;
   border-bottom: 1px solid var(--s-border);
   cursor: pointer;
 }
-.radio-option:last-of-type { border-bottom: none; }
-.radio-option input { margin-top: 3px; flex-shrink: 0; }
-.radio-option strong { display: block; font-size: 14px; color: var(--s-dark); }
-.radio-option span { font-size: 12px; color: var(--s-gray); }
+.radio-option:last-of-type {
+  border-bottom: none;
+}
+.radio-option input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.radio-option strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--s-dark);
+}
+.radio-option span {
+  font-size: 0.8rem;
+  color: var(--s-gray);
+}
 
-.consulta-desc { font-size: 13px; color: var(--s-gray); margin-bottom: 10px; }
+/* ── Lista de Consultas ───────────────────────────────────── */
+.lista-consultas-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-spacing);
+  margin-top: var(--s-spacing);
+}
 
-.consulta-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.lista-vacia {
+  text-align: center;
+  padding: var(--s-spacing-lg);
+  color: var(--s-gray);
+  font-style: italic;
+}
+
+.consulta-desc {
+  font-size: 0.9rem;
+  color: var(--s-gray);
+  margin-bottom: var(--s-spacing-xs);
+}
+
+.consulta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-spacing-xs);
+  margin-bottom: var(--s-spacing-xs);
+}
 
 .chip {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   padding: 4px 10px;
   border-radius: 99px;
@@ -32,10 +80,32 @@
   gap: 5px;
 }
 
-.chip i { font-size: 11px; }
+.chip i {
+  font-size: 0.7rem;
+}
 
-.chip-precio { background: #e8f5e9; color: #2e7d32; }
+.chip-precio {
+  background: var(--s-success-bg, #e8f5e9);
+  color: var(--s-success-text, #2e7d32);
+}
 
-.consulta-actions { margin-top: 8px; }
+.consulta-actions {
+  margin-top: var(--s-spacing-sm);
+  padding-top: var(--s-spacing-sm);
+  border-top: 1px solid var(--s-border);
+}
 
-.btn-container { margin-top: 24px; }
+.btn-container {
+  margin-top: var(--s-spacing-lg);
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  #skeleton-page {
+    padding: var(--s-spacing);
+  }
+  
+  .consulta-actions button {
+    width: 100%;
+  }
+}
