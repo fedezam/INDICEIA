@@ -10,10 +10,15 @@ import { createFormField }        from '/src/skeleton/components/form-field/inde
 import { createCard }             from '/src/skeleton/components/card/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
+
+// Firebase imports necesarios para el batch atómico
+import { db }                     from '/src/services/firebase/firebase.js';
+import { writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+
 import './cobertura.css';
 
 // ============================================================
-// DATA
+// CONSTANTES
 // ============================================================
 const MUTUALES = [
   'OSDE', 'Swiss Medical', 'Galeno', 'Medifé', 'OMINT',
@@ -39,34 +44,30 @@ runLifecycle({
   async onReady(ctx) {
     await runFlowController(ctx.user.uid);
     mountLayout(ctx);
-    const state = await load(ctx);
-    render(ctx, state);
-  }
-});
-
-// ============================================================
-// LOAD
-// ============================================================
-async function load(ctx) {
-  const data = ctx.comercioData || {};
-  return {
-    cobertura: {
+    
+    // Cargar datos iniciales
+    const data = ctx.comercioData || {};
+    const initialState = {
       mutuales:   data.cobertura?.mutuales   || [],
       particular: data.cobertura?.particular !== false,
       honorarios: data.cobertura?.honorarios || '',
       modalidades: data.cobertura?.modalidades || [],
-    }
-  };
-}
+    };
+
+    render(ctx, initialState);
+  }
+});
 
 // ============================================================
-// RENDER
+// RENDER & STATE MANAGEMENT
 // ============================================================
-function render(ctx, state) {
+function render(ctx, initialState) {
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
-  const uiState = structuredClone(state.cobertura);
+  // Estado reactivo local
+  const uiState = structuredClone(initialState);
+  const originalSnapshot = structuredClone(initialState);
 
   const header = document.createElement('div');
   header.className = 'page-header';
@@ -76,28 +77,54 @@ function render(ctx, state) {
   `;
   page.appendChild(header);
 
+  // Renderizar secciones pasando uiState por referencia
   page.appendChild(renderSeccionModalidad(uiState));
   page.appendChild(renderSeccionMutuales(uiState));
   page.appendChild(renderSeccionParticular(uiState));
 
-  const guardarBtn = createOnboardingButton({
-    stepName: 'cobertura',
-    validate: () => uiState.modalidades.length > 0,
-    getLabel: () => uiState.modalidades.length === 0
-      ? 'Seleccioná al menos una modalidad'
-      : 'Guardar y continuar',
-    onSave: async ({ persistence }) => {
-      await persistence.updateData({ cobertura: uiState });
-      return { success: true, stepMarked: true };
-    },
-    onSuccess: () => showToast('Cobertura guardada', 'success'),
-    onError:   (err) => showToast('Error: ' + err.message, 'error'),
-  });
-
+  // Botón dinámico
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
-  btnContainer.appendChild(guardarBtn);
+  btnContainer.appendChild(_renderSaveButton(uiState, originalSnapshot));
   page.appendChild(btnContainer);
+}
+
+// ============================================================
+// SAVE BUTTON (Dinámico y Atómico)
+// ============================================================
+function _renderSaveButton(uiState, originalSnapshot) {
+  const hasChanges = () => JSON.stringify(uiState) !== JSON.stringify(originalSnapshot);
+  const isValid = () => uiState.modalidades.length > 0;
+
+  return createOnboardingButton({
+    stepName: 'cobertura',
+    validate: isValid,
+    getLabel: () => {
+      if (!hasChanges()) return 'Volver al dashboard';
+      return isValid() ? 'Guardar y continuar' : 'Seleccioná al menos una modalidad';
+    },
+    onSave: async ({ uid, comercioId }) => {
+      if (!comercioId) throw new Error('No hay comercioId');
+
+      // Guardado atómico con Batch (igual que lugares.js)
+      const batch = writeBatch(db);
+      const ref = doc(db, 'entidades', comercioId);
+      
+      batch.update(ref, {
+        cobertura: uiState,
+        'onboardingSteps.cobertura': true,
+        fechaActualizacion: serverTimestamp()
+      });
+      
+      await batch.commit();
+      return true; // Éxito, el step ya está marcado en el batch
+    },
+    onSuccess: () => showToast('💾 Cobertura guardada', 'success'),
+    onError: (err) => {
+      console.error('[cobertura] Error:', err);
+      showToast('Error al guardar: ' + err.message, 'error');
+    }
+  });
 }
 
 // ============================================================
@@ -114,14 +141,22 @@ function renderSeccionModalidad(uiState) {
   MODALIDADES.forEach(({ value, label, help: helpText }) => {
     const row = document.createElement('label');
     row.className = 'checkbox-con-explicacion';
+    
     const cb = document.createElement('input');
     cb.type    = 'checkbox';
     cb.value   = value;
     cb.checked = uiState.modalidades.includes(value);
+    
     cb.addEventListener('change', () => {
-      if (cb.checked) uiState.modalidades = [...uiState.modalidades, value];
-      else            uiState.modalidades = uiState.modalidades.filter(m => m !== value);
+      if (cb.checked) {
+        uiState.modalidades = [...uiState.modalidades, value];
+      } else {
+        uiState.modalidades = uiState.modalidades.filter(m => m !== value);
+      }
+      // Disparar evento para actualizar UI del botón si fuera necesario
+      document.dispatchEvent(new Event('change')); 
     });
+
     const textDiv = document.createElement('div');
     textDiv.innerHTML = `<strong>${label}</strong><span>${helpText}</span>`;
     row.append(cb, textDiv);
@@ -163,38 +198,44 @@ function renderSeccionMutuales(uiState) {
       .forEach(mutual => {
         const row = document.createElement('label');
         row.className = 'mutual-row';
+        
         const cb = document.createElement('input');
         cb.type    = 'checkbox';
         cb.value   = mutual;
         cb.checked = uiState.mutuales.includes(mutual);
+        
         cb.addEventListener('change', () => {
-          if (cb.checked) uiState.mutuales = [...uiState.mutuales, mutual];
-          else            uiState.mutuales = uiState.mutuales.filter(m => m !== mutual);
+          if (cb.checked) {
+            uiState.mutuales = [...uiState.mutuales, mutual];
+          } else {
+            uiState.mutuales = uiState.mutuales.filter(m => m !== mutual);
+          }
+          document.dispatchEvent(new Event('change'));
+          // Actualizar resumen visual inmediatamente
+          updateResumen();
         });
+        
         row.append(cb, document.createTextNode(` ${mutual}`));
         grid.appendChild(row);
       });
   };
 
   renderMutuales();
+  
   searchInput.addEventListener('input', e => renderMutuales(e.target.value));
-
   content.appendChild(grid);
 
   // Resumen seleccionadas
   const resumen = document.createElement('p');
   resumen.className = 'mutuales-resumen';
-  resumen.textContent = uiState.mutuales.length > 0
-    ? `${uiState.mutuales.length} seleccionadas`
-    : 'Ninguna seleccionada';
-
-  // Actualizar resumen al cambiar
-  grid.addEventListener('change', () => {
+  
+  const updateResumen = () => {
     resumen.textContent = uiState.mutuales.length > 0
       ? `${uiState.mutuales.length} seleccionadas`
       : 'Ninguna seleccionada';
-  });
-
+  };
+  
+  updateResumen();
   content.appendChild(resumen);
 
   return createCard({
@@ -212,13 +253,17 @@ function renderSeccionParticular(uiState) {
 
   const row = document.createElement('label');
   row.className = 'checkbox-con-explicacion';
+  
   const cb = document.createElement('input');
   cb.type    = 'checkbox';
   cb.checked = uiState.particular;
+  
   cb.addEventListener('change', () => {
     uiState.particular = cb.checked;
     honorariosField.style.display = cb.checked ? 'block' : 'none';
+    document.dispatchEvent(new Event('change'));
   });
+  
   const textDiv = document.createElement('div');
   textDiv.innerHTML = `<strong>Atiendo pacientes particulares</strong><span>Sin obra social, pago directo al profesional</span>`;
   row.append(cb, textDiv);
@@ -231,8 +276,14 @@ function renderSeccionParticular(uiState) {
     helpText: 'Opcional — ayuda al paciente a saber si está al alcance',
     value: uiState.honorarios,
   });
+  
   honorariosField.style.display = uiState.particular ? 'block' : 'none';
-  honorariosField.input?.addEventListener('input', e => { uiState.honorarios = e.target.value; });
+  
+  honorariosField.input?.addEventListener('input', e => { 
+    uiState.honorarios = e.target.value; 
+    document.dispatchEvent(new Event('change'));
+  });
+  
   content.appendChild(honorariosField);
 
   return createCard({
