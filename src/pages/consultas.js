@@ -1,5 +1,5 @@
 // ============================================================
-// src/pages/consultas/consultas.js
+// src/pages/consultas.js
 // ============================================================
 
 import { runLifecycle }           from '/src/skeleton/lifecycle.js';
@@ -11,6 +11,11 @@ import { createButton }           from '/src/skeleton/components/button/index.js
 import { createCard }             from '/src/skeleton/components/card/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
+
+// Firebase imports necesarios para el batch atómico
+import { db }                     from '/src/services/firebase/firebase.js';
+import { writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+
 import './consultas.css';
 
 const adapter = (options) => createFirebaseAdapter(options);
@@ -21,28 +26,26 @@ runLifecycle({
   async onReady(ctx) {
     await runFlowController(ctx.user.uid);
     mountLayout(ctx);
-    const state = await load(ctx);
-    render(ctx, state);
+    
+    // Cargar datos iniciales
+    const consultas = ctx.comercioData?.consultas || [];
+    render(ctx, consultas);
   }
 });
 
 // ============================================================
-// LOAD
+// RENDER & STATE MANAGEMENT
 // ============================================================
-async function load(ctx) {
-  const consultas = ctx.comercioData?.consultas || [];
-  return { consultas: structuredClone(consultas) };
-}
-
-// ============================================================
-// RENDER
-// ============================================================
-function render(ctx, state) {
+function render(ctx, initialConsultas) {
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
-  const uiState = { consultas: state.consultas, draft: {} };
-  const originalSnapshot = structuredClone(state.consultas);
+  // Estado reactivo local
+  const uiState = {
+    consultas: structuredClone(initialConsultas),
+    draft: {}
+  };
+  const originalSnapshot = structuredClone(initialConsultas);
 
   const header = document.createElement('div');
   header.className = 'page-header';
@@ -52,56 +55,73 @@ function render(ctx, state) {
   `;
   page.appendChild(header);
 
-  page.appendChild(renderFormConsulta(uiState, page));
+  // Formulario de carga
+  page.appendChild(renderFormConsulta(uiState));
 
+  // Lista de consultas cargadas
   const listaContainer = document.createElement('div');
   listaContainer.id = 'lista-consultas';
+  listaContainer.className = 'lista-consultas-container';
   page.appendChild(listaContainer);
-  refreshLista(uiState, page);
+  refreshLista(uiState);
 
-  const dirtyController = {
-    hasUnsavedChanges: () =>
-      JSON.stringify(uiState.consultas) !== JSON.stringify(originalSnapshot),
-    markSaved: () => {}
-  };
-
-  const guardarBtn = createOnboardingButton({
-    stepName: 'consultas',
-    validate: () => {
-      if (!dirtyController.hasUnsavedChanges()) return true;
-      return uiState.consultas.length > 0;
-    },
-    getLabel: () => {
-      if (!dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
-      if (uiState.consultas.length === 0) return 'Agregá al menos una consulta';
-      return `Guardar y continuar (${uiState.consultas.length} tipo${uiState.consultas.length > 1 ? 's' : ''})`;
-    },
-    dirtyController,
-    onSave: async ({ persistence }) => {
-      await persistence.updateData({ consultas: uiState.consultas });
-      return { success: true, stepMarked: true };
-    },
-    onSuccess: () => showToast('Consultas guardadas', 'success'),
-    onError:   (err) => showToast('Error: ' + err.message, 'error'),
-  });
-
+  // Botón dinámico de guardado
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
-  btnContainer.appendChild(guardarBtn);
+  btnContainer.appendChild(_renderSaveButton(uiState, originalSnapshot));
   page.appendChild(btnContainer);
 }
 
 // ============================================================
-// FORMULARIO
+// SAVE BUTTON (Dinámico y Atómico)
 // ============================================================
-function renderFormConsulta(uiState, page) {
+function _renderSaveButton(uiState, originalSnapshot) {
+  const hasChanges = () => JSON.stringify(uiState.consultas) !== JSON.stringify(originalSnapshot);
+  const isValid = () => uiState.consultas.length > 0;
+
+  return createOnboardingButton({
+    stepName: 'consultas',
+    validate: isValid,
+    getLabel: () => {
+      if (!hasChanges()) return 'Volver al dashboard';
+      if (uiState.consultas.length === 0) return 'Agregá al menos una consulta';
+      return `Guardar y continuar (${uiState.consultas.length} tipo${uiState.consultas.length > 1 ? 's' : ''})`;
+    },
+    onSave: async ({ uid, comercioId }) => {
+      if (!comercioId) throw new Error('No hay comercioId');
+
+      // Guardado atómico con Batch
+      const batch = writeBatch(db);
+      const ref = doc(db, 'entidades', comercioId);
+      
+      batch.update(ref, {
+        consultas: uiState.consultas,
+        'onboardingSteps.consultas': true,
+        fechaActualizacion: serverTimestamp()
+      });
+      
+      await batch.commit();
+      return true;
+    },
+    onSuccess: () => showToast('💾 Consultas guardadas', 'success'),
+    onError: (err) => {
+      console.error('[consultas] Error:', err);
+      showToast('Error al guardar: ' + err.message, 'error');
+    }
+  });
+}
+
+// ============================================================
+// FORMULARIO DE CARGA
+// ============================================================
+function renderFormConsulta(uiState) {
   const draft = uiState.draft;
 
   const nombre = createFormField({
     label: '¿Qué tipo de consulta es?',
     name: 'consulta-nombre',
     required: true,
-    placeholder: 'Ej: Primera consulta, Consulta de seguimiento, Control anual',
+    placeholder: 'Ej: Primera consulta, Consulta de seguimiento',
     helpText: 'El nombre tal como lo vas a presentar a tus pacientes',
   });
   nombre.input?.addEventListener('input', e => { draft.nombre = e.target.value.trim(); });
@@ -111,7 +131,7 @@ function renderFormConsulta(uiState, page) {
     name: 'consulta-desc',
     type: 'textarea',
     rows: 2,
-    placeholder: 'Ej: Incluye anamnesis, examen físico y diagnóstico inicial.',
+    placeholder: 'Ej: Incluye anamnesis y diagnóstico inicial.',
   });
   descripcion.input?.addEventListener('input', e => { draft.descripcion = e.target.value.trim(); });
 
@@ -175,16 +195,20 @@ function renderFormConsulta(uiState, page) {
         showToast('Ingresá el nombre de la consulta', 'warning');
         return;
       }
+      // Normalizar precio si está vacío
+      if (!draft.precio) draft.precio = { tipo: 'consultar' };
+      
       uiState.consultas.push(structuredClone(draft));
       uiState.draft = {};
-      // Limpiar form
+      
+      // Limpiar form visualmente
       if (nombre.input) nombre.input.value = '';
       if (descripcion.input) descripcion.input.value = '';
       if (duracion.input) duracion.input.value = '';
       radioConsultar.querySelector('input').checked = true;
-      delete draft.precio;
       inputPrecio.style.display = 'none';
-      refreshLista(uiState, page);
+      
+      refreshLista(uiState);
       showToast('Tipo de consulta agregado', 'success');
     }
   });
@@ -201,30 +225,44 @@ function renderFormConsulta(uiState, page) {
 }
 
 // ============================================================
-// LISTA
+// LISTA DE CONSULTAS
 // ============================================================
-function refreshLista(uiState, page) {
+function refreshLista(uiState) {
   const listaContainer = document.getElementById('lista-consultas');
   if (!listaContainer) return;
   listaContainer.innerHTML = '';
 
-  if (uiState.consultas.length === 0) return;
+  if (uiState.consultas.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'lista-vacia';
+    empty.textContent = 'No hay tipos de consulta definidos aún.';
+    listaContainer.appendChild(empty);
+    return;
+  }
 
   uiState.consultas.forEach((consulta, index) => {
-    const precioTexto = consulta.precio?.tipo === 'fijo'
+    const precioTexto = consulta.precio?.tipo === 'fijo' && consulta.precio.valor
       ? `$${consulta.precio.valor.toLocaleString('es-AR')}`
       : 'A consultar';
 
     const content = document.createElement('div');
-    content.innerHTML = `
-      <div class="consulta-detalles">
-        ${consulta.descripcion ? `<p class="consulta-desc">${consulta.descripcion}</p>` : ''}
-        <div class="consulta-chips">
-          ${consulta.duracion_minutos ? `<span class="chip"><i class="fas fa-clock"></i> ${consulta.duracion_minutos} min</span>` : ''}
-          <span class="chip chip-precio"><i class="fas fa-dollar-sign"></i> ${precioTexto}</span>
-        </div>
-      </div>
-    `;
+    
+    if (consulta.descripcion) {
+      const desc = document.createElement('p');
+      desc.className = 'consulta-desc';
+      desc.textContent = consulta.descripcion;
+      content.appendChild(desc);
+    }
+
+    const chips = document.createElement('div');
+    chips.className = 'consulta-chips';
+    
+    if (consulta.duracion_minutos) {
+      chips.innerHTML += `<span class="chip"><i class="fas fa-clock"></i> ${consulta.duracion_minutos} min</span>`;
+    }
+    chips.innerHTML += `<span class="chip chip-precio"><i class="fas fa-dollar-sign"></i> ${precioTexto}</span>`;
+    
+    content.appendChild(chips);
 
     const actions = document.createElement('div');
     actions.className = 'consulta-actions';
@@ -235,7 +273,7 @@ function refreshLista(uiState, page) {
       icon: 'fa-trash',
       onClick: () => {
         uiState.consultas.splice(index, 1);
-        refreshLista(uiState, page);
+        refreshLista(uiState);
         showToast('Eliminado', 'info');
       }
     }));
