@@ -1,5 +1,5 @@
 // ============================================================
-// src/pages/consultas.js
+// src/pages/consultas/consultas.js
 // ============================================================
 
 import { runLifecycle }           from '/src/skeleton/lifecycle.js';
@@ -147,7 +147,7 @@ function renderFormConsulta(uiState) {
     draft.duracion_minutos = n > 0 ? n : null;
   });
 
-  // Precio
+  // Precio con Moneda Explícita
   const precioWrapper = document.createElement('div');
   precioWrapper.className = 's-form-field';
   const precioLabel = document.createElement('label');
@@ -171,16 +171,24 @@ function renderFormConsulta(uiState) {
   });
   inputPrecio.style.display = 'none';
 
+  // Default: moneda ARS
+  const defaultMoneda = 'ARS';
+
   radioConsultar.querySelector('input').addEventListener('change', () => {
     delete draft.precio;
     inputPrecio.style.display = 'none';
   });
+  
   radioFijo.querySelector('input').addEventListener('change', () => {
-    draft.precio = { tipo: 'fijo', valor: 0 };
+    draft.precio = { tipo: 'fijo', valor: 0, moneda: defaultMoneda };
     inputPrecio.style.display = 'block';
   });
+  
   inputPrecio.input?.addEventListener('input', e => {
-    if (draft.precio) draft.precio.valor = parseInt(e.target.value) || 0;
+    if (draft.precio) {
+      draft.precio.valor = parseInt(e.target.value) || 0;
+      draft.precio.moneda = defaultMoneda; // Asegurar moneda al editar
+    }
   });
 
   precioWrapper.append(radioConsultar, radioFijo, inputPrecio);
@@ -195,10 +203,21 @@ function renderFormConsulta(uiState) {
         showToast('Ingresá el nombre de la consulta', 'warning');
         return;
       }
-      // Normalizar precio si está vacío
-      if (!draft.precio) draft.precio = { tipo: 'consultar' };
       
-      uiState.consultas.push(structuredClone(draft));
+      // Normalizar precio si está vacío
+      if (!draft.precio) {
+        draft.precio = { tipo: 'consultar', moneda: defaultMoneda };
+      } else if (draft.precio.tipo === 'fijo') {
+        draft.precio.moneda = defaultMoneda;
+      }
+
+      // Generar ID único
+      const nuevaConsulta = {
+        id: crypto.randomUUID(),
+        ...structuredClone(draft)
+      };
+
+      uiState.consultas.push(nuevaConsulta);
       uiState.draft = {};
       
       // Limpiar form visualmente
@@ -240,7 +259,7 @@ function refreshLista(uiState) {
     return;
   }
 
-  uiState.consultas.forEach((consulta, index) => {
+  uiState.consultas.forEach((consulta) => {
     const precioTexto = consulta.precio?.tipo === 'fijo' && consulta.precio.valor
       ? `$${consulta.precio.valor.toLocaleString('es-AR')}`
       : 'A consultar';
@@ -266,17 +285,20 @@ function refreshLista(uiState) {
 
     const actions = document.createElement('div');
     actions.className = 'consulta-actions';
+    
+    // Eliminar por ID, no por índice
     actions.appendChild(createButton({
       label: 'Eliminar',
       variant: 'danger',
       size: 'sm',
       icon: 'fa-trash',
       onClick: () => {
-        uiState.consultas.splice(index, 1);
+        uiState.consultas = uiState.consultas.filter(c => c.id !== consulta.id);
         refreshLista(uiState);
         showToast('Eliminado', 'info');
       }
     }));
+    
     content.appendChild(actions);
 
     listaContainer.appendChild(createCard({
