@@ -1,6 +1,5 @@
 /* ============================================================
-   src/pages/consultas.css
-   Coherente con skeleton y páginas anteriores
+   src/pages/consultas/consultas.css
    ============================================================ */
 
 #skeleton-page {
@@ -14,7 +13,7 @@
   text-align: center;
 }
 
-/* ── Opciones de Precio (Radio Buttons) ───────────────────── */
+/* ── Opciones de Precio ───────────────────────────────────── */
 .radio-option {
   display: flex;
   align-items: flex-start;
@@ -90,6 +89,8 @@
 }
 
 .consulta-actions {
+  display: flex; /* Para poner botones lado a lado si hay espacio */
+  gap: var(--s-spacing-xs);
   margin-top: var(--s-spacing-sm);
   padding-top: var(--s-spacing-sm);
   border-top: 1px solid var(--s-border);
@@ -99,10 +100,14 @@
   margin-top: var(--s-spacing-lg);
 }
 
-/* ── Responsive ───────────────────────────────────────────── */
+/* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
   #skeleton-page {
     padding: var(--s-spacing);
+  }
+  
+  .consulta-actions {
+    flex-direction: column; /* En móvil, uno debajo del otro */
   }
   
   .consulta-actions button {
