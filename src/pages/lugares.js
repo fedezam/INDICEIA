@@ -11,6 +11,11 @@ import { createOnboardingButton } from '/src/skeleton/components/onboarding-butt
 import { showToast }              from '/src/skeleton/components/toast/index.js';
 import { fillProvinciaSelector }  from '/src/shared/provincias.js';
 import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
+
+// Imports de Firebase necesarios para el batch
+import { db }                     from '/src/services/firebase/firebase.js';
+import { writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+
 import './lugares.css';
 
 // ============================================================
@@ -672,7 +677,7 @@ const page = {
     this._listaCard = newLista;
   },
 
-    // ──────────────────────────────────────────────────────────
+  // ──────────────────────────────────────────────────────────
   // SAVE BUTTON
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
@@ -719,6 +724,7 @@ const page = {
       }
     });
   },
+}; // <--- CIERRA EL OBJETO PAGE
 
 // ============================================================
 // ARRANQUE
