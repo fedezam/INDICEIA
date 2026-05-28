@@ -12,7 +12,6 @@ import { createCard }             from '/src/skeleton/components/card/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
 
-// Firebase imports necesarios para el batch atómico
 import { db }                     from '/src/services/firebase/firebase.js';
 import { writeBatch, doc, serverTimestamp } from 'firebase/firestore';
 
@@ -26,8 +25,7 @@ runLifecycle({
   async onReady(ctx) {
     await runFlowController(ctx.user.uid);
     mountLayout(ctx);
-    
-    // Cargar datos iniciales
+
     const consultas = ctx.comercioData?.consultas || [];
     render(ctx, consultas);
   }
@@ -40,11 +38,9 @@ function render(ctx, initialConsultas) {
   const page = document.getElementById('skeleton-page');
   page.innerHTML = '';
 
-  // Estado reactivo local
-  // _editingId: null si estamos creando, string si estamos editando
   const uiState = {
     consultas: structuredClone(initialConsultas),
-    draft: { _editingId: null } 
+    draft: { _editingId: null }
   };
   const originalSnapshot = structuredClone(initialConsultas);
 
@@ -56,17 +52,25 @@ function render(ctx, initialConsultas) {
   `;
   page.appendChild(header);
 
-  // Formulario de carga/edición
-  page.appendChild(renderFormConsulta(uiState));
+  // Formulario — guardar referencia directa
+  let formCardRef = renderFormConsulta(uiState);
+  page.appendChild(formCardRef);
 
-  // Lista de consultas cargadas (borrador local)
+  // Función de refresh del form — cierra sobre formCardRef
+  uiState._refreshForm = () => {
+    const nuevo = renderFormConsulta(uiState);
+    formCardRef.replaceWith(nuevo);
+    formCardRef = nuevo;
+  };
+
+  // Lista
   const listaContainer = document.createElement('div');
   listaContainer.id = 'lista-consultas';
   listaContainer.className = 'lista-consultas-container';
   page.appendChild(listaContainer);
   refreshLista(uiState);
 
-  // Botón dinámico de guardado final
+  // Botón de guardado
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
   btnContainer.appendChild(_renderSaveButton(uiState, originalSnapshot));
@@ -93,13 +97,16 @@ function _renderSaveButton(uiState, originalSnapshot) {
     },
     onSave: async ({ uid, comercioId }) => {
       if (!comercioId) throw new Error('No hay comercioId');
+
       const batch = writeBatch(db);
       const ref = doc(db, 'entidades', comercioId);
+
       batch.update(ref, {
         consultas: uiState.consultas,
         'onboardingSteps.consultas': true,
         fechaActualizacion: serverTimestamp()
       });
+
       await batch.commit();
       return true;
     },
@@ -151,12 +158,12 @@ function renderFormConsulta(uiState) {
     draft.duracion_minutos = n > 0 ? n : null;
   });
 
-  // Precio con Semántica Corregida
+  // Precio
   const precioWrapper = document.createElement('div');
   precioWrapper.className = 's-form-field';
   const precioLabel = document.createElement('label');
   precioLabel.className = 's-label';
-  precioLabel.textContent = 'Precio'; // ← Cambio semántico
+  precioLabel.textContent = 'Precio';
   precioWrapper.appendChild(precioLabel);
 
   const radioConsultar = document.createElement('label');
@@ -173,13 +180,12 @@ function renderFormConsulta(uiState) {
     type: 'number',
     placeholder: 'Ej: 5000',
   });
-  
-  // Determinar estado inicial de los radios
+
   const isFijo = draft.precio?.tipo === 'fijo';
   if (isFijo) {
     radioFijo.querySelector('input').checked = true;
     inputPrecio.style.display = 'block';
-    inputPrecio.input.value = draft.precio.valor || '';
+    if (inputPrecio.input) inputPrecio.input.value = draft.precio.valor || '';
   } else {
     radioConsultar.querySelector('input').checked = true;
     inputPrecio.style.display = 'none';
@@ -189,14 +195,14 @@ function renderFormConsulta(uiState) {
     delete draft.precio;
     inputPrecio.style.display = 'none';
   });
-  
+
   radioFijo.querySelector('input').addEventListener('change', () => {
-    draft.precio = { tipo: 'fijo', valor: parseInt(inputPrecio.input.value) || 0, moneda: 'ARS' };
+    draft.precio = { tipo: 'fijo', valor: parseInt(inputPrecio.input?.value) || 0, moneda: 'ARS' };
     inputPrecio.style.display = 'block';
   });
-  
+
   inputPrecio.input?.addEventListener('input', e => {
-    if (draft.precio && draft.precio.tipo === 'fijo') {
+    if (draft.precio?.tipo === 'fijo') {
       draft.precio.valor = parseInt(e.target.value) || 0;
     }
   });
@@ -213,24 +219,20 @@ function renderFormConsulta(uiState) {
         showToast('Ingresá el nombre de la consulta', 'warning');
         return;
       }
-      
-      // Normalizar precio si está vacío
+
       if (!draft.precio) {
         draft.precio = { tipo: 'consultar', moneda: 'ARS' };
       }
 
       if (isEditing) {
-        // Actualizar existente
         const idx = uiState.consultas.findIndex(c => c.id === draft._editingId);
         if (idx >= 0) {
-          // Mantener el ID original
           const updated = { ...draft, id: draft._editingId };
           delete updated._editingId;
           uiState.consultas[idx] = updated;
           showToast('Consulta actualizada', 'success');
         }
       } else {
-        // Crear nueva
         const nuevaConsulta = {
           id: crypto.randomUUID(),
           ...structuredClone(draft)
@@ -240,21 +242,14 @@ function renderFormConsulta(uiState) {
         showToast('Tipo de consulta agregado', 'success');
       }
 
-      // Resetear draft
+      // Resetear draft y refrescar
       uiState.draft = { _editingId: null };
       refreshLista(uiState);
-      
-      // Re-renderizar formulario para limpiarlo y volver a modo "Agregar"
-      const formCard = document.querySelector('.s-card--primary'); // Asumiendo que es la primera card primary
-      if (formCard) {
-         // Una forma simple es re-renderizar todo el form content
-         const newForm = renderFormConsulta(uiState);
-         formCard.replaceWith(newForm);
-      }
+      uiState._refreshForm();  // ← referencia directa, no querySelector
     }
   });
 
-  let content = document.createElement('div');
+  const content = document.createElement('div');
   content.append(nombre, descripcion, duracion, precioWrapper, btnAction);
 
   if (isEditing) {
@@ -265,8 +260,7 @@ function renderFormConsulta(uiState) {
       block: true,
       onClick: () => {
         uiState.draft = { _editingId: null };
-        const formCard = document.querySelector('.s-card--primary');
-        if (formCard) formCard.replaceWith(renderFormConsulta(uiState));
+        uiState._refreshForm();  // ← referencia directa
       }
     });
     content.appendChild(btnCancel);
@@ -302,7 +296,7 @@ function refreshLista(uiState) {
       : 'A consultar';
 
     const content = document.createElement('div');
-    
+
     if (consulta.descripcion) {
       const desc = document.createElement('p');
       desc.className = 'consulta-desc';
@@ -312,40 +306,33 @@ function refreshLista(uiState) {
 
     const chips = document.createElement('div');
     chips.className = 'consulta-chips';
-    
+
     if (consulta.duracion_minutos) {
       chips.innerHTML += `<span class="chip"><i class="fas fa-clock"></i> ${consulta.duracion_minutos} min</span>`;
     }
     chips.innerHTML += `<span class="chip chip-precio"><i class="fas fa-dollar-sign"></i> ${precioTexto}</span>`;
-    
+
     content.appendChild(chips);
 
     const actions = document.createElement('div');
     actions.className = 'consulta-actions';
-    
-    // Botón Editar
+
     actions.appendChild(createButton({
       label: 'Editar',
       variant: 'primary',
       size: 'sm',
       icon: 'fa-pencil',
       onClick: () => {
-        // Cargar en draft para editar
         uiState.draft = {
           ...structuredClone(consulta),
           _editingId: consulta.id
         };
-        
-        // Re-renderizar formulario arriba
-        const formCard = document.querySelector('.s-card--primary');
-        if (formCard) formCard.replaceWith(renderFormConsulta(uiState));
-        
+        uiState._refreshForm();  // ← referencia directa
         window.scrollTo({ top: 0, behavior: 'smooth' });
         showToast('Modo edición activado', 'info');
       }
     }));
 
-    // Botón Eliminar
     actions.appendChild(createButton({
       label: 'Eliminar',
       variant: 'danger',
@@ -357,7 +344,7 @@ function refreshLista(uiState) {
         showToast('Eliminado', 'info');
       }
     }));
-    
+
     content.appendChild(actions);
 
     listaContainer.appendChild(createCard({
