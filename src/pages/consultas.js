@@ -78,29 +78,28 @@ function render(ctx, initialConsultas) {
 // ============================================================
 function _renderSaveButton(uiState, originalSnapshot) {
   const hasChanges = () => JSON.stringify(uiState.consultas) !== JSON.stringify(originalSnapshot);
-  const isValid = () => uiState.consultas.length > 0;
 
   return createOnboardingButton({
     stepName: 'consultas',
-    validate: isValid,
+    validate: () => true,
     getLabel: () => {
-      if (!hasChanges()) return 'Volver al dashboard';
       if (uiState.consultas.length === 0) return 'Agregá al menos una consulta';
+      if (!hasChanges()) return 'Volver al dashboard';
       return `Guardar y continuar (${uiState.consultas.length} tipo${uiState.consultas.length > 1 ? 's' : ''})`;
+    },
+    dirtyController: {
+      hasUnsavedChanges: () => hasChanges() && uiState.consultas.length > 0,
+      markSaved: () => {}
     },
     onSave: async ({ uid, comercioId }) => {
       if (!comercioId) throw new Error('No hay comercioId');
-
-      // Guardado atómico con Batch
       const batch = writeBatch(db);
       const ref = doc(db, 'entidades', comercioId);
-      
       batch.update(ref, {
         consultas: uiState.consultas,
         'onboardingSteps.consultas': true,
         fechaActualizacion: serverTimestamp()
       });
-      
       await batch.commit();
       return true;
     },
