@@ -2,6 +2,7 @@
 import { buildEntity } from '../entity-factory/index.js';
 import { buildIndex } from '../../lib/entity-factory/builders/index.builder.js';
 import { enrichAndSaveCityIndex } from '../../lib/entity-factory/enrich-index.builder.js';
+import { normalizeEntityData } from '../../lib/entity-factory/normalizers/normalizeEntityData.js'; // ← NUEVO
 import { put } from '@vercel/blob';
 import admin from 'firebase-admin';
 
@@ -10,6 +11,7 @@ if (!admin.apps.length) {
     credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
   });
 }
+
 const db = admin.firestore();
 
 export default async function handler(req, res) {
@@ -23,15 +25,14 @@ export default async function handler(req, res) {
 
     console.log('Generando entidad para:', comercioId);
 
-    // 1. Leer datos crudos de Firestore
+    // 1. Leer datos crudos de Firestore y normalizar
     const comercioSnap = await db.collection('entidades').doc(comercioId).get();
     if (!comercioSnap.exists) {
       return res.status(404).json({ error: 'Comercio no encontrado' });
     }
-    const rawData = comercioSnap.data();
+    const rawData = normalizeEntityData(comercioSnap.data()); // ← CAMBIO: era comercioSnap.data()
 
-    // 2. Slug desde rawData — fuente de verdad única (data.landing.slug en Firestore)
-    // La query a /landings era redundante: el slug ya vive en el documento de la entidad.
+    // 2. Slug desde rawData — fuente de verdad única
     const slug = rawData.landing?.slug || null;
 
     // 3. Generar entidad completa
@@ -47,14 +48,7 @@ export default async function handler(req, res) {
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    // 5. Actualizar índice de ciudad con datos crudos de Firestore
-    console.log('[debug] rawData.tieneLocalFisico:', rawData.tieneLocalFisico);
-    console.log('[debug] rawData.entrega:', JSON.stringify(rawData.entrega));
-    console.log('[debug] rawData.horarios keys:', rawData.horarios ? Object.keys(rawData.horarios) : 'SIN horarios');
-    console.log('[debug] rawData.horarios_presencial:', rawData.horarios_presencial ? 'tiene' : 'SIN horarios_presencial');
-    console.log('[debug] rawData.ubicacion:', JSON.stringify(rawData.ubicacion));
-    console.log('[debug] rawData keys:', Object.keys(rawData));
-
+    // 5. Actualizar índice de ciudad con datos normalizados
     const indexResult = await buildIndex(
       rawData,
       comercioId,
