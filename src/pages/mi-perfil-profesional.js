@@ -9,7 +9,7 @@ import { createOnboardingButton } from '/src/skeleton/components/onboarding-butt
 import { createCard }             from '/src/skeleton/components/card/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
 import { db }                     from '/src/services/firebase/firebase.js';
-import { doc, updateDoc, collection, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, collection, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import './mi-perfil-profesional.css';
 
 // ============================================================
@@ -353,6 +353,23 @@ const page = {
             comercioId: nuevoComercioId,
           });
 
+          // ── Referral event — pendiente de validación ──
+          const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
+          const referredBy  = usuarioSnap.data()?.referredBy || null;
+
+          if (referredBy) {
+            await setDoc(doc(collection(db, 'referral_events')), {
+              referrerCode:    referredBy,
+              referrerType:    'usuario',
+              createdUserId:   uid,
+              createdEntityId: nuevoComercioId,
+              valid:           false,
+              timestamp:       new Date()
+            });
+            console.log('🎯 Referral event creado (pendiente) para:', referredBy);
+          }
+          // ── Fin referral event ──
+
           console.log(`[mi-perfil-profesional] Nueva entidad creada: ${nuevoComercioId}`);
 
         } else {
@@ -387,3 +404,4 @@ runSkeleton({
   adapter: createFirebaseAdapter,
   options: { loadingMessage: 'Cargando perfil profesional...' },
 });
+
