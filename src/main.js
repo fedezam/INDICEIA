@@ -35,8 +35,6 @@ window.__auth = {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     // Enviar email de verificación inmediatamente
     await sendEmailVerification(cred.user, {
-      // URL a la que vuelve el usuario después de verificar
-      // Ajustá si tenés un dominio propio
       url: window.location.origin + '/'
     });
     console.log('✉️ Email de verificación enviado a:', cred.user.email);
@@ -101,12 +99,17 @@ async function saveNewUserIfNeeded(user) {
     const fullName = (user.displayName || email.split('@')[0]).trim();
     const parts    = fullName.split(/\s+/);
 
+    // Capturar código de referido si existe (guardado por la landing al detectar ?ref=)
+    const referredBy = sessionStorage.getItem('indiceia_ref') || null;
+    sessionStorage.removeItem('indiceia_ref');
+
     await setDoc(userRef, {
-      uid:         user.uid,
-      mail:        email,
-      nombre:      parts[0] || '',
-      apellido:    parts.slice(1).join(' ') || '',
-      referralId:  Math.random().toString(36).substring(2, 10).toUpperCase(),
+      uid:           user.uid,
+      mail:          email,
+      nombre:        parts[0] || '',
+      apellido:      parts.slice(1).join(' ') || '',
+      referralCode:  Math.random().toString(36).substring(2, 10).toUpperCase(),
+      referredBy,
       emailVerified: user.emailVerified,
       fechaRegistro: serverTimestamp()
     });
