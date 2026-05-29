@@ -216,14 +216,14 @@ const page = {
     const autocompleteField = createAutocomplete({
       placeholder: 'Escribí el nombre de la localidad...',
       minChars: 2, debounceMs: 400, maxResults: 8, required: true,
-      
+
       fetchOptions: async (query) => {
         const provincia = this._refs.fields.provincia.input.value;
         if (!provincia) return [];
         return getLocalidades(provincia).filter(l =>
           l.nombre.toLowerCase().includes(query.toLowerCase())
-       );
-     },
+        );
+      },
       formatOption: (loc) => loc.nombre,
       getValue: (loc) => loc,
       onSelect: (loc) => {
@@ -246,7 +246,6 @@ const page = {
 
     // Re-render al cambiar provincia
     this._refs.fields.provincia.input.addEventListener('change', () => {
-      const nuevaProvincia = this._refs.fields.provincia.input.value;
       this._data.localidad_principal = null;
       chipPrincipalContainer.innerHTML = '';
       renderChipPrincipal(chipPrincipalContainer, this._data);
@@ -325,7 +324,7 @@ const page = {
         return getLocalidades(provincia).filter(l =>
           l.nombre.toLowerCase().includes(query.toLowerCase())
         );
-    },
+      },
       formatOption: (loc) => loc.nombre,
       getValue: (loc) => loc,
       onSelect: (loc) => { localidadZonaSeleccionada = loc; }
@@ -542,6 +541,22 @@ const page = {
           await setDoc(comercioRef, { ...updates, duenoId: uid, fechaCreacion: new Date(), fechaActualizacion: new Date(), onboardingSteps: { 'mi-perfil': true }, plan: { type: 'trial', active: true, trial: true, startedAt: now, expiresAt, createdAt: now, updatedAt: now, source: 'system' } });
           await setDoc(doc(db, 'landings', d.slug), { slug: d.slug, comercioId: nuevoComercioId, nombre: updates.nombre, activo: true, createdAt: new Date(), updatedAt: new Date() });
           await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevoComercioId });
+
+          // ── Referral tracking ──
+          const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
+          const referredBy  = usuarioSnap.data()?.referredBy || null;
+
+          if (referredBy) {
+            await setDoc(doc(collection(db, 'referral_events')), {
+              referrerCode:    referredBy,
+              referrerType:    'usuario',
+              createdUserId:   uid,
+              createdEntityId: nuevoComercioId,
+              timestamp:       new Date()
+            });
+          }
+          // ── Fin referral tracking ──
+
         } else {
           updates['onboardingSteps.mi-perfil'] = true; updates.fechaActualizacion = new Date();
           await updateDoc(doc(db, 'entidades', comercioId), updates);
