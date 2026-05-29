@@ -18,17 +18,20 @@ const page = {
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
-    const slug = ctx.comercioData?.landing?.slug;
-    if (!slug) return;
-
-    const q    = query(collection(db, 'landing_events'), where('destination', '==', slug));
-    const snap = await getDocs(q);
-
-    const events = [];
-    snap.forEach(d => events.push(d.data()));
-
-    this._stats = this._process(events);
-  },
+  console.log('🔍 ctx completo:', ctx);
+  const slug = ctx.comercioData?.landing?.slug;
+  console.log('🔍 slug:', slug);
+  if (!slug) {
+    console.warn('❌ slug undefined');
+    return;
+  }
+  const q    = query(collection(db, 'landing_events'), where('destination', '==', slug));
+  const snap = await getDocs(q);
+  const events = [];
+  snap.forEach(d => events.push(d.data()));
+  console.log('🔍 events encontrados:', events.length);
+  this._stats = this._process(events);
+},
 
   // ──────────────────────────────────────────────────────────
   // PROCESS
