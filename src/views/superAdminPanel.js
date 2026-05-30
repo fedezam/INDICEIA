@@ -1,11 +1,10 @@
 // src/views/superAdminPanel.js
 import '../pages/super-admin.css';
-import { listEntidades, loadEntidad } from '../controllers/panelCore.js';
+import { listEntidades, loadEntidad, listUsuarios } from '../controllers/panelCore.js';
 import { createTable, createEmptyState } from '../skeleton/components/skeletonComponents.js';
 import { buildFlowContext, buildPipeline } from '../controllers/flowController.js';
-import { getPlanData, calcularEstadoPlan, getDiasRestantesTrial } from '../shared/plans.js';
 import { db } from '../services/firebase/firebase.js';
-import { doc, updateDoc, collection, getDocs, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
 
 // ─── container helper ────────────────────────────────────────
 function getContainer() {
@@ -79,7 +78,6 @@ function openEditModal({ title, fields, data, onSave }) {
   const body = document.createElement('div');
   body.className = 'sa-modal-body';
 
-  // Render campos
   const refs = {};
   fields.forEach(f => {
     const wrap = document.createElement('div');
@@ -187,13 +185,15 @@ function openEditModal({ title, fields, data, onSave }) {
 // ============================================================
 export const page = {
   entities:  [],
+  users:     [],
   selected:  null,
   isLoading: false,
 
   async load(context) {
-    if (!context?.user) { window.location.href = '/admin-login'; return; }
-    if (context.userData?.role !== 'admin') { window.location.href = '/dashboard'; return; }
+    if (!context?.user) { window.location.href = '/'; return; }
+    if (context.userData?.role !== 'admin') { window.location.href = '/'; return; }
     this.entities = await listEntidades();
+    this.users    = await listUsuarios();
   },
 
   render() {
@@ -217,39 +217,79 @@ export const page = {
   // LISTADO
   // ──────────────────────────────────────────────────────────
   _renderList(container) {
-    const header = document.createElement('div');
-    header.className = 'sa-list-header';
-    header.innerHTML = `
+
+    // ── Entidades ──
+    const entHeader = document.createElement('div');
+    entHeader.className = 'sa-list-header';
+    entHeader.innerHTML = `
       <h2 class="sa-list-title">
         <i class="fas fa-database"></i> Entidades
         <span class="sa-count">${this.entities.length}</span>
       </h2>
     `;
-    container.appendChild(header);
+    container.appendChild(entHeader);
 
     if (!this.entities.length) {
       container.appendChild(createEmptyState({ icon: 'fas fa-database', title: 'Sin entidades', message: 'No hay datos en Firestore' }));
-      return;
+    } else {
+      const table = createTable({
+        columns: [
+          { key: '_nombre',    label: 'Nombre' },
+          { key: 'id',         label: 'ID' },
+          { key: 'entityType', label: 'Tipo' },
+          { key: '_fecha',     label: 'Actualización' }
+        ],
+        data: this.entities.map(e => ({
+          ...e,
+          _nombre: e.nombreComercio || e.nombre || '-',
+          _fecha:  e.fechaActualizacion
+                     ? e.fechaActualizacion.toLocaleDateString('es-AR')
+                     : '-'
+        })),
+        actions: [{ id: 'ver', label: 'Ver', icon: 'fas fa-eye', onClick: (row) => this.openEntity(row.id) }]
+      });
+      container.appendChild(table);
     }
 
-    const table = createTable({
-      columns: [
-        { key: '_nombre',    label: 'Nombre' },      // ← fix: normalizado
-        { key: 'id',         label: 'ID' },
-        { key: 'entityType', label: 'Tipo' },
-        { key: '_fecha',     label: 'Actualización' }
-      ],
-      data: this.entities.map(e => ({
-        ...e,
-        _nombre: e.nombreComercio || e.nombre || '-', // ← fix: fallback a e.nombre
-        _fecha:  e.fechaActualizacion
-                   ? e.fechaActualizacion.toLocaleDateString('es-AR')
-                   : '-'
-      })),
-      actions: [{ id: 'ver', label: 'Ver', icon: 'fas fa-eye', onClick: (row) => this.openEntity(row.id) }]
-    });
+    // ── Usuarios ──
+    const usersHeader = document.createElement('div');
+    usersHeader.className = 'sa-list-header';
+    usersHeader.innerHTML = `
+      <h2 class="sa-list-title">
+        <i class="fas fa-users"></i> Usuarios
+        <span class="sa-count">${this.users.length}</span>
+      </h2>
+    `;
+    container.appendChild(usersHeader);
 
-    container.appendChild(table);
+    if (!this.users.length) {
+      container.appendChild(createEmptyState({ icon: 'fas fa-users', title: 'Sin usuarios', message: 'No hay usuarios registrados' }));
+    } else {
+      const usersTable = createTable({
+        columns: [
+          { key: 'nombre',       label: 'Nombre'       },
+          { key: 'mail',         label: 'Email'         },
+          { key: 'referralCode', label: 'Ref. Code'     },
+          { key: 'referredBy',   label: 'Referido por'  },
+          { key: 'role',         label: 'Rol'           },
+          { key: '_fecha',       label: 'Registro'      },
+        ],
+        data: this.users.map(u => ({
+          ...u,
+          role:         u.role         || '-',
+          referralCode: u.referralCode || '-',
+          referredBy:   u.referredBy   || '-',
+          _fecha: u.fechaRegistro
+            ? u.fechaRegistro.toLocaleDateString('es-AR')
+            : '-'
+        })),
+        actions: [{
+          id: 'ver', label: 'Ver entidad', icon: 'fas fa-eye',
+          onClick: (row) => { if (row.comercioId) this.openEntity(row.comercioId); }
+        }]
+      });
+      container.appendChild(usersTable);
+    }
   },
 
   // ──────────────────────────────────────────────────────────
@@ -402,20 +442,22 @@ export const page = {
           title: 'Editar Tipo de Entidad',
           fields: [
             { key: 'entityType', label: 'Tipo de entidad', type: 'select', options: [
-              { value: 'comercio',    label: 'Comercio' },
-              { value: 'prestador',  label: 'Prestador' },
-              { value: 'profesional', label: 'Profesional' }
+              { value: 'comercio',     label: 'Comercio'     },
+              { value: 'prestador',    label: 'Prestador'    },
+              { value: 'profesional',  label: 'Profesional'  }
             ]},
             { key: 'serviceType', label: 'Tipo de servicio', type: 'select', options: [
               { value: '',       label: '— ninguno —' },
-              { value: 'oficio', label: 'Oficio' }
+              { value: 'oficio', label: 'Oficio'      }
             ]},
           ],
           data: { entityType: entidad.entityType, serviceType: entidad.serviceType || '' },
           onSave: async (updates) => {
             await Promise.all([
               updateDoc(doc(db, 'entidades', comercioId), { ...updates, fechaActualizacion: new Date() }),
-              user?.uid ? updateDoc(doc(db, 'usuarios', user.uid || entidad.duenoId), { entityType: updates.entityType }) : Promise.resolve()
+              (user?.uid || entidad.duenoId)
+                ? updateDoc(doc(db, 'usuarios', user?.uid || entidad.duenoId), { entityType: updates.entityType })
+                : Promise.resolve()
             ]);
             Object.assign(entidad, updates);
             this.render();
@@ -444,7 +486,9 @@ export const page = {
           onSave: async (updates) => {
             await Promise.all([
               updateDoc(doc(db, 'entidades', comercioId), { offerType: updates, fechaActualizacion: new Date() }),
-              user?.uid || entidad.duenoId ? updateDoc(doc(db, 'usuarios', user?.uid || entidad.duenoId), { offerType: updates }) : Promise.resolve()
+              (user?.uid || entidad.duenoId)
+                ? updateDoc(doc(db, 'usuarios', user?.uid || entidad.duenoId), { offerType: updates })
+                : Promise.resolve()
             ]);
             Object.assign(entidad.offerType, updates);
             this.render();
@@ -669,39 +713,64 @@ export const page = {
   _renderSeccionPlan(container, entidad, comercioId) {
     const { wrap, grid } = makeSection('💳 Plan', 'Estado del plan y acceso');
 
-    const planId   = typeof entidad.plan === 'string' ? entidad.plan : entidad.plan?.type || 'trial';
-    const planData = getPlanData(planId);
-    const estado   = calcularEstadoPlan(entidad);
-    const dias     = planId === 'trial' ? getDiasRestantesTrial(entidad) : null;
+    const plan      = entidad.plan || {};
+    const tipo      = plan.type   || 'trial';
+    const activo    = plan.active ?? false;
+    const trial     = plan.trial  ?? true;
+    const expiresAt = plan.expires_at?.toDate?.() || (plan.expires_at ? new Date(plan.expires_at) : null);
+    const ahora     = new Date();
+    const vencido   = expiresAt && expiresAt < ahora;
+
+    const estado = vencido  ? 'vencido'
+      : !activo             ? 'inactivo'
+      : trial               ? 'trial'
+      : 'activo';
+
+    const status = (estado === 'vencido' || estado === 'inactivo') ? 'warning' : 'ok';
+
+    const diasRestantes = expiresAt
+      ? Math.max(0, Math.ceil((expiresAt - ahora) / (1000 * 60 * 60 * 24)))
+      : null;
 
     grid.appendChild(makeCard({
       icon:   '💳',
-      title:  planData.nombre,
+      title:  tipo.toUpperCase(),
       meta:   estado,
-      status: estado === 'expirado' ? 'warning' : 'ok',
+      status,
       body: `
-        <p>${planData.descripcion}</p>
-        ${dias !== null ? `<p>Días restantes: <strong>${dias}</strong></p>` : ''}
-        <p>Live: ${entidad.liveEnabled ? '✓' : '✗'}</p>
-        <p>Comisión: ${entidad.commissionEnabled ? '✓' : '✗'}</p>
+        <p>Activo: ${activo ? '✓' : '✗'}</p>
+        <p>Trial: ${trial ? '✓' : '✗'}</p>
+        ${expiresAt ? `<p>Vence: ${expiresAt.toLocaleDateString('es-AR')}</p>` : ''}
+        ${diasRestantes !== null ? `<p>Días restantes: <strong>${diasRestantes}</strong></p>` : ''}
       `,
       onEdit: () => openEditModal({
         title: 'Editar Plan',
         fields: [
-          { key: 'plan', label: 'Plan', type: 'select', options: [
-            { value: 'trial',     label: 'Trial' },
-            { value: 'basic',     label: 'Basic' },
-            { value: 'medium',    label: 'Medium' },
-            { value: 'pro',       label: 'Pro' },
-            { value: 'highvalue', label: 'High Value' },
+          { key: 'type', label: 'Tipo', type: 'select', options: [
+            { value: 'trial',  label: 'Trial'  },
+            { value: 'basic',  label: 'Basic'  },
+            { value: 'medium', label: 'Medium' },
+            { value: 'pro',    label: 'Pro'    },
           ]},
-          { key: 'liveEnabled',       label: 'Live enabled',      type: 'boolean' },
-          { key: 'commissionEnabled', label: 'Commission enabled', type: 'boolean' },
+          { key: 'active',     label: 'Activo',     type: 'boolean' },
+          { key: 'trial',      label: 'Es trial',   type: 'boolean' },
+          { key: 'expires_at', label: 'Vence el (ISO)', placeholder: '2026-06-25T00:00:00.000Z' },
         ],
-        data: { plan: planId, liveEnabled: !!entidad.liveEnabled, commissionEnabled: !!entidad.commissionEnabled },
+        data: {
+          type:       tipo,
+          active:     activo,
+          trial,
+          expires_at: expiresAt ? expiresAt.toISOString() : '',
+        },
         onSave: async (updates) => {
-          await updateDoc(doc(db, 'entidades', comercioId), { ...updates, fechaActualizacion: new Date() });
-          Object.assign(entidad, updates);
+          await updateDoc(doc(db, 'entidades', comercioId), {
+            'plan.type':       updates.type,
+            'plan.active':     updates.active,
+            'plan.trial':      updates.trial,
+            'plan.expires_at': updates.expires_at ? new Date(updates.expires_at) : null,
+            fechaActualizacion: new Date()
+          });
+          Object.assign(entidad.plan, updates);
           this.render();
         }
       })
@@ -747,6 +816,36 @@ export const page = {
           this.render();
         }
       })
+    }));
+
+    // ── Regenerar entidad ──
+    grid.appendChild(makeCard({
+      icon:   '⚡',
+      title:  'Regenerar entidad',
+      status: generatedAt ? 'ok' : 'empty',
+      body:   generatedAt
+        ? `<p>Última generación: ${new Date(generatedAt).toLocaleString('es-AR')}</p>`
+        : '<p>Nunca generada</p>',
+      onEdit: async () => {
+        const btns = document.querySelectorAll('.sa-btn--edit');
+        btns.forEach(b => { b.disabled = true; b.textContent = 'Generando...'; });
+
+        try {
+          const res = await fetch('/api/generate-and-upload-entity', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ comercioId })
+          });
+
+          if (!res.ok) throw new Error(await res.text());
+
+          entidad.entityGeneratedAt = new Date().toISOString();
+          this.render();
+        } catch (err) {
+          console.error('Error regenerando:', err);
+          alert('Error al regenerar: ' + err.message);
+        }
+      }
     }));
 
     container.appendChild(wrap);
