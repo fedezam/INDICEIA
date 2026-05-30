@@ -3,7 +3,6 @@
 // ============================================================
 import { runSkeleton }            from '/src/skeleton/skeleton.js';
 import { createFirebaseAdapter }  from '/src/skeleton/adapters/firebaseAdapter.js';
-import { mountLayout }            from '/src/skeleton/layout/index.js';
 import { createFormField }        from '/src/skeleton/components/form-field/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { createCard }             from '/src/skeleton/components/card/index.js';
@@ -39,20 +38,37 @@ const ORGANISMOS_MATRICULA = {
 const IDIOMAS = ['Español', 'Inglés', 'Portugués', 'Italiano', 'Francés', 'Alemán'];
 
 // ============================================================
+// UTILS
+// ============================================================
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/["'`´""'']/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// ============================================================
 // PAGE OBJECT — patrón canónico runSkeleton
 // ============================================================
 const page = {
   _data: {
     nombre: '', especialidad: '', descripcion: '', experiencia: '',
     titulo: '', matricula: { numero: '', organismo: '' },
-    institucionFormadora: '', idiomas: [],
+    institucionFormadora: '', idiomas: [], slug: null,
   },
-  _originalSnapshot: null,
-  _ctx:          null,
-  _isEditMode:   false,
-  _isNuevo:      false,
-  _categoria:    'salud',
-  _comercioData: {},
+  _originalSnapshot:    null,
+  _ctx:                 null,
+  _isEditMode:          false,
+  _isNuevo:             false,
+  _categoria:           'salud',
+  _comercioData:        {},
+  _slugExiste:          false,
+  _refs:                { slugInput: null, slugStatus: null, slugValidationTimer: null },
 
   // ──────────────────────────────────────────────────────────
   // LOAD
@@ -63,6 +79,7 @@ const page = {
     this._comercioData = ctx.comercioData || {};
     this._isNuevo      = !this._comercioData.nombre;
     this._categoria    = ctx.userData?.categoria || 'salud';
+    this._slugExiste   = !!this._comercioData.landing?.slug;
 
     const c = this._comercioData;
     this._data = {
@@ -74,6 +91,7 @@ const page = {
       matricula:            c.matricula             || { numero: '', organismo: '' },
       institucionFormadora: c.institucionFormadora  || '',
       idiomas:              c.idiomas               || [],
+      slug:                 c.landing?.slug         || null,
     };
     this._originalSnapshot = structuredClone(this._data);
   },
@@ -84,6 +102,7 @@ const page = {
   render() {
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
+    this._refs = { slugInput: null, slugStatus: null, slugValidationTimer: null };
 
     const header = document.createElement('div');
     header.className = 'page-header';
@@ -96,6 +115,7 @@ const page = {
     root.appendChild(this._renderSeccionIdentidad());
     root.appendChild(this._renderSeccionCredenciales());
     root.appendChild(this._renderSeccionFormacion());
+    if (!this._slugExiste) root.appendChild(this._renderSeccionSlug());
 
     const btnContainer = document.createElement('div');
     btnContainer.className = 'btn-container';
@@ -143,7 +163,21 @@ const page = {
       helpText: 'Como te conocen tus pacientes o clientes',
       value: d.nombre,
     });
-    nombre.input?.addEventListener('input', e => { d.nombre = e.target.value; });
+    nombre.input?.addEventListener('input', e => {
+      d.nombre = e.target.value;
+      // Autogenerar slug si no existe
+      if (!this._slugExiste) {
+        clearTimeout(this._refs.slugValidationTimer);
+        const nombre = d.nombre.trim();
+        if (nombre.length >= 3 && this._refs.slugInput) {
+          this._refs.slugValidationTimer = setTimeout(async () => {
+            const newSlug = slugify(nombre);
+            this._refs.slugInput.value = newSlug;
+            await this._validarSlug(newSlug, true);
+          }, 500);
+        }
+      }
+    });
 
     const especialidadOptions = (ESPECIALIDADES[this._categoria] || []).map(e => ({ value: e, label: e }));
     const especialidad = createFormField({
@@ -248,7 +282,6 @@ const page = {
     });
     institucion.input?.addEventListener('input', e => { d.institucionFormadora = e.target.value; });
 
-    // Idiomas — checkboxes manuales
     const idiomasWrapper = document.createElement('div');
     idiomasWrapper.className = 's-form-field';
     const idiomasLabel = document.createElement('label');
@@ -287,6 +320,115 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
+  // SECCIÓN: SLUG
+  // ──────────────────────────────────────────────────────────
+  _renderSeccionSlug() {
+    const section = document.createElement('div');
+    section.className = 'form-section';
+
+    const h3 = document.createElement('h3');
+    h3.textContent = 'Tu dirección en ÍndiceIA';
+    section.appendChild(h3);
+
+    const help = document.createElement('p');
+    help.className = 'form-help';
+    help.textContent = 'Esta es la dirección única donde tus pacientes van a encontrarte. Se genera automáticamente pero podés cambiarla.';
+    section.appendChild(help);
+
+    const slugContainer = document.createElement('div');
+    slugContainer.className = 'slug-container';
+
+    const slugPrefix = document.createElement('span');
+    slugPrefix.className   = 'slug-prefix';
+    slugPrefix.textContent = 'indiceia.com/';
+
+    const slugInput = document.createElement('input');
+    slugInput.type        = 'text';
+    slugInput.className   = 'slug-input';
+    slugInput.placeholder = 'dr-juan-garcia';
+    slugInput.value       = this._data.slug || '';
+    this._refs.slugInput  = slugInput;
+
+    slugContainer.append(slugPrefix, slugInput);
+    section.appendChild(slugContainer);
+
+    const slugStatus = document.createElement('div');
+    slugStatus.className = 'slug-status';
+    slugStatus.innerHTML = '<span class="slug-icon"></span><span class="slug-text"></span>';
+    this._refs.slugStatus = slugStatus;
+    section.appendChild(slugStatus);
+
+    slugInput.addEventListener('input', () => {
+      clearTimeout(this._refs.slugValidationTimer);
+      const slug = slugInput.value.trim().toLowerCase();
+      if (!slug) {
+        this._updateSlugStatus('empty', '');
+        this._data.slug = null;
+        return;
+      }
+      this._updateSlugStatus('checking', 'Verificando disponibilidad...');
+      this._refs.slugValidationTimer = setTimeout(async () => {
+        await this._validarSlug(slug, false);
+      }, 800);
+    });
+
+    return section;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // SLUG HELPERS
+  // ──────────────────────────────────────────────────────────
+  async _validarSlug(slug, autoGenerado) {
+    if (!slug || slug.length < 3) {
+      this._updateSlugStatus('empty', '');
+      this._data.slug = null;
+      return;
+    }
+    try {
+      const snap = await getDoc(doc(db, 'landings', slug));
+      if (!snap.exists()) {
+        this._data.slug = slug;
+        this._updateSlugStatus('available', `✓ Disponible: indiceia.com/${slug}`);
+        return;
+      }
+      if (autoGenerado) {
+        for (let i = 1; i <= 3; i++) {
+          const alt     = `${slug}-${i}`;
+          const altSnap = await getDoc(doc(db, 'landings', alt));
+          if (!altSnap.exists()) {
+            this._data.slug = alt;
+            this._refs.slugInput.value = alt;
+            this._updateSlugStatus('suggestion', `Ya existe. Sugerencia: indiceia.com/${alt}`);
+            return;
+          }
+        }
+      }
+      this._data.slug = null;
+      this._updateSlugStatus('taken', 'Este nombre ya está en uso. Probá con otro.');
+    } catch (err) {
+      console.error('[mi-perfil-profesional] Error validando slug:', err);
+      this._data.slug = null;
+      this._updateSlugStatus('error', 'Error al validar. Intentá de nuevo.');
+    }
+  },
+
+  _updateSlugStatus(status, message) {
+    if (!this._refs.slugStatus) return;
+    const icon  = this._refs.slugStatus.querySelector('.slug-icon');
+    const text  = this._refs.slugStatus.querySelector('.slug-text');
+    const icons = {
+      checking:   '<i class="fas fa-spinner fa-spin"></i>',
+      available:  '<i class="fas fa-check-circle" style="color:var(--s-success)"></i>',
+      suggestion: '<i class="fas fa-info-circle" style="color:var(--s-info)"></i>',
+      taken:      '<i class="fas fa-times-circle" style="color:var(--s-danger)"></i>',
+      error:      '<i class="fas fa-exclamation-triangle" style="color:var(--s-warning)"></i>',
+      empty:      ''
+    };
+    icon.innerHTML   = icons[status] || '';
+    text.textContent = message;
+  },
+
+  // ──────────────────────────────────────────────────────────
   // SAVE BUTTON
   // ──────────────────────────────────────────────────────────
   _renderSaveButton() {
@@ -296,12 +438,16 @@ const page = {
       stepName: 'mi-perfil-profesional',
       dirtyController: this._isEditMode ? dirtyController : undefined,
 
-      validate: () => !!(
-        this._data.nombre?.trim()                &&
-        this._data.especialidad?.trim()          &&
-        this._data.matricula?.numero?.trim()     &&
-        this._data.matricula?.organismo?.trim()
-      ),
+      validate: () => {
+        const slugValido = this._slugExiste || !!this._data.slug;
+        return !!(
+          this._data.nombre?.trim()            &&
+          this._data.especialidad?.trim()      &&
+          this._data.matricula?.numero?.trim() &&
+          this._data.matricula?.organismo?.trim() &&
+          slugValido
+        );
+      },
 
       getLabel: () => {
         if (!this._isEditMode) return 'Continuar';
@@ -329,6 +475,24 @@ const page = {
           'onboardingSteps.mi-perfil-profesional': true,
         };
 
+        // Landing
+        if (!page._slugExiste) {
+          updates.landing = {
+            activo:    true,
+            nombre:    d.nombre.trim(),
+            slug:      d.slug,
+            tipo:      'perfil',
+            createdAt: now,
+            updatedAt: now,
+          };
+        } else {
+          updates.landing = {
+            ...page._comercioData.landing,
+            nombre:    d.nombre.trim(),
+            updatedAt: now,
+          };
+        }
+
         if (page._isNuevo || !comercioId) {
           const comercioRef     = comercioId
             ? doc(db, 'entidades', comercioId)
@@ -349,14 +513,22 @@ const page = {
             },
           });
 
+          await setDoc(doc(db, 'landings', d.slug), {
+            slug:       d.slug,
+            comercioId: nuevoComercioId,
+            nombre:     d.nombre.trim(),
+            activo:     true,
+            createdAt:  now,
+            updatedAt:  now,
+          });
+
           await updateDoc(doc(db, 'usuarios', uid), {
             comercioId: nuevoComercioId,
           });
 
-          // ── Referral event — pendiente de validación ──
+          // ── Referral event ──
           const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
           const referredBy  = usuarioSnap.data()?.referredBy || null;
-
           if (referredBy) {
             await setDoc(doc(collection(db, 'referral_events')), {
               referrerCode:    referredBy,
@@ -364,17 +536,23 @@ const page = {
               createdUserId:   uid,
               createdEntityId: nuevoComercioId,
               valid:           false,
-              timestamp:       new Date()
+              timestamp:       now,
             });
-            console.log('🎯 Referral event creado (pendiente) para:', referredBy);
           }
           // ── Fin referral event ──
 
-          console.log(`[mi-perfil-profesional] Nueva entidad creada: ${nuevoComercioId}`);
-
         } else {
           await updateDoc(doc(db, 'entidades', comercioId), updates);
-          console.log(`[mi-perfil-profesional] Entidad actualizada: ${comercioId}`);
+          if (!page._slugExiste) {
+            await setDoc(doc(db, 'landings', d.slug), {
+              slug:       d.slug,
+              comercioId,
+              nombre:     d.nombre.trim(),
+              activo:     true,
+              createdAt:  now,
+              updatedAt:  now,
+            });
+          }
         }
 
         return { success: true, stepMarked: true };
@@ -382,7 +560,7 @@ const page = {
 
       onSuccess: () => {
         showToast(
-          this._isEditMode ? 'Perfil actualizado' : 'Perfil guardado',
+          page._isEditMode ? 'Perfil actualizado' : 'Perfil guardado',
           'success'
         );
         dirtyController.markSaved();
@@ -404,4 +582,3 @@ runSkeleton({
   adapter: createFirebaseAdapter,
   options: { loadingMessage: 'Cargando perfil profesional...' },
 });
-
