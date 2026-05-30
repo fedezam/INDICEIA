@@ -62,7 +62,6 @@ const page = {
       this._entityType === 'comercio' ||
       capacidades.includes('productos');
 
-    // Normaliza estructura — soporta legacy plano y nueva estructura anidada
     this._aiConfig = {
       identidad: {
         nombre:        raw.identidad?.nombre       || raw.aiName        || '',
@@ -76,12 +75,11 @@ const page = {
         formatoRespuestas: raw.comportamiento?.formatoRespuestas || raw.formatoRespuestas || ''
       },
       contingencias: {
-        sinPrecio:    raw.contingencias?.sinPrecio    || raw.sinPrecio    || '',
-        sinStock:     raw.contingencias?.sinStock     || raw.sinStock     || '',
-        localCerrado: raw.contingencias?.localCerrado || raw.localCerrado || ''
+        sinPrecio: raw.contingencias?.sinPrecio || raw.sinPrecio || '',
+        sinStock:  raw.contingencias?.sinStock  || raw.sinStock  || ''
       },
       contexto: {
-        global_ai_context: raw.contexto?.global_ai_context || [] // ← NEW
+        global_ai_context: raw.contexto?.global_ai_context || []
       }
     };
   },
@@ -113,7 +111,7 @@ const page = {
     root.appendChild(this._renderIdentidadCard());
     root.appendChild(this._renderComportamientoCard());
     root.appendChild(this._renderContingenciasCard());
-    root.appendChild(this._renderContextoCard()); // ← NEW
+    root.appendChild(this._renderContextoCard());
     root.appendChild(this._renderSaveButton());
   },
 
@@ -163,7 +161,6 @@ const page = {
 
   // ──────────────────────────────────────────────────────────
   // SALUDO PARTIDO
-  // [ prefijo editable ] [ nombre — locked ] [ sufijo negocio — locked ]
   // ──────────────────────────────────────────────────────────
   _renderSaludoPartido(saludoPrefixValue = '') {
     const nombreIA = this._aiConfig.identidad.nombre;
@@ -277,14 +274,13 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // CONTINGENCIAS — condicional según entityType
+  // CONTINGENCIAS
   // ──────────────────────────────────────────────────────────
   _renderContingenciasCard() {
     const container = document.createElement('div');
     container.className = 'ia-grid';
     const c = this._aiConfig.contingencias;
 
-    // Todos los tipos: ¿qué hacer si no hay precio?
     this.fields.sinPrecio = createFormField({
       id: 'sinPrecio', label: 'Si no hay precio',
       type: 'select',
@@ -299,7 +295,6 @@ const page = {
 
     container.appendChild(this.fields.sinPrecio);
 
-    // Solo si tiene productos (comercio o prestador con productos)
     if (this._tieneProductos) {
       this.fields.sinStock = createFormField({
         id: 'sinStock', label: 'Si no hay stock',
@@ -314,26 +309,11 @@ const page = {
       container.appendChild(this.fields.sinStock);
     }
 
-    // Solo comercio
-    if (this._entityType === 'comercio') {
-      this.fields.localCerrado = createFormField({
-        id: 'localCerrado', label: 'Si el local está cerrado',
-        type: 'select',
-        options: [
-          { value: '',             label: 'Seleccionar', disabled: true, hidden: true },
-          { value: 'informar',     label: 'Informar horario' },
-          { value: 'tomarMensaje', label: 'Tomar mensaje' }
-        ],
-        value: c.localCerrado
-      });
-      container.appendChild(this.fields.localCerrado);
-    }
-
     return createCard({ title: 'Contingencias', icon: 'fa-exclamation-triangle', content: container });
   },
 
   // ──────────────────────────────────────────────────────────
-  // ← NEW: CONTEXTO OPERATIVO GLOBAL + PREVIEW DINÁMICO
+  // CONTEXTO OPERATIVO
   // ──────────────────────────────────────────────────────────
   _renderContextoCard() {
     const container = document.createElement('div');
@@ -361,7 +341,6 @@ const page = {
 
     container.appendChild(this.fields.globalContext);
 
-    // ── Preview dinámico ──────────────────────────────────
     const preview = document.createElement('div');
     preview.className = 'ia-contexto-preview';
 
@@ -387,7 +366,6 @@ const page = {
     this.fields.globalContext?.input?.addEventListener('input', updatePreview);
 
     container.appendChild(preview);
-    // ───────────────────────────────────────────────────────
 
     return createCard({
       title: 'Contexto operativo',
@@ -408,15 +386,6 @@ const page = {
         const requiredFields = ['nombre', 'personalidad', 'tono'];
         const fieldsOk = requiredFields.every(k => this.fields[k]?.input.value.trim());
         const saludoOk = this.fields.saludoPartido?.getValue().length > 0;
-        console.log('[ia-config] validate:', {
-          nombre:       this.fields.nombre?.input?.value,
-          personalidad: this.fields.personalidad?.input?.value,
-          tono:         this.fields.tono?.input?.value,
-          saludo:       this.fields.saludoPartido?.getValue(),
-          fieldsOk,
-          saludoOk,
-          result: fieldsOk && saludoOk
-        });
         return fieldsOk && saludoOk;
       },
 
@@ -433,11 +402,6 @@ const page = {
           contingencias.sinStock = v('sinStock') || '';
         }
 
-        if (this._entityType === 'comercio') {
-          contingencias.localCerrado = v('localCerrado') || '';
-        }
-
-        // ← NEW: contexto global (solo si existe)
         const contexto = {};
         if (this._aiConfig.contexto?.global_ai_context?.length) {
           contexto.global_ai_context = this._aiConfig.contexto.global_ai_context;
@@ -495,7 +459,6 @@ const page = {
       formatoRespuestas: v('formatoRespuestas'),
       sinPrecio:         v('sinPrecio'),
       sinStock:          v('sinStock'),
-      localCerrado:      v('localCerrado'),
       globalContext:     this._aiConfig.contexto?.global_ai_context?.join('\n') || ''
     });
   },
