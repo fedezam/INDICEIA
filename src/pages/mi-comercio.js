@@ -82,7 +82,7 @@ runLifecycle({
 async function load(ctx) {
   const isEditMode             = window.isEditMode === true;
   const comercioData           = ctx.comercioData || {};
-  const isNewComercio          = !comercioData.nombreComercio;
+  const isNewComercio          = !comercioData.nombre;
   const comercioSlug           = comercioData.landing?.slug || null;
   const slugDisponible         = !!comercioSlug;
   const selectedPaymentMethods = comercioData.paymentMethods || [];
@@ -137,11 +137,11 @@ function renderSeccionBasicos(state, refs, uiState) {
   const section   = crearSeccion('Datos Básicos');
   const tieneSlug = !!state.comercioData.landing?.slug;
 
-  refs.fields.nombreComercio = createFormField({
-    label: 'Nombre del Comercio', name: 'nombreComercio', required: true,
-    value: state.comercioData.nombreComercio || ''
+  refs.fields.nombre = createFormField({
+    label: 'Nombre del Comercio', name: 'nombre', required: true,
+    value: state.comercioData.nombre || ''
   });
-  section.appendChild(refs.fields.nombreComercio);
+  section.appendChild(refs.fields.nombre);
 
   section.appendChild(
     tieneSlug
@@ -156,7 +156,7 @@ function renderSeccionBasicos(state, refs, uiState) {
   });
   section.appendChild(refs.fields.descripcion);
 
-  agregarListeners([refs.fields.nombreComercio, refs.fields.descripcion], refs, uiState);
+  agregarListeners([refs.fields.nombre, refs.fields.descripcion], refs, uiState);
   return section;
 }
 
@@ -205,14 +205,14 @@ function renderSlugEditable(refs, uiState) {
   });
 
   setTimeout(() => {
-    const nombreInput = refs.fields.nombreComercio?.input;
+    const nombreInput = refs.fields.nombre?.input;
     if (!nombreInput) return;
     nombreInput.addEventListener('input', () => {
       clearTimeout(refs.slugValidationTimer);
-      const nombre = nombreInput.value.trim();
-      if (nombre.length >= 3 && refs.slugInput) {
+      const valor = nombreInput.value.trim();
+      if (valor.length >= 3 && refs.slugInput) {
         refs.slugValidationTimer = setTimeout(async () => {
-          const newSlug = slugify(nombre);
+          const newSlug = slugify(valor);
           refs.slugInput.value = newSlug;
           await validarSlug(newSlug, refs, uiState, true);
         }, 500);
@@ -472,14 +472,14 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
 
       if (!originalHasLanding) {
         updates.landing = {
-          activo: true, nombre: updates.nombreComercio,
+          activo: true, nombre: updates.nombre,
           slug: uiState.comercioSlug, tipo: 'default',
           createdAt: new Date(), updatedAt: new Date()
         };
       } else {
         updates.landing = {
           ...state.comercioData.landing,
-          nombre:    updates.nombreComercio,
+          nombre:    updates.nombre,
           updatedAt: new Date()
         };
       }
@@ -511,7 +511,7 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
 
         await setDoc(doc(db, 'landings', uiState.comercioSlug), {
           slug: uiState.comercioSlug, comercioId,
-          nombre: updates.nombreComercio, activo: true,
+          nombre: updates.nombre, activo: true,
           createdAt: new Date(), updatedAt: new Date()
         });
 
@@ -549,7 +549,7 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         if (!originalHasLanding) {
           await setDoc(doc(db, 'landings', uiState.comercioSlug), {
             slug: uiState.comercioSlug, comercioId: ctxComercioId,
-            nombre: updates.nombreComercio, activo: true,
+            nombre: updates.nombre, activo: true,
             createdAt: new Date(), updatedAt: new Date()
           });
         }
@@ -643,20 +643,20 @@ function updateSlugStatus(refs, status, message) {
 
 function getCurrentData(refs, uiState) {
   return {
-    nombreComercio:   refs.fields.nombreComercio?.input.value.trim() || '',
-    descripcion:      refs.fields.descripcion?.input.value.trim()    || '',
+    nombre:           refs.fields.nombre?.input.value.trim()          || '',
+    descripcion:      refs.fields.descripcion?.input.value.trim()     || '',
 
     ubicacion: ubicacionFromForm(refs),
     rubro: rubroFromForm(refs.categorySelector?.getSelected() || []),
 
-    direccion:        refs.fields.direccion?.input.value.trim()      || '',
-    telefono:         refs.fields.telefono?.input.value.trim()       || '',
-    email:            refs.fields.email?.input.value.trim()          || '',
-    website:          refs.fields.website?.input.value.trim()        || null,
-    instagram:        refs.fields.instagram?.input.value.trim()      || null,
-    facebook:         refs.fields.facebook?.input.value.trim()       || null,
-    whatsapp:         refs.fields.whatsapp?.input.value.trim()       || null,
-    categories:       refs.categorySelector?.getSelected()           || [],
+    direccion:        refs.fields.direccion?.input.value.trim()       || '',
+    telefono:         refs.fields.telefono?.input.value.trim()        || '',
+    email:            refs.fields.email?.input.value.trim()           || '',
+    website:          refs.fields.website?.input.value.trim()         || null,
+    instagram:        refs.fields.instagram?.input.value.trim()       || null,
+    facebook:         refs.fields.facebook?.input.value.trim()        || null,
+    whatsapp:         refs.fields.whatsapp?.input.value.trim()        || null,
+    categories:       refs.categorySelector?.getSelected()            || [],
     paymentMethods:   uiState.selectedPaymentMethods,
     tieneLocalFisico: uiState.tieneLocalFisico,
   };
@@ -667,7 +667,7 @@ function isFormValid(refs, uiState, state) {
 
   const tieneUbicacion = data.ubicacion?.localidad?.id && data.direccion;
 
-  const camposBasicos  = data.nombreComercio && data.descripcion &&
+  const camposBasicos  = data.nombre && data.descripcion &&
                          tieneUbicacion && data.telefono && data.email;
   const tieneRedSocial  = data.website || data.instagram || data.facebook || data.whatsapp;
   const tieneCategorias = data.categories.length > 0;
@@ -681,16 +681,16 @@ function hayDirtyState(refs, uiState, state) {
   const original = state.comercioData;
 
   return (
-    current.nombreComercio !== (original.nombreComercio || '') ||
-    current.descripcion    !== (original.descripcion    || '') ||
+    current.nombre          !== (original.nombre          || '') ||
+    current.descripcion     !== (original.descripcion     || '') ||
     JSON.stringify(current.ubicacion) !== JSON.stringify(original.ubicacion || original.localidad || null) ||
-    current.direccion      !== (original.direccion      || '') ||
-    current.telefono       !== (original.telefono       || '') ||
-    current.email          !== (original.email          || '') ||
-    current.website        !== (original.website        || null) ||
-    current.instagram      !== (original.instagram      || null) ||
-    current.facebook       !== (original.facebook       || null) ||
-    current.whatsapp       !== (original.whatsapp       || null) ||
+    current.direccion       !== (original.direccion       || '') ||
+    current.telefono        !== (original.telefono        || '') ||
+    current.email           !== (original.email           || '') ||
+    current.website         !== (original.website         || null) ||
+    current.instagram       !== (original.instagram       || null) ||
+    current.facebook        !== (original.facebook        || null) ||
+    current.whatsapp        !== (original.whatsapp        || null) ||
     JSON.stringify(current.categories)     !== JSON.stringify(original.categories     || []) ||
     JSON.stringify(current.paymentMethods) !== JSON.stringify(original.paymentMethods || []) ||
     current.tieneLocalFisico !== (original.tieneLocalFisico !== false)
