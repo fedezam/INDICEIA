@@ -31,8 +31,8 @@ export async function loadEntidad(comercioId) {
   const pipeline = buildPipeline(ctx);
 
   return {
-    user: userData,
-    entidad: comercioData,
+    user:     userData,
+    entidad:  { id: comercioId, ...comercioData },  // ← id incluido
     ctx,
     pipeline,
     steps: comercioData.onboardingSteps || {}
