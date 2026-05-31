@@ -319,7 +319,7 @@ export const page = {
   // ──────────────────────────────────────────────────────────
   _renderPanel(container) {
     const { entidad, user, ctx, pipeline, steps } = this.selected;
-    const comercioId = entidad.id || Object.keys(this.selected).find(k => k === 'id');
+    const comercioId = entidad.id;
 
     const topbar = document.createElement('div');
     topbar.className = 'sa-topbar';
@@ -786,7 +786,9 @@ export const page = {
     const { wrap, grid } = makeSection('🚀 Publicación', 'Estado de publicación y onboarding');
 
     const slug        = entidad.landing?.slug;
-    const generatedAt = entidad.entityGeneratedAt;
+    const generatedAt = entidad.entityGeneratedAt
+      ? (entidad.entityGeneratedAt?.toDate?.() || new Date(entidad.entityGeneratedAt))
+      : null;
     const steps       = entidad.onboardingSteps || {};
     const stepsOk     = Object.values(steps).filter(Boolean).length;
     const stepsTotal  = Object.keys(steps).length;
@@ -823,8 +825,8 @@ export const page = {
       icon:   '⚡',
       title:  'Regenerar entidad',
       status: generatedAt ? 'ok' : 'empty',
-      body:   generatedAt
-        ? `<p>Última generación: ${new Date(generatedAt).toLocaleString('es-AR')}</p>`
+      body: generatedAt
+        ? `<p>Última generación: ${generatedAt.toLocaleString('es-AR')}</p>`
         : '<p>Nunca generada</p>',
       onEdit: async () => {
         const btns = document.querySelectorAll('.sa-btn--edit');
@@ -892,7 +894,7 @@ export const page = {
           <div class="sa-item">
             <strong>${p.nombre || '-'}</strong>
             <span>$${p.precio_final ?? '-'}</span>
-            <span>${p.paused ? '🔴 pausado' : '🟢 activo'}</span>
+            <span>{p.paused ? '🔴 pausado' : '🟢 activo'}</span>
           </div>
         `).join('')}
       </div>
@@ -926,7 +928,7 @@ export const page = {
         ${items.length === 0 ? '<p>Sin servicios</p>' : items.map(s => `
           <div class="sa-item">
             <strong>${s.nombre || '-'}</strong>
-            <span>${s.precio?.valor ? `$${s.precio.valor}` : 'Sin precio'}</span>
+            <span>${s.precio?.valor ? `$$$${s.precio.valor}` : 'Sin precio'}</span>
             <span>${s.activo === false ? '🔴 inactivo' : '🟢 activo'}</span>
           </div>
         `).join('')}
@@ -943,3 +945,4 @@ export const page = {
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
   }
 };
+
