@@ -68,7 +68,7 @@ const page = {
   _categoria:           'salud',
   _comercioData:        {},
   _slugExiste:          false,
-  _refs:                { slugInput: null, slugStatus: null, slugValidationTimer: null },
+  _refs:                { fields: {}, slugInput: null, slugStatus: null, slugValidationTimer: null },
 
   // ──────────────────────────────────────────────────────────
   // LOAD
@@ -102,7 +102,7 @@ const page = {
   render() {
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
-    this._refs = { slugInput: null, slugStatus: null, slugValidationTimer: null };
+    this._refs = { fields: {}, slugInput: null, slugStatus: null, slugValidationTimer: null };
 
     const header = document.createElement('div');
     header.className = 'page-header';
@@ -115,7 +115,7 @@ const page = {
     root.appendChild(this._renderSeccionIdentidad());
     root.appendChild(this._renderSeccionCredenciales());
     root.appendChild(this._renderSeccionFormacion());
-    if (!this._slugExiste) root.appendChild(this._renderSeccionSlug());
+    root.appendChild(this._renderSeccionSlug());
 
     const btnContainer = document.createElement('div');
     btnContainer.className = 'btn-container';
@@ -165,19 +165,8 @@ const page = {
     });
     nombre.input?.addEventListener('input', e => {
       d.nombre = e.target.value;
-      // Autogenerar slug si no existe
-      if (!this._slugExiste) {
-        clearTimeout(this._refs.slugValidationTimer);
-        const nombre = d.nombre.trim();
-        if (nombre.length >= 3 && this._refs.slugInput) {
-          this._refs.slugValidationTimer = setTimeout(async () => {
-            const newSlug = slugify(nombre);
-            this._refs.slugInput.value = newSlug;
-            await this._validarSlug(newSlug, true);
-          }, 500);
-        }
-      }
     });
+    this._refs.fields.nombre = nombre;
 
     const especialidadOptions = (ESPECIALIDADES[this._categoria] || []).map(e => ({ value: e, label: e }));
     const especialidad = createFormField({
@@ -330,10 +319,63 @@ const page = {
     h3.textContent = 'Tu dirección en ÍndiceIA';
     section.appendChild(h3);
 
+    if (this._slugExiste) {
+      section.appendChild(this._renderSlugReadonly(this._comercioData.landing.slug));
+    } else {
+      section.appendChild(this._renderSlugEditable());
+    }
+
+    return section;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // SLUG: READONLY (cuando ya existe)
+  // ──────────────────────────────────────────────────────────
+  _renderSlugReadonly(slug) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'slug-field-wrapper';
+
+    const display = document.createElement('div');
+    display.className = 'slug-readonly';
+
+    const prefix = document.createElement('span');
+    prefix.className   = 'slug-prefix';
+    prefix.textContent = 'indiceia.com/';
+
+    const value = document.createElement('span');
+    value.className   = 'slug-value';
+    value.textContent = slug;
+
+    const lock = document.createElement('span');
+    lock.className = 'slug-lock';
+    lock.innerHTML = '<i class="fas fa-lock"></i>';
+
+    display.append(prefix, value, lock);
+
+    const note = document.createElement('p');
+    note.className   = 'form-help';
+    note.textContent = 'Este es tu link permanente. No se puede modificar.';
+
+    wrapper.append(display, note);
+    return wrapper;
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // SLUG: EDITABLE (cuando es nuevo)
+  // ──────────────────────────────────────────────────────────
+  _renderSlugEditable() {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'slug-field-wrapper';
+
+    const warning = document.createElement('p');
+    warning.className   = 'form-help form-help--warning';
+    warning.textContent = '⚠️ Tu link público. Elegilo con cuidado — una vez guardado no se puede cambiar.';
+    wrapper.appendChild(warning);
+
     const help = document.createElement('p');
     help.className = 'form-help';
-    help.textContent = 'Esta es la dirección única donde tus pacientes van a encontrarte. Se genera automáticamente pero podés cambiarla.';
-    section.appendChild(help);
+    help.textContent = 'Se genera automáticamente a partir de tu nombre, pero podés cambiarlo.';
+    wrapper.appendChild(help);
 
     const slugContainer = document.createElement('div');
     slugContainer.className = 'slug-container';
@@ -342,37 +384,50 @@ const page = {
     slugPrefix.className   = 'slug-prefix';
     slugPrefix.textContent = 'indiceia.com/';
 
-    const slugInput = document.createElement('input');
-    slugInput.type        = 'text';
-    slugInput.className   = 'slug-input';
-    slugInput.placeholder = 'dr-juan-garcia';
-    slugInput.value       = this._data.slug || '';
-    this._refs.slugInput  = slugInput;
+    this._refs.slugInput = document.createElement('input');
+    this._refs.slugInput.type        = 'text';
+    this._refs.slugInput.className   = 'slug-input';
+    this._refs.slugInput.placeholder = 'dr-juan-garcia';
+    this._refs.slugInput.value       = this._data.slug || '';
 
-    slugContainer.append(slugPrefix, slugInput);
-    section.appendChild(slugContainer);
+    slugContainer.append(slugPrefix, this._refs.slugInput);
+    wrapper.appendChild(slugContainer);
 
-    const slugStatus = document.createElement('div');
-    slugStatus.className = 'slug-status';
-    slugStatus.innerHTML = '<span class="slug-icon"></span><span class="slug-text"></span>';
-    this._refs.slugStatus = slugStatus;
-    section.appendChild(slugStatus);
+    this._refs.slugStatus = document.createElement('div');
+    this._refs.slugStatus.className = 'slug-status';
+    this._refs.slugStatus.innerHTML = `<span class="slug-icon"></span><span class="slug-text"></span>`;
+    wrapper.appendChild(this._refs.slugStatus);
 
-    slugInput.addEventListener('input', () => {
+    this._refs.slugInput.addEventListener('input', () => {
       clearTimeout(this._refs.slugValidationTimer);
-      const slug = slugInput.value.trim().toLowerCase();
-      if (!slug) {
+      const slug = this._refs.slugInput.value.trim();
+      if (slug.length < 3) {
         this._updateSlugStatus('empty', '');
         this._data.slug = null;
         return;
       }
       this._updateSlugStatus('checking', 'Verificando disponibilidad...');
-      this._refs.slugValidationTimer = setTimeout(async () => {
-        await this._validarSlug(slug, false);
-      }, 800);
+      this._refs.slugValidationTimer = setTimeout(() => this._validarSlug(slug, false), 800);
     });
 
-    return section;
+    // auto-generar slug desde nombre
+    setTimeout(() => {
+      const nombreInput = this._refs.fields.nombre?.input;
+      if (!nombreInput) return;
+      nombreInput.addEventListener('input', () => {
+        clearTimeout(this._refs.slugValidationTimer);
+        const nombre = this._data.nombre?.trim();
+        if (nombre && nombre.length >= 3 && this._refs.slugInput) {
+          this._refs.slugValidationTimer = setTimeout(async () => {
+            const newSlug = slugify(nombre);
+            this._refs.slugInput.value = newSlug;
+            await this._validarSlug(newSlug, true);
+          }, 500);
+        }
+      });
+    }, 0);
+
+    return wrapper;
   },
 
   // ──────────────────────────────────────────────────────────
