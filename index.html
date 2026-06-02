@@ -4,608 +4,144 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <title>ÍndiceIA — La IA que atiende tu comercio cuando vos no estás</title>
-  <meta name="description" content="ÍndiceIA hace que una IA atienda las consultas de tu comercio, filtre el ruido y te deje solo los clientes listos para comprar. No es un bot. Es algo nuevo." />
+  <meta name="description" content="ÍndiceIA conecta intenciones en tiempo real con agentes autónomos. Hacé que una IA atienda las consultas de tu comercio, filtre el ruido y cierre clientes listos para comprar." />
+  <meta name="keywords" content="Inteligencia Artificial, directorio de comercios, agentes autonomos, atencion automatizada, Casilda, ecommerce ia" />
   <meta name="robots" content="index, follow" />
+
   <meta property="og:type" content="website" />
   <meta property="og:title" content="ÍndiceIA — La IA que atiende tu comercio" />
-  <meta property="og:description" content="Respondé consultas al instante. Filtrá interesados. Concentrate en cerrar ventas." />
+  <meta property="og:description" content="Respondé consultas al instante. Filtrá interesados. Ecosistema descentralizado de agentes comerciales con IA." />
+  <meta property="og:url" content="https://indiceia.app" />
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/styles/main.css" />
 
-  <!-- QR -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-  <style>
-    :root {
-      /* ── Paleta crema/hueso ── */
-      --bg: #f5f2ec;
-      --surface: #ffffff;
-      --surface2: #edeae3;
-      --border: #ddd9d0;
-      --border-soft: #e8e4dc;
-      --text: #1a1814;
-      --text-muted: #6b6458;
-      --text-dim: #a89e90;
-      --accent: #1a6bb5;
-      --accent-bg: rgba(26,107,181,0.08);
-      --accent-hover: #155a9e;
-      --green: #2d8a52;
-      --red-soft: rgba(192,57,43,0.06);
-      --red-border: rgba(192,57,43,0.2);
-      --red-text: #c0392b;
-      --shadow-sm: 0 1px 4px rgba(26,24,20,0.06);
-      --shadow-md: 0 4px 16px rgba(26,24,20,0.08);
-      --shadow-lg: 0 8px 32px rgba(26,24,20,0.10);
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 20px;
-      --font-display: 'DM Serif Display', Georgia, serif;
-      --font-mono: 'DM Mono', 'Courier New', monospace;
-      --font-body: 'DM Sans', sans-serif;
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "ÍndiceIA",
+    "url": "https://indiceia.app",
+    "description": "Plataforma e infraestructura descentralizada de agentes autónomos con IA para comercios y servicios locales.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://indiceia.app/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
     }
+  }
+  </script>
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-weight: 400; line-height: 1.7; overflow-x: hidden; }
-
-    /* NAV */
-    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 16px 48px; background: rgba(245,242,236,0.92); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-soft); box-shadow: var(--shadow-sm); }
-    .nav-logo { font-family: var(--font-display); font-size: 20px; font-weight: 400; color: var(--text); text-decoration: none; letter-spacing: -0.01em; }
-    .nav-logo span { color: var(--accent); }
-    .nav-actions { display: flex; align-items: center; gap: 12px; }
-    .nav-beta { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--text-dim); text-transform: uppercase; border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; background: var(--surface2); }
-    .btn-nav { font-family: var(--font-body); font-size: 14px; font-weight: 500; color: var(--text-muted); background: none; border: none; cursor: pointer; transition: color 0.2s; padding: 8px 12px; border-radius: var(--radius-sm); }
-    .btn-nav:hover { color: var(--text); background: var(--surface2); }
-
-    /* SCREENS */
-    .screen { display: none; }
-    .screen.active { display: block; }
-
-    /* HERO */
-    .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 120px 48px 80px; position: relative; overflow: hidden; background: var(--bg); }
-    .hero::before { content: ''; position: absolute; top: -100px; right: -100px; width: 500px; height: 500px; background: radial-gradient(circle, rgba(184,150,46,0.07) 0%, transparent 65%); pointer-events: none; }
-    .hero::after { content: ''; position: absolute; bottom: -80px; left: -80px; width: 400px; height: 400px; background: radial-gradient(circle, rgba(184,150,46,0.04) 0%, transparent 65%); pointer-events: none; }
-    .hero-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 24px; opacity: 0; animation: fadeUp 0.8s ease forwards 0.1s; display: inline-flex; align-items: center; gap: 8px; }
-    .hero-eyebrow::before { content: ''; width: 24px; height: 2px; background: var(--accent); border-radius: 2px; }
-    .hero-title { font-family: var(--font-display); font-size: clamp(36px, 5.5vw, 72px); line-height: 1.1; letter-spacing: -0.02em; color: var(--text); max-width: 800px; margin-bottom: 24px; opacity: 0; animation: fadeUp 0.8s ease forwards 0.25s; }
-    .hero-title em { font-style: italic; color: var(--accent); }
-    .hero-sub { font-size: 18px; font-weight: 400; color: var(--text-muted); max-width: 500px; line-height: 1.75; margin-bottom: 44px; opacity: 0; animation: fadeUp 0.8s ease forwards 0.4s; }
-    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; opacity: 0; animation: fadeUp 0.8s ease forwards 0.55s; }
-    .hero-disclaimer { margin-top: 32px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.04em; opacity: 0; animation: fadeUp 0.8s ease forwards 0.7s; }
-
-    /* BUTTONS */
-    .btn-primary { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: #ffffff; background: var(--accent); border: none; padding: 14px 28px; cursor: pointer; transition: background 0.2s, transform 0.15s, box-shadow 0.2s; text-decoration: none; display: inline-block; border-radius: var(--radius-md); box-shadow: 0 2px 8px rgba(26,107,181,0.25); }
-    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(26,107,181,0.3); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-secondary { font-family: var(--font-body); font-size: 15px; font-weight: 500; color: var(--text-muted); background: var(--surface); border: 1.5px solid var(--border); padding: 14px 28px; cursor: pointer; transition: border-color 0.2s, color 0.2s, box-shadow 0.2s; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); box-shadow: var(--shadow-md); }
-
-    /* SECTIONS */
-    section { padding: 88px 48px; max-width: 980px; margin: 0 auto; }
-    .section-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 40px; display: flex; align-items: center; gap: 12px; }
-    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-    .section-title { font-family: var(--font-display); font-size: clamp(28px, 4vw, 46px); line-height: 1.15; color: var(--text); margin-bottom: 20px; }
-    .section-body { font-size: 16px; color: var(--text-muted); max-width: 600px; line-height: 1.9; }
-
-    /* ANTES/DESPUÉS */
-    .antesdespues { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 56px; }
-    .ad-col { background: var(--surface); padding: 36px; border-radius: var(--radius-lg); border: 1.5px solid var(--border); box-shadow: var(--shadow-sm); }
-    .ad-col.after { border-color: var(--accent); background: #f0f5fb; }
-    .ad-col-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 28px; display: flex; align-items: center; gap: 10px; }
-    .ad-col-label .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
-    .ad-col.after .ad-col-label .dot { background: var(--accent); }
-    .ad-col-label span { color: var(--text-muted); font-weight: 500; }
-    .ad-col.after .ad-col-label span { color: var(--accent); }
-    .ad-item { display: flex; gap: 14px; margin-bottom: 16px; align-items: flex-start; }
-    .ad-item-icon { font-family: var(--font-mono); font-size: 13px; color: var(--text-dim); margin-top: 1px; min-width: 16px; font-weight: 600; }
-    .ad-col.after .ad-item-icon { color: var(--accent); }
-    .ad-item p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
-
-    /* FRASE CENTRAL */
-    .frase-central { text-align: center; padding: 72px 48px; background: var(--surface2); margin: 40px 0; }
-    .frase-central p { font-family: var(--font-display); font-size: clamp(22px, 3.5vw, 40px); color: var(--text-muted); line-height: 1.4; max-width: 720px; margin: 0 auto; }
-    .frase-central p strong { color: var(--text); }
-
-    /* ESCENA */
-    .escena { background: var(--surface); border: 1.5px solid var(--border); padding: 56px 64px; position: relative; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); overflow: hidden; }
-    .escena::before { content: '"'; font-family: var(--font-display); font-size: 140px; color: rgba(184,150,46,0.08); position: absolute; top: 10px; left: 32px; line-height: 1; pointer-events: none; }
-    .escena-text { font-family: var(--font-display); font-size: 21px; line-height: 1.65; color: var(--text); position: relative; z-index: 1; }
-    .escena-text strong { color: var(--accent); font-style: italic; }
-
-    /* PASOS */
-    .pasos { display: flex; flex-direction: column; gap: 12px; margin-top: 56px; }
-    .paso { display: grid; grid-template-columns: 72px 1fr; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); transition: box-shadow 0.2s, transform 0.2s; }
-    .paso:hover { box-shadow: var(--shadow-md); transform: translateX(4px); }
-    .paso-num { background: var(--surface2); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 12px; color: var(--accent); letter-spacing: 0.1em; font-weight: 500; border-right: 1.5px solid var(--border); }
-    .paso-content { padding: 28px 36px; }
-    .paso-content h3 { font-family: var(--font-body); font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-    .paso-content p { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
-
-    /* DEMOS */
-    .demos-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 56px; }
-    .demo-card { background: var(--surface); padding: 36px 28px; display: flex; flex-direction: column; gap: 20px; border-radius: var(--radius-lg); border: 1.5px solid var(--border); box-shadow: var(--shadow-sm); transition: box-shadow 0.25s, transform 0.25s; }
-    .demo-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); }
-    .demo-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); background: var(--accent-bg); display: inline-block; padding: 3px 10px; border-radius: 20px; }
-    .demo-name { font-family: var(--font-display); font-size: 22px; color: var(--text); line-height: 1.2; }
-    .demo-desc { font-size: 13px; color: var(--text-muted); line-height: 1.7; flex: 1; }
-    .demo-qr { width: 96px; height: 96px; background: white; padding: 5px; border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); border: 1px solid var(--border); }
-    .demo-qr img, .demo-qr canvas { width: 100% !important; height: 100% !important; }
-    .demo-status { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 0.08em; display: flex; align-items: center; gap: 6px; }
-    .demo-status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; }
-    .demo-status.placeholder::before { background: var(--border); }
-    .demo-link { font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; transition: color 0.2s; display: flex; align-items: center; gap: 6px; margin-top: 4px; }
-    .demo-link:hover { color: var(--accent-hover); }
-    .demo-link.active::after { content: ' →'; }
-
-    /* BETA */
-    .beta-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 56px; margin-top: 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; box-shadow: var(--shadow-md); }
-    .beta-title { font-family: var(--font-display); font-size: 34px; color: var(--text); line-height: 1.2; margin-bottom: 16px; }
-    .beta-body { font-size: 14px; color: var(--text-muted); line-height: 1.9; }
-    .beta-status-list { display: flex; flex-direction: column; gap: 0; background: var(--bg); border-radius: var(--radius-md); border: 1px solid var(--border); overflow: hidden; }
-    .beta-status-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border-soft); font-family: var(--font-mono); font-size: 12px; }
-    .beta-status-item:last-child { border-bottom: none; }
-    .beta-status-item .label { color: var(--text-muted); }
-    .status-badge { font-size: 10px; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
-    .status-badge.ok { color: var(--green); background: rgba(45,138,82,0.08); border: 1px solid rgba(45,138,82,0.2); }
-    .status-badge.evolving { color: var(--accent); background: var(--accent-bg); border: 1px solid rgba(26,107,181,0.2); }
-    .status-badge.exp { color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); }
-
-    /* CTA FINAL */
-    .cta-final { text-align: center; padding: 100px 48px; max-width: 720px; margin: 0 auto; }
-    .cta-final .section-title { font-size: clamp(30px, 5vw, 56px); margin-bottom: 16px; }
-    .cta-final .section-body { max-width: 100%; margin-bottom: 40px; }
-
-    /* FOOTER */
-    footer { border-top: 1px solid var(--border-soft); padding: 36px 48px; display: flex; justify-content: space-between; align-items: center; background: var(--surface2); }
-    .footer-logo { font-family: var(--font-display); font-size: 14px; color: var(--text-muted); }
-    .footer-copy { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
-
-    /* MODAL AUTH */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,24,20,0.5); z-index: 200; backdrop-filter: blur(8px); align-items: center; justify-content: center; }
-    .modal-overlay.open { display: flex; }
-    .modal { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); width: 100%; max-width: 440px; padding: 44px; position: relative; animation: fadeUp 0.3s ease; max-height: 95vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
-    .modal-close { position: absolute; top: 18px; right: 20px; background: var(--surface2); border: none; color: var(--text-muted); font-size: 16px; cursor: pointer; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s, color 0.2s; }
-    .modal-close:hover { background: var(--border); color: var(--text); }
-    .modal-title { font-family: var(--font-display); font-size: 26px; color: var(--text); margin-bottom: 6px; }
-    .modal-sub { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); letter-spacing: 0.04em; margin-bottom: 32px; line-height: 1.6; }
-
-    .auth-tabs { display: flex; margin-bottom: 28px; background: var(--surface2); border-radius: var(--radius-sm); padding: 4px; gap: 4px; }
-    .auth-tab { font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text-muted); background: none; border: none; padding: 8px 20px; cursor: pointer; border-radius: 6px; flex: 1; transition: background 0.2s, color 0.2s; }
-    .auth-tab.active { color: var(--text); background: var(--surface); box-shadow: var(--shadow-sm); }
-    .auth-panel { display: none; }
-    .auth-panel.active { display: block; }
-
-    .form-group { margin-bottom: 16px; }
-    .form-label { display: block; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
-    .form-input { width: 100%; background: var(--bg); border: 1.5px solid var(--border); color: var(--text); font-family: var(--font-body); font-size: 14px; padding: 11px 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; border-radius: var(--radius-sm); }
-    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,107,181,0.12); }
-    .form-input::placeholder { color: var(--text-dim); }
-
-    .btn-full { width: 100%; font-family: var(--font-body); font-size: 15px; font-weight: 600; color: white; background: var(--accent); border: none; padding: 13px; cursor: pointer; margin-top: 8px; transition: background 0.2s, box-shadow 0.2s; border-radius: var(--radius-md); box-shadow: 0 2px 8px rgba(26,107,181,0.2); }
-    .btn-full:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(26,107,181,0.28); }
-    .btn-full:disabled { opacity: 0.45; cursor: not-allowed; }
-
-    .btn-google { width: 100%; font-family: var(--font-body); font-size: 14px; font-weight: 500; color: var(--text); background: var(--surface); border: 1.5px solid var(--border); padding: 11px; cursor: pointer; margin-top: 10px; transition: border-color 0.2s, box-shadow 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); }
-    .btn-google:hover { border-color: var(--text-muted); box-shadow: var(--shadow-md); }
-
-    .auth-separator { display: flex; align-items: center; gap: 14px; margin: 18px 0; }
-    .auth-separator span { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.08em; white-space: nowrap; }
-    .auth-separator::before, .auth-separator::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-    .auth-msg { display: none; font-family: var(--font-body); font-size: 13px; padding: 10px 14px; margin-bottom: 14px; line-height: 1.5; border-radius: var(--radius-sm); }
-    .auth-msg.error { color: var(--red-text); background: var(--red-soft); border: 1px solid var(--red-border); }
-    .auth-msg.success { color: var(--green); background: rgba(45,138,82,0.07); border: 1px solid rgba(45,138,82,0.2); }
-    .auth-msg.visible { display: block; }
-
-    .auth-forgot { font-family: var(--font-body); font-size: 13px; color: var(--text-dim); background: none; border: none; cursor: pointer; margin-top: 8px; transition: color 0.2s; display: block; text-align: right; }
-    .auth-forgot:hover { color: var(--accent); }
-
-    /* VERIFY */
-    #verify-screen { display: none; min-height: 100vh; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 48px; gap: 20px; background: var(--bg); }
-    #verify-screen.active { display: flex; }
-    .verify-icon { font-size: 56px; }
-    .verify-title { font-family: var(--font-display); font-size: 34px; color: var(--text); }
-    .verify-email-display { font-family: var(--font-mono); font-size: 13px; color: var(--accent); letter-spacing: 0.06em; background: var(--accent-bg); padding: 6px 16px; border-radius: 20px; }
-    .verify-body { font-size: 16px; color: var(--text-muted); max-width: 440px; line-height: 1.8; }
-    .verify-hint { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); background: var(--surface2); padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
-    .verify-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
-    .verify-feedback { font-family: var(--font-mono); font-size: 11px; min-height: 20px; }
-
-    /* ANIMATIONS */
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.65s ease, transform 0.65s ease; }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-
-    /* MOBILE */
-    @media (max-width: 768px) {
-      nav { padding: 14px 20px; }
-      .nav-beta { display: none; }
-      .hero { padding: 96px 20px 56px; }
-      section { padding: 56px 20px; }
-      .antesdespues, .beta-box { grid-template-columns: 1fr; }
-      .beta-box { gap: 32px; padding: 32px 24px; }
-      .frase-central { padding: 56px 20px; }
-      .demos-grid { grid-template-columns: 1fr; }
-      .escena { padding: 36px 28px; }
-      footer { flex-direction: column; gap: 12px; text-align: center; padding: 28px 20px; }
-      .modal { margin: 12px; padding: 28px 20px; }
-      .cta-final { padding: 72px 20px; }
-    }
-  </style>
-</head>
+  </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <a href="/" class="nav-logo">Índice<span>IA</span></a>
-  <div class="nav-actions">
-    <span class="nav-beta">Beta pública</span>
-    <button class="btn-nav" onclick="openAuth('login')">Ingresar</button>
-    <button class="btn-nav" style="color:var(--accent)" onclick="openAuth('register')">Crear cuenta →</button>
-  </div>
-</nav>
+  <div id="app">
+    
+    <header class="main-header">
+      <div class="logo">Índice<span>IA</span></div>
+      <button id="btn-open-auth" class="btn-secondary">Ingresar</button>
+    </header>
 
-<!-- LANDING -->
-<div id="landing" class="screen active">
+    <main id="screen-landing" class="screen active">
+      <section class="hero layout-grid">
+        <div class="hero-text reveal">
+          <h1>La IA que atiende tu comercio <span>cuando vos no estás.</span></h1>
+          <p>ÍndiceIA procesa la intención real de tus clientes en tiempo real. Filtra las consultas repetitivas, responde con datos actualizados y te entrega leads listos para facturar.</p>
+          <div class="cta-group">
+            <button id="btn-cta-start" class="btn-primary">Digitalizar mi Comercio</button>
+            <a href="#demos" class="btn-link">Ver ejemplos en vivo ↓</a>
+          </div>
+        </div>
 
-  <div class="hero">
-    <p class="hero-eyebrow">Beta pública · Identidad comercial para IA</p>
-    <h1 class="hero-title">La IA que atiende tu comercio<br><em>cuando vos no estás.</em></h1>
-    <p class="hero-sub">Tu comercio recibe consultas todo el tiempo. La mayoría no termina en venta. ÍndiceIA responde todas al instante y te pasa solo las que realmente importan.</p>
-    <div class="hero-actions">
-      <button class="btn-primary" onclick="openAuth('register')">Crear mi entidad</button>
-      <button class="btn-secondary" onclick="document.getElementById('como-funciona').scrollIntoView({behavior:'smooth'})">Ver cómo funciona</button>
-    </div>
-    <p class="hero-disclaimer">Puede fallar · Estamos construyendo esto · No es un bot</p>
-  </div>
+        <div class="hero-preview reveal delay-1">
+          <div class="card-demo">
+            <div class="card-header">
+              <h3>Pizzería La Esquina</h3>
+              <span class="badge">📍 Casilda</span>
+            </div>
+            <p>Agente asignado: <strong>PizzaBot</strong></p>
+            <div id="qr-pizza" class="qr-container"></div>
+            <small>Escaneá para probar la velocidad de respuesta frente a intenciones de compra reales.</small>
+          </div>
+        </div>
+      </section>
 
-  <section>
-    <p class="section-label reveal">El problema</p>
-    <h2 class="section-title reveal">Tu comercio recibe consultas.<br>La mayoría se pierde.</h2>
-    <p class="section-body reveal">Preguntas repetidas en WhatsApp, Instagram, Facebook. El local cerrado y alguien queriendo saber el precio. Vos ocupado y una consulta que no esperó.<br><br>No es falta de interés. Es falta de respuesta en el momento justo.</p>
-    <div class="antesdespues reveal">
-      <div class="ad-col">
-        <div class="ad-col-label"><div class="dot"></div><span>Sin ÍndiceIA</span></div>
-        <div class="ad-item"><span class="ad-item-icon">×</span><p>Respondés lo mismo decenas de veces por día</p></div>
-        <div class="ad-item"><span class="ad-item-icon">×</span><p>Las consultas llegan cuando estás ocupado o dormido</p></div>
-        <div class="ad-item"><span class="ad-item-icon">×</span><p>El local cerrado es oportunidad perdida</p></div>
-        <div class="ad-item"><span class="ad-item-icon">×</span><p>No sabés si el que pregunta quiere comprar o curiosear</p></div>
-        <div class="ad-item"><span class="ad-item-icon">×</span><p>La IA improvisa cuando alguien pregunta por tu negocio</p></div>
-      </div>
-      <div class="ad-col after">
-        <div class="ad-col-label"><div class="dot"></div><span>Con ÍndiceIA</span></div>
-        <div class="ad-item"><span class="ad-item-icon">→</span><p>Todas las consultas se responden al instante, siempre</p></div>
-        <div class="ad-item"><span class="ad-item-icon">→</span><p>La IA atiende a las 3 de la mañana si hace falta</p></div>
-        <div class="ad-item"><span class="ad-item-icon">→</span><p>El QR en vidriera trabaja aunque esté cerrado el local</p></div>
-        <div class="ad-item"><span class="ad-item-icon">→</span><p>Solo te llegan los que ya decidieron avanzar</p></div>
-        <div class="ad-item"><span class="ad-item-icon">→</span><p>La IA usa tu información real. No inventa nada.</p></div>
-      </div>
-    </div>
-  </section>
+      <section id="demos" class="seccion-demos">
+        <h2 class="reveal">Ecosistema Activo de Intenciones</h2>
+        <div class="grid-demos">
+          <div class="card-mini reveal">
+            <h4>Tienda de Ropa</h4>
+            <div id="qr-tienda" class="qr-small"></div>
+            <p>Resuelve stock, talles y pasarela de pagos.</p>
+          </div>
+          <div class="card-mini reveal">
+            <h4>Centro de Estética</h4>
+            <div id="qr-estetica" class="qr-small"></div>
+            <p>Agenda turnos dinámicos según calendario real.</p>
+          </div>
+        </div>
+      </section>
+    </main>
 
-  <div class="frase-central reveal">
-    <p>Todos hablan de lo revolucionaria que es la inteligencia artificial.<br><strong>¿Te imaginás que trabaje para tu negocio?</strong></p>
-  </div>
+    <div id="auth-modal" class="modal-overlay">
+      <div class="modal-card">
+        <button id="btn-close-auth" class="close-x">&times;</button>
+        
+        <div id="panel-login" class="auth-panel active">
+          <h3>Ingresar a la Plataforma</h3>
+          <div class="form-group">
+            <label for="login-email">Email corporativo</label>
+            <input type="email" id="login-email" placeholder="vos@comercio.com" />
+          </div>
+          <div class="form-group">
+            <label for="login-pass">Contraseña</label>
+            <input type="password" id="login-pass" />
+          </div>
+          <button id="btn-do-login" class="btn-primary full-width">Iniciar Sesión</button>
+          <p class="switch-mode">¿Nuevo en ÍndiceIA? <span id="to-register">Crear cuenta corporativa</span></p>
+        </div>
 
-  <section style="padding-top:0">
-    <div class="escena reveal">
-      <p class="escena-text">
-        Es domingo a la noche. El local está cerrado.<br><br>
-        Una persona pasa, ve algo en la vidriera que le interesa. Anota mentalmente "llamar mañana" — y mañana se olvida.<br><br>
-        Con ÍndiceIA hay un QR en la vidriera. Lo escanea. Habla con la IA del comercio. Resuelve sus dudas.<br><br>
-        <strong>El lunes a primera hora, vos recibís en WhatsApp una consulta armada, con todo lo que necesitás para cerrar.</strong>
-      </p>
-    </div>
-  </section>
-
-  <section id="como-funciona">
-    <p class="section-label reveal">Cómo funciona</p>
-    <h2 class="section-title reveal">No es un bot.<br>Es algo que todavía no tiene nombre.</h2>
-    <p class="section-body reveal">Un bot tiene respuestas prearmadas. Si la pregunta no encaja, falla.<br><br>ÍndiceIA crea una identidad estructurada de tu comercio. Una IA real — de las que ya usás todos los días — la lee antes de responder. Entiende tu negocio. No improvisa porque tiene tu información. No inventa porque tiene límites claros.</p>
-    <div class="pasos reveal">
-      <div class="paso"><div class="paso-num">01</div><div class="paso-content"><h3>Cargás tu información</h3><p>Nombre, productos, precios, horarios, formas de pago, servicios. Vos decidís qué sabe la IA.</p></div></div>
-      <div class="paso"><div class="paso-num">02</div><div class="paso-content"><h3>Recibís tu link y tu QR</h3><p>Un link para redes. Un QR en SVG para imprimir y pegar en vidriera o mostrador. Tu comercio, siempre disponible.</p></div></div>
-      <div class="paso"><div class="paso-num">03</div><div class="paso-content"><h3>La IA atiende con tu información</h3><p>El cliente abre el link o escanea el QR. La IA responde como si fuera parte de tu equipo. Solo con lo que vos definiste.</p></div></div>
-      <div class="paso"><div class="paso-num">04</div><div class="paso-content"><h3>Los interesados llegan a tu WhatsApp</h3><p>Al cierre de la consulta la IA arma el resumen. El cliente lo manda. Vos lo recibís listo. Vos cerrás.</p></div></div>
-    </div>
-  </section>
-
-  <section>
-    <p class="section-label reveal">Experimentá</p>
-    <h2 class="section-title reveal">Estas no son simulaciones.<br>Son comercios reales funcionando.</h2>
-    <p class="section-body reveal">Abrí el link o escaneá el QR. La IA carga la identidad del comercio y te atiende. Vivís el flujo completo incluyendo el cierre por WhatsApp.<br><br>Cuando termines, vas a entender mejor que con cualquier explicación.</p>
-    <div class="demos-grid reveal">
-      <div class="demo-card">
-        <div><p class="demo-tag">Gastronomía</p><h3 class="demo-name">Pizzería La Esquina</h3></div>
-        <p class="demo-desc">Menú completo con precios. La IA toma tu pedido, arma el resumen y lo deja listo para enviar por WhatsApp.</p>
-        <div class="demo-qr" id="qr-pizza"></div>
-        <div><span class="demo-status">Operacional</span><a href="https://indiceia.vercel.app/entidad/wv3uTMVE5gyriqWqledV" target="_blank" rel="noopener" class="demo-link active">Abrir entidad</a></div>
-      </div>
-      <div class="demo-card">
-        <div><p class="demo-tag">Retail</p><h3 class="demo-name">Tienda Urbana</h3></div>
-        <p class="demo-desc">Catálogo de productos. La IA responde sobre stock, talles y precios como un vendedor que conoce cada artículo.</p>
-        <div class="demo-qr" id="qr-tienda"></div>
-        <div><span class="demo-status placeholder">Próximamente</span><span class="demo-link" style="cursor:default;color:var(--text-dim)">En construcción</span></div>
-      </div>
-      <div class="demo-card">
-        <div><p class="demo-tag">Servicios</p><h3 class="demo-name">Estética Aurora</h3></div>
-        <p class="demo-desc">Tratamientos, precios y turnos. La IA orienta al cliente y lo prepara para una consulta personal.</p>
-        <div class="demo-qr" id="qr-estetica"></div>
-        <div><span class="demo-status placeholder">Próximamente</span><span class="demo-link" style="cursor:default;color:var(--text-dim)">En construcción</span></div>
+        <div id="panel-register" class="auth-panel">
+          <h3>Registrar tu Comercio</h3>
+          <div class="form-group">
+            <label for="reg-name">Nombre del Comercio</label>
+            <input type="text" id="reg-name" placeholder="Pizzería, Tienda, etc." />
+          </div>
+          <div class="form-group">
+            <label for="reg-email">Email de contacto</label>
+            <input type="email" id="reg-email" />
+          </div>
+          <div class="form-group">
+            <label for="reg-pass">Contraseña de seguridad</label>
+            <input type="password" id="reg-pass" />
+          </div>
+          <button id="btn-do-register" class="btn-primary full-width">Dar de alta Agente</button>
+          <p class="switch-mode">¿Ya tenés cuenta? <span id="to-login">Volver al login</span></p>
+        </div>
       </div>
     </div>
-  </section>
 
-  <section>
-    <p class="section-label reveal">Estado actual</p>
-    <div class="beta-box reveal">
-      <div>
-        <h2 class="beta-title">Sin humo.<br>Sin promesas infladas.</h2>
-        <p class="beta-body">ÍndiceIA está en beta. Puede fallar. Puede cambiar. Cosas que hoy funcionan mañana pueden no hacerlo.<br><br>No somos una startup que promete revolucionar el comercio en 30 días. Estamos construyendo algo nuevo, despacio, con honestidad.<br><br>Si eso te parece bien, estás en el lugar correcto.</p>
-      </div>
-      <div class="beta-status-list">
-        <div class="beta-status-item"><span class="label">Identidades comerciales</span><span class="status-badge ok">Estable</span></div>
-        <div class="beta-status-item"><span class="label">Generación de QR</span><span class="status-badge ok">Estable</span></div>
-        <div class="beta-status-item"><span class="label">Plantillas visuales</span><span class="status-badge evolving">En evolución</span></div>
-        <div class="beta-status-item"><span class="label">Integración WhatsApp</span><span class="status-badge evolving">En evolución</span></div>
-        <div class="beta-status-item"><span class="label">Protocolos live</span><span class="status-badge exp">Experimental</span></div>
-      </div>
-    </div>
-  </section>
+    <main id="screen-dashboard" class="screen">
+      <header class="dash-header">
+        <h2>Panel de Configuración de Agentes</h2>
+        <button id="btn-signout" class="btn-danger">Cerrar Sesión</button>
+      </header>
+      <section class="dash-content">
+        <p>Bienvenido. Acá vas a entrenar el comportamiento de tu agente de IA frente a las intenciones de tus usuarios.</p>
+      </section>
+    </main>
 
-  <div class="cta-final reveal">
-    <h2 class="section-title">Tu comercio ya recibe consultas.<br><em style="color:var(--accent)">ÍndiceIA hace que todas tengan respuesta.</em></h2>
-    <p class="section-body" style="margin:0 auto 48px">Creá tu entidad. Cargá tu información. Recibí tu QR. La IA empieza a trabajar para vos.</p>
-    <button class="btn-primary" onclick="openAuth('register')">Crear mi entidad</button>
+    <footer class="main-footer">
+      <p>&copy; 2026 ÍndiceIA. Infraestructura de agentes autónomos de intención.</p>
+    </footer>
+
   </div>
 
-  <footer>
-    <span class="footer-logo">ÍndiceIA — Beta pública 2026</span>
-    <span class="footer-copy">Casilda, Santa Fe, Argentina</span>
-  </footer>
-</div>
-
-<!-- VERIFY SCREEN -->
-<div id="verify-screen">
-  <div class="verify-icon">✉️</div>
-  <h2 class="verify-title">Revisá tu correo</h2>
-  <p class="verify-email-display" id="verify-email-display"></p>
-  <p class="verify-body">Te enviamos un link de verificación. Hacé clic en él para activar tu cuenta y acceder a ÍndiceIA.</p>
-  <p class="verify-hint">¿No lo encontrás? Revisá la carpeta de spam.</p>
-  <p class="verify-feedback" id="verify-feedback"></p>
-  <div class="verify-actions">
-    <button class="btn-primary" onclick="uiResendVerification()">Reenviar email</button>
-    <button class="btn-secondary" onclick="uiSignOutToHome()">Volver al inicio</button>
-  </div>
-</div>
-
-<!-- MODAL AUTH -->
-<div class="modal-overlay" id="auth-modal" onclick="handleOverlayClick(event)">
-  <div class="modal" role="dialog" aria-modal="true">
-    <button class="modal-close" onclick="closeAuth()">✕</button>
-    <h2 class="modal-title">ÍndiceIA</h2>
-    <p class="modal-sub">Acceso en beta · El registro requiere verificación por email</p>
-
-    <div class="auth-tabs">
-      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Ingresar</button>
-      <button class="auth-tab" id="tab-register" onclick="switchTab('register')">Crear cuenta</button>
-    </div>
-
-    <!-- LOGIN -->
-    <div class="auth-panel active" id="panel-login">
-      <div class="auth-msg error" id="login-error"></div>
-      <div class="auth-msg success" id="login-success"></div>
-      <div class="form-group">
-        <label class="form-label" for="login-email">Email</label>
-        <input type="email" id="login-email" class="form-input" placeholder="tu@email.com" autocomplete="email" />
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="login-pass">Contraseña</label>
-        <input type="password" id="login-pass" class="form-input" placeholder="••••••••" autocomplete="current-password" />
-      </div>
-      <button class="btn-full" id="btn-login" onclick="doLogin()">Ingresar</button>
-      <button class="auth-forgot" onclick="doResetPassword()">Olvidé mi contraseña</button>
-      <div class="auth-separator"><span>o</span></div>
-      <button class="btn-google" onclick="doGoogleLogin()">
-        <img src="/public/img/google-icon.svg" width="16" height="16" alt="Google" onerror="this.style.display='none'" />
-        Continuar con Google
-      </button>
-    </div>
-
-    <!-- REGISTER -->
-    <div class="auth-panel" id="panel-register">
-      <div class="auth-msg error" id="register-error"></div>
-      <div class="form-group">
-        <label class="form-label" for="reg-email">Email</label>
-        <input type="email" id="reg-email" class="form-input" placeholder="tu@email.com" autocomplete="email" />
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="reg-pass">Contraseña</label>
-        <input type="password" id="reg-pass" class="form-input" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="reg-pass2">Repetir contraseña</label>
-        <input type="password" id="reg-pass2" class="form-input" placeholder="••••••••" autocomplete="new-password" />
-      </div>
-      <button class="btn-full" id="btn-register" onclick="doRegister()">Crear cuenta</button>
-      <div class="auth-separator"><span>o</span></div>
-      <button class="btn-google" onclick="doGoogleLogin()">
-        <img src="/public/img/google-icon.svg" width="16" height="16" alt="Google" onerror="this.style.display='none'" />
-        Continuar con Google
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- UI JS: solo DOM, sin Firebase directo -->
-<script>
-  const _ref = new URLSearchParams(window.location.search).get('ref');
-  if (_ref) sessionStorage.setItem('indiceia_ref', _ref);
-  // ─── Screens ───
-  function showScreen(name) {
-    document.getElementById('landing').classList.toggle('active', name === 'landing');
-    document.getElementById('verify-screen').classList.toggle('active', name === 'verify');
-  }
-
-  // ─── Modal ───
-  function openAuth(mode) {
-    document.getElementById('auth-modal').classList.add('open');
-    switchTab(mode);
-    document.body.style.overflow = 'hidden';
-  }
-  function closeAuth() {
-    document.getElementById('auth-modal').classList.remove('open');
-    document.body.style.overflow = '';
-    clearMsgs();
-  }
-  function handleOverlayClick(e) {
-    if (e.target === document.getElementById('auth-modal')) closeAuth();
-  }
-  function switchTab(tab) {
-    ['login','register'].forEach(t => {
-      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
-      document.getElementById('panel-' + t).classList.toggle('active', t === tab);
-    });
-  }
-
-  // ─── Mensajes ───
-  function clearMsgs() {
-    document.querySelectorAll('.auth-msg').forEach(el => { el.textContent = ''; el.classList.remove('visible'); });
-  }
-  function showMsg(id, text, type) {
-    const el = document.getElementById(id);
-    el.textContent = text;
-    el.className = 'auth-msg ' + type + ' visible';
-  }
-  function setLoading(btnId, loading, label) {
-    const b = document.getElementById(btnId);
-    b.disabled = loading;
-    b.textContent = loading ? 'Procesando...' : label;
-  }
-
-  // ─── Mensajes de error Firebase ───
-  function fbMsg(code) {
-    return ({
-      'auth/user-not-found':        'No existe una cuenta con ese email.',
-      'auth/wrong-password':        'Contraseña incorrecta.',
-      'auth/invalid-credential':    'Email o contraseña incorrectos.',
-      'auth/email-already-in-use':  'Ya existe una cuenta con ese email.',
-      'auth/weak-password':         'La contraseña debe tener al menos 6 caracteres.',
-      'auth/invalid-email':         'El formato del email no es válido.',
-      'auth/too-many-requests':     'Demasiados intentos. Esperá unos minutos.',
-      'auth/popup-closed-by-user':  'Cancelaste el inicio de sesión con Google.',
-      'auth/network-request-failed':'Error de red. Verificá tu conexión.',
-    })[code] || 'Error inesperado. Intentá de nuevo.';
-  }
-
-  // ─── Acciones auth (implementadas en main.js vía window.__auth) ───
-  async function doLogin() {
-    clearMsgs();
-    const email = document.getElementById('login-email').value.trim();
-    const pass  = document.getElementById('login-pass').value;
-    if (!email || !pass) { showMsg('login-error', 'Completá los dos campos.', 'error'); return; }
-    setLoading('btn-login', true, 'Ingresar');
-    try {
-      await window.__auth.login(email, pass);
-      closeAuth();
-    } catch(e) { showMsg('login-error', fbMsg(e.code), 'error'); }
-    setLoading('btn-login', false, 'Ingresar');
-  }
-
-  async function doRegister() {
-    clearMsgs();
-    const email = document.getElementById('reg-email').value.trim();
-    const pass  = document.getElementById('reg-pass').value;
-    const pass2 = document.getElementById('reg-pass2').value;
-    if (!email || !pass || !pass2) { showMsg('register-error', 'Completá todos los campos.', 'error'); return; }
-    if (pass !== pass2)            { showMsg('register-error', 'Las contraseñas no coinciden.', 'error'); return; }
-    if (pass.length < 8)           { showMsg('register-error', 'La contraseña debe tener al menos 8 caracteres.', 'error'); return; }
-    setLoading('btn-register', true, 'Crear cuenta');
-    try {
-      const email_used = await window.__auth.register(email, pass);
-      closeAuth();
-      document.getElementById('verify-email-display').textContent = email_used || email;
-      showScreen('verify');
-    } catch(e) { showMsg('register-error', fbMsg(e.code), 'error'); }
-    setLoading('btn-register', false, 'Crear cuenta');
-  }
-
-  async function doGoogleLogin() {
-    clearMsgs();
-    try {
-      await window.__auth.loginWithGoogle();
-      closeAuth();
-    } catch(e) {
-      const panel = document.getElementById('panel-login').classList.contains('active') ? 'login-error' : 'register-error';
-      showMsg(panel, fbMsg(e.code), 'error');
-    }
-  }
-
-  async function doResetPassword() {
-    clearMsgs();
-    const email = document.getElementById('login-email').value.trim();
-    if (!email) { showMsg('login-error', 'Ingresá tu email arriba para recuperar la contraseña.', 'error'); return; }
-    try {
-      await window.__auth.resetPassword(email);
-      showMsg('login-success', '✓ Revisá tu email para restablecer la contraseña.', 'success');
-    } catch(e) { showMsg('login-error', fbMsg(e.code), 'error'); }
-  }
-
-  async function uiResendVerification() {
-    const fb = document.getElementById('verify-feedback');
-    try {
-      await window.__auth.resendVerification();
-      fb.textContent = '✓ Email reenviado. Revisá tu bandeja.';
-      fb.style.color = 'var(--green)';
-    } catch(e) {
-      fb.textContent = 'No pudimos reenviar el email. Intentá más tarde.';
-      fb.style.color = 'var(--red-text)';
-    }
-  }
-
-  async function uiSignOutToHome() {
-    await window.__auth.signOut();
-    showScreen('landing');
-  }
-
-  // ─── Keyboard ───
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeAuth();
-    if (e.key === 'Enter' && document.getElementById('auth-modal').classList.contains('open')) {
-      document.getElementById('panel-login').classList.contains('active') ? doLogin() : doRegister();
-    }
-  });
-
-  // ─── QR ───
-  window.addEventListener('load', () => {
-    new QRCode(document.getElementById('qr-pizza'), {
-      text: 'https://indiceia.vercel.app/entidad/wv3uTMVE5gyriqWqledV',
-      width: 100, height: 100, colorDark: '#0a0a0a', colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
-    ['qr-tienda','qr-estetica'].forEach(id => {
-      new QRCode(document.getElementById(id), {
-        text: 'https://indiceia.vercel.app',
-        width: 100, height: 100, colorDark: '#3a3835', colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    });
-  });
-
-  // ─── Scroll reveal ───
-  const revealObserver = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
-  }, { threshold: 0.08 });
-  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-</script>
-
-<!-- Vite entry (Firebase, auth logic, flow controller) -->
-<script type="module" src="/src/main.js"></script>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
