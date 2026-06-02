@@ -1,0 +1,175 @@
+/* ============================================================
+   mi-soporte.css
+   Coherente con mi-comercio.css y mi-perfil.css
+   ============================================================ */
+
+#skeleton-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--s-spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-spacing-lg);
+}
+
+.page-title {
+  margin: 0 0 var(--s-spacing) 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+}
+
+/* ==================== SECCIONES ==================== */
+.form-section {
+  background: white;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  padding: var(--s-spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-spacing);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.form-section > h3 {
+  margin: 0 0 var(--s-spacing-sm) 0;
+  padding-bottom: var(--s-spacing-sm);
+  border-bottom: 2px solid var(--s-border);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--s-dark);
+}
+
+.form-help {
+  margin: 0 0 var(--s-spacing-sm) 0;
+  font-size: 0.875rem;
+  color: var(--s-gray, #6c757d);
+  font-style: italic;
+}
+
+/* ==================== FORM HELP WARNING ==================== */
+.form-help--warning {
+  color: var(--s-warning-text, #856404);
+  background: var(--s-warning-bg, #fff3cd);
+  border: 1px solid var(--s-warning-border, #ffc107);
+  border-radius: var(--s-radius, 4px);
+  padding: 0.5rem 0.75rem;
+  font-style: normal;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+/* ==================== SLUG FIELD WRAPPER ==================== */
+.slug-field-wrapper {
+  margin: 0.25rem 0 1.25rem 0;
+}
+
+/* Input editable con prefijo */
+.slug-container {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.slug-prefix {
+  background: var(--s-light, #f8f9fa);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--s-gray, #6c757d);
+  border-right: 1px solid var(--s-border, #d2d6de);
+  white-space: nowrap;
+  font-family: monospace;
+}
+
+.slug-input {
+  flex: 1;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  outline: none;
+  font-family: monospace;
+}
+
+.slug-input:focus {
+  background: rgba(60, 141, 188, 0.05);
+}
+
+/* Status de validación */
+.slug-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  min-height: 1.75rem;
+}
+
+.slug-icon {
+  font-size: 1rem;
+}
+
+.slug-text {
+  color: var(--s-text, #495057);
+}
+
+/* Readonly — ya guardado, inmutable */
+.slug-readonly {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--s-light, #f8f9fa);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+.slug-value {
+  color: var(--s-dark, #343a40);
+  font-weight: 600;
+}
+
+.slug-lock {
+  margin-left: auto;
+  color: var(--s-gray, #6c757d);
+  font-size: 0.75rem;
+}
+
+/* ==================== BOTÓN CONTAINER ==================== */
+.btn-container {
+  margin-top: var(--s-spacing-xl);
+  padding-top: var(--s-spacing-lg);
+  border-top: 2px solid var(--s-border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  #skeleton-page {
+    padding: var(--s-spacing);
+  }
+
+  .form-section {
+    padding: var(--s-spacing);
+  }
+
+  .slug-prefix {
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  .btn-container {
+    justify-content: stretch;
+  }
+  
+  .btn-container button {
+    width: 100%;
+  }
+}
