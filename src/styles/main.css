@@ -1,0 +1,181 @@
+/* ── Variables de Sistema y Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-dark: #0a0a0a;
+  --bg-card: #121212;
+  --text-main: #f5f5f7;
+  --text-muted: #8e8e93;
+  --accent-color: #0071e3;
+  --accent-gradient: linear-gradient(135deg, #0071e3, #c724b1);
+  --border-color: #2c2c2e;
+  --radius-lg: 16px;
+  --radius-sm: 8px;
+}
+
+body {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* ── Estructura de Pantallas y Layout ── */
+.screen {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  padding: 40px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.screen.active {
+  display: block;
+  opacity: 1;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+  padding: 60px 0;
+}
+
+@media (min-width: 768px) {
+  .layout-grid {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+}
+
+/* ── Encabezados y UI ── */
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem;
+  letter-spacing: -0.5px;
+}
+
+.logo span {
+  color: var(--accent-color);
+}
+
+/* Hero */
+.hero-text h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 3rem;
+  line-height: 1.1;
+  margin-bottom: 20px;
+}
+
+.hero-text h1 span {
+  display: block;
+  font-size: 2.2rem;
+  color: var(--text-muted);
+}
+
+.hero-text p {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+  max-width: 540px;
+}
+
+/* Componentes de Botones */
+.btn-primary {
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+  padding: 14px 28px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.btn-primary:hover, .btn-secondary:hover {
+  transform: translateY(-2px);
+}
+
+.full-width { width: 100%; }
+
+/* Anzuelos Semánticos (Cards de Ejemplo con QR) */
+.card-demo {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 30px;
+  text-align: center;
+}
+
+.qr-container {
+  background: white;
+  padding: 10px;
+  display: inline-block;
+  margin: 20px 0;
+  border-radius: var(--radius-sm);
+}
+
+/* Modales e Interfaz de Carga */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 999;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+}
+
+.auth-panel { display: none; }
+.auth-panel.active { display: block; }
+
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+.form-group input { width: 100%; background: #1c1c1e; border: 1px solid var(--border-color); padding: 12px; color: white; border-radius: var(--radius-sm); }
+
+/* Animación Scroll Reveal */
+.reveal { opacity: 0; transform: translateY(30px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.delay-1 { transition-delay: 0.2s; }
