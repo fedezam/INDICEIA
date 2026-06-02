@@ -57,16 +57,16 @@ const ENTITY_CONFIG = {
       desc:  'Vendé productos relacionados a tu profesión. Ej: libros, kits, materiales.',
     }],
   },
-  // ── soporte: no disponible en MVP ───────────────────────
-  // soporte: {
-  //   entityType: 'soporte',
-  //   title:      'Asistente de soporte',
-  //   icon:       'fa-headset',
-  //   variant:    'secondary',
-  //   desc:       'Un asistente entrenado con tu documentación técnica para responder consultas de usuarios.',
-  //   ejemplos:   'Soporte técnico, guías de uso, FAQs, manuales de producto.',
-  //   extras:     [],
-  // },
+
+   soporte: {
+     entityType: 'soporte',
+     title:      'Asistente de soporte',
+     icon:       'fa-headset',
+     variant:    'secondary',
+     desc:       'Un asistente entrenado con tu documentación técnica para responder consultas de usuarios.',
+     ejemplos:   'Soporte técnico, guías de uso, FAQs, manuales de producto.',
+     extras:     [],
+   },
 };
 
 /** entityType de Firestore → key de ENTITY_CONFIG */
