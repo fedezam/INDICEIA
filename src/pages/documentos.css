@@ -1,0 +1,62 @@
+/* ============================================================
+   documentos.css
+   Coherente con mi-comercio.css, mi-perfil.css y mi-soporte.css
+   ============================================================ */
+
+#skeleton-page {
+  max-width: 800px; /* Un poco más ancho que los perfiles para mejor lectura/escritura */
+  margin: 0 auto;
+  padding: var(--s-spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-spacing);
+}
+
+.page-title {
+  margin: 0 0 var(--s-spacing-sm) 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+}
+
+.form-help {
+  margin: 0 0 var(--s-spacing) 0;
+  font-size: 0.9rem;
+  color: var(--s-gray, #6c757d);
+  line-height: 1.5;
+}
+
+/* Ajuste específico para el textarea grande */
+.s-form-field textarea {
+  font-family: monospace; /* Opcional: ayuda a visualizar Markdown */
+  line-height: 1.6;
+  resize: vertical; /* Permite al usuario ajustar alto si lo desea */
+}
+
+/* ==================== BOTÓN CONTAINER ==================== */
+.btn-container {
+  margin-top: var(--s-spacing-xl);
+  padding-top: var(--s-spacing-lg);
+  border-top: 2px solid var(--s-border, #d2d6de);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  #skeleton-page {
+    padding: var(--s-spacing);
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .btn-container {
+    justify-content: stretch;
+  }
+  
+  .btn-container button {
+    width: 100%;
+  }
+}
