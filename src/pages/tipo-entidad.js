@@ -29,15 +29,16 @@ runLifecycle({
 // LOAD
 // ============================================================
 async function load(ctx) {
-  const entityType      = ctx.userData?.entityType      || null;
-  const capacidades     = ctx.userData?.capacidades     || [];
+  const entityType        = ctx.userData?.entityType        || null;
+  const capacidades       = ctx.userData?.capacidades       || [];
   const modalidad_trabajo = ctx.userData?.modalidad_trabajo || null;
-  const isEditMode      = window.isEditMode === true;
+  const isEditMode        = window.isEditMode === true;
 
   let selectedOffer = null;
   if (entityType === 'profesional') selectedOffer = 'profesional';
   else if (entityType === 'prestador') selectedOffer = 'servicios';
   else if (entityType === 'comercio')  selectedOffer = 'productos';
+  else if (entityType === 'soporte')   selectedOffer = 'soporte';   // ← soporte (no disponible en MVP)
 
   const tieneProductos = entityType === 'comercio'   || capacidades.includes('productos');
   const tieneServicios = entityType === 'prestador'  || capacidades.includes('servicios');
@@ -63,7 +64,7 @@ function render(ctx, state) {
   page.innerHTML = "";
 
   let selectedOffer       = state.selectedOffer;
-  let modalidad_trabajo   = state.modalidad_trabajo;  // 'local' | null
+  let modalidad_trabajo   = state.modalidad_trabajo;
   const selectedCapacidades = new Set(state.capacidades);
 
   // ── Header ────────────────────────────────────────────────
@@ -116,6 +117,17 @@ function render(ctx, state) {
       ejemplos: 'Médico, odontólogo, psicólogo, kinesiólogo, abogado, contador, arquitecto, veterinario.',
       disabled: state.upgradeMode,
     },
+    // ── SOPORTE — no disponible en MVP ────────────────────────
+    // {
+    //   key:      'soporte',
+    //   title:    'Asistente de soporte',
+    //   icon:     'fa-headset',
+    //   variant:  'secondary',
+    //   desc:     'Un asistente entrenado con tu documentación técnica para responder consultas de usuarios.',
+    //   ejemplos: 'Soporte técnico, guías de uso, FAQs, manuales de producto.',
+    //   disabled: state.upgradeMode,
+    // },
+    // ─────────────────────────────────────────────────────────
   ];
 
   const cardsQ1Map = {};
@@ -165,7 +177,6 @@ function render(ctx, state) {
         if (key !== active) card.deselect?.();
       });
 
-      // Si cambia de servicios a otra cosa, resetear modalidad
       if (active !== 'servicios') modalidad_trabajo = null;
 
       selectedOffer = active;
@@ -189,7 +200,6 @@ function render(ctx, state) {
   capacidadesContainer.className = "te-capacidades";
   page.appendChild(capacidadesContainer);
 
-  // Render inicial
   actualizarCapacidades(
     selectedOffer,
     capacidadesContainer,
@@ -240,7 +250,6 @@ function render(ctx, state) {
 
     validate: () => {
       if (!selectedOffer) return false;
-      // prestador requiere modalidad_trabajo definida
       if (selectedOffer === 'servicios' && !modalidad_trabajo) return false;
       return true;
     },
@@ -250,26 +259,24 @@ function render(ctx, state) {
     dirtyController: state.isEditMode ? dirtyController : undefined,
 
     onSave: async ({ uid, comercioId }) => {
-      const entityType = 
+      const entityType =
         selectedOffer === 'profesional' ? 'profesional' :
         selectedOffer === 'servicios'   ? 'prestador'   :
-                                         'comercio';
+        // selectedOffer === 'soporte'  ? 'soporte'    :   // ← soporte (no disponible en MVP)
+                                          'comercio';
 
       const capacidades = [...selectedCapacidades];
 
-      // Armar updates — omitir modalidad_trabajo si no aplica
       const userUpdates = {
         entityType,
         capacidades,
         'onboardingSteps.tipo-entidad': true,
       };
 
-      // modalidad_trabajo: solo se guarda si es 'local'
-      // si va a domicilio, no existe — el LLM infiere por ausencia
       if (entityType === 'prestador' && modalidad_trabajo === 'local') {
         userUpdates.modalidad_trabajo = 'local';
       } else if (entityType === 'prestador') {
-        userUpdates.modalidad_trabajo = null; // limpiar si cambió
+        userUpdates.modalidad_trabajo = null;
       }
 
       await updateDoc(doc(db, 'usuarios', uid), userUpdates);
@@ -345,12 +352,6 @@ function actualizarCapacidades(selectedOffer, container, selectedCapacidades, on
         <p class="te-card-ejemplos"><strong>Ejemplos:</strong> ${op.ejemplos}</p>
       `;
 
-      const isSelected =
-        op.value === 'local'
-          ? modalidadActual === 'local'
-          : modalidadActual === null || modalidadActual === 'domicilio';
-
-      // Solo pre-seleccionar si había un valor guardado
       const preSelected = modalidadActual !== null
         ? (op.value === 'local' ? modalidadActual === 'local' : modalidadActual !== 'local')
         : false;
@@ -393,6 +394,7 @@ function actualizarCapacidades(selectedOffer, container, selectedCapacidades, on
     productos:   [{ key: 'servicios', label: 'También ofrezco servicios', icon: 'fa-hands-helping', desc: 'Agregá servicios a tu comercio. Ej: instalación, reparación, asesoramiento.' }],
     servicios:   [{ key: 'productos', label: 'También vendo productos',   icon: 'fa-box',           desc: 'Vendé productos además de tus servicios. Ej: insumos, materiales, kits.' }],
     profesional: [{ key: 'productos', label: 'También vendo productos',   icon: 'fa-box',           desc: 'Vendé productos relacionados a tu profesión. Ej: libros, kits, materiales.' }],
+    // soporte: [],   // ← sin capacidades extras por ahora (no disponible en MVP)
   };
 
   const extras = opcionesExtras[selectedOffer];
