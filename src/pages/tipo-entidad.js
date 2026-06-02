@@ -1,7 +1,5 @@
-// ============================================================
 // src/pages/tipo-entidad.js
-// ============================================================
-import { doc, updateDoc }          from "firebase/firestore";
+import { doc, writeBatch }         from "firebase/firestore";
 import { db }                      from "/src/firebase.js";
 import { runLifecycle }            from "/src/skeleton/lifecycle.js";
 import { createFirebaseAdapter }   from "/src/skeleton/adapters/firebaseAdapter.js";
@@ -12,6 +10,76 @@ import { createOnboardingButton }  from "/src/skeleton/components/onboarding-but
 import { showToast }               from "/src/skeleton/components/toast/index.js";
 import "./tipo-entidad.css";
 
+// ============================================================
+// CONFIG — fuente única de verdad para tipos, mapeos y extras
+// ============================================================
+const ENTITY_CONFIG = {
+  productos: {
+    entityType: 'comercio',
+    title:      'Vendo productos',
+    icon:       'fa-box',
+    variant:    'primary',
+    desc:       'Tenés un negocio, local o tienda donde vendés artículos físicos o digitales.',
+    ejemplos:   'Kiosco, ferretería, ropa, panadería, verdulería, electrónica.',
+    extras: [{
+      key:   'servicios',
+      label: 'También ofrezco servicios',
+      icon:  'fa-hands-helping',
+      desc:  'Agregá servicios a tu comercio. Ej: instalación, reparación, asesoramiento.',
+    }],
+  },
+  servicios: {
+    entityType:      'prestador',
+    needsModalidad:  true,
+    title:           'Ofrezco servicios',
+    icon:            'fa-hands-helping',
+    variant:         'info',
+    desc:            'Tu trabajo es lo que hacés, no lo que vendés. Tus clientes te contratan por tu tiempo, habilidad o conocimiento.',
+    ejemplos:        'Plomero, manicura, peluquería, profe particular, electricista, estética.',
+    extras: [{
+      key:   'productos',
+      label: 'También vendo productos',
+      icon:  'fa-box',
+      desc:  'Vendé productos además de tus servicios. Ej: insumos, materiales, kits.',
+    }],
+  },
+  profesional: {
+    entityType: 'profesional',
+    title:      'Soy profesional matriculado',
+    icon:       'fa-user-md',
+    variant:    'warning',
+    desc:       'Ejercés una profesión con título universitario y matrícula habilitante.',
+    ejemplos:   'Médico, odontólogo, psicólogo, kinesiólogo, abogado, contador, arquitecto, veterinario.',
+    extras: [{
+      key:   'productos',
+      label: 'También vendo productos',
+      icon:  'fa-box',
+      desc:  'Vendé productos relacionados a tu profesión. Ej: libros, kits, materiales.',
+    }],
+  },
+  // ── soporte: no disponible en MVP ───────────────────────
+  // soporte: {
+  //   entityType: 'soporte',
+  //   title:      'Asistente de soporte',
+  //   icon:       'fa-headset',
+  //   variant:    'secondary',
+  //   desc:       'Un asistente entrenado con tu documentación técnica para responder consultas de usuarios.',
+  //   ejemplos:   'Soporte técnico, guías de uso, FAQs, manuales de producto.',
+  //   extras:     [],
+  // },
+};
+
+/** entityType de Firestore → key de ENTITY_CONFIG */
+function offerKeyFromEntityType(entityType) {
+  for (const [key, cfg] of Object.entries(ENTITY_CONFIG)) {
+    if (cfg.entityType === entityType) return key;
+  }
+  return null;
+}
+
+// ============================================================
+// LIFECYCLE
+// ============================================================
 const adapter = (options) => createFirebaseAdapter(options);
 
 runLifecycle({
@@ -34,15 +102,8 @@ async function load(ctx) {
   const modalidad_trabajo = ctx.userData?.modalidad_trabajo || null;
   const isEditMode        = window.isEditMode === true;
 
-  let selectedOffer = null;
-  if (entityType === 'profesional') selectedOffer = 'profesional';
-  else if (entityType === 'prestador') selectedOffer = 'servicios';
-  else if (entityType === 'comercio')  selectedOffer = 'productos';
-  else if (entityType === 'soporte')   selectedOffer = 'soporte';   // ← soporte (no disponible en MVP)
-
-  const tieneProductos = entityType === 'comercio'   || capacidades.includes('productos');
-  const tieneServicios = entityType === 'prestador'  || capacidades.includes('servicios');
-  const upgradeMode    = isEditMode && !!entityType;
+  const selectedOffer = offerKeyFromEntityType(entityType);
+  const upgradeMode   = isEditMode && !!entityType;
 
   return {
     entityType,
@@ -51,8 +112,6 @@ async function load(ctx) {
     selectedOffer,
     isEditMode,
     upgradeMode,
-    tieneProductos,
-    tieneServicios,
   };
 }
 
@@ -82,84 +141,48 @@ function render(ctx, state) {
   // ============================================================
   const labelQ1 = document.createElement("p");
   labelQ1.className   = "te-label";
-  labelQ1.textContent = state.upgradeMode ? "Tu actividad principal:" : "¿Qué hacés principalmente?";
+  labelQ1.textContent = state.upgradeMode
+    ? "Tu actividad principal:"
+    : "¿Qué hacés principalmente?";
   page.appendChild(labelQ1);
 
   const cardsQ1 = document.createElement("div");
   cardsQ1.className = "te-cards";
   page.appendChild(cardsQ1);
 
-  const opcionesQ1 = [
-    {
-      key:      'productos',
-      title:    'Vendo productos',
-      icon:     'fa-box',
-      variant:  'primary',
-      desc:     'Tenés un negocio, local o tienda donde vendés artículos físicos o digitales.',
-      ejemplos: 'Kiosco, ferretería, ropa, panadería, verdulería, electrónica.',
-      disabled: state.upgradeMode,
-    },
-    {
-      key:      'servicios',
-      title:    'Ofrezco servicios',
-      icon:     'fa-hands-helping',
-      variant:  'info',
-      desc:     'Tu trabajo es lo que hacés, no lo que vendés. Tus clientes te contratan por tu tiempo, habilidad o conocimiento.',
-      ejemplos: 'Plomero, manicura, peluquería, profe particular, electricista, estética.',
-      disabled: state.upgradeMode,
-    },
-    {
-      key:      'profesional',
-      title:    'Soy profesional matriculado',
-      icon:     'fa-user-md',
-      variant:  'warning',
-      desc:     'Ejercés una profesión con título universitario y matrícula habilitante.',
-      ejemplos: 'Médico, odontólogo, psicólogo, kinesiólogo, abogado, contador, arquitecto, veterinario.',
-      disabled: state.upgradeMode,
-    },
-    // ── SOPORTE — no disponible en MVP ────────────────────────
-    // {
-    //   key:      'soporte',
-    //   title:    'Asistente de soporte',
-    //   icon:     'fa-headset',
-    //   variant:  'secondary',
-    //   desc:     'Un asistente entrenado con tu documentación técnica para responder consultas de usuarios.',
-    //   ejemplos: 'Soporte técnico, guías de uso, FAQs, manuales de producto.',
-    //   disabled: state.upgradeMode,
-    // },
-    // ─────────────────────────────────────────────────────────
-  ];
-
   const cardsQ1Map = {};
 
-  opcionesQ1.forEach(op => {
+  Object.entries(ENTITY_CONFIG).forEach(([key, cfg]) => {
     const content = document.createElement('div');
     content.innerHTML = `
-      <p class="te-card-desc">${op.desc}</p>
-      <p class="te-card-ejemplos"><strong>Ejemplos:</strong> ${op.ejemplos}</p>
+      <p class="te-card-desc">${cfg.desc}</p>
+      <p class="te-card-ejemplos"><strong>Ejemplos:</strong> ${cfg.ejemplos}</p>
     `;
 
     const card = createCard({
-      title:      op.title,
-      icon:       op.icon,
-      variant:    op.disabled ? null : op.variant,
-      selectable: !op.disabled,
-      selected:   selectedOffer === op.key,
-      flat:       op.disabled,
+      title:      cfg.title,
+      icon:       cfg.icon,
+      variant:    state.upgradeMode ? null : cfg.variant,
+      selectable: !state.upgradeMode,
+      selected:   selectedOffer === key,
+      flat:       state.upgradeMode,
       content,
     });
 
-    if (op.disabled) {
+    if (state.upgradeMode) {
       card.style.opacity       = '0.45';
       card.style.pointerEvents = 'none';
       card.style.cursor        = 'not-allowed';
     }
 
-    cardsQ1Map[op.key] = card;
+    cardsQ1Map[key] = card;
     cardsQ1.appendChild(card);
   });
 
-  // ── Lógica selección Q1 ───────────────────────────────────
+  // ── Lógica selección Q1 (radio) ──────────────────────────
+  // createCard maneja su propio toggle internamente;
+  // leemos el resultado en el siguiente tick para saber
+  // qué quedó seleccionado y forzar radio en el resto.
   cardsQ1.addEventListener('click', () => {
     setTimeout(() => {
       let active = null;
@@ -167,19 +190,28 @@ function render(ctx, state) {
         if (card.isSelected?.()) active = key;
       });
 
+      // No permitir deseleccionar — siempre hay una opción
       if (!active) {
         if (selectedOffer) cardsQ1Map[selectedOffer]?.select?.();
         showToast('Seleccioná una opción para continuar', 'warning');
         return;
       }
 
+      // Forzar radio
       Object.entries(cardsQ1Map).forEach(([key, card]) => {
         if (key !== active) card.deselect?.();
       });
 
-      if (active !== 'servicios') modalidad_trabajo = null;
-
+      const previousOffer = selectedOffer;
       selectedOffer = active;
+
+      // Al cambiar de tipo, limpiar capacidades redundantes
+      if (previousOffer !== active) {
+        selectedCapacidades.delete(active);
+        if (!ENTITY_CONFIG[active]?.needsModalidad) {
+          modalidad_trabajo = null;
+        }
+      }
 
       actualizarCapacidades(
         selectedOffer,
@@ -232,13 +264,14 @@ function render(ctx, state) {
       snapshot.selectedOffer     = selectedOffer;
       snapshot.modalidad_trabajo = modalidad_trabajo;
       snapshot.capacidades       = JSON.stringify([...selectedCapacidades].sort());
-    }
+    },
   };
 
   // ── Label dinámico ────────────────────────────────────────
   function getLabel() {
     if (!selectedOffer) return 'Seleccioná una opción para continuar';
-    if (selectedOffer === 'servicios' && !modalidad_trabajo) return 'Indicá cómo trabajás para continuar';
+    const cfg = ENTITY_CONFIG[selectedOffer];
+    if (cfg?.needsModalidad && !modalidad_trabajo) return 'Indicá cómo trabajás para continuar';
     if (state.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
     if (state.isEditMode) return 'Guardar y continuar';
     return 'Continuar';
@@ -250,7 +283,8 @@ function render(ctx, state) {
 
     validate: () => {
       if (!selectedOffer) return false;
-      if (selectedOffer === 'servicios' && !modalidad_trabajo) return false;
+      const cfg = ENTITY_CONFIG[selectedOffer];
+      if (cfg?.needsModalidad && !modalidad_trabajo) return false;
       return true;
     },
 
@@ -259,38 +293,39 @@ function render(ctx, state) {
     dirtyController: state.isEditMode ? dirtyController : undefined,
 
     onSave: async ({ uid, comercioId }) => {
-      const entityType =
-        selectedOffer === 'profesional' ? 'profesional' :
-        selectedOffer === 'servicios'   ? 'prestador'   :
-        // selectedOffer === 'soporte'  ? 'soporte'    :   // ← soporte (no disponible en MVP)
-                                          'comercio';
+      const cfg = ENTITY_CONFIG[selectedOffer];
+      if (!cfg) throw new Error(`Tipo de oferta no reconocido: ${selectedOffer}`);
 
+      const entityType  = cfg.entityType;
       const capacidades = [...selectedCapacidades];
 
-      const userUpdates = {
+      const updates = {
         entityType,
         capacidades,
         'onboardingSteps.tipo-entidad': true,
       };
 
-      if (entityType === 'prestador' && modalidad_trabajo === 'local') {
-        userUpdates.modalidad_trabajo = 'local';
-      } else if (entityType === 'prestador') {
-        userUpdates.modalidad_trabajo = null;
+      // Solo prestadores guardan modalidad
+      if (cfg.needsModalidad) {
+        updates.modalidad_trabajo = modalidad_trabajo === 'local' ? 'local' : null;
       }
 
-      await updateDoc(doc(db, 'usuarios', uid), userUpdates);
+      // Escritura atómica: usuario + entidad en el mismo batch
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'usuarios', uid), updates);
 
       if (comercioId) {
-        const entidadUpdates = { entityType, capacidades };
-        if (entityType === 'prestador' && modalidad_trabajo === 'local') {
-          entidadUpdates.modalidad_trabajo = 'local';
-        } else if (entityType === 'prestador') {
-          entidadUpdates.modalidad_trabajo = null;
+        const entidadUpdates = {
+          entityType,
+          capacidades,
+        };
+        if (cfg.needsModalidad) {
+          entidadUpdates.modalidad_trabajo = updates.modalidad_trabajo;
         }
-        await updateDoc(doc(db, 'entidades', comercioId), entidadUpdates);
+        batch.update(doc(db, 'entidades', comercioId), entidadUpdates);
       }
 
+      await batch.commit();
       return { success: true, stepMarked: true };
     },
 
@@ -299,7 +334,7 @@ function render(ctx, state) {
     onError: (err) => {
       console.error('[tipo-entidad] onSave ERROR:', err);
       showToast('Error al guardar la configuración', 'error');
-    }
+    },
   });
 
   page.appendChild(btn);
@@ -310,11 +345,12 @@ function render(ctx, state) {
 // ============================================================
 function actualizarCapacidades(selectedOffer, container, selectedCapacidades, onModalidadChange, modalidadActual) {
   container.innerHTML = '';
-
   if (!selectedOffer) return;
 
-  // ── Pregunta de modalidad — solo para prestadores ─────────
-  if (selectedOffer === 'servicios') {
+  const cfg = ENTITY_CONFIG[selectedOffer];
+
+  // ── Modalidad — solo para prestadores ─────────────────────
+  if (cfg?.needsModalidad) {
     const labelModalidad = document.createElement('p');
     labelModalidad.className   = 'te-label';
     labelModalidad.textContent = '¿Cómo prestás tus servicios?';
@@ -352,16 +388,17 @@ function actualizarCapacidades(selectedOffer, container, selectedCapacidades, on
         <p class="te-card-ejemplos"><strong>Ejemplos:</strong> ${op.ejemplos}</p>
       `;
 
-      const preSelected = modalidadActual !== null
-        ? (op.value === 'local' ? modalidadActual === 'local' : modalidadActual !== 'local')
-        : false;
+      // Pre-selección: matching explícito sin asumir fallback
+      const isPreSelected = op.value === null
+        ? (modalidadActual !== null && modalidadActual !== 'local')
+        : modalidadActual === op.value;
 
       const card = createCard({
         title:      op.title,
         icon:       op.icon,
         variant:    op.variant,
         selectable: true,
-        selected:   preSelected,
+        selected:   isPreSelected,
         content,
       });
 
@@ -375,9 +412,9 @@ function actualizarCapacidades(selectedOffer, container, selectedCapacidades, on
         Object.entries(modalidadCards).forEach(([key, card]) => {
           if (card.isSelected?.()) activeKey = key;
         });
-
         if (!activeKey) return;
 
+        // Forzar radio
         Object.entries(modalidadCards).forEach(([key, card]) => {
           if (key !== activeKey) card.deselect?.();
         });
@@ -390,14 +427,7 @@ function actualizarCapacidades(selectedOffer, container, selectedCapacidades, on
   }
 
   // ── Capacidades extras ────────────────────────────────────
-  const opcionesExtras = {
-    productos:   [{ key: 'servicios', label: 'También ofrezco servicios', icon: 'fa-hands-helping', desc: 'Agregá servicios a tu comercio. Ej: instalación, reparación, asesoramiento.' }],
-    servicios:   [{ key: 'productos', label: 'También vendo productos',   icon: 'fa-box',           desc: 'Vendé productos además de tus servicios. Ej: insumos, materiales, kits.' }],
-    profesional: [{ key: 'productos', label: 'También vendo productos',   icon: 'fa-box',           desc: 'Vendé productos relacionados a tu profesión. Ej: libros, kits, materiales.' }],
-    // soporte: [],   // ← sin capacidades extras por ahora (no disponible en MVP)
-  };
-
-  const extras = opcionesExtras[selectedOffer];
+  const extras = cfg?.extras;
   if (!extras?.length) return;
 
   const label = document.createElement('p');
