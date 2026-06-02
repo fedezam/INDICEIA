@@ -24,6 +24,10 @@ export default defineConfig({
         "mi-comercio": resolve(__dirname, "src/pages/mi-comercio.html"),
         "mi-perfil": resolve(__dirname, "src/pages/mi-perfil.html"),
         "mi-perfil-profesional": resolve(__dirname, "src/pages/mi-perfil-profesional.html"),
+        
+        // Nuevas páginas de configuración/perfil
+        "mi-soporte": resolve(__dirname, "src/pages/mi-soporte.html"),
+        documentos: resolve(__dirname, "src/pages/documentos.html"),
 
         horarios: resolve(__dirname, "src/pages/horarios.html"),
 
