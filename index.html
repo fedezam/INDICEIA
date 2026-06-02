@@ -4,21 +4,22 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
+
   <title>ÍndiceIA — La IA que atiende tu comercio cuando vos no estás</title>
-  <meta name="description" content="ÍndiceIA conecta intenciones en tiempo real con agentes autónomos. Hacé que una IA atienda las consultas de tu comercio, filtre el ruido y cierre clientes listos para comprar." />
-  <meta name="keywords" content="Inteligencia Artificial, directorio de comercios, agentes autonomos, atencion automatizada, Casilda, ecommerce ia" />
+  <meta name="description" content="ÍndiceIA hace que una IA atienda las consultas de tu comercio, filtre el ruido y te deje solo los clientes listos para comprar. No es un bot. Es algo nuevo." />
   <meta name="robots" content="index, follow" />
 
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="ÍndiceIA — La IA que atiende tu comercio" />
-  <meta property="og:description" content="Respondé consultas al instante. Filtrá interesados. Ecosistema descentralizado de agentes comerciales con IA." />
-  <meta property="og:url" content="https://indiceia.app" />
+  <meta property="og:type"        content="website" />
+  <meta property="og:title"       content="ÍndiceIA — La IA que atiende tu comercio" />
+  <meta property="og:description" content="Respondé consultas al instante. Filtrá interesados. Concentrate en cerrar ventas." />
+  <meta property="og:url"         content="https://indiceia.app" />
+
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
   <link rel="stylesheet" href="/src/styles/main.css" />
 
   <script type="application/ld+json">
@@ -35,114 +36,213 @@
     }
   }
   </script>
-
-  </head>
+</head>
 <body>
 
-  <div id="app">
-    
-    <header class="main-header">
-      <div class="logo">Índice<span>IA</span></div>
-      <button id="btn-open-auth" class="btn-secondary">Ingresar</button>
-    </header>
+<!-- LANDING -->
+<div id="landing" class="screen active">
 
-    <main id="screen-landing" class="screen active">
-      <section class="hero layout-grid">
-        <div class="hero-text reveal">
-          <h1>La IA que atiende tu comercio <span>cuando vos no estás.</span></h1>
-          <p>ÍndiceIA procesa la intención real de tus clientes en tiempo real. Filtra las consultas repetitivas, responde con datos actualizados y te entrega leads listos para facturar.</p>
-          <div class="cta-group">
-            <button id="btn-cta-start" class="btn-primary">Digitalizar mi Comercio</button>
-            <a href="#demos" class="btn-link">Ver ejemplos en vivo ↓</a>
-          </div>
-        </div>
-
-        <div class="hero-preview reveal delay-1">
-          <div class="card-demo">
-            <div class="card-header">
-              <h3>Pizzería La Esquina</h3>
-              <span class="badge">📍 Casilda</span>
-            </div>
-            <p>Agente asignado: <strong>PizzaBot</strong></p>
-            <div id="qr-pizza" class="qr-container"></div>
-            <small>Escaneá para probar la velocidad de respuesta frente a intenciones de compra reales.</small>
-          </div>
-        </div>
-      </section>
-
-      <section id="demos" class="seccion-demos">
-        <h2 class="reveal">Ecosistema Activo de Intenciones</h2>
-        <div class="grid-demos">
-          <div class="card-mini reveal">
-            <h4>Tienda de Ropa</h4>
-            <div id="qr-tienda" class="qr-small"></div>
-            <p>Resuelve stock, talles y pasarela de pagos.</p>
-          </div>
-          <div class="card-mini reveal">
-            <h4>Centro de Estética</h4>
-            <div id="qr-estetica" class="qr-small"></div>
-            <p>Agenda turnos dinámicos según calendario real.</p>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <div id="auth-modal" class="modal-overlay">
-      <div class="modal-card">
-        <button id="btn-close-auth" class="close-x">&times;</button>
-        
-        <div id="panel-login" class="auth-panel active">
-          <h3>Ingresar a la Plataforma</h3>
-          <div class="form-group">
-            <label for="login-email">Email corporativo</label>
-            <input type="email" id="login-email" placeholder="vos@comercio.com" />
-          </div>
-          <div class="form-group">
-            <label for="login-pass">Contraseña</label>
-            <input type="password" id="login-pass" />
-          </div>
-          <button id="btn-do-login" class="btn-primary full-width">Iniciar Sesión</button>
-          <p class="switch-mode">¿Nuevo en ÍndiceIA? <span id="to-register">Crear cuenta corporativa</span></p>
-        </div>
-
-        <div id="panel-register" class="auth-panel">
-          <h3>Registrar tu Comercio</h3>
-          <div class="form-group">
-            <label for="reg-name">Nombre del Comercio</label>
-            <input type="text" id="reg-name" placeholder="Pizzería, Tienda, etc." />
-          </div>
-          <div class="form-group">
-            <label for="reg-email">Email de contacto</label>
-            <input type="email" id="reg-email" />
-          </div>
-          <div class="form-group">
-            <label for="reg-pass">Contraseña de seguridad</label>
-            <input type="password" id="reg-pass" />
-          </div>
-          <button id="btn-do-register" class="btn-primary full-width">Dar de alta Agente</button>
-          <p class="switch-mode">¿Ya tenés cuenta? <span id="to-login">Volver al login</span></p>
-        </div>
-      </div>
+  <nav>
+    <a href="/" class="nav-logo">Índice<span>IA</span></a>
+    <div class="nav-actions">
+      <span class="nav-beta">Beta pública</span>
+      <button class="btn-nav" onclick="openAuth('login')">Ingresar</button>
+      <button class="btn-nav" style="color:var(--accent)" onclick="openAuth('register')">Crear cuenta →</button>
     </div>
+  </nav>
 
-    <main id="screen-dashboard" class="screen">
-      <header class="dash-header">
-        <h2>Panel de Configuración de Agentes</h2>
-        <button id="btn-signout" class="btn-danger">Cerrar Sesión</button>
-      </header>
-      <section class="dash-content">
-        <p>Bienvenido. Acá vas a entrenar el comportamiento de tu agente de IA frente a las intenciones de tus usuarios.</p>
-      </section>
-    </main>
-
-    <footer class="main-footer">
-      <p>&copy; 2026 ÍndiceIA. Infraestructura de agentes autónomos de intención.</p>
-    </footer>
-
+  <div class="hero">
+    <p class="hero-eyebrow">Beta pública · Identidad comercial para IA</p>
+    <h1 class="hero-title">La IA que atiende tu comercio<br><em>cuando vos no estás.</em></h1>
+    <p class="hero-sub">Tu comercio recibe consultas todo el tiempo. La mayoría no termina en venta. ÍndiceIA responde todas al instante y te pasa solo las que realmente importan.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="openAuth('register')">Crear mi entidad</button>
+      <button class="btn-secondary" onclick="document.getElementById('como-funciona').scrollIntoView({behavior:'smooth'})">Ver cómo funciona</button>
+    </div>
+    <p class="hero-disclaimer">Puede fallar · Estamos construyendo esto · No es un bot</p>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="/src/main.js"></script>
-  <script type="module" src="/src/landing.js"></script>
+  <section>
+    <p class="section-label reveal">El problema</p>
+    <h2 class="section-title reveal">Tu comercio recibe consultas.<br>La mayoría se pierde.</h2>
+    <p class="section-body reveal">Preguntas repetidas en WhatsApp, Instagram, Facebook. El local cerrado y alguien queriendo saber el precio. Vos ocupado y una consulta que no esperó.<br><br>No es falta de interés. Es falta de respuesta en el momento justo.</p>
+    <div class="antesdespues reveal">
+      <div class="ad-col">
+        <div class="ad-col-label"><div class="dot"></div><span>Sin ÍndiceIA</span></div>
+        <div class="ad-item"><span class="ad-item-icon">×</span><p>Respondés lo mismo decenas de veces por día</p></div>
+        <div class="ad-item"><span class="ad-item-icon">×</span><p>Las consultas llegan cuando estás ocupado o dormido</p></div>
+        <div class="ad-item"><span class="ad-item-icon">×</span><p>El local cerrado es oportunidad perdida</p></div>
+        <div class="ad-item"><span class="ad-item-icon">×</span><p>No sabés si el que pregunta quiere comprar o curiosear</p></div>
+        <div class="ad-item"><span class="ad-item-icon">×</span><p>La IA improvisa cuando alguien pregunta por tu negocio</p></div>
+      </div>
+      <div class="ad-col after">
+        <div class="ad-col-label"><div class="dot"></div><span>Con ÍndiceIA</span></div>
+        <div class="ad-item"><span class="ad-item-icon">→</span><p>Todas las consultas se responden al instante, siempre</p></div>
+        <div class="ad-item"><span class="ad-item-icon">→</span><p>La IA atiende a las 3 de la mañana si hace falta</p></div>
+        <div class="ad-item"><span class="ad-item-icon">→</span><p>El QR en vidriera trabaja aunque esté cerrado el local</p></div>
+        <div class="ad-item"><span class="ad-item-icon">→</span><p>Solo te llegan los que ya decidieron avanzar</p></div>
+        <div class="ad-item"><span class="ad-item-icon">→</span><p>La IA usa tu información real. No inventa nada.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="frase-central reveal">
+    <p>Todos hablan de lo revolucionaria que es la inteligencia artificial.<br><strong>¿Te imaginás que trabaje para tu negocio?</strong></p>
+  </div>
+
+  <section style="padding-top:0">
+    <div class="escena reveal">
+      <p class="escena-text">
+        Es domingo a la noche. El local está cerrado.<br><br>
+        Una persona pasa, ve algo en la vidriera que le interesa. Anota mentalmente "llamar mañana" — y mañana se olvida.<br><br>
+        Con ÍndiceIA hay un QR en la vidriera. Lo escanea. Habla con la IA del comercio. Resuelve sus dudas.<br><br>
+        <strong>El lunes a primera hora, vos recibís en WhatsApp una consulta armada, con todo lo que necesitás para cerrar.</strong>
+      </p>
+    </div>
+  </section>
+
+  <section id="como-funciona">
+    <p class="section-label reveal">Cómo funciona</p>
+    <h2 class="section-title reveal">No es un bot.<br>Es algo que todavía no tiene nombre.</h2>
+    <p class="section-body reveal">Un bot tiene respuestas prearmadas. Si la pregunta no encaja, falla.<br><br>ÍndiceIA crea una identidad estructurada de tu comercio. Una IA real — de las que ya usás todos los días — la lee antes de responder. Entiende tu negocio. No improvisa porque tiene tu información. No inventa porque tiene límites claros.</p>
+    <div class="pasos reveal">
+      <div class="paso"><div class="paso-num">01</div><div class="paso-content"><h3>Cargás tu información</h3><p>Nombre, productos, precios, horarios, formas de pago, servicios. Vos decidís qué sabe la IA.</p></div></div>
+      <div class="paso"><div class="paso-num">02</div><div class="paso-content"><h3>Recibís tu link y tu QR</h3><p>Un link para redes. Un QR en SVG para imprimir y pegar en vidriera o mostrador. Tu comercio, siempre disponible.</p></div></div>
+      <div class="paso"><div class="paso-num">03</div><div class="paso-content"><h3>La IA atiende con tu información</h3><p>El cliente abre el link o escanea el QR. La IA responde como si fuera parte de tu equipo. Solo con lo que vos definiste.</p></div></div>
+      <div class="paso"><div class="paso-num">04</div><div class="paso-content"><h3>Los interesados llegan a tu WhatsApp</h3><p>Al cierre de la consulta la IA arma el resumen. El cliente lo manda. Vos lo recibís listo. Vos cerrás.</p></div></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-label reveal">Experimentá</p>
+    <h2 class="section-title reveal">Estas no son simulaciones.<br>Son comercios reales funcionando.</h2>
+    <p class="section-body reveal">Abrí el link o escaneá el QR. La IA carga la identidad del comercio y te atiende. Vivís el flujo completo incluyendo el cierre por WhatsApp.<br><br>Cuando termines, vas a entender mejor que con cualquier explicación.</p>
+    <div class="demos-grid reveal">
+      <div class="demo-card">
+        <div><p class="demo-tag">Gastronomía</p><h3 class="demo-name">Pizzería La Esquina</h3></div>
+        <p class="demo-desc">Menú completo con precios. La IA toma tu pedido, arma el resumen y lo deja listo para enviar por WhatsApp.</p>
+        <div class="demo-qr" id="qr-pizza"></div>
+        <div><span class="demo-status">Operacional</span><a href="https://indiceia.vercel.app/entidad/wv3uTMVE5gyriqWqledV" target="_blank" rel="noopener" class="demo-link active">Abrir entidad</a></div>
+      </div>
+      <div class="demo-card">
+        <div><p class="demo-tag">Retail</p><h3 class="demo-name">Tienda Urbana</h3></div>
+        <p class="demo-desc">Catálogo de productos. La IA responde sobre stock, talles y precios como un vendedor que conoce cada artículo.</p>
+        <div class="demo-qr" id="qr-tienda"></div>
+        <div><span class="demo-status placeholder">Próximamente</span><span class="demo-link" style="cursor:default;color:var(--text-dim)">En construcción</span></div>
+      </div>
+      <div class="demo-card">
+        <div><p class="demo-tag">Servicios</p><h3 class="demo-name">Estética Aurora</h3></div>
+        <p class="demo-desc">Tratamientos, precios y turnos. La IA orienta al cliente y lo prepara para una consulta personal.</p>
+        <div class="demo-qr" id="qr-estetica"></div>
+        <div><span class="demo-status placeholder">Próximamente</span><span class="demo-link" style="cursor:default;color:var(--text-dim)">En construcción</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="section-label reveal">Estado actual</p>
+    <div class="beta-box reveal">
+      <div>
+        <h2 class="beta-title">Sin humo.<br>Sin promesas infladas.</h2>
+        <p class="beta-body">ÍndiceIA está en beta. Puede fallar. Puede cambiar. Cosas que hoy funcionan mañana pueden no hacerlo.<br><br>No somos una startup que promete revolucionar el comercio en 30 días. Estamos construyendo algo nuevo, despacio, con honestidad.<br><br>Si eso te parece bien, estás en el lugar correcto.</p>
+      </div>
+      <div class="beta-status-list">
+        <div class="beta-status-item"><span class="label">Identidades comerciales</span><span class="status-badge ok">Estable</span></div>
+        <div class="beta-status-item"><span class="label">Generación de QR</span><span class="status-badge ok">Estable</span></div>
+        <div class="beta-status-item"><span class="label">Plantillas visuales</span><span class="status-badge evolving">En evolución</span></div>
+        <div class="beta-status-item"><span class="label">Integración WhatsApp</span><span class="status-badge evolving">En evolución</span></div>
+        <div class="beta-status-item"><span class="label">Protocolos live</span><span class="status-badge exp">Experimental</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta-final reveal">
+    <h2 class="section-title">Tu comercio ya recibe consultas.<br><em style="color:var(--accent)">ÍndiceIA hace que todas tengan respuesta.</em></h2>
+    <p class="section-body" style="margin:0 auto 48px">Creá tu entidad. Cargá tu información. Recibí tu QR. La IA empieza a trabajar para vos.</p>
+    <button class="btn-primary" onclick="openAuth('register')">Crear mi entidad</button>
+  </div>
+
+  <footer>
+    <span class="footer-logo">ÍndiceIA — Beta pública 2026</span>
+    <span class="footer-copy">Casilda, Santa Fe, Argentina</span>
+  </footer>
+</div>
+
+<!-- VERIFY SCREEN -->
+<div id="verify-screen">
+  <div class="verify-icon">✉️</div>
+  <h2 class="verify-title">Revisá tu correo</h2>
+  <p class="verify-email-display" id="verify-email-display"></p>
+  <p class="verify-body">Te enviamos un link de verificación. Hacé clic en él para activar tu cuenta y acceder a ÍndiceIA.</p>
+  <p class="verify-hint">¿No lo encontrás? Revisá la carpeta de spam.</p>
+  <p class="verify-feedback" id="verify-feedback"></p>
+  <div class="verify-actions">
+    <button class="btn-primary" onclick="uiResendVerification()">Reenviar email</button>
+    <button class="btn-secondary" onclick="uiSignOutToHome()">Volver al inicio</button>
+  </div>
+</div>
+
+<!-- MODAL AUTH -->
+<div class="modal-overlay" id="auth-modal" onclick="handleOverlayClick(event)">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="modal-close" onclick="closeAuth()">✕</button>
+    <h2 class="modal-title">ÍndiceIA</h2>
+    <p class="modal-sub">Acceso en beta · El registro requiere verificación por email</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login"    onclick="switchTab('login')">Ingresar</button>
+      <button class="auth-tab"        id="tab-register" onclick="switchTab('register')">Crear cuenta</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="auth-panel active" id="panel-login">
+      <div class="auth-msg error"   id="login-error"></div>
+      <div class="auth-msg success" id="login-success"></div>
+      <div class="form-group">
+        <label class="form-label" for="login-email">Email</label>
+        <input type="email"    id="login-email" class="form-input" placeholder="tu@email.com"  autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="login-pass">Contraseña</label>
+        <input type="password" id="login-pass"  class="form-input" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button class="btn-full" id="btn-login" onclick="doLogin()">Ingresar</button>
+      <button class="auth-forgot" onclick="doResetPassword()">Olvidé mi contraseña</button>
+      <div class="auth-separator"><span>o</span></div>
+      <button class="btn-google" onclick="doGoogleLogin()">
+        <img src="/public/img/google-icon.svg" width="16" height="16" alt="Google" onerror="this.style.display='none'" />
+        Continuar con Google
+      </button>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="auth-panel" id="panel-register">
+      <div class="auth-msg error" id="register-error"></div>
+      <div class="form-group">
+        <label class="form-label" for="reg-email">Email</label>
+        <input type="email"    id="reg-email"  class="form-input" placeholder="tu@email.com"        autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reg-pass">Contraseña</label>
+        <input type="password" id="reg-pass"   class="form-input" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="reg-pass2">Repetir contraseña</label>
+        <input type="password" id="reg-pass2"  class="form-input" placeholder="••••••••"            autocomplete="new-password" />
+      </div>
+      <button class="btn-full" id="btn-register" onclick="doRegister()">Crear cuenta</button>
+      <div class="auth-separator"><span>o</span></div>
+      <button class="btn-google" onclick="doGoogleLogin()">
+        <img src="/public/img/google-icon.svg" width="16" height="16" alt="Google" onerror="this.style.display='none'" />
+        Continuar con Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/src/landing.js"></script>
+<script type="module" src="/src/main.js"></script>
+
 </body>
 </html>
