@@ -32,6 +32,8 @@ const ADMIN_PAGES  = ["super-admin"];
 // ============================================================
 
 const STEPS = {
+  'mi-soporte':            { page: 'mi-soporte'            },
+  'documentos':            { page: 'documentos'            },
   'mi-comercio':           { page: 'mi-comercio'           },
   'mi-perfil':             { page: 'mi-perfil'             },
   'mi-perfil-profesional': { page: 'mi-perfil-profesional' },
@@ -51,6 +53,10 @@ const STEPS = {
 // ============================================================
 
 export function calcularPipeline(entityType, capacidades = [], entidadData = {}) {
+
+  if (entityType === 'soporte') {
+    return ['mi-soporte', 'documentos', 'ia-config'];
+  }
 
   const steps = [];
 
@@ -107,6 +113,7 @@ function getFirstIncompleteStep(pipeline, onboardingSteps) {
 function getPrimeraPagina(entityType) {
   if (entityType === 'prestador')   return 'mi-perfil';
   if (entityType === 'profesional') return 'mi-perfil-profesional';
+  if (entityType === 'soporte')     return 'mi-soporte';
   return 'mi-comercio';
 }
 
