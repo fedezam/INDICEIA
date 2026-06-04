@@ -47,6 +47,8 @@ const page = {
   _nombreEntidad: '',
   _entityType: '',
   _tieneProductos: false,
+  _tieneServicios: false,
+  _esSoporte: false,
 
   // ──────────────────────────────────────────────────────────
   // LOAD
@@ -56,15 +58,25 @@ const page = {
 
     this._nombreEntidad = ctx.comercioData?.nombre || '';
     this._entityType    = ctx.comercioData?.entityType || 'comercio';
+    this._esSoporte     = this._entityType === 'soporte';
 
     const capacidades = ctx.comercioData?.capacidades || [];
     this._tieneProductos =
       this._entityType === 'comercio' ||
       capacidades.includes('productos');
 
+    this._tieneServicios =
+      this._entityType === 'prestador' ||
+      (this._entityType === 'comercio' && capacidades.includes('servicios'));
+
+    // Para soporte, el nombre del asistente viene de comercioData.nombre
+    const nombreIA = this._esSoporte
+      ? this._nombreEntidad
+      : (raw.identidad?.nombre || raw.aiName || '');
+
     this._aiConfig = {
       identidad: {
-        nombre:        raw.identidad?.nombre       || raw.aiName        || '',
+        nombre:        nombreIA,
         idioma:        raw.identidad?.idioma        || raw.aiLanguage    || 'es-AR',
         personalidad:  raw.identidad?.personalidad  || raw.aiPersonality || '',
         tono:          raw.identidad?.tono          || raw.aiTone        || '',
@@ -110,7 +122,10 @@ const page = {
 
     root.appendChild(this._renderIdentidadCard());
     root.appendChild(this._renderComportamientoCard());
-    root.appendChild(this._renderContingenciasCard());
+
+    const contingenciasCard = this._renderContingenciasCard();
+    if (contingenciasCard) root.appendChild(contingenciasCard);
+
     root.appendChild(this._renderContextoCard());
     root.appendChild(this._renderSaveButton());
   },
@@ -122,11 +137,15 @@ const page = {
     const container = document.createElement('div');
     const id = this._aiConfig.identidad;
 
-    this.fields.nombre = createFormField({
-      id: 'aiName', label: 'Nombre de la IA',
-      placeholder: 'Ej: JuancaBot, Sofi Asistente',
-      required: true, value: id.nombre
-    });
+    // Para soporte el nombre viene de mi-soporte, no se edita acá
+    if (!this._esSoporte) {
+      this.fields.nombre = createFormField({
+        id: 'aiName', label: 'Nombre de la IA',
+        placeholder: 'Ej: JuancaBot, Sofi Asistente',
+        required: true, value: id.nombre
+      });
+      container.appendChild(this.fields.nombre);
+    }
 
     this.fields.idioma = createFormField({
       id: 'aiLanguage', label: 'Idioma',
@@ -149,7 +168,6 @@ const page = {
     this.fields.saludoPartido = saludoField;
 
     container.append(
-      this.fields.nombre,
       this.fields.idioma,
       this.fields.personalidad,
       this.fields.tono,
@@ -211,14 +229,18 @@ const page = {
 
     const updatePreview = () => {
       const prefix = input.value.trim() || '¡Hola! Soy';
-      const name = this.fields.nombre?.input?.value.trim() || nombreIA || 'Tu asistente';
+      // Para soporte el nombre es fijo desde _nombreEntidad
+      const name = this._esSoporte
+        ? (this._nombreEntidad || 'Tu asistente')
+        : (this.fields.nombre?.input?.value.trim() || nombreIA || 'Tu asistente');
       preview.textContent = `${prefix} ${name}${sufijo}`;
     };
     updatePreview();
 
     input.addEventListener('input', updatePreview);
 
-    if (this.fields.nombre?.input) {
+    // Solo escucha cambios del campo nombre si no es soporte
+    if (!this._esSoporte && this.fields.nombre?.input) {
       this.fields.nombre.input.addEventListener('input', () => {
         const newName = this.fields.nombre.input.value.trim();
         nombreChip.textContent = newName || 'Tu asistente';
@@ -275,8 +297,12 @@ const page = {
 
   // ──────────────────────────────────────────────────────────
   // CONTINGENCIAS
+  // Solo se renderiza si la entidad tiene productos o servicios.
+  // Para soporte retorna null y no se muestra.
   // ──────────────────────────────────────────────────────────
   _renderContingenciasCard() {
+    if (!this._tieneProductos && !this._tieneServicios) return null;
+
     const container = document.createElement('div');
     container.className = 'ia-grid';
     const c = this._aiConfig.contingencias;
@@ -292,7 +318,6 @@ const page = {
       ],
       value: c.sinPrecio
     });
-
     container.appendChild(this.fields.sinPrecio);
 
     if (this._tieneProductos) {
@@ -383,7 +408,10 @@ const page = {
       stepName: 'ia-config',
 
       validate: () => {
-        const requiredFields = ['nombre', 'personalidad', 'tono'];
+        // Para soporte el nombre viene de mi-soporte, no se valida acá
+        const requiredFields = this._esSoporte
+          ? ['personalidad', 'tono']
+          : ['nombre', 'personalidad', 'tono'];
         const fieldsOk = requiredFields.every(k => this.fields[k]?.input.value.trim());
         const saludoOk = this.fields.saludoPartido?.getValue().length > 0;
         return fieldsOk && saludoOk;
@@ -394,10 +422,15 @@ const page = {
 
         const v = (id) => document.getElementById(id)?.value || '';
 
-        const contingencias = {
-          sinPrecio: v('sinPrecio') || ''
-        };
+        // Para soporte el nombre se toma de la entidad, no del campo
+        const nombreIA = this._esSoporte
+          ? this._nombreEntidad
+          : v('aiName');
 
+        const contingencias = {};
+        if (this._tieneProductos || this._tieneServicios) {
+          contingencias.sinPrecio = v('sinPrecio') || '';
+        }
         if (this._tieneProductos) {
           contingencias.sinStock = v('sinStock') || '';
         }
@@ -410,7 +443,7 @@ const page = {
         const raw = {
           aiConfig: {
             identidad: {
-              nombre:        v('aiName'),
+              nombre:        nombreIA,
               idioma:        v('aiLanguage'),
               personalidad:  v('aiPersonality'),
               tono:          v('aiTone'),
@@ -420,17 +453,18 @@ const page = {
               proactividad:      v('proactividad'),
               formatoRespuestas: v('formatoRespuestas')
             },
-            contingencias,
-            ...(Object.keys(contexto).length > 0 && { contexto })
+            ...(Object.keys(contingencias).length > 0 && { contingencias }),
+            ...(Object.keys(contexto).length > 0      && { contexto })
           }
         };
 
         await updateDoc(doc(db, 'entidades', comercioId), {
           ...cleanPayload(raw),
+          'onboardingSteps.ia-config': true,
           fechaActualizacion: serverTimestamp()
         });
 
-        return { success: true, stepMarked: false };
+        return { success: true, stepMarked: true };
       },
 
       onSuccess: () => showToast('Guardado', 'Configuración actualizada correctamente', 'success'),
@@ -439,8 +473,6 @@ const page = {
         console.error('[ia-config] Error guardando:', err);
         showToast('Error', 'No se pudo guardar la configuración', 'error');
       },
-
-      redirectTo: '/dashboard.html'
     });
   },
 
@@ -450,7 +482,7 @@ const page = {
   getCurrentData() {
     const v = (id) => document.getElementById(id)?.value || '';
     return structuredClone({
-      nombre:            v('aiName'),
+      nombre:            this._esSoporte ? this._nombreEntidad : v('aiName'),
       idioma:            v('aiLanguage'),
       personalidad:      v('aiPersonality'),
       tono:              v('aiTone'),
@@ -464,7 +496,9 @@ const page = {
   },
 
   isFormValid() {
-    const required = ['nombre', 'personalidad', 'tono'];
+    const required = this._esSoporte
+      ? ['personalidad', 'tono']
+      : ['nombre', 'personalidad', 'tono'];
     const fieldsOk = required.every(k => this.fields[k]?.input.value.trim());
     const saludoOk = this.fields.saludoPartido?.getValue().length > 0;
     return fieldsOk && saludoOk;
