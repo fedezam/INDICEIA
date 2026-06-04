@@ -245,9 +245,10 @@ export async function redirectAfterSave(uid) {
 
 export function buildFlowContext(userData, comercioData) {
   return {
-    entityType:  comercioData.entityType  || userData.entityType  || 'comercio',
-    capacidades: comercioData.capacidades || userData.capacidades || [],
-    comercioId:  userData.comercioId || null,
+    entityType:   comercioData.entityType  || userData.entityType  || 'comercio',
+    capacidades:  comercioData.capacidades || userData.capacidades || [],
+    comercioId:   userData.comercioId || null,
+    comercioData: comercioData,
   };
 }
 
