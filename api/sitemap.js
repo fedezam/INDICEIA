@@ -1,17 +1,19 @@
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+// api/sitemap.js
 
-if (!getApps().length) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
+import admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+  if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+    throw new Error('Falta FIREBASE_SERVICE_ACCOUNT');
+  }
+  admin.initializeApp({
+    credential: admin.credential.cert(
+      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    ),
   });
 }
 
-const db = getFirestore();
+const db = admin.firestore();
 
 export default async function handler(req, res) {
   try {
@@ -20,9 +22,9 @@ export default async function handler(req, res) {
     const urls = [];
 
     snapshot.forEach(doc => {
-      const data = doc.data();
-      const slug = data.landing?.slug;
-      const activo = data.landing?.activo;
+      const data     = doc.data();
+      const slug     = data.landing?.slug;
+      const activo   = data.landing?.activo;
       const tieneSeo = !!data.seoHtmlUrl;
 
       if (slug && activo && tieneSeo) {
