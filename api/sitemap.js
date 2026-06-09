@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       const tieneSeo = !!data.seoHtmlUrl;
 
       if (slug && activo && tieneSeo) {
-        urls.push(`https://indiceia-public.vercel.app/p/${slug}`);
+        urls.push(`https://indiceia-public.vercel.app/p/${slug.trim()}`);
       }
     });
 
