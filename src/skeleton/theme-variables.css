@@ -1,36 +1,46 @@
 /* src/skeleton/theme-variables.css */
-/* Variables base inspiradas en AdminLTE 3 – no sobreescribe, solo define defaults consumibles */
-
+/* Paleta ÍndiceIA — crema/hueso · extraída de landing (main.css) + Pomelli Brand DNA */
 :root {
-  /* Colores principales – extraídos de AdminLTE 3 real (no Bootstrap puro) */
-  --s-primary:     #3c8dbc;     /* azul dashboard clásico */
-  --s-primary-rgb: 60, 141, 188;
-  --s-danger:      #dd4b39;      /* rojo característico */
-  --s-success:     #00a65a;
-  --s-info:        #00c0ef;
-  --s-warning:     #f39c12;
-  --s-secondary:   #6c757d;
-  --s-dark:        #343a40;      /* sidebar/nav dark */
-  --s-light:       #f8f9fa;      /* fondos claros */
-  --s-gray:        #adb5bd;
+  /* ── Colores principales ── */
+  --s-primary:     #1a6bb5;
+  --s-primary-rgb: 26, 107, 181;
+  --s-danger:      #c0392b;
+  --s-success:     #2d8a52;
+  --s-info:        #4a9bd4;
+  --s-warning:     #b8962e;
+  --s-secondary:   #6b6458;
+  --s-dark:        #1a1814;
+  --s-light:       #edeae3;
+  --s-gray:        #a89e90;
 
-  /* Bordes y formas */
-  --s-border:      #d2d6de;     /* borde gris suave típico */
-  --s-radius:      4px;          /* 0.25rem = 4px en la mayoría de AdminLTE */
-  --s-radius-lg:   6px;
+  /* ── Bordes y formas ── */
+  --s-border:      #ddd9d0;
+  --s-radius:      12px;
+  --s-radius-lg:   20px;
 
-  /* Inputs / selects / textareas */
-  --s-input-height:     38px;    /* altura cómoda en AdminLTE */
-  --s-input-padding-x:  12px;
-  --s-focus-ring:       rgba(60, 141, 188, 0.3);  /* basado en primary */
-  --s-placeholder:      #adb5bd;
+  /* ── Inputs ── */
+  --s-input-height:     42px;
+  --s-input-padding-x:  14px;
+  --s-focus-ring:       rgba(26, 107, 181, 0.12);
+  --s-placeholder:      #a89e90;
 
-  /* Cards / boxes */
-  --s-box-shadow:      0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  /* ── Cards / boxes ── */
+  --s-box-shadow:      0 4px 16px rgba(26,24,20,0.08);
   --s-card-bg:         #ffffff;
 
-  /* Espaciados globales */
-  --s-spacing:         16px;     /* 1rem */
+  /* ── Espaciados ── */
+  --s-spacing:         16px;
   --s-spacing-sm:      12px;
   --s-spacing-lg:      20px;
+
+  /* ── Tipografía ── */
+  --s-font-display: 'DM Serif Display', Georgia, serif;
+  --s-font-mono:    'DM Mono', 'Courier New', monospace;
+  --s-font-body:    'DM Sans', sans-serif;
+}
+
+body {
+  background: #f5f2ec;
+  font-family: var(--s-font-body);
+  color: var(--s-dark);
 }
