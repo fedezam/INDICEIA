@@ -1,0 +1,207 @@
+/* skeleton/components/table/styles.css */
+
+.s-table-wrap {
+  background: var(--s-card-bg, #fff);
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius-lg, 8px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+/* ==================== TOOLBAR ==================== */
+.s-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--s-border, #d2d6de);
+  background: var(--s-light, #f8f9fa);
+}
+
+.s-table-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  max-width: 280px;
+  background: #fff;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  padding: 6px 10px;
+}
+
+.s-table-search i {
+  color: var(--s-gray, #97a1ab);
+  font-size: 12px;
+}
+
+.s-table-search-input {
+  border: none;
+  outline: none;
+  font-size: 13px;
+  width: 100%;
+  color: var(--s-dark, #343a40);
+  background: transparent;
+  font-family: inherit;
+}
+
+.s-table-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--s-gray, #97a1ab);
+  white-space: nowrap;
+}
+
+/* ==================== SCROLL WRAP ==================== */
+.s-table-scroll {
+  overflow-x: auto;
+}
+
+/* ==================== TABLE ==================== */
+.s-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.s-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.s-table-th {
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--s-light, #f8f9fa);
+  color: var(--s-dark, #343a40);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 2px solid var(--s-border, #d2d6de);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.s-table-th--sortable {
+  cursor: pointer;
+  display: table-cell;
+}
+
+.s-table-th--sortable span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.s-table-th--sortable:hover {
+  background: var(--s-border, #e9ecef);
+}
+
+.s-table-th--active {
+  color: var(--s-primary, #3c8dbc);
+}
+
+.s-table-sort-icon {
+  font-size: 10px;
+  margin-left: 4px;
+  color: var(--s-gray, #97a1ab);
+  opacity: .6;
+}
+
+.s-table-th--active .s-table-sort-icon {
+  color: var(--s-primary, #3c8dbc);
+  opacity: 1;
+}
+
+.s-table-th--actions {
+  width: 1%;
+}
+
+/* ==================== ROWS ==================== */
+.s-table-row {
+  border-bottom: 1px solid var(--s-border, #eef0f2);
+  transition: background .12s ease;
+}
+
+.s-table-row:nth-child(even) {
+  background: rgba(0, 0, 0, .015);
+}
+
+.s-table-row:hover {
+  background: rgba(60, 141, 188, .06);
+}
+
+.s-table-td {
+  padding: 9px 14px;
+  color: var(--s-text, #495057);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.s-table-td--actions {
+  white-space: nowrap;
+  display: flex;
+  gap: 6px;
+  width: 1%;
+}
+
+/* ==================== ACTION BUTTONS ==================== */
+.s-table-action-btn {
+  border: none;
+  background: var(--s-primary, #3c8dbc);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--s-radius, 4px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: opacity .15s;
+}
+
+.s-table-action-btn:hover {
+  opacity: .82;
+}
+
+/* ==================== EMPTY STATE ==================== */
+.s-table-empty {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 20px;
+  color: var(--s-gray, #97a1ab);
+}
+
+.s-table-empty i {
+  font-size: 28px;
+  opacity: .5;
+}
+
+.s-table-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+  .s-table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .s-table-search {
+    max-width: 100%;
+  }
+  .s-table-td, .s-table-th {
+    padding: 8px 10px;
+  }
+}
