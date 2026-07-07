@@ -1,7 +1,8 @@
 // src/views/superAdminPanel.js
 import '../pages/super-admin.css';
 import { listEntidades, loadEntidad, listUsuarios } from '../controllers/panelCore.js';
-import { createTable, createEmptyState } from '../skeleton/components/skeletonComponents.js';
+import { createTable } from '../skeleton/components/table/index.js';
+import { createEmptyState } from '../skeleton/components/skeletonComponents.js';
 import { buildFlowContext, buildPipeline } from '../controllers/flowController.js';
 import { db } from '../services/firebase/firebase.js';
 import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
@@ -894,7 +895,7 @@ export const page = {
           <div class="sa-item">
             <strong>${p.nombre || '-'}</strong>
             <span>$${p.precio_final ?? '-'}</span>
-            <span>${p.paused ? '🔴 pausado' : '🟢 activo'}</span>
+            <span>{p.paused ? '🔴 pausado' : '🟢 activo'}</span>
           </div>
         `).join('')}
       </div>
@@ -928,7 +929,7 @@ export const page = {
         ${items.length === 0 ? '<p>Sin servicios</p>' : items.map(s => `
           <div class="sa-item">
             <strong>${s.nombre || '-'}</strong>
-            <span>${s.precio?.valor ? `$${s.precio.valor}` : 'Sin precio'}</span>
+            <span>${s.precio?.valor ? `$$$${s.precio.valor}` : 'Sin precio'}</span>
             <span>${s.activo === false ? '🔴 inactivo' : '🟢 activo'}</span>
           </div>
         `).join('')}
