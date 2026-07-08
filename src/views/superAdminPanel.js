@@ -876,8 +876,8 @@ export const page = {
   // ──────────────────────────────────────────────────────────
   // PANELES ESPECIALES: PRODUCTOS / SERVICIOS
   // ──────────────────────────────────────────────────────────
-  async _openProductosPanel(comercioId) {
-    const snap  = await getDocs(collection(db, 'entidades', comercioId, 'productos'));
+  async _openItemsPanel(comercioId, subcoleccion, { titleIcon, titleLabel, emptyLabel, renderItem }) {
+    const snap  = await getDocs(collection(db, 'entidades', comercioId, subcoleccion));
     const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     const overlay = document.createElement('div');
@@ -887,17 +887,11 @@ export const page = {
     modal.className = 'sa-modal sa-modal--wide';
     modal.innerHTML = `
       <div class="sa-modal-header">
-        <h3>📦 Productos (${items.length})</h3>
+        <h3>${titleIcon} ${titleLabel} (${items.length})</h3>
         <button class="sa-modal-close">&times;</button>
       </div>
       <div class="sa-modal-body">
-        ${items.length === 0 ? '<p>Sin productos</p>' : items.map(p => `
-          <div class="sa-item">
-            <strong>${p.nombre || '-'}</strong>
-            <span>$${p.precio_final ?? '-'}</span>
-            <span>{p.paused ? '🔴 pausado' : '🟢 activo'}</span>
-          </div>
-        `).join('')}
+        ${items.length === 0 ? `<p>${emptyLabel}</p>` : items.map(renderItem).join('')}
       </div>
       <div class="sa-modal-footer">
         <button class="sa-btn sa-btn--secondary sa-close">Cerrar</button>
@@ -911,38 +905,33 @@ export const page = {
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
   },
 
-  async _openServiciosPanel(comercioId) {
-    const snap  = await getDocs(collection(db, 'entidades', comercioId, 'servicios'));
-    const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  _openProductosPanel(comercioId) {
+    return this._openItemsPanel(comercioId, 'productos', {
+      titleIcon:  '📦',
+      titleLabel: 'Productos',
+      emptyLabel: 'Sin productos',
+      renderItem: (p) => `
+        <div class="sa-item">
+          <strong>${p.nombre || '-'}</strong>
+          <span>$${p.precio_final ?? '-'}</span>
+          <span>${p.paused ? '🔴 pausado' : '🟢 activo'}</span>
+        </div>
+      `
+    });
+  },
 
-    const overlay = document.createElement('div');
-    overlay.className = 'sa-modal-overlay';
-
-    const modal = document.createElement('div');
-    modal.className = 'sa-modal sa-modal--wide';
-    modal.innerHTML = `
-      <div class="sa-modal-header">
-        <h3>🛎️ Servicios (${items.length})</h3>
-        <button class="sa-modal-close">&times;</button>
-      </div>
-      <div class="sa-modal-body">
-        ${items.length === 0 ? '<p>Sin servicios</p>' : items.map(s => `
-          <div class="sa-item">
-            <strong>${s.nombre || '-'}</strong>
-            <span>${s.precio?.valor ? `$$$${s.precio.valor}` : 'Sin precio'}</span>
-            <span>${s.activo === false ? '🔴 inactivo' : '🟢 activo'}</span>
-          </div>
-        `).join('')}
-      </div>
-      <div class="sa-modal-footer">
-        <button class="sa-btn sa-btn--secondary sa-close">Cerrar</button>
-      </div>
-    `;
-
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-    modal.querySelector('.sa-modal-close').onclick = () => overlay.remove();
-    modal.querySelector('.sa-close').onclick       = () => overlay.remove();
-    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  _openServiciosPanel(comercioId) {
+    return this._openItemsPanel(comercioId, 'servicios', {
+      titleIcon:  '🛎️',
+      titleLabel: 'Servicios',
+      emptyLabel: 'Sin servicios',
+      renderItem: (s) => `
+        <div class="sa-item">
+          <strong>${s.nombre || '-'}</strong>
+          <span>${s.precio?.valor ? `$${s.precio.valor}` : 'Sin precio'}</span>
+          <span>${s.activo === false ? '🔴 inactivo' : '🟢 activo'}</span>
+        </div>
+      `
+    });
   }
 };
