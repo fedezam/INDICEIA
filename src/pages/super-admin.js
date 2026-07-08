@@ -7,7 +7,7 @@ import { listEntidades, listUsuarios } from '/src/controllers/panelCore.js';
 import { createTable }           from '/src/skeleton/components/table/index.js';
 import { createEmptyState }      from '/src/skeleton/components/skeletonComponents.js';
 
-import '../super-admin.css';
+import '/src/pages/super-admin.css';
 
 const adapter = (options) => createFirebaseAdapter(options);
 
