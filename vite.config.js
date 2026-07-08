@@ -61,6 +61,7 @@ export default defineConfig({
 
         // Super Admin
         "super-admin": resolve(__dirname, "src/pages/super-admin.html"),
+        "super-admin-entity": resolve(__dirname, "src/pages/super-admin-entity.html"),
       },
     },
   },
