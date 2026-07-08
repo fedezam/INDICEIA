@@ -1,0 +1,139 @@
+/* skeleton/components/horarios-editor/styles.css */
+
+.s-horarios-editor {
+  display: block;
+}
+
+.s-horarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+/* ==================== DAY CARD ==================== */
+.s-day-card {
+  background: white;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.s-day-card.s-active {
+  border-color: var(--s-primary, #3c8dbc);
+}
+
+.s-day-header {
+  padding: 12px 15px;
+  background: var(--s-light, #f8f9fa);
+  border-bottom: 1px solid var(--s-border, #d2d6de);
+}
+
+.s-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.s-day-toggle label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  cursor: pointer;
+}
+
+.s-day-name {
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  font-size: 14px;
+}
+
+.s-status-badge {
+  font-size: 12px;
+  color: var(--s-text, #6c757d);
+}
+
+.s-day-card.s-active .s-status-badge {
+  color: var(--s-primary, #3c8dbc);
+  font-weight: 600;
+}
+
+/* ==================== DAY BODY ==================== */
+.s-day-body {
+  padding: 15px;
+}
+
+.s-day-body.s-disabled {
+  display: none;
+}
+
+/* ==================== MODE TOGGLE ==================== */
+.s-mode-toggle {
+  margin-bottom: 10px;
+}
+
+.s-mode-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--s-text, #495057);
+}
+
+.s-content-separator {
+  border: none;
+  border-top: 1px solid var(--s-border, #d2d6de);
+  margin: 10px 0;
+}
+
+/* ==================== PERIOD / TURNO ==================== */
+.s-schedule-period + .s-schedule-period {
+  margin-top: 20px;
+}
+
+.s-period-label-text,
+.s-period-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  margin: 0 0 8px 0;
+}
+
+/* ==================== TIME INPUTS ==================== */
+.s-time-inputs {
+  display: flex;
+  gap: 16px;
+}
+
+.s-time-group {
+  flex: 1;
+}
+
+.s-time-group label {
+  display: block;
+  font-size: 12px;
+  color: var(--s-text, #6c757d);
+  margin-bottom: 4px;
+}
+
+.s-time-selects-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.s-time-select {
+  flex: 1;
+  padding: 6px 4px;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  font-size: 13px;
+  background: white;
+}
+
+.s-time-separator {
+  font-weight: 600;
+  color: var(--s-text, #6c757d);
+}
