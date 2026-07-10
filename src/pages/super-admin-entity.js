@@ -8,7 +8,7 @@ import { createEmptyState }      from '/src/skeleton/components/skeletonComponen
 import { db } from '/src/services/firebase/firebase.js';
 import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { createHorariosEditor } from '/src/skeleton/components/horarios-editor/index.js';
-import { makeSection, makeCard, openEditModal } from '/src/pages/super-admin/shared/ui-helpers.js';
+import { makeSection, makeCard, openEditModal } from '/src/shared/superAdminUI.js';
 
 import './super-admin.css';
 

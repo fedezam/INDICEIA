@@ -1,4 +1,4 @@
-// src/pages/super-admin/shared/ui-helpers.js
+// src/shared/superAdminUI.js
 
 export function makeSection(titulo, subtitulo = '') {
   const wrap = document.createElement('div');
