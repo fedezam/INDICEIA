@@ -25,7 +25,7 @@ function getCurrentPage() {
 }
 
 const PUBLIC_PAGES = ["login", "registro", "index", ""];
-const ADMIN_PAGES  = ["super-admin"];
+const ADMIN_PAGES = ["super-admin", "super-admin-entity"];
 
 // ============================================================
 // STEP DEFINITIONS
