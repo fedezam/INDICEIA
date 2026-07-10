@@ -10,7 +10,7 @@ import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { createHorariosEditor } from '/src/skeleton/components/horarios-editor/index.js';
 import { makeSection, makeCard, openEditModal } from '/src/pages/super-admin/shared/ui-helpers.js';
 
-import '../super-admin.css';
+import './super-admin.css';
 
 const adapter = (options) => createFirebaseAdapter(options);
 
