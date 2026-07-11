@@ -10,8 +10,15 @@ import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { createHorariosEditor } from '/src/skeleton/components/horarios-editor/index.js';
 import { makeSection, makeCard, openEditModal } from '/src/shared/superAdminUI.js';
 import { createCheckboxGroup } from '/src/skeleton/components/checkbox-group/index.js';
-import { COGNITIVE_PERMISSIONS, cognitivePermissionsToKeys, keysToCognitivePermissions } from '/src/shared/cognitivePermissions.js';
-import { createTemplateSelector, loadTemplatesForEntityType } from '/src/skeleton/components/visual-template-selector/index.js';
+import {
+  createTemplateSelector,
+  loadTemplatesForEntityType
+} from '/src/skeleton/components/visual-template-selector/index.js';
+import {
+  COGNITIVE_PERMISSIONS,
+  cognitivePermissionsToKeys,
+  keysToCognitivePermissions
+} from '/src/shared/cognitivePermissions.js';
 
 import './super-admin.css';
 
@@ -364,7 +371,6 @@ function renderSeccionOperativa(container, entidad, ctx, pipeline, comercioId, r
 function renderSeccionIA(container, entidad, entCtx, comercioId, rerender) {
   const { wrap, grid } = makeSection('🤖 Inteligencia Artificial', 'Config de IA y capacidades');
 
-  // --- Config IA (queda pendiente el ia-config-editor) ---
   const aiOk = !!entidad.aiConfig;
   grid.appendChild(makeCard({
     icon:   '🤖',
@@ -386,7 +392,6 @@ function renderSeccionIA(container, entidad, entCtx, comercioId, rerender) {
     })
   }));
 
-  // --- Capacidades Cognitivas — checkbox group reusable ---
   const cogOk = !!entidad.cognitive_permissions && Object.keys(entidad.cognitive_permissions).length > 0;
   const cogActivas = cogOk
     ? Object.entries(entidad.cognitive_permissions).filter(([,v]) => v?.enabled).map(([,v]) => v.label).join(', ')
@@ -420,6 +425,7 @@ function renderSeccionIA(container, entidad, entCtx, comercioId, rerender) {
 
       const footer = document.createElement('div');
       footer.className = 'sa-modal-footer';
+
       const cancelBtn = document.createElement('button');
       cancelBtn.className = 'sa-btn sa-btn--secondary';
       cancelBtn.textContent = 'Cancelar';
@@ -456,7 +462,6 @@ function renderSeccionIA(container, entidad, entCtx, comercioId, rerender) {
     }
   }));
 
-  // --- Visual — template selector con grid clickeable ---
   const visualOk = !!entidad.templateId;
   grid.appendChild(makeCard({
     icon:   '🎨',
@@ -478,11 +483,15 @@ function renderSeccionIA(container, entidad, entCtx, comercioId, rerender) {
       const body = document.createElement('div');
       body.className = 'sa-modal-body';
 
-      const selector = createTemplateSelector(templates, entidad.templateId || null);
-      body.appendChild(selector.element);
+      const selector = createTemplateSelector({
+        templates,
+        selectedId: entidad.templateId || null
+      });
+      body.appendChild(selector);
 
       const footer = document.createElement('div');
       footer.className = 'sa-modal-footer';
+
       const cancelBtn = document.createElement('button');
       cancelBtn.className = 'sa-btn sa-btn--secondary';
       cancelBtn.textContent = 'Cancelar';
@@ -790,7 +799,7 @@ function openProductosPanel(comercioId) {
       <div class="sa-item">
         <strong>${p.nombre || '-'}</strong>
         <span>$${p.precio_final ?? '-'}</span>
-        <span>{p.paused ? '🔴 pausado' : '🟢 activo'}</span>
+        <span>${p.paused ? '🔴 pausado' : '🟢 activo'}</span>
       </div>
     `
   });
@@ -804,7 +813,7 @@ function openServiciosPanel(comercioId) {
     renderItem: (s) => `
       <div class="sa-item">
         <strong>${s.nombre || '-'}</strong>
-        <span>${s.precio?.valor ? `$$$${s.precio.valor}` : 'Sin precio'}</span>
+        <span>${s.precio?.valor ? `$${s.precio.valor}` : 'Sin precio'}</span>
         <span>${s.activo === false ? '🔴 inactivo' : '🟢 activo'}</span>
       </div>
     `
