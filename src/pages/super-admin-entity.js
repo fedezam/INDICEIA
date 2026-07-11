@@ -9,6 +9,9 @@ import { db } from '/src/services/firebase/firebase.js';
 import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { createHorariosEditor } from '/src/skeleton/components/horarios-editor/index.js';
 import { makeSection, makeCard, openEditModal } from '/src/shared/superAdminUI.js';
+import { createCheckboxGroup } from '/src/skeleton/components/checkbox-group/index.js';
+import { COGNITIVE_PERMISSIONS, cognitivePermissionsToKeys, keysToCognitivePermissions } from '/src/shared/cognitivePermissions.js';
+import { createTemplateSelector, loadTemplatesForEntityType } from '/src/skeleton/components/visual-template-selector/index.js';
 
 import './super-admin.css';
 
@@ -70,7 +73,7 @@ function render(ctx, selected) {
   }
 
   renderSeccionOperativa(container, entidad, entCtx, pipeline, comercioId, rerender);
-  renderSeccionIA(container, entidad, comercioId, rerender);
+  renderSeccionIA(container, entidad, entCtx, comercioId, rerender);
   renderSeccionPlan(container, entidad, comercioId, rerender);
   renderSeccionPublicacion(container, entidad, comercioId, rerender);
   renderJsonDebug(container, selected);
@@ -358,9 +361,10 @@ function renderSeccionOperativa(container, entidad, ctx, pipeline, comercioId, r
 // ──────────────────────────────────────────────────────────
 // SECCIÓN: IA
 // ──────────────────────────────────────────────────────────
-function renderSeccionIA(container, entidad, comercioId, rerender) {
+function renderSeccionIA(container, entidad, entCtx, comercioId, rerender) {
   const { wrap, grid } = makeSection('🤖 Inteligencia Artificial', 'Config de IA y capacidades');
 
+  // --- Config IA (queda pendiente el ia-config-editor) ---
   const aiOk = !!entidad.aiConfig;
   grid.appendChild(makeCard({
     icon:   '🤖',
@@ -382,6 +386,7 @@ function renderSeccionIA(container, entidad, comercioId, rerender) {
     })
   }));
 
+  // --- Capacidades Cognitivas — checkbox group reusable ---
   const cogOk = !!entidad.cognitive_permissions && Object.keys(entidad.cognitive_permissions).length > 0;
   const cogActivas = cogOk
     ? Object.entries(entidad.cognitive_permissions).filter(([,v]) => v?.enabled).map(([,v]) => v.label).join(', ')
@@ -391,37 +396,130 @@ function renderSeccionIA(container, entidad, comercioId, rerender) {
     title:  'Capacidades',
     status: cogOk ? 'ok' : 'empty',
     body:   cogActivas ? `<p>${cogActivas}</p>` : '<p>Sin capacidades activas</p>',
-    onEdit: () => openEditModal({
-      title: 'Editar Capacidades (JSON)',
-      fields: [{ key: 'cognitive_permissions', label: 'Capacidades', type: 'json' }],
-      data: entidad,
-      onSave: async (updates) => {
-        await updateDoc(doc(db, 'entidades', comercioId), { cognitive_permissions: updates.cognitive_permissions, fechaActualizacion: new Date() });
-        entidad.cognitive_permissions = updates.cognitive_permissions;
-        rerender();
-      }
-    })
+    onEdit: () => {
+      const overlay = document.createElement('div');
+      overlay.className = 'sa-modal-overlay';
+      const modal = document.createElement('div');
+      modal.className = 'sa-modal sa-modal--wide';
+
+      const header = document.createElement('div');
+      header.className = 'sa-modal-header';
+      header.innerHTML = '<h3>Editar Capacidades</h3><button class="sa-modal-close">&times;</button>';
+
+      const body = document.createElement('div');
+      body.className = 'sa-modal-body';
+
+      const checkboxGroup = createCheckboxGroup({
+        name: 'cognitive_permissions',
+        value: cognitivePermissionsToKeys(entidad.cognitive_permissions),
+        options: Object.entries(COGNITIVE_PERMISSIONS).map(([key, def]) => ({
+          value: key, label: def.label, description: def.description
+        }))
+      });
+      body.appendChild(checkboxGroup);
+
+      const footer = document.createElement('div');
+      footer.className = 'sa-modal-footer';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'sa-btn sa-btn--secondary';
+      cancelBtn.textContent = 'Cancelar';
+      cancelBtn.onclick = () => overlay.remove();
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'sa-btn sa-btn--primary';
+      saveBtn.textContent = 'Guardar';
+      saveBtn.onclick = async () => {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Guardando...';
+        try {
+          const nuevo = keysToCognitivePermissions(checkboxGroup.getValue());
+          await updateDoc(doc(db, 'entidades', comercioId), { cognitive_permissions: nuevo, fechaActualizacion: new Date() });
+          entidad.cognitive_permissions = nuevo;
+          overlay.remove();
+          rerender();
+        } catch (err) {
+          console.error('[superAdmin] Error guardando capacidades:', err);
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Error — reintentar';
+        }
+      };
+
+      footer.appendChild(cancelBtn);
+      footer.appendChild(saveBtn);
+      modal.appendChild(header);
+      modal.appendChild(body);
+      modal.appendChild(footer);
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+      modal.querySelector('.sa-modal-close').onclick = () => overlay.remove();
+      overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    }
   }));
 
+  // --- Visual — template selector con grid clickeable ---
   const visualOk = !!entidad.templateId;
   grid.appendChild(makeCard({
     icon:   '🎨',
     title:  'Visual',
     status: visualOk ? 'ok' : 'empty',
     body:   visualOk ? `<p>Template: ${entidad.templateId}</p>` : '<p>Sin template elegido</p>',
-    onEdit: () => openEditModal({
-      title: 'Editar Visual',
-      fields: [
-        { key: 'templateId',        label: 'Template ID' },
-        { key: 'templateUpdatedAt', label: 'Actualizado el' },
-      ],
-      data: { templateId: entidad.templateId || '', templateUpdatedAt: entidad.templateUpdatedAt || '' },
-      onSave: async (updates) => {
-        await updateDoc(doc(db, 'entidades', comercioId), { ...updates, fechaActualizacion: new Date() });
-        Object.assign(entidad, updates);
-        rerender();
-      }
-    })
+    onEdit: async () => {
+      const templates = await loadTemplatesForEntityType(entCtx.entityType);
+
+      const overlay = document.createElement('div');
+      overlay.className = 'sa-modal-overlay';
+      const modal = document.createElement('div');
+      modal.className = 'sa-modal sa-modal--wide';
+
+      const header = document.createElement('div');
+      header.className = 'sa-modal-header';
+      header.innerHTML = '<h3>Editar Visual</h3><button class="sa-modal-close">&times;</button>';
+
+      const body = document.createElement('div');
+      body.className = 'sa-modal-body';
+
+      const selector = createTemplateSelector(templates, entidad.templateId || null);
+      body.appendChild(selector.element);
+
+      const footer = document.createElement('div');
+      footer.className = 'sa-modal-footer';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'sa-btn sa-btn--secondary';
+      cancelBtn.textContent = 'Cancelar';
+      cancelBtn.onclick = () => overlay.remove();
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'sa-btn sa-btn--primary';
+      saveBtn.textContent = 'Guardar';
+      saveBtn.onclick = async () => {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Guardando...';
+        try {
+          const nuevoId = selector.getValue();
+          const updates = nuevoId
+            ? { templateId: nuevoId, templateUpdatedAt: new Date().toISOString() }
+            : { templateId: null, templateUpdatedAt: null };
+          await updateDoc(doc(db, 'entidades', comercioId), { ...updates, fechaActualizacion: new Date() });
+          Object.assign(entidad, updates);
+          overlay.remove();
+          rerender();
+        } catch (err) {
+          console.error('[superAdmin] Error guardando visual:', err);
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Error — reintentar';
+        }
+      };
+
+      footer.appendChild(cancelBtn);
+      footer.appendChild(saveBtn);
+      modal.appendChild(header);
+      modal.appendChild(body);
+      modal.appendChild(footer);
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+      modal.querySelector('.sa-modal-close').onclick = () => overlay.remove();
+      overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    }
   }));
 
   container.appendChild(wrap);
@@ -692,7 +790,7 @@ function openProductosPanel(comercioId) {
       <div class="sa-item">
         <strong>${p.nombre || '-'}</strong>
         <span>$${p.precio_final ?? '-'}</span>
-        <span>${p.paused ? '🔴 pausado' : '🟢 activo'}</span>
+        <span>{p.paused ? '🔴 pausado' : '🟢 activo'}</span>
       </div>
     `
   });
@@ -706,7 +804,7 @@ function openServiciosPanel(comercioId) {
     renderItem: (s) => `
       <div class="sa-item">
         <strong>${s.nombre || '-'}</strong>
-        <span>${s.precio?.valor ? `$${s.precio.valor}` : 'Sin precio'}</span>
+        <span>${s.precio?.valor ? `$$$${s.precio.valor}` : 'Sin precio'}</span>
         <span>${s.activo === false ? '🔴 inactivo' : '🟢 activo'}</span>
       </div>
     `
