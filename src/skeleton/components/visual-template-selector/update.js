@@ -1,4 +1,4 @@
-update.js// skeleton/components/visual-template-selector/update.js
+// skeleton/components/visual-template-selector/update.js
 
 export function updateTemplateSelector(dom, config = {}) {
   const {
