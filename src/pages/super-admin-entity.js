@@ -1,4 +1,4 @@
-// src/pages/super-admin/entity.js
+// src/pages/super-admin-entity.js
 import { runLifecycle } from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout } from '/src/skeleton/layout/index.js';
