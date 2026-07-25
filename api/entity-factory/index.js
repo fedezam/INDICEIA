@@ -131,9 +131,15 @@ export async function buildEntity({ comercioId }) {
 
   const { goods, services, professional, visual, mind, mind_hash, mind_id, channels, capabilities } = built;
 
-  // Campos efímeros — consumidos, no van al JSON final
+  // Campos efímeros — consumidos en tiempo de compilación (domain_tag por
+  // resolveDomain/mind.builder.js, referral_link por mind.builder.js para
+  // armar REFERRAL_LINK y ORIGIN.mas_info), no van al JSON final. Antes
+  // referral_link quedaba duplicado tal cual en context — mismo string ya
+  // presente dos veces dentro de `mind` (ORIGIN + REFERRAL_LINK) — sin
+  // ningún consumidor nuevo en runtime. Fix 25/07/2026.
   delete context.domain_tag;
   delete context.contacto;
+  delete context.referral_link;
 
   // ── SEO ───────────────────────────────────────────────────
   const savedSeo = { seoHash: data.seoHash || null, seoHtmlUrl: data.seoHtmlUrl || null };
