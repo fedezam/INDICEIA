@@ -8,7 +8,8 @@ import { createOnboardingButton } from '/src/skeleton/components/onboarding-butt
 import { createCard }             from '/src/skeleton/components/card/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
 import { db }                     from '/src/services/firebase/firebase.js';
-import { doc, updateDoc, collection, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, collection, setDoc, getDoc } from 'firebase/firestore';
+import { createInitialPlan } from '/src/shared/createInitialPlan.js';
 import './mi-perfil-profesional.css';
 
 // ============================================================
@@ -553,20 +554,19 @@ const page = {
             ? doc(db, 'entidades', comercioId)
             : doc(collection(db, 'entidades'));
           const nuevoComercioId = comercioRef.id;
-          const ts              = Timestamp.now();
 
+          // Doc base — SIN plan. El plan lo crea createInitialPlan()
+          // más abajo, que llama a /api/generate-and-upload-entity con
+          // el flag createInitialPlan:true (mismo shape canónico
+          // snake_case en Firestore, sin la mezcla camelCase de antes).
           await setDoc(comercioRef, {
             ...updates,
             duenoId:        uid,
             fechaCreacion:  now,
             onboardingSteps: { 'mi-perfil-profesional': true },
-            plan: {
-              type: 'trial', active: true, trial: true,
-              startedAt: ts,
-              expiresAt: Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
-              createdAt: ts, updatedAt: ts, source: 'system',
-            },
           });
+
+          await createInitialPlan(nuevoComercioId);
 
           await setDoc(doc(db, 'landings', d.slug), {
             slug:       d.slug,
