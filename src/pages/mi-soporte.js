@@ -10,6 +10,7 @@ import { createFormField }         from '/src/skeleton/components/form-field/ind
 import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }               from '/src/skeleton/components/toast/index.js';
 import { db }                      from '/src/services/firebase/firebase.js';
+import { createInitialPlan } from '/src/shared/createInitialPlan.js';
 import {
   doc, setDoc, updateDoc,
   collection, getDoc, Timestamp
@@ -334,21 +335,15 @@ const page = {
             ? doc(db, 'entidades', comercioId)
             : doc(collection(db, 'entidades'));
           const nuevoComercioId = comercioRef.id;
-          const now       = Timestamp.now();
-          const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-
           await setDoc(comercioRef, {
             ...updates,
             duenoId:           uid,
             fechaCreacion:     new Date(),
             fechaActualizacion: new Date(),
             onboardingSteps:   { 'mi-soporte': true },
-            plan: {
-              type: 'trial', active: true, trial: true,
-              startedAt: now, expiresAt,
-              createdAt: now, updatedAt: now, source: 'system',
-            },
           });
+
+          await createInitialPlan(nuevoComercioId);
 
           await setDoc(doc(db, 'landings', d.slug), {
             slug: d.slug, comercioId: nuevoComercioId,
