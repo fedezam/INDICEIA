@@ -25,6 +25,7 @@ import { showToast }              from '/src/skeleton/components/toast/index.js'
 // ==================== SHARED ====================
 import { fillProvinciaSelector } from '/src/shared/provincias.js';
 import { ubicacionFromForm, rubroFromForm } from '/src/shared/entity-context.js';
+import { createInitialPlan } from '/src/shared/createInitialPlan.js';
 
 import './mi-comercio.css';
 
@@ -501,13 +502,7 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         const now       = Timestamp.now();
         const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 
-        await updateDoc(comercioRef, {
-          plan: {
-            type: 'trial', active: true, trial: true,
-            startedAt: now, expiresAt, createdAt: now, updatedAt: now, source: 'system'
-          },
-          fechaActualizacion: new Date()
-        });
+        await createInitialPlan(comercioId);
 
         await setDoc(doc(db, 'landings', uiState.comercioSlug), {
           slug: uiState.comercioSlug, comercioId,
