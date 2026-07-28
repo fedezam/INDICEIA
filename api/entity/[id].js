@@ -12,19 +12,21 @@
 //    ya en producción). Deliberadamente NO se calcula un booleano
 //    "abierto=true/false": el LLM sigue siendo quien compara la hora
 //    contra los rangos.
-// 4. NUEVO (28/07/2026): enforcement de plan. Hasta ahora ninguna parte
-//    del sistema chequeaba plan.active al SERVIR la entidad — el cron
-//    (plan-expiration-check.js) actualizaba Firestore pero el proxy la
-//    seguía sirviendo igual, sana, para siempre. Fix: se resuelve el
-//    estado real con resolvePlanStatus() (tiempo real, cierra el gap
-//    de hasta 24hs entre corridas del cron) y, si no está activa, la
-//    entidad entra en estado de "huelga": mismo principio que horarios
-//    — no se le impone la conclusión al LLM ("decí que estás cerrado"),
-//    se le da el hecho resuelto vía frame LER + una frase fija de
-//    aterrizaje (mismo patrón que originEscapePhrase). goods/services/
-//    professional/visual se omiten del JSON; channels (contacto) se
-//    mantiene siempre — la salida de la huelga es justamente que
-//    alguien se contacte.
+// 4. Enforcement de plan (28/07/2026): se resuelve el estado real con
+//    resolvePlanStatus() (tiempo real, cierra el gap de hasta 24hs entre
+//    corridas del cron) y, si no está activa, la entidad entra en
+//    estado de "huelga": frame LER + frase fija de aterrizaje (mismo
+//    patrón que originEscapePhrase). goods/services/professional/visual
+//    se omiten del JSON; channels (contacto) se mantiene siempre.
+// 5. FIX (28/07/2026): el plan NUNCA vivió en el Blob (entity.json) —
+//    ni el mecanismo viejo (compileSubscription en mind.builder.js,
+//    ahora desactivado) ni el nuestro lo necesitan ahí. El plan vive en
+//    Firestore, documento que este mismo proxy YA lee en el paso 1 para
+//    sacar entityPublicUrl. Se corrige resolvePlanStatus() para leer de
+//    `firestoreData.plan` (el snap que ya tenemos), no de `entity.plan`
+//    (que siempre fue undefined — bug que hacía que el enforcement
+//    nunca funcionara en la práctica). No hace falta tocar buildEntity()
+//    para nada.
 // ───────────────────────────────────────────────────────────────
 
 import { getHoraActual } from '../../lib/utils/getHoraActual.js';
@@ -70,12 +72,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Leer URL del Blob desde Firestore
+    // 1. Leer documento de Firestore — de acá sale la URL del Blob Y
+    //    el plan real (fuente única de verdad para el estado de plan,
+    //    nunca vivió en el Blob).
     const snap = await db.collection('entidades').doc(id).get();
     if (!snap.exists) {
       return res.status(404).json({ error: 'Entidad no encontrada' });
     }
-    const { entityPublicUrl } = snap.data();
+    const firestoreData = snap.data();
+    const { entityPublicUrl } = firestoreData;
     if (!entityPublicUrl) {
       return res.status(404).json({ error: 'Entidad no generada aún' });
     }
@@ -123,8 +128,9 @@ export default async function handler(req, res) {
           .replace('delivery_hours_from_context', deliveryToken)
       : entity.mind;
 
-    // 6. Resolver estado de plan (en tiempo real, cierra el gap del cron)
-    const planStatus = resolvePlanStatus(entity.plan);
+    // 6. Resolver estado de plan — en tiempo real, leyendo Firestore
+    //    (firestoreData.plan), NO el Blob. Cierra el gap del cron.
+    const planStatus = resolvePlanStatus(firestoreData.plan);
 
     // 7. Si está inactiva → agregar bloque de huelga al mind
     if (!planStatus.active) {
