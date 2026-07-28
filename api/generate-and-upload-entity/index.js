@@ -11,11 +11,25 @@
 // mismo filtro en dos lugares es redundante — un solo punto de
 // verdad para "qué ve el LLM" es más simple de mantener.
 // ────────────────────────────────────────────────────────────────
+//
+// ── Nota (28/07/2026) ──────────────────────────────────────────
+// Se agregó createInitialPlan como flag opcional en vez de crear un
+// endpoint serverless nuevo (api/plan/create-initial-plan.js) — el
+// proyecto está en el límite de funciones serverless del plan de
+// Vercel. Este endpoint YA se llama desde el cliente al dar de alta
+// una entidad (mi-perfil.js, mi-comercio.js, mi-perfil-profesional.js,
+// mi-soporte.js), así que reutilizamos el mismo slot en vez de sumar
+// uno nuevo. Si createInitialPlan:true viene en el body, se crea el
+// plan trial ANTES de generar la entidad (para que buildEntity/
+// entity.json ya incluya el plan si en algún momento se decide leerlo
+// ahí también).
+// ────────────────────────────────────────────────────────────────
 
 import { buildEntity } from '../entity-factory/index.js';
 import { buildIndex } from '../../lib/entity-factory/builders/index.builder.js';
 import { enrichAndSaveCityIndex } from '../../lib/entity-factory/enrich-index.builder.js';
 import { normalizeEntityData } from '../../lib/entity-factory/normalizers/normalizeEntityData.js';
+import { applyPlanStateChange } from '../../lib/plan/applyPlanStateChange.js';
 import { put } from '@vercel/blob';
 import admin from 'firebase-admin';
 if (!admin.apps.length) {
@@ -24,13 +38,38 @@ if (!admin.apps.length) {
   });
 }
 const db = admin.firestore();
+
+const TRIAL_DURATION_DAYS = 30; // ← ajustar si el trial real es de 7 días u otro valor
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   try {
-    const { comercioId } = req.body;
+    const { comercioId, createInitialPlan } = req.body;
     if (!comercioId || typeof comercioId !== 'string') {
       return res.status(400).json({ error: 'comercioId inválido' });
     }
+
+    // 0. Crear plan trial inicial, si se pidió — ÚNICO punto de
+    //    creación del plan, reemplaza las 4 escrituras manuales
+    //    duplicadas que existían en los flujos de onboarding.
+    if (createInitialPlan === true) {
+      const startedAt = admin.firestore.Timestamp.now();
+      const expiresAt = admin.firestore.Timestamp.fromMillis(
+        startedAt.toMillis() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000
+      );
+
+      await applyPlanStateChange({
+        comercioId,
+        type: 'trial',
+        active: true,
+        trial: true,
+        startedAt,
+        expiresAt,
+        source: 'system',
+        reason: 'trial_created',
+      });
+    }
+
     console.log('Generando entidad para:', comercioId);
     // 1. Leer datos crudos de Firestore y normalizar
     const comercioSnap = await db.collection('entidades').doc(comercioId).get();
