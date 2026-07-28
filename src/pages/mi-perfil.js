@@ -14,6 +14,7 @@ import { showToast }               from '/src/skeleton/components/toast/index.js
 import { db }                      from '/src/services/firebase/firebase.js';
 import { fillProvinciaSelector }   from '/src/shared/provincias.js';
 import { getLocalidades }          from '/src/shared/ciudades.js';
+import { createInitialPlan }       from '/src/shared/createInitialPlan.js';
 import { rubroFromForm }           from '/src/shared/entity-context.js';
 import {
   doc, setDoc, updateDoc,
@@ -584,7 +585,7 @@ const page = {
           ...(d.atiende_urgencias === true && { atiende_urgencias: true }),
           localidad_principal: d.localidad_principal,
           ubicacion: { pais: d.localidad_principal?.pais || 'Argentina', provincia: d.localidad_principal?.provincia || '', localidad: { id: d.localidad_principal?.id || null, nombre: d.localidad_principal?.localidad || '', lat: d.localidad_principal?.lat || null, lng: d.localidad_principal?.lng || null } },
-          localidad: d.localidad_principal?.localidad || null, provincia: d.localidad_principal?.provincia || null, pais: 'Argentina',
+          localidad: d.localidad_principal?.localidad || null, provplan:incia: d.localidad_principal?.provincia || null, pais: 'Argentina',
           ...(tieneLocal && d.direccion ? { direccion: d.direccion } : {}),
           ...(!tieneLocal && d.zona_cobertura.length > 0 ? { zona_cobertura: d.zona_cobertura } : {}),
           whatsapp: d.whatsapp, telefono: d.telefono || null, email: d.email || null, instagram: d.instagram || null, entityType: 'prestador'
@@ -595,8 +596,8 @@ const page = {
         if (page._isNuevo) {
           const comercioRef = comercioId ? doc(db, 'entidades', comercioId) : doc(collection(db, 'entidades'));
           const nuevoComercioId = comercioRef.id;
-          const now = Timestamp.now(); const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-          await setDoc(comercioRef, { ...updates, duenoId: uid, fechaCreacion: new Date(), fechaActualizacion: new Date(), onboardingSteps: { 'mi-perfil': true }, plan: { type: 'trial', active: true, trial: true, startedAt: now, expiresAt, createdAt: now, updatedAt: now, source: 'system' } });
+          await setDoc(comercioRef, { ...updates, duenoId: uid, fechaCreacion: new Date(), fechaActualizacion: new Date(), onboardingSteps: { 'mi-perfil': true } });
+          await createInitialPlan(nuevoComercioId);
           await setDoc(doc(db, 'landings', d.slug), { slug: d.slug, comercioId: nuevoComercioId, nombre: updates.nombre, activo: true, createdAt: new Date(), updatedAt: new Date() });
           await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevoComercioId });
 
