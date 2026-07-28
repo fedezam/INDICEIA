@@ -40,9 +40,20 @@ const page = {
     if (!events.length) return null;
 
     const views     = events.filter(e => e.event === 'landing_view').length;
-    const clicks    = events.filter(e => e.event === 'talk_click').length;
-    const ctr       = views ? ((clicks / views) * 100).toFixed(1) : 0;
-    const abandonos = views - clicks;
+    const clicks     = events.filter(e => e.event === 'talk_click').length;
+    const ctr        = views ? ((clicks / views) * 100).toFixed(1) : 0;
+    const abandonos  = views - clicks;
+
+    // ── Pedidos (salida del embudo: la entidad conectó al usuario
+    // con el comercio con el contexto de la consulta ya cerrado) ──
+    const pedidos          = events.filter(e => e.event === 'wa_order_click');
+    const totalPedidos     = pedidos.length;
+    const ticketPromedio   = totalPedidos
+      ? Math.round(pedidos.reduce((sum, p) => sum + (p.total || 0), 0) / totalPedidos)
+      : 0;
+    const tasaCalificacion = clicks
+      ? ((totalPedidos / clicks) * 100).toFixed(1)
+      : 0;
 
     // ── Dispositivos ──────────────────────────────────────
     const dispositivos = {};
@@ -82,7 +93,11 @@ const page = {
       if (e.event === 'talk_click')   horarios[h].clicks++;
     });
 
-    return { views, clicks, ctr, abandonos, dispositivos, origenes, horarios };
+    return {
+      views, clicks, ctr, abandonos,
+      dispositivos, origenes, horarios,
+      totalPedidos, ticketPromedio, tasaCalificacion,
+    };
   },
 
   // ──────────────────────────────────────────────────────────
@@ -107,6 +122,7 @@ const page = {
     }
 
     root.appendChild(this._renderGeneral());
+    root.appendChild(this._renderPedidos());
     root.appendChild(this._renderOrigenes());
     root.appendChild(this._renderDispositivos());
     root.appendChild(this._renderHorarios());
@@ -186,6 +202,50 @@ const page = {
     `;
 
     return createCard({ title: 'General', icon: 'fa-chart-pie', content: container });
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // PEDIDOS (salida del embudo)
+  // ──────────────────────────────────────────────────────────
+  _renderPedidos() {
+    const { totalPedidos, ticketPromedio, tasaCalificacion } = this._stats;
+    const container = document.createElement('div');
+    container.className = 'kpi-grid';
+
+    const tasaClass = tasaCalificacion >= 50 ? 'ctr-high' : tasaCalificacion >= 25 ? 'ctr-medium' : 'ctr-low';
+    const tasaTooltip = `De cada 100 que empezaron a chatear, ${tasaCalificacion} terminaron armando un pedido y tocando el enlace de WhatsApp. ${
+      tasaCalificacion >= 50 ? 'Excelente: tu asistente está calificando muy bien a los interesados.' :
+      tasaCalificacion >= 25 ? 'Regular: uno de cada cuatro llega hasta el final.' :
+                                'Bajo: puede estar perdiendo gente interesada en el medio de la conversación.'
+    }`;
+
+    container.innerHTML = `
+      <div class="kpi-box">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="kpi-value">${totalPedidos}</span>
+        <span class="kpi-label">Pedidos armados</span>
+        <span class="kpi-desc">tu asistente creó el enlace de WhatsApp con el pedido ya cerrado, listo para enviar</span>
+      </div>
+      <div class="kpi-box">
+        <i class="fas fa-dollar-sign"></i>
+        <span class="kpi-value">$${ticketPromedio}</span>
+        <span class="kpi-label">Ticket promedio</span>
+        <span class="kpi-desc">monto promedio de esos pedidos</span>
+      </div>
+      <div class="kpi-box kpi-tooltip-wrap" title="${tasaTooltip}">
+        <i class="fas fa-filter"></i>
+        <span class="kpi-value ${tasaClass}">${tasaCalificacion}%</span>
+        <span class="kpi-label">Calificación de interesados <i class="fas fa-info-circle kpi-info-icon"></i></span>
+        <span class="kpi-desc">de los que chatearon, cuántos llegaron a pedido</span>
+      </div>
+    `;
+
+    const hint = document.createElement('p');
+    hint.className = 'stats-hint';
+    hint.textContent = 'Estas son las veces que tu asistente conectó a un visitante con vos, con el pedido o la consulta ya resuelta y lista para enviar por WhatsApp — no cuenta si la persona después decidió no enviarla.';
+    container.appendChild(hint);
+
+    return createCard({ title: 'Pedidos', icon: 'fa-receipt', content: container });
   },
 
   // ──────────────────────────────────────────────────────────
