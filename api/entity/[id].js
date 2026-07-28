@@ -1,32 +1,36 @@
 // /api/entity/[id].js
-// ⟦ROLE⟧ Proxy de entidad. Lee Blob estático → inyecta horaActual → devuelve JSON fresco.
+// ⟦ROLE⟧ Proxy de entidad. Lee Blob estático → inyecta horaActual →
+// resuelve estado de plan → devuelve JSON fresco.
 //
 // ── Fixes aplicados ───────────────────────────────────────────
 // 1. now=horaActual / day_key=diaComercialActual → sustituidos por valores
 //    reales (fix previo, ya en producción).
 // 2. Orden: mind primero, meta/contracts al final (fix previo, ya en
 //    producción).
-// 3. NUEVO (25/07/2026): hours_from_context / delivery_hours_from_context
-//    seguían como texto literal sin resolver — el mismo bug que now/day_key
-//    tenían antes, nunca corregido para estos dos. El LLM recibía la
-//    instrucción "andá a buscar los horarios en otro lado" sin que
-//    existiera ningún "otro lado" real: el contenido de context.horarios
-//    ya viaja en el propio JSON, pero SCHEDULE nunca lo referenciaba.
-//
-//    Fix: se sustituyen por los horarios YA RESUELTOS para el día
-//    comercial de hoy (hours_today=..., delivery_hours_today=...), en
-//    el mismo formato compacto que usa el resto del LER (rangos con
-//    guion, turnos separados por pipe — sin JSON crudo, sin corchetes).
-//    Deliberadamente NO se calcula un booleano "abierto=true/false":
-//    eso le impondría el razonamiento al LLM, contradiciendo el
-//    principio ya documentado en getDiaComercialActual.js ("el LLM
-//    sigue siendo quien compara la hora contra los rangos"). Se le
-//    da el dato resuelto (qué día es, qué horario tiene ese día), no
-//    la conclusión.
+// 3. hours_from_context / delivery_hours_from_context — sustituidos por
+//    los horarios YA RESUELTOS para el día comercial de hoy (fix previo,
+//    ya en producción). Deliberadamente NO se calcula un booleano
+//    "abierto=true/false": el LLM sigue siendo quien compara la hora
+//    contra los rangos.
+// 4. NUEVO (28/07/2026): enforcement de plan. Hasta ahora ninguna parte
+//    del sistema chequeaba plan.active al SERVIR la entidad — el cron
+//    (plan-expiration-check.js) actualizaba Firestore pero el proxy la
+//    seguía sirviendo igual, sana, para siempre. Fix: se resuelve el
+//    estado real con resolvePlanStatus() (tiempo real, cierra el gap
+//    de hasta 24hs entre corridas del cron) y, si no está activa, la
+//    entidad entra en estado de "huelga": mismo principio que horarios
+//    — no se le impone la conclusión al LLM ("decí que estás cerrado"),
+//    se le da el hecho resuelto vía frame LER + una frase fija de
+//    aterrizaje (mismo patrón que originEscapePhrase). goods/services/
+//    professional/visual se omiten del JSON; channels (contacto) se
+//    mantiene siempre — la salida de la huelga es justamente que
+//    alguien se contacte.
 // ───────────────────────────────────────────────────────────────
 
 import { getHoraActual } from '../../lib/utils/getHoraActual.js';
 import { getDiaComercialActual } from '../../lib/utils/getDiaComercialActual.js';
+import { resolvePlanStatus } from '../../lib/plan/resolvePlanStatus.js';
+import { mindConfig } from '../../lib/entity-factory/mind.config.js';
 import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
@@ -45,6 +49,16 @@ function formatTurnos(turnos) {
     .filter(t => Array.isArray(t) && t[0] && t[1])
     .map(([open, close]) => `${open}-${close}`);
   return formateados.length ? formateados.join('|') : null;
+}
+
+// ── Arma el bloque LER de huelga, con placeholders resueltos ──
+function buildInactiveBlock(entity) {
+  const nombreComercio = entity.context?.nombre || entity.meta?.comercioId || 'este comercio';
+  const escapePhrase = mindConfig.inactiveConfig.escapePhrase.replace(
+    '{{NOMBRE_COMERCIO}}',
+    nombreComercio
+  );
+  return `\n⟦INACTIVE⟧${mindConfig.inactiveConfig.frame}∧escape="${escapePhrase}"`;
 }
 
 export default async function handler(req, res) {
@@ -81,8 +95,8 @@ export default async function handler(req, res) {
     //    indexados por el día comercial correcto (no el día calendario
     //    literal — ver getDiaComercialActual.js para el caso de cruce
     //    de medianoche).
-    const horariosHoy   = diaComercialActual ? entity.context?.horarios?.[diaComercialActual] : null;
-    const deliveryHoy    = diaComercialActual ? entity.context?.horariosDelivery?.[diaComercialActual] : null;
+    const horariosHoy = diaComercialActual ? entity.context?.horarios?.[diaComercialActual] : null;
+    const deliveryHoy = diaComercialActual ? entity.context?.horariosDelivery?.[diaComercialActual] : null;
 
     const hoursStr    = formatTurnos(horariosHoy);
     const deliveryStr = formatTurnos(deliveryHoy);
@@ -98,7 +112,7 @@ export default async function handler(req, res) {
       : 'delivery_hours_today=n/a';
 
     // 5. Sustituir los placeholders reales dentro del mind.
-    const mindResuelto = typeof entity.mind === 'string'
+    let mindResuelto = typeof entity.mind === 'string'
       ? entity.mind
           .replace('now=horaActual', `now=${horaActual}`)
           .replace(
@@ -109,7 +123,15 @@ export default async function handler(req, res) {
           .replace('delivery_hours_from_context', deliveryToken)
       : entity.mind;
 
-    // 6. Reensamblar en el orden en que el LLM debería leerlo:
+    // 6. Resolver estado de plan (en tiempo real, cierra el gap del cron)
+    const planStatus = resolvePlanStatus(entity.plan);
+
+    // 7. Si está inactiva → agregar bloque de huelga al mind
+    if (!planStatus.active) {
+      mindResuelto = `${mindResuelto}${buildInactiveBlock(entity)}`;
+    }
+
+    // 8. Reensamblar en el orden en que el LLM debería leerlo:
     //    identidad primero, bookkeeping técnico al final.
     const {
       meta,
@@ -128,10 +150,16 @@ export default async function handler(req, res) {
     const enriched = {
       mind: mindResuelto,
       context,
-      ...(goods        && { goods }),
-      ...(services     && { services }),
-      ...(professional && { professional }),
-      ...(visual       && { visual }),
+      // goods/services/professional/visual se omiten completos si la
+      // entidad está en huelga — la ausencia habla por sí sola, sin
+      // necesidad de nombrar "catálogo" (vocabulario que no aplica a
+      // todos los entityType) ni de dar la coordenada de la mini-app.
+      ...(planStatus.active && goods        && { goods }),
+      ...(planStatus.active && services     && { services }),
+      ...(planStatus.active && professional && { professional }),
+      ...(planStatus.active && visual       && { visual }),
+      // channels (contacto) se mantiene siempre — la salida de la
+      // huelga es justamente que alguien se contacte.
       ...(channels     && { channels }),
       ...(capabilities && { capabilities }),
       ...resto,
@@ -139,7 +167,8 @@ export default async function handler(req, res) {
       contracts,
     };
 
-    // 7. Cache corto — la hora cambia cada minuto
+    // 9. Cache corto — la hora cambia cada minuto y el estado de plan
+    //    puede cambiar en cualquier momento
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'public, max-age=60');
     return res.status(200).json(enriched);
