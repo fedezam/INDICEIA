@@ -585,7 +585,7 @@ const page = {
           ...(d.atiende_urgencias === true && { atiende_urgencias: true }),
           localidad_principal: d.localidad_principal,
           ubicacion: { pais: d.localidad_principal?.pais || 'Argentina', provincia: d.localidad_principal?.provincia || '', localidad: { id: d.localidad_principal?.id || null, nombre: d.localidad_principal?.localidad || '', lat: d.localidad_principal?.lat || null, lng: d.localidad_principal?.lng || null } },
-          localidad: d.localidad_principal?.localidad || null, provplan:incia: d.localidad_principal?.provincia || null, pais: 'Argentina',
+          localidad: d.localidad_principal?.localidad || null, provincia: d.localidad_principal?.provincia || null, pais: 'Argentina',
           ...(tieneLocal && d.direccion ? { direccion: d.direccion } : {}),
           ...(!tieneLocal && d.zona_cobertura.length > 0 ? { zona_cobertura: d.zona_cobertura } : {}),
           whatsapp: d.whatsapp, telefono: d.telefono || null, email: d.email || null, instagram: d.instagram || null, entityType: 'prestador'
