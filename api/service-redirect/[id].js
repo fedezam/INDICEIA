@@ -59,17 +59,23 @@ export default async function handler(req, res) {
 
     const waUrl = `https://wa.me/549${waNumber}?text=${encodeURIComponent(mensaje)}`;
 
-    // ── log fire-and-forget ──
+    // ── log: await antes del redirect — en serverless una escritura
+    // fire-and-forget puede no completarse si el proceso se congela
+    // tras responder ──
     const slug = data.landing?.slug || null;
     if (slug) {
-      db.collection('landing_events').add({
-        destination: slug,
-        event: 'wa_service_click',
-        servicio,
-        modalidad,
-        zona: zona || null,
-        timestamp: new Date(),
-      }).catch(() => {});
+      try {
+        await db.collection('landing_events').add({
+          destination: slug,
+          event: 'wa_service_click',
+          servicio,
+          modalidad,
+          zona: zona || null,
+          timestamp: new Date(),
+        });
+      } catch (e) {
+        console.error('[SERVICE-REDIRECT] log falló:', e);
+      }
     }
 
     return res.redirect(302, waUrl);
