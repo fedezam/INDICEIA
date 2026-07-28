@@ -46,7 +46,11 @@ export default async function handler(req, res) {
       const p = productosById.get(itemId);
       if (!p || p.paused) continue; // inexistente o pausado → se ignora, no se inventa
 
-      const tamaño = p.atributos?.tamaño;
+      const tamañoRaw = p.atributos?.tamaño;
+      const SKIP_VALUES = ['unidad', 'porción', 'porcion'];
+      const tamaño = tamañoRaw && !SKIP_VALUES.includes(tamañoRaw.toLowerCase())
+        ? tamañoRaw
+        : null;
       const lineTotal = p.precio_final * qty;
       subtotal += lineTotal;
       lineas.push(`${qty}x ${p.nombre}${tamaño ? ' ' + tamaño : ''} - $${lineTotal}`);
@@ -76,25 +80,27 @@ export default async function handler(req, res) {
 
     const waUrl = `https://wa.me/549${waNumber}?text=${encodeURIComponent(mensaje)}`;
 
-    // ── log fire-and-forget, no bloquea el redirect ──
-    comercioRef.collection('stats').add({
-      event: 'wa_order_click',
-      timestamp: new Date(),
-      items: pairs,
-      subtotal,
-      total,
-      modo,
-      source: 'wa-redirect',
-    }).catch(() => {});
-
-    db.collection('order_events').add({
-      comercioId,
-      items: pairs,
-      subtotal,
-      total,
-      modo,
-      timestamp: new Date(),
-    }).catch(() => {});
+    // ── log: debe ir a landing_events (destination=slug), que es lo
+    // único que lee stats.js — y debe esperarse (await) antes del
+    // redirect, porque en serverless una escritura fire-and-forget
+    // puede no completarse si el proceso se congela tras responder ──
+    const slug = data.landing?.slug || null;
+    if (slug) {
+      try {
+        await db.collection('landing_events').add({
+          destination: slug,
+          event: 'wa_order_click',
+          items: pairs,
+          subtotal,
+          total,
+          modo,
+          timestamp: new Date(),
+        });
+      } catch (e) {
+        console.error('[WA-REDIRECT] log falló:', e);
+        // no bloquea el redirect igual — el usuario no debe notar el fallo de logging
+      }
+    }
 
     return res.redirect(302, waUrl);
   } catch (err) {
