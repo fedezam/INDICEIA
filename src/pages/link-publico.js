@@ -215,12 +215,16 @@ const page = {
         console.warn('[link-publico] qrCanvas null al renderizar preview');
         return;
       }
-      const previewCanvas = renderPreview({ qrCanvas: this._data.qrCanvas });
-      previewCanvas.style.maxWidth = '100%';
-      previewCanvas.style.height   = 'auto';
-      previewCanvas.style.display  = 'block';
-      previewArea.appendChild(previewCanvas);
-      console.log('[link-publico] preview renderizado OK');
+      // renderPreview ahora es async (carga fuentes de marca antes de dibujar)
+      renderPreview({ qrCanvas: this._data.qrCanvas }).then((previewCanvas) => {
+        previewCanvas.style.maxWidth = '100%';
+        previewCanvas.style.height   = 'auto';
+        previewCanvas.style.display  = 'block';
+        previewArea.appendChild(previewCanvas);
+        console.log('[link-publico] preview renderizado OK');
+      }).catch((err) => {
+        console.error('[link-publico] error renderizando preview:', err);
+      });
     });
 
     return createCard({
@@ -259,7 +263,8 @@ const page = {
           btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando…';
 
           try {
-            const result = exportCartel({ formatId: format.id, qrCanvas: this._data.qrCanvas });
+            // exportCartel ahora es async (carga fuentes de marca antes de dibujar)
+            const result = await exportCartel({ formatId: format.id, qrCanvas: this._data.qrCanvas });
             result.download({ name: `indiceia-${format.id}` });
             showToast('Cartel descargado', 'success');
             console.log('[link-publico] descarga OK:', format.id);
