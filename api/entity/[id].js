@@ -18,20 +18,24 @@
 //    estado de "huelga": frame LER + frase fija de aterrizaje (mismo
 //    patrón que originEscapePhrase). goods/services/professional/visual
 //    se omiten del JSON; channels (contacto) se mantiene siempre.
-// 5. FIX (28/07/2026): el plan NUNCA vivió en el Blob (entity.json) —
-//    ni el mecanismo viejo (compileSubscription en mind.builder.js,
-//    ahora desactivado) ni el nuestro lo necesitan ahí. El plan vive en
+// 5. FIX: el plan NUNCA vivió en el Blob (entity.json) — vive en
 //    Firestore, documento que este mismo proxy YA lee en el paso 1 para
-//    sacar entityPublicUrl. Se corrige resolvePlanStatus() para leer de
-//    `firestoreData.plan` (el snap que ya tenemos), no de `entity.plan`
-//    (que siempre fue undefined — bug que hacía que el enforcement
-//    nunca funcionara en la práctica). No hace falta tocar buildEntity()
-//    para nada.
+//    sacar entityPublicUrl. resolvePlanStatus() lee de
+//    `firestoreData.plan` (el snap que ya tenemos), no de `entity.plan`.
+// 6. FIX (28/07/2026): omitir goods/services/visual como campos del
+//    JSON no alcanza — el `mind` es un string ya horneado en
+//    buildEntity(), con MINIAPP:<url> y ORDER_CLOSE/SERVICE_CLOSE/
+//    CONTACT_CLOSE escritos como texto plano ADENTRO del string.
+//    Agregar ⟦INACTIVE⟧ al final no borra eso — hay que recortarlo
+//    explícitamente con stripOperationalBlocks() antes de appendear el
+//    bloque de huelga, o la entidad recibe instrucciones contradictorias
+//    (mini-app + flujo de pedido conviviendo con "estoy en huelga").
 // ───────────────────────────────────────────────────────────────
 
 import { getHoraActual } from '../../lib/utils/getHoraActual.js';
 import { getDiaComercialActual } from '../../lib/utils/getDiaComercialActual.js';
 import { resolvePlanStatus } from '../../lib/plan/resolvePlanStatus.js';
+import { stripOperationalBlocks } from '../../lib/plan/stripOperationalBlocks.js';
 import { mindConfig } from '../../lib/entity-factory/mind.config.js';
 import admin from 'firebase-admin';
 
@@ -132,8 +136,12 @@ export default async function handler(req, res) {
     //    (firestoreData.plan), NO el Blob. Cierra el gap del cron.
     const planStatus = resolvePlanStatus(firestoreData.plan);
 
-    // 7. Si está inactiva → agregar bloque de huelga al mind
+    // 7. Si está inactiva → recortar bloques operativos del mind
+    //    (mini-app, cierre de pedido/servicio/contacto) ANTES de
+    //    agregar el bloque de huelga. Sin esto, la entidad recibiría
+    //    instrucciones contradictorias.
     if (!planStatus.active) {
+      mindResuelto = stripOperationalBlocks(mindResuelto);
       mindResuelto = `${mindResuelto}${buildInactiveBlock(entity)}`;
     }
 
