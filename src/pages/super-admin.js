@@ -1,4 +1,4 @@
-// src/pages/super-admin/list.js
+// src/pages/super-admin.js
 import { runLifecycle }          from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter } from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }           from '/src/skeleton/layout/index.js';
@@ -6,6 +6,8 @@ import { runFlowController }     from '/src/controllers/flowController.js';
 import { listEntidades, listUsuarios } from '/src/controllers/panelCore.js';
 import { createTable }           from '/src/skeleton/components/table/index.js';
 import { createEmptyState }      from '/src/skeleton/components/skeletonComponents.js';
+import { createButton }          from '/src/skeleton/components/button/index.js';
+import { showToast }             from '/src/skeleton/components/toast/index.js';
 
 import '/src/pages/super-admin.css';
 
@@ -34,11 +36,102 @@ async function load(ctx) {
 }
 
 // ============================================================
+// HERRAMIENTAS ADMIN
+// ⟦ROLE⟧ Acciones de mantenimiento (30/07/2026) — reutilizan
+// /api/generate-and-upload-entity con `action` en vez de sumar
+// funciones serverless nuevas (límite del plan de Vercel). El
+// adminSecret se pide por prompt en vez de hardcodearlo acá: este
+// archivo lo sirve el navegador tal cual, cualquiera puede ver su
+// código fuente — un secreto embebido no sería secreto.
+// ────────────────────────────────────────────────────────────
+function renderHerramientasAdmin() {
+  const section = document.createElement('div');
+  section.className = 'sa-list-header sa-admin-tools';
+
+  const title = document.createElement('h2');
+  title.className = 'sa-list-title';
+  title.innerHTML = `<i class="fas fa-tools"></i> Herramientas`;
+  section.appendChild(title);
+
+  const resultBox = document.createElement('pre');
+  resultBox.className = 'sa-admin-result';
+  resultBox.style.cssText = 'background:#111;color:#0f0;padding:12px;border-radius:8px;max-height:300px;overflow:auto;display:none;white-space:pre-wrap;font-size:12px;';
+  section.appendChild(resultBox);
+
+  function showResult(data) {
+    resultBox.style.display = 'block';
+    resultBox.textContent = JSON.stringify(data, null, 2);
+  }
+
+  async function callAdminAction(action, extra = {}) {
+    const adminSecret = window.prompt('Ingresá el ADMIN_SECRET:');
+    if (!adminSecret) return;
+
+    try {
+      const response = await fetch('/api/generate-and-upload-entity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, adminSecret, ...extra }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        showToast(`Error: ${data.error || 'falló la acción'}`, 'error');
+        showResult(data);
+        return;
+      }
+
+      showToast('Acción completada', 'success');
+      showResult(data);
+    } catch (err) {
+      showToast('Error de red: ' + err.message, 'error');
+    }
+  }
+
+  const btnRegenerarTodas = createButton({
+    label: 'Regenerar todas las entidades',
+    icon: 'fa-sync',
+    variant: 'secondary',
+    onClick: () => {
+      if (!window.confirm('¿Regenerar el entity.json de TODAS las entidades? Puede tardar.')) return;
+      callAdminAction('regenerate_all');
+    },
+  });
+
+  const btnBackfillDryRun = createButton({
+    label: 'Backfill plan (dry-run)',
+    icon: 'fa-flask',
+    variant: 'secondary',
+    onClick: () => callAdminAction('backfill_plan_shape', { dryRun: true }),
+  });
+
+  const btnBackfillReal = createButton({
+    label: 'Backfill plan (aplicar)',
+    icon: 'fa-database',
+    variant: 'secondary',
+    onClick: () => {
+      if (!window.confirm('¿Aplicar el backfill de plan en serio? Esto escribe en Firestore.')) return;
+      callAdminAction('backfill_plan_shape', { dryRun: false });
+    },
+  });
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;';
+  btnRow.append(btnRegenerarTodas, btnBackfillDryRun, btnBackfillReal);
+  section.appendChild(btnRow);
+
+  return section;
+}
+
+// ============================================================
 // RENDER
 // ============================================================
 function render(ctx, state) {
   const container = document.getElementById('skeleton-page');
   container.innerHTML = '';
+
+  // ── Herramientas admin ──
+  container.appendChild(renderHerramientasAdmin());
 
   // ── Entidades ──
   const entHeader = document.createElement('div');
