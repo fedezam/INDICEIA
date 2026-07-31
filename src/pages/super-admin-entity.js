@@ -481,6 +481,16 @@ function renderSeccionIA(container, entidad, entCtx, comercioId, rerender) {
 // ──────────────────────────────────────────────────────────
 // SECCIÓN: PLAN
 // ──────────────────────────────────────────────────────────
+async function callPlanAction(action, comercioId, extra = {}) {
+  const res = await fetch('/api/generate-and-upload-entity', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, comercioId, ...extra })
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 function renderSeccionPlan(container, entidad, comercioId, rerender) {
   const { wrap, grid } = makeSection('💳 Plan', 'Estado del plan y acceso');
   const plan = entidad.plan || {};
@@ -498,7 +508,8 @@ function renderSeccionPlan(container, entidad, comercioId, rerender) {
   const diasRestantes = expiresAt
     ? Math.max(0, Math.ceil((expiresAt - ahora) / (1000 * 60 * 60 * 24)))
     : null;
-  grid.appendChild(makeCard({
+
+  const card = makeCard({
     icon: '💳',
     title: tipo.toUpperCase(),
     meta: estado,
@@ -508,6 +519,10 @@ function renderSeccionPlan(container, entidad, comercioId, rerender) {
       <p>Trial: ${trial ? '✓' : '✗'}</p>
       ${expiresAt ? `<p>Vence: ${expiresAt.toLocaleDateString('es-AR')}</p>` : ''}
       ${diasRestantes !== null ? `<p>Días restantes: <strong>${diasRestantes}</strong></p>` : ''}
+      <div class="sa-plan-actions" style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button type="button" class="sa-btn sa-btn--secondary sa-plan-reactivar">🔄 Reactivar (15 días)</button>
+        <button type="button" class="sa-btn sa-btn--secondary sa-plan-extender">⏳ Extender días</button>
+      </div>
     `,
     onEdit: () => openEditModal({
       title: 'Editar Plan',
@@ -540,8 +555,54 @@ function renderSeccionPlan(container, entidad, comercioId, rerender) {
         rerender();
       }
     })
-  }));
+  });
+
+  grid.appendChild(card);
   container.appendChild(wrap);
+
+  // ── Botones de plan: llaman a /api/generate-and-upload-entity
+  // (action: plan_reactivate / plan_extend) — reusa el endpoint existente,
+  // no crea función serverless nueva. Ver applyPlanStateChange.js para el
+  // detalle del fix de dot-notation que hace que esto no pise otros campos
+  // del mapa "plan".
+  const reactivarBtn = card.querySelector('.sa-plan-reactivar');
+  const extenderBtn = card.querySelector('.sa-plan-extender');
+
+  reactivarBtn.onclick = async () => {
+    if (!confirm('¿Reactivar con 15 días de trial desde hoy? Esto reinicia el contador (started_at = ahora).')) return;
+    reactivarBtn.disabled = true;
+    reactivarBtn.textContent = 'Reactivando...';
+    try {
+      await callPlanAction('plan_reactivate', comercioId);
+      rerender(); // applyPlanStateChange ya regenera la entidad internamente
+    } catch (err) {
+      console.error('[superAdmin] Error reactivando plan:', err);
+      alert('Error al reactivar: ' + err.message);
+      reactivarBtn.disabled = false;
+      reactivarBtn.textContent = '🔄 Reactivar (15 días)';
+    }
+  };
+
+  extenderBtn.onclick = async () => {
+    const daysStr = prompt('¿Cuántos días agregar al plan actual?', '7');
+    if (!daysStr) return;
+    const days = Number(daysStr);
+    if (!Number.isFinite(days) || days <= 0) {
+      alert('Ingresá un número de días válido');
+      return;
+    }
+    extenderBtn.disabled = true;
+    extenderBtn.textContent = 'Extendiendo...';
+    try {
+      await callPlanAction('plan_extend', comercioId, { days });
+      rerender();
+    } catch (err) {
+      console.error('[superAdmin] Error extendiendo plan:', err);
+      alert('Error al extender: ' + err.message);
+      extenderBtn.disabled = false;
+      extenderBtn.textContent = '⏳ Extender días';
+    }
+  };
 }
 
 // ──────────────────────────────────────────────────────────
