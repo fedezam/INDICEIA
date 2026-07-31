@@ -20,15 +20,32 @@
 // ────────────────────────────────────────────────────────────────
 //
 // ── Nota (30/07/2026) ──────────────────────────────────────────
-// Se agregan dos acciones administrativas (action: 'regenerate_all'
-// y action: 'backfill_plan_shape'), reutilizando este mismo endpoint
-// en vez de sumar funciones nuevas. Ambas requieren ADMIN_SECRET
-// (env var, se define en Vercel — nunca hardcodear). Pensado para ser
-// llamado desde un botón en super-admin.js/super-admin-entity.js, sin
-// necesidad de correr scripts locales ni lidiar con env vars a mano
-// (en producción Vercel ya inyecta FIREBASE_SERVICE_ACCOUNT bien
-// formateado — el lío de parseo que tuvimos corriendo esto local con
-// vercel env pull no aplica acá).
+// Se agregan cuatro acciones administrativas (action: 'regenerate_all',
+// 'backfill_plan_shape', 'plan_reactivate', 'plan_extend'), reutilizando
+// este mismo endpoint en vez de sumar funciones nuevas (límite de
+// funciones serverless del plan free de Vercel).
+//
+// 'regenerate_all' y 'backfill_plan_shape' son operaciones masivas —
+// requieren ADMIN_SECRET (env var, se define en Vercel — nunca
+// hardcodear).
+//
+// 'plan_reactivate' y 'plan_extend' son scoped a UNA entidad puntual
+// (comercioId) — no requieren ADMIN_SECRET porque no pueden hacer daño
+// masivo, y ya están gateadas client-side por el chequeo de
+// role !== 'admin' en super-admin-entity.js. NOTA DE SEGURIDAD: ese
+// chequeo es solo de UI — cualquiera que le pegue directo al endpoint
+// con {action:'plan_reactivate', comercioId:'X'} puede reactivar
+// cualquier entidad sin pasar por el panel. Si en algún momento importa
+// cerrar ese hueco, sumarles el mismo checkAdminSecret que las otras dos.
+//
+// 'plan_reactivate': reactiva una entidad (active:true + trial nuevo de
+// TRIAL_DURATION_DAYS días, reinicia started_at). Usar cuando el trial
+// venció y se lo reinicia de cero.
+// 'plan_extend': suma N días al vencimiento SIN reiniciar started_at —
+// el trial sigue siendo "el mismo", solo se le da más margen. Si
+// expires_at ya venció, la base para sumar es "ahora" (no la fecha
+// vieja), así "extender 7 días" algo vencido hace 2 meses da 7 días
+// reales desde hoy, no lo deja vencido igual.
 //
 // Uso desde el panel:
 //   fetch('/api/generate-and-upload-entity', {
@@ -41,6 +58,18 @@
 //     method: 'POST',
 //     headers: { 'Content-Type': 'application/json' },
 //     body: JSON.stringify({ action: 'backfill_plan_shape', adminSecret: '...', dryRun: true })
+//   })
+//
+//   fetch('/api/generate-and-upload-entity', {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify({ action: 'plan_reactivate', comercioId: '...' })
+//   })
+//
+//   fetch('/api/generate-and-upload-entity', {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify({ action: 'plan_extend', comercioId: '...', days: 7 })
 //   })
 //
 // El comportamiento original (comercioId + createInitialPlan opcional)
@@ -61,9 +90,9 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-const TRIAL_DURATION_DAYS = 30; // ← ajustar si el trial real es de 7 días u otro valor
+const TRIAL_DURATION_DAYS = 15;
 
-// ── Guard de seguridad para acciones admin ──────────────────────
+// ── Guard de seguridad para acciones admin masivas ──────────────
 function checkAdminSecret(adminSecret) {
   const expected = process.env.ADMIN_SECRET;
   if (!expected) {
@@ -185,13 +214,87 @@ async function handleBackfillPlanShape(res, dryRun) {
   return res.status(200).json(results);
 }
 
+// ── Acción: reactivar plan de una entidad puntual ──
+// ⟦ROLE⟧ Reactivar NO es solo poner active:true — si expires_at quedó
+// en el pasado (ej. trial viejo vencido), resolvePlanStatus() sigue
+// devolviendo inactivo aunque active:true, porque el chequeo en tiempo
+// real da prioridad a la fecha de vencimiento real sobre el booleano
+// (ver 30/07/2026: caso real donde tocar solo `active` a mano desde el
+// panel no sacaba a la entidad de huelga). Esta acción empuja
+// expires_at a una fecha futura además de active:true, usando
+// applyPlanStateChange (shape canónico snake_case + mirror camelCase).
+async function handleReactivatePlan(res, comercioId, days) {
+  if (!comercioId || typeof comercioId !== 'string') {
+    return res.status(400).json({ error: 'comercioId requerido' });
+  }
+
+  const durationDays = Number.isFinite(days) && days > 0 ? days : TRIAL_DURATION_DAYS;
+  const startedAt = admin.firestore.Timestamp.now();
+  const expiresAt = admin.firestore.Timestamp.fromMillis(
+    startedAt.toMillis() + durationDays * 24 * 60 * 60 * 1000
+  );
+
+  await applyPlanStateChange({
+    comercioId,
+    type: 'trial',
+    active: true,
+    trial: true,
+    startedAt,
+    expiresAt,
+    source: 'admin_panel',
+    reason: 'reactivated_manually',
+  });
+
+  return res.status(200).json({ ok: true, comercioId, expiresAt: expiresAt.toDate().toISOString() });
+}
+
+// ── Acción: extender plan de una entidad puntual (sumar N días) ──
+// No toca started_at — el trial sigue siendo "el mismo", solo se le da
+// más margen. Si expires_at ya venció, la base para sumar es "ahora",
+// no la fecha vieja (si no, "extender 7 días" algo vencido hace 2 meses
+// seguiría dando vencido).
+async function handleExtendPlan(res, comercioId, days) {
+  if (!comercioId || typeof comercioId !== 'string') {
+    return res.status(400).json({ error: 'comercioId requerido' });
+  }
+  const extendDays = Number(days);
+  if (!Number.isFinite(extendDays) || extendDays <= 0) {
+    return res.status(400).json({ error: 'days debe ser un número > 0' });
+  }
+
+  const comercioSnap = await db.collection('entidades').doc(comercioId).get();
+  if (!comercioSnap.exists) {
+    return res.status(404).json({ error: `Comercio ${comercioId} no encontrado` });
+  }
+  const plan = comercioSnap.data().plan || {};
+
+  const currentExpiresMs = plan.expires_at?.toMillis?.() ?? 0;
+  const nowMs = Date.now();
+  const baseMs = Math.max(currentExpiresMs, nowMs);
+  const expiresAt = admin.firestore.Timestamp.fromMillis(baseMs + extendDays * 24 * 60 * 60 * 1000);
+  const startedAt = plan.started_at || admin.firestore.Timestamp.now();
+
+  await applyPlanStateChange({
+    comercioId,
+    type: plan.type ?? 'trial',
+    active: true,
+    trial: plan.trial ?? true,
+    startedAt,
+    expiresAt,
+    source: 'admin_panel',
+    reason: 'extended_manually',
+  });
+
+  return res.status(200).json({ ok: true, comercioId, expiresAt: expiresAt.toDate().toISOString() });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { action, adminSecret, dryRun, comercioId, createInitialPlan } = req.body;
+    const { action, adminSecret, dryRun, comercioId, createInitialPlan, days } = req.body;
 
-    // ── Acciones administrativas ──
+    // ── Acciones administrativas masivas (requieren ADMIN_SECRET) ──
     if (action === 'regenerate_all') {
       if (!checkAdminSecret(adminSecret)) {
         return res.status(403).json({ error: 'No autorizado' });
@@ -204,6 +307,15 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'No autorizado' });
       }
       return await handleBackfillPlanShape(res, dryRun);
+    }
+
+    // ── Acciones administrativas scoped a una entidad ──
+    if (action === 'plan_reactivate') {
+      return await handleReactivatePlan(res, comercioId, days);
+    }
+
+    if (action === 'plan_extend') {
+      return await handleExtendPlan(res, comercioId, days);
     }
 
     // ── Comportamiento normal (sin action) ──
