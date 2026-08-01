@@ -46,6 +46,31 @@
 // expires_at ya venció, la base para sumar es "ahora" (no la fecha
 // vieja), así "extender 7 días" algo vencido hace 2 meses da 7 días
 // reales desde hoy, no lo deja vencido igual.
+// ────────────────────────────────────────────────────────────────
+//
+// ── Nota (01/08/2026) ──────────────────────────────────────────
+// Se agrega action: 'create_payment_preference' — mismo motivo que las
+// anteriores (límite de funciones serverless de Vercel, no se puede
+// sumar un endpoint nuevo).
+//
+// Reemplaza al sistema viejo de links fijos de MercadoPago
+// (plan.mercadoPagoLink hardcodeado en plans.pricing.js). Ese sistema
+// generaba UNA preference fija por plan, sin external_reference
+// dinámico → el webhook (api/webhooks/mercadopago.js) nunca podía saber
+// qué comercio había pagado. Esta acción genera una preference NUEVA
+// en cada compra, con external_reference = "comercioId:planType", que
+// es lo que el webhook necesita para poder llamar a
+// applyPlanStateChange() correctamente.
+//
+// Scoped a una entidad puntual (comercioId), igual que plan_reactivate/
+// plan_extend — no requiere ADMIN_SECRET por el mismo motivo: no puede
+// hacer daño masivo. El comercioId debería venir de un usuario
+// autenticado en el frontend (resolveFirebaseContext), pero OJO: este
+// endpoint hoy NO valida que el comercioId recibido corresponda al
+// usuario que hace el request. Si en algún momento importa cerrar ese
+// hueco, habría que validar un idToken de Firebase acá antes de crear
+// la preference.
+// ────────────────────────────────────────────────────────────────
 //
 // Uso desde el panel:
 //   fetch('/api/generate-and-upload-entity', {
@@ -72,6 +97,12 @@
 //     body: JSON.stringify({ action: 'plan_extend', comercioId: '...', days: 7 })
 //   })
 //
+//   fetch('/api/generate-and-upload-entity', {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify({ action: 'create_payment_preference', comercioId: '...', planType: 'pro' })
+//   })
+//
 // El comportamiento original (comercioId + createInitialPlan opcional)
 // sigue funcionando igual que siempre cuando no se manda `action`.
 // ────────────────────────────────────────────────────────────────
@@ -83,6 +114,9 @@ import { normalizeEntityData } from '../../lib/entity-factory/normalizers/normal
 import { applyPlanStateChange } from '../../lib/plan/applyPlanStateChange.js';
 import { put } from '@vercel/blob';
 import admin from 'firebase-admin';
+import mercadopago from 'mercadopago';
+import { PLAN_PRICING } from '../../src/shared/pricing/plans.pricing.js';
+
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
@@ -90,7 +124,12 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
+mercadopago.configure({
+  access_token: process.env.MP_ACCESS_TOKEN,
+});
+
 const TRIAL_DURATION_DAYS = 15;
+const SITE_URL = 'https://indiceia.vercel.app';
 
 // ── Guard de seguridad para acciones admin masivas ──────────────
 function checkAdminSecret(adminSecret) {
@@ -288,11 +327,48 @@ async function handleExtendPlan(res, comercioId, days) {
   return res.status(200).json({ ok: true, comercioId, expiresAt: expiresAt.toDate().toISOString() });
 }
 
+// ── Acción: crear preference dinámica de pago (MercadoPago) ──
+// Genera una preference NUEVA por cada compra, con external_reference
+// = "comercioId:planType" — es lo que el webhook necesita leer para
+// saber a quién activarle el plan. Reemplaza los links fijos viejos
+// de plans.pricing.js (mercadoPagoLink / preferenceId).
+async function handleCreatePaymentPreference(res, comercioId, planType) {
+  if (!comercioId || typeof comercioId !== 'string') {
+    return res.status(400).json({ error: 'comercioId requerido' });
+  }
+  const pricing = PLAN_PRICING[planType];
+  if (!pricing) {
+    return res.status(400).json({ error: `planType inválido: ${planType}` });
+  }
+
+  const preference = {
+    items: [
+      {
+        title: pricing.checkoutLabel,
+        quantity: 1,
+        currency_id: pricing.currency,
+        unit_price: pricing.price,
+      },
+    ],
+    external_reference: `${comercioId}:${planType}`,
+    notification_url: `${SITE_URL}/api/webhooks/mercadopago`,
+    back_urls: {
+      success: `${SITE_URL}/pago-exitoso.html`,
+      pending: `${SITE_URL}/pago-exitoso.html`,
+      failure: `${SITE_URL}/plans.html`,
+    },
+    auto_return: 'approved',
+  };
+
+  const response = await mercadopago.preferences.create(preference);
+  return res.status(200).json({ initPoint: response.body.init_point });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { action, adminSecret, dryRun, comercioId, createInitialPlan, days } = req.body;
+    const { action, adminSecret, dryRun, comercioId, createInitialPlan, days, planType } = req.body;
 
     // ── Acciones administrativas masivas (requieren ADMIN_SECRET) ──
     if (action === 'regenerate_all') {
@@ -316,6 +392,11 @@ export default async function handler(req, res) {
 
     if (action === 'plan_extend') {
       return await handleExtendPlan(res, comercioId, days);
+    }
+
+    // ── Acción: crear preference de pago (usuario final, no admin) ──
+    if (action === 'create_payment_preference') {
+      return await handleCreatePaymentPreference(res, comercioId, planType);
     }
 
     // ── Comportamiento normal (sin action) ──
