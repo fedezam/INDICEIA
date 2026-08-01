@@ -64,12 +64,14 @@
 //
 // Scoped a una entidad puntual (comercioId), igual que plan_reactivate/
 // plan_extend — no requiere ADMIN_SECRET por el mismo motivo: no puede
-// hacer daño masivo. El comercioId debería venir de un usuario
-// autenticado en el frontend (resolveFirebaseContext), pero OJO: este
-// endpoint hoy NO valida que el comercioId recibido corresponda al
-// usuario que hace el request. Si en algún momento importa cerrar ese
-// hueco, habría que validar un idToken de Firebase acá antes de crear
-// la preference.
+// hacer daño masivo. OJO: este endpoint hoy NO valida que el comercioId
+// recibido corresponda al usuario que hace el request. Si en algún
+// momento importa cerrar ese hueco, habría que validar un idToken de
+// Firebase acá antes de crear la preference.
+//
+// SDK de mercadopago: usa MercadoPagoConfig + clases de recurso
+// (Preference), NO el viejo mercadopago.configure() de la v1
+// (deprecada). Instalado: v3.x.
 // ────────────────────────────────────────────────────────────────
 //
 // Uso desde el panel:
@@ -114,7 +116,7 @@ import { normalizeEntityData } from '../../lib/entity-factory/normalizers/normal
 import { applyPlanStateChange } from '../../lib/plan/applyPlanStateChange.js';
 import { put } from '@vercel/blob';
 import admin from 'firebase-admin';
-import mercadopago from 'mercadopago';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { PLAN_PRICING } from '../../src/shared/pricing/plans.pricing.js';
 
 if (!admin.apps.length) {
@@ -124,9 +126,13 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 
-mercadopago.configure({
-  access_token: process.env.MP_ACCESS_TOKEN,
+// ===============================
+// MERCADO PAGO (SDK v3)
+// ===============================
+const mpClient = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN,
 });
+const preferenceClient = new Preference(mpClient);
 
 const TRIAL_DURATION_DAYS = 15;
 const SITE_URL = 'https://indiceia.vercel.app';
@@ -341,7 +347,7 @@ async function handleCreatePaymentPreference(res, comercioId, planType) {
     return res.status(400).json({ error: `planType inválido: ${planType}` });
   }
 
-  const preference = {
+  const preferenceData = {
     items: [
       {
         title: pricing.checkoutLabel,
@@ -360,8 +366,8 @@ async function handleCreatePaymentPreference(res, comercioId, planType) {
     auto_return: 'approved',
   };
 
-  const response = await mercadopago.preferences.create(preference);
-  return res.status(200).json({ initPoint: response.body.init_point });
+  const response = await preferenceClient.create({ body: preferenceData });
+  return res.status(200).json({ initPoint: response.init_point });
 }
 
 export default async function handler(req, res) {
