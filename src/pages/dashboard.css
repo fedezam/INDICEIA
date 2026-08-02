@@ -1,4 +1,4 @@
-/* src/pages/dashboard/dashboard.css */
+/* src/pages/dashboard.css */
 /* Estética AdminLTE — solo layout propio de la página */
 
 /* ──────────────────────────────────────────────────────────
@@ -296,4 +296,28 @@
   .entity-banner {
     flex-wrap: wrap;
   }
+}
+
+/* ──────────────────────────────────────────────────────────
+   PLAN ESTADO (tiempo real via resolvePlanStatus)
+────────────────────────────────────────────────────────── */
+.plan-estado-ok {
+  color: var(--s-success, #16a34a);
+  font-weight: 600;
+}
+
+.plan-estado-expired {
+  color: var(--s-danger, #dc2626);
+  font-weight: 700;
+}
+
+.plan-estado-warning {
+  color: var(--s-warning, #ca8a04);
+  font-weight: 700;
+  animation: plan-estado-blink 1s infinite;
+}
+
+@keyframes plan-estado-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
 }
