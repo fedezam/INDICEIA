@@ -1,5 +1,5 @@
 // ============================================================
-// src/pages/dashboard/dashboard.js
+// src/pages/dashboard.js
 // ============================================================
 
 import { runSkeleton }           from '../skeleton/skeleton.js';
@@ -9,7 +9,8 @@ import { createButton }          from '/src/skeleton/components/button/index.js'
 import { showToast }             from '/src/skeleton/components/toast/index.js';
 import { getServicios }          from '/src/services/firebase/db.js';
 import { runFlowController }     from '/src/controllers/flowController.js';
-import { PLANS, calcularEstadoPlan, getDiasRestantesTrial, hasLiveAccess, isHighValuePlan } from '/src/shared/plans.js';
+import { PLANS, hasLiveAccess, isHighValuePlan } from '/src/shared/plans.js';
+import { resolvePlanStatus, getDiasHastaVencimiento } from '../../lib/plan/resolvePlanStatus.js';
 import { db }                    from '/src/services/firebase/firebase.js';
 import { collection, getDocs }   from 'firebase/firestore';
 import './dashboard.css';
@@ -192,18 +193,31 @@ const page = {
   },
 
   _renderPlanCard() {
-    const planId = this._data.comercio.plan || 'trial';
-    const plan   = PLANS[planId] || PLANS.trial;
-    const estado = calcularEstadoPlan(this._data.comercio);
+    const planData = this._data.comercio.plan || {};
+    const planId   = planData.type || 'trial';
+    const plan     = PLANS[planId] || PLANS.trial;
+    const status   = resolvePlanStatus(planData);
+    const dias     = getDiasHastaVencimiento(planData);
+    const esTrial  = !!planData.trial;
 
-    let estadoText = '';
-    if (estado === 'trial') {
-      const dias = getDiasRestantesTrial(this._data.comercio);
-      estadoText = `Trial activo — te quedan <strong>${dias} días</strong>`;
-    } else if (estado === 'activo') {
-      estadoText = isHighValuePlan(planId)
-        ? 'High Value activo — comisión por ventas'
-        : `Plan ${plan.nombre} activo`;
+    let estadoText  = '';
+    let estadoClass = 'plan-estado-ok';
+
+    if (!status.active) {
+      estadoClass = 'plan-estado-expired';
+      estadoText  = esTrial
+        ? 'Trial vencido — sin capacidad plena de respuestas'
+        : 'Plan vencido — sin capacidad plena de respuestas';
+    } else if (dias !== null && dias <= 3) {
+      estadoClass = 'plan-estado-warning';
+      const diasLabel = dias <= 0 ? 'hoy' : `en ${dias} día${dias !== 1 ? 's' : ''}`;
+      estadoText = esTrial ? `⚠️ Tu trial vence ${diasLabel}` : `⚠️ Tu plan vence ${diasLabel}`;
+    } else if (isHighValuePlan(planId)) {
+      estadoText = 'High Value activo — comisión por ventas';
+    } else if (esTrial) {
+      estadoText = dias !== null ? `Trial activo — te quedan ${dias} días` : 'Trial activo';
+    } else {
+      estadoText = `Plan ${plan.nombre} activo`;
     }
 
     const liveOk = hasLiveAccess(planId, this._data.comercio.liveEnabled);
@@ -212,7 +226,7 @@ const page = {
     content.innerHTML = `
       <p class="plan-nombre"><strong>${plan.nombre}</strong></p>
       <p class="plan-descripcion">${plan.descripcion}</p>
-      <p class="plan-estado">${estadoText}</p>
+      <p class="plan-estado ${estadoClass}">${estadoText}</p>
       <p class="plan-live">${liveOk ? '✓ Interacción continua incluida' : 'Interacción continua no disponible'}</p>
     `;
 
@@ -223,7 +237,7 @@ const page = {
     return createCard({
       title: 'Tu Plan',
       icon: 'fa-crown',
-      variant: 'primary',
+      variant: status.active ? 'primary' : 'danger',
       highlight: true,
       content,
       action: {
@@ -231,7 +245,7 @@ const page = {
         url: '/plans.html',
         variant: 'primary',
         size: 'sm',
-        label: 'Ver planes'
+        label: status.active ? 'Ver planes' : 'Reactivar / Ver planes'
       }
     });
   },
