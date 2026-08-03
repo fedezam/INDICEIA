@@ -22,12 +22,16 @@ export function renderHeader() {
           <span id="headerUserName" class="user-name">Usuario</span>
         </div>
 
-        <!-- DERECHA: comercio + plan + logout -->
+        <!-- DERECHA: comercio + plan + alertas + logout -->
         <div class="header-right">
           <div class="header-right-info">
             <span id="headerCommerceName" class="commerce-name">Mi Comercio</span>
             <span id="headerPlan" class="plan-badge trial">TRIAL</span>
           </div>
+          <button id="headerAlertasBtn" class="btn-alertas" title="Alertas">
+            <i class="fas fa-bell"></i>
+            <span id="headerAlertasBadge" class="alertas-badge" hidden>0</span>
+          </button>
           <button id="headerLogoutBtn" class="btn-logout" title="Cerrar sesión">
             <i class="fas fa-sign-out-alt"></i>
           </button>
