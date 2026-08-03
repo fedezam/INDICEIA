@@ -1,6 +1,6 @@
 import { db, Timestamp } from "./firebaseAdmin.js";
-import { applyPlanStateChange } from "../lib/plan/applyPlanStateChange.js";
-import { crearAlerta } from "../lib/alerts/crearAlerta.js";
+import { applyPlanStateChange } from "./lib/plan/applyPlanStateChange.js";
+import { crearAlerta } from "./lib/alerts/crearAlerta.js";
 
 const MS_POR_DIA = 1000 * 60 * 60 * 24;
 const DIAS_AVISO_PREVIO = 3;
@@ -8,7 +8,7 @@ const DIAS_AVISO_PREVIO = 3;
 export async function checkExpiredPlans() {
   console.log("⏱️ checkExpiredPlans running");
   const now      = Timestamp.now();
-  const hoyISO   = new Date(now.toMillis()).toISOString().slice(0, 10); // YYYY-MM-DD, dedup diario
+  const hoyISO   = new Date(now.toMillis()).toISOString().slice(0, 10);
   const snapshot = await db.collection("entidades").get();
 
   for (const docSnap of snapshot.docs) {
@@ -20,7 +20,6 @@ export async function checkExpiredPlans() {
 
     const msRestantes = plan.expires_at.toMillis() - now.toMillis();
 
-    // ── Plan activo pero ya vencido → marcarlo + alerta de vencimiento ──
     if (plan.active && msRestantes <= 0) {
       console.log(`⏰ Plan vencido: ${comercioId}`);
 
@@ -50,7 +49,6 @@ export async function checkExpiredPlans() {
       continue;
     }
 
-    // ── Plan activo, por vencer en 3 días o menos → alerta diaria ──────
     if (plan.active && msRestantes > 0) {
       const diasRestantes = Math.ceil(msRestantes / MS_POR_DIA);
       console.log(`📅 ${comercioId}: ${diasRestantes} días restantes`);

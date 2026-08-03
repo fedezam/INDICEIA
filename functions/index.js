@@ -1,5 +1,4 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { onRequest } from "firebase-functions/v2/https";
 import { checkExpiredPlans } from "./plan-expiration-check.js";
 
 // ===============================
@@ -18,10 +17,3 @@ export const planExpirationDailyCheck = onSchedule(
     await checkExpiredPlans();
   }
 );
-
-// ⚠️ TEMPORAL — solo para testear el cron a demanda. Borrar después de probar.
-export const testCheckExpiredPlans = onRequest(async (req, res) => {
-  console.log("🧪 Test manual de checkExpiredPlans");
-  await checkExpiredPlans();
-  res.send("OK — checkExpiredPlans ejecutado");
-});
