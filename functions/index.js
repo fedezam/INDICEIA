@@ -19,3 +19,9 @@ export const planExpirationDailyCheck = onSchedule(
   }
 );
 
+// ⚠️ TEMPORAL — solo para testear el cron a demanda. Borrar después de probar.
+export const testCheckExpiredPlans = onRequest(async (req, res) => {
+  console.log("🧪 Test manual de checkExpiredPlans");
+  await checkExpiredPlans();
+  res.send("OK — checkExpiredPlans ejecutado");
+});
