@@ -7,6 +7,7 @@ import { listEntidades, listUsuarios } from '/src/controllers/panelCore.js';
 import { createTable }           from '/src/skeleton/components/table/index.js';
 import { createEmptyState }      from '/src/skeleton/components/skeletonComponents.js';
 import { createButton }          from '/src/skeleton/components/button/index.js';
+import { createChip }            from '/src/skeleton/components/chip/index.js';
 import { showToast }             from '/src/skeleton/components/toast/index.js';
 
 import '/src/pages/super-admin.css';
@@ -124,6 +125,139 @@ function renderHerramientasAdmin() {
 }
 
 // ============================================================
+// HELPERS — Badges de plan
+// ============================================================
+
+// ── Badge de estado de plan (usa .s-badge--* ya definidas en table/styles.css) ──
+function renderPlanBadge(reason, _row) {
+  const map = {
+    ok:            { label: 'Activo',   cls: 'green' },
+    trial_expired: { label: 'Huelga',   cls: 'red'   },
+    plan_expired:  { label: 'Huelga',   cls: 'red'   },
+    inactive:      { label: 'Huelga',   cls: 'red'   },
+    no_plan:       { label: 'Sin plan', cls: 'gray'  },
+  };
+  const cfg = map[reason] || map.no_plan;
+  return `<span class="s-badge s-badge--${cfg.cls}">${cfg.label}</span>`;
+}
+
+// ── Días restantes, con aviso visual si vence pronto ──
+function renderDiasRestantes(dias) {
+  if (dias === null || dias === undefined) return '-';
+  if (dias < 0)   return `<span class="s-badge s-badge--red">venció hace ${Math.abs(dias)}d</span>`;
+  if (dias === 0) return `<span class="s-badge s-badge--orange">vence hoy</span>`;
+  if (dias <= 3)  return `<span class="s-badge s-badge--orange">${dias}d</span>`;
+  return `${dias}d`;
+}
+
+// ============================================================
+// SECCIÓN ENTIDADES — con filtros por chip y localidad
+// ============================================================
+function renderEntidadesSection(state) {
+  const container = document.createElement('div');
+
+  const header = document.createElement('div');
+  header.className = 'sa-list-header';
+  header.innerHTML = `
+    <h2 class="sa-list-title">
+      <i class="fas fa-database"></i> Entidades
+      <span class="sa-count">${state.entities.length}</span>
+    </h2>
+  `;
+  container.appendChild(header);
+
+  if (!state.entities.length) {
+    container.appendChild(createEmptyState({ icon: 'fas fa-database', title: 'Sin entidades', message: 'No hay datos en Firestore' }));
+    return container;
+  }
+
+  // ── estado local de filtros (vive mientras esta sección exista) ──
+  const filterState = { plan: null, ciudad: null };
+
+  const activas  = state.entities.filter(e => e.planActive).length;
+  const enHuelga = state.entities.filter(e => !e.planActive && e.planReason !== 'no_plan').length;
+  const sinPlan  = state.entities.filter(e => e.planReason === 'no_plan').length;
+
+  const chipsRow = document.createElement('div');
+  chipsRow.style.cssText = 'display:flex;gap:8px;margin:-8px 0 12px;flex-wrap:wrap;align-items:center;';
+
+  function applyFilters() {
+    let filtered = state.entities;
+    if (filterState.plan === 'activas')  filtered = filtered.filter(e => e.planActive);
+    if (filterState.plan === 'huelga')   filtered = filtered.filter(e => !e.planActive && e.planReason !== 'no_plan');
+    if (filterState.plan === 'sinplan')  filtered = filtered.filter(e => e.planReason === 'no_plan');
+    if (filterState.ciudad)              filtered = filtered.filter(e => e.ciudad === filterState.ciudad);
+    table.setData(buildRows(filtered));
+  }
+
+  function makeFilterChip(text, variant, key) {
+    const chip = createChip({
+      text, variant, size: 'small',
+      onClick: () => {
+        filterState.plan = filterState.plan === key ? null : key;
+        chipsRow.querySelectorAll('.s-chip').forEach(c => c.classList.remove('s-chip--active-filter'));
+        if (filterState.plan) chip.classList.add('s-chip--active-filter');
+        applyFilters();
+      }
+    });
+    return chip;
+  }
+
+  chipsRow.appendChild(makeFilterChip(`${activas} activas`,  'success',    'activas'));
+  chipsRow.appendChild(makeFilterChip(`${enHuelga} en huelga`, 'danger',  'huelga'));
+  if (sinPlan) chipsRow.appendChild(makeFilterChip(`${sinPlan} sin plan`, 'secondary', 'sinplan'));
+
+  // ── selector de localidad ──
+  const ciudades = [...new Set(state.entities.map(e => e.ciudad).filter(Boolean))].sort();
+  if (ciudades.length > 1) {
+    const select = document.createElement('select');
+    select.className = 's-select-localidad';
+    select.style.cssText = 'margin-left:auto;padding:6px 10px;border-radius:4px;border:1px solid #d2d6de;font-size:13px;';
+    select.innerHTML = `<option value="">Todas las localidades</option>` +
+      ciudades.map(c => `<option value="${c}">${c}</option>`).join('');
+    select.onchange = () => {
+      filterState.ciudad = select.value || null;
+      applyFilters();
+    };
+    chipsRow.appendChild(select);
+  }
+
+  container.appendChild(chipsRow);
+
+  // ── filas ──
+  function buildRows(entities) {
+    return entities.map(e => ({
+      ...e,
+      _nombre: e.nombreComercio || e.nombre || '-',
+      ciudad:  e.ciudad || '-',
+      _fecha:  e.fechaActualizacion
+                 ? e.fechaActualizacion.toLocaleDateString('es-AR')
+                 : '-'
+    }));
+  }
+
+  const table = createTable({
+    columns: [
+      { key: '_nombre',       label: 'Nombre' },
+      { key: 'id',            label: 'ID' },
+      { key: 'entityType',    label: 'Tipo' },
+      { key: 'ciudad',        label: 'Localidad' },
+      { key: 'planReason',    label: 'Plan', render: renderPlanBadge },
+      { key: 'diasRestantes', label: 'Vence en', render: renderDiasRestantes },
+      { key: '_fecha',        label: 'Actualización' }
+    ],
+    data: buildRows(state.entities),
+    actions: [{
+      id: 'ver', label: 'Ver', icon: 'fas fa-eye',
+      onClick: (row) => { window.location.href = `/super-admin-entity.html?id=${row.id}`; }
+    }]
+  });
+  container.appendChild(table);
+
+  return container;
+}
+
+// ============================================================
 // RENDER
 // ============================================================
 function render(ctx, state) {
@@ -133,41 +267,8 @@ function render(ctx, state) {
   // ── Herramientas admin ──
   container.appendChild(renderHerramientasAdmin());
 
-  // ── Entidades ──
-  const entHeader = document.createElement('div');
-  entHeader.className = 'sa-list-header';
-  entHeader.innerHTML = `
-    <h2 class="sa-list-title">
-      <i class="fas fa-database"></i> Entidades
-      <span class="sa-count">${state.entities.length}</span>
-    </h2>
-  `;
-  container.appendChild(entHeader);
-
-  if (!state.entities.length) {
-    container.appendChild(createEmptyState({ icon: 'fas fa-database', title: 'Sin entidades', message: 'No hay datos en Firestore' }));
-  } else {
-    const table = createTable({
-      columns: [
-        { key: '_nombre',    label: 'Nombre' },
-        { key: 'id',         label: 'ID' },
-        { key: 'entityType', label: 'Tipo' },
-        { key: '_fecha',     label: 'Actualización' }
-      ],
-      data: state.entities.map(e => ({
-        ...e,
-        _nombre: e.nombreComercio || e.nombre || '-',
-        _fecha:  e.fechaActualizacion
-                   ? e.fechaActualizacion.toLocaleDateString('es-AR')
-                   : '-'
-      })),
-      actions: [{
-        id: 'ver', label: 'Ver', icon: 'fas fa-eye',
-        onClick: (row) => { window.location.href = `/super-admin-entity.html?id=${row.id}`; }
-      }]
-    });
-    container.appendChild(table);
-  }
+  // ── Entidades (con filtros) ──
+  container.appendChild(renderEntidadesSection(state));
 
   // ── Usuarios ──
   const usersHeader = document.createElement('div');

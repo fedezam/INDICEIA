@@ -71,3 +71,9 @@
 .s-chip__text {
   white-space: nowrap;
 }
+
+/* ── Estado activo (usado como filtro clickeable) ────────────── */
+.s-chip--active-filter {
+  box-shadow: 0 0 0 2px currentColor;
+  transform: scale(1.03);
+}

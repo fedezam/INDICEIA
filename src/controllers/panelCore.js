@@ -3,6 +3,7 @@
 import { db } from '../services/firebase/firebase.js';
 import { doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { buildFlowContext, buildPipeline } from './flowController.js';
+import { resolvePlanStatus, getDiasHastaVencimiento } from '../../lib/plan/resolvePlanStatus.js';
 
 // ============================================================
 // 🔹 LOAD ENTIDAD
@@ -32,7 +33,7 @@ export async function loadEntidad(comercioId) {
 
   return {
     user:     userData,
-    entidad:  { id: comercioId, ...comercioData },  // ← id incluido
+    entidad:  { id: comercioId, ...comercioData },
     ctx,
     pipeline,
     steps: comercioData.onboardingSteps || {}
@@ -71,20 +72,25 @@ export async function listEntidades({ maxResults = 100 } = {}) {
       orderBy('fechaActualizacion', 'desc'),
       limit(maxResults)
     );
-
     const snap = await getDocs(q);
-
     return snap.docs.map(doc => {
       const d = doc.data();
+      const planStatus    = resolvePlanStatus(d.plan);
+      const diasRestantes = getDiasHastaVencimiento(d.plan);
+      const ciudad        = d.lugares?.[0]?.ciudad?.nombre || null;
+
       return {
         id: doc.id,
         nombreComercio: d.nombre || d.nombreComercio || '',
         duenoId: d.duenoId || null,
         entityType: d.entityType || 'comercio',
-        fechaActualizacion: d.fechaActualizacion?.toDate?.() || null
+        fechaActualizacion: d.fechaActualizacion?.toDate?.() || null,
+        ciudad,
+        planActive: planStatus.active,
+        planReason: planStatus.reason,
+        diasRestantes,
       };
     });
-
   } catch (err) {
     console.error('[panelCore]', err);
     return [];
