@@ -1,0 +1,81 @@
+/* ============================================================
+   src/pages/alertas.css
+   Solo layout — cards y componentes vienen del skeleton
+   ============================================================ */
+
+#skeleton-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+}
+
+.page-header h1 i {
+  color: var(--s-primary, #3c8dbc);
+  margin-right: 10px;
+}
+
+.page-subtitle {
+  margin: 0;
+  color: #555;
+  font-size: 15px;
+}
+
+.alertas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alerta-mensaje {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  color: var(--s-dark, #343a40);
+  line-height: 1.5;
+}
+
+.alerta-fecha {
+  margin: 0;
+  font-size: 12px;
+  color: #888;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: #555;
+}
+
+.empty-state i {
+  font-size: 48px;
+  color: var(--s-primary, #3c8dbc);
+  margin-bottom: 16px;
+  display: block;
+}
+
+.empty-state h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--s-dark, #343a40);
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  font-size: 15px;
+  margin: 0;
+  color: #555;
+}
+
+.page-footer-action {
+  margin-top: 24px;
+}
