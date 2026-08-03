@@ -53,6 +53,7 @@ export async function checkExpiredPlans() {
     // ── Plan activo, por vencer en 3 días o menos → alerta diaria ──────
     if (plan.active && msRestantes > 0) {
       const diasRestantes = Math.ceil(msRestantes / MS_POR_DIA);
+      console.log(`📅 ${comercioId}: ${diasRestantes} días restantes`);
 
       if (diasRestantes <= DIAS_AVISO_PREVIO) {
         await crearAlerta({
