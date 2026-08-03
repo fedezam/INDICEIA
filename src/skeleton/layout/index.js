@@ -1,5 +1,4 @@
 // src/skeleton/layout/index.js
-
 import { renderLayout } from './renderLayout.js';
 import { updateHeader } from './header/update.js';
 
@@ -12,11 +11,10 @@ export function mountLayout(context) {
     renderLayout();
   }
 
-  // Extraemos SOLO lo que updateHeader necesita
-  const { userData, comercioData } = context;
+  const { userData, comercioData, user, comercioId } = context;
 
   console.log('📍 mountLayout → userData:', userData);
   console.log('📍 mountLayout → comercioData:', comercioData);
 
-  updateHeader({ userData, comercioData });
+  updateHeader({ userData, comercioData, uid: user?.uid, comercioId });
 }
