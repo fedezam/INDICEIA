@@ -2,8 +2,9 @@
 import { auth } from '/src/services/firebase/firebase.js';
 import { signOut } from 'firebase/auth';
 import { resolvePlanStatus, getDiasHastaVencimiento } from '../../../../lib/plan/resolvePlanStatus.js';
+import { contarAlertasNoLeidas } from '/src/services/firebase/alerts.js';
 
-export function updateHeader({ userData, comercioData }) {
+export function updateHeader({ userData, comercioData, uid, comercioId }) {
   console.log('🧩 updateHeader()', { userData, comercioData });
 
   // Nombre usuario (abajo izquierda)
@@ -36,6 +37,26 @@ export function updateHeader({ userData, comercioData }) {
     } else {
       planEl.classList.add('active');
     }
+  }
+
+  // 🔔 Alertas
+  const alertasBtn = document.getElementById('headerAlertasBtn');
+  if (alertasBtn) {
+    alertasBtn.onclick = () => { window.location.href = '/alertas.html'; };
+  }
+
+  const badgeEl = document.getElementById('headerAlertasBadge');
+  if (badgeEl && uid && comercioId) {
+    contarAlertasNoLeidas(uid, comercioId)
+      .then(count => {
+        if (count > 0) {
+          badgeEl.textContent = count > 9 ? '9+' : String(count);
+          badgeEl.hidden = false;
+        } else {
+          badgeEl.hidden = true;
+        }
+      })
+      .catch(err => console.error('[header] Error contando alertas:', err));
   }
 
   // ✅ Logout
