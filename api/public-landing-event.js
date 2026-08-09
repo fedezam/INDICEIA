@@ -27,7 +27,7 @@ function resolveSource(src) {
 
 // ============================================================
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin',  'https://indiceia-public.vercel.app');
+  res.setHeader('Access-Control-Allow-Origin',  'https://ia.indiceia.dev');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 

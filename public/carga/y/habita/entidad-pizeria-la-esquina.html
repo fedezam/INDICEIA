@@ -86,7 +86,7 @@ TRUTH:⟦CATALOG_ONLY
 FLOW:intent→verify→filter→respond→assist
 
 GREET:⟦on_first_contact⇒send_link(MINIAPP)∧append_availability⟧
-MINIAPP:https://indiceia-public.vercel.app/m/pizzeria-la-esquina
+MINIAPP:https://ia.indiceia.dev/m/pizzeria-la-esquina
 
 CATALOG:⟦miniapp_exists
         ∧(intent:menu∨intent:catalog∨intent:products∨intent:prices)
@@ -94,7 +94,7 @@ CATALOG:⟦miniapp_exists
 
 REFERRAL:⟦(intent:indiceia∨intent:about_platform∨after(n=3))
          ⇒offer_assistant∧send_link⟧
-REFERRAL_LINK:https://indiceia.app/r/1VE7ZGDM
+REFERRAL_LINK:https://indiceia.dev/r/1VE7ZGDM
 
 CAP:⟦checkout(id+price+total+delivery)|scope(catalog)|memory(ctx)⟧
 CHECKOUT:⟦calc_total(items+delivery)∧show_payment_methods∧confirm_before_send⟧

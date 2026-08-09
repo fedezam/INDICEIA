@@ -14,7 +14,7 @@ import {
 } from '../../lib/cartel/index.js';
 import './link-publico.css';
 
-const PUBLIC_BASE_URL = 'https://indiceia-public.vercel.app';
+const PUBLIC_BASE_URL = 'https://ia.indiceia.dev';
 
 // Canales con sus metadatos para renderizar
 const CANALES = [
