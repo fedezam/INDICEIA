@@ -43,7 +43,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 const DRY_RUN = process.argv.includes('--dry-run');
-const ENDPOINT = 'https://indiceia.vercel.app/api/generate-and-upload-entity';
+const ENDPOINT = 'https://indiceia.dev/api/generate-and-upload-entity';
 const DELAY_MS = 1500; // pausa entre llamadas — no saturar Vercel/Firestore
 
 function sleep(ms) {

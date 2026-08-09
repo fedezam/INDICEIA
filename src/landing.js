@@ -147,14 +147,14 @@ document.addEventListener('keydown', e => {
 // ─── QR ───
 window.addEventListener('load', () => {
   new QRCode(document.getElementById('qr-pizza'), {
-    text: 'https://indiceia.vercel.app/entidad/wv3uTMVE5gyriqWqledV',
+    text: 'https://indiceia.dev/entidad/wv3uTMVE5gyriqWqledV',
     width: 100, height: 100,
     colorDark: '#0a0a0a', colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M
   });
   ['qr-tienda', 'qr-estetica'].forEach(id => {
     new QRCode(document.getElementById(id), {
-      text: 'https://indiceia.vercel.app',
+      text: 'https://indiceia.dev',
       width: 100, height: 100,
       colorDark: '#3a3835', colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M

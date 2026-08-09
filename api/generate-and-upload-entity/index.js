@@ -135,7 +135,7 @@ const mpClient = new MercadoPagoConfig({
 const preferenceClient = new Preference(mpClient);
 
 const TRIAL_DURATION_DAYS = 15;
-const SITE_URL = 'https://indiceia.vercel.app';
+const SITE_URL = 'https://indiceia.dev';
 
 // ── Guard de seguridad para acciones admin masivas ──────────────
 function checkAdminSecret(adminSecret) {
