@@ -8,7 +8,7 @@ import { createButton } from '/src/skeleton/components/button/index.js';
 import { showToast }    from '/src/skeleton/components/toast/index.js';
 
 // ==================== NEGOCIO ====================
-import { getAllPlans } from '../../shared/pricing/plans.service.js';
+import { getAllPlans } from '../shared/pricing/plans.service.js';
 
 import './plans.css';
 
