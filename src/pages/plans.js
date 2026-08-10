@@ -12,35 +12,27 @@ plans.forEach(plan => {
 
 function renderPlan(plan) {
   const card = document.createElement("article");
-  card.className = `plan-card ${plan.recommended ? "recommended" : ""}`;
-
+  card.className = `plan-card ${plan.recommended ? "featured" : ""}`;
   card.innerHTML = `
     ${plan.recommended ? `<div class="badge">RECOMENDADO</div>` : ""}
-
-    <h2>Plan ${plan.name}</h2>
-
+    <h2 class="plan-name">Plan ${plan.name}</h2>
     <p class="plan-desc">${plan.descriptionShort}</p>
-
-    <div class="price">
-      $${plan.price.toLocaleString("es-AR")}
-      <span>/mes</span>
+    <div class="plan-price">
+      <span class="price-amount">$${plan.price.toLocaleString("es-AR")}</span>
+      <span class="price-period">/mes</span>
     </div>
-
-    <ul class="features">
-      <li>Hasta ${plan.productos} productos</li>
-      <li>${plan.live ? "Interacción continua 24/7" : "Respuestas bajo demanda"}</li>
-      <li>IA entrenada con tus datos</li>
-      <li>Link público + QR</li>
+    <ul class="plan-features">
+      <li><i class="fas fa-check"></i> Hasta ${plan.productos} productos</li>
+      <li><i class="fas fa-check"></i> ${plan.live ? "Interacción continua 24/7" : "Respuestas bajo demanda"}</li>
+      <li><i class="fas fa-check"></i> IA entrenada con tus datos</li>
+      <li><i class="fas fa-check"></i> Link público + QR</li>
     </ul>
-
-    <button type="button" class="cta-button">
+    <button type="button" class="btn-select-plan">
       Elegir plan
     </button>
   `;
-
-  const btn = card.querySelector(".cta-button");
+  const btn = card.querySelector(".btn-select-plan");
   btn.addEventListener("click", () => handlePlanClick(plan, btn));
-
   return card;
 }
 
@@ -57,7 +49,6 @@ function handlePlanClick(plan, btn) {
         btn.textContent = originalLabel;
         return;
       }
-
       try {
         const res = await fetch("/api/generate-and-upload-entity", {
           method: "POST",
@@ -68,13 +59,10 @@ function handlePlanClick(plan, btn) {
             planType: plan.id,
           }),
         });
-
         const data = await res.json();
-
         if (!res.ok || data.error) {
           throw new Error(data.error || "Error creando el pago");
         }
-
         window.open(data.initPoint, "_blank", "noopener");
       } catch (err) {
         console.error("Error al iniciar pago:", err);
