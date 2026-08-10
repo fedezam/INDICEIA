@@ -13,16 +13,39 @@ import {
 /**
  * NORMALIZA comercioData
  * 👉 garantiza contratos estables para TODAS las páginas
+ *
+ * Conviven dos shapes de plan en el sistema:
+ *  - planId: string simple ("trial", "pro", ...) — usado por código
+ *    legacy que indexa PLANS[planId] (header/update.js,
+ *    dataPageSkeleton.js, plans.js).
+ *  - plan: objeto real de Firestore { type, active, trial, expires_at,
+ *    started_at, ... } — usado por el sistema nuevo de planes
+ *    (resolvePlanStatus.js, dashboard.js, super-admin).
+ *
+ * Antes esta función pisaba `data.plan` con un string y perdía el
+ * objeto completo, rompiendo resolvePlanStatus() en el dashboard
+ * (siempre veía plan.active === undefined → siempre "vencido").
+ * Ahora no se pierde nada: se agregan ambos campos por separado.
  */
 function normalizeComercioData(raw = {}) {
   const data = { ...raw };
-  if (!data.plan) {
-    data.plan = 'trial';
-  } else if (typeof data.plan === 'object') {
-    data.plan = data.plan.id || 'trial';
+
+  // planId: string simple del plan, para consumidores legacy
+  if (!raw.plan) {
+    data.planId = 'trial';
+  } else if (typeof raw.plan === 'object') {
+    data.planId = raw.plan.type || 'trial';
   } else {
-    data.plan = String(data.plan);
+    data.planId = String(raw.plan);
   }
+
+  // plan: objeto intacto para resolvePlanStatus()/dashboard.js.
+  // Si viniera como string legacy nunca migrado, armamos un objeto
+  // mínimo en vez de dejarlo como string suelto.
+  data.plan = raw.plan && typeof raw.plan === 'object'
+    ? raw.plan
+    : { type: data.planId, active: false, trial: true };
+
   return data;
 }
 
