@@ -145,39 +145,6 @@ export function hasLiveAccess(planId, liveEnabled = false) {
   return false;
 }
 
-export function calcularEstadoPlan(comercioData) {
-  if (!comercioData.fechaCreacion) return 'trial';
-  
-  const fechaCreacion = comercioData.fechaCreacion.toDate 
-    ? comercioData.fechaCreacion.toDate() 
-    : new Date(comercioData.fechaCreacion);
-  
-  const ahora = new Date();
-  const diasTranscurridos = Math.floor((ahora - fechaCreacion) / (1000 * 60 * 60 * 24));
-  
-  const planActual = normalizePlanId(comercioData.plan || 'trial');
-  
-  if (planActual === 'trial' && diasTranscurridos > 7) {
-    return 'expirado';
-  }
-  
-  return 'activo';
-}
-
-export function getDiasRestantesTrial(comercioData) {
-  if (!comercioData.fechaCreacion) return 7;
-  
-  const fechaCreacion = comercioData.fechaCreacion.toDate 
-    ? comercioData.fechaCreacion.toDate() 
-    : new Date(comercioData.fechaCreacion);
-  
-  const ahora = new Date();
-  const diasTranscurridos = Math.floor((ahora - fechaCreacion) / (1000 * 60 * 60 * 24));
-  const diasRestantes = 7 - diasTranscurridos;
-  
-  return diasRestantes > 0 ? diasRestantes : 0;
-}
-
 // ==================== UTILIDADES ADICIONALES ====================
 /**
  * Obtiene el límite de productos para un plan
