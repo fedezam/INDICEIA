@@ -2,45 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Elegí tu plan | ÍndiceIA</title>
 
-  <!-- HEAD_PARTIAL:START -->
-  <!-- Fuentes de marca -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  
-  <!-- ✅ CRÍTICO: Cargar variables del theme -->
+  <!-- CRÍTICO: theme variables PRIMERO -->
   <link rel="stylesheet" href="/src/skeleton/theme-variables.css">
-  
-  <!-- Font Awesome para iconos -->
+
+  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- HEAD_PARTIAL:END -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Base styles del sistema -->
-  <link rel="stylesheet" href="../styles/base.css" />
-  <link rel="stylesheet" href="../styles/layout.css" />
-  <link rel="stylesheet" href="../styles/components.css" />
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
-
 <body>
-  <main class="plans-page">
-    <header class="planes-header">
-      <h1>Elegí tu plan</h1>
-      <p>Todos los planes incluyen IA entrenada con los datos reales de tu comercio.</p>
-    </header>
-
-    <section id="plansGrid" class="plans-grid">
-      <!-- Render dinámico -->
-    </section>
-  </main>
-
+  <div id="app"></div>
   <script type="module" src="./plans.js"></script>
 </body>
 </html>
