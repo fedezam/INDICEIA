@@ -1,3 +1,9 @@
+.page-header {
+  max-width: 700px;
+  margin: 0 auto var(--s-spacing-lg);
+  text-align: center;
+}
+
 .plans-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -45,3 +51,10 @@
 }
 .plan-features li { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 8px; color: var(--s-dark); }
 .plan-features i { color: var(--s-success); font-size: 12px; }
+
+.plans-back {
+  margin-top: 40px;
+  text-align: center;
+}
+
+@media (max-width: 768px) { .plans-grid { grid-template-columns: 1fr; } }
