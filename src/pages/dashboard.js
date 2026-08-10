@@ -231,7 +231,13 @@ const page = {
     `;
 
     if (!isHighValuePlan(planId)) {
-      content.appendChild(this._renderHighValuePromo());
+      // ⏸️ PAUSADO (10/8/2026): High Value todavía no tiene definido el
+      // modelo de comisión (ventas vs leads) ni el criterio de industrias
+      // elegibles (autos, inmuebles, maquinaria). Se oculta la promo del
+      // dashboard hasta cerrar esa definición. _renderHighValuePromo() y
+      // _openHighValueModal() quedan intactos para reactivar con un
+      // solo uncomment cuando el modelo esté definido.
+      //content.appendChild(this._renderHighValuePromo());
     }
 
     return createCard({
