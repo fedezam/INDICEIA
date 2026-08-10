@@ -35,4 +35,9 @@
 .plan-features li { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 8px; color: var(--s-dark); }
 .plan-features i { color: var(--s-success); font-size: 12px; }
 
+.plans-back {
+  margin-top: var(--s-spacing-lg);
+  text-align: center;
+}
+
 @media (max-width: 768px) { .plans-grid { grid-template-columns: 1fr; } }
