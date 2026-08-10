@@ -45,6 +45,17 @@ function render(ctx, state) {
   grid.className = 'plans-grid';
   state.plans.forEach(plan => grid.appendChild(crearPlanCard(ctx, plan)));
   page.appendChild(grid);
+
+  // ── Volver al dashboard ──
+  const backWrap = document.createElement('div');
+  backWrap.className = 'plans-back';
+  backWrap.appendChild(createButton({
+    label:   'Volver al dashboard',
+    variant: 'secondary',
+    icon:    'fa-arrow-left',
+    onClick: () => window.location.href = '/dashboard.html'
+  }));
+  page.appendChild(backWrap);
 }
 
 function crearPlanCard(ctx, plan) {
