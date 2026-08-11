@@ -19,8 +19,10 @@ export default async function handler(req, res) {
   try {
     const snapshot = await db.collection('entidades').get();
 
-    const urls = [];
+    // 1. Inicializamos el array directamente con la Home del dominio principal
+    const urls = ['https://indiceia.dev/'];
 
+    // 2. Iteramos las entidades y las agregamos con el dominio canónico
     snapshot.forEach(doc => {
       const data     = doc.data();
       const slug     = data.landing?.slug;
@@ -28,7 +30,7 @@ export default async function handler(req, res) {
       const tieneSeo = !!data.seoHtmlUrl;
 
       if (slug && activo && tieneSeo) {
-        urls.push(`https://ia.indiceia.dev/p/${slug.trim()}`);
+        urls.push(`https://indiceia.dev/p/${slug.trim()}`);
       }
     });
 
