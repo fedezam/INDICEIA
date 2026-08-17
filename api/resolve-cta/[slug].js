@@ -4,24 +4,32 @@
 import admin from 'firebase-admin';
 import { buildPrompt } from '../../lib/link-builder/config/prompt-template.js';
 import { hasData } from '../../lib/entity-factory/utils/hasData.js';
+
 if (!admin.apps.length) {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
+
 const db = admin.firestore();
+
 export default async function handler(req, res) {
   const { slug } = req.query;
   if (!slug) return res.status(400).json({ ok: false, error: 'slug requerido' });
+
   try {
     const landingSnap = await db.collection('landings').doc(slug).get();
     if (!landingSnap.exists) return res.status(404).json({ ok: false, error: 'landing no encontrada' });
+
     const { comercioId } = landingSnap.data();
+
     const comercioRef  = db.collection('entidades').doc(comercioId);
     const comercioSnap = await comercioRef.get();
     if (!comercioSnap.exists) return res.status(404).json({ ok: false, error: 'comercio no encontrado' });
+
     const data = comercioSnap.data();
     if (!data.entityPublicUrl) return res.status(409).json({ ok: false, error: 'entidad no generada' });
+
     // ── miniPrompt ──
     const context = {
       nombre:     data.nombre || data.nombreComercio,
@@ -30,6 +38,7 @@ export default async function handler(req, res) {
     };
     const entityUrl = `https://indiceia.dev/api/entity/${comercioId}`;
     const miniPrompt = buildPrompt(context, entityUrl);
+
     // ── goods ──
     const snapshot = await comercioRef.collection('productos').get();
     const goods = snapshot.empty ? [] : snapshot.docs
@@ -51,10 +60,10 @@ export default async function handler(req, res) {
           ...(hasData(p.stock)          && { stock: p.stock }),
           ...(hasData(p.disponibilidad) && { disponibilidad: p.disponibilidad }),
           ...(hasData(p.etiquetas)      && { etiquetas: p.etiquetas }),
-          ...(hasData(p.atributos)      && { atributos: p.atributos }),
           ...(hasData(p.variantes)      && { variantes: p.variantes }),
         };
       });
+
     return res.status(200).json({
       ok:              true,
       slug,
@@ -70,6 +79,7 @@ export default async function handler(req, res) {
       templateId:      data.visualTemplateId || 'C1_SimpleCatalog',
       goods,
     });
+
   } catch (err) {
     console.error('[RESOLVE-CTA]', err);
     return res.status(500).json({ ok: false, error: 'error interno' });
