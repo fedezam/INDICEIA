@@ -13,7 +13,8 @@ import { buildSeo }          from '../../lib/entity-factory/builders/seo.builder
 import { buildIndex }        from '../../lib/entity-factory/builders/index.builder.js';
 import { resolveDomain }     from '../../lib/entity-factory/domain-resolver.js';
 import { buildEntityContext } from '../../src/shared/entity-context.js';
-import { normalizeEntityData } from '../../lib/entity-factory/normalizers/normalizeEntityData.js'; // ← NUEVO
+import { normalizeEntityData } from '../../lib/entity-factory/normalizers/normalizeEntityData.js';
+import { resolveCatalogDelivery } from '../../lib/entity-factory/resolveCatalogDelivery.js'; // ← NUEVO
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -50,7 +51,11 @@ function safeMerge(base, override) {
 // ─── BUILDERS POR ENTITYTYPE ──────────────────────────────────
 
 async function buildComercio(comercioRef, data, context, referralCode, slug) {
-  const goods    = await buildGoods(comercioRef, context);
+  // 1. Compilar catálogo (solo compresión/agrupación)
+  const compiled = await buildGoods(comercioRef, context);
+  // 2. Decidir entrega: array inline o ref URL (mismo contrato `goods`)
+  const { goods } = resolveCatalogDelivery(compiled, { slug });
+
   const services = null;
 
   const templateId  = data.templateId || null;
@@ -107,7 +112,7 @@ export async function buildEntity({ comercioId }) {
   const snap        = await comercioRef.get();
   if (!snap.exists) throw new Error(`Entidad ${comercioId} no encontrada`);
 
-  const data       = normalizeEntityData(snap.data()); // ← CAMBIO: era snap.data()
+  const data       = normalizeEntityData(snap.data());
   const entityType = data.entityType || 'comercio';
 
   // Slug desde Firestore — fuente de verdad única
