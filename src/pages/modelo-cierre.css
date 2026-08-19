@@ -1,0 +1,49 @@
+/* ============================================================
+   src/pages/modelo-cierre.css
+   ============================================================
+   Solo posición/layout de la página. Los componentes del
+   skeleton (card, onboarding-button, etc.) traen su propio CSS
+   -- acá no se pisa nada de eso, solo se ordena el grid propio
+   de esta pantalla (calco de entrega.css).
+   ============================================================ */
+
+.modelo-cierre-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.modelo-cierre-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--s-border, #e0e0e0);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.modelo-cierre-item.activa {
+  border-color: var(--s-primary, #4f46e5);
+}
+
+.modelo-cierre-item input[type="radio"] {
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.modelo-cierre-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modelo-cierre-item-label {
+  font-weight: 600;
+}
+
+.modelo-cierre-item-desc {
+  font-size: 13px;
+  color: var(--s-gray, #888);
+}
