@@ -2,7 +2,7 @@
 import { getLocalidades } from '/src/shared/ciudades.js';
 
 export function updateFormField(dom, config = {}) {
-  // Normalizar config para soportar ambos formatos
+  // Normalizar config para soportar ambos formatos (legacy y nuevo)
   const normalizedConfig = {
     id: config.id || config.name,
     content: {
@@ -18,7 +18,7 @@ export function updateFormField(dom, config = {}) {
       rows:      config.flags?.rows      || config.rows,
       options:   config.flags?.options   || config.options,
       maxLength: config.flags?.maxLength || config.maxLength || null,
-      provincia: config.flags?.provincia || config.provincia || null,  // ← autocomplete
+      provincia: config.flags?.provincia || config.provincia || null,
     },
     value:   config.value,
     actions: config.actions || {}
@@ -27,7 +27,7 @@ export function updateFormField(dom, config = {}) {
   const { id, content, flags, value, actions } = normalizedConfig;
   const { wrapper, label, inputWrapper, help } = dom;
 
-  // ── Identidad ──────────────────────────────────────────────
+  // ─ Identidad ──────────────────────────────────────────────
   if (id) {
     wrapper.dataset.fieldId = id;
     label.htmlFor = id;
@@ -43,13 +43,12 @@ export function updateFormField(dom, config = {}) {
 
   // ── Input ──────────────────────────────────────────────────
   inputWrapper.innerHTML = '';
-  let input;
+  let input; // Este será el input principal (hidden en autocomplete, normal en otros)
   const type = flags.type || 'text';
 
   if (type === 'select') {
     input = document.createElement('select');
     input.className = 's-input';
-
     if (flags.options && Array.isArray(flags.options)) {
       flags.options.forEach(opt => {
         const option = document.createElement('option');
@@ -61,51 +60,70 @@ export function updateFormField(dom, config = {}) {
         input.appendChild(option);
       });
     }
-
-  } else if (type === 'textarea') {
+  } 
+  else if (type === 'textarea') {
     input = document.createElement('textarea');
     input.className = 's-input';
     input.rows = flags.rows || 3;
-
-  } else if (type === 'autocomplete') {
-    // ── AUTOCOMPLETE ─────────────────────────────────────────
-    // input fantasma: mantiene el valor seleccionado, expuesto como .input
+  } 
+  else if (type === 'autocomplete') {
+    // ── AUTOCOMPLETE DE CIUDADES ─────────────────────────────
+    
+    // 1. Input Hidden: Almacena el ID o nombre final para el formulario
     input = document.createElement('input');
     input.type   = 'hidden';
-    input.value  = value || '';
+    // Si value es objeto, guardamos el ID, si no, el string
+    input.value  = (typeof value === 'object' && value?.id) ? value.id : (value || '');
     if (id) input.id = id;
 
     const provincia      = flags.provincia;
     const allLocalidades = getLocalidades(provincia);
     const editable       = flags.editable !== false;
 
-    // visible: el input que ve el usuario
+    // 2. Input Visible: Solo para búsqueda visual
     const visibleInput = document.createElement('input');
-    visibleInput.type        = 'text';
-    visibleInput.className   = 's-input';
-    visibleInput.placeholder = content.placeholder || (provincia ? 'Buscá tu localidad...' : 'Primero elegí una provincia');
-    visibleInput.value       = value || '';
+    visibleInput.type         = 'text';
+    visibleInput.className    = 's-input'; // ✅ Usa estilo Skeleton
+    visibleInput.placeholder  = content.placeholder || (provincia ? 'Buscá tu localidad...' : 'Primero elegí una provincia');
     visibleInput.autocomplete = 'off';
-    visibleInput.disabled    = !editable || !provincia;
+    visibleInput.disabled     = !editable || !provincia;
 
-    // dropdown
+    // Setear valor inicial visual
+    if (typeof value === 'string') {
+      visibleInput.value = value;
+    } else if (value?.nombre) {
+      visibleInput.value = value.nombre;
+    }
+
+    // 3. Dropdown
     const dropdown = document.createElement('ul');
-    dropdown.className = 's-autocomplete-dropdown';
+    dropdown.className = 's-autocomplete-dropdown'; // ✅ Usa estilo Skeleton
     dropdown.style.display = 'none';
 
     let selectedIndex = -1;
+    let currentItems = [];
 
     function renderDropdown(items) {
       dropdown.innerHTML = '';
       selectedIndex = -1;
-      if (!items.length) { dropdown.style.display = 'none'; return; }
+      currentItems = items;
 
-      items.slice(0, 8).forEach((nombre, i) => {
+      if (!items.length) {
+        dropdown.style.display = 'none';
+        return;
+      }
+
+      items.slice(0, 8).forEach((loc, i) => {
         const li = document.createElement('li');
         li.className   = 's-autocomplete-option';
-        li.textContent = nombre;
+        li.textContent = loc.nombre;
+        li.dataset.index = i;
+
         li.addEventListener('mouseenter', () => setActive(i));
-        li.addEventListener('mousedown', e => { e.preventDefault(); selectItem(nombre); });
+        li.addEventListener('mousedown', e => {
+          e.preventDefault();
+          selectItem(loc);
+        });
         dropdown.appendChild(li);
       });
 
@@ -113,35 +131,53 @@ export function updateFormField(dom, config = {}) {
     }
 
     function setActive(index) {
-      dropdown.querySelectorAll('li').forEach((li, i) => {
+      dropdown.querySelectorAll('.s-autocomplete-option').forEach((li, i) => {
         li.classList.toggle('is-active', i === index);
       });
       selectedIndex = index;
     }
 
-    function selectItem(nombre) {
-      visibleInput.value     = nombre;
-      input.value            = nombre;            // sincroniza el hidden
+    function selectItem(loc) {
+      visibleInput.value = loc.nombre;
+      input.value        = loc.id || loc.nombre; // Guarda ID preferentemente
+      
       dropdown.style.display = 'none';
-      actions.onChange?.(nombre);
-      // dispara input en el hidden para que los listeners externos funcionen
+      
+      // Disparar onChange externo
+      actions.onChange?.(loc);
+      
+      // Disparar evento 'input' en el hidden para que listeners genéricos lo capten
       input.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
+    // Eventos de filtrado
     visibleInput.addEventListener('input', () => {
       const q = visibleInput.value.trim().toLowerCase();
-      input.value = '';                           // invalida hasta selección
-      if (!q) { dropdown.style.display = 'none'; return; }
-      renderDropdown(allLocalidades.filter(l => l.toLowerCase().includes(q)));
+      input.value = ''; // Invalida hasta selección explícita
+      
+      if (!q) { 
+        dropdown.style.display = 'none'; 
+        return; 
+      }
+      
+      const matches = allLocalidades.filter(l => 
+        l.nombre.toLowerCase().includes(q)
+      );
+      renderDropdown(matches);
     });
 
     visibleInput.addEventListener('focus', () => {
       const q = visibleInput.value.trim().toLowerCase();
-      if (q) renderDropdown(allLocalidades.filter(l => l.toLowerCase().includes(q)));
+      if (q) {
+        const matches = allLocalidades.filter(l => 
+          l.nombre.toLowerCase().includes(q)
+        );
+        renderDropdown(matches);
+      }
     });
 
     visibleInput.addEventListener('keydown', e => {
-      const items = dropdown.querySelectorAll('li');
+      const items = dropdown.querySelectorAll('.s-autocomplete-option');
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setActive(Math.min(selectedIndex + 1, items.length - 1));
@@ -150,7 +186,7 @@ export function updateFormField(dom, config = {}) {
         setActive(Math.max(selectedIndex - 1, 0));
       } else if (e.key === 'Enter' && selectedIndex >= 0) {
         e.preventDefault();
-        selectItem(items[selectedIndex].textContent);
+        selectItem(currentItems[selectedIndex]);
       } else if (e.key === 'Escape') {
         dropdown.style.display = 'none';
       }
@@ -160,24 +196,27 @@ export function updateFormField(dom, config = {}) {
       setTimeout(() => { dropdown.style.display = 'none'; }, 150);
     });
 
-    // el inputWrapper ya tiene position:relative por styles.css
+    // Estructura DOM: Wrapper > [VisibleInput, Dropdown, HiddenInput]
     inputWrapper.appendChild(visibleInput);
     inputWrapper.appendChild(dropdown);
-    inputWrapper.appendChild(input);   // hidden al final
+    inputWrapper.appendChild(input);
 
-  } else {
+    // Exponer visibleInput para accesos directos si fueran necesarios
+    dom.wrapper.visibleInput = visibleInput;
+  } 
+  else {
+    // Tipos estándar (text, email, etc.)
     input = document.createElement('input');
     input.className = 's-input';
     input.type = type;
   }
 
-  // ── Atributos comunes (no autocomplete) ────────────────────
+  // ── Atributos comunes (solo para tipos NO autocomplete) ───
   if (type !== 'autocomplete') {
     if (id)                  input.id          = id;
     if (content.placeholder) input.placeholder = content.placeholder;
     if (value !== undefined) input.value       = value;
 
-    // ── maxLength ────────────────────────────────────────────
     if (flags.maxLength && type !== 'select') {
       input.maxLength = flags.maxLength;
       const currentLen = (value ?? '').toString().length;
@@ -187,11 +226,10 @@ export function updateFormField(dom, config = {}) {
         help.textContent = `${input.value.length}/${flags.maxLength}`;
       });
     }
-
     inputWrapper.appendChild(input);
   }
 
-  // ── Help text estático (solo si no hay maxLength) ──────────
+  // ── Help text estático ─────────────────────────────────────
   if (!flags.maxLength) {
     if (content.helpText) {
       help.textContent   = content.helpText;
@@ -201,15 +239,16 @@ export function updateFormField(dom, config = {}) {
     }
   }
 
-  // ── Flags ──────────────────────────────────────────────────
+  // ─ Flags visuales ─────────────────────────────────────────
   wrapper.classList.toggle('is-required', !!flags.required);
   wrapper.classList.toggle('is-invalid',  !!flags.invalid);
   wrapper.classList.toggle('is-disabled', flags.editable === false);
+
   if (type !== 'autocomplete') {
     input.disabled = flags.editable === false;
   }
 
-  // ── Actions (tipos no-autocomplete) ───────────────────────
+  // ─ Actions (tipos no-autocomplete) ──────────────────────
   if (type !== 'autocomplete') {
     if (actions.onChange) {
       input.addEventListener('input', () => actions.onChange(input.value));
