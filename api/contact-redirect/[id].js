@@ -1,96 +1,159 @@
-// api/contact-redirect/[id].js
-import admin from 'firebase-admin';
+// ============================================================
+// src/pages/modelo-cierre.js
+// ============================================================
+//
+// Define si el comercio cierra transacciones directo (pedido con
+// items+cantidad+entrega, como gastronomía o retail) o si necesita
+// que el cliente vea/pruebe el producto en persona antes de decidir
+// (autos, maquinaria, industria pesada, inmobiliaria a futuro).
+//
+// Esto NO es una variante de "entrega" -- es un modelo transaccional
+// distinto. En "showroom_lead" el bot no cierra nada: genera un lead
+// calificado (interés + item puntual) para que un vendedor humano
+// cierre en persona. Por eso, si el comercio elige esta opción, el
+// step "entrega" se salta completo en el pipeline (ver
+// flowController.js: calcularPipeline) -- no hay qué entregar.
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId:   process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey:  process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-    }),
+import { runLifecycle }           from '/src/skeleton/lifecycle.js';
+import { createFirebaseAdapter }  from '/src/skeleton/adapters/firebaseAdapter.js';
+import { mountLayout }            from '/src/skeleton/layout/index.js';
+import { runFlowController }      from '/src/controllers/flowController.js';
+import { createCard }             from '/src/skeleton/components/card/index.js';
+import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
+import { showToast }              from '/src/skeleton/components/toast/index.js';
+import './modelo-cierre.css';
+
+const OPCIONES = [
+  {
+    key:   'directo',
+    icon:  'fa-cart-shopping',
+    label: 'El cliente pide y recibe',
+    desc:  'Arma su pedido con vos por chat, elige cómo lo recibe (retiro, delivery, envío) y listo. Ideal para gastronomía, kioscos, indumentaria, retail en general.',
+  },
+  {
+    key:   'showroom_lead',
+    icon:  'fa-handshake',
+    label: 'El cliente viene a ver / probar antes de decidir',
+    desc:  'No hay "pedido" ni entrega -- el cliente se interesa en algo puntual y tu asistente le pasa el contacto directo a un vendedor para coordinar una visita. Ideal para autos, maquinaria, inmobiliaria, industria.',
+  },
+];
+
+const adapter = (options) => createFirebaseAdapter(options);
+
+runLifecycle({
+  adapter,
+  options: { loadingMessage: 'Cargando configuración...' },
+
+  async onReady(ctx) {
+    await runFlowController(ctx.user.uid);
+    mountLayout(ctx);
+    const state = await load(ctx);
+    render(ctx, state);
+  }
+});
+
+async function load(ctx) {
+  // Default explícito: 'directo'. Comercios que ya pasaron onboarding
+  // antes de que existiera este step no deben quedar en un estado
+  // ambiguo -- ver nota de migración en el PR de este cambio.
+  const modeloCierre = ctx.comercioData?.modeloCierre || 'directo';
+  return { modeloCierre };
+}
+
+function render(ctx, state) {
+  const page = document.getElementById('skeleton-page');
+  page.innerHTML = '';
+
+  const uiState = { modeloCierre: state.modeloCierre };
+  const originalSnapshot = state.modeloCierre;
+
+  const dirtyController = {
+    hasUnsavedChanges: () => uiState.modeloCierre !== originalSnapshot,
+    markSaved:         () => { /* originalSnapshot se recalcula en próximo load */ },
+  };
+
+  const header = document.createElement('div');
+  header.className = 'page-header';
+  header.innerHTML = `
+    <h2><i class="fas fa-route"></i> Cómo cerrás tus ventas</h2>
+    <p>Esto define cómo tu asistente maneja el interés de un cliente.</p>
+  `;
+  page.appendChild(header);
+
+  page.appendChild(createCard({
+    title:     '¡Tu IA se adapta a esto!',
+    icon:      'fa-robot',
+    variant:   'info',
+    highlight: true,
+    compact:   true,
+    content:   'Si elegís "el cliente viene a ver / probar", tu asistente no va a intentar armar pedidos ni preguntar por delivery -- va a enfocarse en generar el interés y pasarlo a un vendedor.',
+  }));
+
+  const grid = document.createElement('div');
+  grid.className = 'modelo-cierre-grid';
+
+  OPCIONES.forEach(op => {
+    grid.appendChild(createOpcionItem(op, uiState));
   });
-}
-const db = admin.firestore();
 
-export default async function handler(req, res) {
-  const { id: comercioId } = req.query;
-  const { motivo, cobertura, lugar } = req.query;
+  page.appendChild(grid);
 
-  if (!comercioId || !motivo) {
-    return res.status(400).send('Faltan parámetros');
-  }
+  const btnContainer = document.createElement('div');
+  btnContainer.style.marginTop = '30px';
 
-  try {
-    const comercioRef  = db.collection('entidades').doc(comercioId);
-    const comercioSnap = await comercioRef.get();
-    if (!comercioSnap.exists) return res.status(404).send('Comercio no encontrado');
+  btnContainer.appendChild(createOnboardingButton({
+    stepName: 'modelo-cierre',
 
-    // ── professional vive directo en el documento, no en subcolección ──
-    const data = comercioSnap.data();
-    const waNumber = resolveWaNumber(data.whatsapp);
-    if (!waNumber) return res.status(409).send('Sin WhatsApp configurado');
+    validate: () => !!uiState.modeloCierre,
 
-    const nombre = data.nombre || 'el profesional';
+    getData: () => ({
+      modeloCierre: uiState.modeloCierre,
+      comercioId:   ctx.comercioId,
+    }),
 
-    // ── validar lugar contra data.lugares si fue provisto ──
-    let lugarValido = null;
-    if (lugar && Array.isArray(data.lugares)) {
-      const match = data.lugares.find(
-        l => l.activo !== false && l.nombre === lugar
-      );
-      if (match) lugarValido = match.nombre;
-    }
+    dirtyController,
 
-    // ── validar cobertura contra data.cobertura.mutuales si fue provista ──
-    let coberturaValida = null;
-    if (cobertura && data.cobertura?.mutuales?.includes(cobertura)) {
-      coberturaValida = cobertura;
-    } else if (cobertura === 'particular' && data.cobertura?.particular) {
-      coberturaValida = 'Particular';
-    }
+    getLabel: () => {
+      if (ctx.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
+      return 'Guardar y continuar';
+    },
 
-    const mensaje = [
-      'Hola! Vengo de IndiceIA 👋',
-      '',
-      `Motivo: ${motivo}`,
-      coberturaValida ? `Obra social: ${coberturaValida}` : null,
-      lugarValido ? `Lugar preferido: ${lugarValido}` : null,
-      '─────────────────',
-      'Quedo a la espera para coordinar turno 🙏',
-    ].filter(Boolean).join('\n');
+    onSuccess: () => showToast('Guardado correctamente', 'success'),
+    onError:   (err) => showToast('Error al guardar: ' + err.message, 'error'),
+  }));
 
-    const waUrl = `https://wa.me/549${waNumber}?text=${encodeURIComponent(mensaje)}`;
-
-    // ── log: await antes del redirect — en serverless una escritura
-    // fire-and-forget puede no completarse si el proceso se congela
-    // tras responder ──
-    const slug = data.landing?.slug || null;
-    if (slug) {
-      try {
-        await db.collection('landing_events').add({
-          destination: slug,
-          event: 'wa_contact_click',
-          cobertura: coberturaValida,
-          lugar: lugarValido,
-          timestamp: new Date(),
-        });
-      } catch (e) {
-        console.error('[CONTACT-REDIRECT] log falló:', e);
-      }
-    }
-
-    return res.redirect(302, waUrl);
-  } catch (err) {
-    console.error('[CONTACT-REDIRECT]', err);
-    return res.status(500).send('Error interno');
-  }
+  page.appendChild(btnContainer);
 }
 
-function resolveWaNumber(raw) {
-  if (!raw) return null;
-  let n = String(raw).replace(/[\s\-\(\)\+]/g, '');
-  if (n.startsWith('549')) n = n.slice(3);
-  else if (n.startsWith('54')) n = n.slice(2);
-  if (n.startsWith('9') && n.length >= 10) n = n.slice(1);
-  return n || null;
+function createOpcionItem(op, uiState) {
+  const activa = uiState.modeloCierre === op.key;
+
+  const wrapper = document.createElement('label');
+  wrapper.className = `modelo-cierre-item ${activa ? 'activa' : ''}`;
+  wrapper.dataset.key = op.key;
+
+  const radio = document.createElement('input');
+  radio.type    = 'radio';
+  radio.name    = 'modelo_cierre';
+  radio.checked = activa;
+
+  const info = document.createElement('div');
+  info.className = 'modelo-cierre-item-info';
+  info.innerHTML = `
+    <span class="modelo-cierre-item-label"><i class="fas ${op.icon}"></i> ${op.label}</span>
+    <span class="modelo-cierre-item-desc">${op.desc}</span>
+  `;
+
+  wrapper.appendChild(radio);
+  wrapper.appendChild(info);
+
+  radio.addEventListener('change', () => {
+    if (!radio.checked) return;
+    uiState.modeloCierre = op.key;
+    document.querySelectorAll('.modelo-cierre-item').forEach(el => el.classList.remove('activa'));
+    wrapper.classList.add('activa');
+    document.dispatchEvent(new Event('change'));
+  });
+
+  return wrapper;
 }
