@@ -1,12 +1,13 @@
 // ============================================================
 // src/pages/mi-comercio.js
 // ============================================================
-
 // ==================== SKELETON CORE ====================
 import { runLifecycle }            from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter }   from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }             from '/src/skeleton/layout/index.js';
-import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
+// NOTA: Ya no necesitamos importar mountCiudadAutocomplete aquí para renderizar,
+// pero lo dejamos si se usa en otro lado, o podemos eliminarlo si update.js lo maneja todo.
+// import { mountCiudadAutocomplete } from '/src/shared/ciudades.js'; 
 
 // ==================== FIREBASE ====================
 import { doc, getDoc, setDoc, updateDoc, collection, Timestamp } from 'firebase/firestore';
@@ -26,24 +27,23 @@ import { showToast }              from '/src/skeleton/components/toast/index.js'
 import { fillProvinciaSelector } from '/src/shared/provincias.js';
 import { ubicacionFromForm, rubroFromForm } from '/src/shared/entity-context.js';
 import { createInitialPlan } from '/src/shared/createInitialPlan.js';
-
 import './mi-comercio.css';
 
 // ==================== DATOS ESTÁTICOS ====================
 const CATEGORIAS_COMUNES = [
-  "Panadería", "Carnicería", "Verdulería", "Kiosco", "Supermercado", "Restaurante",
-  "Cafetería", "Pizzería", "Heladería", "Bar", "Ropa", "Zapatería", "Belleza",
-  "Peluquería", "Gimnasio", "Farmacia", "Ferretería", "Librería", "Juguetería",
-  "Electrónica", "Mascotas", "Óptica", "Limpieza", "Regalería", "Tienda de deportes"
+ "Panadería ",  "Carnicería ",  "Verdulería ",  "Kiosco ",  "Supermercado ",  "Restaurante ",
+ "Cafetería ",  "Pizzería ",  "Heladería ",  "Bar ",  "Ropa ",  "Zapatería ",  "Belleza ",
+ "Peluquería ",  "Gimnasio ",  "Farmacia ",  "Ferretería ",  "Librería ",  "Juguetería ",
+ "Electrónica ",  "Mascotas ",  "Óptica ",  "Limpieza ",  "Regalería ",  "Tienda de deportes "
 ];
 
 const METODOS_PAGO = [
-  { id: 'efectivo',        nombre: 'Efectivo',        icon: 'fa-money-bill'   },
-  { id: 'tarjeta_debito',  nombre: 'Tarjeta Débito',  icon: 'fa-credit-card'  },
-  { id: 'tarjeta_credito', nombre: 'Tarjeta Crédito', icon: 'fa-credit-card'  },
-  { id: 'transferencia',   nombre: 'Transferencia',   icon: 'fa-exchange-alt' },
-  { id: 'mercadopago',     nombre: 'Mercado Pago',    icon: 'fa-wallet'       },
-  { id: 'qr',              nombre: 'QR',              icon: 'fa-qrcode'       }
+{ id: 'efectivo',        nombre: 'Efectivo',        icon: 'fa-money-bill'   },
+{ id: 'tarjeta_debito',  nombre: 'Tarjeta Débito',  icon: 'fa-credit-card'  },
+{ id: 'tarjeta_credito', nombre: 'Tarjeta Crédito', icon: 'fa-credit-card'  },
+{ id: 'transferencia',   nombre: 'Transferencia',   icon: 'fa-exchange-alt' },
+{ id: 'mercadopago',     nombre: 'Mercado Pago',    icon: 'fa-wallet'       },
+{ id: 'qr',              nombre: 'QR',              icon: 'fa-qrcode'       }
 ];
 
 // ==================== HELPERS ====================
@@ -68,7 +68,6 @@ runLifecycle({
   options: {
     loadingMessage: 'Cargando datos del comercio...',
   },
-
   async onReady(ctx) {
     await runFlowController(ctx.user.uid);
     mountLayout(ctx);
@@ -133,7 +132,6 @@ function render(ctx, state) {
 // ============================================================
 // SECCIONES
 // ============================================================
-
 function renderSeccionBasicos(state, refs, uiState) {
   const section   = crearSeccion('Datos Básicos');
   const tieneSlug = !!state.comercioData.landing?.slug;
@@ -261,27 +259,24 @@ function renderSeccionUbicacion(state, refs, uiState) {
 
   const localFisicoContainer = document.createElement('div');
   localFisicoContainer.className = 'form-field';
-
+  
   const toggleWrapper = document.createElement('div');
   toggleWrapper.className = 'toggle-wrapper';
-
+  
   const checkbox = document.createElement('input');
   checkbox.type    = 'checkbox';
   checkbox.id      = 'tieneLocalFisico';
   checkbox.checked = uiState.tieneLocalFisico;
-
+  
   const label = document.createElement('label');
   label.htmlFor = 'tieneLocalFisico';
-  label.innerHTML = `
-    <span class="toggle-label">¿Tenés local físico?</span>
-    <span class="toggle-helper">Marcá si atendés clientes en un local</span>
-  `;
-
+  label.innerHTML = `<span class="toggle-label">¿Tenés local físico?</span> <span class="toggle-helper">Marcá si atendés clientes en un local</span>`;
+  
   checkbox.addEventListener('change', (e) => {
     uiState.tieneLocalFisico = e.target.checked;
     document.dispatchEvent(new Event('change'));
   });
-
+  
   toggleWrapper.append(checkbox, label);
   localFisicoContainer.appendChild(toggleWrapper);
   section.appendChild(localFisicoContainer);
@@ -300,34 +295,57 @@ function renderSeccionUbicacion(state, refs, uiState) {
     || state.comercioData.localidad?.provincia
     || state.comercioData.provincia
     || '';
+
   if (provinciaActual) refs.fields.provincia.input.value = provinciaActual;
   section.appendChild(refs.fields.provincia);
 
-  const ciudadLabel = document.createElement('label');
-  ciudadLabel.className   = 'form-field-label';
-  ciudadLabel.textContent = 'Ciudad *';
-  section.appendChild(ciudadLabel);
-
-  const ciudadContainer = document.createElement('div');
-  ciudadContainer.className = 'ciudad-autocomplete-container';
-  section.appendChild(ciudadContainer);
-
-  function montarCiudad(provincia, valorActual = '') {
-    mountCiudadAutocomplete(provincia, ciudadContainer, valorActual, (localidad) => {
-      refs.localidadSeleccionada = localidad;
-      document.dispatchEvent(new Event('change'));
-    });
-  }
-
+  // --- CAMPO CIUDAD CON AUTOCOMPLETE INTEGRADO ---
   const localidadActual = state.comercioData.ubicacion?.localidad
     || state.comercioData.localidad
     || state.comercioData.ciudad
     || '';
-  if (provinciaActual) montarCiudad(provinciaActual, localidadActual);
 
-  refs.fields.provincia.input.addEventListener('change', () => {
+  // Función helper para crear/actualizar el campo ciudad
+  const crearCampoCiudad = (provincia, valorInicial) => {
+    // Si ya existe, lo removemos para recrearlo limpio con la nueva provincia
+    if (refs.fields.ciudad) {
+      refs.fields.ciudad.remove();
+    }
+
+    refs.fields.ciudad = createFormField({
+      label: 'Ciudad',
+      name: 'ciudad',
+      type: 'autocomplete',       // ← Tipo especial del Skeleton
+      required: true,
+      provincia: provincia,       // ← Pasa la provincia para filtrar
+      value: valorInicial,        // ← Soporta string u objeto {id, nombre}
+      placeholder: provincia ? 'Buscá tu localidad...' : 'Primero elegí una provincia',
+      onChange: (localidadObj) => {
+        refs.localidadSeleccionada = localidadObj;
+        document.dispatchEvent(new Event('change'));
+      }
+    });
+    
+    // Insertamos antes de Dirección
+    section.insertBefore(refs.fields.ciudad, refs.fields.direccion);
+  };
+
+  // Inicializar ciudad si hay provincia
+  if (provinciaActual) {
+    crearCampoCiudad(provinciaActual, localidadActual);
+  } else {
+    // Crear campo deshabilitado hasta elegir provincia
+    crearCampoCiudad(null, '');
+  }
+
+  // Listener para cuando cambia la provincia
+  refs.fields.provincia.input.addEventListener('change', (e) => {
+    const nuevaProvincia = e.target.value;
     refs.localidadSeleccionada = null;
-    montarCiudad(refs.fields.provincia.input.value);
+    
+    // Recrear el campo ciudad con la nueva provincia
+    crearCampoCiudad(nuevaProvincia, '');
+    
     document.dispatchEvent(new Event('change'));
   });
 
@@ -353,7 +371,6 @@ function renderSeccionContacto(state, refs, uiState) {
     label: 'Teléfono', name: 'telefono', type: 'tel', required: true,
     placeholder: '+54 9 11 1234-5678', value: state.comercioData.telefono || ''
   });
-
   refs.fields.email = createFormField({
     label: 'Email', name: 'email', type: 'email', required: true,
     placeholder: 'contacto@ejemplo.com', value: state.comercioData.email || ''
@@ -369,7 +386,6 @@ function renderSeccionContacto(state, refs, uiState) {
 // ------------------------------------------------------------
 function renderSeccionRedes(state, refs, uiState) {
   const section = crearSeccion('Redes Sociales');
-
   const help = document.createElement('p');
   help.className   = 'form-help';
   help.textContent = 'Al menos una red social es obligatoria.';
@@ -395,11 +411,9 @@ function renderSeccionCategorias(state, refs, uiState) {
     options:  CATEGORIAS_COMUNES,
     selected: state.comercioData.categories || [],
   });
-
   refs.categorySelector.addEventListener('categories-change', () => {
     document.dispatchEvent(new Event('change'));
   });
-
   section.appendChild(refs.categorySelector);
   return section;
 }
@@ -409,32 +423,28 @@ function renderSeccionCategorias(state, refs, uiState) {
 // ------------------------------------------------------------
 function renderSeccionPagos(state, refs, uiState) {
   const section = crearSeccion('Métodos de Pago');
-
   const grid = document.createElement('div');
   grid.className = 'payment-grid';
 
   METODOS_PAGO.forEach(metodo => {
     const isSelected = uiState.selectedPaymentMethods.includes(metodo.id);
-
     const card = createCard({
-      title: metodo.nombre, icon: metodo.icon, variant: 'info',
-      selectable: true, selected: isSelected, compact: true,
-      onClick: () => {
-        card.toggle();
-        if (card.isSelected()) {
-          if (!uiState.selectedPaymentMethods.includes(metodo.id))
-            uiState.selectedPaymentMethods.push(metodo.id);
-        } else {
-          uiState.selectedPaymentMethods = uiState.selectedPaymentMethods.filter(id => id !== metodo.id);
-        }
-        document.dispatchEvent(new Event('change'));
-      }
-    });
-
-    refs.paymentCards.push(card);
-    grid.appendChild(card);
+       title: metodo.nombre, icon: metodo.icon, variant: 'info',
+       selectable: true, selected: isSelected, compact: true,
+       onClick: () => {
+         card.toggle();
+         if (card.isSelected()) {
+           if (!uiState.selectedPaymentMethods.includes(metodo.id))
+             uiState.selectedPaymentMethods.push(metodo.id);
+         } else {
+           uiState.selectedPaymentMethods = uiState.selectedPaymentMethods.filter(id => id !== metodo.id);
+         }
+         document.dispatchEvent(new Event('change'));
+       }
+     });
+     refs.paymentCards.push(card);
+     grid.appendChild(card);
   });
-
   section.appendChild(grid);
   return section;
 }
@@ -445,20 +455,16 @@ function renderSeccionPagos(state, refs, uiState) {
 function renderBotonGuardar(ctx, state, refs, uiState) {
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
-
   const isEditMode = state.isEditMode;
 
   const btn = createOnboardingButton({
     stepName: 'mi-comercio',
-
     validate: () => isFormValid(refs, uiState, state),
-
     getLabel: () => {
       if (!isEditMode) return 'Continuar';
       if (hayDirtyState(refs, uiState, state)) return 'Guardar y volver al dashboard';
       return 'Volver al dashboard';
     },
-
     dirtyController: isEditMode ? {
       hasUnsavedChanges: () => hayDirtyState(refs, uiState, state),
       markSaved: () => {
@@ -466,7 +472,6 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         Object.assign(state.comercioData, current);
       }
     } : undefined,
-
     onSave: async ({ uid, comercioId: ctxComercioId }) => {
       const updates            = getCurrentData(refs, uiState);
       const originalHasLanding = state.comercioData.landing?.slug;
@@ -501,7 +506,6 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
 
         const now       = Timestamp.now();
         const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-
         await createInitialPlan(comercioId);
 
         await setDoc(doc(db, 'landings', uiState.comercioSlug), {
@@ -515,10 +519,9 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
           'onboardingSteps.mi-comercio': true
         });
 
-        // ── Referral event — pendiente de validación ──
+        // ─ Referral event ──
         const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
         const referredBy  = usuarioSnap.data()?.referredBy || null;
-
         if (referredBy) {
           await setDoc(doc(collection(db, 'referral_events')), {
             referrerCode:    referredBy,
@@ -528,19 +531,17 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
             valid:           false,
             timestamp:       new Date()
           });
-          console.log('🎯 Referral event creado (pendiente) para:', referredBy);
+          console.log(' Referral event creado (pendiente) para:', referredBy);
         }
-        // ── Fin referral event ──
+        // ─ Fin referral event ──
 
         return { success: true, stepMarked: true };
-
       } else {
         await updateDoc(doc(db, 'entidades', ctxComercioId), {
           ...updates,
           'onboardingSteps.mi-comercio': true,
           fechaActualizacion: new Date()
         });
-
         if (!originalHasLanding) {
           await setDoc(doc(db, 'landings', uiState.comercioSlug), {
             slug: uiState.comercioSlug, comercioId: ctxComercioId,
@@ -548,18 +549,15 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
             createdAt: new Date(), updatedAt: new Date()
           });
         }
-
         return { success: true, stepMarked: true };
       }
     },
-
     onSuccess: () => showToast('Comercio guardado correctamente', 'success'),
     onError:   (err) => {
-      console.error('❌ Error guardando:', err);
+      console.error(' Error guardando:', err);
       showToast('Error al guardar: ' + err.message, 'error');
     },
   });
-
   btnContainer.appendChild(btn);
   return btnContainer;
 }
@@ -578,7 +576,6 @@ async function validarSlug(slug, refs, uiState, autoGenerated) {
 
   try {
     const landingSnap = await getDoc(doc(db, 'landings', slug));
-
     if (!landingSnap.exists()) {
       uiState.comercioSlug   = slug;
       uiState.slugDisponible = true;
@@ -606,7 +603,6 @@ async function validarSlug(slug, refs, uiState, autoGenerated) {
     uiState.comercioSlug   = null;
     updateSlugStatus(refs, 'taken', 'Este nombre ya está en uso. Probá con otro.');
     document.dispatchEvent(new Event('change'));
-
   } catch (err) {
     console.error('Error validando slug:', err);
     uiState.slugDisponible = false;
@@ -621,11 +617,11 @@ function updateSlugStatus(refs, status, message) {
   const icon  = refs.slugStatus.querySelector('.slug-icon');
   const text  = refs.slugStatus.querySelector('.slug-text');
   const icons = {
-    checking:   '<i class="fas fa-spinner fa-spin"></i>',
-    available:  '<i class="fas fa-check-circle" style="color: var(--s-success)"></i>',
-    suggestion: '<i class="fas fa-info-circle" style="color: var(--s-info)"></i>',
-    taken:      '<i class="fas fa-times-circle" style="color: var(--s-danger)"></i>',
-    error:      '<i class="fas fa-exclamation-triangle" style="color: var(--s-warning)"></i>',
+    checking:   ' <i class= "fas fa-spinner fa-spin " > </i >',
+    available:  ' <i class= "fas fa-check-circle " style= "color: var(--s-success) " > </i >',
+    suggestion: ' <i class= "fas fa-info-circle " style= "color: var(--s-info) " > </i >',
+    taken:      ' <i class= "fas fa-times-circle " style= "color: var(--s-danger) " > </i >',
+    error:      ' <i class= "fas fa-exclamation-triangle " style= "color: var(--s-warning) " > </i >',
     empty:      ''
   };
   icon.innerHTML   = icons[status] || '';
@@ -635,15 +631,12 @@ function updateSlugStatus(refs, status, message) {
 // ============================================================
 // HELPERS DE FORMULARIO
 // ============================================================
-
 function getCurrentData(refs, uiState) {
   return {
     nombre:           refs.fields.nombre?.input.value.trim()          || '',
     descripcion:      refs.fields.descripcion?.input.value.trim()     || '',
-
     ubicacion: ubicacionFromForm(refs),
     rubro: rubroFromForm(refs.categorySelector?.getSelected() || []),
-
     direccion:        refs.fields.direccion?.input.value.trim()       || '',
     telefono:         refs.fields.telefono?.input.value.trim()        || '',
     email:            refs.fields.email?.input.value.trim()           || '',
@@ -659,9 +652,7 @@ function getCurrentData(refs, uiState) {
 
 function isFormValid(refs, uiState, state) {
   const data = getCurrentData(refs, uiState);
-
   const tieneUbicacion = data.ubicacion?.localidad?.id && data.direccion;
-
   const camposBasicos  = data.nombre && data.descripcion &&
                          tieneUbicacion && data.telefono && data.email;
   const tieneRedSocial  = data.website || data.instagram || data.facebook || data.whatsapp;
@@ -695,7 +686,6 @@ function hayDirtyState(refs, uiState, state) {
 // ============================================================
 // UTILS
 // ============================================================
-
 function crearSeccion(titulo) {
   const section = document.createElement('div');
   section.className = 'form-section';
