@@ -26,12 +26,18 @@ import {
  * objeto completo, rompiendo resolvePlanStatus() en el dashboard
  * (siempre veía plan.active === undefined → siempre "vencido").
  * Ahora no se pierde nada: se agregan ambos campos por separado.
+ *
+ * IMPORTANTE: esta función asume que raw es un objeto de comercio
+ * real. NO se debe llamar con null (páginas de usuario sin comercio
+ * asociado) — ver createFirebaseAdapter más abajo, donde se evita
+ * llamarla en ese caso. Se deja igual el guard con `?.` como
+ * resguardo defensivo por si algún otro caller la invoca con null.
  */
 function normalizeComercioData(raw = {}) {
-  const data = { ...raw };
+  const data = { ...(raw || {}) };
 
   // planId: string simple del plan, para consumidores legacy
-  if (!raw.plan) {
+  if (!raw?.plan) {
     data.planId = 'trial';
   } else if (typeof raw.plan === 'object') {
     data.planId = raw.plan.type || 'trial';
@@ -42,7 +48,7 @@ function normalizeComercioData(raw = {}) {
   // plan: objeto intacto para resolvePlanStatus()/dashboard.js.
   // Si viniera como string legacy nunca migrado, armamos un objeto
   // mínimo en vez de dejarlo como string suelto.
-  data.plan = raw.plan && typeof raw.plan === 'object'
+  data.plan = raw?.plan && typeof raw.plan === 'object'
     ? raw.plan
     : { type: data.planId, active: false, trial: true };
 
@@ -62,10 +68,18 @@ export function createFirebaseAdapter(options = {}) {
         try {
           const isEditMode =
             new URLSearchParams(window.location.search).get('edit') === 'true';
+
           const context = {
             ...baseContext,
-            // 🔧 Normalización central
-            comercioData: normalizeComercioData(baseContext.comercioData),
+            // 🔧 Normalización central — SOLO si hay comercio real.
+            // Páginas de usuario (usuario.js, modelo-negocio.js, etc.)
+            // no tienen comercioData todavía: baseContext.comercioData
+            // llega como null, y forzarle un objeto plan fantasma no
+            // tiene sentido semántico y además rompía el flujo
+            // (Cannot read properties of null (reading 'plan')).
+            comercioData: baseContext.comercioData
+              ? normalizeComercioData(baseContext.comercioData)
+              : null,
             isEditMode,
             currentComercioId: baseContext.comercioId,
             // 🔥 Persistencia integrada
@@ -88,6 +102,7 @@ export function createFirebaseAdapter(options = {}) {
             },
             ...options
           };
+
           resolve(context);
         } catch (err) {
           reject(err);
