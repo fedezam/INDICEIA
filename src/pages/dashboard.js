@@ -356,8 +356,13 @@ const page = {
       grid.appendChild(this._renderHorariosDeliveryCard());
     }
 
-    // ── Entrega — solo si tiene productos ─────────────────
-    if (this._data.tieneProductos) {
+    // ── Entrega — solo si tiene productos Y no es showroom_lead.
+    // Mismo criterio que flowController.js/calcularPipeline: en
+    // showroom_lead (autos, maquinaria) no hay qué entregar, el
+    // cliente ve/prueba en persona. Si esta condición se desincroniza
+    // de la de flowController, el dashboard vuelve a mostrar la card. ──
+    const esShowroomLead = this._data.comercio.modeloCierre === 'showroom_lead';
+    if (this._data.tieneProductos && !esShowroomLead) {
       grid.appendChild(this._renderEntregaCard());
     }
 
