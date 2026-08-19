@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
-
 export default defineConfig({
   root: ".",
   resolve: {
@@ -19,11 +18,11 @@ export default defineConfig({
         "mi-comercio": resolve(__dirname, "src/pages/mi-comercio.html"),
         "mi-perfil": resolve(__dirname, "src/pages/mi-perfil.html"),
         "mi-perfil-profesional": resolve(__dirname, "src/pages/mi-perfil-profesional.html"),
-
         // Nuevas páginas de configuración/perfil
         "mi-soporte": resolve(__dirname, "src/pages/mi-soporte.html"),
         documentos: resolve(__dirname, "src/pages/documentos.html"),
         horarios: resolve(__dirname, "src/pages/horarios.html"),
+        "modelo-cierre": resolve(__dirname, "src/pages/modelo-cierre.html"),
         productos: resolve(__dirname, "src/pages/productos.html"),
         servicios: resolve(__dirname, "src/pages/servicios.html"),
         "ia-config": resolve(__dirname, "src/pages/ia-config.html"),
