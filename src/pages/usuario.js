@@ -24,7 +24,7 @@ import { showToast }              from '/src/skeleton/components/toast/index.js'
 
 // ==================== SHARED ====================
 import { fillProvinciaSelector }   from '/src/shared/provincias.js';
-import { mountCiudadAutocomplete } from '/src/shared/ciudades.js';
+// ELIMINADO: import { mountCiudadAutocomplete } from '/src/shared/ciudades.js'; 
 import { getCiudadesCercanas }     from '/src/shared/geo-helpers.js';
 
 // ==================== ADAPTER ====================
@@ -51,7 +51,7 @@ runLifecycle({
 async function load(ctx) {
   const userData   = ctx.userData || {};
   const isEditMode = new URLSearchParams(window.location.search).get('edit') === 'true';
-  console.log('📦 Usuario cargado:', userData);
+  console.log(' Usuario cargado:', userData);
   return { userData, isEditMode };
 }
 
@@ -70,6 +70,7 @@ function render(ctx, state) {
   page.innerHTML = '';
 
   const refs = {
+    fields: {}, // Usamos un objeto fields para consistencia con mi-comercio
     localidadSeleccionada: userData.localidad || null,
   };
 
@@ -79,82 +80,114 @@ function render(ctx, state) {
   title.textContent = 'Datos personales';
   page.appendChild(title);
 
-  // ── Campos ────────────────────────────────────────────────
-  const nombre = createFormField({
+  // ── Campos Básicos ────────────────────────────────────────
+  refs.fields.nombre = createFormField({
     label: 'Nombre', name: 'nombre', required: true,
     value: userData.nombre || ''
   });
 
-  const apellido = createFormField({
+  refs.fields.apellido = createFormField({
     label: 'Apellido', name: 'apellido', required: true,
     value: userData.apellido || ''
   });
 
-  const mail = createFormField({
+  refs.fields.mail = createFormField({
     label: 'Email', name: 'mail', type: 'email', required: false,
     value: userData.mail || '',
     disabled: true
   });
 
-  const fechaNacimiento = createFormField({
+  refs.fields.fechaNacimiento = createFormField({
     label: 'Fecha de nacimiento', name: 'fechaNacimiento',
     placeholder: 'DD/MM/AAAA', required: true,
     value: userData.fechaNacimiento ? isoToFecha(userData.fechaNacimiento) : ''
   });
 
-  const telefono = createFormField({
+  refs.fields.telefono = createFormField({
     label: 'Teléfono', name: 'telefono', required: true,
     value: userData.telefono || ''
   });
 
   // ── PAÍS ──────────────────────────────────────────────────
-  const pais = createFormField({
+  refs.fields.pais = createFormField({
     label: 'País', name: 'pais', value: 'Argentina', disabled: true
   });
 
   // ── PROVINCIA ─────────────────────────────────────────────
-  const provincia = createFormField({
+  refs.fields.provincia = createFormField({
     label: 'Provincia', type: 'select', name: 'provincia', required: true
   });
-  fillProvinciaSelector('Argentina', provincia.input);
+  fillProvinciaSelector('Argentina', refs.fields.provincia.input);
+  
+  // Setear valor inicial si existe
   if (userData.provincia) {
-    setTimeout(() => { provincia.input.value = userData.provincia; }, 0);
+    refs.fields.provincia.input.value = userData.provincia;
   }
+  
+  page.append(
+    refs.fields.nombre, 
+    refs.fields.apellido, 
+    refs.fields.mail, 
+    refs.fields.fechaNacimiento, 
+    refs.fields.telefono,
+    refs.fields.pais, 
+    refs.fields.provincia
+  );
 
-  // ── LOCALIDAD (autocomplete) ───────────────────────────────
-  const localidadLabel = document.createElement('label');
-  localidadLabel.className   = 'form-field-label';
-  localidadLabel.textContent = 'Localidad *';
+  // ── LOCALIDAD (AHORA USANDO CREATEFORMFIELD NATIVO) ───────
+  
+  // Helper para crear/actualizar el campo localidad
+  const crearCampoLocalidad = (provincia, valorInicial) => {
+    if (refs.fields.localidad) {
+      refs.fields.localidad.remove();
+    }
 
-  const localidadContainer = document.createElement('div');
-  localidadContainer.className = 'ciudad-autocomplete-container';
-
-  function montarLocalidad(provinciaVal, valorActual = '') {
-    mountCiudadAutocomplete(provinciaVal, localidadContainer, valorActual, (localidad) => {
-      refs.localidadSeleccionada = localidad;
-      document.dispatchEvent(new Event('change'));
+    refs.fields.localidad = createFormField({
+      label: 'Localidad',
+      name: 'localidad',
+      type: 'autocomplete',       // ← Tipo especial del Skeleton
+      required: true,
+      provincia: provincia,       // ← Pasa la provincia para filtrar
+      value: valorInicial,        // ← Soporta string u objeto {id, nombre}
+      placeholder: provincia ? 'Buscá tu localidad...' : 'Primero elegí una provincia',
+      onChange: (localidadObj) => {
+        refs.localidadSeleccionada = localidadObj;
+        document.dispatchEvent(new Event('change'));
+      }
     });
+    
+    // Insertamos antes de Dirección
+    page.insertBefore(refs.fields.localidad, refs.fields.direccion);
+  };
+
+  // Inicializar localidad si hay provincia
+  const provinciaActual = userData.provincia || '';
+  if (provinciaActual) {
+    crearCampoLocalidad(provinciaActual, userData.localidad);
+  } else {
+    // Crear campo deshabilitado hasta elegir provincia
+    crearCampoLocalidad(null, '');
   }
 
-  if (userData.provincia) {
-    montarLocalidad(userData.provincia, userData.localidad || '');
-  }
-
-  provincia.input.addEventListener('change', () => {
+  // Listener para cuando cambia la provincia
+  refs.fields.provincia.input.addEventListener('change', (e) => {
+    const nuevaProvincia = e.target.value;
     refs.localidadSeleccionada = null;
-    montarLocalidad(provincia.input.value);
+    
+    // Recrear el campo localidad con la nueva provincia
+    crearCampoLocalidad(nuevaProvincia, '');
+    
+    document.dispatchEvent(new Event('change'));
   });
 
   // ── DIRECCIÓN ─────────────────────────────────────────────
-  const direccion = createFormField({
+  refs.fields.direccion = createFormField({
     label: 'Dirección', name: 'direccion', required: true,
     value: userData.direccion || ''
   });
-
-  page.append(
-    nombre, apellido, mail, fechaNacimiento, telefono,
-    pais, provincia, localidadLabel, localidadContainer, direccion
-  );
+  
+  // Agregar dirección al final (ya que localidad se inserta dinámicamente antes)
+  page.appendChild(refs.fields.direccion);
 
   // ── SNAPSHOT + getCurrentState ────────────────────────────
   const initialSnapshot = {
@@ -163,19 +196,19 @@ function render(ctx, state) {
     fechaNacimiento: userData.fechaNacimiento ? isoToFecha(userData.fechaNacimiento) : '',
     telefono:        userData.telefono        || '',
     provincia:       userData.provincia       || '',
-    localidad:       userData.localidad       || '',
+    localidad:       userData.localidad       || '', // Ojo: esto puede ser objeto o string
     direccion:       userData.direccion       || '',
   };
 
   function getCurrentState() {
     return {
-      nombre:          nombre.input.value.trim(),
-      apellido:        apellido.input.value.trim(),
-      fechaNacimiento: fechaNacimiento.input.value.trim(),
-      telefono:        telefono.input.value.trim(),
-      provincia:       provincia.input.value.trim(),
-      localidad:       refs.localidadSeleccionada || '',
-      direccion:       direccion.input.value.trim(),
+      nombre:          refs.fields.nombre.input.value.trim(),
+      apellido:        refs.fields.apellido.input.value.trim(),
+      fechaNacimiento: refs.fields.fechaNacimiento.input.value.trim(),
+      telefono:        refs.fields.telefono.input.value.trim(),
+      provincia:       refs.fields.provincia.input.value.trim(),
+      localidad:       refs.localidadSeleccionada || '', // Ahora es consistente con el objeto devuelto por autocomplete
+      direccion:       refs.fields.direccion.input.value.trim(),
     };
   }
 
@@ -183,7 +216,19 @@ function render(ctx, state) {
   const dirtyController = {
     hasUnsavedChanges() {
       const current = getCurrentState();
-      return Object.keys(initialSnapshot).some(k => current[k] !== initialSnapshot[k]);
+      // Comparación simple para strings, para localidad podrías comparar IDs si es objeto
+      return Object.keys(initialSnapshot).some(k => {
+        const currVal = current[k];
+        const initVal = initialSnapshot[k];
+        
+        // Si localidad es objeto en current pero string en initial, comparamos nombres o IDs
+        if (k === 'localidad') {
+            const currId = typeof currVal === 'object' ? currVal?.id : currVal;
+            const initId = typeof initVal === 'object' ? initVal?.id : initVal;
+            return currId !== initId;
+        }
+        return currVal !== initVal;
+      });
     },
     markSaved() {
       const current = getCurrentState();
@@ -193,27 +238,27 @@ function render(ctx, state) {
     }
   };
 
-  // ── Botón ─────────────────────────────────────────────────
+  // ── Botón ────────────────────────────────────────────────
   const btnContainer = document.createElement('div');
   btnContainer.className = 'btn-container';
 
   btnContainer.appendChild(
     createOnboardingButton({
       stepName: 'usuario',
-
-      // Solo en editMode el botón sabe si hay cambios o no.
-      // En onboarding normal no se pasa → el botón siempre guarda.
       dirtyController: isEditMode ? dirtyController : undefined,
 
       validate() {
         const current = getCurrentState();
+        // Validación robusta: localidad puede ser objeto, verificamos que exista
+        const localidadValida = current.localidad && (typeof current.localidad === 'object' ? current.localidad.nombre : current.localidad !== '');
+        
         const valid = (
           current.nombre          !== '' &&
           current.apellido        !== '' &&
           current.fechaNacimiento !== '' &&
           current.telefono        !== '' &&
           current.provincia       !== '' &&
-          current.localidad       !== '' &&
+          localidadValida         &&
           current.direccion       !== ''
         );
         console.log('🔍 Validación:', valid ? 'OK ✅' : 'FALTAN DATOS ❌');
@@ -227,25 +272,23 @@ function render(ctx, state) {
           : 'Volver al dashboard';
       },
 
-      // FIX: usuario escribe en "usuarios", no en "entidades".
-      // markStepCompleted del botón escribe en entidades → no sirve acá.
-      // Hacemos todo en onSave y retornamos stepMarked: true.
       async onSave({ uid, persistence }) {
         const data = {
-          nombre:          nombre.input.value.trim(),
-          apellido:        apellido.input.value.trim(),
-          fechaNacimiento: fechaToISO(fechaNacimiento.input.value),
-          telefono:        telefono.input.value.trim(),
+          nombre:          refs.fields.nombre.input.value.trim(),
+          apellido:        refs.fields.apellido.input.value.trim(),
+          fechaNacimiento: fechaToISO(refs.fields.fechaNacimiento.input.value),
+          telefono:        refs.fields.telefono.input.value.trim(),
           pais:            'Argentina',
-          provincia:       provincia.input.value.trim(),
-          localidad:       refs.localidadSeleccionada || '',
-          direccion:       direccion.input.value.trim(),
+          provincia:       refs.fields.provincia.input.value.trim(),
+          // Guardamos el objeto completo de localidad si existe, sino el string
+          localidad:       refs.localidadSeleccionada || '', 
+          direccion:       refs.fields.direccion.input.value.trim(),
         };
 
         // Datos del usuario
         await persistence.updateUserData(data);
 
-        // Step "usuario" vive en usuarios.onboardingSteps, no en entidades
+        // Step "usuario" vive en usuarios.onboardingSteps
         await updateDoc(doc(db, 'usuarios', uid), {
           'onboardingSteps.usuario': true,
         });
@@ -265,8 +308,6 @@ function render(ctx, state) {
         showToast('Error al guardar los datos', 'error');
       },
 
-      // Siempre intenta ir al dashboard.
-      // FlowController redirige al siguiente step si el pipeline no está completo.
       redirectTo: '/dashboard.html',
     })
   );
