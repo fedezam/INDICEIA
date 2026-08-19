@@ -39,6 +39,7 @@ const STEPS = {
   'mi-perfil-profesional': { page: 'mi-perfil-profesional' },
   'horarios':              { page: 'horarios'              },
   'horarios-delivery':     { page: 'horarios-delivery'     },
+  'modelo-cierre':         { page: 'modelo-cierre'         },
   'entrega':               { page: 'entrega'               },
   'productos':             { page: 'productos'             },
   'servicios':             { page: 'servicios'             },
@@ -78,8 +79,21 @@ export function calcularPipeline(entityType, capacidades = [], entidadData = {})
   if (necesitaHorarios) steps.push('horarios');
 
   if (tieneProductos) {
-    steps.push('entrega');
-    if (entidadData.entrega?.delivery) steps.push('horarios-delivery');
+    // modelo-cierre decide si el flujo de este comercio es "directo"
+    // (pedido + entrega, gastronomía/retail) o "showroom_lead" (autos,
+    // maquinaria, industria -- el cliente va a ver/probar, no hay
+    // entrega). Se pregunta ANTES de entrega porque condiciona si ese
+    // step siquiera tiene sentido para este comercio.
+    steps.push('modelo-cierre');
+
+    const esShowroomLead = entidadData.modeloCierre === 'showroom_lead';
+
+    if (!esShowroomLead) {
+      steps.push('entrega');
+      if (entidadData.entrega?.delivery) steps.push('horarios-delivery');
+    }
+    // showroom_lead: no hay qué entregar, se salta 'entrega' entero.
+
     steps.push('productos');
   }
 
