@@ -1,296 +1,236 @@
-
 {
-  "version": "1.0",
-  "descripcion": "Vocabulario controlado de tipos de negocio e ÍndiceIA — interior AR",
+  "version": "4.0",
+  "descripcion": "ÍndiceIA v4.0 — Taxonomía unificada. Merge de v2 + v2.2 + v3.1, sin categorías perdidas. Pensada para localidades del interior AR de 40.000 habitantes o menos, con cobertura urbana + rural/industrial.",
+  "estructura": "Nivel 1 (Tipo) > Nivel 2 (Subcategoría). schema_org y DOMAIN se heredan estrictamente del Nivel 2. sinonimos alimentan el resolver como fallback para datos legados/import — el flujo principal es selección directa por codigo desde el dropdown de 2 niveles.",
 
   "tipos": [
-    { "codigo": "FRR", "nombre": "Restaurante / Parrilla / Bar",     "schema_org": "FoodEstablishment",  "tier_default": "C" },
-    { "codigo": "ALI", "nombre": "Almacén / Dietética / Despensa",   "schema_org": "GroceryStore",        "tier_default": "C" },
-    { "codigo": "MOD", "nombre": "Indumentaria / Calzado / Moda",    "schema_org": "ClothingStore",       "tier_default": "C" },
-    { "codigo": "SAL", "nombre": "Clínica / Consultorio / Médico",   "schema_org": "MedicalBusiness",     "tier_default": "B" },
-    { "codigo": "BIE", "nombre": "Spa / Centro de Bienestar",        "schema_org": "HealthAndBeautyBusiness", "tier_default": "C" },
-    { "codigo": "EST", "nombre": "Peluquería / Estética / Barbería", "schema_org": "BeautySalon",         "tier_default": "C" },
-    { "codigo": "DEP", "nombre": "Gimnasio / Club Deportivo",        "schema_org": "SportsActivityLocation", "tier_default": "B" },
-    { "codigo": "FAR", "nombre": "Farmacia / Herboristería",         "schema_org": "Pharmacy",            "tier_default": "B" },
-    { "codigo": "HOM", "nombre": "Ferretería / Materiales / Hogar",  "schema_org": "HomeGoodsStore",      "tier_default": "C" },
-    { "codigo": "VEH", "nombre": "Mecánica / Taller / Repuestos",    "schema_org": "AutoRepair",          "tier_default": "C" },
-    { "codigo": "PRO", "nombre": "Profesional / Estudio / Oficina",  "schema_org": "ProfessionalService", "tier_default": "B" },
-    { "codigo": "EDU", "nombre": "Instituto / Academia / Escuela",   "schema_org": "EducationalOrganization", "tier_default": "B" },
-    { "codigo": "MAS", "nombre": "Veterinaria / Pet Shop",           "schema_org": "VeterinaryCare",      "tier_default": "C" },
-    { "codigo": "INM", "nombre": "Inmobiliaria / Propiedades",       "schema_org": "RealEstateAgent",     "tier_default": "B" },
-    { "codigo": "EVT", "nombre": "Eventos / Catering / Salón",       "schema_org": "EventVenue",          "tier_default": "C" },
-    { "codigo": "OFI", "nombre": "Oficios / Servicios del Hogar",    "schema_org": "HomeAndConstructionBusiness", "tier_default": "C" },
-    { "codigo": "TRV", "nombre": "Turismo / Agencia de Viajes",      "schema_org": "TravelAgency",        "tier_default": "B" }
-  ],
-
-  "tags": {
-    "validos": [
-      "gastronomia", "alimentos", "moda",
-      "salud", "bienestar", "estetica", "deportes", "farmacia",
-      "legal", "contabilidad", "tech", "educacion", "diseno",
-      "construccion", "hogar", "vehiculos", "electricidad",
-      "mascotas", "inmobiliaria", "eventos", "turismo", "oficios"
-    ],
-
-    "mapa_sinonimos": {
-      "restaurant":       "gastronomia",
-      "restaurante":      "gastronomia",
-      "restoran":         "gastronomia",
-      "parrilla":         "gastronomia",
-      "parrillaRestaurant": "gastronomia",
-      "bar":              "gastronomia",
-      "cafe":             "gastronomia",
-      "cafeteria":        "gastronomia",
-      "confiteria":       "gastronomia",
-      "heladeria":        "gastronomia",
-      "pizzeria":         "gastronomia",
-      "sushi":            "gastronomia",
-      "hamburgueseria":   "gastronomia",
-      "delivery":         "gastronomia",
-      "comida":           "gastronomia",
-      "food":             "gastronomia",
-
-      "almacen":          "alimentos",
-      "supermercado":     "alimentos",
-      "minimarket":       "alimentos",
-      "dietetica":        "alimentos",
-      "dietética":        "alimentos",
-      "verduleria":       "alimentos",
-      "carniceria":       "alimentos",
-      "panaderia":        "alimentos",
-      "rotiseria":        "alimentos",
-      "grocery":          "alimentos",
-      "despensa":         "alimentos",
-
-      "ropa":             "moda",
-      "indumentaria":     "moda",
-      "calzado":          "moda",
-      "zapateria":        "moda",
-      "lenceria":         "moda",
-      "boutique":         "moda",
-      "fashion":          "moda",
-      "clothing":         "moda",
-      "accesorios":       "moda",
-
-      "medico":           "salud",
-      "medica":           "salud",
-      "clinica":          "salud",
-      "clínica":          "salud",
-      "consultorio":      "salud",
-      "odontologia":      "salud",
-      "odontólogo":       "salud",
-      "dentista":         "salud",
-      "psicologia":       "salud",
-      "psicólogo":        "salud",
-      "nutricion":        "salud",
-      "nutricionista":    "salud",
-      "kinesiologia":     "salud",
-      "kinesiologo":      "salud",
-      "veterinaria":      "mascotas",
-      "health":           "salud",
-      "medical":          "salud",
-
-      "spa":              "bienestar",
-      "masajes":          "bienestar",
-      "meditacion":       "bienestar",
-      "yoga":             "bienestar",
-      "wellness":         "bienestar",
-      "reiki":            "bienestar",
-      "terapias":         "bienestar",
-
-      "peluqueria":       "estetica",
-      "peluquería":       "estetica",
-      "barberia":         "estetica",
-      "barbería":         "estetica",
-      "estetica":         "estetica",
-      "estética":         "estetica",
-      "manicura":         "estetica",
-      "nail":             "estetica",
-      "cosmetologia":     "estetica",
-      "depilacion":       "estetica",
-      "beauty":           "estetica",
-      "salon":            "estetica",
-
-      "gimnasio":         "deportes",
-      "gym":              "deportes",
-      "crossfit":         "deportes",
-      "pilates":          "deportes",
-      "natacion":         "deportes",
-      "futbol":           "deportes",
-      "tenis":            "deportes",
-      "club":             "deportes",
-      "deporte":          "deportes",
-      "sport":            "deportes",
-      "fitness":          "deportes",
-
-      "farmacia":         "farmacia",
-      "herboristeria":    "farmacia",
-      "herbolario":       "farmacia",
-      "pharmacy":         "farmacia",
-      "drogueria":        "farmacia",
-      "optica":           "farmacia",
-
-      "abogado":          "legal",
-      "abogada":          "legal",
-      "estudioJuridico":  "legal",
-      "escribania":       "legal",
-      "escribano":        "legal",
-      "notaria":          "legal",
-      "legal":            "legal",
-      "law":              "legal",
-      "juridico":         "legal",
-
-      "contador":         "contabilidad",
-      "contadora":        "contabilidad",
-      "estudioContable":  "contabilidad",
-      "impuestos":        "contabilidad",
-      "afip":             "contabilidad",
-      "accounting":       "contabilidad",
-      "contable":         "contabilidad",
-      "auditoria":        "contabilidad",
-
-      "software":         "tech",
-      "desarrollo":       "tech",
-      "it":               "tech",
-      "sistemas":         "tech",
-      "tecnologia":       "tech",
-      "tecnología":       "tech",
-      "web":              "tech",
-      "app":              "tech",
-      "informatica":      "tech",
-      "soporte":          "tech",
-
-      "escuela":          "educacion",
-      "colegio":          "educacion",
-      "instituto":        "educacion",
-      "academia":         "educacion",
-      "tutoria":          "educacion",
-      "tutoría":          "educacion",
-      "clases":           "educacion",
-      "capacitacion":     "educacion",
-      "education":        "educacion",
-      "curso":            "educacion",
-
-      "diseño":           "diseno",
-      "diseñador":        "diseno",
-      "grafico":          "diseno",
-      "publicidad":       "diseno",
-      "marketing":        "diseno",
-      "branding":         "diseno",
-      "imprenta":         "diseno",
-      "fotografia":       "diseno",
-      "fotografía":       "diseno",
-      "design":           "diseno",
-
-      "ferreteria":       "construccion",
-      "ferretería":       "construccion",
-      "materiales":       "construccion",
-      "construccion":     "construccion",
-      "construcción":     "construccion",
-      "carpinteria":      "construccion",
-      "pintureria":       "construccion",
-      "albanileria":      "construccion",
-      "obra":             "construccion",
-      "hardware":         "construccion",
-
-      "muebleria":        "hogar",
-      "mueblería":        "hogar",
-      "decoracion":       "hogar",
-      "decoración":       "hogar",
-      "bazar":            "hogar",
-      "electrodomesticos":"hogar",
-      "electrodomésticos":"hogar",
-      "colchones":        "hogar",
-      "cortinas":         "hogar",
-      "home":             "hogar",
-
-      "electricista":     "electricidad",
-      "electricidad":     "electricidad",
-      "instalaciones":    "electricidad",
-      "iluminacion":      "electricidad",
-      "iluminación":      "electricidad",
-      "electricas":       "electricidad",
-
-      "mecanica":         "vehiculos",
-      "mecánica":         "vehiculos",
-      "taller":           "vehiculos",
-      "repuestos":        "vehiculos",
-      "autos":            "vehiculos",
-      "motos":            "vehiculos",
-      "gomeria":          "vehiculos",
-      "gomería":          "vehiculos",
-      "automotor":        "vehiculos",
-      "car":              "vehiculos",
-      "auto":             "vehiculos",
-
-      "petshop":          "mascotas",
-      "pet":              "mascotas",
-      "perros":           "mascotas",
-      "gatos":            "mascotas",
-      "animales":         "mascotas",
-
-      "inmobiliaria":     "inmobiliaria",
-      "propiedades":      "inmobiliaria",
-      "alquileres":       "inmobiliaria",
-      "realEstate":       "inmobiliaria",
-      "realestate":       "inmobiliaria",
-
-      "eventos":          "eventos",
-      "salon-de-eventos": "eventos",
-      "catering":         "eventos",
-      "cumpleanos":       "eventos",
-      "casamiento":       "eventos",
-      "boda":             "eventos",
-      "fiesta":           "eventos",
-      "event":            "eventos",
-
-      "plomeria":   "oficios",
-      "plomería":   "oficios",
-      "plomero":    "oficios",
-      "gasista":    "oficios",
-      "albanil":    "oficios",
-      "albañil":    "oficios",
-      "pintor":     "oficios",
-      "carpintero": "oficios",
-      "cerrajero":  "oficios",
-      "techista":   "oficios",
-      "herrero":    "oficios",
-      "soldador":   "oficios",
-
-
-      "viajes":           "turismo",
-      "turismo":          "turismo",
-      "agencia":          "turismo",
-      "hotel":            "turismo",
-      "hostel":           "turismo",
-      "travel":           "turismo",
-      "tour":             "turismo"
+    {
+      "codigo": "AGR",
+      "nombre": "Agropecuario e Industria Rural",
+      "subcategorias": [
+        { "codigo": "AGR-INS", "nombre": "Insumos Rurales / Agroquímicos / Semillas / Veterinaria rural", "schema_org": "Store", "sinonimos": ["agroquimicos","semillas","fertilizantes","fumigacion","mosquito","veterinaria rural","forrajeria"] },
+        { "codigo": "AGR-MAQ", "nombre": "Maquinaria Agrícola / Implementos / Acopio", "schema_org": "Store", "sinonimos": ["maquinaria agricola","implementos","sembradora","trilladora","acopio","silos","cooperativa","repuestos agricolas"] },
+        { "codigo": "AGR-SER", "nombre": "Servicios de Campo / Maquinista / Siembra / Cosecha", "schema_org": "ProfessionalService", "sinonimos": ["servicio de siembra","maquinista","cosecha","rolleo","fumigacion aerea"] }
+      ]
+    },
+    {
+      "codigo": "ALI",
+      "nombre": "Alimentos y Almacén",
+      "subcategorias": [
+        { "codigo": "ALI-SUP", "nombre": "Supermercado / Almacén / Dietética", "schema_org": "GroceryStore", "sinonimos": ["almacen","supermercado","minimarket","dietetica","despensa"] },
+        { "codigo": "ALI-FRE", "nombre": "Verdulería / Carnicería / Fiambrería / Pescadería", "schema_org": "Store", "sinonimos": ["verduleria","carniceria","fiambreria","pescaderia"] }
+      ]
+    },
+    {
+      "codigo": "ALT",
+      "nombre": "Terapias Alternativas y Esotéricas",
+      "subcategorias": [
+        { "codigo": "ALT-HOL", "nombre": "Medicina Holística / Naturista / Homeopatía", "schema_org": "HealthAndBeautyBusiness", "sinonimos": ["naturista","homeopatia","flores de bach","acupuntura"] },
+        { "codigo": "ALT-ESO", "nombre": "Tarot / Astrología / Esoterismo", "schema_org": "ProfessionalService", "sinonimos": ["tarot","astrologia","lectura de manos","magnetismo"] }
+      ]
+    },
+    {
+      "codigo": "ART",
+      "nombre": "Artesanías / Oficios Creativos",
+      "subcategorias": [
+        { "codigo": "ART-TEJ", "nombre": "Tejido / Costura / Textil artesanal", "schema_org": "Store", "sinonimos": ["tejido","costura","textil"] },
+        { "codigo": "ART-CER", "nombre": "Cerámica / Talabartería / Cuchillería", "schema_org": "Store", "sinonimos": ["ceramica","talabarteria","cuchilleria artesanal"] }
+      ]
+    },
+    {
+      "codigo": "BIE",
+      "nombre": "Bienestar Físico",
+      "subcategorias": [
+        { "codigo": "BIE-GYM", "nombre": "Gimnasio / Crossfit / Pilates", "schema_org": "ExerciseGym", "sinonimos": ["gimnasio","fitness","crossfit","pilates"] },
+        { "codigo": "BIE-SPA", "nombre": "Spa / Masajes / Termas", "schema_org": "DaySpa", "sinonimos": ["spa","masajes","termas","relax","wellness"] },
+        { "codigo": "BIE-CLU", "nombre": "Club deportivo", "schema_org": "SportsActivityLocation", "sinonimos": ["club","futbol","tenis","natacion"] }
+      ]
+    },
+    {
+      "codigo": "CON",
+      "nombre": "Construcción y Materiales Pesados",
+      "subcategorias": [
+        { "codigo": "CON-COR", "nombre": "Corralón / Áridos / Ladrillos", "schema_org": "HomeGoodsStore", "sinonimos": ["corralon","arena","cemento","ladrillos","aridos","bloques","cal"] },
+        { "codigo": "CON-HOR", "nombre": "Hormigón Elaborado / Mezcla en Obra", "schema_org": "ProfessionalService", "sinonimos": ["hormigon elaborado","concreto","bomba de hormigon","mezcla"] },
+        { "codigo": "CON-TER", "nombre": "Sanitarios / Cerámicos / Durlock / Terminaciones", "schema_org": "HomeGoodsStore", "sinonimos": ["sanitarios","ceramicos","porcelanatos","griferia","durlock","placas","baños"] },
+        { "codigo": "CON-MAR", "nombre": "Marmolería / Granitos / Mesadas", "schema_org": "HomeGoodsStore", "sinonimos": ["marmoleria","granito","mesadas","encimeras"] },
+        { "codigo": "CON-FER", "nombre": "Ferretería / Pinturería / Herramientas", "schema_org": "HardwareStore", "sinonimos": ["ferreteria","pintureria","herramientas"] }
+      ]
+    },
+    {
+      "codigo": "EDU",
+      "nombre": "Educación",
+      "subcategorias": [
+        { "codigo": "EDU-ACA", "nombre": "Academia / Instituto / Clases particulares", "schema_org": "EducationalOrganization", "sinonimos": ["academia","instituto","tutoria","clases","curso","colegio","escuela"] }
+      ]
+    },
+    {
+      "codigo": "EST",
+      "nombre": "Estética y Belleza",
+      "subcategorias": [
+        { "codigo": "EST-PEL", "nombre": "Peluquería / Barbería", "schema_org": "HairSalon", "sinonimos": ["peluqueria","barberia","corte","tintura"] },
+        { "codigo": "EST-MAN", "nombre": "Manicura / Cejas / Pestañas", "schema_org": "BeautySalon", "sinonimos": ["unas","cejas","pestanas","nails","semipermanente","depilacion","cosmetologia"] }
+      ]
+    },
+    {
+      "codigo": "EVT",
+      "nombre": "Eventos",
+      "subcategorias": [
+        { "codigo": "EVT-SAL", "nombre": "Salón de eventos / Catering", "schema_org": "EventVenue", "sinonimos": ["eventos","catering","salon de eventos","casamiento","fiesta","cumpleanos"] }
+      ]
+    },
+    {
+      "codigo": "FAR",
+      "nombre": "Farmacia y Óptica",
+      "subcategorias": [
+        { "codigo": "FAR-FAR", "nombre": "Farmacia / Droguería", "schema_org": "Pharmacy", "sinonimos": ["farmacia","drogueria","perfumeria"] },
+        { "codigo": "FAR-OPT", "nombre": "Óptica / Audiología", "schema_org": "Optician", "sinonimos": ["optica","lentes","audifonos","gafas"] }
+      ]
+    },
+    {
+      "codigo": "FRR",
+      "nombre": "Gastronomía y Viandas",
+      "subcategorias": [
+        { "codigo": "FRR-RES", "nombre": "Restaurante / Parrilla / Menú del Día", "schema_org": "Restaurant", "sinonimos": ["restaurante","parrilla","menu del dia","comida casera","bodegon","asador"] },
+        { "codigo": "FRR-ROT", "nombre": "Rotisería / Comida para Llevar / Pizzería", "schema_org": "FastFoodRestaurant", "sinonimos": ["rotiseria","viandas","comida para llevar","pollo al spiedo","minutas","lomitos","empanadas","pizzeria","hamburgueseria","sushi","delivery"] },
+        { "codigo": "FRR-BAR", "nombre": "Bar / Café / Confitería", "schema_org": "CafeOrCoffeeShop", "sinonimos": ["bar","cafe","confiteria","billar","desayunos","cafeteria"] },
+        { "codigo": "FRR-HEL", "nombre": "Heladería", "schema_org": "IceCreamShop", "sinonimos": ["heladeria","helados"] }
+      ]
+    },
+    {
+      "codigo": "HOM",
+      "nombre": "Hogar y Decoración",
+      "subcategorias": [
+        { "codigo": "HOM-BAZ", "nombre": "Bazar / Regalería / Juguetería", "schema_org": "Store", "sinonimos": ["bazar","regaleria","vajilla","jugueteria"] },
+        { "codigo": "HOM-DEC", "nombre": "Decoración / Cortinas / Alfombras", "schema_org": "HomeGoodsStore", "sinonimos": ["cortinas","roller","blackout","persianas","alfombras","tapizados"] },
+        { "codigo": "HOM-ELE", "nombre": "Electrodomésticos / Blancos / Electricidad", "schema_org": "ElectronicsStore", "sinonimos": ["electrodomesticos","heladeras","lavarropas","aire acondicionado","electricista","iluminacion"] },
+        { "codigo": "HOM-LIB", "nombre": "Librería / Papelería / Imprenta", "schema_org": "BookStore", "sinonimos": ["libreria","papeleria","copias","impresiones","utiles escolares"] }
+      ]
+    },
+    {
+      "codigo": "IND",
+      "nombre": "Industria y Metalmecánica",
+      "subcategorias": [
+        { "codigo": "IND-BUL", "nombre": "Bulonera / Rodamientos / Hidráulica", "schema_org": "HardwareStore", "sinonimos": ["bulonera","rodamientos","mangueras hidraulicas","conexiones"] },
+        { "codigo": "IND-MET", "nombre": "Metalúrgica / Estructuras / Galpones", "schema_org": "GeneralContractor", "sinonimos": ["metalurgica","galpones","estructuras metalicas","soldadura industrial"] }
+      ]
+    },
+    {
+      "codigo": "INM",
+      "nombre": "Inmobiliaria y Campos",
+      "subcategorias": [
+        { "codigo": "INM-AGE", "nombre": "Inmobiliaria / Loteos / Chacras", "schema_org": "RealEstateAgent", "sinonimos": ["inmobiliaria","loteos","chacras","terrenos en cuotas","alquiler de campo","propiedades","alquileres"] }
+      ]
+    },
+    {
+      "codigo": "MAD",
+      "nombre": "Maderas y Aserraderos",
+      "subcategorias": [
+        { "codigo": "MAD-ASE", "nombre": "Aserradero / Madera en Bruto", "schema_org": "Store", "sinonimos": ["aserradero","madera","tablas","vigas","rollizos","leña"] },
+        { "codigo": "MAD-PUE", "nombre": "Puertas de Madera / Marcos / Pisos", "schema_org": "HomeGoodsStore", "sinonimos": ["puertas de madera","marcos","pisos de madera","parquet","deck"] }
+      ]
+    },
+    {
+      "codigo": "MAS",
+      "nombre": "Mascotas",
+      "subcategorias": [
+        { "codigo": "MAS-VET", "nombre": "Veterinaria (urbana)", "schema_org": "VeterinaryCare", "sinonimos": ["veterinaria"] },
+        { "codigo": "MAS-PET", "nombre": "Pet shop", "schema_org": "PetStore", "sinonimos": ["petshop","mascotas","perros","gatos"] }
+      ]
+    },
+    {
+      "codigo": "MOD",
+      "nombre": "Indumentaria y Mobiliario",
+      "subcategorias": [
+        { "codigo": "MOD-ROP", "nombre": "Ropa / Boutique / Indumentaria", "schema_org": "ClothingStore", "sinonimos": ["ropa","boutique","moda","jeans","fashion"] },
+        { "codigo": "MOD-CAL", "nombre": "Calzado / Zapatería", "schema_org": "ShoeStore", "sinonimos": ["zapateria","calzado","zapatillas"] },
+        { "codigo": "MOD-ACC", "nombre": "Accesorios / Bijouterie / Relojería", "schema_org": "JewelryStore", "sinonimos": ["accesorios","relojes","bijou","marroquineria"] },
+        { "codigo": "MOD-MUE", "nombre": "Mueblería / Fábrica de Muebles / Colchones", "schema_org": "FurnitureStore", "sinonimos": ["muebles","fabrica de muebles","sillones","colchones","cocinas integrales"] }
+      ]
+    },
+    {
+      "codigo": "OFI",
+      "nombre": "Oficios de Urgencia y Mantenimiento",
+      "subcategorias": [
+        { "codigo": "OFI-HUM", "nombre": "Plomero / Gasista / Destapes", "schema_org": "Plumber", "sinonimos": ["plomero","gasista","destape","cloacas","urgencias"] },
+        { "codigo": "OFI-AIR", "nombre": "Aire Acondicionado / Refrigeración", "schema_org": "HVACBusiness", "sinonimos": ["aire acondicionado","reparacion de split","frigista","carga de gas"] },
+        { "codigo": "OFI-GAS", "nombre": "Sodería / Garrafas / Gas Envasado", "schema_org": "HomeGoodsStore", "sinonimos": ["sodero","garrafa","gas envasado","carga de garrafas"] },
+        { "codigo": "OFI-SEC", "nombre": "Cerrajero / Herrero / Rejas", "schema_org": "Locksmith", "sinonimos": ["cerrajero","herrero","rejas","apertura de puertas"] },
+        { "codigo": "OFI-CON", "nombre": "Albañil / Pintor / Carpintero / Techista", "schema_org": "HomeAndConstructionBusiness", "sinonimos": ["albañil","pintor","carpintero","techista","soldador"] }
+      ]
+    },
+    {
+      "codigo": "PRO",
+      "nombre": "Servicios Profesionales",
+      "subcategorias": [
+        { "codigo": "PRO-LEG", "nombre": "Abogado / Escribanía", "schema_org": "Attorney", "sinonimos": ["abogado","escribania","legal","sucesiones","notaria"] },
+        { "codigo": "PRO-CON", "nombre": "Contador / Estudio Contable", "schema_org": "AccountingService", "sinonimos": ["contador","estudio contable","impuestos","monotributo","afip"] },
+        { "codigo": "PRO-IT", "nombre": "Desarrollo de Software / Diseño Web / IT", "schema_org": "ProfessionalService", "sinonimos": ["programador","diseño web","sistemas","informatica","soporte tecnico"] },
+        { "codigo": "PRO-DIS", "nombre": "Diseño / Publicidad / Fotografía", "schema_org": "ProfessionalService", "sinonimos": ["diseño","publicidad","marketing","fotografia"] }
+      ]
+    },
+    {
+      "codigo": "REP",
+      "nombre": "Panadería y Repostería",
+      "subcategorias": [
+        { "codigo": "REP-PAN", "nombre": "Panadería Artesanal", "schema_org": "Bakery", "sinonimos": ["panaderia","facturas","pan"] },
+        { "codigo": "REP-TOR", "nombre": "Repostería / Tortas por encargo", "schema_org": "Bakery", "sinonimos": ["tortas","pasteleria","dulceria"] }
+      ]
+    },
+    {
+      "codigo": "SAL",
+      "nombre": "Salud Clínica y Profesional",
+      "subcategorias": [
+        { "codigo": "SAL-MED", "nombre": "Consultorio Médico / Centro de Salud", "schema_org": "Physician", "sinonimos": ["medico","clinica","pediatra","cardiologo","dermatologo","turnos"] },
+        { "codigo": "SAL-DEN", "nombre": "Odontología / Urgencias", "schema_org": "Dentist", "sinonimos": ["dentista","ortodoncia","implantes","urgencia dental"] },
+        { "codigo": "SAL-KIN", "nombre": "Kinesiología / Fonoaudiología / Nutrición", "schema_org": "Physiotherapy", "sinonimos": ["kinesiologo","fonoaudiologo","nutricionista","psicomotricista","psicologia"] },
+        { "codigo": "SAL-LAB", "nombre": "Laboratorio de Análisis / Imágenes", "schema_org": "MedicalBusiness", "sinonimos": ["laboratorio","analisis clinicos","rayos","ecografia","resonancia"] }
+      ]
+    },
+    {
+      "codigo": "SEG",
+      "nombre": "Seguros y Finanzas",
+      "subcategorias": [
+        { "codigo": "SEG-PAS", "nombre": "Productor Asesor de Seguros / Correduría", "schema_org": "InsuranceAgency", "sinonimos": ["productor asesor","seguros","cotizacion","asesor"] },
+        { "codigo": "SEG-ART", "nombre": "ART / Riesgos del Trabajo / Monotributo", "schema_org": "InsuranceAgency", "sinonimos": ["art","riesgos del trabajo","monotributo","empleados temporales"] }
+      ]
+    },
+    {
+      "codigo": "TEC",
+      "nombre": "Tecnología y Celulares",
+      "subcategorias": [
+        { "codigo": "TEC-CEL", "nombre": "Celulares / Reparación / Accesorios", "schema_org": "ElectronicsStore", "sinonimos": ["celulares","reparacion de celulares","fundas","pantallas","cargadores"] },
+        { "codigo": "TEC-PC", "nombre": "Computación / Soporte Técnico", "schema_org": "ComputerStore", "sinonimos": ["computacion","notebooks","impresoras"] }
+      ]
+    },
+    {
+      "codigo": "TRV",
+      "nombre": "Turismo",
+      "subcategorias": [
+        { "codigo": "TRV-AGE", "nombre": "Agencia de viajes / Hotel / Hostel", "schema_org": "TravelAgency", "sinonimos": ["viajes","turismo","agencia","hotel","hostel"] }
+      ]
+    },
+    {
+      "codigo": "VEH",
+      "nombre": "Vehículos y Movilidad",
+      "subcategorias": [
+        { "codigo": "VEH-VTA", "nombre": "Concesionaria / Venta de Autos y Pickups", "schema_org": "AutoDealer", "sinonimos": ["concesionaria","automotores","automotora","pickups","hilux","usados","0km","venta de autos","agencia de autos"] },
+        { "codigo": "VEH-MOT", "nombre": "Motos / Scooters / Cuatriciclos", "schema_org": "MotorcycleDealer", "sinonimos": ["motos","scooters","cuatriciclos"] },
+        { "codigo": "VEH-BIC", "nombre": "Bicicletas / Repuestos / Accesorios", "schema_org": "BicycleStore", "sinonimos": ["bicicletas","bici","repuestos de bici","cubiertas"] },
+        { "codigo": "VEH-TAL", "nombre": "Taller Mecánico / Gomería / Service", "schema_org": "AutoRepair", "sinonimos": ["taller","mecanica","gomeria","service","scanner","pinchadura"] },
+        { "codigo": "VEH-REP", "nombre": "Casa de Repuestos / Autopartes", "schema_org": "AutoPartsStore", "sinonimos": ["repuestos","autopartes","baterias","amortiguadores"] },
+        { "codigo": "VEH-AUX", "nombre": "Grúa / Auxilio Mecánico / Emergencias", "schema_org": "AutomotiveBusiness", "sinonimos": ["grua","auxilio mecanico","remolque","auxilio 24hs"] },
+        { "codigo": "VEH-FLE", "nombre": "Fletes / Cadetería / Remis / Miniflete", "schema_org": "MovingCompany", "sinonimos": ["flete","cadeteria","remis","transporte","miniflete","encomiendas","mudanzas"] },
+        { "codigo": "VEH-LAV", "nombre": "Lavadero / Detailing / Limpieza", "schema_org": "CarWash", "sinonimos": ["lavadero","detailing","limpieza de autos","encerado"] }
+      ]
+    },
+    {
+      "codigo": "VID",
+      "nombre": "Vidrios y Aluminio",
+      "subcategorias": [
+        { "codigo": "VID-CRI", "nombre": "Cristalería / Vidrios / Espejos", "schema_org": "HomeGoodsStore", "sinonimos": ["cristaleria","vidrios","espejos","blindex"] },
+        { "codigo": "VID-ALU", "nombre": "Aluminio / Ventanas / Cerramientos", "schema_org": "GeneralContractor", "sinonimos": ["aluminio","ventanas de aluminio","mamparas","cerramientos","mosquiteros"] }
+      ]
     }
-  },
-
-  "resolucion": {
-    "FRR": ["gastronomia"],
-    "ALI": ["alimentos"],
-    "MOD": ["moda"],
-    "SAL": ["salud"],
-    "BIE": ["bienestar"],
-    "EST": ["estetica"],
-    "DEP": ["deportes"],
-    "FAR": ["farmacia"],
-    "HOM": ["construccion", "hogar", "electricidad"],
-    "VEH": ["vehiculos"],
-    "PRO": ["legal", "contabilidad", "tech", "diseno"],
-    "EDU": ["educacion"],
-    "MAS": ["mascotas"],
-    "INM": ["inmobiliaria"],
-    "EVT": ["eventos"],
-    "TRV": ["turismo"],
-    "OFI": ["oficios"]
-  },
-
-  "notas": {
-    "tipos_mvp_visual_builder": ["FRR","ALI","MOD","SAL","BIE","EST","DEP","FAR","HOM","VEH","PRO","EDU"],
-    "tipos_nicho_whitelist_only": ["MAS","INM","EVT","TRV"],
-    "mapa_sinonimos_version": "1.0 — expandir con datos reales de extractKeywords() en v1.1"
-  }
+  ]
 }
