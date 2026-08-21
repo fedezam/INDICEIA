@@ -261,24 +261,24 @@ function renderSeccionUbicacion(state, refs, uiState) {
 
   const localFisicoContainer = document.createElement('div');
   localFisicoContainer.className = 'form-field';
-  
+
   const toggleWrapper = document.createElement('div');
   toggleWrapper.className = 'toggle-wrapper';
-  
+
   const checkbox = document.createElement('input');
   checkbox.type    = 'checkbox';
   checkbox.id      = 'tieneLocalFisico';
   checkbox.checked = uiState.tieneLocalFisico;
-  
+
   const label = document.createElement('label');
   label.htmlFor = 'tieneLocalFisico';
   label.innerHTML = `<span class="toggle-label">¿Tenés local físico?</span> <span class="toggle-helper">Marcá si atendés clientes en un local</span>`;
-  
+
   checkbox.addEventListener('change', (e) => {
     uiState.tieneLocalFisico = e.target.checked;
     document.dispatchEvent(new Event('change'));
   });
-  
+
   toggleWrapper.append(checkbox, label);
   localFisicoContainer.appendChild(toggleWrapper);
   section.appendChild(localFisicoContainer);
@@ -302,10 +302,29 @@ function renderSeccionUbicacion(state, refs, uiState) {
   section.appendChild(refs.fields.provincia);
 
   // --- CAMPO CIUDAD CON AUTOCOMPLETE INTEGRADO ---
-  const localidadActual = state.comercioData.ubicacion?.localidad
+
+  // FIX: además del nombre para mostrar, necesitamos el objeto completo
+  // {id, nombre, lat, lng} para precargar refs.localidadSeleccionada.
+  // Sin esto, ubicacionFromForm() devuelve null en modo edición hasta que
+  // el usuario reselecciona ciudad manualmente, y el botón de guardar
+  // queda deshabilitado para siempre (isFormValid exige localidad.id).
+  const localidadObjExistente =
+    (state.comercioData.ubicacion?.localidad?.id && state.comercioData.ubicacion.localidad) ||
+    (typeof state.comercioData.localidad === 'object' && state.comercioData.localidad?.id && state.comercioData.localidad) ||
+    (typeof state.comercioData.ciudad === 'object' && state.comercioData.ciudad?.id && state.comercioData.ciudad) ||
+    null;
+
+  const localidadActual = localidadObjExistente?.nombre
+    || state.comercioData.ubicacion?.localidad
     || state.comercioData.localidad
     || state.comercioData.ciudad
     || '';
+
+  // Precargar refs.localidadSeleccionada YA, antes de cualquier interacción
+  // del usuario, así ubicacionFromForm tiene un id válido desde el arranque.
+  if (localidadObjExistente) {
+    refs.localidadSeleccionada = localidadObjExistente;
+  }
 
   const crearCampoCiudad = (provincia, valorInicial) => {
     if (refs.fields.ciudad) {
@@ -325,7 +344,7 @@ function renderSeccionUbicacion(state, refs, uiState) {
         document.dispatchEvent(new Event('change'));
       }
     });
-    
+
     section.insertBefore(refs.fields.ciudad, refs.fields.direccion);
   };
 
@@ -337,6 +356,8 @@ function renderSeccionUbicacion(state, refs, uiState) {
 
   refs.fields.provincia.input.addEventListener('change', (e) => {
     const nuevaProvincia = e.target.value;
+    // Cambiar de provincia invalida la localidad anterior — esto es correcto,
+    // fuerza a re-elegir ciudad dentro de la nueva provincia.
     refs.localidadSeleccionada = null;
     crearCampoCiudad(nuevaProvincia, '');
     document.dispatchEvent(new Event('change'));
@@ -353,6 +374,7 @@ function renderSeccionUbicacion(state, refs, uiState) {
 
   return section;
 }
+
 
 // ------------------------------------------------------------
 // CONTACTO
