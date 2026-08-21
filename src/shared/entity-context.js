@@ -2,42 +2,30 @@
 // src/shared/entity-context.js
 // ⟦ROLE⟧ Contexto unificado: ubicación + rubro
 // NO LER | NO PROMPTS | NO SIDE EFFECTS
+//
+// v2 — Ya NO carga business-vocabulary.json ni reimplementa matching propio.
+// Toda resolución de rubro (tipo + subcategoria + schema_org) delega a
+// rubro-resolver.js — única fuente de verdad. Esto reemplaza la 5ta copia
+// del vocabulario que existía acá (incompatible además con el árbol de
+// 2 niveles: schema_org vive en subcategoria, no en tipo).
 // ============================================================
 
 import { getGeoContext }  from './geo-helpers.js';
-import vocabRaw from './business-vocabulary.json' with { type: 'json' };
-import arGeoRaw from './ar-geo-enriched.json'     with { type: 'json' };
+import arGeoRaw from './ar-geo-enriched.json' with { type: 'json' };
+import {
+  resolveRubro,
+  getTipo,
+  getSubcategoria
+} from '../../lib/entity-factory/rubro-resolver.js';
 
-// ── Limpiar espacios en claves/valores del vocabulario ───────
 const clean = (str) => typeof str === 'string' ? str.trim() : str;
-
-export const vocab = {
-  tipos: (vocabRaw.tipos || []).map(t => ({
-    codigo:       clean(t.codigo),
-    nombre:       clean(t.nombre),
-    schema_org:   clean(t.schema_org),
-    tier_default: clean(t.tier_default)
-  })),
-  tags: {
-    validos: (vocabRaw.tags?.validos || []).map(clean),
-    mapa_sinonimos: Object.fromEntries(
-      Object.entries(vocabRaw.tags?.mapa_sinonimos || {}).map(([k, v]) => [clean(k), clean(v)])
-    )
-  },
-  resolucion: Object.fromEntries(
-    Object.entries(vocabRaw.resolucion || {}).map(([k, v]) => [
-      clean(k),
-      (v || []).map(clean)
-    ])
-  )
-};
 
 export const arGeo = Object.fromEntries(
   Object.entries(arGeoRaw).map(([k, v]) => [clean(k), v])
 );
 
 // ============================================================
-// HELPERS INTERNOS
+// HELPERS INTERNOS (ubicación — sin cambios, no es parte del bug de rubro)
 // ============================================================
 
 const norm   = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
@@ -67,56 +55,27 @@ function _resolverUbicacion(data) {
   return null;
 }
 
-function _tipoDesdeTag(tag) {
-  for (const [tipo, tags] of Object.entries(vocab.resolucion)) {
-    if (tags.includes(tag)) return tipo;
-  }
-  return 'GEN';
-}
+// ============================================================
+// RUBRO — delega 100% a rubro-resolver.js
+// ============================================================
 
-function _resolverRubroDesdeInput(input) {
-  const n = norm(input);
-  if (!n) return null;
+// Envuelve resolveRubro() y devuelve siempre la forma completa
+// { tipo, subcategoria, nombre, schema_org, tags }, con tags conservados
+// del dato crudo (tags no vive en el árbol, es libre — lo preserva tal cual
+// venía de Firestore/onboarding).
+function _rubroCompleto(data) {
+  const resuelto = resolveRubro({ rubro: data.rubro }, data);
+  const tagsCrudos = data.rubro?.tags || [];
 
-  if (vocab.tags.mapa_sinonimos[n]) {
-    const tag = vocab.tags.mapa_sinonimos[n];
-    return { tipo: _tipoDesdeTag(tag), tags: [tag] };
-  }
-
-  const keyMatch = Object.keys(vocab.tags.mapa_sinonimos).find(k => n.includes(k));
-  if (keyMatch) {
-    const tag = vocab.tags.mapa_sinonimos[keyMatch];
-    return { tipo: _tipoDesdeTag(tag), tags: [tag] };
-  }
-
-  if (vocab.tags.validos.includes(n)) {
-    return { tipo: _tipoDesdeTag(n), tags: [n] };
-  }
-
-  return null;
-}
-
-function _resolverRubro(data) {
-  if (data.rubro?.tipo) return data.rubro;
-  const fuentes = [
-    data.businessType,
-    ...(data.categories || []),
-    data.especialidad
-  ].filter(Boolean);
-  for (const f of fuentes) {
-    const res = _resolverRubroDesdeInput(f);
-    if (res) return res;
-  }
-  return { tipo: 'GEN', tags: [] };
-}
-
-function _enriquecerRubro(rubro) {
-  const tipoDef = vocab.tipos.find(t => t.codigo === rubro.tipo);
   return {
-    tipo:       rubro.tipo,
-    nombre:     tipoDef?.nombre     || rubro.tipo,
-    schema_org: tipoDef?.schema_org || 'LocalBusiness',
-    tags:       rubro.tags          || [],
+    tipo:          resuelto.tipo,
+    subcategoria:  resuelto.subcategoria,
+    nombre:        resuelto.nombre || getTipo(resuelto.tipo)?.nombre || resuelto.tipo,
+    schema_org:    resuelto.schema_org,
+    tags:          tagsCrudos,
+    domain_confidence: resuelto.domain_confidence,
+    requiere_completar_subcategoria: !!resuelto.requiere_completar_subcategoria,
+    requiere_revision: !!resuelto.requiere_revision,
   };
 }
 
@@ -125,11 +84,9 @@ function _enriquecerRubro(rubro) {
 // ============================================================
 
 // ── Para entity.json (LLM que responde al usuario) ───────────
-// Necesita: ubicacion propia con coords + rubro enriquecido
-// NO necesita: vecinas (eso es contexto del índice, no de la entidad)
 export function toEntityContext(data) {
   const ubi = _resolverUbicacion(data);
-  const rub = _enriquecerRubro(_resolverRubro(data));
+  const rub = _rubroCompleto(data);
 
   return {
     ...(ubi ? {
@@ -148,18 +105,15 @@ export function toEntityContext(data) {
 }
 
 // ── Para seo.builder (Google) ─────────────────────────────────
-// Necesita: texto legible para <title>, <h1>, meta + paths para canonical URLs
-// NO necesita: coords, vecinas, tags
 export function toSeoContext(data) {
-  const ubi     = _resolverUbicacion(data);
-  const rubro   = _resolverRubro(data);
-  const tipoDef = vocab.tipos.find(t => t.codigo === rubro.tipo);
+  const ubi = _resolverUbicacion(data);
+  const rub = _rubroCompleto(data);
 
   return {
-    pais:        ubi?.pais || 'Argentina',  // ← FIX: agregado
+    pais:        ubi?.pais || 'Argentina',
     localidad:   ubi?.localidad?.nombre || '',
     provincia:   ubi?.provincia         || '',
-    rubroNombre: tipoDef?.nombre        || '',
+    rubroNombre: rub.nombre             || '',
     paths: {
       ciudadPath:    ubi ? toPath(ubi.localidad.nombre) : '',
       provinciaPath: ubi ? toPath(ubi.provincia)        : '',
@@ -168,11 +122,11 @@ export function toSeoContext(data) {
 }
 
 // ── Para index.builder (LLM crawler) ─────────────────────────
-// Necesita: paths para URLs + rubro.tipo/tags para filtrar + vecinas legibles para navegar
-// NO necesita: schema_org, coords precisas
+// FIX: ahora incluye subcategoria — antes se perdía acá, que era el punto
+// de fuga real por el que card.compiler.js nunca la recibía.
 export function toIndexContext(data) {
   const ubi = _resolverUbicacion(data);
-  const rub = _resolverRubro(data);
+  const rub = _rubroCompleto(data);
 
   const paths = ubi ? {
     ciudadPath:    toPath(ubi.localidad.nombre),
@@ -180,15 +134,18 @@ export function toIndexContext(data) {
     localidadId:   ubi.localidad.id || null,
   } : { ciudadPath: '', provinciaPath: '', localidadId: null };
 
-  // vecinas con nombres legibles + distancia para que el LLM navegue
   const geo     = paths.localidadId ? getGeoContext(paths.localidadId) : null;
   const vecinas = geo?.cercanas || [];
 
   return {
-    pais:    ubi?.pais || 'Argentina',  // ← FIX: agregado
+    pais:  ubi?.pais || 'Argentina',
     paths,
-    rubro:   { tipo: rub.tipo, tags: rub.tags },
-    vecinas, // [{ id, nombre, provincia, dist_km }]
+    rubro: {
+      tipo:         rub.tipo,
+      subcategoria: rub.subcategoria,  // ← el campo que faltaba
+      tags:         rub.tags,
+    },
+    vecinas,
   };
 }
 
@@ -199,7 +156,7 @@ export function validarUbicacion(data) {
 }
 
 export function validarRubro(data) {
-  const rub = _resolverRubro(data);
+  const rub = _rubroCompleto(data);
   return !!(rub?.tipo && rub.tipo !== 'GEN');
 }
 
@@ -215,11 +172,25 @@ export function ubicacionFromForm(formRefs) {
   };
 }
 
+// NOTA: rubroFromForm() se elimina como camino recomendado — mi-comercio.js
+// ahora usa refs.rubroSelector.getValue() directo. Se mantiene acá como wrapper
+// de compat porque mi-perfil.js (y potencialmente otros callers no auditados
+// todavía) siguen importándola. Delega a resolveRubro() en vez de reimplementar
+// matching — ya no hay una 5ta copia del vocabulario acá.
+// TODO: migrar mi-perfil.js a rubro-selector cuando se audite esa página.
 export function rubroFromForm(categories = []) {
-  if (!Array.isArray(categories)) return { tipo: 'GEN', tags: [] };
+  if (!Array.isArray(categories) || !categories.length) {
+    return { tipo: 'GEN', tags: [] };
+  }
   for (const cat of categories) {
-    const res = _resolverRubroDesdeInput(cat);
-    if (res) return res;
+    const resuelto = resolveRubro({ categorias: [cat] }, {});
+    if (resuelto.tipo !== 'GEN') {
+      return {
+        tipo: resuelto.tipo,
+        subcategoria: resuelto.subcategoria || null,
+        tags: [cat]
+      };
+    }
   }
   return { tipo: 'GEN', tags: [] };
 }
