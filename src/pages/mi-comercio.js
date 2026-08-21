@@ -5,9 +5,6 @@
 import { runLifecycle }            from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter }   from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }             from '/src/skeleton/layout/index.js';
-// NOTA: Ya no necesitamos importar mountCiudadAutocomplete aquí para renderizar,
-// pero lo dejamos si se usa en otro lado, o podemos eliminarlo si update.js lo maneja todo.
-// import { mountCiudadAutocomplete } from '/src/shared/ciudades.js'; 
 
 // ==================== FIREBASE ====================
 import { doc, getDoc, setDoc, updateDoc, collection, Timestamp } from 'firebase/firestore';
@@ -20,21 +17,24 @@ import { runFlowController } from '/src/controllers/flowController.js';
 import { createFormField }        from '/src/skeleton/components/form-field/index.js';
 import { createCard }             from '/src/skeleton/components/card/index.js';
 import { createCategorySelector } from '/src/skeleton/components/category-selector/index.js';
+import { createRubroSelector }    from '/src/skeleton/components/rubro-selector/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
 
 // ==================== SHARED ====================
 import { fillProvinciaSelector } from '/src/shared/provincias.js';
-import { ubicacionFromForm, rubroFromForm } from '/src/shared/entity-context.js';
+import { ubicacionFromForm } from '/src/shared/entity-context.js';
 import { createInitialPlan } from '/src/shared/createInitialPlan.js';
 import './mi-comercio.css';
 
 // ==================== DATOS ESTÁTICOS ====================
-const CATEGORIAS_COMUNES = [
- "Panadería ",  "Carnicería ",  "Verdulería ",  "Kiosco ",  "Supermercado ",  "Restaurante ",
- "Cafetería ",  "Pizzería ",  "Heladería ",  "Bar ",  "Ropa ",  "Zapatería ",  "Belleza ",
- "Peluquería ",  "Gimnasio ",  "Farmacia ",  "Ferretería ",  "Librería ",  "Juguetería ",
- "Electrónica ",  "Mascotas ",  "Óptica ",  "Limpieza ",  "Regalería ",  "Tienda de deportes "
+// NOTA: ya no se usa para clasificación del rubro (eso lo maneja rubro-selector
+// contra business-vocabulary.json). Se mantiene para el category-selector,
+// que ahora sirve solo para tags DESCRIPTIVOS adicionales, no clasificatorios.
+const TAGS_DESCRIPTIVOS_SUGERIDOS = [
+  "Envío a domicilio", "Abierto los domingos", "Acepta reservas",
+  "Pet friendly", "Apto celíacos", "Wifi gratis", "Estacionamiento propio",
+  "Atención 24hs", "Venta mayorista", "Envío a otras localidades"
 ];
 
 const METODOS_PAGO = [
@@ -100,7 +100,8 @@ function render(ctx, state) {
 
   const refs = {
     fields:              {},
-    categorySelector:    null,
+    categorySelector:    null,   // tags descriptivos libres
+    rubroSelector:       null,   // NUEVO: clasificación tipo/subcategoria
     paymentCards:        [],
     slugInput:           null,
     slugStatus:          null,
@@ -124,7 +125,8 @@ function render(ctx, state) {
   page.appendChild(renderSeccionUbicacion(state, refs, uiState));
   page.appendChild(renderSeccionContacto(state, refs, uiState));
   page.appendChild(renderSeccionRedes(state, refs, uiState));
-  page.appendChild(renderSeccionCategorias(state, refs, uiState));
+  page.appendChild(renderSeccionRubro(state, refs, uiState));       // NUEVO — reemplaza a Categorías
+  page.appendChild(renderSeccionTagsDescriptivos(state, refs, uiState)); // antes "Categorías"
   page.appendChild(renderSeccionPagos(state, refs, uiState));
   page.appendChild(renderBotonGuardar(ctx, state, refs, uiState));
 }
@@ -305,9 +307,7 @@ function renderSeccionUbicacion(state, refs, uiState) {
     || state.comercioData.ciudad
     || '';
 
-  // Función helper para crear/actualizar el campo ciudad
   const crearCampoCiudad = (provincia, valorInicial) => {
-    // Si ya existe, lo removemos para recrearlo limpio con la nueva provincia
     if (refs.fields.ciudad) {
       refs.fields.ciudad.remove();
     }
@@ -315,10 +315,10 @@ function renderSeccionUbicacion(state, refs, uiState) {
     refs.fields.ciudad = createFormField({
       label: 'Ciudad',
       name: 'ciudad',
-      type: 'autocomplete',       // ← Tipo especial del Skeleton
+      type: 'autocomplete',
       required: true,
-      provincia: provincia,       // ← Pasa la provincia para filtrar
-      value: valorInicial,        // ← Soporta string u objeto {id, nombre}
+      provincia: provincia,
+      value: valorInicial,
       placeholder: provincia ? 'Buscá tu localidad...' : 'Primero elegí una provincia',
       onChange: (localidadObj) => {
         refs.localidadSeleccionada = localidadObj;
@@ -326,26 +326,19 @@ function renderSeccionUbicacion(state, refs, uiState) {
       }
     });
     
-    // Insertamos antes de Dirección
     section.insertBefore(refs.fields.ciudad, refs.fields.direccion);
   };
 
-  // Inicializar ciudad si hay provincia
   if (provinciaActual) {
     crearCampoCiudad(provinciaActual, localidadActual);
   } else {
-    // Crear campo deshabilitado hasta elegir provincia
     crearCampoCiudad(null, '');
   }
 
-  // Listener para cuando cambia la provincia
   refs.fields.provincia.input.addEventListener('change', (e) => {
     const nuevaProvincia = e.target.value;
     refs.localidadSeleccionada = null;
-    
-    // Recrear el campo ciudad con la nueva provincia
     crearCampoCiudad(nuevaProvincia, '');
-    
     document.dispatchEvent(new Event('change'));
   });
 
@@ -402,14 +395,46 @@ function renderSeccionRedes(state, refs, uiState) {
 }
 
 // ------------------------------------------------------------
-// CATEGORÍAS
+// RUBRO (NUEVO) — clasificación tipo/subcategoría vía árbol de 2 niveles
 // ------------------------------------------------------------
-function renderSeccionCategorias(state, refs, uiState) {
-  const section = crearSeccion('Categorías');
+function renderSeccionRubro(state, refs, uiState) {
+  const section = crearSeccion('Rubro de tu negocio');
+
+  const help = document.createElement('p');
+  help.className   = 'form-help';
+  help.textContent = 'Elegí tu rubro y especialidad. Esto define cómo te van a encontrar tus clientes.';
+  section.appendChild(help);
+
+  const rubroActual = state.comercioData.rubro || {};
+
+  refs.rubroSelector = createRubroSelector({
+    tipo: rubroActual.tipo || null,
+    subcategoria: rubroActual.subcategoria || null,
+  });
+
+  refs.rubroSelector.addEventListener('rubro-change', () => {
+    document.dispatchEvent(new Event('change'));
+  });
+
+  section.appendChild(refs.rubroSelector);
+  return section;
+}
+
+// ------------------------------------------------------------
+// TAGS DESCRIPTIVOS (antes "Categorías") — ya NO clasifica el negocio
+// ------------------------------------------------------------
+function renderSeccionTagsDescriptivos(state, refs, uiState) {
+  const section = crearSeccion('Etiquetas adicionales');
+
+  const help = document.createElement('p');
+  help.className   = 'form-help';
+  help.textContent = 'Opcional. Sumá detalles que ayuden a describir tu negocio (no afectan tu clasificación).';
+  section.appendChild(help);
 
   refs.categorySelector = createCategorySelector({
-    options:  CATEGORIAS_COMUNES,
+    options:  TAGS_DESCRIPTIVOS_SUGERIDOS,
     selected: state.comercioData.categories || [],
+    customPlaceholder: 'O agregá una etiqueta propia...'
   });
   refs.categorySelector.addEventListener('categories-change', () => {
     document.dispatchEvent(new Event('change'));
@@ -636,7 +661,7 @@ function getCurrentData(refs, uiState) {
     nombre:           refs.fields.nombre?.input.value.trim()          || '',
     descripcion:      refs.fields.descripcion?.input.value.trim()     || '',
     ubicacion: ubicacionFromForm(refs),
-    rubro: rubroFromForm(refs.categorySelector?.getSelected() || []),
+    rubro: refs.rubroSelector?.getValue()                             || { tipo: null, subcategoria: null },
     direccion:        refs.fields.direccion?.input.value.trim()       || '',
     telefono:         refs.fields.telefono?.input.value.trim()        || '',
     email:            refs.fields.email?.input.value.trim()           || '',
@@ -644,7 +669,7 @@ function getCurrentData(refs, uiState) {
     instagram:        refs.fields.instagram?.input.value.trim()       || null,
     facebook:         refs.fields.facebook?.input.value.trim()        || null,
     whatsapp:         refs.fields.whatsapp?.input.value.trim()        || null,
-    categories:       refs.categorySelector?.getSelected()            || [],
+    categories:       refs.categorySelector?.getSelected()            || [], // tags descriptivos, no clasificatorios
     paymentMethods:   uiState.selectedPaymentMethods,
     tieneLocalFisico: uiState.tieneLocalFisico,
   };
@@ -656,10 +681,13 @@ function isFormValid(refs, uiState, state) {
   const camposBasicos  = data.nombre && data.descripcion &&
                          tieneUbicacion && data.telefono && data.email;
   const tieneRedSocial  = data.website || data.instagram || data.facebook || data.whatsapp;
-  const tieneCategorias = data.categories.length > 0;
+  // Rubro: exigimos al menos el tipo (nivel 1). La subcategoría se recomienda
+  // pero no bloquea el guardado — así no perdemos al usuario si su rubro no
+  // tiene aún una especialidad cargada (queda marcado para revisión vía resolver).
+  const tieneRubro      = !!data.rubro?.tipo;
   const slugValido      = state.comercioData.landing?.slug || uiState.slugDisponible;
 
-  return !!(camposBasicos && tieneRedSocial && tieneCategorias && slugValido);
+  return !!(camposBasicos && tieneRedSocial && tieneRubro && slugValido);
 }
 
 function hayDirtyState(refs, uiState, state) {
@@ -670,6 +698,7 @@ function hayDirtyState(refs, uiState, state) {
     current.nombre          !== (original.nombre          || '') ||
     current.descripcion     !== (original.descripcion     || '') ||
     JSON.stringify(current.ubicacion) !== JSON.stringify(original.ubicacion || original.localidad || null) ||
+    JSON.stringify(current.rubro)     !== JSON.stringify(original.rubro     || { tipo: null, subcategoria: null }) ||
     current.direccion       !== (original.direccion       || '') ||
     current.telefono        !== (original.telefono        || '') ||
     current.email           !== (original.email           || '') ||
