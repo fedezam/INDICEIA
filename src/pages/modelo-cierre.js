@@ -13,6 +13,18 @@
 // cierre en persona. Por eso, si el comercio elige esta opción, el
 // step "entrega" se salta completo en el pipeline (ver
 // flowController.js: calcularPipeline) -- no hay qué entregar.
+//
+// NOTA: este step se visita UNA SOLA VEZ dentro del pipeline de
+// onboarding (no es una página de edición recurrente como horarios
+// o productos) -- flowController no te deja llegar al dashboard, y
+// por lo tanto no se genera la entidad, hasta que este paso quede
+// marcado como completo. Por eso NO usa dirtyController: ese patrón
+// asume que "valor en pantalla == snapshot inicial" implica "ya está
+// guardado en Firestore", lo cual es falso acá cuando el snapshot es
+// un default en memoria ('directo') que nunca se persistió. Eso
+// generaba un loop modelo-cierre → dashboard → modelo-cierre para
+// comercios que aceptaban el default sin tocar el radio. Guardar
+// siempre en el click, sin atajo de "sin cambios".
 
 import { runLifecycle }           from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter }  from '/src/skeleton/adapters/firebaseAdapter.js';
@@ -65,12 +77,6 @@ function render(ctx, state) {
   page.innerHTML = '';
 
   const uiState = { modeloCierre: state.modeloCierre };
-  const originalSnapshot = state.modeloCierre;
-
-  const dirtyController = {
-    hasUnsavedChanges: () => uiState.modeloCierre !== originalSnapshot,
-    markSaved:         () => { /* originalSnapshot se recalcula en próximo load */ },
-  };
 
   const header = document.createElement('div');
   header.className = 'page-header';
@@ -111,12 +117,10 @@ function render(ctx, state) {
       comercioId:   ctx.comercioId,
     }),
 
-    dirtyController,
+    // Sin dirtyController a propósito -- ver nota al inicio del archivo.
+    // Este step se visita una sola vez; siempre debe persistir al click.
 
-    getLabel: () => {
-      if (ctx.isEditMode && !dirtyController.hasUnsavedChanges()) return 'Volver al dashboard';
-      return 'Guardar y continuar';
-    },
+    getLabel: () => 'Guardar y continuar',
 
     onSuccess: () => showToast('Guardado correctamente', 'success'),
     onError:   (err) => showToast('Error al guardar: ' + err.message, 'error'),
