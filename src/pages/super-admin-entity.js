@@ -667,7 +667,60 @@ function renderSeccionPublicacion(container, entidad, comercioId, rerender) {
       }
     }
   }));
+
+  // ── SEO — independiente de la regeneración de entidad. La entidad se
+  // regenera cuando cambian datos operativos (precios, catálogo, config
+  // interna); seo.html solo debería regenerarse cuando cambian datos
+  // "de indexación" (dirección, rubro, nombre, descripción). Separado a
+  // propósito para no disparar un rebuild completo solo por ajustar SEO
+  // mientras se está trabajando en la capa de indexación.
+  //
+  // ASUNCIÓN A VALIDAR: este botón manda action: 'regenerate_seo' al
+  // mismo endpoint /api/generate-and-upload-entity. Si el handler
+  // todavía no distingue por `action` y siempre regenera todo, hay que
+  // agregar esa rama del lado del backend antes de que esto sirva de
+  // algo -- si no, el botón va a terminar regenerando la entidad entera
+  // igual, que es justo lo que se quiere evitar.
+  const seoGeneratedAt = entidad.seoGeneratedAt
+    ? (entidad.seoGeneratedAt?.toDate?.() || new Date(entidad.seoGeneratedAt))
+    : null;
+  const seoCard = makeCard({
+    icon: '🔍',
+    title: 'SEO (seo.html)',
+    status: seoGeneratedAt ? 'ok' : 'empty',
+    body: `
+      ${seoGeneratedAt
+        ? `<p>Última generación: ${seoGeneratedAt.toLocaleString('es-AR')}</p>`
+        : '<p>Nunca generado</p>'}
+      <div style="margin-top:8px">
+        <button type="button" class="sa-btn sa-btn--secondary sa-seo-regenerar">🔍 Regenerar solo SEO</button>
+      </div>
+    `,
+  });
+  grid.appendChild(seoCard);
   container.appendChild(wrap);
+
+  const seoBtn = seoCard.querySelector('.sa-seo-regenerar');
+  seoBtn.onclick = async () => {
+    if (!confirm('¿Regenerar seo.html? Esto NO toca la entidad ni la mini app, solo la página de indexación.')) return;
+    seoBtn.disabled = true;
+    seoBtn.textContent = 'Regenerando...';
+    try {
+      const res = await fetch('/api/generate-and-upload-entity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'regenerate_seo', comercioId })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      entidad.seoGeneratedAt = new Date().toISOString();
+      rerender();
+    } catch (err) {
+      console.error('[superAdmin] Error regenerando SEO:', err);
+      alert('Error al regenerar SEO: ' + err.message);
+      seoBtn.disabled = false;
+      seoBtn.textContent = '🔍 Regenerar solo SEO';
+    }
+  };
 }
 
 // ──────────────────────────────────────────────────────────
