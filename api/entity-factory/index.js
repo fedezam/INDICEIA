@@ -221,22 +221,26 @@ export async function buildEntity({ comercioId }) {
 // que agregarlo acá también o esta función quedará desincronizada
 // silenciosamente respecto de buildEntity().
 export async function regenerateSeoOnly({ comercioId }) {
-  const { comercioRef, data, slug, context } = await loadBaseContext(comercioId);
+  const { data, slug, context } = await loadBaseContext(comercioId);
 
   delete context.domain_tag;
   delete context.contacto;
   delete context.referral_link;
 
   const savedSeo = { seoHash: data.seoHash || null, seoHtmlUrl: data.seoHtmlUrl || null };
-  const seoResult = await buildSeo(context, comercioId, savedSeo, slug);
 
-  // buildSeo persiste seoHash/seoHtmlUrl internamente (mismo comportamiento
-  // que en buildEntity), pero acá agregamos un timestamp propio para que
-  // el panel de super-admin pueda mostrar "última generación de SEO" sin
-  // depender de entityGeneratedAt (que no se toca en este flujo).
-  await comercioRef.update({
-    seoGeneratedAt: new Date().toISOString(),
-  });
+  // forceRegenerate: true — este botón existe específicamente para el caso
+  // en que los datos "de indexación" (nombre, rubro, ubicación, etc.) NO
+  // cambiaron pero igual queremos re-subir seo.html (ajustes al propio
+  // seo.builder.js, iteración sobre el HTML/JSON-LD generado, etc.). Sin
+  // esto, buildSeo hace skip por el guard de hash y el botón no tiene
+  // ningún efecto visible pese a responder 200 OK.
+  const seoResult = await buildSeo(context, comercioId, savedSeo, slug, { forceRegenerate: true });
+
+  // NOTA: no pisamos seoGeneratedAt acá — buildSeo ya lo persiste en
+  // Firestore cuando efectivamente sube un HTML nuevo (skipped: false).
+  // Si en algún escenario diera skipped: true (ej. sin slug), no hay
+  // nada nuevo que reportar como "generado".
 
   return { comercioId, seo: seoResult ?? null };
 }
