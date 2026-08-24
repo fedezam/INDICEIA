@@ -74,6 +74,25 @@
 // (deprecada). Instalado: v3.x.
 // ────────────────────────────────────────────────────────────────
 //
+// ── Nota (24/08/2026) ──────────────────────────────────────────
+// Se agrega action: 'regenerate_seo' — mismo motivo que las
+// anteriores (límite de funciones serverless de Vercel).
+//
+// Regenera SOLO seo.html (vía regenerateSeoOnly en entity-factory),
+// sin correr goods/visual/mind/channels/capabilities y sin tocar
+// entity.json, entityGeneratedAt, ni el índice geográfico. Pensado
+// para el botón "Regenerar solo SEO" del panel de super-admin,
+// mientras se ajusta la capa de indexación de Google sin querer
+// disparar un rebuild completo por cada iteración.
+//
+// Scoped a una entidad puntual (comercioId), mismo criterio que
+// plan_reactivate/plan_extend — no requiere ADMIN_SECRET (no puede
+// hacer daño masivo, y ya está gateado client-side por el chequeo de
+// role !== 'admin' en super-admin-entity.js). Mismo hueco de seguridad
+// que las otras dos: si alguna vez importa cerrarlo, sumarle
+// checkAdminSecret.
+// ────────────────────────────────────────────────────────────────
+//
 // Uso desde el panel:
 //   fetch('/api/generate-and-upload-entity', {
 //     method: 'POST',
@@ -105,11 +124,17 @@
 //     body: JSON.stringify({ action: 'create_payment_preference', comercioId: '...', planType: 'pro' })
 //   })
 //
+//   fetch('/api/generate-and-upload-entity', {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify({ action: 'regenerate_seo', comercioId: '...' })
+//   })
+//
 // El comportamiento original (comercioId + createInitialPlan opcional)
 // sigue funcionando igual que siempre cuando no se manda `action`.
 // ────────────────────────────────────────────────────────────────
 
-import { buildEntity } from '../entity-factory/index.js';
+import { buildEntity, regenerateSeoOnly } from '../entity-factory/index.js';
 import { buildIndex } from '../../lib/entity-factory/builders/index.builder.js';
 import { enrichAndSaveCityIndex } from '../../lib/entity-factory/enrich-index.builder.js';
 import { normalizeEntityData } from '../../lib/entity-factory/normalizers/normalizeEntityData.js';
@@ -370,6 +395,21 @@ async function handleCreatePaymentPreference(res, comercioId, planType) {
   return res.status(200).json({ initPoint: response.init_point });
 }
 
+// ── Acción: regenerar SOLO seo.html de una entidad puntual ──
+// No pasa por regenerateOne() a propósito: NO debe tocar entity.json,
+// entityGeneratedAt, ni el índice geográfico (buildIndex/
+// enrichAndSaveCityIndex) — eso sería exactamente el rebuild completo
+// que esta acción existe para evitar. regenerateSeoOnly ya persiste
+// seoGeneratedAt en Firestore internamente.
+async function handleRegenerateSeo(res, comercioId) {
+  if (!comercioId || typeof comercioId !== 'string') {
+    return res.status(400).json({ error: 'comercioId requerido' });
+  }
+
+  const result = await regenerateSeoOnly({ comercioId });
+  return res.status(200).json({ ok: true, ...result });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -398,6 +438,10 @@ export default async function handler(req, res) {
 
     if (action === 'plan_extend') {
       return await handleExtendPlan(res, comercioId, days);
+    }
+
+    if (action === 'regenerate_seo') {
+      return await handleRegenerateSeo(res, comercioId);
     }
 
     // ── Acción: crear preference de pago (usuario final, no admin) ──
