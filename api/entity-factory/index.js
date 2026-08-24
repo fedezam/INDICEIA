@@ -103,9 +103,13 @@ async function buildProfesionalEntity(comercioRef, data, context, referralCode, 
   return { goods, services, professional, visual, mind, mind_hash, mind_id, channels, capabilities };
 }
 
-// ─── EXPORT PRINCIPAL ─────────────────────────────────────────
-
-export async function buildEntity({ comercioId }) {
+// ─── CONTEXTO COMPARTIDO (comercioId → data + context + slug) ──
+//
+// Extraído de buildEntity() para que regenerateSeoOnly() pueda armar
+// el mismo `context` sin correr los builders de goods/visual/mind,
+// que son los costosos y los que NO queremos disparar al tocar solo
+// SEO.
+async function loadBaseContext(comercioId) {
   if (!comercioId) throw new Error('Falta comercioId');
 
   const comercioRef = db.collection('entidades').doc(comercioId);
@@ -115,14 +119,21 @@ export async function buildEntity({ comercioId }) {
   const data       = normalizeEntityData(snap.data());
   const entityType = data.entityType || 'comercio';
 
-  // Slug desde Firestore — fuente de verdad única
   const slug         = data.landing?.slug || null;
   const referralCode = await resolveReferralCode(comercioId, data.duenoId);
-  const context      = buildContext(data, comercioId, referralCode);
+  const context       = buildContext(data, comercioId, referralCode);
 
-  // Domain — efímero, solo para mind y meta
   const domainMeta = resolveDomain(context, data);
   context.domain_tag = domainMeta.domain_tag;
+
+  return { comercioRef, data, entityType, slug, context, domainMeta, referralCode };
+}
+
+// ─── EXPORT PRINCIPAL ─────────────────────────────────────────
+
+export async function buildEntity({ comercioId }) {
+  const { comercioRef, data, entityType, slug, context, domainMeta, referralCode } =
+    await loadBaseContext(comercioId);
 
   // ── Builder según entityType ──────────────────────────────
   let built;
@@ -193,4 +204,39 @@ export async function buildEntity({ comercioId }) {
     ...(channels      && { channels }),
     ...(capabilities  && { capabilities }),
   };
+}
+
+// ─── EXPORT: SOLO SEO ───────────────────────────────────────
+//
+// Regenera únicamente seo.html, sin correr goods/visual/mind/channels/
+// capabilities. Pensado para el botón "Regenerar solo SEO" del panel
+// de super-admin — permite iterar sobre la capa de indexación (Google)
+// sin disparar un rebuild completo de la entidad ni tocar entity.json
+// ni la mini app.
+//
+// IMPORTANTE: usa el mismo `context` que buildEntity() le pasaría a
+// buildSeo() en el mismo punto del flujo (antes del enrichedContext de
+// geo/rubro, que buildSeo no consume). Si en el futuro buildSeo pasa a
+// necesitar algo de enrichedContext (geoCtx.rubro, por ejemplo), hay
+// que agregarlo acá también o esta función quedará desincronizada
+// silenciosamente respecto de buildEntity().
+export async function regenerateSeoOnly({ comercioId }) {
+  const { comercioRef, data, slug, context } = await loadBaseContext(comercioId);
+
+  delete context.domain_tag;
+  delete context.contacto;
+  delete context.referral_link;
+
+  const savedSeo = { seoHash: data.seoHash || null, seoHtmlUrl: data.seoHtmlUrl || null };
+  const seoResult = await buildSeo(context, comercioId, savedSeo, slug);
+
+  // buildSeo persiste seoHash/seoHtmlUrl internamente (mismo comportamiento
+  // que en buildEntity), pero acá agregamos un timestamp propio para que
+  // el panel de super-admin pueda mostrar "última generación de SEO" sin
+  // depender de entityGeneratedAt (que no se toca en este flujo).
+  await comercioRef.update({
+    seoGeneratedAt: new Date().toISOString(),
+  });
+
+  return { comercioId, seo: seoResult ?? null };
 }
