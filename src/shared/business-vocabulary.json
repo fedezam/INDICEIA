@@ -1,7 +1,8 @@
 {
-  "version": "4.0",
-  "descripcion": "ÍndiceIA v4.0 — Taxonomía unificada. Merge de v2 + v2.2 + v3.1, sin categorías perdidas. Pensada para localidades del interior AR de 40.000 habitantes o menos, con cobertura urbana + rural/industrial.",
+  "version": "4.1",
+  "descripcion": "ÍndiceIA v4.1 — Taxonomía unificada. Base v4.0 + campo opcional de matrícula/habilitación en subcategorías de oficio. Pensada para localidades del interior AR de 40.000 habitantes o menos, con cobertura urbana + rural/industrial.",
   "estructura": "Nivel 1 (Tipo) > Nivel 2 (Subcategoría). schema_org y DOMAIN se heredan estrictamente del Nivel 2. sinonimos alimentan el resolver como fallback para datos legados/import — el flujo principal es selección directa por codigo desde el dropdown de 2 niveles.",
+  "notaMatricula": "Decisión de diseño (2026-08): NO existe un flag condicional tipo requiresLicenseCheck que cambie pipeline, schema_org ni scope de servicios. La matrícula/habilitación es un dato opcional e informativo (campo 'matricula' en Firestore, string libre) que el usuario carga si la tiene. No filtra nada, no bifurca onboarding. El mercado ya sabe interpretar si necesita un prestador matriculado o no. Las subcategorías marcadas con 'matriculaOpcional': true simplemente muestran un campo de texto adicional en el rubro-selector.",
 
   "tipos": [
     {
@@ -42,7 +43,14 @@
       "nombre": "Bienestar Físico",
       "subcategorias": [
         { "codigo": "BIE-GYM", "nombre": "Gimnasio / Crossfit / Pilates", "schema_org": "ExerciseGym", "sinonimos": ["gimnasio","fitness","crossfit","pilates"] },
-        { "codigo": "BIE-SPA", "nombre": "Spa / Masajes / Termas", "schema_org": "DaySpa", "sinonimos": ["spa","masajes","termas","relax","wellness"] },
+        {
+          "codigo": "BIE-SPA",
+          "nombre": "Spa / Masajes / Termas",
+          "schema_org": "DaySpa",
+          "sinonimos": ["spa","masajes","termas","relax","wellness"],
+          "matriculaOpcional": true,
+          "matriculaLabel": "Matrícula / habilitación (si tenés)"
+        },
         { "codigo": "BIE-CLU", "nombre": "Club deportivo", "schema_org": "SportsActivityLocation", "sinonimos": ["club","futbol","tenis","natacion"] }
       ]
     },
@@ -69,7 +77,14 @@
       "nombre": "Estética y Belleza",
       "subcategorias": [
         { "codigo": "EST-PEL", "nombre": "Peluquería / Barbería", "schema_org": "HairSalon", "sinonimos": ["peluqueria","barberia","corte","tintura"] },
-        { "codigo": "EST-MAN", "nombre": "Manicura / Cejas / Pestañas", "schema_org": "BeautySalon", "sinonimos": ["unas","cejas","pestanas","nails","semipermanente","depilacion","cosmetologia"] }
+        {
+          "codigo": "EST-MAN",
+          "nombre": "Manicura / Cejas / Pestañas",
+          "schema_org": "BeautySalon",
+          "sinonimos": ["unas","cejas","pestanas","nails","semipermanente","depilacion","cosmetologia"],
+          "matriculaOpcional": true,
+          "matriculaLabel": "Matrícula / habilitación (si tenés)"
+        }
       ]
     },
     {
@@ -152,11 +167,47 @@
       "codigo": "OFI",
       "nombre": "Oficios de Urgencia y Mantenimiento",
       "subcategorias": [
-        { "codigo": "OFI-HUM", "nombre": "Plomero / Gasista / Destapes", "schema_org": "Plumber", "sinonimos": ["plomero","gasista","destape","cloacas","urgencias"] },
-        { "codigo": "OFI-AIR", "nombre": "Aire Acondicionado / Refrigeración", "schema_org": "HVACBusiness", "sinonimos": ["aire acondicionado","reparacion de split","frigista","carga de gas"] },
-        { "codigo": "OFI-GAS", "nombre": "Sodería / Garrafas / Gas Envasado", "schema_org": "HomeGoodsStore", "sinonimos": ["sodero","garrafa","gas envasado","carga de garrafas"] },
-        { "codigo": "OFI-SEC", "nombre": "Cerrajero / Herrero / Rejas", "schema_org": "Locksmith", "sinonimos": ["cerrajero","herrero","rejas","apertura de puertas"] },
-        { "codigo": "OFI-CON", "nombre": "Albañil / Pintor / Carpintero / Techista", "schema_org": "HomeAndConstructionBusiness", "sinonimos": ["albañil","pintor","carpintero","techista","soldador"] }
+        {
+          "codigo": "OFI-HUM",
+          "nombre": "Plomero / Gasista / Destapes",
+          "schema_org": "Plumber",
+          "sinonimos": ["plomero","gasista","destape","cloacas","urgencias"],
+          "matriculaOpcional": true,
+          "matriculaLabel": "Matrícula (ej: gasista matriculado para conexión a red)"
+        },
+        {
+          "codigo": "OFI-AIR",
+          "nombre": "Aire Acondicionado / Refrigeración",
+          "schema_org": "HVACBusiness",
+          "sinonimos": ["aire acondicionado","reparacion de split","frigista","carga de gas"],
+          "matriculaOpcional": true,
+          "matriculaLabel": "Matrícula / habilitación (si tenés)"
+        },
+        {
+          "codigo": "OFI-GAS",
+          "nombre": "Sodería / Distribución de Garrafas / Gas Envasado",
+          "schema_org": "HomeGoodsStore",
+          "sinonimos": ["sodero","garrafa","gas envasado","carga de garrafas"],
+          "_nota": "OJO: este código NO es 'gasista'. El gasista matriculado vive en OFI-HUM. Este código quedó así por compatibilidad histórica de datos en Firestore — no renombrar el 'codigo', solo se aclaró el 'nombre' para evitar confusión en desarrollo.",
+          "matriculaOpcional": true,
+          "matriculaLabel": "Matrícula / habilitación (si tenés)"
+        },
+        {
+          "codigo": "OFI-SEC",
+          "nombre": "Cerrajero / Herrero / Rejas",
+          "schema_org": "Locksmith",
+          "sinonimos": ["cerrajero","herrero","rejas","apertura de puertas"],
+          "matriculaOpcional": true,
+          "matriculaLabel": "Matrícula / habilitación (si tenés)"
+        },
+        {
+          "codigo": "OFI-CON",
+          "nombre": "Albañil / Pintor / Carpintero / Techista",
+          "schema_org": "HomeAndConstructionBusiness",
+          "sinonimos": ["albañil","pintor","carpintero","techista","soldador"],
+          "matriculaOpcional": true,
+          "matriculaLabel": "Matrícula (ej: maestro mayor de obra, si tenés)"
+        }
       ]
     },
     {
