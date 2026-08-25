@@ -23,12 +23,16 @@ export default async function handler(req, res) {
 
     // 2. Iteramos las entidades y las agregamos con el dominio canónico (subdominio ia.)
     snapshot.forEach(doc => {
-      const data     = doc.data();
-      const slug     = data.landing?.slug;
-      const activo   = data.landing?.activo;
-      const tieneSeo = !!data.seoHtmlUrl;
+      const data      = doc.data();
+      const slug      = data.landing?.slug;
+      const activo    = data.landing?.activo;
+      const tieneSeo  = !!data.seoHtmlUrl;
+      // Default seguro: si el campo no está seteado, NO se indexa.
+      // Solo entidades marcadas a mano como indexable: true entran al sitemap
+      // (así evitamos indexar demos/pruebas por accidente).
+      const indexable = data.indexable === true;
 
-      if (slug && activo && tieneSeo) {
+      if (slug && activo && tieneSeo && indexable) {
         const lastmod = data.seoGeneratedAt
           ? new Date(data.seoGeneratedAt).toISOString().split('T')[0]
           : null;
