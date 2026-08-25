@@ -2,7 +2,7 @@
 //
 // Depende de las funciones del resolver para no duplicar el árbol acá:
 //   getTiposOrdenados()       -> [{codigo, nombre}]  (todo vocab.tipos)
-//   getSubcategoriasDeTipo(t) -> [{codigo, nombre, schema_org}]
+//   getSubcategoriasDeTipo(t) -> [{codigo, nombre, schema_org, matriculaOpcional?, matriculaLabel?}]
 //   sugerirSubcategoria(txt)  -> {tipo, subcategoria, nombre, confidence} | null
 import { getSubcategoriasDeTipo, sugerirSubcategoria } from '/lib/entity-factory/rubro-resolver.js';
 import vocab from '/lib/entity-factory/base/business-vocabulary.json' with { type: 'json' };
@@ -17,11 +17,13 @@ export function updateRubroSelector(dom, config = {}) {
   const {
     tipo = null,
     subcategoria = null,
+    matricula = null,
     onChange = () => {}
   } = config;
 
   const {
     container, tipoSelect, subSelect, status,
+    matriculaWrapper, matriculaLabelEl, matriculaInput,
     noMatchToggle, noMatchPanel, noMatchInput, noMatchSuggestion, noMatchSubmit
   } = dom;
 
@@ -42,6 +44,7 @@ export function updateRubroSelector(dom, config = {}) {
     if (!codigoTipo) {
       subSelect.innerHTML = '<option value="">Primero elegí un rubro</option>';
       subSelect.disabled = true;
+      toggleMatricula(null);
       return;
     }
 
@@ -50,11 +53,30 @@ export function updateRubroSelector(dom, config = {}) {
       const opt = document.createElement('option');
       opt.value = s.codigo;
       opt.textContent = s.nombre;
+      opt.dataset.matriculaOpcional = s.matriculaOpcional ? '1' : '0';
+      opt.dataset.matriculaLabel = s.matriculaLabel || '';
       subSelect.appendChild(opt);
     });
     subSelect.disabled = false;
 
-    if (seleccionar) subSelect.value = seleccionar;
+    if (seleccionar) {
+      subSelect.value = seleccionar;
+      const selectedOpt = subSelect.querySelector(`option[value="${seleccionar}"]`);
+      toggleMatricula(selectedOpt);
+    } else {
+      toggleMatricula(null);
+    }
+  };
+
+  // ==================== MOSTRAR/OCULTAR CAMPO MATRÍCULA ====================
+  const toggleMatricula = (selectedOpt) => {
+    const activa = selectedOpt?.dataset?.matriculaOpcional === '1';
+    matriculaWrapper.classList.toggle('hidden', !activa);
+    if (activa) {
+      matriculaLabelEl.textContent = selectedOpt.dataset.matriculaLabel || 'Matrícula / habilitación (si tenés)';
+    } else {
+      matriculaInput.value = ''; // limpia si cambia a una subcategoría que no aplica
+    }
   };
 
   // ==================== ESTADO / FEEDBACK ====================
@@ -67,7 +89,8 @@ export function updateRubroSelector(dom, config = {}) {
   const emitChange = () => {
     const t = tipoSelect.value || null;
     const s = subSelect.value || null;
-    container._rubroValue = { tipo: t, subcategoria: s };
+    const m = matriculaWrapper.classList.contains('hidden') ? null : (matriculaInput.value.trim() || null);
+    container._rubroValue = { tipo: t, subcategoria: s, matricula: m };
 
     if (t && !s) {
       setStatus('Falta elegir la especialidad para clasificar bien tu negocio.', 'warning');
@@ -78,10 +101,10 @@ export function updateRubroSelector(dom, config = {}) {
     }
 
     container.dispatchEvent(new CustomEvent('rubro-change', {
-      detail: { tipo: t, subcategoria: s },
+      detail: { tipo: t, subcategoria: s, matricula: m },
       bubbles: true
     }));
-    onChange({ tipo: t, subcategoria: s });
+    onChange({ tipo: t, subcategoria: s, matricula: m });
   };
 
   // ==================== EVENTOS NIVEL 1 ====================
@@ -92,6 +115,13 @@ export function updateRubroSelector(dom, config = {}) {
 
   // ==================== EVENTOS NIVEL 2 ====================
   subSelect.onchange = () => {
+    const selectedOpt = subSelect.selectedOptions[0];
+    toggleMatricula(selectedOpt);
+    emitChange();
+  };
+
+  // ==================== EVENTO MATRÍCULA ====================
+  matriculaInput.oninput = () => {
     emitChange();
   };
 
@@ -123,20 +153,27 @@ export function updateRubroSelector(dom, config = {}) {
     if (!texto) return;
     // Sin subcategoria: el resolver lo va a marcar requiere_revision
     // y guardamos el texto libre en un campo aparte para que vos lo audites.
-    container._rubroValue = { tipo: tipoSelect.value || null, subcategoria: null, tagLibre: texto };
+    container._rubroValue = { tipo: tipoSelect.value || null, subcategoria: null, matricula: null, tagLibre: texto };
     setStatus('Guardado. Nuestro equipo va a revisar la clasificación de tu negocio.', 'info');
     container.dispatchEvent(new CustomEvent('rubro-change', {
-      detail: { tipo: tipoSelect.value || null, subcategoria: null, tagLibre: texto },
+      detail: { tipo: tipoSelect.value || null, subcategoria: null, matricula: null, tagLibre: texto },
       bubbles: true
     }));
-    onChange({ tipo: tipoSelect.value || null, subcategoria: null, tagLibre: texto });
+    onChange({ tipo: tipoSelect.value || null, subcategoria: null, matricula: null, tagLibre: texto });
     noMatchPanel.classList.add('hidden');
   };
 
   // ==================== INICIALIZAR ====================
   if (tipo) tipoSelect.value = tipo;
   poblarSubcategorias(tipo, subcategoria);
-  container._rubroValue = { tipo, subcategoria };
+  if (matricula && !matriculaWrapper.classList.contains('hidden')) {
+    matriculaInput.value = matricula;
+  }
+  container._rubroValue = {
+    tipo,
+    subcategoria,
+    matricula: matriculaWrapper.classList.contains('hidden') ? null : matricula
+  };
   setStatus(tipo && !subcategoria ? 'Falta elegir la especialidad para clasificar bien tu negocio.' : '', 'warning');
 
   return container;
