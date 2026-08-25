@@ -67,10 +67,19 @@ function _rubroCompleto(data) {
   const resuelto = resolveRubro({ rubro: data.rubro }, data);
   const tagsCrudos = data.rubro?.tags || [];
 
+  // ⚠️ FIX: antes, si ni resuelto.nombre ni getTipo(tipo)?.nombre existían,
+  // se devolvía resuelto.tipo crudo (ej. "GEN", "CON") como si fuera un
+  // nombre legible. Eso terminaba filtrándose a <title>, meta description,
+  // y JSON-LD en seo.builder.js — literalmente mostrando "GEN en Casilda"
+  // como nombre de rubro público. Ahora, si no hay nombre humano real,
+  // devolvemos null: los consumidores (toSeoContext, buildHtml) ya tienen
+  // fallback correcto para rubro ausente (usan solo nombre + ciudad).
+  const nombreHumano = resuelto.nombre || getTipo(resuelto.tipo)?.nombre || null;
+
   return {
     tipo:          resuelto.tipo,
     subcategoria:  resuelto.subcategoria,
-    nombre:        resuelto.nombre || getTipo(resuelto.tipo)?.nombre || resuelto.tipo,
+    nombre:        nombreHumano,
     schema_org:    resuelto.schema_org,
     tags:          tagsCrudos,
     domain_confidence: resuelto.domain_confidence,
@@ -114,6 +123,13 @@ export function toSeoContext(data) {
     localidad:   ubi?.localidad?.nombre || '',
     provincia:   ubi?.provincia         || '',
     rubroNombre: rub.nombre             || '',
+    // ⚠️ FIX unificación: antes seo.builder.js leía context.rubro.schema_org
+    // directo del documento de Firestore — un valor snapshoteado al crear
+    // la entidad, que puede quedar desactualizado si después se completa
+    // o cambia la subcategoría (mismo bug que tenía domain_tag con el mind).
+    // Ahora se resuelve en vivo, siempre desde la misma fuente única
+    // (rubro-resolver.js), igual que domain-resolver.js.
+    schemaOrg:   rub.schema_org         || 'LocalBusiness',
     paths: {
       ciudadPath:    ubi ? toPath(ubi.localidad.nombre) : '',
       provinciaPath: ubi ? toPath(ubi.provincia)        : '',
