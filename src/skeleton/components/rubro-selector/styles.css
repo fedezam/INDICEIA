@@ -1,23 +1,19 @@
 /* skeleton/components/rubro-selector/styles.css */
-
 .s-rubro-selector {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
-
 .s-rubro-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-
 .s-rubro-label {
   font-size: 13px;
   font-weight: 600;
   color: var(--s-dark, #343a40);
 }
-
 .s-rubro-select {
   width: 100%;
   height: var(--s-input-height, 38px);
@@ -31,50 +27,63 @@
   cursor: pointer;
   transition: border-color 0.15s ease, opacity 0.15s ease;
 }
-
 .s-rubro-select:disabled {
   background: var(--s-light, #f8f9fa);
   color: var(--s-gray, #999);
   cursor: not-allowed;
   opacity: 0.7;
 }
-
 .s-rubro-select:focus {
   outline: none;
   border-color: var(--s-primary, #3c8dbc);
   box-shadow: 0 0 0 3px var(--s-focus-ring, rgba(60, 141, 188, 0.25));
 }
-
+/* ==================== MATRÍCULA ==================== */
+.s-rubro-matricula.hidden {
+  display: none;
+}
+.s-rubro-matricula-input {
+  width: 100%;
+  height: var(--s-input-height, 38px);
+  padding: 8px 12px;
+  border: 1px solid var(--s-border, #d2d6de);
+  border-radius: var(--s-radius, 4px);
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 14px;
+  color: var(--s-dark, #343a40);
+  background: white;
+  transition: border-color 0.15s ease;
+}
+.s-rubro-matricula-input:focus {
+  outline: none;
+  border-color: var(--s-primary, #3c8dbc);
+  box-shadow: 0 0 0 3px var(--s-focus-ring, rgba(60, 141, 188, 0.25));
+}
 /* ==================== STATUS ==================== */
 .s-rubro-status {
   font-size: 13px;
   padding: 8px 12px;
   border-radius: var(--s-radius, 4px);
 }
-
 .s-rubro-status.hidden {
   display: none;
 }
-
 .s-rubro-status--warning {
   background: rgba(240, 173, 78, 0.12);
   color: var(--s-warning, #f0ad4e);
   border: 1px solid rgba(240, 173, 78, 0.3);
 }
-
 .s-rubro-status--ok {
   background: rgba(92, 184, 92, 0.12);
   color: var(--s-success, #5cb85c);
   border: 1px solid rgba(92, 184, 92, 0.3);
 }
-
 /* ==================== NO MATCH ==================== */
 .s-rubro-nomatch {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-
 .s-rubro-nomatch-toggle {
   align-self: flex-start;
   background: none;
@@ -85,7 +94,6 @@
   cursor: pointer;
   padding: 0;
 }
-
 .s-rubro-nomatch-panel {
   display: flex;
   flex-direction: column;
@@ -95,11 +103,9 @@
   border: 1px dashed var(--s-border, #d2d6de);
   border-radius: var(--s-radius, 4px);
 }
-
 .s-rubro-nomatch-panel.hidden {
   display: none;
 }
-
 .s-rubro-nomatch-input {
   height: var(--s-input-height, 38px);
   padding: 8px 12px;
@@ -108,17 +114,14 @@
   font-family: 'Source Sans Pro', sans-serif;
   font-size: 14px;
 }
-
 .s-rubro-suggestion {
   font-size: 13px;
   color: var(--s-info, #5bc0de);
   padding: 6px 0;
 }
-
 .s-rubro-suggestion.hidden {
   display: none;
 }
-
 /* ==================== RESPONSIVE ==================== */
 @media (min-width: 768px) {
   .s-rubro-selector {
@@ -127,9 +130,9 @@
     gap: 16px 20px;
     align-items: start;
   }
-
   .s-rubro-status,
-  .s-rubro-nomatch {
+  .s-rubro-nomatch,
+  .s-rubro-matricula {
     grid-column: 1 / -1;
   }
 }
