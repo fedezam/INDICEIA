@@ -9,8 +9,9 @@
 import { getSubcategoriasDeTipo, sugerirSubcategoria } from '/lib/entity-factory/rubro-resolver.js';
 import vocab from '/lib/entity-factory/base/business-vocabulary.json' with { type: 'json' };
 
-function getTiposOrdenados() {
+function getTiposOrdenados(tiposExcluidos = []) {
   return [...vocab.tipos]
+    .filter(t => !tiposExcluidos.includes(t.codigo))
     .map(t => ({ codigo: t.codigo, nombre: t.nombre }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 }
@@ -22,6 +23,7 @@ export function updateRubroSelector(dom, config = {}) {
     matricula = null,
     especialidad = null,
     matriculaProf = null, // { numero, organismo }
+    tiposExcluidos = [],
     onChange = () => {}
   } = config;
 
@@ -35,7 +37,7 @@ export function updateRubroSelector(dom, config = {}) {
 
   // ==================== POBLAR NIVEL 1 ====================
   tipoSelect.innerHTML = '<option value="">Seleccioná tu rubro...</option>';
-  getTiposOrdenados().forEach(t => {
+  getTiposOrdenados(tiposExcluidos).forEach(t => {
     const opt = document.createElement('option');
     opt.value = t.codigo;
     opt.textContent = t.nombre;
