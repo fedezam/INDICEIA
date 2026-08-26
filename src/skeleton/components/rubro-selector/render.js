@@ -28,7 +28,18 @@ export function renderRubroSelector() {
   subSelect.innerHTML = '<option value="">Primero elegí un rubro</option>';
   subWrapper.append(subLabel, subSelect);
 
-  // ---- Matrícula opcional (visible solo si la subcategoría lo requiere) ----
+  // ---- Nivel 3: Especialidad clínica/profesional (condicional, ej: SAL-MED) ----
+  const nivel3Wrapper = document.createElement('div');
+  nivel3Wrapper.className = 's-rubro-field s-rubro-nivel3 hidden';
+  const nivel3Label = document.createElement('label');
+  nivel3Label.className = 's-rubro-label';
+  nivel3Label.textContent = 'Especialidad';
+  const nivel3Select = document.createElement('select');
+  nivel3Select.className = 's-rubro-select';
+  nivel3Select.innerHTML = '<option value="">Seleccioná tu especialidad...</option>';
+  nivel3Wrapper.append(nivel3Label, nivel3Select);
+
+  // ---- Matrícula opcional (input libre, ej: gasista/oficio) ----
   const matriculaWrapper = document.createElement('div');
   matriculaWrapper.className = 's-rubro-field s-rubro-matricula hidden';
   const matriculaLabelEl = document.createElement('label');
@@ -38,6 +49,28 @@ export function renderRubroSelector() {
   matriculaInput.className = 's-rubro-matricula-input';
   matriculaInput.placeholder = 'Ej: GN-4521';
   matriculaWrapper.append(matriculaLabelEl, matriculaInput);
+
+  // ---- Matrícula profesional: número + organismo select (ej: SAL-MED/SAL-DEN/SAL-KIN) ----
+  const matriculaProfWrapper = document.createElement('div');
+  matriculaProfWrapper.className = 's-rubro-field s-rubro-matricula-prof hidden';
+
+  const matriculaNumeroLabel = document.createElement('label');
+  matriculaNumeroLabel.className = 's-rubro-label';
+  matriculaNumeroLabel.textContent = 'Número de matrícula';
+  const matriculaNumeroInput = document.createElement('input');
+  matriculaNumeroInput.type = 'text';
+  matriculaNumeroInput.inputMode = 'numeric';
+  matriculaNumeroInput.className = 's-rubro-matricula-input';
+  matriculaNumeroInput.placeholder = 'Ej: 12345';
+
+  const organismoLabel = document.createElement('label');
+  organismoLabel.className = 's-rubro-label';
+  organismoLabel.textContent = 'Organismo que emite la matrícula';
+  const organismoSelect = document.createElement('select');
+  organismoSelect.className = 's-rubro-select';
+  organismoSelect.innerHTML = '<option value="">Seleccioná el organismo</option>';
+
+  matriculaProfWrapper.append(matriculaNumeroLabel, matriculaNumeroInput, organismoLabel, organismoSelect);
 
   // ---- Feedback / estado ----
   const status = document.createElement('div');
@@ -65,11 +98,17 @@ export function renderRubroSelector() {
   noMatchPanel.append(noMatchInput, noMatchSuggestion, noMatchSubmit);
   noMatchWrapper.append(noMatchToggle, noMatchPanel);
 
-  container.append(tipoWrapper, subWrapper, matriculaWrapper, status, noMatchWrapper);
+  container.append(
+    tipoWrapper, subWrapper, nivel3Wrapper,
+    matriculaWrapper, matriculaProfWrapper,
+    status, noMatchWrapper
+  );
 
   return {
     container, tipoSelect, subSelect, status,
+    nivel3Wrapper, nivel3Select,
     matriculaWrapper, matriculaLabelEl, matriculaInput,
+    matriculaProfWrapper, matriculaNumeroInput, organismoSelect,
     noMatchToggle, noMatchPanel, noMatchInput, noMatchSuggestion, noMatchSubmit
   };
 }
