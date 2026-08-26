@@ -429,9 +429,14 @@ function renderSeccionRubro(state, refs, uiState) {
 
   const rubroActual = state.comercioData.rubro || {};
 
+  // FIX: se agrega matricula al config inicial — sin esto, en modo edición
+  // el campo de matrícula del rubro-selector queda vacío aunque la entidad
+  // ya tenga rubro.matricula guardada (el selector no tiene forma de saberlo
+  // si no se lo pasás en el config).
   refs.rubroSelector = createRubroSelector({
     tipo: rubroActual.tipo || null,
     subcategoria: rubroActual.subcategoria || null,
+    matricula: rubroActual.matricula || null,
   });
 
   refs.rubroSelector.addEventListener('rubro-change', () => {
@@ -664,11 +669,11 @@ function updateSlugStatus(refs, status, message) {
   const icon  = refs.slugStatus.querySelector('.slug-icon');
   const text  = refs.slugStatus.querySelector('.slug-text');
   const icons = {
-    checking:   ' <i class= "fas fa-spinner fa-spin " > </i >',
-    available:  ' <i class= "fas fa-check-circle " style= "color: var(--s-success) " > </i >',
-    suggestion: ' <i class= "fas fa-info-circle " style= "color: var(--s-info) " > </i >',
-    taken:      ' <i class= "fas fa-times-circle " style= "color: var(--s-danger) " > </i >',
-    error:      ' <i class= "fas fa-exclamation-triangle " style= "color: var(--s-warning) " > </i >',
+    checking:   '<i class="fas fa-spinner fa-spin"></i>',
+    available:  '<i class="fas fa-check-circle" style="color:var(--s-success)"></i>',
+    suggestion: '<i class="fas fa-info-circle" style="color:var(--s-info)"></i>',
+    taken:      '<i class="fas fa-times-circle" style="color:var(--s-danger)"></i>',
+    error:      '<i class="fas fa-exclamation-triangle" style="color:var(--s-warning)"></i>',
     empty:      ''
   };
   icon.innerHTML   = icons[status] || '';
@@ -683,7 +688,7 @@ function getCurrentData(refs, uiState) {
     nombre:           refs.fields.nombre?.input.value.trim()          || '',
     descripcion:      refs.fields.descripcion?.input.value.trim()     || '',
     ubicacion: ubicacionFromForm(refs),
-    rubro: refs.rubroSelector?.getValue()                             || { tipo: null, subcategoria: null },
+    rubro: refs.rubroSelector?.getValue()                             || { tipo: null, subcategoria: null, matricula: null },
     direccion:        refs.fields.direccion?.input.value.trim()       || '',
     telefono:         refs.fields.telefono?.input.value.trim()        || '',
     email:            refs.fields.email?.input.value.trim()           || '',
@@ -720,7 +725,7 @@ function hayDirtyState(refs, uiState, state) {
     current.nombre          !== (original.nombre          || '') ||
     current.descripcion     !== (original.descripcion     || '') ||
     JSON.stringify(current.ubicacion) !== JSON.stringify(original.ubicacion || original.localidad || null) ||
-    JSON.stringify(current.rubro)     !== JSON.stringify(original.rubro     || { tipo: null, subcategoria: null }) ||
+    JSON.stringify(current.rubro)     !== JSON.stringify(original.rubro     || { tipo: null, subcategoria: null, matricula: null }) ||
     current.direccion       !== (original.direccion       || '') ||
     current.telefono        !== (original.telefono        || '') ||
     current.email           !== (original.email           || '') ||
