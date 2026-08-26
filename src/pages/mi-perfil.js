@@ -10,12 +10,12 @@ import { createButton }            from '/src/skeleton/components/button/index.j
 import { createOnboardingButton }  from '/src/skeleton/components/onboarding-button/index.js';
 import { createChip }              from '/src/skeleton/components/chip/index.js';
 import { createAutocomplete }      from '/src/skeleton/components/autocomplete/index.js';
+import { createRubroSelector }     from '/src/skeleton/components/rubro-selector/index.js';
 import { showToast }               from '/src/skeleton/components/toast/index.js';
 import { db }                      from '/src/services/firebase/firebase.js';
 import { fillProvinciaSelector }   from '/src/shared/provincias.js';
 import { getLocalidades }          from '/src/shared/ciudades.js';
 import { createInitialPlan }       from '/src/shared/createInitialPlan.js';
-import { rubroFromForm }           from '/src/shared/entity-context.js';
 import {
   doc, setDoc, updateDoc,
   collection, getDoc, Timestamp
@@ -27,14 +27,15 @@ import './mi-perfil.css';
 // ============================================================
 const page = {
   _data: {
-    nombre: '', especialidad: '', descripcion: '', experiencia: '',
+    nombre: '', descripcion: '', experiencia: '',
+    rubro: { tipo: null, subcategoria: null, matricula: null },
     modalidad_trabajo: null, atiende_urgencias: false,
     whatsapp: '', telefono: '', email: '', instagram: '',
     direccion: '', localidad_principal: null, zona_cobertura: [], slug: null,
   },
   _originalSnapshot: null, _ctx: null, _isEditMode: false,
   _isNuevo: false, _slugExiste: false, _comercioData: {},
-  _refs: { fields: {}, slugInput: null, slugStatus: null, slugValidationTimer: null },
+  _refs: { fields: {}, rubroSelector: null, slugInput: null, slugStatus: null, slugValidationTimer: null },
 
   async load(ctx) {
     this._ctx = ctx;
@@ -48,8 +49,14 @@ const page = {
     const zona_cobertura = c.zona_cobertura || c.cobertura?.slice(1)?.map(x => ({ ...x })) || [];
 
     this._data = {
-      nombre: c.nombre || '', especialidad: c.especialidad || '', descripcion: c.descripcion || '',
-      experiencia: c.experiencia || '', modalidad_trabajo: c.modalidad_trabajo || null,
+      nombre: c.nombre || '', descripcion: c.descripcion || '',
+      experiencia: c.experiencia || '',
+      rubro: {
+        tipo: c.rubro?.tipo || null,
+        subcategoria: c.rubro?.subcategoria || null,
+        matricula: c.rubro?.matricula || null
+      },
+      modalidad_trabajo: c.modalidad_trabajo || null,
       atiende_urgencias: c.atiende_urgencias === true, whatsapp: c.whatsapp || '',
       telefono: c.telefono || '', email: c.email || '', instagram: c.instagram || '',
       direccion: c.direccion || '', localidad_principal, zona_cobertura,
@@ -61,7 +68,7 @@ const page = {
   render() {
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
-    this._refs = { fields: {}, slugInput: null, slugStatus: null, slugValidationTimer: null };
+    this._refs = { fields: {}, rubroSelector: null, slugInput: null, slugStatus: null, slugValidationTimer: null };
 
     const title = document.createElement('h2');
     title.className = 'page-title';
@@ -104,13 +111,28 @@ const page = {
       value: this._data.nombre,
       actions: { onChange: (v) => { this._data.nombre = v.trim(); } }
     });
-    this._refs.fields.especialidad = createFormField({
-      label: 'Especialidad', name: 'especialidad', required: true,
-      placeholder: 'Ej: Plomero, Manicura, Profe de matemáticas',
-      helpText: 'En una línea, qué hacés',
-      value: this._data.especialidad,
-      actions: { onChange: (v) => { this._data.especialidad = v.trim(); } }
+
+    const rubroWrapper = document.createElement('div');
+    rubroWrapper.className = 's-rubro-wrapper';
+    const rubroLabel = document.createElement('p');
+    rubroLabel.className = 'form-help';
+    rubroLabel.textContent = 'Elegí el rubro que mejor describe tu negocio.';
+    rubroWrapper.appendChild(rubroLabel);
+
+    this._refs.rubroSelector = createRubroSelector({
+      tipo: this._data.rubro.tipo,
+      subcategoria: this._data.rubro.subcategoria,
+      matricula: this._data.rubro.matricula,
+      onChange: ({ tipo, subcategoria, matricula, tagLibre }) => {
+        this._data.rubro = {
+          tipo, subcategoria, matricula: matricula || null,
+          ...(tagLibre ? { tagLibre } : {})
+        };
+        document.dispatchEvent(new Event('change'));
+      }
     });
+    rubroWrapper.appendChild(this._refs.rubroSelector);
+
     this._refs.fields.descripcion = createFormField({
       label: 'Descripción', name: 'descripcion', type: 'textarea', rows: 3, required: true,
       placeholder: 'Ej: Hago instalaciones y reparaciones de cañerías en hogares y comercios.',
@@ -126,7 +148,7 @@ const page = {
     });
 
     section.append(
-      this._refs.fields.nombre, this._refs.fields.especialidad,
+      this._refs.fields.nombre, rubroWrapper,
       this._refs.fields.descripcion, this._refs.fields.experiencia,
       this._renderUrgenciasField()
     );
@@ -571,7 +593,8 @@ const page = {
       },
       validate: () => {
         const tieneLocal = this._data.modalidad_trabajo === 'local';
-        const camposBase = this._data.nombre.trim() && this._data.especialidad.trim() && this._data.descripcion.trim() && this._data.whatsapp.trim() && !!this._data.localidad_principal && !!this._data.modalidad_trabajo;
+        const rubroCompleto = this._refs.rubroSelector?.isComplete?.() ?? false;
+        const camposBase = this._data.nombre.trim() && rubroCompleto && this._data.descripcion.trim() && this._data.whatsapp.trim() && !!this._data.localidad_principal && !!this._data.modalidad_trabajo;
         const camposModalidad = tieneLocal ? !!this._data.direccion?.trim() : true;
         const slugValido = this._slugExiste || !!this._data.slug;
         return !!(camposBase && camposModalidad && slugValido);
@@ -579,7 +602,12 @@ const page = {
       onSave: async ({ uid, comercioId }) => {
         const d = page._data; const tieneLocal = d.modalidad_trabajo === 'local';
         const updates = {
-          nombre: d.nombre, especialidad: d.especialidad, rubro: rubroFromForm([d.especialidad]),
+          nombre: d.nombre,
+          rubro: {
+            tipo: d.rubro.tipo, subcategoria: d.rubro.subcategoria,
+            matricula: d.rubro.matricula || null,
+            ...(d.rubro.tagLibre ? { tagLibre: d.rubro.tagLibre } : {})
+          },
           descripcion: d.descripcion, experiencia: d.experiencia || null,
           modalidad_trabajo: d.modalidad_trabajo,
           ...(d.atiende_urgencias === true && { atiende_urgencias: true }),
@@ -697,4 +725,3 @@ function slugify(text) {
 // ARRANQUE
 // ============================================================
 runSkeleton({ page, adapter: createFirebaseAdapter, options: { loadingMessage: 'Cargando perfil...' } });
-
