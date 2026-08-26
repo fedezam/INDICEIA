@@ -19,6 +19,9 @@ import { updateRubroSelector } from './update.js';
  * @param {string} [config.matricula] - matrícula de oficio precargada (si aplica)
  * @param {string} [config.especialidad] - especialidad clínica/profesional precargada (si aplica)
  * @param {Object} [config.matriculaProf] - {numero, organismo} precargado (si aplica)
+ * @param {string[]} [config.tiposExcluidos] - códigos de Nivel 1 a ocultar del dropdown
+ *   (ej: ['SAL'] en mi-perfil.js, para no pisar el flujo dedicado de
+ *   mi-perfil-profesional.js con rubros de carrera universitaria)
  * @param {Function} [config.onChange] - callback({tipo, subcategoria, matricula, especialidad, matriculaProf, tagLibre?})
  *
  * @returns {HTMLElement} con métodos:
