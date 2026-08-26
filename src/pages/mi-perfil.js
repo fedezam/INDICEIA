@@ -123,6 +123,10 @@ const page = {
       tipo: this._data.rubro.tipo,
       subcategoria: this._data.rubro.subcategoria,
       matricula: this._data.rubro.matricula,
+      // SAL tiene flujo dedicado en mi-perfil-profesional.js (especialidad
+      // clínica + matrícula de colegio profesional). Se excluye acá para
+      // no pisar ese onboarding con la variante simple de prestador.
+      tiposExcluidos: ['SAL'],
       onChange: ({ tipo, subcategoria, matricula, tagLibre }) => {
         this._data.rubro = {
           tipo, subcategoria, matricula: matricula || null,
