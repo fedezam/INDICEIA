@@ -6,6 +6,7 @@ import { createFirebaseAdapter }  from '/src/skeleton/adapters/firebaseAdapter.j
 import { createFormField }        from '/src/skeleton/components/form-field/index.js';
 import { createOnboardingButton } from '/src/skeleton/components/onboarding-button/index.js';
 import { createCard }             from '/src/skeleton/components/card/index.js';
+import { createRubroSelector }    from '/src/skeleton/components/rubro-selector/index.js';
 import { showToast }              from '/src/skeleton/components/toast/index.js';
 import { db }                     from '/src/services/firebase/firebase.js';
 import { doc, updateDoc, collection, setDoc, getDoc } from 'firebase/firestore';
@@ -13,29 +14,10 @@ import { createInitialPlan } from '/src/shared/createInitialPlan.js';
 import './mi-perfil-profesional.css';
 
 // ============================================================
-// DATA — especialidades por categoría
+// DATA — sin ESPECIALIDADES/ORGANISMOS_MATRICULA hardcodeados.
+// Ahora vienen del business-vocabulary.json vía rubro-selector
+// (especialidades + organismoMatricula en las subcategorías SAL-*).
 // ============================================================
-const ESPECIALIDADES = {
-  salud: [
-    'Medicina General / Clínica Médica', 'Pediatría', 'Cardiología', 'Dermatología',
-    'Ginecología y Obstetricia', 'Traumatología y Ortopedia', 'Neurología', 'Psiquiatría',
-    'Oftalmología', 'Otorrinolaringología', 'Urología', 'Endocrinología', 'Gastroenterología',
-    'Neumología', 'Oncología', 'Reumatología', 'Anestesiología', 'Radiología', 'Cirugía General',
-    'Medicina Interna', 'Odontología General', 'Ortodoncia', 'Odontopediatría', 'Implantología',
-    'Periodoncia', 'Psicología Clínica', 'Psicología Infantil', 'Psicología de Pareja',
-    'Kinesiología', 'Fonoaudiología', 'Nutrición', 'Otra especialidad',
-  ],
-};
-
-const ORGANISMOS_MATRICULA = {
-  salud: [
-    'Colegio Médico de la Provincia', 'Colegio de Médicos Distrito I (Santa Fe)',
-    'Colegio de Médicos Distrito II (Rosario)', 'Colegio de Odontólogos',
-    'Colegio de Psicólogos', 'Colegio de Kinesiólogos', 'Ministerio de Salud de la Nación',
-    'Otro organismo',
-  ],
-};
-
 const IDIOMAS = ['Español', 'Inglés', 'Portugués', 'Italiano', 'Francés', 'Alemán'];
 
 // ============================================================
@@ -58,18 +40,17 @@ function slugify(text) {
 // ============================================================
 const page = {
   _data: {
-    nombre: '', especialidad: '', descripcion: '', experiencia: '',
-    titulo: '', matricula: { numero: '', organismo: '' },
-    institucionFormadora: '', idiomas: [], slug: null,
+    nombre: '', descripcion: '', experiencia: '',
+    rubro: { tipo: 'SAL', subcategoria: null, especialidad: null, matriculaProf: null },
+    titulo: '', institucionFormadora: '', idiomas: [], slug: null,
   },
   _originalSnapshot:    null,
   _ctx:                 null,
   _isEditMode:          false,
   _isNuevo:             false,
-  _categoria:           'salud',
   _comercioData:        {},
   _slugExiste:          false,
-  _refs:                { fields: {}, slugInput: null, slugStatus: null, slugValidationTimer: null },
+  _refs:                { fields: {}, rubroSelector: null, slugInput: null, slugStatus: null, slugValidationTimer: null },
 
   // ──────────────────────────────────────────────────────────
   // LOAD
@@ -79,17 +60,25 @@ const page = {
     this._isEditMode   = ctx.isEditMode === true;
     this._comercioData = ctx.comercioData || {};
     this._isNuevo      = !this._comercioData.nombre;
-    this._categoria    = ctx.userData?.categoria || 'salud';
     this._slugExiste   = !!this._comercioData.landing?.slug;
 
     const c = this._comercioData;
     this._data = {
       nombre:               c.nombre               || '',
-      especialidad:         c.especialidad          || '',
       descripcion:          c.descripcion           || '',
       experiencia:          c.experiencia           || '',
+      rubro: {
+        // Default a "SAL" — este flujo es de profesionales con carrera,
+        // hoy solo modelado para salud. Si a futuro se agregan otros
+        // tipos con carrera (ej PRO-LEG con matrícula de colegio de
+        // abogados), este default deja de tener sentido fijo y debería
+        // salir de una selección previa (categoria) en vez de hardcodearse.
+        tipo:          c.rubro?.tipo          || 'SAL',
+        subcategoria:  c.rubro?.subcategoria  || null,
+        especialidad:  c.rubro?.especialidad  || null,
+        matriculaProf: c.rubro?.matriculaProf || (c.matricula ? { numero: c.matricula.numero || '', organismo: c.matricula.organismo || '' } : null),
+      },
       titulo:               c.titulo                || '',
-      matricula:            c.matricula             || { numero: '', organismo: '' },
       institucionFormadora: c.institucionFormadora  || '',
       idiomas:              c.idiomas               || [],
       slug:                 c.landing?.slug         || null,
@@ -103,7 +92,7 @@ const page = {
   render() {
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
-    this._refs = { fields: {}, slugInput: null, slugStatus: null, slugValidationTimer: null };
+    this._refs = { fields: {}, rubroSelector: null, slugInput: null, slugStatus: null, slugValidationTimer: null };
 
     const header = document.createElement('div');
     header.className = 'page-header';
@@ -130,11 +119,10 @@ const page = {
   _buildDirtyController() {
     const snapshot = () => ({
       nombre:               this._data.nombre?.trim()               || '',
-      especialidad:         this._data.especialidad?.trim()         || '',
       descripcion:          this._data.descripcion?.trim()          || '',
       experiencia:          this._data.experiencia?.trim()          || '',
       titulo:               this._data.titulo?.trim()               || '',
-      matricula:            JSON.stringify(this._data.matricula     || { numero: '', organismo: '' }),
+      rubro:                JSON.stringify(this._data.rubro         || {}),
       institucionFormadora: this._data.institucionFormadora?.trim() || '',
       idiomas:              JSON.stringify(this._data.idiomas       || []),
     });
@@ -169,15 +157,6 @@ const page = {
     });
     this._refs.fields.nombre = nombre;
 
-    const especialidadOptions = (ESPECIALIDADES[this._categoria] || []).map(e => ({ value: e, label: e }));
-    const especialidad = createFormField({
-      label: 'Especialidad', name: 'especialidad', type: 'select', required: true,
-      placeholder: 'Seleccioná tu especialidad',
-      options: [{ value: '', label: 'Seleccioná tu especialidad' }, ...especialidadOptions],
-      value: d.especialidad,
-    });
-    especialidad.input?.addEventListener('change', e => { d.especialidad = e.target.value; });
-
     const descripcion = createFormField({
       label: 'Descripción', name: 'descripcion', type: 'textarea', rows: 3,
       placeholder: 'Ej: Médico clínico con enfoque en medicina preventiva y atención personalizada.',
@@ -197,7 +176,7 @@ const page = {
       title: '¿Quién sos?', icon: 'fa-user-md',
       content: (() => {
         const c = document.createElement('div');
-        c.append(nombre, especialidad, descripcion, experiencia);
+        c.append(nombre, descripcion, experiencia);
         return c;
       })()
     }));
@@ -205,44 +184,31 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
-  // SECCIÓN: CREDENCIALES
+  // SECCIÓN: CREDENCIALES (rubro + especialidad + matrícula, todo vía rubro-selector)
   // ──────────────────────────────────────────────────────────
   _renderSeccionCredenciales() {
     const d = this._data;
     const section = document.createElement('div');
 
-    const matriculaNumero = createFormField({
-      label: 'Número de matrícula', name: 'matricula-numero',
-      required: true, type: 'tel', inputmode: 'numeric', maxlength: 10,
-      placeholder: 'Ej: 12345',
-      helpText: 'Ingresá solo números. El prefijo (MP, MN, etc.) se genera automáticamente.',
-      value: d.matricula.numero,
-    });
-    matriculaNumero.input?.addEventListener('input', e => {
-      const clean = e.target.value.replace(/\D/g, '');
-      e.target.value = clean;
-      d.matricula = { ...d.matricula, numero: clean };
-    });
+    const help = document.createElement('p');
+    help.className = 'form-help';
+    help.textContent = 'Elegí tu especialidad y cargá tu matrícula profesional — la matrícula valida tu credencial ante los pacientes.';
 
-    const organismoOptions = (ORGANISMOS_MATRICULA[this._categoria] || []).map(o => ({ value: o, label: o }));
-    const matriculaOrganismo = createFormField({
-      label: 'Organismo que emite la matrícula', name: 'matricula-organismo',
-      type: 'select', required: true,
-      options: [{ value: '', label: 'Seleccioná el organismo' }, ...organismoOptions],
-      value: d.matricula.organismo,
-    });
-    matriculaOrganismo.input?.addEventListener('change', e => {
-      d.matricula = { ...d.matricula, organismo: e.target.value };
+    this._refs.rubroSelector = createRubroSelector({
+      tipo: d.rubro.tipo,
+      subcategoria: d.rubro.subcategoria,
+      especialidad: d.rubro.especialidad,
+      matriculaProf: d.rubro.matriculaProf,
+      onChange: ({ tipo, subcategoria, especialidad, matriculaProf }) => {
+        d.rubro = { tipo, subcategoria, especialidad: especialidad || null, matriculaProf: matriculaProf || null };
+      }
     });
 
     section.appendChild(createCard({
-      title: 'Matrícula profesional', icon: 'fa-id-card',
+      title: 'Especialidad y matrícula', icon: 'fa-id-card',
       content: (() => {
         const c = document.createElement('div');
-        const help = document.createElement('p');
-        help.className = 'form-help';
-        help.textContent = 'La matrícula valida tu credencial ante los pacientes.';
-        c.append(help, matriculaNumero, matriculaOrganismo);
+        c.append(help, this._refs.rubroSelector);
         return c;
       })()
     }));
@@ -496,11 +462,13 @@ const page = {
 
       validate: () => {
         const slugValido = this._slugExiste || !!this._data.slug;
+        const rubroCompleto = this._refs.rubroSelector?.isComplete?.() ?? false;
         return !!(
-          this._data.nombre?.trim()            &&
-          this._data.especialidad?.trim()      &&
-          this._data.matricula?.numero?.trim() &&
-          this._data.matricula?.organismo?.trim() &&
+          this._data.nombre?.trim()                       &&
+          rubroCompleto                                    &&
+          this._data.rubro?.especialidad                   &&
+          this._data.rubro?.matriculaProf?.numero?.trim()  &&
+          this._data.rubro?.matriculaProf?.organismo?.trim() &&
           slugValido
         );
       },
@@ -518,15 +486,18 @@ const page = {
 
         const updates = {
           nombre:               d.nombre.trim(),
-          especialidad:         d.especialidad.trim(),
           descripcion:          d.descripcion.trim(),
           experiencia:          d.experiencia.trim(),
           titulo:               d.titulo.trim(),
-          matricula:            d.matricula,
+          rubro: {
+            tipo:          d.rubro.tipo,
+            subcategoria:  d.rubro.subcategoria,
+            especialidad:  d.rubro.especialidad,
+            matriculaProf: d.rubro.matriculaProf,
+          },
           institucionFormadora: d.institucionFormadora.trim(),
           idiomas:              d.idiomas,
           entityType:           'profesional',
-          categoria:            page._categoria,
           fechaActualizacion:   now,
           'onboardingSteps.mi-perfil-profesional': true,
         };
