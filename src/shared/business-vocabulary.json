@@ -1,6 +1,6 @@
 {
-  "version": "4.2",
-  "descripcion": "ÍndiceIA v4.2 — Base v4.1 + tercer nivel opcional (especialidades + organismoMatricula) en subcategorías de salud, para unificar mi-perfil-profesional.js con el vocabulario único.",
+  "version": "4.3",
+  "descripcion": "ÍndiceIA v4.3 — Base v4.2 + capa de relaciones de grafo por tipo (campo \"relaciones\": array de aristas {hacia, tipo, peso, nota} y \"prioridad\" por tipo). Unifica relations.constants.js dentro del vocabulario único: misma fuente de verdad para clasificación de entidades y generación del grafo semántico. Tipo nuevo: INS (Instituciones). Subcategorías nuevas: MOD-DEP, SEG-FIN. DEP y FIN quedan deprecados como tipos Nivel 1 (absorbidos en BIE/MOD-DEP y SEG-FIN respectivamente).",
   "estructura": "Nivel 1 (Tipo) > Nivel 2 (Subcategoría). schema_org y DOMAIN se heredan estrictamente del Nivel 2. sinonimos alimentan el resolver como fallback para datos legados/import — el flujo principal es selección directa por codigo desde el dropdown de 2 niveles.",
   "notaMatricula": "Decisión de diseño (2026-08): NO existe un flag condicional tipo requiresLicenseCheck que cambie pipeline, schema_org ni scope de servicios. La matrícula/habilitación es un dato opcional e informativo (campo 'matricula' en Firestore, string libre) que el usuario carga si la tiene. No filtra nada, no bifurca onboarding. El mercado ya sabe interpretar si necesita un prestador matriculado o no. Las subcategorías marcadas con 'matriculaOpcional': true simplemente muestran un campo de texto adicional en el rubro-selector.",
   "tipos": [
@@ -49,7 +49,50 @@
             "fumigacion aerea"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "VEH",
+          "tipo": "complementario",
+          "peso": 0.88,
+          "nota": "compra/venta de vehículos y pickups ligados a producción"
+        },
+        {
+          "hacia": "SEG",
+          "tipo": "complementario",
+          "peso": 0.85,
+          "nota": "financiamiento de campaña, seguro rural, seguro de granizo"
+        },
+        {
+          "hacia": "PRO",
+          "tipo": "complementario",
+          "peso": 0.68,
+          "nota": "contador para monotributo/liquidación de granos"
+        },
+        {
+          "hacia": "IND",
+          "tipo": "complementario",
+          "peso": 0.55,
+          "nota": "estructuras metálicas, galpones, silos"
+        },
+        {
+          "hacia": "VEH",
+          "tipo": "misma_audiencia",
+          "peso": 0.8
+        },
+        {
+          "hacia": "SEG",
+          "tipo": "misma_audiencia",
+          "peso": 0.7
+        },
+        {
+          "hacia": "VEH",
+          "tipo": "misma_ocasion",
+          "peso": 0.75,
+          "nota": "campaña de siembra/cosecha"
+        }
+      ],
+      "prioridad": 82
     },
     {
       "codigo": "ALI",
@@ -78,7 +121,31 @@
             "pescaderia"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "FAR",
+          "tipo": "complementario",
+          "peso": 0.6
+        },
+        {
+          "hacia": "FRR",
+          "tipo": "complementario",
+          "peso": 0.55
+        },
+        {
+          "hacia": "HOM",
+          "tipo": "complementario",
+          "peso": 0.45
+        },
+        {
+          "hacia": "SEG",
+          "tipo": "complementario",
+          "peso": 0.5,
+          "nota": "tarjeta local de consumo en almacén de barrio"
+        }
+      ],
+      "prioridad": 52
     },
     {
       "codigo": "ALT",
@@ -106,7 +173,21 @@
             "magnetismo"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "SAL",
+          "tipo": "afinidad_contextual",
+          "peso": 0.5,
+          "nota": "medicina complementaria a tratamiento clínico"
+        },
+        {
+          "hacia": "BIE",
+          "tipo": "misma_audiencia",
+          "peso": 0.55
+        }
+      ],
+      "prioridad": 40
     },
     {
       "codigo": "ART",
@@ -132,7 +213,21 @@
             "cuchilleria artesanal"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "MOD",
+          "tipo": "misma_audiencia",
+          "peso": 0.5
+        },
+        {
+          "hacia": "EVT",
+          "tipo": "afinidad_contextual",
+          "peso": 0.45,
+          "nota": "artesanías como souvenir/regalo de evento"
+        }
+      ],
+      "prioridad": 38
     },
     {
       "codigo": "BIE",
@@ -174,7 +269,37 @@
             "natacion"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "EST",
+          "tipo": "complementario",
+          "peso": 0.65
+        },
+        {
+          "hacia": "FRR",
+          "tipo": "complementario",
+          "peso": 0.5,
+          "nota": "viandas saludables tras entrenar"
+        },
+        {
+          "hacia": "MOD",
+          "tipo": "complementario",
+          "peso": 0.45,
+          "nota": "indumentaria deportiva (ver MOD-DEP)"
+        },
+        {
+          "hacia": "SAL",
+          "tipo": "afinidad_contextual",
+          "peso": 0.67
+        },
+        {
+          "hacia": "EST",
+          "tipo": "misma_audiencia",
+          "peso": 0.7
+        }
+      ],
+      "prioridad": 54
     },
     {
       "codigo": "CON",
@@ -240,7 +365,37 @@
             "herramientas"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "IND",
+          "tipo": "complementario",
+          "peso": 0.6
+        },
+        {
+          "hacia": "MAD",
+          "tipo": "complementario",
+          "peso": 0.55
+        },
+        {
+          "hacia": "OFI",
+          "tipo": "complementario",
+          "peso": 0.7,
+          "nota": "corralón + albañil/pintor en la misma obra"
+        },
+        {
+          "hacia": "VID",
+          "tipo": "complementario",
+          "peso": 0.5
+        },
+        {
+          "hacia": "INM",
+          "tipo": "afinidad_contextual",
+          "peso": 0.55,
+          "nota": "reforma antes de vender/alquilar"
+        }
+      ],
+      "prioridad": 65
     },
     {
       "codigo": "EDU",
@@ -260,7 +415,26 @@
             "escuela"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "TEC",
+          "tipo": "complementario",
+          "peso": 0.7
+        },
+        {
+          "hacia": "PRO",
+          "tipo": "complementario",
+          "peso": 0.55
+        },
+        {
+          "hacia": "INS",
+          "tipo": "afinidad_contextual",
+          "peso": 0.5,
+          "nota": "institución educativa pública vs academia privada"
+        }
+      ],
+      "prioridad": 64
     },
     {
       "codigo": "EST",
@@ -293,7 +467,31 @@
           "matriculaOpcional": true,
           "matriculaLabel": "Matrícula / habilitación (si tenés)"
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "MOD",
+          "tipo": "complementario",
+          "peso": 0.82
+        },
+        {
+          "hacia": "BIE",
+          "tipo": "complementario",
+          "peso": 0.7
+        },
+        {
+          "hacia": "EVT",
+          "tipo": "complementario",
+          "peso": 0.75,
+          "nota": "peinado/maquillaje antes de evento"
+        },
+        {
+          "hacia": "MOD",
+          "tipo": "misma_audiencia",
+          "peso": 0.8
+        }
+      ],
+      "prioridad": 58
     },
     {
       "codigo": "EVT",
@@ -312,7 +510,41 @@
             "cumpleanos"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "FRR",
+          "tipo": "complementario",
+          "peso": 0.8
+        },
+        {
+          "hacia": "EST",
+          "tipo": "complementario",
+          "peso": 0.75
+        },
+        {
+          "hacia": "MOD",
+          "tipo": "complementario",
+          "peso": 0.7
+        },
+        {
+          "hacia": "TEC",
+          "tipo": "afinidad_contextual",
+          "peso": 0.42,
+          "nota": "fotografía/sonido para el evento"
+        },
+        {
+          "hacia": "FRR",
+          "tipo": "misma_ocasion",
+          "peso": 0.8
+        },
+        {
+          "hacia": "EST",
+          "tipo": "misma_ocasion",
+          "peso": 0.75
+        }
+      ],
+      "prioridad": 68
     },
     {
       "codigo": "FAR",
@@ -339,7 +571,31 @@
             "gafas"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "SAL",
+          "tipo": "complementario",
+          "peso": 0.92
+        },
+        {
+          "hacia": "BIE",
+          "tipo": "complementario",
+          "peso": 0.61
+        },
+        {
+          "hacia": "SEG",
+          "tipo": "complementario",
+          "peso": 0.65,
+          "nota": "obra social, jubilaciones, adultos mayores"
+        },
+        {
+          "hacia": "SAL",
+          "tipo": "misma_ocasion",
+          "peso": 0.92
+        }
+      ],
+      "prioridad": 95
     },
     {
       "codigo": "FRR",
@@ -398,7 +654,45 @@
             "helados"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "ALI",
+          "tipo": "complementario",
+          "peso": 0.6
+        },
+        {
+          "hacia": "EVT",
+          "tipo": "complementario",
+          "peso": 0.8
+        },
+        {
+          "hacia": "HOM",
+          "tipo": "complementario",
+          "peso": 0.4
+        },
+        {
+          "hacia": "EVT",
+          "tipo": "afinidad_contextual",
+          "peso": 0.8
+        },
+        {
+          "hacia": "EST",
+          "tipo": "afinidad_contextual",
+          "peso": 0.62
+        },
+        {
+          "hacia": "EVT",
+          "tipo": "misma_ocasion",
+          "peso": 0.8
+        },
+        {
+          "hacia": "EST",
+          "tipo": "misma_ocasion",
+          "peso": 0.62
+        }
+      ],
+      "prioridad": 78
     },
     {
       "codigo": "HOM",
@@ -453,7 +747,26 @@
             "utiles escolares"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "OFI",
+          "tipo": "complementario",
+          "peso": 0.75,
+          "nota": "electrodoméstico nuevo + instalación/reparación"
+        },
+        {
+          "hacia": "VEH",
+          "tipo": "complementario",
+          "peso": 0.4
+        },
+        {
+          "hacia": "CON",
+          "tipo": "afinidad_contextual",
+          "peso": 0.55
+        }
+      ],
+      "prioridad": 70
     },
     {
       "codigo": "IND",
@@ -481,7 +794,26 @@
             "soldadura industrial"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "AGR",
+          "tipo": "complementario",
+          "peso": 0.6,
+          "nota": "estructuras y repuestos para maquinaria de campo"
+        },
+        {
+          "hacia": "CON",
+          "tipo": "complementario",
+          "peso": 0.6
+        },
+        {
+          "hacia": "VEH",
+          "tipo": "afinidad_contextual",
+          "peso": 0.45
+        }
+      ],
+      "prioridad": 55
     },
     {
       "codigo": "INM",
@@ -501,7 +833,104 @@
             "alquileres"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "SEG",
+          "tipo": "complementario",
+          "peso": 0.72
+        },
+        {
+          "hacia": "PRO",
+          "tipo": "complementario",
+          "peso": 0.72,
+          "nota": "escribano para la operación"
+        },
+        {
+          "hacia": "CON",
+          "tipo": "complementario",
+          "peso": 0.55,
+          "nota": "reforma antes de habitar"
+        },
+        {
+          "hacia": "HOM",
+          "tipo": "afinidad_contextual",
+          "peso": 0.5
+        }
+      ],
+      "prioridad": 66
+    },
+    {
+      "codigo": "INS",
+      "nombre": "Instituciones",
+      "subcategorias": [
+        {
+          "codigo": "INS-MUN",
+          "nombre": "Municipalidad / Comuna",
+          "schema_org": "GovernmentOffice",
+          "sinonimos": [
+            "municipalidad",
+            "comuna",
+            "intendencia",
+            "registro civil",
+            "tramites municipales"
+          ]
+        },
+        {
+          "codigo": "INS-CLU",
+          "nombre": "Club de Barrio / Social / Deportivo",
+          "schema_org": "SportsClub",
+          "sinonimos": [
+            "club",
+            "club social",
+            "club de barrio",
+            "socios",
+            "mutual"
+          ],
+          "_nota": "Puede ofrecer mutual (préstamos a socios) como servicio adicional — ver relacion capacidad_ofrecida hacia SEG."
+        },
+        {
+          "codigo": "INS-REL",
+          "nombre": "Iglesia / Templo",
+          "schema_org": "PlaceOfWorship",
+          "sinonimos": [
+            "iglesia",
+            "parroquia",
+            "templo",
+            "capilla"
+          ]
+        },
+        {
+          "codigo": "INS-EDU",
+          "nombre": "Institución Educativa Pública",
+          "schema_org": "EducationalOrganization",
+          "sinonimos": [
+            "escuela publica",
+            "colegio publico",
+            "escuela tecnica"
+          ]
+        }
+      ],
+      "relaciones": [
+        {
+          "hacia": "SEG",
+          "tipo": "capacidad_ofrecida",
+          "peso": 0.55,
+          "nota": "mutual de club: préstamos a socios, ver SEG-FIN"
+        },
+        {
+          "hacia": "EDU",
+          "tipo": "afinidad_contextual",
+          "peso": 0.5
+        },
+        {
+          "hacia": "BIE",
+          "tipo": "afinidad_contextual",
+          "peso": 0.45,
+          "nota": "club social con actividad deportiva"
+        }
+      ],
+      "prioridad": 90
     },
     {
       "codigo": "MAD",
@@ -532,7 +961,21 @@
             "deck"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "CON",
+          "tipo": "complementario",
+          "peso": 0.6
+        },
+        {
+          "hacia": "OFI",
+          "tipo": "complementario",
+          "peso": 0.55,
+          "nota": "carpintero como destino de la madera"
+        }
+      ],
+      "prioridad": 48
     },
     {
       "codigo": "MAS",
@@ -557,7 +1000,20 @@
             "gatos"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "FAR",
+          "tipo": "complementario",
+          "peso": 0.45
+        },
+        {
+          "hacia": "SAL",
+          "tipo": "afinidad_contextual",
+          "peso": 0.4
+        }
+      ],
+      "prioridad": 50
     },
     {
       "codigo": "MOD",
@@ -607,8 +1063,43 @@
             "colchones",
             "cocinas integrales"
           ]
+        },
+        {
+          "codigo": "MOD-DEP",
+          "nombre": "Indumentaria y Artículos Deportivos",
+          "schema_org": "SportingGoodsStore",
+          "sinonimos": [
+            "ropa deportiva",
+            "articulos deportivos",
+            "zapatillas deportivas",
+            "equipamiento deportivo"
+          ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "EST",
+          "tipo": "complementario",
+          "peso": 0.82
+        },
+        {
+          "hacia": "EVT",
+          "tipo": "complementario",
+          "peso": 0.7
+        },
+        {
+          "hacia": "BIE",
+          "tipo": "complementario",
+          "peso": 0.45,
+          "nota": "indumentaria deportiva, ver MOD-DEP"
+        },
+        {
+          "hacia": "EST",
+          "tipo": "misma_audiencia",
+          "peso": 0.82
+        }
+      ],
+      "prioridad": 60
     },
     {
       "codigo": "OFI",
@@ -682,7 +1173,31 @@
           "matriculaOpcional": true,
           "matriculaLabel": "Matrícula (ej: maestro mayor de obra, si tenés)"
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "HOM",
+          "tipo": "complementario",
+          "peso": 0.75
+        },
+        {
+          "hacia": "CON",
+          "tipo": "complementario",
+          "peso": 0.7
+        },
+        {
+          "hacia": "VID",
+          "tipo": "complementario",
+          "peso": 0.5
+        },
+        {
+          "hacia": "HOM",
+          "tipo": "misma_ocasion",
+          "peso": 0.6,
+          "nota": "urgencia doméstica"
+        }
+      ],
+      "prioridad": 88
     },
     {
       "codigo": "PRO",
@@ -735,7 +1250,31 @@
             "fotografia"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "SEG",
+          "tipo": "complementario",
+          "peso": 0.82
+        },
+        {
+          "hacia": "INM",
+          "tipo": "complementario",
+          "peso": 0.72
+        },
+        {
+          "hacia": "INS",
+          "tipo": "complementario",
+          "peso": 0.58,
+          "nota": "trámites que requieren asesoramiento legal/contable"
+        },
+        {
+          "hacia": "EDU",
+          "tipo": "afinidad_contextual",
+          "peso": 0.55
+        }
+      ],
+      "prioridad": 74
     },
     {
       "codigo": "REP",
@@ -761,7 +1300,21 @@
             "dulceria"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "EVT",
+          "tipo": "complementario",
+          "peso": 0.6,
+          "nota": "torta por encargo para cumpleaños/casamiento"
+        },
+        {
+          "hacia": "FRR",
+          "tipo": "misma_audiencia",
+          "peso": 0.5
+        }
+      ],
+      "prioridad": 45
     },
     {
       "codigo": "SAL",
@@ -873,7 +1426,31 @@
             "resonancia"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "FAR",
+          "tipo": "complementario",
+          "peso": 0.92
+        },
+        {
+          "hacia": "BIE",
+          "tipo": "complementario",
+          "peso": 0.67
+        },
+        {
+          "hacia": "SEG",
+          "tipo": "complementario",
+          "peso": 0.58,
+          "nota": "obra social/prepaga"
+        },
+        {
+          "hacia": "FAR",
+          "tipo": "misma_ocasion",
+          "peso": 0.92
+        }
+      ],
+      "prioridad": 100
     },
     {
       "codigo": "SEG",
@@ -900,8 +1477,49 @@
             "monotributo",
             "empleados temporales"
           ]
+        },
+        {
+          "codigo": "SEG-FIN",
+          "nombre": "Financiera / Microcréditos / Tarjeta Local",
+          "schema_org": "FinancialService",
+          "sinonimos": [
+            "financiera",
+            "prestamos",
+            "microcreditos",
+            "tarjeta local",
+            "credito personal",
+            "cuotas"
+          ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "PRO",
+          "tipo": "complementario",
+          "peso": 0.82
+        },
+        {
+          "hacia": "INM",
+          "tipo": "complementario",
+          "peso": 0.72
+        },
+        {
+          "hacia": "AGR",
+          "tipo": "complementario",
+          "peso": 0.85
+        },
+        {
+          "hacia": "VEH",
+          "tipo": "complementario",
+          "peso": 0.56
+        },
+        {
+          "hacia": "INS",
+          "tipo": "afinidad_contextual",
+          "peso": 0.55
+        }
+      ],
+      "prioridad": 88
     },
     {
       "codigo": "TEC",
@@ -929,7 +1547,30 @@
             "impresoras"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "EDU",
+          "tipo": "complementario",
+          "peso": 0.7
+        },
+        {
+          "hacia": "PRO",
+          "tipo": "complementario",
+          "peso": 0.48
+        },
+        {
+          "hacia": "HOM",
+          "tipo": "complementario",
+          "peso": 0.42
+        },
+        {
+          "hacia": "EDU",
+          "tipo": "misma_audiencia",
+          "peso": 0.7
+        }
+      ],
+      "prioridad": 76
     },
     {
       "codigo": "TRV",
@@ -947,7 +1588,26 @@
             "hostel"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "FRR",
+          "tipo": "complementario",
+          "peso": 0.62
+        },
+        {
+          "hacia": "EVT",
+          "tipo": "complementario",
+          "peso": 0.6
+        },
+        {
+          "hacia": "SEG",
+          "tipo": "complementario",
+          "peso": 0.45,
+          "nota": "seguro de viaje/asistencia"
+        }
+      ],
+      "prioridad": 45
     },
     {
       "codigo": "VEH",
@@ -1050,7 +1710,35 @@
             "encerado"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "AGR",
+          "tipo": "complementario",
+          "peso": 0.88
+        },
+        {
+          "hacia": "HOM",
+          "tipo": "complementario",
+          "peso": 0.65
+        },
+        {
+          "hacia": "PRO",
+          "tipo": "complementario",
+          "peso": 0.58
+        },
+        {
+          "hacia": "SEG",
+          "tipo": "complementario",
+          "peso": 0.56
+        },
+        {
+          "hacia": "AGR",
+          "tipo": "misma_audiencia",
+          "peso": 0.8
+        }
+      ],
+      "prioridad": 84
     },
     {
       "codigo": "VID",
@@ -1079,8 +1767,22 @@
             "mosquiteros"
           ]
         }
-      ]
+      ],
+      "relaciones": [
+        {
+          "hacia": "CON",
+          "tipo": "complementario",
+          "peso": 0.6
+        },
+        {
+          "hacia": "OFI",
+          "tipo": "complementario",
+          "peso": 0.45
+        }
+      ],
+      "prioridad": 42
     }
   ],
-  "notaEspecialidades": "Campo opcional \"especialidades\" (array de strings) + \"organismoMatricula\" (array de strings) en subcategorías que lo requieran. Cuando existen, el rubro-selector muestra un tercer dropdown encadenado (especialidad clínica) y organismoMatricula pasa a ser select en vez de texto libre. Reemplaza los objetos ESPECIALIDADES/ORGANISMOS_MATRICULA que antes vivían hardcodeados en mi-perfil-profesional.js."
+  "notaEspecialidades": "Campo opcional \"especialidades\" (array de strings) + \"organismoMatricula\" (array de strings) en subcategorías que lo requieran. Cuando existen, el rubro-selector muestra un tercer dropdown encadenado (especialidad clínica) y organismoMatricula pasa a ser select en vez de texto libre. Reemplaza los objetos ESPECIALIDADES/ORGANISMOS_MATRICULA que antes vivían hardcodeados en mi-perfil-profesional.js.",
+  "notaRelaciones": "Campo \"relaciones\" (array) en cada tipo de Nivel 1: cada arista tiene {hacia: codigo de otro tipo, tipo: \"complementario\"|\"misma_audiencia\"|\"misma_ocasion\"|\"afinidad_contextual\"|\"capacidad_ofrecida\"|(extensible), peso: 0-1, nota: string opcional en lenguaje natural para el LLM}. No simétrico por diseño. Nuevos tipos de relación no requieren cambios de código, solo agregar el string nuevo en \"tipo\". Campo \"prioridad\" (0-100) por tipo desempata cuando varios nodos tienen score semántico igual en el grafo. Consumido por vocab-relations.resolver.js con fallback a relations.constants.js para tipos aún sin migrar."
 }
