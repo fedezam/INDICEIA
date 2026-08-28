@@ -913,6 +913,18 @@
       ],
       "relaciones": [
         {
+          "hacia": "PRO",
+          "tipo": "complementario",
+          "peso": 0.55,
+          "nota": "trámites municipales/registro civil que requieren asesoramiento legal o contable"
+        },
+        {
+          "hacia": "MOD",
+          "tipo": "complementario",
+          "peso": 0.4,
+          "nota": "indumentaria deportiva tras actividad en club"
+        },
+        {
           "hacia": "SEG",
           "tipo": "capacidad_ofrecida",
           "peso": 0.55,
