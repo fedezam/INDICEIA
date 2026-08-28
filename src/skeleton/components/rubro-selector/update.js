@@ -7,7 +7,7 @@
 //                                  especialidades?, organismoMatricula?}]
 //   sugerirSubcategoria(txt)  -> {tipo, subcategoria, nombre, confidence} | null
 import { getSubcategoriasDeTipo, sugerirSubcategoria } from '/lib/entity-factory/rubro-resolver.js';
-import vocab from '/lib/entity-factory/base/business-vocabulary.json' with { type: 'json' };
+import vocab from '/src/shared/business-vocabulary.json' with { type: 'json' };
 
 function getTiposOrdenados(tiposExcluidos = []) {
   return [...vocab.tipos]
