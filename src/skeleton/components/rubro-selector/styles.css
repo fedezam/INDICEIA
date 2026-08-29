@@ -122,17 +122,8 @@
 .s-rubro-suggestion.hidden {
   display: none;
 }
-/* ==================== RESPONSIVE ==================== */
-@media (min-width: 768px) {
-  .s-rubro-selector {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px 20px;
-    align-items: start;
-  }
-  .s-rubro-status,
-  .s-rubro-nomatch,
-  .s-rubro-matricula {
-    grid-column: 1 / -1;
-  }
-}
+/* Sin grid de 2 columnas: los campos van uno debajo del otro, en el
+   mismo orden de la cascada de elección (Rubro → Categoría →
+   Especialidad → Matrícula). El zigzag de 2 columnas generaba
+   confusión — daba la sensación de "Especialidad" duplicada al
+   quedar la subcategoría al lado del rubro en vez de debajo. */
