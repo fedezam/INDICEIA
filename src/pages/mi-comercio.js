@@ -554,7 +554,7 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
           fechaCreacion:      new Date(),
           fechaActualizacion: new Date(),
           onboardingSteps:    { 'mi-comercio': true }
-        });
+        }, { merge: true });
 
         const now       = Timestamp.now();
         const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
