@@ -65,7 +65,7 @@ function render(ctx, selected) {
   container.appendChild(topbar);
   const rerender = () => render(ctx, selected);
   renderSeccionIdentidad(container, entidad, entCtx, comercioId, rerender);
-  renderSeccionTipoEntidad(container, entidad, user, comercioId, rerender);
+  renderSeccionTipoEntidad(container, entidad, entCtx, user, comercioId, rerender);
   if (entCtx.offerType?.productos || entCtx.offerType?.servicios) {
     renderSeccionCatalogo(container, entidad, entCtx, comercioId);
   }
@@ -146,9 +146,10 @@ function renderSeccionIdentidad(container, entidad, ctx, comercioId, rerender) {
 // ──────────────────────────────────────────────────────────
 // SECCIÓN: TIPO DE ENTIDAD
 // ──────────────────────────────────────────────────────────
-function renderSeccionTipoEntidad(container, entidad, user, comercioId, rerender) {
+function renderSeccionTipoEntidad(container, entidad, entCtx, user, comercioId, rerender) {
   const { wrap, grid } = makeSection('🗂️ Tipo de Entidad', 'Qué tipo de entidad es y qué ofrece');
   const offerType = entidad.offerType || {};
+  if (!entidad.offerType) entidad.offerType = offerType;
   const offers = [
     offerType.productos && 'Productos',
     offerType.servicios && 'Servicios'
@@ -212,6 +213,7 @@ function renderSeccionTipoEntidad(container, entidad, user, comercioId, rerender
               : Promise.resolve()
           ]);
           Object.assign(entidad.offerType, updates);
+          if (entCtx) entCtx.offerType = { ...entidad.offerType }; // mantiene sincronizado el gate de Catálogo
           rerender();
         }
       });
@@ -494,6 +496,7 @@ async function callPlanAction(action, comercioId, extra = {}) {
 function renderSeccionPlan(container, entidad, comercioId, rerender) {
   const { wrap, grid } = makeSection('💳 Plan', 'Estado del plan y acceso');
   const plan = entidad.plan || {};
+  if (!entidad.plan) entidad.plan = plan;
   const tipo = plan.type || 'trial';
   const activo = plan.active ?? false;
   const trial = plan.trial ?? true;
@@ -1029,7 +1032,7 @@ function openProductosPanel(comercioId) {
       <div class="sa-item">
         <strong>${p.nombre || '-'}</strong>
         <span>$${p.precio_final ?? '-'}</span>
-        <span>${p.paused ? '🔴 pausado' : '🟢 activo'}</span>
+        <span>{p.paused ? '🔴 pausado' : '🟢 activo'}</span>
       </div>
     `
   });
@@ -1042,7 +1045,7 @@ function openServiciosPanel(comercioId) {
     renderItem: (s) => `
       <div class="sa-item">
         <strong>${s.nombre || '-'}</strong>
-        <span>${s.precio?.valor ? `$${s.precio.valor}` : 'Sin precio'}</span>
+        <span>${s.precio?.valor ? `$$$${s.precio.valor}` : 'Sin precio'}</span>
         <span>${s.activo === false ? '🔴 inactivo' : '🟢 activo'}</span>
       </div>
     `
