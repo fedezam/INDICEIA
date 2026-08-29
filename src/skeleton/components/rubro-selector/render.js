@@ -21,7 +21,7 @@ export function renderRubroSelector() {
   subWrapper.className = 's-rubro-field';
   const subLabel = document.createElement('label');
   subLabel.className = 's-rubro-label';
-  subLabel.textContent = 'Especialidad';
+  subLabel.textContent = 'Categoría';
   const subSelect = document.createElement('select');
   subSelect.className = 's-rubro-select';
   subSelect.disabled = true;
