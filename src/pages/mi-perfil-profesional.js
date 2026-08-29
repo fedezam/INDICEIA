@@ -535,7 +535,7 @@ const page = {
             duenoId:        uid,
             fechaCreacion:  now,
             onboardingSteps: { 'mi-perfil-profesional': true },
-          });
+          }, { merge: true });
 
           await createInitialPlan(nuevoComercioId);
 
