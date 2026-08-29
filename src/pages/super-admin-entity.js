@@ -213,7 +213,7 @@ function renderSeccionTipoEntidad(container, entidad, entCtx, user, comercioId, 
               : Promise.resolve()
           ]);
           Object.assign(entidad.offerType, updates);
-          if (entCtx) entCtx.offerType = { ...entidad.offerType }; // mantiene sincronizado el gate de Catálogo
+          entCtx.offerType = { ...entidad.offerType };
           rerender();
         }
       });
@@ -652,24 +652,35 @@ function renderSeccionPublicacion(container, entidad, comercioId, rerender) {
     body: generatedAt
       ? `<p>Última generación: ${generatedAt.toLocaleString('es-AR')}</p>`
       : '<p>Nunca generada</p>',
-    onEdit: async () => {
-      const btns = document.querySelectorAll('.sa-btn--edit');
-      btns.forEach(b => { b.disabled = true; b.textContent = 'Generando...'; });
-      try {
-        const res = await fetch('/api/generate-and-upload-entity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ comercioId })
-        });
-        if (!res.ok) throw new Error(await res.text());
-        entidad.entityGeneratedAt = new Date().toISOString();
-        rerender();
-      } catch (err) {
-        console.error('Error regenerando:', err);
-        alert('Error al regenerar: ' + err.message);
-      }
-    }
   }));
+
+  const regenerarCard = grid.lastElementChild;
+  regenerarCard.querySelector('.sa-card-body').insertAdjacentHTML('beforeend', `
+    <div style="margin-top:8px">
+      <button type="button" class="sa-btn sa-btn--secondary sa-regenerar-entidad">⚡ Regenerar entidad</button>
+    </div>
+  `);
+  const regenerarBtn = regenerarCard.querySelector('.sa-regenerar-entidad');
+  regenerarBtn.onclick = async () => {
+    if (!confirm('¿Regenerar la entidad completa (entity.json, visual.html, mini app)?')) return;
+    regenerarBtn.disabled = true;
+    regenerarBtn.textContent = 'Generando...';
+    try {
+      const res = await fetch('/api/generate-and-upload-entity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comercioId })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      entidad.entityGeneratedAt = new Date().toISOString();
+      rerender();
+    } catch (err) {
+      console.error('[superAdmin] Error regenerando entidad:', err);
+      alert('Error al regenerar: ' + err.message);
+      regenerarBtn.disabled = false;
+      regenerarBtn.textContent = '⚡ Regenerar entidad';
+    }
+  };
 
   // ── SEO — independiente de la regeneración de entidad. La entidad se
   // regenera cuando cambian datos operativos (precios, catálogo, config
@@ -1044,8 +1055,8 @@ function openServiciosPanel(comercioId) {
     emptyLabel: 'Sin servicios',
     renderItem: (s) => `
       <div class="sa-item">
-        <strong>${s.nombre || '-'}</strong>
-        <span>${s.precio?.valor ? `$$$${s.precio.valor}` : 'Sin precio'}</span>
+        <strong>{s.nombre || '-'}</strong>
+        <span>${s.precio?.valor ? `$$$$$${s.precio.valor}` : 'Sin precio'}</span>
         <span>${s.activo === false ? '🔴 inactivo' : '🟢 activo'}</span>
       </div>
     `
