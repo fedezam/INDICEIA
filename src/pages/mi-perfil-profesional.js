@@ -377,10 +377,22 @@ const page = {
       this._refs.slugValidationTimer = setTimeout(() => this._validarSlug(slug, false), 800);
     });
 
-    // auto-generar slug desde nombre
+        // auto-generar slug desde nombre
     setTimeout(() => {
       const nombreInput = this._refs.fields.nombre?.input;
       if (!nombreInput) return;
+
+      // Si el nombre ya viene precargado (modo edición sobre una entidad vieja
+      // sin landing.slug) el evento 'input' de abajo nunca dispara — nadie
+      // escribe nada, el campo ya tiene valor. Sin esto, el slug queda vacío
+      // para siempre y el botón de guardar se bloquea sin explicación visible.
+      const nombreInicial = nombreInput.value?.trim();
+      if (nombreInicial && nombreInicial.length >= 3 && !this._data.slug) {
+        const slugInicial = slugify(nombreInicial);
+        this._refs.slugInput.value = slugInicial;
+        this._validarSlug(slugInicial, true);
+      }
+
       nombreInput.addEventListener('input', () => {
         clearTimeout(this._refs.slugValidationTimer);
         const nombre = this._data.nombre?.trim();
