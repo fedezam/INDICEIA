@@ -578,12 +578,12 @@ const page = {
   _renderCoberturaCard() {
     const ok = this._data.comercio.onboardingSteps?.cobertura === true;
     return createCard({
-      title: 'Zona de Cobertura',
-      icon: 'fa-map-marked-alt',
-      content: `<p>${ok ? 'Configurada ✓' : 'Sin configurar'}</p>`,
-      action: { type: 'link', url: '/cobertura.html?edit=true', label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
-    });
-  },
+       title: 'Cobertura y Modalidad',
+       icon: 'fa-shield-alt',
+       content: `<p>${ok ? 'Configurada ✓' : 'Sin configurar'}</p>`,
+       action: { type: 'link', url: '/cobertura.html?edit=true', label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
+     });
+   },
 
   _renderConsultasCard() {
     const ok = this._data.comercio.onboardingSteps?.consultas === true;
