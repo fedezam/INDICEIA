@@ -715,12 +715,12 @@ const page = {
         return true;
       },
       onSuccess: () => {
-        showToast('💾 Lugares guardados', 'success');
+        showToast('💾 Lugares guardados', '', 'success');
         dirtyController.markSaved();
       },
       onError: err => {
         console.error('[lugares] Error guardando:', err);
-        showToast('Error al guardar: ' + err.message, 'error');
+       showToast('Error al guardar: ' + err.message, '', 'error');
       }
     });
   },
