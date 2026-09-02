@@ -656,7 +656,7 @@ const page = {
         return { success: true, stepMarked: true };
       },
       onSuccess: () => { showToast('Perfil guardado correctamente', '', 'success'); dirtyController.markSaved(); },
-      onError: (err) => { console.error('❌ Error guardando perfil:', err); showToast('Error al guardar: ' + err.message, '', 'error'); }}
+      onError: (err) => { console.error('❌ Error guardando perfil:', err); showToast('Error al guardar: ' + err.message, '', 'error'); }
     });
   }
 };
