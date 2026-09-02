@@ -604,10 +604,10 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         return { success: true, stepMarked: true };
       }
     },
-    onSuccess: () => showToast('Comercio guardado correctamente', 'success'),
+    onSuccess: () => showToast('Comercio guardado correctamente', '', 'success'),
     onError:   (err) => {
       console.error(' Error guardando:', err);
-      showToast('Error al guardar: ' + err.message, 'error');
+      showToast('Error al guardar: ' + err.message, '', 'error');
     },
   });
   btnContainer.appendChild(btn);
