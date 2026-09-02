@@ -599,6 +599,7 @@ const page = {
       onSuccess: () => {
         showToast(
           page._isEditMode ? 'Perfil actualizado' : 'Perfil guardado',
+          '',
           'success'
         );
         dirtyController.markSaved();
@@ -606,7 +607,7 @@ const page = {
 
       onError: (err) => {
         console.error('[mi-perfil-profesional] onSave ERROR:', err);
-        showToast('Error al guardar el perfil', 'error');
+        showToast('Error al guardar el perfil', '', 'error');
       },
     });
   },
