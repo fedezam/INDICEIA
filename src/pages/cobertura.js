@@ -119,10 +119,10 @@ function _renderSaveButton(uiState, originalSnapshot) {
       await batch.commit();
       return true; // Éxito, el step ya está marcado en el batch
     },
-    onSuccess: () => showToast('💾 Cobertura guardada', 'success'),
+    onSuccess: () => showToast('💾 Cobertura guardada', '', 'success'),
     onError: (err) => {
       console.error('[cobertura] Error:', err);
-      showToast('Error al guardar: ' + err.message, 'error');
+      showToast('Error al guardar: ' + err.message, '', 'error');
     }
   });
 }
