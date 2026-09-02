@@ -110,10 +110,10 @@ function _renderSaveButton(uiState, originalSnapshot) {
       await batch.commit();
       return true;
     },
-    onSuccess: () => showToast('💾 Consultas guardadas', 'success'),
+    onSuccess: () => showToast('💾 Consultas guardadas', '', 'success'),
     onError: (err) => {
       console.error('[consultas] Error:', err);
-      showToast('Error al guardar: ' + err.message, 'error');
+      showToast('Error al guardar: ' + err.message, '', 'error');
     }
   });
 }
