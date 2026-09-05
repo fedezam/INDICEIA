@@ -14,7 +14,7 @@ const db = admin.firestore();
 
 export default async function handler(req, res) {
   const { id: comercioId } = req.query;
-  const { items, modo, direccion } = req.query;
+  const { items, modo, direccion, waDestino } = req.query;
 
   if (!comercioId || !items) {
     return res.status(400).send('Faltan parámetros');
@@ -26,7 +26,19 @@ export default async function handler(req, res) {
     if (!comercioSnap.exists) return res.status(404).send('Comercio no encontrado');
 
     const data = comercioSnap.data();
-    const waNumber = resolveWaNumber(data.whatsapp);
+
+    // ── DEMO: resolver número destino ──
+    // isDemo se lee acá, de Firestore, directo — NUNCA de un parámetro
+    // de la URL ni de nada que haya decidido el LLM en la conversación.
+    // Si la entidad no es demo, waDestino se ignora en silencio (ni
+    // error ni aviso) aunque venga en el query string: así no se le da
+    // información a quien intente falsear el parámetro a mano sobre si
+    // el sistema lo reconoce o no. Ver mind.builder.js / closers/order.js
+    // para el resto del flujo.
+    const isDemo = data.isDemo === true;
+    const waNumber = isDemo && waDestino
+      ? resolveWaNumber(waDestino)
+      : resolveWaNumber(data.whatsapp);
     if (!waNumber) return res.status(409).send('Comercio sin WhatsApp configurado');
 
     // ── parsear items: "id:qty,id:qty" ──
@@ -65,7 +77,9 @@ export default async function handler(req, res) {
     const modoLabel = modo === 'delivery' ? 'Delivery' : 'Retiro por el local';
 
     const mensaje = [
-      'Hola! Vengo de IndiceIA, este es mi pedido 🛒',
+      isDemo
+        ? 'Hola! Este es un pedido de PRUEBA generado desde el demostrador de IndiceIA 🧪'
+        : 'Hola! Vengo de IndiceIA, este es mi pedido 🛒',
       '',
       ...lineas,
       '─────────────────',
@@ -89,7 +103,7 @@ export default async function handler(req, res) {
       try {
         await db.collection('landing_events').add({
           destination: slug,
-          event: 'wa_order_click',
+          event: isDemo ? 'wa_order_click_demo' : 'wa_order_click',
           items: pairs,
           subtotal,
           total,
