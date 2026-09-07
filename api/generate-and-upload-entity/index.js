@@ -93,6 +93,25 @@
 // checkAdminSecret.
 // ────────────────────────────────────────────────────────────────
 //
+// ── Nota (05/09/2026) ──────────────────────────────────────────
+// Se agrega action: 'toggle_demo' — mismo motivo que las anteriores
+// (límite de funciones serverless de Vercel).
+//
+// Marca/desmarca isDemo en Firestore para una entidad puntual. A
+// propósito NO regenera entity.json (ver handleToggleDemo) — separar
+// "marcar" de "publicar" evita que un toggle accidental dispare un
+// rebuild completo sin querer. El admin aplica el cambio cuando
+// quiere, vía 'regenerate_all' o regenerando esa entidad puntual desde
+// super-admin-entity.js.
+//
+// Scoped a una entidad puntual (comercioId), mismo criterio que
+// plan_reactivate/plan_extend/regenerate_seo — no requiere
+// ADMIN_SECRET (no puede hacer daño masivo, y ya está gateado
+// client-side por el chequeo de role !== 'admin' en super-admin.js).
+// Mismo hueco de seguridad que las otras: si alguna vez importa
+// cerrarlo, sumarle checkAdminSecret.
+// ────────────────────────────────────────────────────────────────
+//
 // Uso desde el panel:
 //   fetch('/api/generate-and-upload-entity', {
 //     method: 'POST',
@@ -128,6 +147,12 @@
 //     method: 'POST',
 //     headers: { 'Content-Type': 'application/json' },
 //     body: JSON.stringify({ action: 'regenerate_seo', comercioId: '...' })
+//   })
+//
+//   fetch('/api/generate-and-upload-entity', {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify({ action: 'toggle_demo', comercioId: '...', isDemo: true })
 //   })
 //
 // El comportamiento original (comercioId + createInitialPlan opcional)
@@ -395,6 +420,31 @@ async function handleCreatePaymentPreference(res, comercioId, planType) {
   return res.status(200).json({ initPoint: response.init_point });
 }
 
+// ── Acción: marcar/desmarcar una entidad como demo ──
+// Solo escribe el flag en Firestore — NO regenera entity.json. El
+// admin decide cuándo aplicar el cambio al Blob (botón "Regenerar
+// todas" o regenerate_seo/regenerateOne puntual), a propósito: separar
+// "marcar" de "publicar" evita que un toggle accidental dispare un
+// rebuild completo sin querer.
+async function handleToggleDemo(res, comercioId, isDemo) {
+  if (!comercioId || typeof comercioId !== 'string') {
+    return res.status(400).json({ error: 'comercioId requerido' });
+  }
+  if (typeof isDemo !== 'boolean') {
+    return res.status(400).json({ error: 'isDemo debe ser boolean' });
+  }
+
+  const comercioRef = db.collection('entidades').doc(comercioId);
+  const snap = await comercioRef.get();
+  if (!snap.exists) {
+    return res.status(404).json({ error: `Comercio ${comercioId} no encontrado` });
+  }
+
+  await comercioRef.update({ isDemo });
+
+  return res.status(200).json({ ok: true, comercioId, isDemo });
+}
+
 // ── Acción: regenerar SOLO seo.html de una entidad puntual ──
 // No pasa por regenerateOne() a propósito: NO debe tocar entity.json,
 // entityGeneratedAt, ni el índice geográfico (buildIndex/
@@ -414,7 +464,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { action, adminSecret, dryRun, comercioId, createInitialPlan, days, planType } = req.body;
+    const { action, adminSecret, dryRun, comercioId, createInitialPlan, days, planType, isDemo } = req.body;
 
     // ── Acciones administrativas masivas (requieren ADMIN_SECRET) ──
     if (action === 'regenerate_all') {
@@ -442,6 +492,10 @@ export default async function handler(req, res) {
 
     if (action === 'regenerate_seo') {
       return await handleRegenerateSeo(res, comercioId);
+    }
+
+    if (action === 'toggle_demo') {
+      return await handleToggleDemo(res, comercioId, isDemo);
     }
 
     // ── Acción: crear preference de pago (usuario final, no admin) ──
