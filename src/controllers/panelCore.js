@@ -89,6 +89,7 @@ export async function listEntidades({ maxResults = 100 } = {}) {
         planActive: planStatus.active,
         planReason: planStatus.reason,
         diasRestantes,
+        isDemo: d.isDemo === true,
       };
     });
   } catch (err) {
