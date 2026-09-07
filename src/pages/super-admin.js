@@ -37,6 +37,29 @@ async function load(ctx) {
 }
 
 // ============================================================
+// TOGGLE DEMO — acción liviana, scoped a una entidad
+// ⟦ROLE⟧ toggle_demo no requiere ADMIN_SECRET (mismo criterio que
+// plan_reactivate/plan_extend/regenerate_seo en el endpoint) — no
+// puede hacer daño masivo. Por eso NO pasa por callAdminAction, que
+// siempre pide el secret vía prompt; usa su propio fetch liviano.
+// Solo marca el flag en Firestore, no regenera entity.json — el admin
+// decide cuándo publicar el cambio (botón "Regenerar todas" o desde
+// super-admin-entity.js).
+// ────────────────────────────────────────────────────────────
+async function toggleDemo(comercioId, nextValue) {
+  const response = await fetch('/api/generate-and-upload-entity', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'toggle_demo', comercioId, isDemo: nextValue }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Falló el toggle de demo');
+  }
+  return data;
+}
+
+// ============================================================
 // HERRAMIENTAS ADMIN
 // ⟦ROLE⟧ Acciones de mantenimiento (30/07/2026) — reutilizan
 // /api/generate-and-upload-entity con `action` en vez de sumar
@@ -141,6 +164,15 @@ function renderPlanBadge(reason, _row) {
   return `<span class="s-badge s-badge--${cfg.cls}">${cfg.label}</span>`;
 }
 
+// ── Badge de demo (columna aparte, no reemplaza al de plan) ──
+// Estilo inline en vez de una clase s-badge--* nueva: no está
+// confirmado que exista una variante "purple" en table/styles.css,
+// y esto evita depender de tocar ese CSS para que se vea bien.
+function renderDemoBadge(isDemo, _row) {
+  if (!isDemo) return '-';
+  return `<span class="s-badge" style="background:#8e44ad;color:#fff;">Demo</span>`;
+}
+
 // ── Días restantes, con aviso visual si vence pronto ──
 function renderDiasRestantes(dias) {
   if (dias === null || dias === undefined) return '-';
@@ -172,11 +204,12 @@ function renderEntidadesSection(state) {
   }
 
   // ── estado local de filtros (vive mientras esta sección exista) ──
-  const filterState = { plan: null, ciudad: null };
+  const filterState = { plan: null, ciudad: null, demo: false };
 
   const activas  = state.entities.filter(e => e.planActive).length;
   const enHuelga = state.entities.filter(e => !e.planActive && e.planReason !== 'no_plan').length;
   const sinPlan  = state.entities.filter(e => e.planReason === 'no_plan').length;
+  const demos    = state.entities.filter(e => e.isDemo).length;
 
   const chipsRow = document.createElement('div');
   chipsRow.style.cssText = 'display:flex;gap:8px;margin:-8px 0 12px;flex-wrap:wrap;align-items:center;';
@@ -187,6 +220,7 @@ function renderEntidadesSection(state) {
     if (filterState.plan === 'huelga')   filtered = filtered.filter(e => !e.planActive && e.planReason !== 'no_plan');
     if (filterState.plan === 'sinplan')  filtered = filtered.filter(e => e.planReason === 'no_plan');
     if (filterState.ciudad)              filtered = filtered.filter(e => e.ciudad === filterState.ciudad);
+    if (filterState.demo)                filtered = filtered.filter(e => e.isDemo);
     table.setData(buildRows(filtered));
   }
 
@@ -206,6 +240,19 @@ function renderEntidadesSection(state) {
   chipsRow.appendChild(makeFilterChip(`${activas} activas`,  'success',    'activas'));
   chipsRow.appendChild(makeFilterChip(`${enHuelga} en huelga`, 'danger',  'huelga'));
   if (sinPlan) chipsRow.appendChild(makeFilterChip(`${sinPlan} sin plan`, 'secondary', 'sinplan'));
+
+  // ── chip de demo — toggle independiente, no exclusivo con los de plan ──
+  if (demos) {
+    const chipDemo = createChip({
+      text: `${demos} demo`, variant: 'secondary', size: 'small',
+      onClick: () => {
+        filterState.demo = !filterState.demo;
+        chipDemo.classList.toggle('s-chip--active-filter', filterState.demo);
+        applyFilters();
+      }
+    });
+    chipsRow.appendChild(chipDemo);
+  }
 
   // ── selector de localidad ──
   const ciudades = [...new Set(state.entities.map(e => e.ciudad).filter(Boolean))].sort();
@@ -236,6 +283,24 @@ function renderEntidadesSection(state) {
     }));
   }
 
+  // ── toggle demo desde la fila — actualiza estado local + backend ──
+  async function handleToggleDemoClick(row) {
+    const nextValue = !row.isDemo;
+    const label = nextValue ? 'marcar como demo' : 'quitar la marca de demo';
+    if (!window.confirm(`¿Confirmás ${label} a "${row._nombre || row.id}"? Esto solo marca el flag — para publicarlo hay que regenerar la entidad.`)) return;
+
+    try {
+      await toggleDemo(row.id, nextValue);
+      // ── actualizar estado local sin refetch completo ──
+      const entity = state.entities.find(e => e.id === row.id);
+      if (entity) entity.isDemo = nextValue;
+      showToast(nextValue ? 'Marcada como demo' : 'Demo desmarcada', 'success');
+      applyFilters();
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    }
+  }
+
   const table = createTable({
     columns: [
       { key: '_nombre',       label: 'Nombre' },
@@ -244,13 +309,27 @@ function renderEntidadesSection(state) {
       { key: 'ciudad',        label: 'Localidad' },
       { key: 'planReason',    label: 'Plan', render: renderPlanBadge },
       { key: 'diasRestantes', label: 'Vence en', render: renderDiasRestantes },
+      { key: 'isDemo',        label: 'Demo', render: renderDemoBadge },
       { key: '_fecha',        label: 'Actualización' }
     ],
     data: buildRows(state.entities),
-    actions: [{
-      id: 'ver', label: 'Ver', icon: 'fas fa-eye',
-      onClick: (row) => { window.location.href = `/super-admin-entity.html?id=${row.id}`; }
-    }]
+    actions: [
+      {
+        id: 'ver', label: 'Ver', icon: 'fas fa-eye',
+        onClick: (row) => { window.location.href = `/super-admin-entity.html?id=${row.id}`; }
+      },
+      {
+        // label fijo: createTable no soporta label dinámico por fila.
+        // El estado real (demo o no) ya lo muestra la columna "Demo" de
+        // arriba, y el confirm() del handler aclara qué acción va a
+        // hacer ("marcar como demo" / "quitar la marca de demo") antes
+        // de ejecutarla.
+        id: 'toggle-demo',
+        label: 'Alternar demo',
+        icon: 'fas fa-flask',
+        onClick: handleToggleDemoClick,
+      },
+    ]
   });
   container.appendChild(table);
 
