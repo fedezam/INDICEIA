@@ -28,8 +28,15 @@
 //    CONTACT_CLOSE escritos como texto plano ADENTRO del string.
 //    Agregar ⟦INACTIVE⟧ al final no borra eso — hay que recortarlo
 //    explícitamente con stripOperationalBlocks() antes de appendear el
-//    bloque de huelga, o la entidad recibe instrucciones contradictorias
-//    (mini-app + flujo de pedido conviviendo con "estoy en huelga").
+//    bloque de huelga, o la entidad recibe instrucciones contradictorias.
+// 7. FIX (08/09/2026): entidades demo (firestoreData.isDemo === true)
+//    quedan exentas del sistema de plan por completo. Conceptualmente
+//    una demo no tiene "cliente que paga" — no hay pago que pueda
+//    vencer, así que "huelga por falta de pago" no aplica. Se resuelve
+//    ACÁ (antes de llamar a resolvePlanStatus) para que sea imposible
+//    que una demo entre en huelga sin importar qué diga plan.expires_at
+//    en Firestore — no es un parche de "ponerle muchos días", es que
+//    el chequeo directamente no corre para estas entidades.
 // ───────────────────────────────────────────────────────────────
 
 import { getHoraActual } from '../../lib/utils/getHoraActual.js';
@@ -134,7 +141,12 @@ export default async function handler(req, res) {
 
     // 6. Resolver estado de plan — en tiempo real, leyendo Firestore
     //    (firestoreData.plan), NO el Blob. Cierra el gap del cron.
-    const planStatus = resolvePlanStatus(firestoreData.plan);
+    //    EXCEPCIÓN: entidades demo no tienen plan que pueda vencer —
+    //    quedan exentas del sistema completo, sin importar qué diga
+    //    plan.expires_at en Firestore. Ver nota 7 al inicio del archivo.
+    const planStatus = firestoreData.isDemo === true
+      ? { active: true, reason: 'demo_exempt' }
+      : resolvePlanStatus(firestoreData.plan);
 
     // 7. Si está inactiva → recortar bloques operativos del mind
     //    (mini-app, cierre de pedido/servicio/contacto) ANTES de
