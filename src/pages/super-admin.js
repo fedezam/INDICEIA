@@ -14,6 +14,15 @@ import '/src/pages/super-admin.css';
 
 const adapter = (options) => createFirebaseAdapter(options);
 
+// ⟦ROLE⟧ UID de la cuenta admin — dueña de las entidades "propias de
+// plataforma" (demo + soporte/onboarding). Es el mismo UID usado en
+// la migración manual de duenoId (08/09/2026). Se usa acá SOLO para
+// separar visualmente las secciones del dashboard — no reemplaza los
+// chequeos de seguridad reales (isAdmin()/isOwner() en Firestore
+// rules), que siguen siendo la fuente de verdad de qué puede hacer
+// cada usuario.
+const ADMIN_UID = 'hx1XgXN7vBXNV7TsFaLyrol9p972';
+
 runLifecycle({
   adapter,
   options: { loadingMessage: 'Cargando panel...' },
@@ -67,6 +76,13 @@ async function toggleDemo(comercioId, nextValue) {
 // adminSecret se pide por prompt en vez de hardcodearlo acá: este
 // archivo lo sirve el navegador tal cual, cualquiera puede ver su
 // código fuente — un secreto embebido no sería secreto.
+//
+// Backfill plan (dry-run / aplicar): migra planes viejos guardados en
+// formato camelCase (startedAt/expiresAt) al formato snake_case
+// (started_at/expires_at) que usa resolvePlanStatus.js. dry-run solo
+// muestra qué cambiaría, sin escribir; aplicar sí escribe. Si no
+// quedan entidades con planes en formato viejo, estos botones no
+// tienen nada para hacer — quedan como red de seguridad.
 // ────────────────────────────────────────────────────────────
 function renderHerramientasAdmin() {
   const section = document.createElement('div');
@@ -148,7 +164,7 @@ function renderHerramientasAdmin() {
 }
 
 // ============================================================
-// HELPERS — Badges de plan
+// HELPERS — Badges
 // ============================================================
 
 // ── Badge de estado de plan (usa .s-badge--* ya definidas en table/styles.css) ──
@@ -164,10 +180,18 @@ function renderPlanBadge(reason, _row) {
   return `<span class="s-badge s-badge--${cfg.cls}">${cfg.label}</span>`;
 }
 
-// ── Badge de demo (columna aparte, no reemplaza al de plan) ──
-// Estilo inline en vez de una clase s-badge--* nueva: no está
-// confirmado que exista una variante "purple" en table/styles.css,
-// y esto evita depender de tocar ese CSS para que se vea bien.
+// ── Badge de tipo, para la sección "Mis Entidades" (demo vs soporte) ──
+function renderTipoPropiaBadge(_val, row) {
+  if (row.entityType === 'soporte') {
+    return `<span class="s-badge" style="background:#2c3e50;color:#fff;">Soporte</span>`;
+  }
+  if (row.isDemo) {
+    return `<span class="s-badge" style="background:#8e44ad;color:#fff;">Demo</span>`;
+  }
+  return '-';
+}
+
+// ── Badge de demo, para la tabla de terceros (debería ser rarísimo verlo ahí) ──
 function renderDemoBadge(isDemo, _row) {
   if (!isDemo) return '-';
   return `<span class="s-badge" style="background:#8e44ad;color:#fff;">Demo</span>`;
@@ -182,23 +206,107 @@ function renderDiasRestantes(dias) {
   return `${dias}d`;
 }
 
+// ── filas base compartidas entre ambas tablas de entidades ──
+function buildRows(entities) {
+  return entities.map(e => ({
+    ...e,
+    _nombre: e.nombreComercio || e.nombre || '-',
+    ciudad:  e.ciudad || '-',
+    _fecha:  e.fechaActualizacion
+               ? e.fechaActualizacion.toLocaleDateString('es-AR')
+               : '-'
+  }));
+}
+
 // ============================================================
-// SECCIÓN ENTIDADES — con filtros por chip y localidad
-// ============================================================
-function renderEntidadesSection(state) {
+// SECCIÓN — MIS ENTIDADES (propias de plataforma: demo + soporte)
+// ⟦ROLE⟧ Criterio de "propia": duenoId === ADMIN_UID. Es el más
+// confiable porque ya se hizo la migración manual (08/09/2026) — es
+// el dato real de ownership, no una inferencia. isDemo/entityType
+// solo se usan acá para el badge informativo de "qué tipo de propia
+// es", no para decidir si pertenece a esta sección.
+//
+// Tabla simplificada a propósito: sin columnas de plan (las demo
+// están exentas del sistema de plan — ver api/entity/[id].js — y
+// soporte tampoco factura), sin filtros de plan. Sí mantiene el
+// toggle de demo por si alguna entidad propia necesita marcarse/
+// desmarcarse.
+// ────────────────────────────────────────────────────────────
+function renderMisEntidadesSection(state, handleToggleDemoClick) {
+  const propias = state.entities.filter(e => e.duenoId === ADMIN_UID);
+
   const container = document.createElement('div');
 
   const header = document.createElement('div');
   header.className = 'sa-list-header';
   header.innerHTML = `
     <h2 class="sa-list-title">
-      <i class="fas fa-database"></i> Entidades
-      <span class="sa-count">${state.entities.length}</span>
+      <i class="fas fa-star"></i> Mis Entidades <span style="font-weight:400;opacity:.7;">(demo · soporte)</span>
+      <span class="sa-count">${propias.length}</span>
     </h2>
   `;
   container.appendChild(header);
 
-  if (!state.entities.length) {
+  if (!propias.length) {
+    container.appendChild(createEmptyState({
+      icon: 'fas fa-star',
+      title: 'Sin entidades propias',
+      message: 'Ninguna entidad tiene duenoId asignado a la cuenta admin todavía.'
+    }));
+    return container;
+  }
+
+  const table = createTable({
+    columns: [
+      { key: '_nombre',    label: 'Nombre' },
+      { key: 'id',         label: 'ID' },
+      { key: 'entityType', label: 'Tipo', render: renderTipoPropiaBadge },
+      { key: '_fecha',     label: 'Actualización' },
+    ],
+    data: buildRows(propias),
+    searchable: propias.length > 8,
+    actions: [
+      {
+        id: 'ver', label: 'Ver', icon: 'fas fa-eye',
+        onClick: (row) => { window.location.href = `/super-admin-entity.html?id=${row.id}`; }
+      },
+      {
+        id: 'toggle-demo',
+        label: 'Alternar demo',
+        icon: 'fas fa-flask',
+        onClick: handleToggleDemoClick,
+      },
+    ]
+  });
+  container.appendChild(table);
+
+  return container;
+}
+
+// ============================================================
+// SECCIÓN — ENTIDADES DE TERCEROS (comercios reales, no propias)
+// ⟦ROLE⟧ Todo lo que NO tiene duenoId === ADMIN_UID. Control total
+// vía isAdmin() en Firestore rules — no hace falta ser owner para
+// gestionarlas desde acá, por eso siguen apareciendo con acción "Ver".
+// Mantiene los filtros de plan (acá sí importan — son negocios reales
+// que pueden entrar en huelga por falta de pago).
+// ────────────────────────────────────────────────────────────
+function renderTercerosSection(state, handleToggleDemoClick) {
+  const terceros = state.entities.filter(e => e.duenoId !== ADMIN_UID);
+
+  const container = document.createElement('div');
+
+  const header = document.createElement('div');
+  header.className = 'sa-list-header';
+  header.innerHTML = `
+    <h2 class="sa-list-title">
+      <i class="fas fa-database"></i> Entidades de Terceros
+      <span class="sa-count">${terceros.length}</span>
+    </h2>
+  `;
+  container.appendChild(header);
+
+  if (!terceros.length) {
     container.appendChild(createEmptyState({ icon: 'fas fa-database', title: 'Sin entidades', message: 'No hay datos en Firestore' }));
     return container;
   }
@@ -206,16 +314,18 @@ function renderEntidadesSection(state) {
   // ── estado local de filtros (vive mientras esta sección exista) ──
   const filterState = { plan: null, ciudad: null, demo: false };
 
-  const activas  = state.entities.filter(e => e.planActive).length;
-  const enHuelga = state.entities.filter(e => !e.planActive && e.planReason !== 'no_plan').length;
-  const sinPlan  = state.entities.filter(e => e.planReason === 'no_plan').length;
-  const demos    = state.entities.filter(e => e.isDemo).length;
+  const activas  = terceros.filter(e => e.planActive).length;
+  const enHuelga = terceros.filter(e => !e.planActive && e.planReason !== 'no_plan').length;
+  const sinPlan  = terceros.filter(e => e.planReason === 'no_plan').length;
+  // Debería ser 0 casi siempre — si aparece algo acá, es una demo que
+  // quedó con duenoId de un tercero (dato inconsistente a revisar).
+  const demosSueltas = terceros.filter(e => e.isDemo).length;
 
   const chipsRow = document.createElement('div');
   chipsRow.style.cssText = 'display:flex;gap:8px;margin:-8px 0 12px;flex-wrap:wrap;align-items:center;';
 
   function applyFilters() {
-    let filtered = state.entities;
+    let filtered = terceros;
     if (filterState.plan === 'activas')  filtered = filtered.filter(e => e.planActive);
     if (filterState.plan === 'huelga')   filtered = filtered.filter(e => !e.planActive && e.planReason !== 'no_plan');
     if (filterState.plan === 'sinplan')  filtered = filtered.filter(e => e.planReason === 'no_plan');
@@ -241,10 +351,11 @@ function renderEntidadesSection(state) {
   chipsRow.appendChild(makeFilterChip(`${enHuelga} en huelga`, 'danger',  'huelga'));
   if (sinPlan) chipsRow.appendChild(makeFilterChip(`${sinPlan} sin plan`, 'secondary', 'sinplan'));
 
-  // ── chip de demo — toggle independiente, no exclusivo con los de plan ──
-  if (demos) {
+  // ── chip de "demo suelta" — solo aparece si hay una inconsistencia
+  //    real para revisar (demo con dueño de tercero) ──
+  if (demosSueltas) {
     const chipDemo = createChip({
-      text: `${demos} demo`, variant: 'secondary', size: 'small',
+      text: `⚠ ${demosSueltas} demo con dueño de tercero`, variant: 'danger', size: 'small',
       onClick: () => {
         filterState.demo = !filterState.demo;
         chipDemo.classList.toggle('s-chip--active-filter', filterState.demo);
@@ -255,7 +366,7 @@ function renderEntidadesSection(state) {
   }
 
   // ── selector de localidad ──
-  const ciudades = [...new Set(state.entities.map(e => e.ciudad).filter(Boolean))].sort();
+  const ciudades = [...new Set(terceros.map(e => e.ciudad).filter(Boolean))].sort();
   if (ciudades.length > 1) {
     const select = document.createElement('select');
     select.className = 's-select-localidad';
@@ -271,36 +382,6 @@ function renderEntidadesSection(state) {
 
   container.appendChild(chipsRow);
 
-  // ── filas ──
-  function buildRows(entities) {
-    return entities.map(e => ({
-      ...e,
-      _nombre: e.nombreComercio || e.nombre || '-',
-      ciudad:  e.ciudad || '-',
-      _fecha:  e.fechaActualizacion
-                 ? e.fechaActualizacion.toLocaleDateString('es-AR')
-                 : '-'
-    }));
-  }
-
-  // ── toggle demo desde la fila — actualiza estado local + backend ──
-  async function handleToggleDemoClick(row) {
-    const nextValue = !row.isDemo;
-    const label = nextValue ? 'marcar como demo' : 'quitar la marca de demo';
-    if (!window.confirm(`¿Confirmás ${label} a "${row._nombre || row.id}"? Esto solo marca el flag — para publicarlo hay que regenerar la entidad.`)) return;
-
-    try {
-      await toggleDemo(row.id, nextValue);
-      // ── actualizar estado local sin refetch completo ──
-      const entity = state.entities.find(e => e.id === row.id);
-      if (entity) entity.isDemo = nextValue;
-      showToast(nextValue ? 'Marcada como demo' : 'Demo desmarcada', 'success');
-      applyFilters();
-    } catch (err) {
-      showToast('Error: ' + err.message, 'error');
-    }
-  }
-
   const table = createTable({
     columns: [
       { key: '_nombre',       label: 'Nombre' },
@@ -312,18 +393,13 @@ function renderEntidadesSection(state) {
       { key: 'isDemo',        label: 'Demo', render: renderDemoBadge },
       { key: '_fecha',        label: 'Actualización' }
     ],
-    data: buildRows(state.entities),
+    data: buildRows(terceros),
     actions: [
       {
         id: 'ver', label: 'Ver', icon: 'fas fa-eye',
         onClick: (row) => { window.location.href = `/super-admin-entity.html?id=${row.id}`; }
       },
       {
-        // label fijo: createTable no soporta label dinámico por fila.
-        // El estado real (demo o no) ya lo muestra la columna "Demo" de
-        // arriba, y el confirm() del handler aclara qué acción va a
-        // hacer ("marcar como demo" / "quitar la marca de demo") antes
-        // de ejecutarla.
         id: 'toggle-demo',
         label: 'Alternar demo',
         icon: 'fas fa-flask',
@@ -343,11 +419,34 @@ function render(ctx, state) {
   const container = document.getElementById('skeleton-page');
   container.innerHTML = '';
 
+  // ── toggle demo desde cualquier fila (compartido entre secciones) ──
+  async function handleToggleDemoClick(row) {
+    const nextValue = !row.isDemo;
+    const label = nextValue ? 'marcar como demo' : 'quitar la marca de demo';
+    if (!window.confirm(`¿Confirmás ${label} a "${row._nombre || row.id}"? Esto solo marca el flag — para publicarlo hay que regenerar la entidad.`)) return;
+
+    try {
+      await toggleDemo(row.id, nextValue);
+      const entity = state.entities.find(e => e.id === row.id);
+      if (entity) entity.isDemo = nextValue;
+      showToast(nextValue ? 'Marcada como demo' : 'Demo desmarcada', 'success');
+      // Re-render completo: mantiene ambas secciones en sync sin
+      // duplicar lógica — más simple y seguro que actualizar dos
+      // tablas independientes a mano.
+      render(ctx, state);
+    } catch (err) {
+      showToast('Error: ' + err.message, 'error');
+    }
+  }
+
   // ── Herramientas admin ──
   container.appendChild(renderHerramientasAdmin());
 
-  // ── Entidades (con filtros) ──
-  container.appendChild(renderEntidadesSection(state));
+  // ── Mis Entidades (propias: demo + soporte) ──
+  container.appendChild(renderMisEntidadesSection(state, handleToggleDemoClick));
+
+  // ── Entidades de Terceros ──
+  container.appendChild(renderTercerosSection(state, handleToggleDemoClick));
 
   // ── Usuarios ──
   const usersHeader = document.createElement('div');
