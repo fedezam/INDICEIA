@@ -1,5 +1,14 @@
 // api/wa-redirect/[id].js
+//
+// 08/09/2026: resolveWaNumber() + la lógica de isDemo/waDestino ya no
+// viven acá duplicadas — se movieron a
+// lib/redirect/resolveDemoWaNumber.js, compartido con
+// service-redirect/[id].js (y cualquier *-redirect futuro: lead,
+// contact, o lo que traiga un entityType nuevo). Mismo motivo de
+// siempre: un solo punto de verdad para la validación de seguridad,
+// en vez de N copias que puedan divergir con el tiempo.
 import admin from 'firebase-admin';
+import { resolveDemoAwareNumber } from '../../lib/redirect/resolveDemoWaNumber.js';
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -27,18 +36,12 @@ export default async function handler(req, res) {
 
     const data = comercioSnap.data();
 
-    // ── DEMO: resolver número destino ──
-    // isDemo se lee acá, de Firestore, directo — NUNCA de un parámetro
-    // de la URL ni de nada que haya decidido el LLM en la conversación.
-    // Si la entidad no es demo, waDestino se ignora en silencio (ni
-    // error ni aviso) aunque venga en el query string: así no se le da
-    // información a quien intente falsear el parámetro a mano sobre si
-    // el sistema lo reconoce o no. Ver mind.builder.js / closers/order.js
-    // para el resto del flujo.
+    // ── DEMO: resolver número destino. isDemo se lee de Firestore acá
+    // (data.isDemo), NUNCA del query param — si la entidad no es demo,
+    // waDestino se ignora en silencio aunque venga en la URL. Ver
+    // lib/redirect/resolveDemoWaNumber.js. ──
     const isDemo = data.isDemo === true;
-    const waNumber = isDemo && waDestino
-      ? resolveWaNumber(waDestino)
-      : resolveWaNumber(data.whatsapp);
+    const waNumber = resolveDemoAwareNumber(data, waDestino);
     if (!waNumber) return res.status(409).send('Comercio sin WhatsApp configurado');
 
     // ── parsear items: "id:qty,id:qty" ──
@@ -121,13 +124,4 @@ export default async function handler(req, res) {
     console.error('[WA-REDIRECT]', err);
     return res.status(500).send('Error interno');
   }
-}
-
-function resolveWaNumber(raw) {
-  if (!raw) return null;
-  let n = String(raw).replace(/[\s\-\(\)\+]/g, '');
-  if (n.startsWith('549')) n = n.slice(3);
-  else if (n.startsWith('54')) n = n.slice(2);
-  if (n.startsWith('9') && n.length >= 10) n = n.slice(1);
-  return n || null;
 }
