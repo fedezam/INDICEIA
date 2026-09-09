@@ -1,5 +1,12 @@
 // api/service-redirect/[id].js
+//
+// 08/09/2026: soporte demo agregado. resolveWaNumber() ya no vive
+// duplicado acá — se movió a lib/redirect/resolveDemoWaNumber.js,
+// compartido con wa-redirect/[id].js (y cualquier *-redirect futuro).
+// Ver ese archivo para el razonamiento completo del gate de seguridad
+// (isDemo se lee de Firestore acá, nunca del query param).
 import admin from 'firebase-admin';
+import { resolveDemoAwareNumber } from '../../lib/redirect/resolveDemoWaNumber.js';
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -14,7 +21,7 @@ const db = admin.firestore();
 
 export default async function handler(req, res) {
   const { id: comercioId } = req.query;
-  const { servicio, modalidad, zona, consulta } = req.query;
+  const { servicio, modalidad, zona, consulta, waDestino } = req.query;
 
   if (!comercioId || !servicio) {
     return res.status(400).send('Faltan parámetros');
@@ -26,7 +33,13 @@ export default async function handler(req, res) {
     if (!comercioSnap.exists) return res.status(404).send('Comercio no encontrado');
 
     const data = comercioSnap.data();
-    const waNumber = resolveWaNumber(data.whatsapp);
+
+    // ── DEMO: resolver número destino. isDemo se lee de Firestore acá
+    // (data.isDemo), NUNCA del query param — si la entidad no es demo,
+    // waDestino se ignora en silencio aunque venga en la URL. Ver
+    // lib/redirect/resolveDemoWaNumber.js. ──
+    const isDemo = data.isDemo === true;
+    const waNumber = resolveDemoAwareNumber(data, waDestino);
     if (!waNumber) return res.status(409).send('Sin WhatsApp configurado');
 
     // ── resolver servicio contra Firestore (fuente real) ──
@@ -46,7 +59,9 @@ export default async function handler(req, res) {
     const modalidadLabel = modalidad === 'domicilio' ? 'A domicilio' : 'En el local';
 
     const mensaje = [
-      'Hola! Vengo de IndiceIA 👋',
+      isDemo
+        ? 'Hola! Esta es una consulta de PRUEBA generada desde el demostrador de IndiceIA 🧪'
+        : 'Hola! Vengo de IndiceIA 👋',
       '',
       `Servicio: ${nombreServicio}`,
       `Modalidad: ${modalidadLabel}`,
@@ -67,7 +82,7 @@ export default async function handler(req, res) {
       try {
         await db.collection('landing_events').add({
           destination: slug,
-          event: 'wa_service_click',
+          event: isDemo ? 'wa_service_click_demo' : 'wa_service_click',
           servicio,
           modalidad,
           zona: zona || null,
@@ -83,13 +98,4 @@ export default async function handler(req, res) {
     console.error('[SERVICE-REDIRECT]', err);
     return res.status(500).send('Error interno');
   }
-}
-
-function resolveWaNumber(raw) {
-  if (!raw) return null;
-  let n = String(raw).replace(/[\s\-\(\)\+]/g, '');
-  if (n.startsWith('549')) n = n.slice(3);
-  else if (n.startsWith('54')) n = n.slice(2);
-  if (n.startsWith('9') && n.length >= 10) n = n.slice(1);
-  return n || null;
 }
