@@ -62,6 +62,26 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
+  // HELPER — propaga ?id= en los links de páginas de EDICIÓN DE
+  // ENTIDAD cuando un admin está viendo/editando una entidad que no
+  // es la suya (ctx.isAdminViewing, seteado en context.js). Sin
+  // esto, un admin que entra a dashboard.html?id=X vería bien esta
+  // página, pero al clickear "Editar" en cualquier card caería en la
+  // página hija SIN el id, que volvería a resolver su propia entidad
+  // en vez de la que estaba mirando.
+  //
+  // NO se usa en links que no son de entidad (usuario.html,
+  // plans.html) — esos son de la cuenta logueada, no de la entidad
+  // que se está viendo. ──────────────────────────────────────
+  _withId(url) {
+    if (!this._data.ctx?.isAdminViewing) return url;
+    const comercioId = this._data.comercio?.id;
+    if (!comercioId) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}id=${comercioId}`;
+  },
+
+  // ──────────────────────────────────────────────────────────
   // STATS PRODUCTOS
   // ──────────────────────────────────────────────────────────
   async _loadProductosStats(comercioId) {
@@ -134,6 +154,8 @@ const page = {
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
 
+    if (this._data.ctx?.isAdminViewing) root.appendChild(this._renderAdminViewingBanner());
+
     root.appendChild(this._renderZonaSuperior());
 
     if (this._data.entityState === 'outdated') root.appendChild(this._renderOutdatedBanner());
@@ -162,6 +184,27 @@ const page = {
       'Medí el impacto de tu IA.',
       this._renderSeccionRendimiento()
     ));
+  },
+
+  // ──────────────────────────────────────────────────────────
+  // BANNER — admin viendo/editando una entidad ajena. Siempre
+  // visible arriba de todo mientras dure esta vista, para que nunca
+  // sea ambiguo qué se está editando. Incluye link de vuelta al
+  // panel de super-admin.
+  // ──────────────────────────────────────────────────────────
+  _renderAdminViewingBanner() {
+    const nombre = this._data.comercio.nombreComercio || this._data.comercio.nombre || this._data.comercio.id;
+    const banner = document.createElement('div');
+    banner.className = 'entity-banner admin-viewing';
+    banner.innerHTML = `<i class="fas fa-user-shield"></i> Estás viendo/editando como admin: <strong>${nombre}</strong> — los cambios se guardan en esta entidad, no en la tuya.`;
+    const backBtn = createButton({
+      label: 'Volver al panel',
+      variant: 'secondary',
+      size: 'sm',
+      onClick: () => { window.location.href = `/super-admin-entity.html?id=${this._data.comercio.id}`; }
+    });
+    banner.appendChild(backBtn);
+    return banner;
   },
 
   // ──────────────────────────────────────────────────────────
@@ -284,6 +327,8 @@ const page = {
       <p class="usuario-email">${email}</p>
     `;
 
+    // Página de cuenta del usuario LOGUEADO (no de la entidad que se
+    // esté viendo) — a propósito NO pasa por _withId().
     return createCard({
       title: 'Mi Perfil de Usuario',
       icon: 'fa-user',
@@ -384,7 +429,7 @@ const page = {
         title: 'Mi Perfil Profesional',
         icon: 'fa-user-md',
         content: '<p>Tu profesión, experiencia y datos de contacto</p>',
-        action: { type: 'link', url: '/mi-perfil-profesional.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+        action: { type: 'link', url: this._withId('/mi-perfil-profesional.html?edit=true'), label: 'Editar', variant: 'secondary', size: 'sm' }
       });
     }
 
@@ -393,7 +438,7 @@ const page = {
         title: 'Mi Perfil de Servicios',
         icon: 'fa-user-tie',
         content: '<p>Tu nombre, especialidad, zona y datos de contacto</p>',
-        action: { type: 'link', url: '/mi-perfil.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+        action: { type: 'link', url: this._withId('/mi-perfil.html?edit=true'), label: 'Editar', variant: 'secondary', size: 'sm' }
       });
     }
 
@@ -401,7 +446,7 @@ const page = {
       title: 'Mi Comercio',
       icon: 'fa-store',
       content: '<p>Nombre, dirección, contacto y datos generales</p>',
-      action: { type: 'link', url: '/mi-comercio.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+      action: { type: 'link', url: this._withId('/mi-comercio.html?edit=true'), label: 'Editar', variant: 'secondary', size: 'sm' }
     });
   },
 
@@ -410,7 +455,7 @@ const page = {
       title: 'Tipo de entidad',
       icon: 'fa-sitemap',
       content: '<p>Qué tipo de entidad sos y qué ofrecés: productos, servicios o ambos</p>',
-      action: { type: 'link', url: '/tipo-entidad.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+      action: { type: 'link', url: this._withId('/tipo-entidad.html?edit=true'), label: 'Editar', variant: 'secondary', size: 'sm' }
     });
   },
 
@@ -445,7 +490,7 @@ const page = {
         title: 'Productos',
         icon: 'fa-box',
         content,
-        action: { type: 'link', url: '/productos.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+        action: { type: 'link', url: this._withId('/productos.html?edit=true'), label: 'Editar', variant: 'secondary', size: 'sm' }
       });
     }
 
@@ -454,7 +499,7 @@ const page = {
       icon: 'fa-box',
       flat: true,
       content: '<p class="inactive-text">Sin productos cargados</p>',
-      action: { type: 'link', url: '/productos.html?edit=true', label: 'Cargar productos', variant: 'outline-primary', size: 'sm' }
+      action: { type: 'link', url: this._withId('/productos.html?edit=true'), label: 'Cargar productos', variant: 'outline-primary', size: 'sm' }
     });
   },
 
@@ -475,7 +520,7 @@ const page = {
         title: 'Servicios',
         icon: 'fa-concierge-bell',
         content,
-        action: { type: 'link', url: '/servicios.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+        action: { type: 'link', url: this._withId('/servicios.html?edit=true'), label: 'Editar', variant: 'secondary', size: 'sm' }
       });
     }
 
@@ -484,7 +529,7 @@ const page = {
       icon: 'fa-concierge-bell',
       flat: true,
       content: '<p class="inactive-text">Sin servicios cargados</p>',
-      action: { type: 'link', url: '/servicios.html?edit=true', label: 'Cargar servicios', variant: 'outline-primary', size: 'sm' }
+      action: { type: 'link', url: this._withId('/servicios.html?edit=true'), label: 'Cargar servicios', variant: 'outline-primary', size: 'sm' }
     });
   },
 
@@ -522,7 +567,7 @@ const page = {
       title: 'Entregas',
       icon: 'fa-truck',
       content,
-      action: { type: 'link', url: '/entrega.html?edit=true', label: 'Editar', variant: 'secondary', size: 'sm' }
+      action: { type: 'link', url: this._withId('/entrega.html?edit=true'), label: 'Editar', variant: 'secondary', size: 'sm' }
     });
   },
 
@@ -537,7 +582,7 @@ const page = {
       `,
       action: {
         type: 'link',
-        url: '/horarios.html?edit=true',
+        url: this._withId('/horarios.html?edit=true'),
         label: ok ? 'Editar' : 'Configurar',
         variant: ok ? 'secondary' : 'outline-primary',
         size: 'sm'
@@ -556,7 +601,7 @@ const page = {
       `,
       action: {
         type: 'link',
-        url: '/horarios.html?mode=delivery&edit=true',
+        url: this._withId('/horarios.html?mode=delivery&edit=true'),
         label: ok ? 'Editar' : 'Configurar',
         variant: ok ? 'secondary' : 'outline-primary',
         size: 'sm'
@@ -571,7 +616,7 @@ const page = {
       title: 'Lugares de Atención',
       icon: 'fa-map-marker-alt',
       content: `<p>${ok ? 'Configurados ✓' : 'Sin configurar'}</p>`,
-      action: { type: 'link', url: '/lugares.html?edit=true', label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
+      action: { type: 'link', url: this._withId('/lugares.html?edit=true'), label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
     });
   },
 
@@ -581,7 +626,7 @@ const page = {
        title: 'Cobertura y Modalidad',
        icon: 'fa-shield-alt',
        content: `<p>${ok ? 'Configurada ✓' : 'Sin configurar'}</p>`,
-       action: { type: 'link', url: '/cobertura.html?edit=true', label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
+       action: { type: 'link', url: this._withId('/cobertura.html?edit=true'), label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
      });
    },
 
@@ -591,7 +636,7 @@ const page = {
       title: 'Consultas',
       icon: 'fa-question-circle',
       content: `<p>${ok ? 'Configuradas ✓' : 'Sin configurar'}</p>`,
-      action: { type: 'link', url: '/consultas.html?edit=true', label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
+      action: { type: 'link', url: this._withId('/consultas.html?edit=true'), label: ok ? 'Editar' : 'Configurar', variant: ok ? 'secondary' : 'outline-primary', size: 'sm' }
     });
   },
 
@@ -615,7 +660,7 @@ const page = {
       icon: 'fa-robot',
       variant: 'primary',
       content: '<p>Personalidad, tono y comportamiento del asistente</p>',
-      action: { type: 'link', url: '/ia-config.html?edit=true', label: 'Editar', variant: 'primary', size: 'sm' }
+      action: { type: 'link', url: this._withId('/ia-config.html?edit=true'), label: 'Editar', variant: 'primary', size: 'sm' }
     });
   },
 
@@ -648,7 +693,7 @@ const page = {
       content,
       action: {
         type: 'link',
-        url: '/capacidadesCognitivas.html',
+        url: this._withId('/capacidadesCognitivas.html'),
         label:   hayActivas ? 'Editar' : 'Configurar',
         variant: hayActivas ? 'primary' : 'outline-primary',
         size:    'sm'
@@ -663,7 +708,7 @@ const page = {
       variant: 'primary',
       highlight: true,
       content: '<p>Personalizá la apariencia y estética de tu IA</p>',
-      action: { type: 'link', url: '/visual.html', label: 'Acceder', variant: 'primary', size: 'sm' }
+      action: { type: 'link', url: this._withId('/visual.html'), label: 'Acceder', variant: 'primary', size: 'sm' }
     });
   },
 
@@ -726,7 +771,7 @@ const page = {
         : '<p>URL permanente y QR personalizado para compartir</p>',
       action: disabled ? null : {
         type: 'link',
-        url: '/link-publico.html',
+        url: this._withId('/link-publico.html'),
         label: 'Ver link y QR',
         variant: 'primary', size: 'sm'
       }
@@ -744,7 +789,7 @@ const page = {
       title: 'Estadísticas',
       icon: 'fa-chart-bar',
       content: '<p>Visitas, consultas y conversiones de tu landing</p>',
-      action: { type: 'link', url: '/stats.html', label: 'Ver estadísticas', variant: 'secondary', size: 'sm' }
+      action: { type: 'link', url: this._withId('/stats.html'), label: 'Ver estadísticas', variant: 'secondary', size: 'sm' }
     }));
 
     return grid;
