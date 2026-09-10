@@ -283,7 +283,16 @@ const page = {
       //content.appendChild(this._renderHighValuePromo());
     }
 
-    return createCard({
+    // ── Acciones exclusivas de admin (09/09/2026): reactivar/extender
+    // plan gratis. Un dueño normal no debería poder hacerse esto a sí
+    // mismo — por eso solo se agregan cuando ctx.isAdminViewing, nunca
+    // en la vista normal del dueño. Migradas desde la vieja sección
+    // Plan de super-admin-entity.js. ──
+    if (this._data.ctx?.isAdminViewing) {
+      content.appendChild(this._renderPlanAdminActions());
+    }
+
+    const card = createCard({
       title: 'Tu Plan',
       icon: 'fa-crown',
       variant: status.active ? 'primary' : 'danger',
@@ -297,6 +306,78 @@ const page = {
         label: status.active ? 'Ver planes' : 'Reactivar / Ver planes'
       }
     });
+    card.id = 'card-plan-admin';
+    return card;
+  },
+
+  // ── Acciones admin de plan: reactivar (15 días, reinicia
+  // started_at) y extender (suma N días, no reinicia). Mismo endpoint
+  // /api/generate-and-upload-entity que ya usa el resto del panel —
+  // ver applyPlanStateChange.js para el detalle de por qué reactivar
+  // no es solo poner active:true. ──────────────────────────────
+  _renderPlanAdminActions() {
+    const wrap = document.createElement('div');
+    wrap.className = 'sa-plan-actions';
+    wrap.style.cssText = 'display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;padding-top:12px;border-top:1px solid rgba(255,255,255,.15)';
+
+    const label = document.createElement('p');
+    label.style.cssText = 'width:100%;font-size:12px;opacity:.8;margin:0 0 4px';
+    label.textContent = '🛡 Acciones de admin';
+    wrap.appendChild(label);
+
+    const reactivarBtn = createButton({
+      label: '🔄 Reactivar (15 días)',
+      variant: 'secondary',
+      size: 'sm',
+      onClick: async () => {
+        if (!confirm('¿Reactivar con 15 días de trial desde hoy? Esto reinicia el contador (started_at = ahora).')) return;
+        reactivarBtn.setLoading(true);
+        try {
+          await this._callPlanAction('plan_reactivate');
+          this.render();
+        } catch (err) {
+          showToast('Error al reactivar: ' + err.message, 'error');
+          reactivarBtn.setLoading(false);
+        }
+      }
+    });
+
+    const extenderBtn = createButton({
+      label: '⏳ Extender días',
+      variant: 'secondary',
+      size: 'sm',
+      onClick: async () => {
+        const daysStr = prompt('¿Cuántos días agregar al plan actual?', '7');
+        if (!daysStr) return;
+        const days = Number(daysStr);
+        if (!Number.isFinite(days) || days <= 0) {
+          showToast('Ingresá un número de días válido', 'error');
+          return;
+        }
+        extenderBtn.setLoading(true);
+        try {
+          await this._callPlanAction('plan_extend', { days });
+          this.render();
+        } catch (err) {
+          showToast('Error al extender: ' + err.message, 'error');
+          extenderBtn.setLoading(false);
+        }
+      }
+    });
+
+    wrap.appendChild(reactivarBtn);
+    wrap.appendChild(extenderBtn);
+    return wrap;
+  },
+
+  async _callPlanAction(action, extra = {}) {
+    const res = await fetch('/api/generate-and-upload-entity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, comercioId: this._data.comercio.id, ...extra })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
   },
 
   _renderHighValuePromo() {
@@ -722,7 +803,65 @@ const page = {
     grid.appendChild(this._renderGenerarEntidadCard());
     grid.appendChild(this._renderLinkPublicoCard());
 
+    // ── Exclusivo de admin: regenerar SOLO seo.html, sin tocar
+    // entity.json ni la mini app. Migrado desde super-admin-entity.js.
+    // Un dueño normal no necesita esto — usa "Regenerar Entidad" de
+    // arriba para todo. ──
+    if (this._data.ctx?.isAdminViewing) {
+      grid.appendChild(this._renderSeoAdminCard());
+    }
+
     return grid;
+  },
+
+  _renderSeoAdminCard() {
+    const seoGeneratedAt = this._data.comercio.seoGeneratedAt
+      ? (this._data.comercio.seoGeneratedAt?.toDate?.() || new Date(this._data.comercio.seoGeneratedAt))
+      : null;
+
+    const content = document.createElement('div');
+    content.innerHTML = `
+      <p>🛡 Acción de admin — no toca entity.json ni la mini app</p>
+      ${seoGeneratedAt
+        ? `<p>Última generación: ${this._formatFecha(seoGeneratedAt)}</p>`
+        : '<p>Nunca generado</p>'}
+    `;
+
+    const card = createCard({
+      title: 'SEO (seo.html)',
+      icon: 'fa-search',
+      variant: 'secondary',
+      content,
+      action: {
+        type: 'button',
+        label: 'Regenerar solo SEO',
+        variant: 'secondary',
+        size: 'sm',
+        onClick: () => this._regenerarSeo()
+      }
+    });
+    card.id = 'card-seo-admin';
+    return card;
+  },
+
+  async _regenerarSeo() {
+    // Mismo patrón que _generarEntidad(): el botón se busca por
+    // querySelector dentro del card, no se asume que createCard pase
+    // el elemento al callback de onClick.
+    const btn = document.querySelector('#card-seo-admin button');
+    if (!btn || btn.disabled) return;
+    if (!confirm('¿Regenerar seo.html? Esto NO toca la entidad ni la mini app, solo la página de indexación.')) return;
+
+    btn.setLoading(true);
+    try {
+      await this._callPlanAction('regenerate_seo');
+      this._data.comercio.seoGeneratedAt = new Date().toISOString();
+      this.render();
+      showToast('SEO regenerado', 'success');
+    } catch (err) {
+      showToast('Error al regenerar SEO: ' + err.message, 'error');
+      btn.setLoading(false);
+    }
   },
 
   _renderGenerarEntidadCard() {
