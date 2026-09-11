@@ -201,7 +201,7 @@ const page = {
       label: 'Volver al panel',
       variant: 'secondary',
       size: 'sm',
-      onClick: () => { window.location.href = `/super-admin-entity.html?id=${this._data.comercio.id}`; }
+      onClick: () => { window.location.href = '/super-admin.html'; }
     });
     banner.appendChild(backBtn);
     return banner;
