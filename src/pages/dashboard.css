@@ -12,6 +12,13 @@
   align-items: start;
 }
 
+/* Modificador: solo hay una card (admin viendo entidad ajena, sin la
+   card de "Mi Perfil de Usuario") — ocupa el ancho completo en vez
+   de dejar el 30% vacío. Ver dashboard.js:_renderZonaSuperior(). */
+.dashboard-top--single {
+  grid-template-columns: 1fr;
+}
+
 /* ──────────────────────────────────────────────────────────
    SECCIONES
 ────────────────────────────────────────────────────────── */
