@@ -230,8 +230,20 @@ const page = {
   _renderZonaSuperior() {
     const zona = document.createElement('div');
     zona.className = 'dashboard-top';
+    // Sin la card de usuario, el grid 70/30 dejaría espacio vacío —
+    // este modificador la hace ocupar el ancho completo.
+    if (this._data.ctx?.isAdminViewing) {
+      zona.classList.add('dashboard-top--single');
+    }
     zona.appendChild(this._renderPlanCard());
-    zona.appendChild(this._renderUsuarioCard());
+    // La card de "Mi Perfil de Usuario" es sobre la cuenta LOGUEADA,
+    // no sobre la entidad que se está viendo — mezclarla acá cuando
+    // un admin está gestionando la entidad de un tercero es
+    // confuso (mostraría el mail del admin al lado de los datos de
+    // otra persona). Se oculta en ese caso.
+    if (!this._data.ctx?.isAdminViewing) {
+      zona.appendChild(this._renderUsuarioCard());
+    }
     return zona;
   },
 
