@@ -26,13 +26,29 @@ const page = {
   _ctx:     null,
 
   // ──────────────────────────────────────────────────────────
+  // uid REAL a usar para leer/marcar alertas: el dueño de la
+  // entidad que se está mostrando, no necesariamente quien está
+  // logueado. Solo difieren cuando un admin ve la entidad de un
+  // tercero (ctx.isAdminViewing, ver context.js). "alertasLeidas"
+  // vive en usuarios/{uid}/alertasLeidas — usar el uid equivocado
+  // acá hace que el contador del header (que ya usa el mismo
+  // criterio, ver layout/index.js) nunca coincida con lo que esta
+  // página lee o marca.
+  // ──────────────────────────────────────────────────────────
+  _ownerUid() {
+    return (this._ctx?.isAdminViewing && this._ctx?.comercioData?.duenoId)
+      ? this._ctx.comercioData.duenoId
+      : this._ctx?.user?.uid;
+  },
+
+  // ──────────────────────────────────────────────────────────
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
     this._ctx = ctx;
     const [alertas, leidas] = await Promise.all([
       listarAlertas(ctx.comercioId),
-      getAlertasLeidas(ctx.user.uid)
+      getAlertasLeidas(this._ownerUid())
     ]);
     this._alertas = alertas;
     this._leidas  = leidas;
@@ -117,7 +133,15 @@ const page = {
       label:   'Volver al dashboard',
       variant: 'secondary',
       icon:    'fa-arrow-left',
-      onClick: () => window.location.href = '/dashboard.html'
+      onClick: () => {
+        // Propaga id= en modo admin — sin esto, "volver" perdería de
+        // vista qué entidad se estaba mirando (mismo criterio que
+        // dashboard.js:_withId()).
+        const url = this._ctx?.isAdminViewing && this._ctx?.comercioId
+          ? `/dashboard.html?id=${this._ctx.comercioId}`
+          : '/dashboard.html';
+        window.location.href = url;
+      }
     }));
     return div;
   },
@@ -133,11 +157,18 @@ const page = {
   },
 
   async _marcarTodasComoLeidas() {
+    // El admin puede VER el estado de las alertas de una entidad
+    // ajena (diagnóstico), pero no debería ALTERARLO solo por
+    // mirar — marcar como leída es una acción que le pertenece al
+    // dueño real de la entidad, no a quien está de visita.
+    if (this._ctx?.isAdminViewing) return;
+
     const pendientes = this._alertas.filter(a => !this._leidas.has(a.id));
     if (!pendientes.length) return;
 
+    const uid = this._ownerUid();
     await Promise.all(
-      pendientes.map(a => marcarAlertaLeida(this._ctx.user.uid, a.id))
+      pendientes.map(a => marcarAlertaLeida(uid, a.id))
     );
   }
 };
