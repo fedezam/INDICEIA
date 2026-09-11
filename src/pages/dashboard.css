@@ -78,6 +78,19 @@
   color: #7d1c0e;
 }
 
+/* Banner de admin viendo/editando una entidad ajena (09/09/2026) —
+   ver dashboard.js:_renderAdminViewingBanner(). Tono "informativo"
+   (celeste) para no pisar la semántica de warning=amarillo/
+   danger=rojo que ya usan los otros dos banners. */
+.entity-banner.admin-viewing {
+  background: #eef2ff;
+  border-left: 4px solid var(--s-primary, #3c8dbc);
+  color: #1e3a5f;
+  /* separa el botón "Volver al panel" del texto sin que se pegue en mobile */
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
 /* ──────────────────────────────────────────────────────────
    BADGES DE ENTIDAD
 ────────────────────────────────────────────────────────── */
