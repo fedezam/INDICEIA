@@ -25,6 +25,7 @@ import { showToast }              from '/src/skeleton/components/toast/index.js'
 import { fillProvinciaSelector } from '/src/shared/provincias.js';
 import { ubicacionFromForm } from '/src/shared/entity-context.js';
 import { createInitialPlan } from '/src/shared/createInitialPlan.js';
+import { resolveEmbajadorId } from '/src/shared/resolveEmbajadorId.js';
 import './mi-comercio.css';
 
 // ==================== DATOS ESTÁTICOS ====================
@@ -548,9 +549,18 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
           : doc(collection(db, 'entidades'));
         const comercioId = comercioRef.id;
 
+        // ── Resolver referral + embajadorId ANTES de crear el doc,
+        // así entra en el mismo setDoc inicial en vez de necesitar un
+        // updateDoc separado después. Ver resolveEmbajadorId.js para
+        // la regla de herencia por cadena de referidos (09/09/2026). ──
+        const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
+        const referredBy  = usuarioSnap.data()?.referredBy || null;
+        const embajadorId = await resolveEmbajadorId(referredBy);
+
         await setDoc(comercioRef, {
           ...updates,
           duenoId:            uid,
+          ...(embajadorId && { embajadorId }),
           fechaCreacion:      new Date(),
           fechaActualizacion: new Date(),
           onboardingSteps:    { 'mi-comercio': true }
@@ -572,8 +582,6 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         });
 
         // ─ Referral event ──
-        const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
-        const referredBy  = usuarioSnap.data()?.referredBy || null;
         if (referredBy) {
           await setDoc(doc(collection(db, 'referral_events')), {
             referrerCode:    referredBy,
