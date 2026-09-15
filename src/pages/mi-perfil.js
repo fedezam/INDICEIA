@@ -16,6 +16,7 @@ import { db }                      from '/src/services/firebase/firebase.js';
 import { fillProvinciaSelector }   from '/src/shared/provincias.js';
 import { getLocalidades }          from '/src/shared/ciudades.js';
 import { createInitialPlan }       from '/src/shared/createInitialPlan.js';
+import { resolveEmbajadorId }      from '/src/shared/resolveEmbajadorId.js';
 import {
   doc, setDoc, updateDoc,
   collection, getDoc, Timestamp
@@ -628,15 +629,21 @@ const page = {
         if (page._isNuevo) {
           const comercioRef = comercioId ? doc(db, 'entidades', comercioId) : doc(collection(db, 'entidades'));
           const nuevoComercioId = comercioRef.id;
-          await setDoc(comercioRef, { ...updates, duenoId: uid, fechaCreacion: new Date(), fechaActualizacion: new Date(), onboardingSteps: { 'mi-perfil': true } });
+
+          // ── Resolver referral + embajadorId ANTES de crear el doc,
+          // así entra en el mismo setDoc inicial. Ver resolveEmbajadorId.js
+          // para la regla de herencia por cadena de referidos
+          // (09/09/2026, mismo patrón que mi-comercio.js). ──
+          const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
+          const referredBy  = usuarioSnap.data()?.referredBy || null;
+          const embajadorId = await resolveEmbajadorId(referredBy);
+
+          await setDoc(comercioRef, { ...updates, duenoId: uid, ...(embajadorId && { embajadorId }), fechaCreacion: new Date(), fechaActualizacion: new Date(), onboardingSteps: { 'mi-perfil': true } });
           await createInitialPlan(nuevoComercioId);
           await setDoc(doc(db, 'landings', d.slug), { slug: d.slug, comercioId: nuevoComercioId, nombre: updates.nombre, activo: true, createdAt: new Date(), updatedAt: new Date() });
           await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevoComercioId });
 
           // ── Referral tracking ──
-          const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
-          const referredBy  = usuarioSnap.data()?.referredBy || null;
-
           if (referredBy) {
             await setDoc(doc(collection(db, 'referral_events')), {
               referrerCode:    referredBy,
