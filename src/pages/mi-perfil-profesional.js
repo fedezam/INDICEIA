@@ -11,6 +11,7 @@ import { showToast }              from '/src/skeleton/components/toast/index.js'
 import { db }                     from '/src/services/firebase/firebase.js';
 import { doc, updateDoc, collection, setDoc, getDoc } from 'firebase/firestore';
 import { createInitialPlan } from '/src/shared/createInitialPlan.js';
+import { resolveEmbajadorId } from '/src/shared/resolveEmbajadorId.js';
 import './mi-perfil-profesional.css';
 
 // ============================================================
@@ -538,6 +539,13 @@ const page = {
             : doc(collection(db, 'entidades'));
           const nuevoComercioId = comercioRef.id;
 
+          // ── Resolver referral + embajadorId ANTES de crear el doc.
+          // Ver resolveEmbajadorId.js (09/09/2026, mismo patrón que
+          // mi-comercio.js/mi-perfil.js). ──
+          const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
+          const referredBy  = usuarioSnap.data()?.referredBy || null;
+          const embajadorId = await resolveEmbajadorId(referredBy);
+
           // Doc base — SIN plan. El plan lo crea createInitialPlan()
           // más abajo, que llama a /api/generate-and-upload-entity con
           // el flag createInitialPlan:true (mismo shape canónico
@@ -545,6 +553,7 @@ const page = {
           await setDoc(comercioRef, {
             ...updates,
             duenoId:        uid,
+            ...(embajadorId && { embajadorId }),
             fechaCreacion:  now,
             onboardingSteps: { 'mi-perfil-profesional': true },
           }, { merge: true });
@@ -565,8 +574,6 @@ const page = {
           });
 
           // ── Referral event ──
-          const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
-          const referredBy  = usuarioSnap.data()?.referredBy || null;
           if (referredBy) {
             await setDoc(doc(collection(db, 'referral_events')), {
               referrerCode:    referredBy,
