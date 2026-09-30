@@ -13,21 +13,22 @@ import { doc, getDoc } from 'firebase/firestore';
  * 09/09/2026 — Override de admin: si el usuario logueado tiene
  * role:'admin' Y la URL trae ?id={comercioId}, el contexto resuelve
  * ESA entidad en vez de la propia del usuario (userData.comercioId).
- * Esto es lo que le permite a super-admin-entity.js dejar de
- * reimplementar su propia UI de edición y en cambio redirigir a las
- * páginas reales (mi-comercio.html?id=X, horarios.html?id=X, etc.) —
- * una sola implementación de "editar una entidad", con permiso extra
- * para admin de apuntarla a una entidad que no es la suya.
- *
  * Esto NO reemplaza el chequeo de seguridad real: sigue siendo
  * isAdmin() en las Firestore rules quien decide si el read/write se
  * permite. Este override solo decide QUÉ id pedirle a Firestore —
  * si el usuario no es admin de verdad, las rules igual van a
  * rechazar el acceso a una entidad ajena.
  *
- * `isAdminViewing` se expone en el contexto para que las páginas
- * puedan mostrar un banner tipo "Estás viendo como admin: {entidad}"
- * y así nunca sea ambiguo para el propio admin qué está editando.
+ * 30/09/2026 — Override de embajador: mismo mecanismo que admin,
+ * pero acotado a SU cartera (entidad.embajadorId === uid). A
+ * diferencia de admin, acá el chequeo de scope se hace también en
+ * el cliente (no solo confiando en las rules) para poder devolver
+ * un error claro ("no está en tu cartera") en vez de un
+ * permission-denied genérico si el embajador toca una URL ajena.
+ *
+ * `isAdminViewing` / `isEmbajadorViewing` se exponen en el contexto
+ * para que las páginas muestren el banner correspondiente y nunca
+ * sea ambiguo qué se está editando ni con qué permiso.
  */
 export function resolveFirebaseContext(onReady, onError) {
   onAuthStateChanged(auth, async (user) => {
@@ -46,29 +47,36 @@ export function resolveFirebaseContext(onReady, onError) {
       }
 
       const userData = userSnap.data();
-
-      // ── Override de admin: ?id= en la URL, solo tiene efecto si el
-      // usuario logueado es admin. Para cualquier otro usuario, se
-      // ignora en silencio y se usa su propio comercioId — mismo
-      // criterio de "no revelar mecanismo a quien no corresponde" que
-      // ya aplicamos en wa-redirect/[id].js con waDestino. ──
       const requestedId = new URLSearchParams(window.location.search).get('id');
+
+      // ── Override de admin: sin restricción de scope en el cliente,
+      // las rules (isAdmin()) son la única fuente de verdad. ──
       const isAdminViewing = userData.role === 'admin' && !!requestedId;
 
-      const comercioId = isAdminViewing ? requestedId : (userData.comercioId || null);
-
+      let isEmbajadorViewing = false;
+      let comercioId = isAdminViewing ? requestedId : (userData.comercioId || null);
       let comercioData = null;
 
-      if (comercioId) {
-        const comercioSnap = await getDoc(
-          doc(db, 'entidades', comercioId)
-        );
+      // ── Override de embajador: requiere validar en el cliente que
+      // la entidad pedida es parte de su cartera (embajadorId === uid)
+      // antes de tratarla como "resuelta" — evita depender solo del
+      // rechazo de las rules para dar feedback claro. ──
+      if (userData.role === 'embajador' && requestedId) {
+        const targetSnap = await getDoc(doc(db, 'entidades', requestedId));
+        if (targetSnap.exists() && targetSnap.data().embajadorId === user.uid) {
+          isEmbajadorViewing = true;
+          comercioId = requestedId;
+          comercioData = { id: requestedId, ...targetSnap.data() };
+        } else {
+          onError?.(new Error('No autorizado: esta entidad no está en tu cartera'));
+          return;
+        }
+      }
 
+      if (comercioId && !comercioData) {
+        const comercioSnap = await getDoc(doc(db, 'entidades', comercioId));
         if (comercioSnap.exists()) {
-          comercioData = {
-            id: comercioId,
-            ...comercioSnap.data()
-          };
+          comercioData = { id: comercioId, ...comercioSnap.data() };
         }
       }
 
@@ -77,7 +85,8 @@ export function resolveFirebaseContext(onReady, onError) {
         userData,
         comercioId,
         comercioData,
-        isAdminViewing
+        isAdminViewing,
+        isEmbajadorViewing
       });
     } catch (err) {
       onError?.(err);
