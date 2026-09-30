@@ -35,6 +35,16 @@ const page = {
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
+    // ── Guard (30/09/2026): un embajador sin ?id= válido en su
+    // cartera no tiene comercioId propio (no es dueño de entidad) —
+    // sin esto, this._data.comercio quedaría {} y el dashboard
+    // renderiza roto en vez de mandarlo a su panel. ──
+    if (ctx.userData?.role === 'embajador' && !ctx.isEmbajadorViewing) {
+      this._data.ctx = ctx; // para que render() pueda chequear el guard también
+      window.location.href = '/embajador.html';
+      return;
+    }
+
     await runFlowController(ctx.user?.uid);
 
     this._data.ctx       = ctx;
@@ -63,18 +73,19 @@ const page = {
 
   // ──────────────────────────────────────────────────────────
   // HELPER — propaga ?id= en los links de páginas de EDICIÓN DE
-  // ENTIDAD cuando un admin está viendo/editando una entidad que no
-  // es la suya (ctx.isAdminViewing, seteado en context.js). Sin
-  // esto, un admin que entra a dashboard.html?id=X vería bien esta
-  // página, pero al clickear "Editar" en cualquier card caería en la
-  // página hija SIN el id, que volvería a resolver su propia entidad
-  // en vez de la que estaba mirando.
+  // ENTIDAD cuando un admin o un embajador están viendo/editando una
+  // entidad que no es la suya propia (ctx.isAdminViewing /
+  // ctx.isEmbajadorViewing, seteados en context.js). Sin esto, al
+  // clickear "Editar" en cualquier card se caería en la página hija
+  // SIN el id, que volvería a resolver la entidad propia del usuario
+  // logueado en vez de la que estaba mirando.
   //
   // NO se usa en links que no son de entidad (usuario.html,
   // plans.html) — esos son de la cuenta logueada, no de la entidad
-  // que se está viendo. ──────────────────────────────────────
+  // que se está viendo. ──────────────────────────────
   _withId(url) {
-    if (!this._data.ctx?.isAdminViewing) return url;
+    const viewing = this._data.ctx?.isAdminViewing || this._data.ctx?.isEmbajadorViewing;
+    if (!viewing) return url;
     const comercioId = this._data.comercio?.id;
     if (!comercioId) return url;
     const separator = url.includes('?') ? '&' : '?';
@@ -151,10 +162,18 @@ const page = {
   // RENDER
   // ──────────────────────────────────────────────────────────
   render() {
+    // ── Guard (30/09/2026): si load() ya disparó la redirección a
+    // /embajador.html, evitar pintar un dashboard con datos vacíos
+    // mientras el browser navega. ──
+    if (this._data.ctx?.userData?.role === 'embajador' && !this._data.ctx?.isEmbajadorViewing) {
+      return;
+    }
+
     const root = document.getElementById('skeleton-page');
     root.innerHTML = '';
 
-    if (this._data.ctx?.isAdminViewing) root.appendChild(this._renderAdminViewingBanner());
+    if (this._data.ctx?.isAdminViewing)     root.appendChild(this._renderAdminViewingBanner());
+    if (this._data.ctx?.isEmbajadorViewing) root.appendChild(this._renderEmbajadorViewingBanner());
 
     root.appendChild(this._renderZonaSuperior());
 
@@ -208,6 +227,27 @@ const page = {
   },
 
   // ──────────────────────────────────────────────────────────
+  // BANNER — embajador dando soporte a una entidad de su cartera.
+  // Mismo criterio visual que el de admin, texto orientado a
+  // "soporte" en vez de "edición administrativa" — el embajador no
+  // tiene, ni debe tener, la sensación de estar en modo admin. ──
+  // ──────────────────────────────────────────────────────────
+  _renderEmbajadorViewingBanner() {
+    const nombre = this._data.comercio.nombreComercio || this._data.comercio.nombre || this._data.comercio.id;
+    const banner = document.createElement('div');
+    banner.className = 'entity-banner admin-viewing';
+    banner.innerHTML = `<i class="fas fa-handshake"></i> Estás dando soporte como embajador a: <strong>${nombre}</strong>`;
+    const backBtn = createButton({
+      label: 'Volver a mi cartera',
+      variant: 'secondary',
+      size: 'sm',
+      onClick: () => { window.location.href = '/embajador.html'; }
+    });
+    banner.appendChild(backBtn);
+    return banner;
+  },
+
+  // ──────────────────────────────────────────────────────────
   // TÍTULOS SEGÚN ENTITY TYPE
   // ──────────────────────────────────────────────────────────
   _getSeccionTitle() {
@@ -231,17 +271,18 @@ const page = {
     const zona = document.createElement('div');
     zona.className = 'dashboard-top';
     // Sin la card de usuario, el grid 70/30 dejaría espacio vacío —
-    // este modificador la hace ocupar el ancho completo.
-    if (this._data.ctx?.isAdminViewing) {
+    // este modificador la hace ocupar el ancho completo. Aplica a
+    // admin Y embajador viendo una entidad ajena.
+    const viewing = this._data.ctx?.isAdminViewing || this._data.ctx?.isEmbajadorViewing;
+    if (viewing) {
       zona.classList.add('dashboard-top--single');
     }
     zona.appendChild(this._renderPlanCard());
     // La card de "Mi Perfil de Usuario" es sobre la cuenta LOGUEADA,
     // no sobre la entidad que se está viendo — mezclarla acá cuando
-    // un admin está gestionando la entidad de un tercero es
-    // confuso (mostraría el mail del admin al lado de los datos de
-    // otra persona). Se oculta en ese caso.
-    if (!this._data.ctx?.isAdminViewing) {
+    // un admin o embajador están gestionando la entidad de un
+    // tercero es confuso. Se oculta en ambos casos.
+    if (!viewing) {
       zona.appendChild(this._renderUsuarioCard());
     }
     return zona;
@@ -297,9 +338,9 @@ const page = {
 
     // ── Acciones exclusivas de admin (09/09/2026): reactivar/extender
     // plan gratis. Un dueño normal no debería poder hacerse esto a sí
-    // mismo — por eso solo se agregan cuando ctx.isAdminViewing, nunca
-    // en la vista normal del dueño. Migradas desde la vieja sección
-    // Plan de super-admin-entity.js. ──
+    // mismo, y TAMPOCO un embajador — le regalaría el margen a
+    // cualquier comercio de su cartera. Por eso sigue chequeando
+    // SOLO isAdminViewing, nunca isEmbajadorViewing. ──
     if (this._data.ctx?.isAdminViewing) {
       content.appendChild(this._renderPlanAdminActions());
     }
@@ -465,46 +506,34 @@ const page = {
 
     const t = this._data.entityType;
 
-    // ── Identidad — siempre presente, varía por tipo ──────
     grid.appendChild(this._renderMiComercioCard());
 
-    // ── Tipo de entidad — no aplica a profesional ─────────
     if (t !== 'profesional') {
       grid.appendChild(this._renderModeloNegocioCard());
     }
 
-    // ── Productos — solo si aplica ────────────────────────
     if (this._data.tieneProductos) {
       grid.appendChild(this._renderProductosCard());
     }
 
-    // ── Servicios — solo si aplica ────────────────────────
     if (this._data.tieneServicios) {
       grid.appendChild(this._renderServiciosCard());
     }
 
-    // ── Horarios — excepto profesional puro sin productos ─
     const necesitaHorarios = t !== 'profesional' || this._data.tieneProductos;
     if (necesitaHorarios) {
       grid.appendChild(this._renderHorariosCard());
     }
 
-    // ── Horarios Delivery — solo si tiene delivery ────────
     if (this._data.comercio.entrega?.delivery) {
       grid.appendChild(this._renderHorariosDeliveryCard());
     }
 
-    // ── Entrega — solo si tiene productos Y no es showroom_lead.
-    // Mismo criterio que flowController.js/calcularPipeline: en
-    // showroom_lead (autos, maquinaria) no hay qué entregar, el
-    // cliente ve/prueba en persona. Si esta condición se desincroniza
-    // de la de flowController, el dashboard vuelve a mostrar la card. ──
     const esShowroomLead = this._data.comercio.modeloCierre === 'showroom_lead';
     if (this._data.tieneProductos && !esShowroomLead) {
       grid.appendChild(this._renderEntregaCard());
     }
 
-    // ── Exclusivos de profesional ─────────────────────────
     if (t === 'profesional') {
       grid.appendChild(this._renderLugaresCard());
       grid.appendChild(this._renderCoberturaCard());
@@ -816,9 +845,9 @@ const page = {
     grid.appendChild(this._renderLinkPublicoCard());
 
     // ── Exclusivo de admin: regenerar SOLO seo.html, sin tocar
-    // entity.json ni la mini app. Migrado desde super-admin-entity.js.
-    // Un dueño normal no necesita esto — usa "Regenerar Entidad" de
-    // arriba para todo. ──
+    // entity.json ni la mini app. Un embajador no necesita esto —
+    // es mantenimiento técnico de plataforma, no soporte al
+    // comercio. Sigue chequeando SOLO isAdminViewing. ──
     if (this._data.ctx?.isAdminViewing) {
       grid.appendChild(this._renderSeoAdminCard());
     }
@@ -857,9 +886,6 @@ const page = {
   },
 
   async _regenerarSeo() {
-    // Mismo patrón que _generarEntidad(): el botón se busca por
-    // querySelector dentro del card, no se asume que createCard pase
-    // el elemento al callback de onClick.
     const btn = document.querySelector('#card-seo-admin button');
     if (!btn || btn.disabled) return;
     if (!confirm('¿Regenerar seo.html? Esto NO toca la entidad ni la mini app, solo la página de indexación.')) return;
