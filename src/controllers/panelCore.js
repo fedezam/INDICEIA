@@ -1,7 +1,7 @@
 // src/controllers/panelCore.js
 
 import { db } from '../services/firebase/firebase.js';
-import { doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { buildFlowContext, buildPipeline } from './flowController.js';
 import { resolvePlanStatus, getDiasHastaVencimiento } from '../../lib/plan/resolvePlanStatus.js';
 
@@ -63,7 +63,7 @@ export async function loadSubcollections(comercioId) {
 }
 
 // ============================================================
-// 🔹 LISTADO
+// 🔹 LISTADO — TODAS (admin)
 // ============================================================
 export async function listEntidades({ maxResults = 100 } = {}) {
   try {
@@ -83,6 +83,7 @@ export async function listEntidades({ maxResults = 100 } = {}) {
         id: doc.id,
         nombreComercio: d.nombre || d.nombreComercio || '',
         duenoId: d.duenoId || null,
+        embajadorId: d.embajadorId || null,
         entityType: d.entityType || 'comercio',
         fechaActualizacion: d.fechaActualizacion?.toDate?.() || null,
         ciudad,
@@ -94,6 +95,48 @@ export async function listEntidades({ maxResults = 100 } = {}) {
     });
   } catch (err) {
     console.error('[panelCore]', err);
+    return [];
+  }
+}
+
+// ============================================================
+// 🔹 LISTADO — SOLO CARTERA DE UN EMBAJADOR
+// ============================================================
+export async function listEntidadesPorEmbajador(embajadorUid, { maxResults = 100 } = {}) {
+  if (!embajadorUid) {
+    console.error('[panelCore] listEntidadesPorEmbajador: embajadorUid requerido');
+    return [];
+  }
+  try {
+    const q = query(
+      collection(db, 'entidades'),
+      where('embajadorId', '==', embajadorUid),
+      orderBy('fechaActualizacion', 'desc'),
+      limit(maxResults)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(doc => {
+      const d = doc.data();
+      const planStatus    = resolvePlanStatus(d.plan);
+      const diasRestantes = getDiasHastaVencimiento(d.plan);
+      const ciudad        = d.lugares?.[0]?.ciudad?.nombre || null;
+
+      return {
+        id: doc.id,
+        nombreComercio: d.nombre || d.nombreComercio || '',
+        duenoId: d.duenoId || null,
+        embajadorId: d.embajadorId || null,
+        entityType: d.entityType || 'comercio',
+        fechaActualizacion: d.fechaActualizacion?.toDate?.() || null,
+        ciudad,
+        planActive: planStatus.active,
+        planReason: planStatus.reason,
+        diasRestantes,
+        isDemo: d.isDemo === true,
+      };
+    });
+  } catch (err) {
+    console.error('[panelCore] listEntidadesPorEmbajador:', err);
     return [];
   }
 }
