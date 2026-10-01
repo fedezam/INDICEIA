@@ -1,17 +1,16 @@
 // src/pages/embajador.js
 //
-// ⟦ROLE⟧ Panel del embajador (30/09/2026) — vista de su cartera:
-// solo las entidades donde entidad.embajadorId === su uid (ver
-// listEntidadesPorEmbajador en panelCore.js, respaldado por la rule
-// isEmbajadorDe()). Mismo patrón de runLifecycle + mountLayout que
-// super-admin.js, pero sin Herramientas Admin, sin toggle de demo,
-// sin tabla de Usuarios ni sección de Terceros — el embajador solo
-// ve y entra a SU cartera.
+// ⟦ROLE⟧ Panel de cartera (30/09/2026). Dos modos de acceso:
+//   1. Un embajador entra a /embajador.html → ve SU PROPIA cartera
+//      (listEntidadesPorEmbajador(ctx.user.uid)).
+//   2. Un admin entra a /embajador.html?embajadorId=X → ve la
+//      cartera DE ESE embajador, en modo solo lectura/supervisión.
+//      Mismo patrón que isAdminViewing en dashboard.js: el admin no
+//      necesita role:'embajador' propio, el query param alcanza
+//      porque isAdmin() en las rules ya cubre cualquier lectura.
 //
-// La acción "Ver / Dar soporte" lleva a dashboard.html?id=X, que
-// resuelve isEmbajadorViewing en context.js y permite editar todo lo
-// operativo (perfil, productos, servicios, horarios, IA config) pero
-// NO las acciones de plan/SEO, que siguen siendo admin-only.
+// Sin Herramientas Admin, sin toggle de demo, sin tabla de Usuarios
+// — esto es solo el listado de cartera, compartido entre ambos modos.
 import { runLifecycle }              from '/src/skeleton/lifecycle.js';
 import { createFirebaseAdapter }     from '/src/skeleton/adapters/firebaseAdapter.js';
 import { mountLayout }               from '/src/skeleton/layout/index.js';
@@ -19,34 +18,47 @@ import { runFlowController }         from '/src/controllers/flowController.js';
 import { listEntidadesPorEmbajador } from '/src/controllers/panelCore.js';
 import { createTable }               from '/src/skeleton/components/table/index.js';
 import { createEmptyState }          from '/src/skeleton/components/skeletonComponents.js';
+import { createButton }              from '/src/skeleton/components/button/index.js';
 
-import '/src/pages/super-admin.css'; // reutiliza los mismos estilos de lista/tabla
+import '/src/pages/super-admin.css';
 
 const adapter = (options) => createFirebaseAdapter(options);
 
 runLifecycle({
   adapter,
-  options: { loadingMessage: 'Cargando tu cartera...' },
+  options: { loadingMessage: 'Cargando cartera...' },
 
   async onReady(ctx) {
-    if (ctx.userData?.role !== 'embajador') { window.location.href = '/'; return; }
+    const requestedEmbajadorId = new URLSearchParams(window.location.search).get('embajadorId');
+    const isAdminViewing = ctx.userData?.role === 'admin' && !!requestedEmbajadorId;
+
+    // ── Acceso: embajador viendo lo suyo, o admin viendo con
+    // ?embajadorId=. Cualquier otro caso (admin sin param, usuario
+    // común) no tiene nada que hacer acá. ──
+    if (!isAdminViewing && ctx.userData?.role !== 'embajador') {
+      window.location.href = '/';
+      return;
+    }
+
     await runFlowController(ctx.user.uid);
     mountLayout(ctx);
-    const state = await load(ctx);
-    render(ctx, state);
+
+    const targetUid = isAdminViewing ? requestedEmbajadorId : ctx.user.uid;
+    const state = await load(targetUid);
+    render(ctx, state, { isAdminViewing, targetUid });
   }
 });
 
 // ============================================================
 // LOAD
 // ============================================================
-async function load(ctx) {
-  const entities = await listEntidadesPorEmbajador(ctx.user.uid);
+async function load(embajadorUid) {
+  const entities = await listEntidadesPorEmbajador(embajadorUid);
   return { entities };
 }
 
 // ============================================================
-// HELPERS — Badges (mismo criterio visual que super-admin.js)
+// HELPERS — Badges
 // ============================================================
 function renderPlanBadge(reason) {
   const map = {
@@ -82,15 +94,30 @@ function buildRows(entities) {
 // ============================================================
 // RENDER
 // ============================================================
-function render(ctx, state) {
+function render(ctx, state, { isAdminViewing, targetUid }) {
   const container = document.getElementById('skeleton-page');
   container.innerHTML = '';
+
+  // ── Banner: solo si es admin viendo la cartera de un tercero ──
+  if (isAdminViewing) {
+    const banner = document.createElement('div');
+    banner.className = 'entity-banner admin-viewing';
+    banner.innerHTML = `<i class="fas fa-user-shield"></i> Estás viendo la cartera del embajador <strong>${targetUid}</strong> como admin.`;
+    const backBtn = createButton({
+      label: 'Volver al panel',
+      variant: 'secondary',
+      size: 'sm',
+      onClick: () => { window.location.href = '/super-admin.html'; }
+    });
+    banner.appendChild(backBtn);
+    container.appendChild(banner);
+  }
 
   const header = document.createElement('div');
   header.className = 'sa-list-header';
   header.innerHTML = `
     <h2 class="sa-list-title">
-      <i class="fas fa-handshake"></i> Mi Cartera
+      <i class="fas fa-handshake"></i> ${isAdminViewing ? 'Cartera del embajador' : 'Mi Cartera'}
       <span class="sa-count">${state.entities.length}</span>
     </h2>
   `;
@@ -99,8 +126,10 @@ function render(ctx, state) {
   if (!state.entities.length) {
     container.appendChild(createEmptyState({
       icon: 'fas fa-handshake',
-      title: 'Todavía no tenés comercios referidos',
-      message: 'Cuando captes un comercio nuevo, va a aparecer acá para que puedas darle soporte.'
+      title: 'Sin comercios referidos',
+      message: isAdminViewing
+        ? 'Este embajador todavía no tiene entidades a cargo.'
+        : 'Cuando captes un comercio nuevo, va a aparecer acá para que puedas darle soporte.'
     }));
     return;
   }
@@ -130,7 +159,12 @@ function render(ctx, state) {
     actions: [
       {
         id: 'ver', label: 'Ver / Dar soporte', icon: 'fas fa-eye',
-        onClick: (row) => { window.location.href = `/dashboard.html?id=${row.id}`; }
+        onClick: (row) => {
+          // Si es admin, el acceso a dashboard.html sigue siendo
+          // vía isAdminViewing (sin cambios) — no necesita el
+          // embajadorId acá, context.js ya le da acceso total.
+          window.location.href = `/dashboard.html?id=${row.id}`;
+        }
       },
     ]
   });
