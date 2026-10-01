@@ -32,6 +32,18 @@ function switchTab(tab) {
   });
 }
 
+// ─── Embajador ───
+// ⟦ROLE⟧ (30/09/2026) Marca la intención de registrarse como
+// embajador ANTES de abrir el modal — mismo patrón que indiceia_ref
+// (ver arriba): un flag en sessionStorage que main.js consume una
+// sola vez, al crear el doc de usuario en saveNewUserIfNeeded().
+// El modal de registro NO cambia en nada — se recicla tal cual,
+// el flag es lo único que distingue este flujo del de un comercio.
+function prepararRegistroEmbajador() {
+  sessionStorage.setItem('indiceia_want_embajador', 'true');
+  openAuth('register');
+}
+
 // ─── Mensajes ───
 function clearMsgs() {
   document.querySelectorAll('.auth-msg').forEach(el => {
@@ -186,3 +198,4 @@ window.doResetPassword    = doResetPassword;
 window.uiResendVerification = uiResendVerification;
 window.uiSignOutToHome    = uiSignOutToHome;
 window.showScreen         = showScreen;
+window.prepararRegistroEmbajador = prepararRegistroEmbajador;
