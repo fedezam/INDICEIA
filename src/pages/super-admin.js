@@ -290,6 +290,11 @@ function renderMisEntidadesSection(state, handleToggleDemoClick) {
 // gestionarlas desde acá, por eso siguen apareciendo con acción "Ver".
 // Mantiene los filtros de plan (acá sí importan — son negocios reales
 // que pueden entrar en huelga por falta de pago).
+//
+// 30/09/2026 — Sumado chip "sin embajador": informativo, NO indica
+// un error ni una entidad sin soporte (isAdmin() siempre cubre todo).
+// Solo separa visualmente qué entidades tienen apoyo de un embajador
+// además del tuyo, de las que dependen 100% de vos.
 // ────────────────────────────────────────────────────────────
 function renderTercerosSection(state, handleToggleDemoClick) {
   const terceros = state.entities.filter(e => e.duenoId !== ADMIN_UID);
@@ -320,17 +325,20 @@ function renderTercerosSection(state, handleToggleDemoClick) {
   // Debería ser 0 casi siempre — si aparece algo acá, es una demo que
   // quedó con duenoId de un tercero (dato inconsistente a revisar).
   const demosSueltas = terceros.filter(e => e.isDemo).length;
+  // Informativo (ver nota arriba) — no implica falta de soporte.
+  const sinEmbajador = terceros.filter(e => !e.embajadorId).length;
 
   const chipsRow = document.createElement('div');
   chipsRow.style.cssText = 'display:flex;gap:8px;margin:-8px 0 12px;flex-wrap:wrap;align-items:center;';
 
   function applyFilters() {
     let filtered = terceros;
-    if (filterState.plan === 'activas')  filtered = filtered.filter(e => e.planActive);
-    if (filterState.plan === 'huelga')   filtered = filtered.filter(e => !e.planActive && e.planReason !== 'no_plan');
-    if (filterState.plan === 'sinplan')  filtered = filtered.filter(e => e.planReason === 'no_plan');
-    if (filterState.ciudad)              filtered = filtered.filter(e => e.ciudad === filterState.ciudad);
-    if (filterState.demo)                filtered = filtered.filter(e => e.isDemo);
+    if (filterState.plan === 'activas')      filtered = filtered.filter(e => e.planActive);
+    if (filterState.plan === 'huelga')       filtered = filtered.filter(e => !e.planActive && e.planReason !== 'no_plan');
+    if (filterState.plan === 'sinplan')      filtered = filtered.filter(e => e.planReason === 'no_plan');
+    if (filterState.plan === 'sinembajador') filtered = filtered.filter(e => !e.embajadorId);
+    if (filterState.ciudad)                  filtered = filtered.filter(e => e.ciudad === filterState.ciudad);
+    if (filterState.demo)                    filtered = filtered.filter(e => e.isDemo);
     table.setData(buildRows(filtered));
   }
 
@@ -349,7 +357,8 @@ function renderTercerosSection(state, handleToggleDemoClick) {
 
   chipsRow.appendChild(makeFilterChip(`${activas} activas`,  'success',    'activas'));
   chipsRow.appendChild(makeFilterChip(`${enHuelga} en huelga`, 'danger',  'huelga'));
-  if (sinPlan) chipsRow.appendChild(makeFilterChip(`${sinPlan} sin plan`, 'secondary', 'sinplan'));
+  if (sinPlan)      chipsRow.appendChild(makeFilterChip(`${sinPlan} sin plan`, 'secondary', 'sinplan'));
+  if (sinEmbajador) chipsRow.appendChild(makeFilterChip(`${sinEmbajador} sin embajador`, 'secondary', 'sinembajador'));
 
   // ── chip de "demo suelta" — solo aparece si hay una inconsistencia
   //    real para revisar (demo con dueño de tercero) ──
@@ -413,6 +422,65 @@ function renderTercerosSection(state, handleToggleDemoClick) {
 }
 
 // ============================================================
+// SECCIÓN — EMBAJADORES
+// ⟦ROLE⟧ (30/09/2026) Lista los usuarios con role:'embajador' y el
+// tamaño de su cartera, contado en memoria sobre state.entities (sin
+// query extra — ya tenemos ambos listados cargados). "Ver cartera"
+// lleva a embajador.html?embajadorId=X, que resuelve el modo
+// admin-viewing ahí mismo (ver embajador.js) — no requiere ningún
+// permiso nuevo porque isAdmin() ya cubre la lectura en las rules.
+// ────────────────────────────────────────────────────────────
+function renderEmbajadoresSection(state) {
+  const embajadores = state.users.filter(u => u.role === 'embajador');
+
+  const container = document.createElement('div');
+
+  const header = document.createElement('div');
+  header.className = 'sa-list-header';
+  header.innerHTML = `
+    <h2 class="sa-list-title">
+      <i class="fas fa-handshake"></i> Embajadores
+      <span class="sa-count">${embajadores.length}</span>
+    </h2>
+  `;
+  container.appendChild(header);
+
+  if (!embajadores.length) {
+    container.appendChild(createEmptyState({
+      icon: 'fas fa-handshake',
+      title: 'Sin embajadores',
+      message: "Ningún usuario tiene role:'embajador' todavía."
+    }));
+    return container;
+  }
+
+  const rows = embajadores.map(u => ({
+    ...u,
+    _cartera: state.entities.filter(e => e.embajadorId === u.id).length,
+    _fecha: u.fechaRegistro ? u.fechaRegistro.toLocaleDateString('es-AR') : '-'
+  }));
+
+  const table = createTable({
+    columns: [
+      { key: 'nombre',   label: 'Nombre' },
+      { key: 'mail',     label: 'Email' },
+      { key: '_cartera', label: 'Entidades a cargo' },
+      { key: '_fecha',   label: 'Registro' },
+    ],
+    data: rows,
+    actions: [
+      {
+        id: 'ver-cartera', label: 'Ver cartera', icon: 'fas fa-eye',
+        onClick: (row) => { window.location.href = `/embajador.html?embajadorId=${row.id}`; }
+      },
+    ]
+  });
+  container.appendChild(table);
+
+  return container;
+}
+
+// ============================================================
 // RENDER
 // ============================================================
 function render(ctx, state) {
@@ -447,6 +515,9 @@ function render(ctx, state) {
 
   // ── Entidades de Terceros ──
   container.appendChild(renderTercerosSection(state, handleToggleDemoClick));
+
+  // ── Embajadores ──
+  container.appendChild(renderEmbajadoresSection(state));
 
   // ── Usuarios ──
   const usersHeader = document.createElement('div');
