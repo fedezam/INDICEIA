@@ -26,6 +26,12 @@ function getCurrentPage() {
 
 const PUBLIC_PAGES = ["login", "registro", "index", ""];
 const ADMIN_PAGES = ["super-admin", "super-admin-entity"];
+// ⟦ROLE⟧ (30/09/2026) — páginas que un embajador puede visitar sin
+// que el flow controller lo rebote hacia su panel. "dashboard" NO
+// está acá porque un embajador solo debe entrar ahí CON ?id= (viendo
+// una entidad de su cartera) — ese caso se maneja aparte, más abajo,
+// no vía esta lista genérica.
+const EMBAJADOR_PAGES = ["embajador"];
 
 // ============================================================
 // STEP DEFINITIONS
@@ -143,6 +149,7 @@ export async function runFlowController(uid) {
 
   if (PUBLIC_PAGES.includes(currentPage)) return;
   if (ADMIN_PAGES.includes(currentPage))  return;
+  if (EMBAJADOR_PAGES.includes(currentPage)) return;
 
   if (new URLSearchParams(window.location.search).get('edit') === 'true') return;
 
@@ -156,6 +163,18 @@ export async function runFlowController(uid) {
     }
 
     const userData = userSnap.data();
+
+    // ── Embajador: nunca pasa por el onboarding de comercio (no
+    // tiene comercioId propio ni lo va a tener). Si cae en cualquier
+    // página del pipeline normal, se lo manda a su panel — salvo que
+    // esté viendo una entidad de su cartera (dashboard.html?id=X),
+    // caso que dashboard.js ya maneja con isEmbajadorViewing. ──
+    if (userData.role === 'embajador') {
+      const hasId = new URLSearchParams(window.location.search).get('id');
+      if (currentPage === 'dashboard' && hasId) return;
+      if (currentPage !== 'embajador') window.location.href = '/embajador.html';
+      return;
+    }
 
     if (!userData.onboardingSteps?.usuario) {
       if (currentPage !== "usuario") window.location.href = "/usuario.html";
