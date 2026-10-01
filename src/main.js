@@ -103,6 +103,15 @@ async function saveNewUserIfNeeded(user) {
     const referredBy = sessionStorage.getItem('indiceia_ref') || null;
     sessionStorage.removeItem('indiceia_ref');
 
+    // ── 30/09/2026 — Registro como embajador: flag seteado por el
+    // botón "¿Querés ser embajador local?" de la landing
+    // (prepararRegistroEmbajador en landing.js), mismo patrón que
+    // indiceia_ref. Se consume una sola vez acá, en la creación del
+    // doc — después de esto no queda rastro del flag, el dato que
+    // persiste es userData.role. ──
+    const wantsEmbajador = sessionStorage.getItem('indiceia_want_embajador') === 'true';
+    sessionStorage.removeItem('indiceia_want_embajador');
+
     await setDoc(userRef, {
       uid:           user.uid,
       mail:          email,
@@ -110,11 +119,12 @@ async function saveNewUserIfNeeded(user) {
       apellido:      parts.slice(1).join(' ') || '',
       referralCode:  Math.random().toString(36).substring(2, 10).toUpperCase(),
       referredBy,
+      role:          wantsEmbajador ? 'embajador' : null,
       emailVerified: user.emailVerified,
       fechaRegistro: serverTimestamp()
     });
 
-    console.log('✅ Usuario nuevo guardado en Firestore');
+    console.log('✅ Usuario nuevo guardado en Firestore', wantsEmbajador ? '(embajador)' : '');
   } catch (err) {
     console.error('❌ Error al guardar usuario:', err);
   }
@@ -155,9 +165,19 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
 
-    // Email verificado → ir al dashboard
-    console.log('Login verificado → redirigiendo a usuario...');
-    window.location.href = '/src/pages/usuario.html';
+    // ── Email verificado → decidir destino según rol. 30/09/2026:
+    // un embajador no pasa por usuario.html (onboarding de comercio
+    // que nunca le va a aplicar) — va directo a su panel. ──
+    console.log('Login verificado → redirigiendo...');
+
+    const userSnap = await getDoc(doc(db, 'usuarios', user.uid));
+    const role = userSnap.exists() ? userSnap.data().role : null;
+
+    if (role === 'embajador') {
+      window.location.href = '/src/pages/embajador.html';
+    } else {
+      window.location.href = '/src/pages/usuario.html';
+    }
     return;
   }
 
