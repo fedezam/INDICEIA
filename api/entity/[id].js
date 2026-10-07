@@ -1,12 +1,12 @@
 // /api/entity/[id].js
 // ⟦ROLE⟧ Proxy de entidad. Lee Blob estático → inyecta horaActual →
-// resuelve estado de plan → devuelve JSON fresco.
+// resuelve estado de plan → sanitiza para el LLM → devuelve JSON fresco.
 //
 // ── Fixes aplicados ───────────────────────────────────────────
 // 1. now=horaActual / day_key=diaComercialActual → sustituidos por valores
 //    reales (fix previo, ya en producción).
 // 2. Orden: mind primero, meta/contracts al final (fix previo, ya en
-//    producción).
+//    producción). Desde el fix 8 solo aplica a la vista ?full=1.
 // 3. hours_from_context / delivery_hours_from_context — sustituidos por
 //    los horarios YA RESUELTOS para el día comercial de hoy (fix previo,
 //    ya en producción). Deliberadamente NO se calcula un booleano
@@ -37,6 +37,25 @@
 //    que una demo entre en huelga sin importar qué diga plan.expires_at
 //    en Firestore — no es un parche de "ponerle muchos días", es que
 //    el chequeo directamente no corre para estas entidades.
+// 8. SANITIZADOR (07/10/2026): el Blob es la versión de backend
+//    (completa); lo que se expone por defecto es la versión para el
+//    LLM, sin lo que solo le sirve al backend:
+//      - meta, contracts y capabilities (bookkeeping; capabilities
+//        repetía lo que ya dicen CANON y ⛔).
+//      - el marcador ⦓LER:vX⦔ de la primera línea del mind.
+//      - ruido dentro de context (modeloCierre, landing, isDemo,
+//        entityType, rubro interno, id y coords de localidad) y
+//        visual.available / visual.mode.
+//    Se resuelve {{NOMBRE_COMERCIO}} en el mind (CORE lo traía literal)
+//    y en channels.templates. mind_hash y mind_id viajan en headers
+//    (X-Mind-Hash / X-Mind-Id) para no perder trazabilidad.
+//    ?full=1 devuelve la vista completa (con meta, contracts,
+//    capabilities y context sin podar), para cualquier consumidor que
+//    no sea un LLM (miniapp, panel, debug). Mismo pipeline de hora y
+//    plan en ambas vistas.
+//    Se poda por lista negra, no por lista blanca: hay entityTypes
+//    (soporte, prestador, profesional) con bloques propios en el
+//    nivel raíz, y una lista blanca los borraría sin avisar.
 // ───────────────────────────────────────────────────────────────
 
 import { getHoraActual } from '../../lib/utils/getHoraActual.js';
@@ -52,6 +71,15 @@ if (!admin.apps.length) {
   });
 }
 const db = admin.firestore();
+
+// ── Sanitizador: constantes ───────────────────────────────────
+const NAME_PLACEHOLDER = '{{NOMBRE_COMERCIO}}';
+const LER_HEADER_RE = /^⦓LER:[^⦔]*⦔\r?\n?/;
+
+// Claves de context que solo le sirven al backend. NO se tocan
+// ia.comportamiento ni ia.contingencias: el LLM las usa como
+// instrucciones directas (formatoRespuestas, sinPrecio, etc.).
+const CONTEXT_NOISE_KEYS = ['entityType', 'modeloCierre', 'landing', 'isDemo'];
 
 // ── Formatea turnos [[open,close],...] → "open-close|open-close" ──
 // Mismo estilo compacto que el resto del LER (pipe-separated, sin
@@ -74,6 +102,62 @@ function buildInactiveBlock(entity) {
   return `\n⟦INACTIVE⟧${mindConfig.inactiveConfig.frame}∧escape="${escapePhrase}"`;
 }
 
+// ── Nombre legible para frases que ve el cliente ──────────────
+// No usa sanitize() del builder: ese convierte espacios en "_"
+// (como en @PizzaBot:Pizzeria_La_Esquina) y acá el nombre aparece
+// dentro de frases como "acá te ayudo con {{NOMBRE_COMERCIO}}".
+// Solo se quitan los caracteres que romperían la sintaxis LER o
+// las comillas de redirigir("...").
+function cleanName(raw) {
+  return String(raw ?? '')
+    .replace(/[⟦⟧⧦⧧⦓⦔"\r\n]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// ── Reemplaza {{NOMBRE_COMERCIO}} dentro de un objeto JSON ────
+function fillName(value, nombre) {
+  if (value == null) return value;
+  const escaped = JSON.stringify(nombre).slice(1, -1);
+  return JSON.parse(JSON.stringify(value).split(NAME_PLACEHOLDER).join(escaped));
+}
+
+// ── Poda de context para la vista LLM ─────────────────────────
+// Defensiva: la forma de context cambia según entityType.
+function pruneContext(ctx) {
+  if (!ctx || typeof ctx !== 'object') return ctx;
+  const out = { ...ctx };
+
+  for (const k of CONTEXT_NOISE_KEYS) delete out[k];
+
+  // rubro: queda solo el nombre (schema_org, requiere_*,
+  // domain_confidence, tags, subcategoria son del backend).
+  if (out.rubro && typeof out.rubro === 'object') {
+    if (out.rubro.nombre) out.rubro = { nombre: out.rubro.nombre };
+    else delete out.rubro;
+  }
+
+  // ubicacion.localidad: queda solo el nombre (id y coords están
+  // en el backend; las coords ya viajan en SPACETIME del mind).
+  if (out.ubicacion && typeof out.ubicacion === 'object') {
+    const { localidad, ...restUbicacion } = out.ubicacion;
+    out.ubicacion = {
+      ...restUbicacion,
+      ...(localidad?.nombre && { localidad: { nombre: localidad.nombre } }),
+    };
+  }
+
+  return out;
+}
+
+// ── Poda de visual para la vista LLM ──────────────────────────
+// available/mode son flags de backend; el LLM necesita la URL.
+function pruneVisual(visual) {
+  if (!visual || typeof visual !== 'object') return visual;
+  const { available, mode, ...rest } = visual;
+  return Object.keys(rest).length ? rest : undefined;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
@@ -81,6 +165,9 @@ export default async function handler(req, res) {
   if (!id || typeof id !== 'string') {
     return res.status(400).json({ error: 'id inválido' });
   }
+
+  // Vista completa (backend / miniapp / panel). Por defecto, vista LLM.
+  const full = req.query.full === '1';
 
   try {
     // 1. Leer documento de Firestore — de acá sale la URL del Blob Y
@@ -128,6 +215,11 @@ export default async function handler(req, res) {
       : 'delivery_hours_today=n/a';
 
     // 5. Sustituir los placeholders reales dentro del mind.
+    //    {{NOMBRE_COMERCIO}} se resuelve con split/join (no replace)
+    //    para reemplazar TODAS las apariciones y evitar que un
+    //    nombre con "$&" o similar se interprete como patrón.
+    const nombreVisible = cleanName(entity.context?.nombre) || 'este comercio';
+
     let mindResuelto = typeof entity.mind === 'string'
       ? entity.mind
           .replace('now=horaActual', `now=${horaActual}`)
@@ -137,6 +229,7 @@ export default async function handler(req, res) {
           )
           .replace('hours_from_context', hoursToken)
           .replace('delivery_hours_from_context', deliveryToken)
+          .split(NAME_PLACEHOLDER).join(nombreVisible)
       : entity.mind;
 
     // 6. Resolver estado de plan — en tiempo real, leyendo Firestore
@@ -157,8 +250,9 @@ export default async function handler(req, res) {
       mindResuelto = `${mindResuelto}${buildInactiveBlock(entity)}`;
     }
 
-    // 8. Reensamblar en el orden en que el LLM debería leerlo:
-    //    identidad primero, bookkeeping técnico al final.
+    // 8. Sanitizar y reensamblar. Vista LLM (default): sin meta,
+    //    contracts, capabilities, marcador LER ni ruido de backend.
+    //    Vista completa (?full=1): todo, con el bookkeeping al final.
     const {
       meta,
       contracts,
@@ -173,9 +267,18 @@ export default async function handler(req, res) {
       ...resto
     } = entity;
 
+    let mindOut = mindResuelto;
+    if (!full && typeof mindOut === 'string') {
+      mindOut = mindOut.replace(LER_HEADER_RE, '');
+    }
+
+    const contextOut  = full ? context : pruneContext(context);
+    const visualOut   = full ? visual  : pruneVisual(visual);
+    const channelsOut = fillName(channels, nombreVisible);
+
     const enriched = {
-      mind: mindResuelto,
-      context,
+      mind: mindOut,
+      context: contextOut,
       // goods/services/professional/visual se omiten completos si la
       // entidad está en huelga — la ausencia habla por sí sola, sin
       // necesidad de nombrar "catálogo" (vocabulario que no aplica a
@@ -183,19 +286,25 @@ export default async function handler(req, res) {
       ...(planStatus.active && goods        && { goods }),
       ...(planStatus.active && services     && { services }),
       ...(planStatus.active && professional && { professional }),
-      ...(planStatus.active && visual       && { visual }),
+      ...(planStatus.active && visualOut    && { visual: visualOut }),
       // channels (contacto) se mantiene siempre — la salida de la
       // huelga es justamente que alguien se contacte.
-      ...(channels     && { channels }),
-      ...(capabilities && { capabilities }),
+      ...(channelsOut && { channels: channelsOut }),
+      ...(full && capabilities && { capabilities }),
       ...resto,
-      meta,
-      contracts,
+      ...(full && { meta, contracts }),
     };
 
-    // 9. Cache corto — la hora cambia cada minuto y el estado de plan
-    //    puede cambiar en cualquier momento
+    // 9. Trazabilidad fuera del payload: el hash y el id del mind
+    //    viajan en headers, no en el JSON que lee el LLM.
+    if (meta?.mind_hash) res.setHeader('X-Mind-Hash', String(meta.mind_hash));
+    if (meta?.mind_id)   res.setHeader('X-Mind-Id', String(meta.mind_id));
+
+    // 10. Cache corto — la hora cambia cada minuto y el estado de plan
+    //     puede cambiar en cualquier momento. (Vercel cachea por URL
+    //     completa, así que ?full=1 y la vista LLM no se pisan.)
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Expose-Headers', 'X-Mind-Hash, X-Mind-Id');
     res.setHeader('Cache-Control', 'public, max-age=60');
     return res.status(200).json(enriched);
   } catch (err) {
