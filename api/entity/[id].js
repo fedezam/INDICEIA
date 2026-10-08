@@ -311,4 +311,4 @@ export default async function handler(req, res) {
     console.error('[api/entity] Error:', err);
     return res.status(500).json({ error: 'Error interno' });
   }
-}
+}  
