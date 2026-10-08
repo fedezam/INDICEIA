@@ -7,8 +7,28 @@
 // contact, o lo que traiga un entityType nuevo). Mismo motivo de
 // siempre: un solo punto de verdad para la validación de seguridad,
 // en vez de N copias que puedan divergir con el tiempo.
+//
+// 07/10/2026: el LLM manda texto libre y ids, nunca se confía en
+// ellos. Cambios:
+//   - Cantidad: antes `parseInt(qty) || 1` dejaba pasar negativos
+//     (restaban del subtotal) y cantidades absurdas. Ahora una
+//     cantidad menor a 1 o mayor a MAX_QTY invalida ESA línea (se
+//     ignora, igual que un id inexistente). Sin cantidad ("id" a
+//     secas) sigue valiendo 1.
+//   - Precio ausente: un item con precio_final 0, nulo o no numérico
+//     antes imprimía $0 o $NaN y subestimaba el total. Ahora se lista
+//     como "a consultar", no suma, y los rótulos de subtotal y total
+//     aclaran "sin items a consultar".
+//   - Topes de largo: máximo de líneas de items (MAX_ITEMS) y de
+//     caracteres de direccion (MAX_DIRECCION).
+//   - Se agrega "Pedido generado: <hora>" con la hora real del
+//     servidor, para que el comercio vea cuándo se armó el pedido
+//     (la hora que ve el LLM es una foto del momento en que leyó la
+//     URL de la entidad). Si no se quiere, borrar esa línea y el
+//     import de getHoraActual.
 import admin from 'firebase-admin';
 import { resolveDemoAwareNumber } from '../../lib/redirect/resolveDemoWaNumber.js';
+import { getHoraActual } from '../../lib/utils/getHoraActual.js';
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -20,6 +40,17 @@ if (!admin.apps.length) {
   });
 }
 const db = admin.firestore();
+
+// Topes: el LLM es una fuente no confiable. MAX_QTY es alto a
+// propósito para no bloquear pedidos grandes legítimos (eventos).
+const MAX_ITEMS     = 50;
+const MAX_QTY       = 1000;
+const MAX_DIRECCION = 200;
+
+const tienePrecio = (p) => {
+  const n = Number(p.precio_final);
+  return Number.isFinite(n) && n > 0;
+};
 
 export default async function handler(req, res) {
   const { id: comercioId } = req.query;
@@ -45,10 +76,16 @@ export default async function handler(req, res) {
     if (!waNumber) return res.status(409).send('Comercio sin WhatsApp configurado');
 
     // ── parsear items: "id:qty,id:qty" ──
-    const pairs = items.split(',').map(pair => {
-      const [itemId, qty] = pair.split(':');
-      return { itemId, qty: parseInt(qty, 10) || 1 };
-    });
+    // Sin qty ("id") vale 1. Con qty no numérica también vale 1.
+    // La validación de rango se hace más abajo, línea por línea.
+    const pairs = String(items)
+      .split(',')
+      .slice(0, MAX_ITEMS)
+      .map(pair => {
+        const [itemId, qty] = pair.split(':');
+        const n = parseInt(qty, 10);
+        return { itemId: (itemId || '').trim(), qty: Number.isFinite(n) ? n : 1 };
+      });
 
     // ── resolver contra Firestore (fuente real, no el blob) ──
     const productosSnap = await comercioRef.collection('productos').get();
@@ -56,8 +93,11 @@ export default async function handler(req, res) {
 
     const lineas = [];
     let subtotal = 0;
+    let hayAConsultar = false;
 
     for (const { itemId, qty } of pairs) {
+      if (qty < 1 || qty > MAX_QTY) continue; // cantidad inválida → se ignora la línea
+
       const p = productosById.get(itemId);
       if (!p || p.paused) continue; // inexistente o pausado → se ignora, no se inventa
 
@@ -66,9 +106,16 @@ export default async function handler(req, res) {
       const tamaño = tamañoRaw && !SKIP_VALUES.includes(tamañoRaw.toLowerCase())
         ? tamañoRaw
         : null;
-      const lineTotal = p.precio_final * qty;
-      subtotal += lineTotal;
-      lineas.push(`${qty}x ${p.nombre}${tamaño ? ' ' + tamaño : ''} - $${lineTotal}`);
+      const etiqueta = `${qty}x ${p.nombre}${tamaño ? ' ' + tamaño : ''}`;
+
+      if (tienePrecio(p)) {
+        const lineTotal = Number(p.precio_final) * qty;
+        subtotal += lineTotal;
+        lineas.push(`${etiqueta} - $${lineTotal}`);
+      } else {
+        hayAConsultar = true;
+        lineas.push(`${etiqueta} - a consultar`);
+      }
     }
 
     if (!lineas.length) return res.status(422).send('Ningún item válido');
@@ -78,6 +125,8 @@ export default async function handler(req, res) {
     const total = subtotal + deliveryCost;
 
     const modoLabel = modo === 'delivery' ? 'Delivery' : 'Retiro por el local';
+    const direccionTxt = direccion ? String(direccion).slice(0, MAX_DIRECCION) : null;
+    const sufijoTotal = hayAConsultar ? ' (sin items a consultar)' : '';
 
     const mensaje = [
       isDemo
@@ -86,11 +135,12 @@ export default async function handler(req, res) {
       '',
       ...lineas,
       '─────────────────',
-      `Subtotal: $${subtotal}`,
+      `Subtotal${sufijoTotal}: $${subtotal}`,
       hasDelivery ? `Delivery (${data.entrega.delivery.zona ?? ''}): $${deliveryCost}` : null,
       `Modo: ${modoLabel}`,
-      direccion ? `Direccion: ${direccion}` : null,
-      `Total: $${total}`,
+      direccionTxt ? `Direccion: ${direccionTxt}` : null,
+      `Total${sufijoTotal}: $${total}`,
+      `Pedido generado: ${getHoraActual()}`,
       '─────────────────',
       'Gracias, espero tu confirmacion 🙏',
     ].filter(Boolean).join('\n');
