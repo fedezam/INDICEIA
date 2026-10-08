@@ -5,6 +5,18 @@
 // compartido con wa-redirect/[id].js (y cualquier *-redirect futuro).
 // Ver ese archivo para el razonamiento completo del gate de seguridad
 // (isDemo se lee de Firestore acá, nunca del query param).
+//
+// 07/10/2026: combos. El closer (closers/service.js) ya le pide al
+// LLM mandar varios servicios en `servicio` separados por coma
+// ("id1,id2"), pero este endpoint buscaba el string entero como un
+// solo id y respondía 422 en cualquier combo. Ahora se separa por
+// coma, se resuelve cada servicio contra Firestore (los inválidos o
+// inactivos se ignoran, no se inventan, igual que wa-redirect) y el
+// mensaje los lista. Con un solo servicio el mensaje es idéntico al
+// anterior. Precio de combo: la suma si todos tienen precio; si
+// alguno no lo tiene, "a coordinar" (misma regla que `quote` en el
+// closer). También se agregan topes de largo a zona, consulta y
+// cantidad de servicios.
 import admin from 'firebase-admin';
 import { resolveDemoAwareNumber } from '../../lib/redirect/resolveDemoWaNumber.js';
 
@@ -18,6 +30,13 @@ if (!admin.apps.length) {
   });
 }
 const db = admin.firestore();
+
+// Topes: texto libre que viene del LLM, nunca se confía en el largo.
+const MAX_SERVICIOS = 10;
+const MAX_ZONA      = 100;
+const MAX_CONSULTA  = 500;
+
+const tienePrecio = (s) => !!s.precio?.valor;
 
 export default async function handler(req, res) {
   const { id: comercioId } = req.query;
@@ -42,31 +61,61 @@ export default async function handler(req, res) {
     const waNumber = resolveDemoAwareNumber(data, waDestino);
     if (!waNumber) return res.status(409).send('Sin WhatsApp configurado');
 
-    // ── resolver servicio contra Firestore (fuente real) ──
+    // ── resolver servicio(s) contra Firestore (fuente real) ──
+    // `servicio` puede traer un id o varios separados por coma
+    // (combo). Se deduplica y se limita la cantidad.
+    const ids = [...new Set(
+      String(servicio).split(',').map(x => x.trim()).filter(Boolean)
+    )].slice(0, MAX_SERVICIOS);
+
     const serviciosSnap = await comercioRef.collection('servicios').get();
     const serviciosById = new Map(
       serviciosSnap.docs.map(d => [d.id, d.data()])
     );
 
-    const s = serviciosById.get(servicio);
-    if (!s || s.activo !== true) return res.status(422).send('Servicio inválido o inactivo');
+    // inexistente o inactivo → se ignora, no se inventa
+    const validos = ids
+      .map(id => serviciosById.get(id))
+      .filter(s => s && s.activo === true);
 
-    const nombreServicio = s.nombre || 'Consulta';
-    const precioLine = s.precio?.valor
-      ? `Precio: $${s.precio.valor}`
-      : 'Precio: a coordinar';
+    if (!validos.length) return res.status(422).send('Servicio inválido o inactivo');
+
+    // ── líneas de servicio y precio ──
+    let servicioLines;
+    let precioLine;
+
+    if (validos.length === 1) {
+      const s = validos[0];
+      servicioLines = [`Servicio: ${s.nombre || 'Consulta'}`];
+      precioLine = tienePrecio(s)
+        ? `Precio: $${s.precio.valor}`
+        : 'Precio: a coordinar';
+    } else {
+      servicioLines = [
+        'Servicios:',
+        ...validos.map(s =>
+          `- ${s.nombre || 'Consulta'} - ${tienePrecio(s) ? `$${s.precio.valor}` : 'a coordinar'}`
+        ),
+      ];
+      precioLine = validos.every(tienePrecio)
+        ? `Precio total: $${validos.reduce((acc, s) => acc + Number(s.precio.valor), 0)}`
+        : 'Precio total: a coordinar';
+    }
 
     const modalidadLabel = modalidad === 'domicilio' ? 'A domicilio' : 'En el local';
+
+    const zonaTxt     = zona     ? String(zona).slice(0, MAX_ZONA)         : null;
+    const consultaTxt = consulta ? String(consulta).slice(0, MAX_CONSULTA) : null;
 
     const mensaje = [
       isDemo
         ? 'Hola! Esta es una consulta de PRUEBA generada desde el demostrador de IndiceIA 🧪'
         : 'Hola! Vengo de IndiceIA 👋',
       '',
-      `Servicio: ${nombreServicio}`,
+      ...servicioLines,
       `Modalidad: ${modalidadLabel}`,
-      zona ? `Zona: ${zona}` : null,
-      consulta ? `Consulta: ${consulta}` : null,
+      zonaTxt ? `Zona: ${zonaTxt}` : null,
+      consultaTxt ? `Consulta: ${consultaTxt}` : null,
       precioLine,
       '─────────────────',
       'Quedamos en contacto 🙏',
@@ -85,7 +134,7 @@ export default async function handler(req, res) {
           event: isDemo ? 'wa_service_click_demo' : 'wa_service_click',
           servicio,
           modalidad,
-          zona: zona || null,
+          zona: zonaTxt,
           timestamp: new Date(),
         });
       } catch (e) {
