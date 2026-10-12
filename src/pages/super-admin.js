@@ -14,14 +14,15 @@ import '/src/pages/super-admin.css';
 
 const adapter = (options) => createFirebaseAdapter(options);
 
-// ⟦ROLE⟧ UID de la cuenta admin — dueña de las entidades "propias de
-// plataforma" (demo + soporte/onboarding). Es el mismo UID usado en
-// la migración manual de duenoId (08/09/2026). Se usa acá SOLO para
-// separar visualmente las secciones del dashboard — no reemplaza los
-// chequeos de seguridad reales (isAdmin()/isOwner() en Firestore
-// rules), que siguen siendo la fuente de verdad de qué puede hacer
-// cada usuario.
+// ⟦ROLE⟧ UID de la cuenta admin. Se conserva por si hace falta en otra
+// parte del archivo. Ya NO se usa para separar secciones: el criterio
+// de "Mis Entidades" es naturaleza (soporte o demo), no propiedad.
 const ADMIN_UID = 'hx1XgXN7vBXNV7TsFaLyrol9p972';
+
+// ⟦ROLE⟧ Criterio de "propia de plataforma": soporte o demo, sin
+// importar el duenoId. Define qué va a "Mis Entidades" y qué queda
+// afuera (Entidades de Terceros).
+const esMia = e => e.entityType === 'soporte' || e.isDemo === true;
 
 runLifecycle({
   adapter,
@@ -191,12 +192,6 @@ function renderTipoPropiaBadge(_val, row) {
   return '-';
 }
 
-// ── Badge de demo, para la tabla de terceros (debería ser rarísimo verlo ahí) ──
-function renderDemoBadge(isDemo, _row) {
-  if (!isDemo) return '-';
-  return `<span class="s-badge" style="background:#8e44ad;color:#fff;">Demo</span>`;
-}
-
 // ── Días restantes, con aviso visual si vence pronto ──
 function renderDiasRestantes(dias) {
   if (dias === null || dias === undefined) return '-';
@@ -219,21 +214,13 @@ function buildRows(entities) {
 }
 
 // ============================================================
-// SECCIÓN — MIS ENTIDADES (propias de plataforma: demo + soporte)
-// ⟦ROLE⟧ Criterio de "propia": duenoId === ADMIN_UID. Es el más
-// confiable porque ya se hizo la migración manual (08/09/2026) — es
-// el dato real de ownership, no una inferencia. isDemo/entityType
-// solo se usan acá para el badge informativo de "qué tipo de propia
-// es", no para decidir si pertenece a esta sección.
-//
-// Tabla simplificada a propósito: sin columnas de plan (las demo
-// están exentas del sistema de plan — ver api/entity/[id].js — y
-// soporte tampoco factura), sin filtros de plan. Sí mantiene el
-// toggle de demo por si alguna entidad propia necesita marcarse/
-// desmarcarse.
+// SECCIÓN — MIS ENTIDADES (plataforma: demos + soporte)
+// ⟦ROLE⟧ Criterio: esMia(e) → entityType 'soporte' o isDemo true.
+// Independiente del duenoId: una entidad sale de esta sección en
+// cuanto deja de ser demo, aunque siga con el UID admin.
 // ────────────────────────────────────────────────────────────
 function renderMisEntidadesSection(state, handleToggleDemoClick) {
-  const propias = state.entities.filter(e => e.duenoId === ADMIN_UID);
+  const propias = state.entities.filter(esMia);
 
   const container = document.createElement('div');
 
@@ -251,7 +238,7 @@ function renderMisEntidadesSection(state, handleToggleDemoClick) {
     container.appendChild(createEmptyState({
       icon: 'fas fa-star',
       title: 'Sin entidades propias',
-      message: 'Ninguna entidad tiene duenoId asignado a la cuenta admin todavía.'
+      message: 'No hay demos ni entidades de soporte todavía.'
     }));
     return container;
   }
@@ -284,20 +271,14 @@ function renderMisEntidadesSection(state, handleToggleDemoClick) {
 }
 
 // ============================================================
-// SECCIÓN — ENTIDADES DE TERCEROS (comercios reales, no propias)
-// ⟦ROLE⟧ Todo lo que NO tiene duenoId === ADMIN_UID. Control total
-// vía isAdmin() en Firestore rules — no hace falta ser owner para
-// gestionarlas desde acá, por eso siguen apareciendo con acción "Ver".
-// Mantiene los filtros de plan (acá sí importan — son negocios reales
-// que pueden entrar en huelga por falta de pago).
-//
-// 30/09/2026 — Sumado chip "sin embajador": informativo, NO indica
-// un error ni una entidad sin soporte (isAdmin() siempre cubre todo).
-// Solo separa visualmente qué entidades tienen apoyo de un embajador
-// además del tuyo, de las que dependen 100% de vos.
+// SECCIÓN — ENTIDADES DE TERCEROS (todo lo que no es esMia)
+// ⟦ROLE⟧ Comercios, prestadores y profesionales reales. Control
+// total vía isAdmin() en Firestore rules. Mantiene los filtros de
+// plan (son negocios reales que pueden entrar en huelga) y el chip
+// de embajador (informativo, no indica falta de soporte).
 // ────────────────────────────────────────────────────────────
 function renderTercerosSection(state, handleToggleDemoClick) {
-  const terceros = state.entities.filter(e => e.duenoId !== ADMIN_UID);
+  const terceros = state.entities.filter(e => !esMia(e));
 
   const container = document.createElement('div');
 
@@ -317,15 +298,12 @@ function renderTercerosSection(state, handleToggleDemoClick) {
   }
 
   // ── estado local de filtros (vive mientras esta sección exista) ──
-  const filterState = { plan: null, ciudad: null, demo: false };
+  const filterState = { plan: null, ciudad: null };
 
   const activas  = terceros.filter(e => e.planActive).length;
   const enHuelga = terceros.filter(e => !e.planActive && e.planReason !== 'no_plan').length;
   const sinPlan  = terceros.filter(e => e.planReason === 'no_plan').length;
-  // Debería ser 0 casi siempre — si aparece algo acá, es una demo que
-  // quedó con duenoId de un tercero (dato inconsistente a revisar).
-  const demosSueltas = terceros.filter(e => e.isDemo).length;
-  // Informativo (ver nota arriba) — no implica falta de soporte.
+  // Informativo — no implica falta de soporte.
   const sinEmbajador = terceros.filter(e => !e.embajadorId).length;
 
   const chipsRow = document.createElement('div');
@@ -338,7 +316,6 @@ function renderTercerosSection(state, handleToggleDemoClick) {
     if (filterState.plan === 'sinplan')      filtered = filtered.filter(e => e.planReason === 'no_plan');
     if (filterState.plan === 'sinembajador') filtered = filtered.filter(e => !e.embajadorId);
     if (filterState.ciudad)                  filtered = filtered.filter(e => e.ciudad === filterState.ciudad);
-    if (filterState.demo)                    filtered = filtered.filter(e => e.isDemo);
     table.setData(buildRows(filtered));
   }
 
@@ -355,24 +332,10 @@ function renderTercerosSection(state, handleToggleDemoClick) {
     return chip;
   }
 
-  chipsRow.appendChild(makeFilterChip(`${activas} activas`,  'success',    'activas'));
-  chipsRow.appendChild(makeFilterChip(`${enHuelga} en huelga`, 'danger',  'huelga'));
+  chipsRow.appendChild(makeFilterChip(`${activas} activas`,  'success', 'activas'));
+  chipsRow.appendChild(makeFilterChip(`${enHuelga} en huelga`, 'danger', 'huelga'));
   if (sinPlan)      chipsRow.appendChild(makeFilterChip(`${sinPlan} sin plan`, 'secondary', 'sinplan'));
   if (sinEmbajador) chipsRow.appendChild(makeFilterChip(`${sinEmbajador} sin embajador`, 'secondary', 'sinembajador'));
-
-  // ── chip de "demo suelta" — solo aparece si hay una inconsistencia
-  //    real para revisar (demo con dueño de tercero) ──
-  if (demosSueltas) {
-    const chipDemo = createChip({
-      text: `⚠ ${demosSueltas} demo con dueño de tercero`, variant: 'danger', size: 'small',
-      onClick: () => {
-        filterState.demo = !filterState.demo;
-        chipDemo.classList.toggle('s-chip--active-filter', filterState.demo);
-        applyFilters();
-      }
-    });
-    chipsRow.appendChild(chipDemo);
-  }
 
   // ── selector de localidad ──
   const ciudades = [...new Set(terceros.map(e => e.ciudad).filter(Boolean))].sort();
@@ -399,7 +362,6 @@ function renderTercerosSection(state, handleToggleDemoClick) {
       { key: 'ciudad',        label: 'Localidad' },
       { key: 'planReason',    label: 'Plan', render: renderPlanBadge },
       { key: 'diasRestantes', label: 'Vence en', render: renderDiasRestantes },
-      { key: 'isDemo',        label: 'Demo', render: renderDemoBadge },
       { key: '_fecha',        label: 'Actualización' }
     ],
     data: buildRows(terceros),
@@ -423,12 +385,9 @@ function renderTercerosSection(state, handleToggleDemoClick) {
 
 // ============================================================
 // SECCIÓN — EMBAJADORES
-// ⟦ROLE⟧ (30/09/2026) Lista los usuarios con role:'embajador' y el
-// tamaño de su cartera, contado en memoria sobre state.entities (sin
-// query extra — ya tenemos ambos listados cargados). "Ver cartera"
-// lleva a embajador.html?embajadorId=X, que resuelve el modo
-// admin-viewing ahí mismo (ver embajador.js) — no requiere ningún
-// permiso nuevo porque isAdmin() ya cubre la lectura en las rules.
+// ⟦ROLE⟧ Lista los usuarios con role:'embajador' y el tamaño de su
+// cartera, contado en memoria sobre state.entities. "Ver cartera"
+// lleva a embajador.html?embajadorId=X.
 // ────────────────────────────────────────────────────────────
 function renderEmbajadoresSection(state) {
   const embajadores = state.users.filter(u => u.role === 'embajador');
@@ -498,9 +457,8 @@ function render(ctx, state) {
       const entity = state.entities.find(e => e.id === row.id);
       if (entity) entity.isDemo = nextValue;
       showToast(nextValue ? 'Marcada como demo' : 'Demo desmarcada', 'success');
-      // Re-render completo: mantiene ambas secciones en sync sin
-      // duplicar lógica — más simple y seguro que actualizar dos
-      // tablas independientes a mano.
+      // Re-render completo: mantiene las secciones en sync sin
+      // duplicar lógica.
       render(ctx, state);
     } catch (err) {
       showToast('Error: ' + err.message, 'error');
@@ -510,7 +468,7 @@ function render(ctx, state) {
   // ── Herramientas admin ──
   container.appendChild(renderHerramientasAdmin());
 
-  // ── Mis Entidades (propias: demo + soporte) ──
+  // ── Mis Entidades (demo + soporte) ──
   container.appendChild(renderMisEntidadesSection(state, handleToggleDemoClick));
 
   // ── Entidades de Terceros ──
