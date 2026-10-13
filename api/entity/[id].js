@@ -56,6 +56,16 @@
 //    Se poda por lista negra, no por lista blanca: hay entityTypes
 //    (soporte, prestador, profesional) con bloques propios en el
 //    nivel raíz, y una lista blanca los borraría sin avisar.
+// 9. TURN (12/10/2026): acción del primer turno, siempre última línea
+//    del mind. Sin ella, algunos modelos (Gemini) cargaban el
+//    personaje y devolvían un informe de estado en vez del saludo.
+//      - Entidades nuevas: el TURN viene horneado en el Blob
+//        (mind.builder.js).
+//      - Entidades viejas (Blob sin TURN) y vista LLM: se agrega acá,
+//        solo si la entidad está activa.
+//      - Huelga: stripOperationalBlocks() descarta el TURN horneado y
+//        buildInactiveBlock() agrega el de huelga (emitir la
+//        escapePhrase) al final, después de ⟦INACTIVE⟧.
 // ───────────────────────────────────────────────────────────────
 
 import { getHoraActual } from '../../lib/utils/getHoraActual.js';
@@ -63,6 +73,7 @@ import { getDiaComercialActual } from '../../lib/utils/getDiaComercialActual.js'
 import { resolvePlanStatus } from '../../lib/plan/resolvePlanStatus.js';
 import { stripOperationalBlocks } from '../../lib/plan/stripOperationalBlocks.js';
 import { mindConfig } from '../../lib/entity-factory/mind.config.js';
+import { compileTurn } from '../../lib/entity-factory/builders/blocks.js';
 import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
@@ -75,6 +86,7 @@ const db = admin.firestore();
 // ── Sanitizador: constantes ───────────────────────────────────
 const NAME_PLACEHOLDER = '{{NOMBRE_COMERCIO}}';
 const LER_HEADER_RE = /^⦓LER:[^⦔]*⦔\r?\n?/;
+const TURN_LINE_RE = /^TURN:/m;
 
 // Claves de context que solo le sirven al backend. NO se tocan
 // ia.comportamiento ni ia.contingencias: el LLM las usa como
@@ -93,13 +105,18 @@ function formatTurnos(turnos) {
 }
 
 // ── Arma el bloque LER de huelga, con placeholders resueltos ──
+// Incluye el TURN de huelga (primer turno = emitir la escapePhrase)
+// como última línea. Ver nota 9 al inicio del archivo.
 function buildInactiveBlock(entity) {
   const nombreComercio = entity.context?.nombre || entity.meta?.comercioId || 'este comercio';
   const escapePhrase = mindConfig.inactiveConfig.escapePhrase.replace(
     '{{NOMBRE_COMERCIO}}',
     nombreComercio
   );
-  return `\n⟦INACTIVE⟧${mindConfig.inactiveConfig.frame}∧escape="${escapePhrase}"`;
+  const turnInactive = mindConfig.turnConfig?.inactive
+    ? `\nTURN:⟦${mindConfig.turnConfig.inactive}⟧`
+    : '';
+  return `\n⟦INACTIVE⟧${mindConfig.inactiveConfig.frame}∧escape="${escapePhrase}"${turnInactive}`;
 }
 
 // ── Nombre legible para frases que ve el cliente ──────────────
@@ -242,9 +259,10 @@ export default async function handler(req, res) {
       : resolvePlanStatus(firestoreData.plan);
 
     // 7. Si está inactiva → recortar bloques operativos del mind
-    //    (mini-app, cierre de pedido/servicio/contacto) ANTES de
-    //    agregar el bloque de huelga. Sin esto, la entidad recibiría
-    //    instrucciones contradictorias.
+    //    (mini-app, cierre de pedido/servicio/contacto, TURN normal)
+    //    ANTES de agregar el bloque de huelga, que trae su propio
+    //    TURN al final. Sin esto, la entidad recibiría instrucciones
+    //    contradictorias.
     if (!planStatus.active) {
       mindResuelto = stripOperationalBlocks(mindResuelto);
       mindResuelto = `${mindResuelto}${buildInactiveBlock(entity)}`;
@@ -270,6 +288,14 @@ export default async function handler(req, res) {
     let mindOut = mindResuelto;
     if (!full && typeof mindOut === 'string') {
       mindOut = mindOut.replace(LER_HEADER_RE, '');
+
+      // Entidades viejas (Blob generado antes del TURN): se agrega acá.
+      // Solo si está activa — en huelga ya lo puso buildInactiveBlock().
+      // El chequeo evita duplicar si el Blob ya lo trae horneado.
+      if (planStatus.active && !TURN_LINE_RE.test(mindOut)) {
+        const turn = compileTurn(mindConfig, entity.context);
+        if (turn) mindOut = `${mindOut}\n${turn}`;
+      }
     }
 
     const contextOut  = full ? context : pruneContext(context);
@@ -311,4 +337,4 @@ export default async function handler(req, res) {
     console.error('[api/entity] Error:', err);
     return res.status(500).json({ error: 'Error interno' });
   }
-}  
+}
