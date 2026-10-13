@@ -24,9 +24,19 @@
 // la restricción ¬prometer_precio_final_cerrado y este endpoint
 // tiene que sostenerla en el texto real que ve el comercio del
 // otro lado, no solo en el prompt.
+//
+// 13/10/2026 — SOPORTE DEMO: CONTACT_CLOSE ahora puede mandar
+// `waDestino` (ver closers/demo.js). El número destino se decide
+// SIEMPRE con resolveDemoAwareNumber (lib/redirect/resolveDemoWaNumber.js),
+// igual que wa-redirect y service-redirect: waDestino solo se respeta
+// si la entidad es demo según Firestore (data.isDemo), y se ignora en
+// silencio si no. Antes este endpoint no leía waDestino, así que el
+// link de una demo profesional iba al WhatsApp de la entidad (o
+// devolvía 409 si la demo no tenía uno).
 // ────────────────────────────────────────────────────────────
 
 import admin from 'firebase-admin';
+import { resolveDemoAwareNumber } from '../../lib/redirect/resolveDemoWaNumber.js';
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -41,7 +51,7 @@ const db = admin.firestore();
 
 export default async function handler(req, res) {
   const { id: comercioId } = req.query;
-  const { item, motivo, cobertura, lugar } = req.query;
+  const { item, motivo, cobertura, lugar, waDestino } = req.query;
 
   if (!comercioId) {
     return res.status(400).send('Falta comercioId');
@@ -57,7 +67,10 @@ export default async function handler(req, res) {
     if (!comercioSnap.exists) return res.status(404).send('Comercio no encontrado');
 
     const data = comercioSnap.data();
-    const waNumber = resolveWaNumber(data.whatsapp);
+
+    // Demo + waDestino → número del usuario. Cualquier otro caso →
+    // WhatsApp real de la entidad (waDestino se ignora en silencio).
+    const waNumber = resolveDemoAwareNumber(data, waDestino);
     if (!waNumber) return res.status(409).send('Comercio sin WhatsApp configurado');
 
     const nombreEntidad = data.nombre || data.nombreComercio || 'el comercio';
@@ -154,17 +167,4 @@ function buildContactMessage({ motivo, cobertura, lugar }, nombreEntidad) {
       lugar: lugar || null,
     },
   };
-}
-
-// ────────────────────────────────────────────────────────────
-// UTILS
-// ────────────────────────────────────────────────────────────
-
-function resolveWaNumber(raw) {
-  if (!raw) return null;
-  let n = String(raw).replace(/[\s\-\(\)\+]/g, '');
-  if (n.startsWith('549')) n = n.slice(3);
-  else if (n.startsWith('54')) n = n.slice(2);
-  if (n.startsWith('9') && n.length >= 10) n = n.slice(1);
-  return n || null;
 }
