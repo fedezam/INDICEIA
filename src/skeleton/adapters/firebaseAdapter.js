@@ -69,6 +69,10 @@ export function createFirebaseAdapter(options = {}) {
           const isEditMode =
             new URLSearchParams(window.location.search).get('edit') === 'true';
 
+          const comercioDataNormalizada = baseContext.comercioData
+            ? normalizeComercioData(baseContext.comercioData)
+            : null;
+
           const context = {
             ...baseContext,
             // 🔧 Normalización central — SOLO si hay comercio real.
@@ -77,9 +81,8 @@ export function createFirebaseAdapter(options = {}) {
             // llega como null, y forzarle un objeto plan fantasma no
             // tiene sentido semántico y además rompía el flujo
             // (Cannot read properties of null (reading 'plan')).
-            comercioData: baseContext.comercioData
-              ? normalizeComercioData(baseContext.comercioData)
-              : null,
+            comercioData: comercioDataNormalizada,
+            entidadData:  comercioDataNormalizada,   // nombre nuevo, misma referencia
             isEditMode,
             currentComercioId: baseContext.comercioId,
             // 🔥 Persistencia integrada
