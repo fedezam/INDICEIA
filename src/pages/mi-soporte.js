@@ -11,6 +11,7 @@ import { createOnboardingButton }  from '/src/skeleton/components/onboarding-but
 import { showToast }               from '/src/skeleton/components/toast/index.js';
 import { db }                      from '/src/services/firebase/firebase.js';
 import { createInitialPlan } from '/src/shared/createInitialPlan.js';
+import { resolveEntidadObjetivo } from '/src/shared/entidadObjetivo.js';
 import {
   doc, setDoc, updateDoc,
   collection, getDoc, Timestamp
@@ -24,14 +25,18 @@ const page = {
     nombre: '', descripcion: '', whatsapp: '', email: '', slug: null,
   },
   _originalSnapshot: null, _ctx: null, _isEditMode: false,
-  _isNuevo: false, _slugExiste: false, _comercioData: {},
+  _isNuevo: false, _slugExiste: false, _comercioData: {}, _entidadId: null,
   _refs: { fields: {}, slugInput: null, slugStatus: null, slugValidationTimer: null },
 
   async load(ctx) {
     this._ctx = ctx;
     this._isEditMode = ctx.isEditMode === true;
-    this._comercioData = ctx.comercioData || {};
-    this._isNuevo = !this._comercioData.nombre;
+    // ⟦ENTIDAD⟧ Qué entidad edita ESTA página (tipo 'soporte'). Ver entidadObjetivo.js.
+    const objetivo = resolveEntidadObjetivo(ctx, 'soporte');
+    if (objetivo.modo === 'redirigir') window.location.replace('/dashboard.html');
+    this._comercioData = objetivo.entidad;
+    this._entidadId = objetivo.entidadId;
+    this._isNuevo = objetivo.modo !== 'editar';
     this._slugExiste = !!this._comercioData.landing?.slug;
 
     const c = this._comercioData;
@@ -306,7 +311,8 @@ const page = {
           (this._slugExiste || !!this._data.slug)
         );
       },
-      onSave: async ({ uid, comercioId }) => {
+      onSave: async ({ uid }) => {
+        const entidadId = page._entidadId;
         const d = page._data;
         const updates = {
           nombre:      d.nombre,
@@ -331,8 +337,8 @@ const page = {
         }
 
         if (page._isNuevo) {
-          const comercioRef = comercioId
-            ? doc(db, 'entidades', comercioId)
+          const comercioRef = entidadId
+            ? doc(db, 'entidades', entidadId)
             : doc(collection(db, 'entidades'));
           const nuevoComercioId = comercioRef.id;
           await setDoc(comercioRef, {
@@ -341,7 +347,7 @@ const page = {
             fechaCreacion:     new Date(),
             fechaActualizacion: new Date(),
             onboardingSteps:   { 'mi-soporte': true },
-          });
+          }, { merge: true });
 
           await createInitialPlan(nuevoComercioId);
 
@@ -351,15 +357,15 @@ const page = {
             createdAt: new Date(), updatedAt: new Date(),
           });
 
-          await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevoComercioId });
+          await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevoComercioId, entityType: 'soporte' });
 
         } else {
           updates['onboardingSteps.mi-soporte'] = true;
           updates.fechaActualizacion = new Date();
-          await updateDoc(doc(db, 'entidades', comercioId), updates);
+          await updateDoc(doc(db, 'entidades', entidadId), updates);
           if (!page._slugExiste) {
             await setDoc(doc(db, 'landings', d.slug), {
-              slug: d.slug, comercioId,
+              slug: d.slug, comercioId: entidadId,
               nombre: updates.nombre, activo: true,
               createdAt: new Date(), updatedAt: new Date(),
             });
