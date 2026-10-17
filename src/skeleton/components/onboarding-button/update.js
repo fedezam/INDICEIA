@@ -109,7 +109,8 @@ export function attachBehavior(button, config) {
         return;
       }
 
-      const { persistence, user, comercioId, isEditMode } = ctx;
+      const { persistence, user, isEditMode } = ctx;
+      const entidadId = ctx.entidadId ?? ctx.comercioId ?? null;
 
       let saveSuccess = false;
       let stepAlreadyMarked = false;
@@ -119,7 +120,7 @@ export function attachBehavior(button, config) {
         console.log('[onboarding-button] Modo CUSTOM');
 
         const data = typeof getData === 'function' ? getData() : null;
-        const context = { uid: user.uid, comercioId, isEditMode, data, stepName, persistence };
+        const context = { uid: user.uid, entidadId, comercioId: entidadId, isEditMode, data, stepName, persistence };
 
         const result = await onSave(context);
 
