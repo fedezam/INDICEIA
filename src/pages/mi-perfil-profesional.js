@@ -12,6 +12,7 @@ import { db }                     from '/src/services/firebase/firebase.js';
 import { doc, updateDoc, collection, setDoc, getDoc } from 'firebase/firestore';
 import { createInitialPlan } from '/src/shared/createInitialPlan.js';
 import { resolveEmbajadorId } from '/src/shared/resolveEmbajadorId.js';
+import { resolveEntidadObjetivo } from '/src/shared/entidadObjetivo.js';
 import './mi-perfil-profesional.css';
 
 // ============================================================
@@ -50,6 +51,8 @@ const page = {
   _isEditMode:          false,
   _isNuevo:             false,
   _comercioData:        {},
+  _entidadId:           null,
+  _esAdicional:         false,
   _slugExiste:          false,
   _refs:                { fields: {}, rubroSelector: null, slugInput: null, slugStatus: null, slugValidationTimer: null },
 
@@ -59,8 +62,13 @@ const page = {
   async load(ctx) {
     this._ctx          = ctx;
     this._isEditMode   = ctx.isEditMode === true;
-    this._comercioData = ctx.comercioData || {};
-    this._isNuevo      = !this._comercioData.nombre;
+    // ⟦ENTIDAD⟧ Qué entidad edita ESTA página (tipo 'profesional'). Ver entidadObjetivo.js.
+    const objetivo     = resolveEntidadObjetivo(ctx, 'profesional');
+    if (objetivo.modo === 'redirigir') window.location.replace('/dashboard.html');
+    this._comercioData = objetivo.entidad;
+    this._entidadId    = objetivo.entidadId;
+    this._esAdicional  = objetivo.adicional === true;
+    this._isNuevo      = objetivo.modo !== 'editar';
     this._slugExiste   = !!this._comercioData.landing?.slug;
 
     const c = this._comercioData;
@@ -493,7 +501,8 @@ const page = {
           : 'Volver al dashboard';
       },
 
-      async onSave({ uid, comercioId }) {
+      async onSave({ uid }) {
+        const entidadId = page._entidadId;
         const d   = page._data;
         const now = new Date();
 
@@ -533,9 +542,9 @@ const page = {
           };
         }
 
-        if (page._isNuevo || !comercioId) {
-          const comercioRef     = comercioId
-            ? doc(db, 'entidades', comercioId)
+        if (page._isNuevo || !entidadId) {
+          const comercioRef     = entidadId
+            ? doc(db, 'entidades', entidadId)
             : doc(collection(db, 'entidades'));
           const nuevoComercioId = comercioRef.id;
 
@@ -545,14 +554,17 @@ const page = {
           const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
           const referredBy  = usuarioSnap.data()?.referredBy || null;
           const embajadorId = await resolveEmbajadorId(referredBy);
+          const capacidadesNuevas = page._esAdicional ? [] : (usuarioSnap.data()?.capacidades || []);
 
           // Doc base — SIN plan. El plan lo crea createInitialPlan()
           // más abajo, que llama a /api/generate-and-upload-entity con
           // el flag createInitialPlan:true (mismo shape canónico
           // snake_case en Firestore, sin la mezcla camelCase de antes).
+          const { 'onboardingSteps.mi-perfil-profesional': _paso, ...updatesNuevo } = updates;
           await setDoc(comercioRef, {
-            ...updates,
+            ...updatesNuevo,   // sin la clave con punto: en setDoc crearía un campo literal
             duenoId:        uid,
+            capacidades:    capacidadesNuevas,
             ...(embajadorId && { embajadorId }),
             fechaCreacion:  now,
             onboardingSteps: { 'mi-perfil-profesional': true },
@@ -571,6 +583,8 @@ const page = {
 
           await updateDoc(doc(db, 'usuarios', uid), {
             comercioId: nuevoComercioId,
+            entityType: 'profesional',
+            capacidades: capacidadesNuevas,
           });
 
           // ── Referral event ──
@@ -587,11 +601,11 @@ const page = {
           // ── Fin referral event ──
 
         } else {
-          await updateDoc(doc(db, 'entidades', comercioId), updates);
+          await updateDoc(doc(db, 'entidades', entidadId), updates);
           if (!page._slugExiste) {
             await setDoc(doc(db, 'landings', d.slug), {
               slug:       d.slug,
-              comercioId,
+              comercioId: entidadId,
               nombre:     d.nombre.trim(),
               activo:     true,
               createdAt:  now,
