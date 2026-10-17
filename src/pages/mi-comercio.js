@@ -26,6 +26,7 @@ import { fillProvinciaSelector } from '/src/shared/provincias.js';
 import { ubicacionFromForm } from '/src/shared/entity-context.js';
 import { createInitialPlan } from '/src/shared/createInitialPlan.js';
 import { resolveEmbajadorId } from '/src/shared/resolveEmbajadorId.js';
+import { resolveEntidadObjetivo } from '/src/shared/entidadObjetivo.js';
 import './mi-comercio.css';
 
 // ==================== DATOS ESTÁTICOS ====================
@@ -82,14 +83,19 @@ runLifecycle({
 // ============================================================
 async function load(ctx) {
   const isEditMode             = window.isEditMode === true;
-  const comercioData           = ctx.comercioData || {};
-  const isNewComercio          = !comercioData.nombre;
+  // ⟦ENTIDAD⟧ Qué entidad edita ESTA página (tipo 'comercio'). Ver entidadObjetivo.js.
+  const objetivo               = resolveEntidadObjetivo(ctx, 'comercio', { aceptaSinTipo: true });
+  if (objetivo.modo === 'redirigir') window.location.replace('/dashboard.html');
+  const comercioData           = objetivo.entidad;
+  const entidadId              = objetivo.entidadId;
+  const esAdicional            = objetivo.adicional === true;
+  const isNewComercio          = objetivo.modo !== 'editar';
   const comercioSlug           = comercioData.landing?.slug || null;
   const slugDisponible         = !!comercioSlug;
   const selectedPaymentMethods = comercioData.paymentMethods || [];
   const tieneLocalFisico       = comercioData.tieneLocalFisico !== false;
 
-  return { isEditMode, isNewComercio, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
+  return { isEditMode, isNewComercio, entidadId, esAdicional, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
 }
 
 // ============================================================
@@ -525,8 +531,9 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         Object.assign(state.comercioData, current);
       }
     } : undefined,
-    onSave: async ({ uid, comercioId: ctxComercioId }) => {
+    onSave: async ({ uid }) => {
       const updates            = getCurrentData(refs, uiState);
+      updates.entityType       = 'comercio';   // antes solo lo escribía tipo-entidad
       const originalHasLanding = state.comercioData.landing?.slug;
 
       if (!originalHasLanding) {
@@ -544,9 +551,9 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
       }
 
       if (state.isNewComercio) {
-        const comercioRef = ctxComercioId
-          ? doc(db, 'entidades', ctxComercioId)
-          : doc(collection(db, 'entidades'));
+        const comercioRef = state.entidadId
+          ? doc(db, 'entidades', state.entidadId)      // borrador existente sin nombre
+          : doc(collection(db, 'entidades'));          // entidad nueva
         const comercioId = comercioRef.id;
 
         // ── Resolver referral + embajadorId ANTES de crear el doc,
@@ -556,10 +563,14 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
         const referredBy  = usuarioSnap.data()?.referredBy || null;
         const embajadorId = await resolveEmbajadorId(referredBy);
+        // Capacidades propias de la entidad: la primera hereda las que eligió el usuario en
+        // tipo-entidad; una adicional arranca vacía.
+        const capacidadesNuevas = state.esAdicional ? [] : (usuarioSnap.data()?.capacidades || []);
 
         await setDoc(comercioRef, {
           ...updates,
           duenoId:            uid,
+          capacidades:        capacidadesNuevas,
           ...(embajadorId && { embajadorId }),
           fechaCreacion:      new Date(),
           fechaActualizacion: new Date(),
@@ -577,7 +588,9 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         });
 
         await updateDoc(doc(db, 'usuarios', uid), {
-          comercioId,
+          comercioId,                       // entidad activa del usuario
+          entityType: 'comercio',           // tipo de la entidad activa
+          capacidades: capacidadesNuevas,
           'onboardingSteps.mi-comercio': true
         });
 
@@ -597,14 +610,14 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
 
         return { success: true, stepMarked: true };
       } else {
-        await updateDoc(doc(db, 'entidades', ctxComercioId), {
+        await updateDoc(doc(db, 'entidades', state.entidadId), {
           ...updates,
           'onboardingSteps.mi-comercio': true,
           fechaActualizacion: new Date()
         });
         if (!originalHasLanding) {
           await setDoc(doc(db, 'landings', uiState.comercioSlug), {
-            slug: uiState.comercioSlug, comercioId: ctxComercioId,
+            slug: uiState.comercioSlug, comercioId: state.entidadId,
             nombre: updates.nombre, activo: true,
             createdAt: new Date(), updatedAt: new Date()
           });
