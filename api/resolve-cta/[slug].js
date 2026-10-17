@@ -21,9 +21,9 @@ export default async function handler(req, res) {
     const landingSnap = await db.collection('landings').doc(slug).get();
     if (!landingSnap.exists) return res.status(404).json({ ok: false, error: 'landing no encontrada' });
 
-    const { comercioId } = landingSnap.data();
+    const { comercioId: entidadId } = landingSnap.data();
 
-    const comercioRef  = db.collection('entidades').doc(comercioId);
+    const comercioRef  = db.collection('entidades').doc(entidadId);
     const comercioSnap = await comercioRef.get();
     if (!comercioSnap.exists) return res.status(404).json({ ok: false, error: 'comercio no encontrado' });
 
@@ -36,7 +36,7 @@ export default async function handler(req, res) {
       entityType: data.entityType || 'comercio',
       ubicacion:  data.ubicacion  || {},
     };
-    const entityUrl = `https://indiceia.dev/api/entity/${comercioId}`;
+    const entityUrl = `https://indiceia.dev/api/entity/${entidadId}`;
     const miniPrompt = buildPrompt(context, entityUrl);
 
     // ── goods ──
@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       ok:              true,
       slug,
-      comercioId,
+      comercioId: entidadId,
       nombre:          data.nombre || data.nombreComercio,
       descripcion:     data.descripcion     || '',
       entityPublicUrl: data.entityPublicUrl,

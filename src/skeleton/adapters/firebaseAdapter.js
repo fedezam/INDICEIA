@@ -4,7 +4,7 @@
 // ============================================
 import { resolveFirebaseContext } from '../../services/firebase/context.js';
 import {
-  updateComercioData,
+  updateEntidadData,
   updateUserData,
   markOnboardingStep,
   deleteComercioFields
@@ -33,7 +33,7 @@ import {
  * llamarla en ese caso. Se deja igual el guard con `?.` como
  * resguardo defensivo por si algún otro caller la invoca con null.
  */
-function normalizeComercioData(raw = {}) {
+function normalizeEntidadData(raw = {}) {
   const data = { ...(raw || {}) };
 
   // planId: string simple del plan, para consumidores legacy
@@ -69,8 +69,8 @@ export function createFirebaseAdapter(options = {}) {
           const isEditMode =
             new URLSearchParams(window.location.search).get('edit') === 'true';
 
-          const comercioDataNormalizada = baseContext.comercioData
-            ? normalizeComercioData(baseContext.comercioData)
+          const entidadDataNormalizada = baseContext.comercioData
+            ? normalizeEntidadData(baseContext.comercioData)
             : null;
 
           const context = {
@@ -81,15 +81,15 @@ export function createFirebaseAdapter(options = {}) {
             // llega como null, y forzarle un objeto plan fantasma no
             // tiene sentido semántico y además rompía el flujo
             // (Cannot read properties of null (reading 'plan')).
-            comercioData: comercioDataNormalizada,
-            entidadData:  comercioDataNormalizada,   // nombre nuevo, misma referencia
+            comercioData: entidadDataNormalizada,
+            entidadData:  entidadDataNormalizada,   // nombre nuevo, misma referencia
             isEditMode,
             currentComercioId: baseContext.comercioId,
             // 🔥 Persistencia integrada
             persistence: {
               // Para páginas de COMERCIO (horarios, servicios, productos, ia-config...)
               async updateData(data) {
-                await updateComercioData(data);
+                await updateEntidadData(data);
               },
               // Para páginas de USUARIO (usuario, modelo-negocio)
               async updateUserData(data) {

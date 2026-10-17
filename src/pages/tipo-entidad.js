@@ -292,7 +292,7 @@ function render(ctx, state) {
 
     dirtyController: state.isEditMode ? dirtyController : undefined,
 
-    onSave: async ({ uid, comercioId }) => {
+    onSave: async ({ uid, comercioId: entidadId }) => {
       const cfg = ENTITY_CONFIG[selectedOffer];
       if (!cfg) throw new Error(`Tipo de oferta no reconocido: ${selectedOffer}`);
 
@@ -314,7 +314,7 @@ function render(ctx, state) {
       const batch = writeBatch(db);
       batch.update(doc(db, 'usuarios', uid), updates);
 
-      if (comercioId) {
+      if (entidadId) {
         const entidadUpdates = {
           entityType,
           capacidades,
@@ -322,7 +322,7 @@ function render(ctx, state) {
         if (cfg.needsModalidad) {
           entidadUpdates.modalidad_trabajo = updates.modalidad_trabajo;
         }
-        batch.update(doc(db, 'entidades', comercioId), entidadUpdates);
+        batch.update(doc(db, 'entidades', entidadId), entidadUpdates);
       }
 
       await batch.commit();

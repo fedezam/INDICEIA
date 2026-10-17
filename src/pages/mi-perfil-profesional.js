@@ -546,7 +546,7 @@ const page = {
           const comercioRef     = entidadId
             ? doc(db, 'entidades', entidadId)
             : doc(collection(db, 'entidades'));
-          const nuevoComercioId = comercioRef.id;
+          const nuevaEntidadId = comercioRef.id;
 
           // ── Resolver referral + embajadorId ANTES de crear el doc.
           // Ver resolveEmbajadorId.js (09/09/2026, mismo patrón que
@@ -570,11 +570,11 @@ const page = {
             onboardingSteps: { 'mi-perfil-profesional': true },
           }, { merge: true });
 
-          await createInitialPlan(nuevoComercioId);
+          await createInitialPlan(nuevaEntidadId);
 
           await setDoc(doc(db, 'landings', d.slug), {
             slug:       d.slug,
-            comercioId: nuevoComercioId,
+            comercioId: nuevaEntidadId,
             nombre:     d.nombre.trim(),
             activo:     true,
             createdAt:  now,
@@ -582,7 +582,7 @@ const page = {
           });
 
           await updateDoc(doc(db, 'usuarios', uid), {
-            comercioId: nuevoComercioId,
+            comercioId: nuevaEntidadId,
             entityType: 'profesional',
             capacidades: capacidadesNuevas,
           });
@@ -593,7 +593,7 @@ const page = {
               referrerCode:    referredBy,
               referrerType:    'usuario',
               createdUserId:   uid,
-              createdEntityId: nuevoComercioId,
+              createdEntityId: nuevaEntidadId,
               valid:           false,
               timestamp:       now,
             });

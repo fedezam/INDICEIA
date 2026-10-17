@@ -698,13 +698,13 @@ const page = {
         return `Guardar${n > 1 ? ` (${n} lugares)` : ''} y continuar`;
       },
       dirtyController,
-      onSave: async ({ uid, comercioId }) => {
-        if (!comercioId) throw new Error('No hay comercioId para guardar lugares');
+      onSave: async ({ uid, comercioId: entidadId }) => {
+        if (!entidadId) throw new Error('No hay comercioId para guardar lugares');
 
         const payload = this._lugares.map(({ _tempId, _editingRef, ...rest }) => rest);
 
         const batch = writeBatch(db);
-        const ref = doc(db, 'entidades', comercioId);
+        const ref = doc(db, 'entidades', entidadId);
         batch.update(ref, {
           lugares: payload,
           'onboardingSteps.lugares': true,

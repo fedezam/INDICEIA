@@ -12,7 +12,7 @@ export async function checkExpiredPlans() {
   const snapshot = await db.collection("entidades").get();
 
   for (const docSnap of snapshot.docs) {
-    const comercioId = docSnap.id;
+    const entidadId = docSnap.id;
     const data = docSnap.data();
     const plan = data.plan;
 
@@ -21,10 +21,10 @@ export async function checkExpiredPlans() {
     const msRestantes = plan.expires_at.toMillis() - now.toMillis();
 
     if (plan.active && msRestantes <= 0) {
-      console.log(`⏰ Plan vencido: ${comercioId}`);
+      console.log(`⏰ Plan vencido: ${entidadId}`);
 
       await applyPlanStateChange({
-        comercioId,
+        comercioId: entidadId,
         type:       plan.type,
         active:     false,
         trial:      plan.trial ?? false,
@@ -35,10 +35,10 @@ export async function checkExpiredPlans() {
       });
 
       await crearAlerta({
-        id:      `venc_${comercioId}_${hoyISO}`,
+        id:      `venc_${entidadId}_${hoyISO}`,
         scope:   'individual',
         tipo:    'vencimiento',
-        comercioId,
+        comercioId: entidadId,
         titulo:  plan.trial ? 'Tu trial venció' : 'Tu plan venció',
         mensaje: plan.trial
           ? 'Tu período de prueba terminó. Reactivalo para recuperar la capacidad plena de respuestas de tu IA.'
@@ -51,14 +51,14 @@ export async function checkExpiredPlans() {
 
     if (plan.active && msRestantes > 0) {
       const diasRestantes = Math.ceil(msRestantes / MS_POR_DIA);
-      console.log(`📅 ${comercioId}: ${diasRestantes} días restantes`);
+      console.log(`📅 ${entidadId}: ${diasRestantes} días restantes`);
 
       if (diasRestantes <= DIAS_AVISO_PREVIO) {
         await crearAlerta({
-          id:      `venc_proximo_${comercioId}_${hoyISO}`,
+          id:      `venc_proximo_${entidadId}_${hoyISO}`,
           scope:   'individual',
           tipo:    'vencimiento_proximo',
-          comercioId,
+          comercioId: entidadId,
           titulo:  plan.trial ? '⚠️ Tu trial está por vencer' : '⚠️ Tu plan está por vencer',
           mensaje: `Faltan ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} para que ${plan.trial ? 'tu trial' : 'tu plan'} venza.`,
           createdBy: 'cron',

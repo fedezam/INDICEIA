@@ -29,14 +29,14 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-async function resolveReferralCode(comercioId, duenoId) {
+async function resolveReferralCode(entidadId, duenoId) {
   if (duenoId) {
     const ownerSnap = await db.collection('usuarios').doc(duenoId).get();
     if (ownerSnap.exists && ownerSnap.data()?.referralId) {
       return ownerSnap.data().referralId;
     }
   }
-  return comercioId.substring(0, 8).toUpperCase();
+  return entidadId.substring(0, 8).toUpperCase();
 }
 
 // ─── Merge defensivo ──────────────────────────────────────────
@@ -109,19 +109,19 @@ async function buildProfesionalEntity(comercioRef, data, context, referralCode, 
 // el mismo `context` sin correr los builders de goods/visual/mind,
 // que son los costosos y los que NO queremos disparar al tocar solo
 // SEO.
-async function loadBaseContext(comercioId) {
-  if (!comercioId) throw new Error('Falta comercioId');
+async function loadBaseContext(entidadId) {
+  if (!entidadId) throw new Error('Falta comercioId');
 
-  const comercioRef = db.collection('entidades').doc(comercioId);
+  const comercioRef = db.collection('entidades').doc(entidadId);
   const snap        = await comercioRef.get();
-  if (!snap.exists) throw new Error(`Entidad ${comercioId} no encontrada`);
+  if (!snap.exists) throw new Error(`Entidad ${entidadId} no encontrada`);
 
   const data       = normalizeEntityData(snap.data());
   const entityType = data.entityType || 'comercio';
 
   const slug         = data.landing?.slug || null;
-  const referralCode = await resolveReferralCode(comercioId, data.duenoId);
-  const context       = buildContext(data, comercioId, referralCode);
+  const referralCode = await resolveReferralCode(entidadId, data.duenoId);
+  const context       = buildContext(data, entidadId, referralCode);
 
   const domainMeta = resolveDomain(context, data);
   context.domain_tag = domainMeta.domain_tag;
@@ -131,9 +131,9 @@ async function loadBaseContext(comercioId) {
 
 // ─── EXPORT PRINCIPAL ─────────────────────────────────────────
 
-export async function buildEntity({ comercioId }) {
+export async function buildEntity({ comercioId: entidadId }) {
   const { comercioRef, data, entityType, slug, context, domainMeta, referralCode } =
-    await loadBaseContext(comercioId);
+    await loadBaseContext(entidadId);
 
   // ── Builder según entityType ──────────────────────────────
   let built;
@@ -159,7 +159,7 @@ export async function buildEntity({ comercioId }) {
 
   // ── SEO ───────────────────────────────────────────────────
   const savedSeo = { seoHash: data.seoHash || null, seoHtmlUrl: data.seoHtmlUrl || null };
-  await buildSeo(context, comercioId, savedSeo, slug);
+  await buildSeo(context, entidadId, savedSeo, slug);
 
   // ── ENRIQUECER CONTEXTO PARA ENTITY.JSON (LLM) ────────────
   const geoCtx = buildEntityContext(data);
@@ -177,7 +177,7 @@ export async function buildEntity({ comercioId }) {
     meta: {
       version:           '1.0.0',
       tipo:              'entidad_comercial_indiceIA',
-      comercioId,
+      comercioId: entidadId,
       entityType,
       generatedAt:       new Date().toISOString(),
       mind_id,
@@ -220,8 +220,8 @@ export async function buildEntity({ comercioId }) {
 // necesitar algo de enrichedContext (geoCtx.rubro, por ejemplo), hay
 // que agregarlo acá también o esta función quedará desincronizada
 // silenciosamente respecto de buildEntity().
-export async function regenerateSeoOnly({ comercioId }) {
-  const { data, slug, context } = await loadBaseContext(comercioId);
+export async function regenerateSeoOnly({ comercioId: entidadId }) {
+  const { data, slug, context } = await loadBaseContext(entidadId);
 
   delete context.domain_tag;
   delete context.contacto;
@@ -235,12 +235,12 @@ export async function regenerateSeoOnly({ comercioId }) {
   // seo.builder.js, iteración sobre el HTML/JSON-LD generado, etc.). Sin
   // esto, buildSeo hace skip por el guard de hash y el botón no tiene
   // ningún efecto visible pese a responder 200 OK.
-  const seoResult = await buildSeo(context, comercioId, savedSeo, slug, { forceRegenerate: true });
+  const seoResult = await buildSeo(context, entidadId, savedSeo, slug, { forceRegenerate: true });
 
   // NOTA: no pisamos seoGeneratedAt acá — buildSeo ya lo persiste en
   // Firestore cuando efectivamente sube un HTML nuevo (skipped: false).
   // Si en algún escenario diera skipped: true (ej. sin slug), no hay
   // nada nuevo que reportar como "generado".
 
-  return { comercioId, seo: seoResult ?? null };
+  return { comercioId: entidadId, seo: seoResult ?? null };
 }

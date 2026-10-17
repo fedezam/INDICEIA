@@ -3,14 +3,14 @@
 // shared/updateCommerceJSON.js
 // Función reutilizable para todas las páginas usando solo Vercel Blob
 
-export async function updateCommerceJSON(comercioId, userId) {
+export async function updateCommerceJSON(entidadId, userId) {
   try {
-    console.log('🔄 Regenerando JSON del comercio:', comercioId);
+    console.log('🔄 Regenerando JSON del comercio:', entidadId);
     
     const response = await fetch('/api/export-json', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ comercioId, userId })
+      body: JSON.stringify({ comercioId: entidadId, userId })
     });
 
     const text = await response.text();
@@ -31,13 +31,13 @@ export async function updateCommerceJSON(comercioId, userId) {
 
     console.log('✅ JSON actualizado correctamente');
     console.log('🔗 Blob URL:', jsonUrl);
-    console.log('📍 Endpoint GET:', `/api/comercio/${comercioId}`);
+    console.log('📍 Endpoint GET:', `/api/comercio/${entidadId}`);
 
     return {
       success: true,
       jsonUrl,          // URL del blob directo
       blobUrl: jsonUrl, // alias para claridad
-      getEndpoint: `/api/comercio/${comercioId}`,
+      getEndpoint: `/api/comercio/${entidadId}`,
       message: 'JSON actualizado'
     };
 
@@ -48,9 +48,9 @@ export async function updateCommerceJSON(comercioId, userId) {
 }
 
 // Función opcional para obtener el JSON desde el endpoint GET
-export async function getCommerceJSON(comercioId) {
+export async function getCommerceJSON(entidadId) {
   try {
-    const response = await fetch(`/api/comercio/${comercioId}`);
+    const response = await fetch(`/api/comercio/${entidadId}`);
     if (!response.ok) throw new Error('Error obteniendo JSON');
     return await response.json();
   } catch (error) {

@@ -77,8 +77,8 @@ const page = {
         return 'Volver al dashboard';
       },
       validate: () => this._data.manual.trim().length > 0,
-      onSave: async ({ comercioId }) => {
-        await updateDoc(doc(db, 'entidades', comercioId), {
+      onSave: async ({ comercioId: entidadId }) => {
+        await updateDoc(doc(db, 'entidades', entidadId), {
           manual:                      page._data.manual,
           'onboardingSteps.documentos': true,
           fechaActualizacion:          new Date(),

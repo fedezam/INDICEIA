@@ -340,7 +340,7 @@ const page = {
           const comercioRef = entidadId
             ? doc(db, 'entidades', entidadId)
             : doc(collection(db, 'entidades'));
-          const nuevoComercioId = comercioRef.id;
+          const nuevaEntidadId = comercioRef.id;
           await setDoc(comercioRef, {
             ...updates,
             duenoId:           uid,
@@ -349,15 +349,15 @@ const page = {
             onboardingSteps:   { 'mi-soporte': true },
           }, { merge: true });
 
-          await createInitialPlan(nuevoComercioId);
+          await createInitialPlan(nuevaEntidadId);
 
           await setDoc(doc(db, 'landings', d.slug), {
-            slug: d.slug, comercioId: nuevoComercioId,
+            slug: d.slug, comercioId: nuevaEntidadId,
             nombre: updates.nombre, activo: true,
             createdAt: new Date(), updatedAt: new Date(),
           });
 
-          await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevoComercioId, entityType: 'soporte' });
+          await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevaEntidadId, entityType: 'soporte' });
 
         } else {
           updates['onboardingSteps.mi-soporte'] = true;

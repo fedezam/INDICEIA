@@ -9,11 +9,11 @@
 // ya se llama desde estos mismos flujos de onboarding, con el flag
 // createInitialPlan:true.
 
-export async function createInitialPlan(comercioId) {
+export async function createInitialPlan(entidadId) {
   const response = await fetch('/api/generate-and-upload-entity', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ comercioId, createInitialPlan: true }),
+    body: JSON.stringify({ comercioId: entidadId, createInitialPlan: true }),
   });
 
   if (!response.ok) {

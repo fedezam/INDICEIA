@@ -3,8 +3,8 @@
 import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '@/firebase'
 
-export async function loadCognition(comercioId, container) {
-  const ref = doc(db, 'entidades', comercioId, 'config', 'cognition')
+export async function loadCognition(entidadId, container) {
+  const ref = doc(db, 'entidades', entidadId, 'config', 'cognition')
   const snap = await getDoc(ref)
 
   if (!snap.exists()) return
@@ -19,7 +19,7 @@ export async function loadCognition(comercioId, container) {
   })
 }
 
-export async function saveCognition(comercioId, container) {
+export async function saveCognition(entidadId, container) {
   const checkboxes = container.querySelectorAll(
     'input[type="checkbox"][data-key]'
   )
@@ -32,7 +32,7 @@ export async function saveCognition(comercioId, container) {
     }
   })
 
-  const ref = doc(db, 'entidades', comercioId, 'config', 'cognition')
+  const ref = doc(db, 'entidades', entidadId, 'config', 'cognition')
 
   if (Object.keys(cognitive_permissions).length === 0) {
     await deleteDoc(ref)

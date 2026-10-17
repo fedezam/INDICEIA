@@ -95,11 +95,11 @@ function _renderSaveButton(uiState, originalSnapshot) {
       hasUnsavedChanges: () => hasChanges() && uiState.consultas.length > 0,
       markSaved: () => {}
     },
-    onSave: async ({ uid, comercioId }) => {
-      if (!comercioId) throw new Error('No hay comercioId');
+    onSave: async ({ uid, comercioId: entidadId }) => {
+      if (!entidadId) throw new Error('No hay comercioId');
 
       const batch = writeBatch(db);
-      const ref = doc(db, 'entidades', comercioId);
+      const ref = doc(db, 'entidades', entidadId);
 
       batch.update(ref, {
         consultas: uiState.consultas,

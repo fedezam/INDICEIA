@@ -4,8 +4,8 @@ import { signOut } from 'firebase/auth';
 import { resolvePlanStatus, getDiasHastaVencimiento } from '../../../../lib/plan/resolvePlanStatus.js';
 import { contarAlertasNoLeidas } from '/src/services/firebase/alerts.js';
 
-export function updateHeader({ userData, comercioData, uid, comercioId, isAdminViewing = false }) {
-  console.log('🧩 updateHeader()', { userData, comercioData });
+export function updateHeader({ userData, comercioData: entidadData, uid, comercioId: entidadId, isAdminViewing = false }) {
+  console.log('🧩 updateHeader()', { userData, comercioData: entidadData });
 
   // Nombre usuario (abajo izquierda)
   const userEl = document.getElementById('headerUserName');
@@ -16,19 +16,19 @@ export function updateHeader({ userData, comercioData, uid, comercioId, isAdminV
 
   // Nombre comercio (arriba derecha)
   const commerceEl = document.getElementById('headerCommerceName');
-  if (commerceEl && comercioData) {
+  if (commerceEl && entidadData) {
     // 09/09/2026: prefijo visual cuando el admin está viendo una
     // entidad ajena — sin esto, el nombre de la entidad queda al
     // lado del nombre del admin sin nada que aclare que no son la
     // misma cuenta (ver captura del 09/09/2026).
-    const nombre = comercioData.nombre || comercioData.nombreComercio || 'Mi Comercio';
+    const nombre = entidadData.nombre || entidadData.nombreComercio || 'Mi Comercio';
     commerceEl.textContent = isAdminViewing ? `🛡 ${nombre}` : nombre;
   }
 
   // Badge plan (abajo derecha)
   const planEl = document.getElementById('headerPlan');
-  if (planEl && comercioData?.plan) {
-    const planData = comercioData.plan;
+  if (planEl && entidadData?.plan) {
+    const planData = entidadData.plan;
     const status   = resolvePlanStatus(planData);
     const dias     = getDiasHastaVencimiento(planData);
 
@@ -52,15 +52,15 @@ export function updateHeader({ userData, comercioData, uid, comercioId, isAdminV
   const alertasBtn = document.getElementById('headerAlertasBtn');
   if (alertasBtn) {
     alertasBtn.onclick = () => {
-      window.location.href = isAdminViewing && comercioId
-        ? `/alertas.html?id=${comercioId}`
+      window.location.href = isAdminViewing && entidadId
+        ? `/alertas.html?id=${entidadId}`
         : '/alertas.html';
     };
   }
 
   const badgeEl = document.getElementById('headerAlertasBadge');
-  if (badgeEl && uid && comercioId) {
-    contarAlertasNoLeidas(uid, comercioId)
+  if (badgeEl && uid && entidadId) {
+    contarAlertasNoLeidas(uid, entidadId)
       .then(count => {
         if (count > 0) {
           badgeEl.textContent = count > 9 ? '9+' : String(count);

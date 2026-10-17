@@ -86,16 +86,16 @@ async function load(ctx) {
   // ⟦ENTIDAD⟧ Qué entidad edita ESTA página (tipo 'comercio'). Ver entidadObjetivo.js.
   const objetivo               = resolveEntidadObjetivo(ctx, 'comercio', { aceptaSinTipo: true });
   if (objetivo.modo === 'redirigir') window.location.replace('/dashboard.html');
-  const comercioData           = objetivo.entidad;
+  const entidadData           = objetivo.entidad;
   const entidadId              = objetivo.entidadId;
   const esAdicional            = objetivo.adicional === true;
   const isNewComercio          = objetivo.modo !== 'editar';
-  const comercioSlug           = comercioData.landing?.slug || null;
+  const comercioSlug           = entidadData.landing?.slug || null;
   const slugDisponible         = !!comercioSlug;
-  const selectedPaymentMethods = comercioData.paymentMethods || [];
-  const tieneLocalFisico       = comercioData.tieneLocalFisico !== false;
+  const selectedPaymentMethods = entidadData.paymentMethods || [];
+  const tieneLocalFisico       = entidadData.tieneLocalFisico !== false;
 
-  return { isEditMode, isNewComercio, entidadId, esAdicional, comercioData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
+  return { isEditMode, isNewComercio, entidadId, esAdicional, comercioData: entidadData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
 }
 
 // ============================================================
@@ -554,7 +554,7 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         const comercioRef = state.entidadId
           ? doc(db, 'entidades', state.entidadId)      // borrador existente sin nombre
           : doc(collection(db, 'entidades'));          // entidad nueva
-        const comercioId = comercioRef.id;
+        const entidadId = comercioRef.id;
 
         // ── Resolver referral + embajadorId ANTES de crear el doc,
         // así entra en el mismo setDoc inicial en vez de necesitar un
@@ -579,16 +579,16 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
 
         const now       = Timestamp.now();
         const expiresAt = Timestamp.fromDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
-        await createInitialPlan(comercioId);
+        await createInitialPlan(entidadId);
 
         await setDoc(doc(db, 'landings', uiState.comercioSlug), {
-          slug: uiState.comercioSlug, comercioId,
+          slug: uiState.comercioSlug, comercioId: entidadId,
           nombre: updates.nombre, activo: true,
           createdAt: new Date(), updatedAt: new Date()
         });
 
         await updateDoc(doc(db, 'usuarios', uid), {
-          comercioId,                       // entidad activa del usuario
+          comercioId: entidadId,                       // entidad activa del usuario
           entityType: 'comercio',           // tipo de la entidad activa
           capacidades: capacidadesNuevas,
           'onboardingSteps.mi-comercio': true
@@ -600,7 +600,7 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
             referrerCode:    referredBy,
             referrerType:    'usuario',
             createdUserId:   uid,
-            createdEntityId: comercioId,
+            createdEntityId: entidadId,
             valid:           false,
             timestamp:       new Date()
           });

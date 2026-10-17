@@ -103,12 +103,12 @@ function _renderSaveButton(uiState, originalSnapshot) {
       if (!hasChanges()) return 'Volver al dashboard';
       return isValid() ? 'Guardar y continuar' : 'Seleccioná al menos una modalidad';
     },
-    onSave: async ({ uid, comercioId }) => {
-      if (!comercioId) throw new Error('No hay comercioId');
+    onSave: async ({ uid, comercioId: entidadId }) => {
+      if (!entidadId) throw new Error('No hay comercioId');
 
       // Guardado atómico con Batch (igual que lugares.js)
       const batch = writeBatch(db);
-      const ref = doc(db, 'entidades', comercioId);
+      const ref = doc(db, 'entidades', entidadId);
       
       batch.update(ref, {
         cobertura: uiState,

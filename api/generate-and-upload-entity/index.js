@@ -198,16 +198,16 @@ function checkAdminSecret(adminSecret) {
 
 // ── Regenera una entidad puntual (misma lógica que el flujo normal,
 //    extraída para reutilizar en regenerate_all) ──
-async function regenerateOne(comercioId) {
-  const comercioSnap = await db.collection('entidades').doc(comercioId).get();
+async function regenerateOne(entidadId) {
+  const comercioSnap = await db.collection('entidades').doc(entidadId).get();
   if (!comercioSnap.exists) {
-    throw new Error(`Comercio ${comercioId} no encontrado`);
+    throw new Error(`Comercio ${entidadId} no encontrado`);
   }
   const rawData = normalizeEntityData(comercioSnap.data());
-  const entity = await buildEntity({ comercioId });
+  const entity = await buildEntity({ comercioId: entidadId });
   const jsonString = JSON.stringify(entity, null, 2);
 
-  const blobPath = `entidades/${comercioId}/entity.json`;
+  const blobPath = `entidades/${entidadId}/entity.json`;
   const { url } = await put(blobPath, jsonString, {
     access: 'public',
     addRandomSuffix: false,
@@ -215,7 +215,7 @@ async function regenerateOne(comercioId) {
     token: process.env.BLOB_READ_WRITE_TOKEN,
   });
 
-  const indexResult = await buildIndex(rawData, comercioId, entity.goods, entity.services);
+  const indexResult = await buildIndex(rawData, entidadId, entity.goods, entity.services);
   if (indexResult?.url) {
     try {
       await enrichAndSaveCityIndex(
@@ -229,7 +229,7 @@ async function regenerateOne(comercioId) {
     }
   }
 
-  await db.collection('entidades').doc(comercioId).update({
+  await db.collection('entidades').doc(entidadId).update({
     entityPublicUrl: url,
     entityGeneratedAt: new Date().toISOString(),
   });
@@ -244,12 +244,12 @@ async function handleRegenerateAll(res) {
 
   const results = { total: ids.length, ok: [], failed: [] };
 
-  for (const comercioId of ids) {
+  for (const entidadId of ids) {
     try {
-      await regenerateOne(comercioId);
-      results.ok.push(comercioId);
+      await regenerateOne(entidadId);
+      results.ok.push(entidadId);
     } catch (err) {
-      results.failed.push({ comercioId, error: err.message });
+      results.failed.push({ comercioId: entidadId, error: err.message });
     }
   }
 
@@ -318,8 +318,8 @@ async function handleBackfillPlanShape(res, dryRun) {
 // panel no sacaba a la entidad de huelga). Esta acción empuja
 // expires_at a una fecha futura además de active:true, usando
 // applyPlanStateChange (shape canónico snake_case + mirror camelCase).
-async function handleReactivatePlan(res, comercioId, days) {
-  if (!comercioId || typeof comercioId !== 'string') {
+async function handleReactivatePlan(res, entidadId, days) {
+  if (!entidadId || typeof entidadId !== 'string') {
     return res.status(400).json({ error: 'comercioId requerido' });
   }
 
@@ -330,7 +330,7 @@ async function handleReactivatePlan(res, comercioId, days) {
   );
 
   await applyPlanStateChange({
-    comercioId,
+    comercioId: entidadId,
     type: 'trial',
     active: true,
     trial: true,
@@ -340,7 +340,7 @@ async function handleReactivatePlan(res, comercioId, days) {
     reason: 'reactivated_manually',
   });
 
-  return res.status(200).json({ ok: true, comercioId, expiresAt: expiresAt.toDate().toISOString() });
+  return res.status(200).json({ ok: true, comercioId: entidadId, expiresAt: expiresAt.toDate().toISOString() });
 }
 
 // ── Acción: extender plan de una entidad puntual (sumar N días) ──
@@ -348,8 +348,8 @@ async function handleReactivatePlan(res, comercioId, days) {
 // más margen. Si expires_at ya venció, la base para sumar es "ahora",
 // no la fecha vieja (si no, "extender 7 días" algo vencido hace 2 meses
 // seguiría dando vencido).
-async function handleExtendPlan(res, comercioId, days) {
-  if (!comercioId || typeof comercioId !== 'string') {
+async function handleExtendPlan(res, entidadId, days) {
+  if (!entidadId || typeof entidadId !== 'string') {
     return res.status(400).json({ error: 'comercioId requerido' });
   }
   const extendDays = Number(days);
@@ -357,9 +357,9 @@ async function handleExtendPlan(res, comercioId, days) {
     return res.status(400).json({ error: 'days debe ser un número > 0' });
   }
 
-  const comercioSnap = await db.collection('entidades').doc(comercioId).get();
+  const comercioSnap = await db.collection('entidades').doc(entidadId).get();
   if (!comercioSnap.exists) {
-    return res.status(404).json({ error: `Comercio ${comercioId} no encontrado` });
+    return res.status(404).json({ error: `Comercio ${entidadId} no encontrado` });
   }
   const plan = comercioSnap.data().plan || {};
 
@@ -370,7 +370,7 @@ async function handleExtendPlan(res, comercioId, days) {
   const startedAt = plan.started_at || admin.firestore.Timestamp.now();
 
   await applyPlanStateChange({
-    comercioId,
+    comercioId: entidadId,
     type: plan.type ?? 'trial',
     active: true,
     trial: plan.trial ?? true,
@@ -380,7 +380,7 @@ async function handleExtendPlan(res, comercioId, days) {
     reason: 'extended_manually',
   });
 
-  return res.status(200).json({ ok: true, comercioId, expiresAt: expiresAt.toDate().toISOString() });
+  return res.status(200).json({ ok: true, comercioId: entidadId, expiresAt: expiresAt.toDate().toISOString() });
 }
 
 // ── Acción: crear preference dinámica de pago (MercadoPago) ──
@@ -388,8 +388,8 @@ async function handleExtendPlan(res, comercioId, days) {
 // = "comercioId:planType" — es lo que el webhook necesita leer para
 // saber a quién activarle el plan. Reemplaza los links fijos viejos
 // de plans.pricing.js (mercadoPagoLink / preferenceId).
-async function handleCreatePaymentPreference(res, comercioId, planType) {
-  if (!comercioId || typeof comercioId !== 'string') {
+async function handleCreatePaymentPreference(res, entidadId, planType) {
+  if (!entidadId || typeof entidadId !== 'string') {
     return res.status(400).json({ error: 'comercioId requerido' });
   }
   const pricing = PLAN_PRICING[planType];
@@ -406,7 +406,7 @@ async function handleCreatePaymentPreference(res, comercioId, planType) {
         unit_price: pricing.price,
       },
     ],
-    external_reference: `${comercioId}:${planType}`,
+    external_reference: `${entidadId}:${planType}`,
     notification_url: `${SITE_URL}/api/webhooks/mercadopago`,
     back_urls: {
       success: `${SITE_URL}/pago-exitoso.html`,
@@ -426,23 +426,23 @@ async function handleCreatePaymentPreference(res, comercioId, planType) {
 // todas" o regenerate_seo/regenerateOne puntual), a propósito: separar
 // "marcar" de "publicar" evita que un toggle accidental dispare un
 // rebuild completo sin querer.
-async function handleToggleDemo(res, comercioId, isDemo) {
-  if (!comercioId || typeof comercioId !== 'string') {
+async function handleToggleDemo(res, entidadId, isDemo) {
+  if (!entidadId || typeof entidadId !== 'string') {
     return res.status(400).json({ error: 'comercioId requerido' });
   }
   if (typeof isDemo !== 'boolean') {
     return res.status(400).json({ error: 'isDemo debe ser boolean' });
   }
 
-  const comercioRef = db.collection('entidades').doc(comercioId);
+  const comercioRef = db.collection('entidades').doc(entidadId);
   const snap = await comercioRef.get();
   if (!snap.exists) {
-    return res.status(404).json({ error: `Comercio ${comercioId} no encontrado` });
+    return res.status(404).json({ error: `Comercio ${entidadId} no encontrado` });
   }
 
   await comercioRef.update({ isDemo });
 
-  return res.status(200).json({ ok: true, comercioId, isDemo });
+  return res.status(200).json({ ok: true, comercioId: entidadId, isDemo });
 }
 
 // ── Acción: regenerar SOLO seo.html de una entidad puntual ──
@@ -451,12 +451,12 @@ async function handleToggleDemo(res, comercioId, isDemo) {
 // enrichAndSaveCityIndex) — eso sería exactamente el rebuild completo
 // que esta acción existe para evitar. regenerateSeoOnly ya persiste
 // seoGeneratedAt en Firestore internamente.
-async function handleRegenerateSeo(res, comercioId) {
-  if (!comercioId || typeof comercioId !== 'string') {
+async function handleRegenerateSeo(res, entidadId) {
+  if (!entidadId || typeof entidadId !== 'string') {
     return res.status(400).json({ error: 'comercioId requerido' });
   }
 
-  const result = await regenerateSeoOnly({ comercioId });
+  const result = await regenerateSeoOnly({ comercioId: entidadId });
   return res.status(200).json({ ok: true, ...result });
 }
 
@@ -464,7 +464,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { action, adminSecret, dryRun, comercioId, createInitialPlan, days, planType, isDemo } = req.body;
+    const { action, adminSecret, dryRun, comercioId: entidadId, createInitialPlan, days, planType, isDemo } = req.body;
 
     // ── Acciones administrativas masivas (requieren ADMIN_SECRET) ──
     if (action === 'regenerate_all') {
@@ -483,28 +483,28 @@ export default async function handler(req, res) {
 
     // ── Acciones administrativas scoped a una entidad ──
     if (action === 'plan_reactivate') {
-      return await handleReactivatePlan(res, comercioId, days);
+      return await handleReactivatePlan(res, entidadId, days);
     }
 
     if (action === 'plan_extend') {
-      return await handleExtendPlan(res, comercioId, days);
+      return await handleExtendPlan(res, entidadId, days);
     }
 
     if (action === 'regenerate_seo') {
-      return await handleRegenerateSeo(res, comercioId);
+      return await handleRegenerateSeo(res, entidadId);
     }
 
     if (action === 'toggle_demo') {
-      return await handleToggleDemo(res, comercioId, isDemo);
+      return await handleToggleDemo(res, entidadId, isDemo);
     }
 
     // ── Acción: crear preference de pago (usuario final, no admin) ──
     if (action === 'create_payment_preference') {
-      return await handleCreatePaymentPreference(res, comercioId, planType);
+      return await handleCreatePaymentPreference(res, entidadId, planType);
     }
 
     // ── Comportamiento normal (sin action) ──
-    if (!comercioId || typeof comercioId !== 'string') {
+    if (!entidadId || typeof entidadId !== 'string') {
       return res.status(400).json({ error: 'comercioId inválido' });
     }
 
@@ -515,7 +515,7 @@ export default async function handler(req, res) {
       );
 
       await applyPlanStateChange({
-        comercioId,
+        comercioId: entidadId,
         type: 'trial',
         active: true,
         trial: true,
@@ -526,9 +526,9 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log('Generando entidad para:', comercioId);
-    const url = await regenerateOne(comercioId);
-    console.log('Entidad completa para', comercioId, '→', url);
+    console.log('Generando entidad para:', entidadId);
+    const url = await regenerateOne(entidadId);
+    console.log('Entidad completa para', entidadId, '→', url);
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error('Error en generate-and-upload-entity:', err);

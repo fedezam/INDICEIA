@@ -56,8 +56,8 @@ export function resolveFirebaseContext(onReady, onError) {
       let isEmbajadorViewing = false;
       // Entidad activa del usuario: nombre nuevo primero, el viejo de respaldo (transición)
       const entidadActivaId = userData.entidadActivaId ?? userData.comercioId ?? null;
-      let comercioId = isAdminViewing ? requestedId : entidadActivaId;
-      let comercioData = null;
+      let entidadId = isAdminViewing ? requestedId : entidadActivaId;
+      let entidadData = null;
 
       // ── Override de embajador: requiere validar en el cliente que
       // la entidad pedida es parte de su cartera (embajadorId === uid)
@@ -67,18 +67,18 @@ export function resolveFirebaseContext(onReady, onError) {
         const targetSnap = await getDoc(doc(db, 'entidades', requestedId));
         if (targetSnap.exists() && targetSnap.data().embajadorId === user.uid) {
           isEmbajadorViewing = true;
-          comercioId = requestedId;
-          comercioData = { id: requestedId, ...targetSnap.data() };
+          entidadId = requestedId;
+          entidadData = { id: requestedId, ...targetSnap.data() };
         } else {
           onError?.(new Error('No autorizado: esta entidad no está en tu cartera'));
           return;
         }
       }
 
-      if (comercioId && !comercioData) {
-        const comercioSnap = await getDoc(doc(db, 'entidades', comercioId));
+      if (entidadId && !entidadData) {
+        const comercioSnap = await getDoc(doc(db, 'entidades', entidadId));
         if (comercioSnap.exists()) {
-          comercioData = { id: comercioId, ...comercioSnap.data() };
+          entidadData = { id: entidadId, ...comercioSnap.data() };
         }
       }
 
@@ -86,11 +86,11 @@ export function resolveFirebaseContext(onReady, onError) {
         user,
         userData,
         // Nombres nuevos (los que usa el código nuevo)
-        entidadId:   comercioId,
-        entidadData: comercioData,
+        entidadId:   entidadId,
+        entidadData: entidadData,
         // Alias viejos: se eliminan al final de la fase 2
-        comercioId,
-        comercioData,
+        comercioId: entidadId,
+        comercioData: entidadData,
         isAdminViewing,
         isEmbajadorViewing
       });

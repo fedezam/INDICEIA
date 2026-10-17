@@ -78,12 +78,12 @@ export function getCurrentUser() {
 }
 
 /** @returns {string|null} */
-export function getCurrentComercioId() {
+export function getCurrentEntidadId() {
   return getRuntimeContext().comercioId || null;
 }
 
 /** @returns {Object|null} */
-export function getCurrentComercioData() {
+export function getCurrentEntidadData() {
   return getRuntimeContext().comercioData || null;
 }
 
@@ -106,8 +106,8 @@ export function getCurrentUserData() {
  * @returns {string}
  * @throws {Error} Si no hay comercioId
  */
-export function requireComercioId() {
-  const id = getCurrentComercioId();
+export function requireEntidadId() {
+  const id = getCurrentEntidadId();
   if (!id) {
     throw new Error('[runtime] Requiere comercioId. Usuario sin comercio asignado.');
   }

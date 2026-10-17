@@ -24,14 +24,14 @@ export async function redirectToNextStep() {
           return resolve(false);
         }
         
-        const comercioId = userDoc.data().comercioId;
-        if (!comercioId) {
+        const entidadId = userDoc.data().comercioId;
+        if (!entidadId) {
           window.location.href = "/src/pages/usuario.html";
           return resolve(false);
         }
         
         // --- Obtener comercio ---
-        const comercioRef = doc(db, "entidades", comercioId);
+        const comercioRef = doc(db, "entidades", entidadId);
         const comercioSnap = await getDoc(comercioRef);
         
         if (!comercioSnap.exists()) {
@@ -39,10 +39,10 @@ export async function redirectToNextStep() {
           return resolve(false);
         }
         
-        const comercioData = comercioSnap.data();
+        const entidadData = comercioSnap.data();
         
         // --- Obtener productos ---
-        const productosRef = collection(db, "entidades", comercioId, "productos");
+        const productosRef = collection(db, "entidades", entidadId, "productos");
         const productosSnap = await getDocs(productosRef);
         const productos = productosSnap.docs.map((d) => d.data());
         
@@ -57,28 +57,28 @@ export async function redirectToNextStep() {
             userDoc.data().direccion
           ),
           comercio: !!(
-            (comercioData.nombre || comercioData.nombreComercio) &&
-            comercioData.rubro &&
-            comercioData.descripcion &&
-            comercioData.direccion
+            (entidadData.nombre || entidadData.nombreComercio) &&
+            entidadData.rubro &&
+            entidadData.descripcion &&
+            entidadData.direccion
           ),
           horarios: !!(
-            comercioData.horarios &&
-            Object.values(comercioData.horarios).every((h) => h && h.apertura && h.cierre)
+            entidadData.horarios &&
+            Object.values(entidadData.horarios).every((h) => h && h.apertura && h.cierre)
           ),
           productos: productos.length > 0,
           ia: !!(
-            comercioData.aiConfig &&
-            comercioData.aiConfig.aiName &&
-            comercioData.aiConfig.aiPersonality &&
-            comercioData.aiConfig.aiTone &&
-            comercioData.aiConfig.aiLanguage &&
-            comercioData.aiConfig.aiGreeting &&
-            comercioData.aiConfig.sinPrecio &&
-            comercioData.aiConfig.sinStock &&
-            comercioData.aiConfig.localCerrado &&
-            comercioData.aiConfig.proactividad &&
-            comercioData.aiConfig.formatoRespuestas
+            entidadData.aiConfig &&
+            entidadData.aiConfig.aiName &&
+            entidadData.aiConfig.aiPersonality &&
+            entidadData.aiConfig.aiTone &&
+            entidadData.aiConfig.aiLanguage &&
+            entidadData.aiConfig.aiGreeting &&
+            entidadData.aiConfig.sinPrecio &&
+            entidadData.aiConfig.sinStock &&
+            entidadData.aiConfig.localCerrado &&
+            entidadData.aiConfig.proactividad &&
+            entidadData.aiConfig.formatoRespuestas
           ),
         };
         

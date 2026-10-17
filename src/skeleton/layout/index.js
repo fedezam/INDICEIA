@@ -24,16 +24,16 @@ export function mountLayout(context) {
     renderLayout();
   }
 
-  const { userData, comercioData, user, comercioId, isAdminViewing } = context;
+  const { userData, comercioData: entidadData, user, comercioId: entidadId, isAdminViewing } = context;
 
   console.log('📍 mountLayout → userData:', userData);
-  console.log('📍 mountLayout → comercioData:', comercioData);
+  console.log('📍 mountLayout → comercioData:', entidadData);
 
   // uid real dueño de la entidad mostrada — solo difiere de user.uid
   // cuando un admin está viendo una entidad ajena.
-  const ownerUid = (isAdminViewing && comercioData?.duenoId)
-    ? comercioData.duenoId
+  const ownerUid = (isAdminViewing && entidadData?.duenoId)
+    ? entidadData.duenoId
     : user?.uid;
 
-  updateHeader({ userData, comercioData, uid: ownerUid, comercioId, isAdminViewing });
+  updateHeader({ userData, comercioData: entidadData, uid: ownerUid, comercioId: entidadId, isAdminViewing });
 }

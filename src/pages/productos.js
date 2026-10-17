@@ -1079,10 +1079,10 @@ const page = {
         return 'Guardar productos';
       },
       dirtyController,
-      onSave: async ({ uid, comercioId }) => {
-        if (!comercioId) throw new Error('No hay comercioId');
+      onSave: async ({ uid, comercioId: entidadId }) => {
+        if (!entidadId) throw new Error('No hay comercioId');
 
-        const productosRef = collection(db, 'entidades', comercioId, 'productos');
+        const productosRef = collection(db, 'entidades', entidadId, 'productos');
         const batch        = writeBatch(db);
         const existentes   = await getDocs(productosRef);
         const existingMap  = new Map(existentes.docs.map(d => [d.id, d.data()]));
@@ -1100,7 +1100,7 @@ const page = {
           } else {
             const old = existingMap.get(p.id);
             if (old && JSON.stringify(old) !== JSON.stringify(p)) {
-              toUpdate.push({ ref: doc(db, 'entidades', comercioId, 'productos', p.id), data: p });
+              toUpdate.push({ ref: doc(db, 'entidades', entidadId, 'productos', p.id), data: p });
             }
           }
         });

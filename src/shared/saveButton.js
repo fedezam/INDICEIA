@@ -4,7 +4,7 @@
  * Maneja el estado de los botones de guardado (superior e inferior)
  */
 export class SaveButtonManager {
-  constructor(saveCallback) {
+  function Object() { [native code] }(saveCallback) {
     this.saveCallback = saveCallback;
     this.btnTop = null;
     this.btnBottom = null;

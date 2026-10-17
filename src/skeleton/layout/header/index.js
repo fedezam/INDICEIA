@@ -13,8 +13,8 @@ export function createHeader() {
   const headerElement = renderHeader();
   
   const api = {
-    update: ({ userData, comercioData } = {}) => {
-      updateHeader({ userData, comercioData });
+    update: ({ userData, comercioData: entidadData } = {}) => {
+      updateHeader({ userData, comercioData: entidadData });
     },
     getElement: () => headerElement
   };

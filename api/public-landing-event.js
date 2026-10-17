@@ -51,11 +51,11 @@ export default async function handler(req, res) {
       .get();
 
     if (!snap.empty) {
-      const comercioId = snap.docs[0].id;
+      const entidadId = snap.docs[0].id;
 
       await db
         .collection('entidades')
-        .doc(comercioId)
+        .doc(entidadId)
         .collection('stats')
         .add({
           event:       data.event,

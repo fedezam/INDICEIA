@@ -8,43 +8,43 @@ import { resolvePlanStatus, getDiasHastaVencimiento } from '../../lib/plan/resol
 // ============================================================
 // 🔹 LOAD ENTIDAD
 // ============================================================
-export async function loadEntidad(comercioId) {
-  if (!comercioId) {
+export async function loadEntidad(entidadId) {
+  if (!entidadId) {
     throw new Error('[panelCore] comercioId requerido');
   }
 
-  const entidadRef = doc(db, 'entidades', comercioId);
+  const entidadRef = doc(db, 'entidades', entidadId);
   const entidadSnap = await getDoc(entidadRef);
 
   if (!entidadSnap.exists()) {
-    throw new Error(`[panelCore] Entidad '${comercioId}' no encontrada`);
+    throw new Error(`[panelCore] Entidad '${entidadId}' no encontrada`);
   }
 
-  const comercioData = entidadSnap.data();
+  const entidadData = entidadSnap.data();
 
   let userData = {};
-  if (comercioData.duenoId) {
-    const userSnap = await getDoc(doc(db, 'usuarios', comercioData.duenoId));
+  if (entidadData.duenoId) {
+    const userSnap = await getDoc(doc(db, 'usuarios', entidadData.duenoId));
     if (userSnap.exists()) userData = userSnap.data();
   }
 
-  const ctx = buildFlowContext(userData, comercioData);
+  const ctx = buildFlowContext(userData, entidadData);
   const pipeline = buildPipeline(ctx);
 
   return {
     user:     userData,
-    entidad:  { id: comercioId, ...comercioData },
+    entidad:  { id: entidadId, ...entidadData },
     ctx,
     pipeline,
-    steps: comercioData.onboardingSteps || {}
+    steps: entidadData.onboardingSteps || {}
   };
 }
 
 // ============================================================
 // 🔹 SUBCOLECCIONES
 // ============================================================
-export async function loadSubcollections(comercioId) {
-  const baseRef = collection(db, 'entidades', comercioId);
+export async function loadSubcollections(entidadId) {
+  const baseRef = collection(db, 'entidades', entidadId);
 
   let productos = [];
   let servicios = [];

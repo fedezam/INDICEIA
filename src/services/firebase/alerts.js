@@ -8,7 +8,7 @@ import {
 // Trae todas las alertas visibles para esta entidad: las broadcast
 // (para todos) + las individuales de este comercio puntual.
 // Dos queries porque Firestore no permite OR entre campos distintos.
-export async function listarAlertas(comercioId) {
+export async function listarAlertas(entidadId) {
   const broadcastQ = query(
     collection(db, 'alertas'),
     where('scope', '==', 'broadcast')
@@ -16,7 +16,7 @@ export async function listarAlertas(comercioId) {
   const individualQ = query(
     collection(db, 'alertas'),
     where('scope', '==', 'individual'),
-    where('comercioId', '==', comercioId)
+    where('comercioId', '==', entidadId)
   );
 
   const [broadcastSnap, individualSnap] = await Promise.all([
@@ -46,10 +46,10 @@ export async function marcarAlertaLeida(uid, alertaId) {
   });
 }
 
-export async function contarAlertasNoLeidas(uid, comercioId) {
-  if (!uid || !comercioId) return 0;
+export async function contarAlertasNoLeidas(uid, entidadId) {
+  if (!uid || !entidadId) return 0;
   const [alertas, leidas] = await Promise.all([
-    listarAlertas(comercioId),
+    listarAlertas(entidadId),
     getAlertasLeidas(uid)
   ]);
   return alertas.filter(a => !leidas.has(a.id)).length;

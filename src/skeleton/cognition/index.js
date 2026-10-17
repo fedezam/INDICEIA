@@ -3,11 +3,11 @@
 import { renderCognitionPage } from './render'
 import { loadCognition, saveCognition } from './update'
 
-export async function mountCognitionPage({ container, comercioId, onSave }) {
+export async function mountCognitionPage({ container, comercioId: entidadId, onSave }) {
   renderCognitionPage(container)
-  await loadCognition(comercioId, container)
+  await loadCognition(entidadId, container)
 
   onSave(async () => {
-    await saveCognition(comercioId, container)
+    await saveCognition(entidadId, container)
   })
 }

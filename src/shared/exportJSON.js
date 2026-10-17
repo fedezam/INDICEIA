@@ -1,12 +1,12 @@
 // src/shared/exportJSON.js
-export async function exportarBot(comercioId, visualEnabled = true, debug = false) {
+export async function exportarBot(entidadId, visualEnabled = true, debug = false) {
   try {
-    if (!comercioId) throw new Error('comercioId es requerido');
+    if (!entidadId) throw new Error('comercioId es requerido');
 
     const response = await fetch('/api/export-json', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ comercioId, visualEnabled })
+      body: JSON.stringify({ comercioId: entidadId, visualEnabled })
     });
 
     if (!response.ok) {

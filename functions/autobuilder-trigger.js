@@ -32,54 +32,54 @@ const rateLimitCache = new Map(); // memoria efímera
 export const autobuilderTrigger = onDocumentWritten(
   'comercios/{comercioId}',
   async (event) => {
-    const comercioId = event.params.comercioId;
+    const entidadId = event.params.comercioId;
     const before = event.data?.before?.data() || null;
     const after = event.data?.after?.data() || null;
 
-    logger.info(`🔔 Trigger fired for comercio: ${comercioId}`);
+    logger.info(`🔔 Trigger fired for comercio: ${entidadId}`);
 
     try {
       // 1️⃣ Si fue borrado → ignorar
       if (!after) {
-        logger.info(`🗑️ Document ${comercioId} deleted, skipping build.`);
+        logger.info(`🗑️ Document ${entidadId} deleted, skipping build.`);
         return null;
       }
 
       // 2️⃣ Si no hubo cambios relevantes → ignorar
       if (before && !checkRelevantChanges(before, after)) {
-        logger.debug(`No relevant changes detected for ${comercioId}`);
+        logger.debug(`No relevant changes detected for ${entidadId}`);
         return null;
       }
 
       // 3️⃣ Rate limiting
-      if (!checkRateLimit(comercioId)) {
-        logger.warn(`⏱️ Rate limit exceeded for ${comercioId}`);
-        await logRateLimitViolation(comercioId);
+      if (!checkRateLimit(entidadId)) {
+        logger.warn(`⏱️ Rate limit exceeded for ${entidadId}`);
+        await logRateLimitViolation(entidadId);
         return null;
       }
 
       // 4️⃣ Debouncing
-      if (!(await checkDebounce(comercioId))) {
-        logger.info(`🕒 Debounce active for ${comercioId}`);
+      if (!(await checkDebounce(entidadId))) {
+        logger.info(`🕒 Debounce active for ${entidadId}`);
         return null;
       }
 
       // 5️⃣ Llamar al EntityFactory
       const metadata = {
         trigger_type: 'firebase_update',
-        path: `comercios/${comercioId}`,
+        path: `comercios/${entidadId}`,
         changes: detectChanges(before, after),
       };
 
-      const buildResult = await triggerBuild(comercioId, metadata);
+      const buildResult = await triggerBuild(entidadId, metadata);
 
       logger.info(`✅ Build triggered successfully`, buildResult);
       return buildResult;
     } catch (error) {
-      logger.error(`❌ Trigger failed for ${comercioId}: ${error.message}`, error);
+      logger.error(`❌ Trigger failed for ${entidadId}: ${error.message}`, error);
 
       await db.collection('autobuilder_errors').add({
-        comercio_id: comercioId,
+        comercio_id: entidadId,
         error_message: error.message,
         error_stack: error.stack,
         phase: 'autobuilder',
@@ -98,12 +98,12 @@ export const autobuilderTrigger = onDocumentWritten(
 export const catalogoTrigger = onDocumentWritten(
   'comercios/{comercioId}/catalogo/{itemId}',
   async (event) => {
-    const comercioId = event.params.comercioId;
+    const entidadId = event.params.comercioId;
     const itemId = event.params.itemId;
     const before = event.data?.before?.data() || null;
     const after = event.data?.after?.data() || null;
 
-    logger.info(`📦 Catalogo change detected: ${comercioId}/${itemId}`);
+    logger.info(`📦 Catalogo change detected: ${entidadId}/${itemId}`);
 
     try {
       const changeType = !before && after
@@ -112,19 +112,19 @@ export const catalogoTrigger = onDocumentWritten(
         ? 'item_removed'
         : 'item_modified';
 
-      if (!checkRateLimit(comercioId)) {
-        logger.warn(`⏱️ Rate limit exceeded for ${comercioId} (catalogo change)`);
+      if (!checkRateLimit(entidadId)) {
+        logger.warn(`⏱️ Rate limit exceeded for ${entidadId} (catalogo change)`);
         return null;
       }
 
-      if (!(await checkDebounce(comercioId, 3_000))) {
-        logger.info(`🕒 Debounce catalogo for ${comercioId}`);
+      if (!(await checkDebounce(entidadId, 3_000))) {
+        logger.info(`🕒 Debounce catalogo for ${entidadId}`);
         return null;
       }
 
-      const buildResult = await triggerBuild(comercioId, {
+      const buildResult = await triggerBuild(entidadId, {
         trigger_type: 'firebase_catalogo_update',
-        path: `comercios/${comercioId}/catalogo/${itemId}`,
+        path: `comercios/${entidadId}/catalogo/${itemId}`,
         change_type: changeType,
         item_id: itemId,
       });
@@ -132,7 +132,7 @@ export const catalogoTrigger = onDocumentWritten(
       logger.info(`✅ Catalogo build triggered`, buildResult);
       return buildResult;
     } catch (error) {
-      logger.error(`❌ Catalogo trigger failed for ${comercioId}: ${error.message}`, error);
+      logger.error(`❌ Catalogo trigger failed for ${entidadId}: ${error.message}`, error);
       return null;
     }
   }
@@ -170,9 +170,9 @@ function detectChanges(before, after) {
 /* ⚡ RATE LIMIT + DEBOUNCE */
 /* -------------------------------------------------------------------------- */
 
-function checkRateLimit(comercioId) {
+function checkRateLimit(entidadId) {
   const now = Date.now();
-  const key = `rate_${comercioId}`;
+  const key = `rate_${entidadId}`;
   const timestamps = rateLimitCache.get(key) || [];
 
   const valid = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
@@ -183,9 +183,9 @@ function checkRateLimit(comercioId) {
   return true;
 }
 
-async function checkDebounce(comercioId, delayMs = DEBOUNCE_DEFAULT_MS) {
+async function checkDebounce(entidadId, delayMs = DEBOUNCE_DEFAULT_MS) {
   const now = Date.now();
-  const key = `debounce_${comercioId}`;
+  const key = `debounce_${entidadId}`;
   const last = rateLimitCache.get(key);
 
   if (last && now - last < delayMs) return false;
@@ -197,7 +197,7 @@ async function checkDebounce(comercioId, delayMs = DEBOUNCE_DEFAULT_MS) {
 /* 🌐 LLAMADA AL ENTITY FACTORY */
 /* -------------------------------------------------------------------------- */
 
-async function triggerBuild(comercioId, metadata) {
+async function triggerBuild(entidadId, metadata) {
   const apiUrl =
     process.env.ENTITY_FACTORY_API_URL ||
     'https://tudominio.com/api/entity-factory/build';
@@ -209,7 +209,7 @@ async function triggerBuild(comercioId, metadata) {
       'Content-Type': 'application/json',
       ...(apiKey && { Authorization: `Bearer ${apiKey}` }),
     },
-    body: JSON.stringify({ comercio_id: comercioId, metadata }),
+    body: JSON.stringify({ comercio_id: entidadId, metadata }),
   });
 
   if (!response.ok) {
@@ -224,9 +224,9 @@ async function triggerBuild(comercioId, metadata) {
 /* 🧾 LOGS AUXILIARES */
 /* -------------------------------------------------------------------------- */
 
-async function logRateLimitViolation(comercioId) {
+async function logRateLimitViolation(entidadId) {
   await db.collection('autobuilder_rate_limits').add({
-    comercio_id: comercioId,
+    comercio_id: entidadId,
     timestamp: Timestamp.now(),
     window_ms: RATE_LIMIT_WINDOW_MS,
     max_builds: MAX_BUILDS_PER_WINDOW,

@@ -417,8 +417,8 @@ const page = {
         return fieldsOk && saludoOk;
       },
 
-      onSave: async ({ comercioId }) => {
-        if (!comercioId) throw new Error('No hay comercioId');
+      onSave: async ({ comercioId: entidadId }) => {
+        if (!entidadId) throw new Error('No hay comercioId');
 
         const v = (id) => document.getElementById(id)?.value || '';
 
@@ -458,7 +458,7 @@ const page = {
           }
         };
 
-        await updateDoc(doc(db, 'entidades', comercioId), {
+        await updateDoc(doc(db, 'entidades', entidadId), {
           ...cleanPayload(raw),
           'onboardingSteps.ia-config': true,
           fechaActualizacion: serverTimestamp()

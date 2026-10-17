@@ -635,7 +635,7 @@ const page = {
 
         if (page._isNuevo) {
           const comercioRef = entidadId ? doc(db, 'entidades', entidadId) : doc(collection(db, 'entidades'));
-          const nuevoComercioId = comercioRef.id;
+          const nuevaEntidadId = comercioRef.id;
 
           // ── Resolver referral + embajadorId ANTES de crear el doc,
           // así entra en el mismo setDoc inicial. Ver resolveEmbajadorId.js
@@ -647,9 +647,9 @@ const page = {
           const capacidadesNuevas = page._esAdicional ? [] : (usuarioSnap.data()?.capacidades || []);
 
           await setDoc(comercioRef, { ...updates, duenoId: uid, capacidades: capacidadesNuevas, ...(embajadorId && { embajadorId }), fechaCreacion: new Date(), fechaActualizacion: new Date(), onboardingSteps: { 'mi-perfil': true } }, { merge: true });
-          await createInitialPlan(nuevoComercioId);
-          await setDoc(doc(db, 'landings', d.slug), { slug: d.slug, comercioId: nuevoComercioId, nombre: updates.nombre, activo: true, createdAt: new Date(), updatedAt: new Date() });
-          await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevoComercioId, entityType: 'prestador', capacidades: capacidadesNuevas });
+          await createInitialPlan(nuevaEntidadId);
+          await setDoc(doc(db, 'landings', d.slug), { slug: d.slug, comercioId: nuevaEntidadId, nombre: updates.nombre, activo: true, createdAt: new Date(), updatedAt: new Date() });
+          await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevaEntidadId, entityType: 'prestador', capacidades: capacidadesNuevas });
 
           // ── Referral tracking ──
           if (referredBy) {
@@ -657,7 +657,7 @@ const page = {
               referrerCode:    referredBy,
               referrerType:    'usuario',
               createdUserId:   uid,
-              createdEntityId: nuevoComercioId,
+              createdEntityId: nuevaEntidadId,
               valid:           false,
               timestamp:       new Date()
             });

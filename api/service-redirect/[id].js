@@ -39,15 +39,15 @@ const MAX_CONSULTA  = 500;
 const tienePrecio = (s) => !!s.precio?.valor;
 
 export default async function handler(req, res) {
-  const { id: comercioId } = req.query;
+  const { id: entidadId } = req.query;
   const { servicio, modalidad, zona, consulta, waDestino } = req.query;
 
-  if (!comercioId || !servicio) {
+  if (!entidadId || !servicio) {
     return res.status(400).send('Faltan parámetros');
   }
 
   try {
-    const comercioRef  = db.collection('entidades').doc(comercioId);
+    const comercioRef  = db.collection('entidades').doc(entidadId);
     const comercioSnap = await comercioRef.get();
     if (!comercioSnap.exists) return res.status(404).send('Comercio no encontrado');
 

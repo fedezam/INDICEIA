@@ -320,7 +320,7 @@ export const page = {
   // ──────────────────────────────────────────────────────────
   _renderPanel(container) {
     const { entidad, user, ctx, pipeline, steps } = this.selected;
-    const comercioId = entidad.id;
+    const entidadId = entidad.id;
 
     const topbar = document.createElement('div');
     topbar.className = 'sa-topbar';
@@ -334,24 +334,24 @@ export const page = {
     topbar.querySelector('.sa-btn--back').onclick = () => { this.selected = null; this.render(); };
     container.appendChild(topbar);
 
-    this._renderSeccionIdentidad(container, entidad, ctx, comercioId);
-    this._renderSeccionTipoEntidad(container, entidad, user, comercioId);
+    this._renderSeccionIdentidad(container, entidad, ctx, entidadId);
+    this._renderSeccionTipoEntidad(container, entidad, user, entidadId);
 
     if (ctx.offerType?.productos || ctx.offerType?.servicios) {
-      this._renderSeccionCatalogo(container, entidad, ctx, comercioId);
+      this._renderSeccionCatalogo(container, entidad, ctx, entidadId);
     }
 
-    this._renderSeccionOperativa(container, entidad, ctx, pipeline, comercioId);
-    this._renderSeccionIA(container, entidad, comercioId);
-    this._renderSeccionPlan(container, entidad, comercioId);
-    this._renderSeccionPublicacion(container, entidad, comercioId);
+    this._renderSeccionOperativa(container, entidad, ctx, pipeline, entidadId);
+    this._renderSeccionIA(container, entidad, entidadId);
+    this._renderSeccionPlan(container, entidad, entidadId);
+    this._renderSeccionPublicacion(container, entidad, entidadId);
     this._renderJsonDebug(container, this.selected);
   },
 
   // ──────────────────────────────────────────────────────────
   // SECCIÓN: IDENTIDAD
   // ──────────────────────────────────────────────────────────
-  _renderSeccionIdentidad(container, entidad, ctx, comercioId) {
+  _renderSeccionIdentidad(container, entidad, ctx, entidadId) {
     const { wrap, grid } = makeSection('🏪 Identidad', 'Datos principales de la entidad');
 
     const isComercio    = ctx.entityType === 'comercio';
@@ -408,7 +408,7 @@ export const page = {
           fields,
           data: entidad,
           onSave: async (updates) => {
-            await updateDoc(doc(db, 'entidades', comercioId), { ...updates, fechaActualizacion: new Date() });
+            await updateDoc(doc(db, 'entidades', entidadId), { ...updates, fechaActualizacion: new Date() });
             Object.assign(entidad, updates);
             this.render();
           }
@@ -423,7 +423,7 @@ export const page = {
   // ──────────────────────────────────────────────────────────
   // SECCIÓN: TIPO DE ENTIDAD
   // ──────────────────────────────────────────────────────────
-  _renderSeccionTipoEntidad(container, entidad, user, comercioId) {
+  _renderSeccionTipoEntidad(container, entidad, user, entidadId) {
     const { wrap, grid } = makeSection('🗂️ Tipo de Entidad', 'Qué tipo de entidad es y qué ofrece');
 
     const offerType = entidad.offerType || {};
@@ -455,7 +455,7 @@ export const page = {
           data: { entityType: entidad.entityType, serviceType: entidad.serviceType || '' },
           onSave: async (updates) => {
             await Promise.all([
-              updateDoc(doc(db, 'entidades', comercioId), { ...updates, fechaActualizacion: new Date() }),
+              updateDoc(doc(db, 'entidades', entidadId), { ...updates, fechaActualizacion: new Date() }),
               (user?.uid || entidad.duenoId)
                 ? updateDoc(doc(db, 'usuarios', user?.uid || entidad.duenoId), { entityType: updates.entityType })
                 : Promise.resolve()
@@ -486,7 +486,7 @@ export const page = {
           data: offerType,
           onSave: async (updates) => {
             await Promise.all([
-              updateDoc(doc(db, 'entidades', comercioId), { offerType: updates, fechaActualizacion: new Date() }),
+              updateDoc(doc(db, 'entidades', entidadId), { offerType: updates, fechaActualizacion: new Date() }),
               (user?.uid || entidad.duenoId)
                 ? updateDoc(doc(db, 'usuarios', user?.uid || entidad.duenoId), { offerType: updates })
                 : Promise.resolve()
@@ -506,7 +506,7 @@ export const page = {
   // ──────────────────────────────────────────────────────────
   // SECCIÓN: CATÁLOGO
   // ──────────────────────────────────────────────────────────
-  _renderSeccionCatalogo(container, entidad, ctx, comercioId) {
+  _renderSeccionCatalogo(container, entidad, ctx, entidadId) {
     const { wrap, grid } = makeSection('📦 Catálogo', 'Productos y servicios');
 
     if (ctx.offerType?.productos) {
@@ -516,7 +516,7 @@ export const page = {
         meta:   `${entidad._productosCount || '?'} productos`,
         status: 'ok',
         body:   '<p>Gestión de productos en subcolección Firestore</p>',
-        onEdit: () => this._openProductosPanel(comercioId)
+        onEdit: () => this._openProductosPanel(entidadId)
       }));
     }
 
@@ -526,7 +526,7 @@ export const page = {
         title:  'Servicios',
         status: 'ok',
         body:   '<p>Gestión de servicios en subcolección Firestore</p>',
-        onEdit: () => this._openServiciosPanel(comercioId)
+        onEdit: () => this._openServiciosPanel(entidadId)
       }));
     }
 
@@ -536,7 +536,7 @@ export const page = {
   // ──────────────────────────────────────────────────────────
   // SECCIÓN: OPERATIVA
   // ──────────────────────────────────────────────────────────
-  _renderSeccionOperativa(container, entidad, ctx, pipeline, comercioId) {
+  _renderSeccionOperativa(container, entidad, ctx, pipeline, entidadId) {
     const { wrap, grid } = makeSection('⚙️ Operativa', 'Horarios, entrega y cobertura');
 
     const horariosOk = entidad.horarios && Object.keys(entidad.horarios).length > 0;
@@ -550,7 +550,7 @@ export const page = {
         fields: [{ key: 'horarios', label: 'Horarios', type: 'json' }],
         data: entidad,
         onSave: async (updates) => {
-          await updateDoc(doc(db, 'entidades', comercioId), { horarios: updates.horarios, 'onboardingSteps.horarios': true, fechaActualizacion: new Date() });
+          await updateDoc(doc(db, 'entidades', entidadId), { horarios: updates.horarios, 'onboardingSteps.horarios': true, fechaActualizacion: new Date() });
           entidad.horarios = updates.horarios;
           this.render();
         }
@@ -569,7 +569,7 @@ export const page = {
           fields: [{ key: 'entrega', label: 'Entrega', type: 'json' }],
           data: entidad,
           onSave: async (updates) => {
-            await updateDoc(doc(db, 'entidades', comercioId), { entrega: updates.entrega, fechaActualizacion: new Date() });
+            await updateDoc(doc(db, 'entidades', entidadId), { entrega: updates.entrega, fechaActualizacion: new Date() });
             entidad.entrega = updates.entrega;
             this.render();
           }
@@ -589,7 +589,7 @@ export const page = {
           fields: [{ key: 'lugares', label: 'Lugares', type: 'json' }],
           data: entidad,
           onSave: async (updates) => {
-            await updateDoc(doc(db, 'entidades', comercioId), { lugares: updates.lugares, fechaActualizacion: new Date() });
+            await updateDoc(doc(db, 'entidades', entidadId), { lugares: updates.lugares, fechaActualizacion: new Date() });
             entidad.lugares = updates.lugares;
             this.render();
           }
@@ -607,7 +607,7 @@ export const page = {
           fields: [{ key: 'cobertura', label: 'Cobertura', type: 'json' }],
           data: entidad,
           onSave: async (updates) => {
-            await updateDoc(doc(db, 'entidades', comercioId), { cobertura: updates.cobertura, fechaActualizacion: new Date() });
+            await updateDoc(doc(db, 'entidades', entidadId), { cobertura: updates.cobertura, fechaActualizacion: new Date() });
             entidad.cobertura = updates.cobertura;
             this.render();
           }
@@ -625,7 +625,7 @@ export const page = {
           fields: [{ key: 'consultas', label: 'Consultas', type: 'json' }],
           data: entidad,
           onSave: async (updates) => {
-            await updateDoc(doc(db, 'entidades', comercioId), { consultas: updates.consultas, fechaActualizacion: new Date() });
+            await updateDoc(doc(db, 'entidades', entidadId), { consultas: updates.consultas, fechaActualizacion: new Date() });
             entidad.consultas = updates.consultas;
             this.render();
           }
@@ -639,7 +639,7 @@ export const page = {
   // ──────────────────────────────────────────────────────────
   // SECCIÓN: IA
   // ──────────────────────────────────────────────────────────
-  _renderSeccionIA(container, entidad, comercioId) {
+  _renderSeccionIA(container, entidad, entidadId) {
     const { wrap, grid } = makeSection('🤖 Inteligencia Artificial', 'Config de IA y capacidades');
 
     const aiOk = !!entidad.aiConfig;
@@ -656,7 +656,7 @@ export const page = {
         fields: [{ key: 'aiConfig', label: 'aiConfig', type: 'json' }],
         data: entidad,
         onSave: async (updates) => {
-          await updateDoc(doc(db, 'entidades', comercioId), { aiConfig: updates.aiConfig, fechaActualizacion: new Date() });
+          await updateDoc(doc(db, 'entidades', entidadId), { aiConfig: updates.aiConfig, fechaActualizacion: new Date() });
           entidad.aiConfig = updates.aiConfig;
           this.render();
         }
@@ -677,7 +677,7 @@ export const page = {
         fields: [{ key: 'cognitive_permissions', label: 'Capacidades', type: 'json' }],
         data: entidad,
         onSave: async (updates) => {
-          await updateDoc(doc(db, 'entidades', comercioId), { cognitive_permissions: updates.cognitive_permissions, fechaActualizacion: new Date() });
+          await updateDoc(doc(db, 'entidades', entidadId), { cognitive_permissions: updates.cognitive_permissions, fechaActualizacion: new Date() });
           entidad.cognitive_permissions = updates.cognitive_permissions;
           this.render();
         }
@@ -698,7 +698,7 @@ export const page = {
         ],
         data: { templateId: entidad.templateId || '', templateUpdatedAt: entidad.templateUpdatedAt || '' },
         onSave: async (updates) => {
-          await updateDoc(doc(db, 'entidades', comercioId), { ...updates, fechaActualizacion: new Date() });
+          await updateDoc(doc(db, 'entidades', entidadId), { ...updates, fechaActualizacion: new Date() });
           Object.assign(entidad, updates);
           this.render();
         }
@@ -711,7 +711,7 @@ export const page = {
   // ──────────────────────────────────────────────────────────
   // SECCIÓN: PLAN
   // ──────────────────────────────────────────────────────────
-  _renderSeccionPlan(container, entidad, comercioId) {
+  _renderSeccionPlan(container, entidad, entidadId) {
     const { wrap, grid } = makeSection('💳 Plan', 'Estado del plan y acceso');
 
     const plan      = entidad.plan || {};
@@ -764,7 +764,7 @@ export const page = {
           expires_at: expiresAt ? expiresAt.toISOString() : '',
         },
         onSave: async (updates) => {
-          await updateDoc(doc(db, 'entidades', comercioId), {
+          await updateDoc(doc(db, 'entidades', entidadId), {
             'plan.type':       updates.type,
             'plan.active':     updates.active,
             'plan.trial':      updates.trial,
@@ -783,7 +783,7 @@ export const page = {
   // ──────────────────────────────────────────────────────────
   // SECCIÓN: PUBLICACIÓN
   // ──────────────────────────────────────────────────────────
-  _renderSeccionPublicacion(container, entidad, comercioId) {
+  _renderSeccionPublicacion(container, entidad, entidadId) {
     const { wrap, grid } = makeSection('🚀 Publicación', 'Estado de publicación y onboarding');
 
     const slug        = entidad.landing?.slug;
@@ -814,7 +814,7 @@ export const page = {
         fields: [{ key: 'onboardingSteps', label: 'Steps', type: 'json' }],
         data: entidad,
         onSave: async (updates) => {
-          await updateDoc(doc(db, 'entidades', comercioId), { onboardingSteps: updates.onboardingSteps, fechaActualizacion: new Date() });
+          await updateDoc(doc(db, 'entidades', entidadId), { onboardingSteps: updates.onboardingSteps, fechaActualizacion: new Date() });
           entidad.onboardingSteps = updates.onboardingSteps;
           this.render();
         }
@@ -837,7 +837,7 @@ export const page = {
           const res = await fetch('/api/generate-and-upload-entity', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ comercioId })
+            body:    JSON.stringify({ comercioId: entidadId })
           });
 
           if (!res.ok) throw new Error(await res.text());
@@ -876,8 +876,8 @@ export const page = {
   // ──────────────────────────────────────────────────────────
   // PANELES ESPECIALES: PRODUCTOS / SERVICIOS
   // ──────────────────────────────────────────────────────────
-  async _openItemsPanel(comercioId, subcoleccion, { titleIcon, titleLabel, emptyLabel, renderItem }) {
-    const snap  = await getDocs(collection(db, 'entidades', comercioId, subcoleccion));
+  async _openItemsPanel(entidadId, subcoleccion, { titleIcon, titleLabel, emptyLabel, renderItem }) {
+    const snap  = await getDocs(collection(db, 'entidades', entidadId, subcoleccion));
     const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     const overlay = document.createElement('div');
@@ -905,8 +905,8 @@ export const page = {
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
   },
 
-  _openProductosPanel(comercioId) {
-    return this._openItemsPanel(comercioId, 'productos', {
+  _openProductosPanel(entidadId) {
+    return this._openItemsPanel(entidadId, 'productos', {
       titleIcon:  '📦',
       titleLabel: 'Productos',
       emptyLabel: 'Sin productos',
@@ -920,8 +920,8 @@ export const page = {
     });
   },
 
-  _openServiciosPanel(comercioId) {
-    return this._openItemsPanel(comercioId, 'servicios', {
+  _openServiciosPanel(entidadId) {
+    return this._openItemsPanel(entidadId, 'servicios', {
       titleIcon:  '🛎️',
       titleLabel: 'Servicios',
       emptyLabel: 'Sin servicios',

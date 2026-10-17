@@ -12,8 +12,8 @@ import { showToast, showLoading, hideLoading } from './utils.js';
  */
 export async function runMiComercioPage(pageModule) {
   let currentUser = null;
-  let currentComercioId = null;
-  let comercioData = {};
+  let currentEntidadId = null;
+  let entidadData = {};
   let userData = {};
   let isNewComercio = false;
 
@@ -74,48 +74,48 @@ export async function runMiComercioPage(pageModule) {
       // Verificar si ya tiene comercio creado
       if (userData.comercioId) {
         // Ya existe comercio → cargar datos
-        currentComercioId = userData.comercioId;
+        currentEntidadId = userData.comercioId;
         
-        const comercioRef = doc(db, 'entidades', currentComercioId);
+        const comercioRef = doc(db, 'entidades', currentEntidadId);
         const comercioSnap = await getDoc(comercioRef);
 
         if (comercioSnap.exists()) {
-          comercioData = { id: currentComercioId, ...comercioSnap.data() };
+          entidadData = { id: currentEntidadId, ...comercioSnap.data() };
           isNewComercio = false;
-          console.log('✅ Comercio existente cargado:', currentComercioId);
+          console.log('✅ Comercio existente cargado:', currentEntidadId);
         } else {
           // Tiene comercioId pero el documento no existe → error de integridad
           console.error('❌ comercioId existe pero documento no encontrado');
-          currentComercioId = null;
+          currentEntidadId = null;
           isNewComercio = true;
         }
       } else {
         // No tiene comercio → crear nuevo
         isNewComercio = true;
         // Generar ID único para el nuevo comercio
-        currentComercioId = doc(collection(db, 'entidades')).id;
+        currentEntidadId = doc(collection(db, 'entidades')).id;
         
-        comercioData = {
-          id: currentComercioId,
+        entidadData = {
+          id: currentEntidadId,
           duenoId: currentUser.uid, // ✅ CAMPO CORRECTO PARA LAS REGLAS
           plan: 'trial',
           fechaCreacion: new Date(),
           onboardingSteps: {}
         };
         
-        console.log('🆕 Nuevo comercio - ID generado:', currentComercioId);
+        console.log('🆕 Nuevo comercio - ID generado:', currentEntidadId);
       }
 
       // Actualizar header
       updateHeaderInfo(
-        comercioData.nombre || 'Mi Comercio',
+        entidadData.nombre || 'Mi Comercio',
         { nombre: 'Trial', color: '#6366f1' }
       );
 
       // Cargar módulo de página
       await pageModule.load({
-        currentComercioId,
-        comercioData,
+        currentComercioId: currentEntidadId,
+        comercioData: entidadData,
         isNewComercio,
         userData,
         currentUser

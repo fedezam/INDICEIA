@@ -86,19 +86,19 @@ const page = {
   _withId(url) {
     const viewing = this._data.ctx?.isAdminViewing || this._data.ctx?.isEmbajadorViewing;
     if (!viewing) return url;
-    const comercioId = this._data.comercio?.id;
-    if (!comercioId) return url;
+    const entidadId = this._data.comercio?.id;
+    if (!entidadId) return url;
     const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}id=${comercioId}`;
+    return `${url}${separator}id=${entidadId}`;
   },
 
   // ──────────────────────────────────────────────────────────
   // STATS PRODUCTOS
   // ──────────────────────────────────────────────────────────
-  async _loadProductosStats(comercioId) {
-    if (!comercioId) return;
+  async _loadProductosStats(entidadId) {
+    if (!entidadId) return;
     try {
-      const snap = await getDocs(collection(db, 'entidades', comercioId, 'productos'));
+      const snap = await getDocs(collection(db, 'entidades', entidadId, 'productos'));
       let activos = 0, pausados = 0, ultimaActualizacion = null;
 
       snap.docs.forEach(d => {

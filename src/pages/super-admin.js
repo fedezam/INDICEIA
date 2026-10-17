@@ -56,11 +56,11 @@ async function load(ctx) {
 // decide cuándo publicar el cambio (botón "Regenerar todas" o desde
 // super-admin-entity.js).
 // ────────────────────────────────────────────────────────────
-async function toggleDemo(comercioId, nextValue) {
+async function toggleDemo(entidadId, nextValue) {
   const response = await fetch('/api/generate-and-upload-entity', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'toggle_demo', comercioId, isDemo: nextValue }),
+    body: JSON.stringify({ action: 'toggle_demo', comercioId: entidadId, isDemo: nextValue }),
   });
   const data = await response.json();
   if (!response.ok) {

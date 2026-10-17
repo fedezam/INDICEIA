@@ -1907,16 +1907,16 @@ _parseFile(file) {
         ? 'Guardar y volver al dashboard'
         : 'Volver al dashboard',
       dirtyController,
-      onSave: async ({ uid, comercioId }) => {
-        if (!comercioId) throw new Error('No hay comercioId para guardar servicios');
+      onSave: async ({ uid, comercioId: entidadId }) => {
+        if (!entidadId) throw new Error('No hay comercioId para guardar servicios');
         // DEBUG
         console.log('total servicios:', this._data.serviciosAcumulados.length);
         this._data.serviciosAcumulados.forEach((s, i) => {
           if (!s) console.error('UNDEFINED en índice:', i);
         });
         const batch       = writeBatch(db);
-        const comercioRef = doc(db, 'entidades', comercioId);
-        const colRef      = collection(db, 'entidades', comercioId, 'servicios');
+        const comercioRef = doc(db, 'entidades', entidadId);
+        const colRef      = collection(db, 'entidades', entidadId, 'servicios');
 
         const idsOriginales = new Set(
           this._originalSnapshot.filter(s => s.id).map(s => s.id)

@@ -231,9 +231,9 @@ export async function runFlowController(uid) {
 export async function completeStep(uid, stepId) {
   const userSnap = await getDoc(doc(db, "usuarios", uid));
   if (!userSnap.exists()) return;
-  const { comercioId } = userSnap.data();
-  if (!comercioId) return;
-  await updateDoc(doc(db, "entidades", comercioId), {
+  const { comercioId: entidadId } = userSnap.data();
+  if (!entidadId) return;
+  await updateDoc(doc(db, "entidades", entidadId), {
     [`onboardingSteps.${stepId}`]: true,
   });
 }
@@ -246,14 +246,14 @@ export async function redirectAfterSave(uid) {
   const userSnap = await getDoc(doc(db, "usuarios", uid));
   if (!userSnap.exists()) return;
 
-  const { comercioId, entityType: userEntityType, capacidades: userCapacidades } = userSnap.data();
+  const { comercioId: entidadId, entityType: userEntityType, capacidades: userCapacidades } = userSnap.data();
 
-  if (!comercioId) {
+  if (!entidadId) {
     window.location.href = `/${getPrimeraPagina(userEntityType)}.html`;
     return;
   }
 
-  const snap = await getDoc(doc(db, "entidades", comercioId));
+  const snap = await getDoc(doc(db, "entidades", entidadId));
   if (!snap.exists()) return;
 
   const entidadData  = snap.data();
@@ -276,12 +276,12 @@ export async function redirectAfterSave(uid) {
 // EXPORTS PARA SUPER ADMIN
 // ============================================================
 
-export function buildFlowContext(userData, comercioData) {
+export function buildFlowContext(userData, entidadData) {
   return {
-    entityType:   comercioData.entityType  || userData.entityType  || 'comercio',
-    capacidades:  comercioData.capacidades || userData.capacidades || [],
+    entityType:   entidadData.entityType  || userData.entityType  || 'comercio',
+    capacidades:  entidadData.capacidades || userData.capacidades || [],
     comercioId:   userData.comercioId || null,
-    comercioData: comercioData,
+    comercioData: entidadData,
   };
 }
 

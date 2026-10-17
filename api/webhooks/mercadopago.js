@@ -131,14 +131,14 @@ export default async function handler(req, res) {
       throw new Error("Missing external_reference");
     }
 
-    const [comercioId, planType] = externalRef.split(":");
+    const [entidadId, planType] = externalRef.split(":");
 
-    if (!comercioId || !planType) {
+    if (!entidadId || !planType) {
       throw new Error("Invalid external_reference format");
     }
 
     // ── Idempotencia ──
-    const comercioRef = db.collection("entidades").doc(comercioId);
+    const comercioRef = db.collection("entidades").doc(entidadId);
     const comercioSnap = await comercioRef.get();
     const alreadyProcessedId = comercioSnap.data()?.plan?.last_event_id;
 
@@ -153,7 +153,7 @@ export default async function handler(req, res) {
     );
 
     await applyPlanStateChange({
-      comercioId,
+      comercioId: entidadId,
       type: planType,
       active: true,
       trial: false,

@@ -27,7 +27,7 @@ export async function runFlowRuntime() {
 
   const userData = userSnap.data();
 
-  let comercioData = {};
+  let entidadData = {};
   let comercioExiste = false;
 
   if (userData.comercioId) {
@@ -36,14 +36,14 @@ export async function runFlowRuntime() {
     );
     if (comercioSnap.exists()) {
       comercioExiste = true;
-      comercioData = comercioSnap.data();
+      entidadData = comercioSnap.data();
     }
   }
 
   const decision = flowEngine({
     currentPage,
     onboardingSteps: userData.onboardingSteps,
-    comercioSteps: comercioData.onboardingSteps,
+    comercioSteps: entidadData.onboardingSteps,
     offerType: userData.offerType,
     comercioExiste,
     editMode

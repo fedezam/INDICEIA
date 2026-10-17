@@ -35,11 +35,11 @@ runLifecycle({
     if (ctx.userData?.role !== 'admin') { window.location.href = '/'; return; }
     await runFlowController(ctx.user.uid);
 
-    const comercioId = new URLSearchParams(window.location.search).get('id');
-    if (!comercioId) { window.location.href = '/super-admin.html'; return; }
+    const entidadId = new URLSearchParams(window.location.search).get('id');
+    if (!entidadId) { window.location.href = '/super-admin.html'; return; }
 
     // El id ya viaja en la URL — dashboard.html lo va a leer a través
     // de context.js (mismo mecanismo, sin duplicar lógica acá).
-    window.location.href = `/dashboard.html?id=${comercioId}`;
+    window.location.href = `/dashboard.html?id=${entidadId}`;
   }
 });

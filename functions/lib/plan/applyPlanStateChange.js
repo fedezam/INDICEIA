@@ -2,7 +2,7 @@
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 
 export async function applyPlanStateChange({
-  comercioId,
+  comercioId: entidadId,
   type,
   active,
   trial,
@@ -12,11 +12,11 @@ export async function applyPlanStateChange({
   reason,
   eventId = null,
 }) {
-  if (!comercioId) {
+  if (!entidadId) {
     throw new Error("comercioId requerido");
   }
   const db = getFirestore();
-  const comercioRef = db.collection("entidades").doc(comercioId);
+  const comercioRef = db.collection("entidades").doc(entidadId);
   const now = Timestamp.now();
 
   const planUpdate = {
@@ -44,7 +44,7 @@ export async function applyPlanStateChange({
       const referredBy  = usuarioSnap.data()?.referredBy || null;
       if (referredBy) {
         const eventosSnap = await db.collection('referral_events')
-          .where('createdEntityId', '==', comercioId)
+          .where('createdEntityId', '==', entidadId)
           .limit(1)
           .get();
         if (!eventosSnap.empty) {
@@ -57,7 +57,7 @@ export async function applyPlanStateChange({
             referrerCode:    referredBy,
             referrerType:    'usuario',
             createdUserId:   duenoId,
-            createdEntityId: comercioId,
+            createdEntityId: entidadId,
             valid:           true,
             validatedAt:     Timestamp.now(),
             timestamp:       Timestamp.now(),
@@ -69,17 +69,17 @@ export async function applyPlanStateChange({
   }
 
   try {
-    console.log(`🔄 Regenerando entidad para comercio: ${comercioId}`);
+    console.log(`🔄 Regenerando entidad para comercio: ${entidadId}`);
     const response = await fetch('https://indiceia.dev/api/generate-and-upload-entity', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ comercioId }),
+      body: JSON.stringify({ comercioId: entidadId }),
     });
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ Error regenerando entidad:`, errorText);
     } else {
-      console.log(`✅ Entidad regenerada para: ${comercioId}`);
+      console.log(`✅ Entidad regenerada para: ${entidadId}`);
     }
   } catch (error) {
     console.error('⚠️ Error al regenerar entidad:', error);
