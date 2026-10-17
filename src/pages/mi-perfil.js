@@ -17,6 +17,7 @@ import { fillProvinciaSelector }   from '/src/shared/provincias.js';
 import { getLocalidades }          from '/src/shared/ciudades.js';
 import { createInitialPlan }       from '/src/shared/createInitialPlan.js';
 import { resolveEmbajadorId }      from '/src/shared/resolveEmbajadorId.js';
+import { resolveEntidadObjetivo } from '/src/shared/entidadObjetivo.js';
 import {
   doc, setDoc, updateDoc,
   collection, getDoc, Timestamp
@@ -35,14 +36,19 @@ const page = {
     direccion: '', localidad_principal: null, zona_cobertura: [], slug: null,
   },
   _originalSnapshot: null, _ctx: null, _isEditMode: false,
-  _isNuevo: false, _slugExiste: false, _comercioData: {},
+  _isNuevo: false, _slugExiste: false, _comercioData: {}, _entidadId: null, _esAdicional: false,
   _refs: { fields: {}, rubroSelector: null, slugInput: null, slugStatus: null, slugValidationTimer: null },
 
   async load(ctx) {
     this._ctx = ctx;
     this._isEditMode = ctx.isEditMode === true;
-    this._comercioData = ctx.comercioData || {};
-    this._isNuevo = !this._comercioData.nombre;
+    // ⟦ENTIDAD⟧ Qué entidad edita ESTA página (tipo 'prestador'). Ver entidadObjetivo.js.
+    const objetivo = resolveEntidadObjetivo(ctx, 'prestador');
+    if (objetivo.modo === 'redirigir') window.location.replace('/dashboard.html');
+    this._comercioData = objetivo.entidad;
+    this._entidadId = objetivo.entidadId;
+    this._esAdicional = objetivo.adicional === true;
+    this._isNuevo = objetivo.modo !== 'editar';
     this._slugExiste = !!this._comercioData.landing?.slug;
 
     const c = this._comercioData;
@@ -604,7 +610,8 @@ const page = {
         const slugValido = this._slugExiste || !!this._data.slug;
         return !!(camposBase && camposModalidad && slugValido);
       },
-      onSave: async ({ uid, comercioId }) => {
+      onSave: async ({ uid }) => {
+        const entidadId = page._entidadId;
         const d = page._data; const tieneLocal = d.modalidad_trabajo === 'local';
         const updates = {
           nombre: d.nombre,
@@ -627,7 +634,7 @@ const page = {
         else updates.landing = { ...page._comercioData.landing, nombre: updates.nombre, updatedAt: new Date() };
 
         if (page._isNuevo) {
-          const comercioRef = comercioId ? doc(db, 'entidades', comercioId) : doc(collection(db, 'entidades'));
+          const comercioRef = entidadId ? doc(db, 'entidades', entidadId) : doc(collection(db, 'entidades'));
           const nuevoComercioId = comercioRef.id;
 
           // ── Resolver referral + embajadorId ANTES de crear el doc,
@@ -637,11 +644,12 @@ const page = {
           const usuarioSnap = await getDoc(doc(db, 'usuarios', uid));
           const referredBy  = usuarioSnap.data()?.referredBy || null;
           const embajadorId = await resolveEmbajadorId(referredBy);
+          const capacidadesNuevas = page._esAdicional ? [] : (usuarioSnap.data()?.capacidades || []);
 
-          await setDoc(comercioRef, { ...updates, duenoId: uid, ...(embajadorId && { embajadorId }), fechaCreacion: new Date(), fechaActualizacion: new Date(), onboardingSteps: { 'mi-perfil': true } });
+          await setDoc(comercioRef, { ...updates, duenoId: uid, capacidades: capacidadesNuevas, ...(embajadorId && { embajadorId }), fechaCreacion: new Date(), fechaActualizacion: new Date(), onboardingSteps: { 'mi-perfil': true } }, { merge: true });
           await createInitialPlan(nuevoComercioId);
           await setDoc(doc(db, 'landings', d.slug), { slug: d.slug, comercioId: nuevoComercioId, nombre: updates.nombre, activo: true, createdAt: new Date(), updatedAt: new Date() });
-          await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevoComercioId });
+          await updateDoc(doc(db, 'usuarios', uid), { comercioId: nuevoComercioId, entityType: 'prestador', capacidades: capacidadesNuevas });
 
           // ── Referral tracking ──
           if (referredBy) {
@@ -650,6 +658,7 @@ const page = {
               referrerType:    'usuario',
               createdUserId:   uid,
               createdEntityId: nuevoComercioId,
+              valid:           false,
               timestamp:       new Date()
             });
           }
@@ -657,8 +666,8 @@ const page = {
 
         } else {
           updates['onboardingSteps.mi-perfil'] = true; updates.fechaActualizacion = new Date();
-          await updateDoc(doc(db, 'entidades', comercioId), updates);
-          if (!page._slugExiste) await setDoc(doc(db, 'landings', d.slug), { slug: d.slug, comercioId, nombre: updates.nombre, activo: true, createdAt: new Date(), updatedAt: new Date() });
+          await updateDoc(doc(db, 'entidades', entidadId), updates);
+          if (!page._slugExiste) await setDoc(doc(db, 'landings', d.slug), { slug: d.slug, comercioId: entidadId, nombre: updates.nombre, activo: true, createdAt: new Date(), updatedAt: new Date() });
         }
         return { success: true, stepMarked: true };
       },
