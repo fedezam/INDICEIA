@@ -54,7 +54,9 @@ export function resolveFirebaseContext(onReady, onError) {
       const isAdminViewing = userData.role === 'admin' && !!requestedId;
 
       let isEmbajadorViewing = false;
-      let comercioId = isAdminViewing ? requestedId : (userData.comercioId || null);
+      // Entidad activa del usuario: nombre nuevo primero, el viejo de respaldo (transición)
+      const entidadActivaId = userData.entidadActivaId ?? userData.comercioId ?? null;
+      let comercioId = isAdminViewing ? requestedId : entidadActivaId;
       let comercioData = null;
 
       // ── Override de embajador: requiere validar en el cliente que
@@ -83,6 +85,10 @@ export function resolveFirebaseContext(onReady, onError) {
       onReady({
         user,
         userData,
+        // Nombres nuevos (los que usa el código nuevo)
+        entidadId:   comercioId,
+        entidadData: comercioData,
+        // Alias viejos: se eliminan al final de la fase 2
         comercioId,
         comercioData,
         isAdminViewing,
