@@ -40,7 +40,7 @@ module.exports = function transformer(file, api) {
 
   root.find(j.Identifier).forEach((p) => {
     const from = p.node.name;
-    const to = MAP[from];
+    const to = Object.prototype.hasOwnProperty.call(MAP, from) ? MAP[from] : undefined;
     if (!to) return;
     const parent = p.parent.node;
 
@@ -80,7 +80,7 @@ module.exports = function transformer(file, api) {
   // Cadenas que contienen un nombre viejo: contrato o campo de Firestore → a mano
   root.find(j.Literal).forEach((p) => {
     const v = p.node.value;
-    if (typeof v === 'string' && MAP[v]) note('CADENA', p.node, `'${v}'`);
+    if (typeof v === 'string' && Object.prototype.hasOwnProperty.call(MAP, v)) note('CADENA', p.node, `'${v}'`);
   });
 
   if (lines.length) fs.appendFileSync(REPORT, lines.join('\n') + '\n');
