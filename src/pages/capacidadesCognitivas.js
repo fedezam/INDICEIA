@@ -50,7 +50,7 @@ const page = {
 
   async load(ctx) {
     this.ctx = ctx;
-    this.cognitiveState = ctx.comercioData?.cognitive_permissions || {};
+    this.cognitiveState = ctx.entidadData?.cognitive_permissions || {};
 
     // Keys originales para detectar cambios
     this.originalKeys = Object.keys(this.cognitiveState)

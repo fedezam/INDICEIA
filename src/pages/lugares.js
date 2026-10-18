@@ -100,7 +100,7 @@ const page = {
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
-    const raw = ctx.comercioData?.lugares || [];
+    const raw = ctx.entidadData?.lugares || [];
     this._lugares = structuredClone(raw).map(l => ({
       ...l,
       horarios: normalizeHorarios(l.horarios),

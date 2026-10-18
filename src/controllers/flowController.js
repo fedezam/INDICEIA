@@ -281,7 +281,7 @@ export function buildFlowContext(userData, entidadData) {
     entityType:   entidadData.entityType  || userData.entityType  || 'comercio',
     capacidades:  entidadData.capacidades || userData.capacidades || [],
     comercioId:   userData.comercioId || null,
-    comercioData: entidadData,
+    entidadData,
   };
 }
 
@@ -289,6 +289,6 @@ export function buildPipeline(ctx) {
   return calcularPipeline(
     ctx.entityType,
     ctx.capacidades  || [],
-    ctx.comercioData || {}
+    ctx.entidadData || {}
   );
 }

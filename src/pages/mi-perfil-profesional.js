@@ -50,7 +50,7 @@ const page = {
   _ctx:                 null,
   _isEditMode:          false,
   _isNuevo:             false,
-  _comercioData:        {},
+  _entidadData:        {},
   _entidadId:           null,
   _esAdicional:         false,
   _slugExiste:          false,
@@ -65,13 +65,13 @@ const page = {
     // ⟦ENTIDAD⟧ Qué entidad edita ESTA página (tipo 'profesional'). Ver entidadObjetivo.js.
     const objetivo     = resolveEntidadObjetivo(ctx, 'profesional');
     if (objetivo.modo === 'redirigir') window.location.replace('/dashboard.html');
-    this._comercioData = objetivo.entidad;
+    this._entidadData = objetivo.entidad;
     this._entidadId    = objetivo.entidadId;
     this._esAdicional  = objetivo.adicional === true;
     this._isNuevo      = objetivo.modo !== 'editar';
-    this._slugExiste   = !!this._comercioData.landing?.slug;
+    this._slugExiste   = !!this._entidadData.landing?.slug;
 
-    const c = this._comercioData;
+    const c = this._entidadData;
     this._data = {
       nombre:               c.nombre               || '',
       descripcion:          c.descripcion           || '',
@@ -296,7 +296,7 @@ const page = {
     section.appendChild(h3);
 
     if (this._slugExiste) {
-      section.appendChild(this._renderSlugReadonly(this._comercioData.landing.slug));
+      section.appendChild(this._renderSlugReadonly(this._entidadData.landing.slug));
     } else {
       section.appendChild(this._renderSlugEditable());
     }
@@ -536,7 +536,7 @@ const page = {
           };
         } else {
           updates.landing = {
-            ...page._comercioData.landing,
+            ...page._entidadData.landing,
             nombre:    d.nombre.trim(),
             updatedAt: now,
           };

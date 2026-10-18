@@ -68,7 +68,7 @@ async function load(ctx) {
   // Default explícito: 'directo'. Comercios que ya pasaron onboarding
   // antes de que existiera este step no deben quedar en un estado
   // ambiguo -- ver nota de migración en el PR de este cambio.
-  const modeloCierre = ctx.comercioData?.modeloCierre || 'directo';
+  const modeloCierre = ctx.entidadData?.modeloCierre || 'directo';
   return { modeloCierre };
 }
 
@@ -114,7 +114,7 @@ function render(ctx, state) {
 
     getData: () => ({
       modeloCierre: uiState.modeloCierre,
-      comercioId:   ctx.comercioId,
+      comercioId:   ctx.entidadId,
     }),
 
     // Sin dirtyController a propósito -- ver nota al inicio del archivo.

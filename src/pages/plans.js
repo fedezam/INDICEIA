@@ -89,7 +89,7 @@ function crearPlanCard(ctx, plan) {
 }
 
 async function handlePlanClick(ctx, plan, btn) {
-  if (!ctx.comercioId) {
+  if (!ctx.entidadId) {
     showToast('No se encontró tu comercio. Volvé a iniciar sesión.', 'error');
     return;
   }
@@ -102,7 +102,7 @@ async function handlePlanClick(ctx, plan, btn) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'create_payment_preference',
-        comercioId: ctx.comercioId,
+        comercioId: ctx.entidadId,
         planType: plan.id,
       }),
     });

@@ -46,7 +46,7 @@ runLifecycle({
     mountLayout(ctx);
     
     // Cargar datos iniciales
-    const data = ctx.comercioData || {};
+    const data = ctx.entidadData || {};
     const initialState = {
       mutuales:   data.cobertura?.mutuales   || [],
       particular: data.cobertura?.particular !== false,

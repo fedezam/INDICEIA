@@ -54,7 +54,7 @@ const page = {
   },
 
   _isEditMode:       false,
-  _comercioId:       null,
+  _entidadId:       null,
   _originalSnapshot: [],
 
   // ──────────────────────────────────────────────────────────
@@ -79,9 +79,9 @@ const page = {
   // UPLOAD IMAGEN
   // ──────────────────────────────────────────────────────────
   async _subirImagen(file) {
-    if (!this._comercioId) throw new Error('Sin comercioId');
+    if (!this._entidadId) throw new Error('Sin comercioId');
     const filename = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
-    const ref = storageRef(storage, `entidades/${this._comercioId}/productos/${filename}`);
+    const ref = storageRef(storage, `entidades/${this._entidadId}/productos/${filename}`);
     await uploadBytes(ref, file);
     return getDownloadURL(ref);
   },
@@ -91,16 +91,16 @@ const page = {
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
     this._isEditMode = ctx.isEditMode === true;
-    this._comercioId = ctx.comercioId;
+    this._entidadId = ctx.entidadId;
 
-    if (!this._comercioId) {
+    if (!this._entidadId) {
       this._data.productos   = [];
       this._originalSnapshot = [];
       return;
     }
 
     try {
-      const snap = await getDocs(collection(db, 'entidades', this._comercioId, 'productos'));
+      const snap = await getDocs(collection(db, 'entidades', this._entidadId, 'productos'));
       this._data.productos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       this._data.productos.sort((a, b) =>
         (a.nombre || '').localeCompare(b.nombre || '', 'es')

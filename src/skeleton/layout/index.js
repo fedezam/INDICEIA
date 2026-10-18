@@ -24,7 +24,7 @@ export function mountLayout(context) {
     renderLayout();
   }
 
-  const { userData, comercioData: entidadData, user, comercioId: entidadId, isAdminViewing } = context;
+  const { userData, entidadData, user, comercioId: entidadId, isAdminViewing } = context;
 
   console.log('📍 mountLayout → userData:', userData);
   console.log('📍 mountLayout → comercioData:', entidadData);
@@ -35,5 +35,5 @@ export function mountLayout(context) {
     ? entidadData.duenoId
     : user?.uid;
 
-  updateHeader({ userData, comercioData: entidadData, uid: ownerUid, comercioId: entidadId, isAdminViewing });
+  updateHeader({ userData, entidadData, uid: ownerUid, comercioId: entidadId, isAdminViewing });
 }

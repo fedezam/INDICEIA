@@ -55,7 +55,7 @@ runLifecycle({
 // LOAD
 // ============================================================
 async function load(ctx) {
-  const entrega = ctx.comercioData?.entrega || {};
+  const entrega = ctx.entidadData?.entrega || {};
   console.log('✅ [LOAD] Entrega desde DB:', entrega);
   return { entrega };
 }
@@ -130,7 +130,7 @@ function render(ctx, state) {
 
     getData: () => ({
       entrega:    uiState.entrega,
-      comercioId: ctx.comercioId,
+      comercioId: ctx.entidadId,
     }),
 
     dirtyController,

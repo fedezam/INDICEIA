@@ -41,9 +41,9 @@ const page = {
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
     console.group('[link-publico] load()');
-    console.log('comercioData:', ctx.comercioData);
+    console.log('comercioData:', ctx.entidadData);
 
-    const slug = ctx.comercioData?.landing?.slug;
+    const slug = ctx.entidadData?.landing?.slug;
 
     if (!slug) {
       console.warn('[link-publico] sin slug en landing');

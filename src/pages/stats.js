@@ -19,7 +19,7 @@ const page = {
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
   console.log('🔍 ctx completo:', ctx);
-  const slug = ctx.comercioData?.landing?.slug;
+  const slug = ctx.entidadData?.landing?.slug;
   console.log('🔍 slug:', slug);
   if (!slug) {
     console.warn('❌ slug undefined');

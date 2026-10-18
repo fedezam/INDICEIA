@@ -36,8 +36,8 @@ const page = {
   // página lee o marca.
   // ──────────────────────────────────────────────────────────
   _ownerUid() {
-    return (this._ctx?.isAdminViewing && this._ctx?.comercioData?.duenoId)
-      ? this._ctx.comercioData.duenoId
+    return (this._ctx?.isAdminViewing && this._ctx?.entidadData?.duenoId)
+      ? this._ctx.entidadData.duenoId
       : this._ctx?.user?.uid;
   },
 
@@ -47,7 +47,7 @@ const page = {
   async load(ctx) {
     this._ctx = ctx;
     const [alertas, leidas] = await Promise.all([
-      listarAlertas(ctx.comercioId),
+      listarAlertas(ctx.entidadId),
       getAlertasLeidas(this._ownerUid())
     ]);
     this._alertas = alertas;
@@ -137,8 +137,8 @@ const page = {
         // Propaga id= en modo admin — sin esto, "volver" perdería de
         // vista qué entidad se estaba mirando (mismo criterio que
         // dashboard.js:_withId()).
-        const url = this._ctx?.isAdminViewing && this._ctx?.comercioId
-          ? `/dashboard.html?id=${this._ctx.comercioId}`
+        const url = this._ctx?.isAdminViewing && this._ctx?.entidadId
+          ? `/dashboard.html?id=${this._ctx.entidadId}`
           : '/dashboard.html';
         window.location.href = url;
       }

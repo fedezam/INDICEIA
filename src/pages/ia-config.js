@@ -54,13 +54,13 @@ const page = {
   // LOAD
   // ──────────────────────────────────────────────────────────
   async load(ctx) {
-    const raw = ctx.comercioData?.aiConfig || {};
+    const raw = ctx.entidadData?.aiConfig || {};
 
-    this._nombreEntidad = ctx.comercioData?.nombre || '';
-    this._entityType    = ctx.comercioData?.entityType || 'comercio';
+    this._nombreEntidad = ctx.entidadData?.nombre || '';
+    this._entityType    = ctx.entidadData?.entityType || 'comercio';
     this._esSoporte     = this._entityType === 'soporte';
 
-    const capacidades = ctx.comercioData?.capacidades || [];
+    const capacidades = ctx.entidadData?.capacidades || [];
     this._tieneProductos =
       this._entityType === 'comercio' ||
       capacidades.includes('productos');

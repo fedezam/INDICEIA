@@ -50,11 +50,11 @@ const page = {
     this._data.ctx       = ctx;
     this._data.user      = ctx.user;
     this._data.userData  = ctx.userData || {};
-    this._data.comercio  = ctx.comercioData || {};
-    this._data.offerType = ctx.comercioData?.offerType || {};
+    this._data.comercio  = ctx.entidadData || {};
+    this._data.offerType = ctx.entidadData?.offerType || {};
 
-    const entityType  = ctx.comercioData?.entityType || 'comercio';
-    const capacidades = ctx.comercioData?.capacidades || [];
+    const entityType  = ctx.entidadData?.entityType || 'comercio';
+    const capacidades = ctx.entidadData?.capacidades || [];
 
     this._data.entityType = entityType;
     this._data.tieneProductos =
@@ -65,7 +65,7 @@ const page = {
 
     await Promise.all([
       this._loadServiciosStats(),
-      this._loadProductosStats(ctx.comercioId)
+      this._loadProductosStats(ctx.entidadId)
     ]);
 
     this._calculateEntityState();

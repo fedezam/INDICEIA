@@ -79,7 +79,7 @@ const page = {
     draft:               _draftVacio(),
     draftVariante:       null,
   },
-  _comercioId:       null,
+  _entidadId:       null,
   _originalSnapshot: [],
   _formCard:         null,
   _listaCard:        null,
@@ -102,22 +102,22 @@ const page = {
   // CARGA
   // ──────────────────────────────────────────────────────────
   async _subirImagenServicio(file) {
-    if (!this._comercioId) throw new Error('Sin comercioId');
+    if (!this._entidadId) throw new Error('Sin comercioId');
     const filename = `${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
-    const ref = storageRef(storage, `entidades/${this._comercioId}/servicios/${filename}`);
+    const ref = storageRef(storage, `entidades/${this._entidadId}/servicios/${filename}`);
     await uploadBytes(ref, file);
     return getDownloadURL(ref);
   },
 
   async load(ctx) {
-    this._comercioId = ctx.comercioId;
-    if (!this._comercioId) {
+    this._entidadId = ctx.entidadId;
+    if (!this._entidadId) {
       this._data.serviciosAcumulados = [];
       this._data.draft = _draftVacio();
       return;
     }
     try {
-      const serviciosRef = collection(db, 'entidades', this._comercioId, 'servicios');
+      const serviciosRef = collection(db, 'entidades', this._entidadId, 'servicios');
       const snapshot     = await getDocs(serviciosRef);
       // Mapeamos asegurando que los campos existan
       this._data.serviciosAcumulados = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));

@@ -4,8 +4,8 @@ import { signOut } from 'firebase/auth';
 import { resolvePlanStatus, getDiasHastaVencimiento } from '../../../../lib/plan/resolvePlanStatus.js';
 import { contarAlertasNoLeidas } from '/src/services/firebase/alerts.js';
 
-export function updateHeader({ userData, comercioData: entidadData, uid, comercioId: entidadId, isAdminViewing = false }) {
-  console.log('🧩 updateHeader()', { userData, comercioData: entidadData });
+export function updateHeader({ userData, entidadData, uid, comercioId: entidadId, isAdminViewing = false }) {
+  console.log('🧩 updateHeader()', { userData, entidadData });
 
   // Nombre usuario (abajo izquierda)
   const userEl = document.getElementById('headerUserName');

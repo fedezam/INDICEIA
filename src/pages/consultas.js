@@ -26,7 +26,7 @@ runLifecycle({
     await runFlowController(ctx.user.uid);
     mountLayout(ctx);
 
-    const consultas = ctx.comercioData?.consultas || [];
+    const consultas = ctx.entidadData?.consultas || [];
     render(ctx, consultas);
   }
 });

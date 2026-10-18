@@ -24,9 +24,9 @@ const page = {
   _selector: null,
 
   async load(ctx) {
-    const entityType = ctx.comercioData?.entityType || 'comercio';
+    const entityType = ctx.entidadData?.entityType || 'comercio';
 
-    this._data.originalTemplateId = ctx.comercioData?.templateId || null;
+    this._data.originalTemplateId = ctx.entidadData?.templateId || null;
 
     try {
       this._data.templates = await loadTemplatesForEntityType(entityType);

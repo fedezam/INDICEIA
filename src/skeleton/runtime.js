@@ -33,7 +33,7 @@ export function initializeRuntime(ctx) {
   
   console.log('[runtime] Inicializado:', {
     uid: ctx.user?.uid,
-    comercioId: ctx.comercioId,
+    comercioId: ctx.entidadId,
     isEditMode: ctx.isEditMode
   });
 }
@@ -84,7 +84,7 @@ export function getCurrentEntidadId() {
 
 /** @returns {Object|null} */
 export function getCurrentEntidadData() {
-  return getRuntimeContext().comercioData || null;
+  return getRuntimeContext().entidadData || null;
 }
 
 /** @returns {boolean} */

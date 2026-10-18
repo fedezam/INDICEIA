@@ -38,13 +38,13 @@ async function load(ctx) {
   const isDelivery = getMode() === 'delivery';
 
   const horariosData = isDelivery
-    ? ctx.comercioData?.horariosDelivery
-    : ctx.comercioData?.horarios;
+    ? ctx.entidadData?.horariosDelivery
+    : ctx.entidadData?.horarios;
 
-  const entityType       = ctx.comercioData?.entityType || 'comercio';
+  const entityType       = ctx.entidadData?.entityType || 'comercio';
   const tieneLocalFisico = entityType === 'comercio'
-    ? ctx.comercioData?.tieneLocalFisico !== false
-    : ctx.comercioData?.modalidad_trabajo === 'local';
+    ? ctx.entidadData?.tieneLocalFisico !== false
+    : ctx.entidadData?.modalidad_trabajo === 'local';
 
   return { horariosData, tieneLocalFisico, isDelivery };
 }
@@ -119,7 +119,7 @@ function render(ctx, state) {
 
     getData: () => ({
       [state.isDelivery ? 'horariosDelivery' : 'horarios']: editor.getValue(),
-      comercioId: ctx.comercioId
+      comercioId: ctx.entidadId
     }),
 
     dirtyController,

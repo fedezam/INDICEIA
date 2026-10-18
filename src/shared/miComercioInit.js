@@ -114,8 +114,8 @@ export async function runMiComercioPage(pageModule) {
 
       // Cargar módulo de página
       await pageModule.load({
-        currentComercioId: currentEntidadId,
-        comercioData: entidadData,
+        currentEntidadId,
+        entidadData,
         isNewComercio,
         userData,
         currentUser

@@ -25,7 +25,7 @@ const page = {
     this._ctx        = ctx;
     this._isEditMode = ctx.isEditMode === true;
 
-    const c      = ctx.comercioData || {};
+    const c      = ctx.entidadData || {};
     this._data   = { manual: c.manual || '' };
     this._originalSnapshot = structuredClone(this._data);
   },

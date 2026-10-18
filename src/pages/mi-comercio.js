@@ -95,7 +95,7 @@ async function load(ctx) {
   const selectedPaymentMethods = entidadData.paymentMethods || [];
   const tieneLocalFisico       = entidadData.tieneLocalFisico !== false;
 
-  return { isEditMode, isNewComercio, entidadId, esAdicional, comercioData: entidadData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
+  return { isEditMode, isNewComercio, entidadId, esAdicional, entidadData, comercioSlug, slugDisponible, selectedPaymentMethods, tieneLocalFisico };
 }
 
 // ============================================================
@@ -143,24 +143,24 @@ function render(ctx, state) {
 // ============================================================
 function renderSeccionBasicos(state, refs, uiState) {
   const section   = crearSeccion('Datos Básicos');
-  const tieneSlug = !!state.comercioData.landing?.slug;
+  const tieneSlug = !!state.entidadData.landing?.slug;
 
   refs.fields.nombre = createFormField({
     label: 'Nombre del Comercio', name: 'nombre', required: true,
-    value: state.comercioData.nombre || ''
+    value: state.entidadData.nombre || ''
   });
   section.appendChild(refs.fields.nombre);
 
   section.appendChild(
     tieneSlug
-      ? renderSlugReadonly(state.comercioData.landing.slug)
+      ? renderSlugReadonly(state.entidadData.landing.slug)
       : renderSlugEditable(refs, uiState)
   );
 
   refs.fields.descripcion = createFormField({
     label: 'Descripción', name: 'descripcion', type: 'textarea', required: true,
     placeholder: 'Contanos sobre tu comercio...',
-    value: state.comercioData.descripcion || ''
+    value: state.entidadData.descripcion || ''
   });
   section.appendChild(refs.fields.descripcion);
 
@@ -300,9 +300,9 @@ function renderSeccionUbicacion(state, refs, uiState) {
   });
   fillProvinciaSelector('Argentina', refs.fields.provincia.input);
 
-  const provinciaActual = state.comercioData.ubicacion?.provincia
-    || state.comercioData.localidad?.provincia
-    || state.comercioData.provincia
+  const provinciaActual = state.entidadData.ubicacion?.provincia
+    || state.entidadData.localidad?.provincia
+    || state.entidadData.provincia
     || '';
 
   if (provinciaActual) refs.fields.provincia.input.value = provinciaActual;
@@ -316,15 +316,15 @@ function renderSeccionUbicacion(state, refs, uiState) {
   // el usuario reselecciona ciudad manualmente, y el botón de guardar
   // queda deshabilitado para siempre (isFormValid exige localidad.id).
   const localidadObjExistente =
-    (state.comercioData.ubicacion?.localidad?.id && state.comercioData.ubicacion.localidad) ||
-    (typeof state.comercioData.localidad === 'object' && state.comercioData.localidad?.id && state.comercioData.localidad) ||
-    (typeof state.comercioData.ciudad === 'object' && state.comercioData.ciudad?.id && state.comercioData.ciudad) ||
+    (state.entidadData.ubicacion?.localidad?.id && state.entidadData.ubicacion.localidad) ||
+    (typeof state.entidadData.localidad === 'object' && state.entidadData.localidad?.id && state.entidadData.localidad) ||
+    (typeof state.entidadData.ciudad === 'object' && state.entidadData.ciudad?.id && state.entidadData.ciudad) ||
     null;
 
   const localidadActual = localidadObjExistente?.nombre
-    || state.comercioData.ubicacion?.localidad
-    || state.comercioData.localidad
-    || state.comercioData.ciudad
+    || state.entidadData.ubicacion?.localidad
+    || state.entidadData.localidad
+    || state.entidadData.ciudad
     || '';
 
   // Precargar refs.localidadSeleccionada YA, antes de cualquier interacción
@@ -343,7 +343,7 @@ function renderSeccionUbicacion(state, refs, uiState) {
       name: 'ciudad',
       type: 'autocomplete',
       required: true,
-      provincia: provincia,
+      provincia,
       value: valorInicial,
       placeholder: provincia ? 'Buscá tu localidad...' : 'Primero elegí una provincia',
       onChange: (localidadObj) => {
@@ -372,7 +372,7 @@ function renderSeccionUbicacion(state, refs, uiState) {
 
   refs.fields.direccion = createFormField({
     label: 'Dirección', name: 'direccion', required: true,
-    value: state.comercioData.direccion || ''
+    value: state.entidadData.direccion || ''
   });
   refs.fields.direccion.input.addEventListener('input', () => {
     document.dispatchEvent(new Event('change'));
@@ -391,11 +391,11 @@ function renderSeccionContacto(state, refs, uiState) {
 
   refs.fields.telefono = createFormField({
     label: 'Teléfono', name: 'telefono', type: 'tel', required: true,
-    placeholder: '+54 9 11 1234-5678', value: state.comercioData.telefono || ''
+    placeholder: '+54 9 11 1234-5678', value: state.entidadData.telefono || ''
   });
   refs.fields.email = createFormField({
     label: 'Email', name: 'email', type: 'email', required: true,
-    placeholder: 'contacto@ejemplo.com', value: state.comercioData.email || ''
+    placeholder: 'contacto@ejemplo.com', value: state.entidadData.email || ''
   });
 
   section.append(refs.fields.telefono, refs.fields.email);
@@ -413,10 +413,10 @@ function renderSeccionRedes(state, refs, uiState) {
   help.textContent = 'Al menos una red social es obligatoria.';
   section.appendChild(help);
 
-  refs.fields.website   = createFormField({ label: 'Sitio Web',  name: 'website',   type: 'url', placeholder: 'https://...',         value: state.comercioData.website   || '' });
-  refs.fields.instagram = createFormField({ label: 'Instagram',  name: 'instagram',              placeholder: '@usuario',             value: state.comercioData.instagram || '' });
-  refs.fields.facebook  = createFormField({ label: 'Facebook',   name: 'facebook',               placeholder: 'facebook.com/usuario', value: state.comercioData.facebook  || '' });
-  refs.fields.whatsapp  = createFormField({ label: 'WhatsApp',   name: 'whatsapp',  type: 'tel', placeholder: '+54 9 11 1234-5678',   value: state.comercioData.whatsapp  || '' });
+  refs.fields.website   = createFormField({ label: 'Sitio Web',  name: 'website',   type: 'url', placeholder: 'https://...',         value: state.entidadData.website   || '' });
+  refs.fields.instagram = createFormField({ label: 'Instagram',  name: 'instagram',              placeholder: '@usuario',             value: state.entidadData.instagram || '' });
+  refs.fields.facebook  = createFormField({ label: 'Facebook',   name: 'facebook',               placeholder: 'facebook.com/usuario', value: state.entidadData.facebook  || '' });
+  refs.fields.whatsapp  = createFormField({ label: 'WhatsApp',   name: 'whatsapp',  type: 'tel', placeholder: '+54 9 11 1234-5678',   value: state.entidadData.whatsapp  || '' });
 
   section.append(refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp);
   agregarListeners([refs.fields.website, refs.fields.instagram, refs.fields.facebook, refs.fields.whatsapp], refs, uiState);
@@ -434,7 +434,7 @@ function renderSeccionRubro(state, refs, uiState) {
   help.textContent = 'Elegí tu rubro y especialidad. Esto define cómo te van a encontrar tus clientes.';
   section.appendChild(help);
 
-  const rubroActual = state.comercioData.rubro || {};
+  const rubroActual = state.entidadData.rubro || {};
 
   // FIX: se agrega matricula al config inicial — sin esto, en modo edición
   // el campo de matrícula del rubro-selector queda vacío aunque la entidad
@@ -467,7 +467,7 @@ function renderSeccionTagsDescriptivos(state, refs, uiState) {
 
   refs.categorySelector = createCategorySelector({
     options:  TAGS_DESCRIPTIVOS_SUGERIDOS,
-    selected: state.comercioData.categories || [],
+    selected: state.entidadData.categories || [],
     customPlaceholder: 'O agregá una etiqueta propia...'
   });
   refs.categorySelector.addEventListener('categories-change', () => {
@@ -528,13 +528,13 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
       hasUnsavedChanges: () => hayDirtyState(refs, uiState, state),
       markSaved: () => {
         const current = getCurrentData(refs, uiState);
-        Object.assign(state.comercioData, current);
+        Object.assign(state.entidadData, current);
       }
     } : undefined,
     onSave: async ({ uid }) => {
       const updates            = getCurrentData(refs, uiState);
       updates.entityType       = 'comercio';   // antes solo lo escribía tipo-entidad
-      const originalHasLanding = state.comercioData.landing?.slug;
+      const originalHasLanding = state.entidadData.landing?.slug;
 
       if (!originalHasLanding) {
         updates.landing = {
@@ -544,7 +544,7 @@ function renderBotonGuardar(ctx, state, refs, uiState) {
         };
       } else {
         updates.landing = {
-          ...state.comercioData.landing,
+          ...state.entidadData.landing,
           nombre:    updates.nombre,
           updatedAt: new Date()
         };
@@ -733,14 +733,14 @@ function isFormValid(refs, uiState, state) {
   // pero no bloquea el guardado — así no perdemos al usuario si su rubro no
   // tiene aún una especialidad cargada (queda marcado para revisión vía resolver).
   const tieneRubro      = !!data.rubro?.tipo;
-  const slugValido      = state.comercioData.landing?.slug || uiState.slugDisponible;
+  const slugValido      = state.entidadData.landing?.slug || uiState.slugDisponible;
 
   return !!(camposBasicos && tieneRedSocial && tieneRubro && slugValido);
 }
 
 function hayDirtyState(refs, uiState, state) {
   const current  = getCurrentData(refs, uiState);
-  const original = state.comercioData;
+  const original = state.entidadData;
 
   return (
     current.nombre          !== (original.nombre          || '') ||

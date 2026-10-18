@@ -36,7 +36,7 @@ const page = {
     direccion: '', localidad_principal: null, zona_cobertura: [], slug: null,
   },
   _originalSnapshot: null, _ctx: null, _isEditMode: false,
-  _isNuevo: false, _slugExiste: false, _comercioData: {}, _entidadId: null, _esAdicional: false,
+  _isNuevo: false, _slugExiste: false, _entidadData: {}, _entidadId: null, _esAdicional: false,
   _refs: { fields: {}, rubroSelector: null, slugInput: null, slugStatus: null, slugValidationTimer: null },
 
   async load(ctx) {
@@ -45,13 +45,13 @@ const page = {
     // ⟦ENTIDAD⟧ Qué entidad edita ESTA página (tipo 'prestador'). Ver entidadObjetivo.js.
     const objetivo = resolveEntidadObjetivo(ctx, 'prestador');
     if (objetivo.modo === 'redirigir') window.location.replace('/dashboard.html');
-    this._comercioData = objetivo.entidad;
+    this._entidadData = objetivo.entidad;
     this._entidadId = objetivo.entidadId;
     this._esAdicional = objetivo.adicional === true;
     this._isNuevo = objetivo.modo !== 'editar';
-    this._slugExiste = !!this._comercioData.landing?.slug;
+    this._slugExiste = !!this._entidadData.landing?.slug;
 
-    const c = this._comercioData;
+    const c = this._entidadData;
     const localidad_principal = c.localidad_principal || (c.cobertura?.[0] ? { ...c.cobertura[0], pais: 'Argentina' } : null);
     const zona_cobertura = c.zona_cobertura || c.cobertura?.slice(1)?.map(x => ({ ...x })) || [];
 
@@ -447,7 +447,7 @@ const page = {
     const section = crearSeccion('Tu dirección en ÍndiceIA');
 
     if (this._slugExiste) {
-      section.appendChild(this._renderSlugReadonly(this._comercioData.landing.slug));
+      section.appendChild(this._renderSlugReadonly(this._entidadData.landing.slug));
     } else {
       section.appendChild(this._renderSlugEditable());
     }
@@ -631,7 +631,7 @@ const page = {
           whatsapp: d.whatsapp, telefono: d.telefono || null, email: d.email || null, instagram: d.instagram || null, entityType: 'prestador'
         };
         if (!page._slugExiste) updates.landing = { activo: true, nombre: updates.nombre, slug: d.slug, tipo: 'perfil', createdAt: new Date(), updatedAt: new Date() };
-        else updates.landing = { ...page._comercioData.landing, nombre: updates.nombre, updatedAt: new Date() };
+        else updates.landing = { ...page._entidadData.landing, nombre: updates.nombre, updatedAt: new Date() };
 
         if (page._isNuevo) {
           const comercioRef = entidadId ? doc(db, 'entidades', entidadId) : doc(collection(db, 'entidades'));
