@@ -35,7 +35,7 @@ export async function getEntidadId() {
     throw new Error('Usuario no encontrado en Firestore');
   }
 
-  const entidadId = userDoc.data().comercioId;
+  const entidadId = userDoc.data().entidadActivaId ?? userDoc.data().comercioId;
   if (!entidadId) {
     throw new Error('Usuario sin comercio asignado');
   }

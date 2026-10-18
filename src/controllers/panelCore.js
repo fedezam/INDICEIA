@@ -158,7 +158,7 @@ export async function listUsuarios({ maxResults = 100 } = {}) {
         id:           doc.id,
         nombre:       `${d.nombre || ''} ${d.apellido || ''}`.trim(),
         mail:         d.mail         || '',
-        comercioId:   d.comercioId   || null,
+        comercioId:   (d.entidadActivaId ?? d.comercioId) || null,
         referralCode: d.referralCode || null,
         referredBy:   d.referredBy   || null,
         role:         d.role         || null,

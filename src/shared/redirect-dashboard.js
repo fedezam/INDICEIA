@@ -24,7 +24,7 @@ export async function redirectToNextStep() {
           return resolve(false);
         }
         
-        const entidadId = userDoc.data().comercioId;
+        const entidadId = userDoc.data().entidadActivaId ?? userDoc.data().comercioId;
         if (!entidadId) {
           window.location.href = "/src/pages/usuario.html";
           return resolve(false);

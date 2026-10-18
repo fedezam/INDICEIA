@@ -30,9 +30,9 @@ export async function runFlowRuntime() {
   let entidadData = {};
   let comercioExiste = false;
 
-  if (userData.comercioId) {
+  if ((userData.entidadActivaId ?? userData.comercioId)) {
     const comercioSnap = await getDoc(
-      doc(db, "entidades", userData.comercioId)
+      doc(db, "entidades", (userData.entidadActivaId ?? userData.comercioId))
     );
     if (comercioSnap.exists()) {
       comercioExiste = true;

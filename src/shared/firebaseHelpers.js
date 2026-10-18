@@ -23,7 +23,7 @@ export async function getEntidadId() {
   
   if (!userDoc.exists()) throw new Error('Usuario no encontrado');
   
-  const entidadId = userDoc.data().comercioId;
+  const entidadId = userDoc.data().entidadActivaId ?? userDoc.data().comercioId;
   if (!entidadId) throw new Error('Usuario sin comercio asignado');
   
   return entidadId;

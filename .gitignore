@@ -10,3 +10,4 @@ service-account.json
 service-account.json
 .vercel
 .env*
+serviceAccount.json

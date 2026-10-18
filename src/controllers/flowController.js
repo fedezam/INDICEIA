@@ -186,13 +186,13 @@ export async function runFlowController(uid) {
       return;
     }
 
-    if (!userData.comercioId) {
+    if (!(userData.entidadActivaId ?? userData.comercioId)) {
       const firstPage = getPrimeraPagina(userData.entityType);
       if (currentPage !== firstPage) window.location.href = `/${firstPage}.html`;
       return;
     }
 
-    const ref  = doc(db, "entidades", userData.comercioId);
+    const ref  = doc(db, "entidades", (userData.entidadActivaId ?? userData.comercioId));
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
@@ -231,7 +231,7 @@ export async function runFlowController(uid) {
 export async function completeStep(uid, stepId) {
   const userSnap = await getDoc(doc(db, "usuarios", uid));
   if (!userSnap.exists()) return;
-  const { comercioId: entidadId } = userSnap.data();
+  const { entidadActivaId, comercioId: comercioIdViejo } = userSnap.data(); const entidadId = entidadActivaId ?? comercioIdViejo;
   if (!entidadId) return;
   await updateDoc(doc(db, "entidades", entidadId), {
     [`onboardingSteps.${stepId}`]: true,
@@ -246,7 +246,7 @@ export async function redirectAfterSave(uid) {
   const userSnap = await getDoc(doc(db, "usuarios", uid));
   if (!userSnap.exists()) return;
 
-  const { comercioId: entidadId, entityType: userEntityType, capacidades: userCapacidades } = userSnap.data();
+  const { entidadActivaId, comercioId: comercioIdViejo, entityType: userEntityType, capacidades: userCapacidades } = userSnap.data(); const entidadId = entidadActivaId ?? comercioIdViejo;
 
   if (!entidadId) {
     window.location.href = `/${getPrimeraPagina(userEntityType)}.html`;
@@ -280,7 +280,7 @@ export function buildFlowContext(userData, entidadData) {
   return {
     entityType:   entidadData.entityType  || userData.entityType  || 'comercio',
     capacidades:  entidadData.capacidades || userData.capacidades || [],
-    comercioId:   userData.comercioId || null,
+    comercioId:   (userData.entidadActivaId ?? userData.comercioId) || null,
     entidadData,
   };
 }

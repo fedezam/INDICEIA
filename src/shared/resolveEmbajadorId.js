@@ -49,8 +49,8 @@ export async function resolveEmbajadorId(referredByCode) {
 
     // Caso 2: el referente no es embajador, pero su propia entidad
     // ya tiene un embajador asignado → se hereda.
-    if (referrer.comercioId) {
-      const entSnap = await getDoc(doc(db, 'entidades', referrer.comercioId));
+    if ((referrer.entidadActivaId ?? referrer.comercioId)) {
+      const entSnap = await getDoc(doc(db, 'entidades', (referrer.entidadActivaId ?? referrer.comercioId)));
       if (entSnap.exists()) {
         return entSnap.data().embajadorId || null;
       }
