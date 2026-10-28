@@ -116,7 +116,7 @@ async function loadBaseContext(entidadId) {
   const snap        = await comercioRef.get();
   if (!snap.exists) throw new Error(`Entidad ${entidadId} no encontrada`);
 
-  const data       = normalizeEntityData(snap.data());
+  const data       = { ...normalizeEntityData(snap.data()), comercioId: entidadId };
   const entityType = data.entityType || 'comercio';
 
   const slug         = data.landing?.slug || null;
