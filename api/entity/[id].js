@@ -292,9 +292,13 @@ export default async function handler(req, res) {
       // Entidades viejas (Blob generado antes del TURN): se agrega acá.
       // Solo si está activa — en huelga ya lo puso buildInactiveBlock().
       // El chequeo evita duplicar si el Blob ya lo trae horneado.
-      if (planStatus.active && !TURN_LINE_RE.test(mindOut)) {
-        const turn = compileTurn(mindConfig, entity.context);
-        if (turn) mindOut = `${mindOut}\n${turn}`;
+      if (planStatus.active) {
+        const turn = compileTurn(mindConfig, entity.context, entity.visual?.mini_app_url ?? '');
+        if (turn) {
+          mindOut = TURN_LINE_RE.test(mindOut)
+            ? mindOut.replace(/^TURN:.*$/m, () => turn)
+            : `${mindOut}\n${turn}`;
+        }
       }
     }
 
