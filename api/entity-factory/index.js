@@ -15,6 +15,7 @@ import { resolveDomain }     from '../../lib/entity-factory/domain-resolver.js';
 import { buildEntityContext } from '../../src/shared/entity-context.js';
 import { normalizeEntityData } from '../../lib/entity-factory/normalizers/normalizeEntityData.js';
 import { resolveCatalogDelivery } from '../../lib/entity-factory/resolveCatalogDelivery.js'; // ← NUEVO
+import { isIndexable }       from '../../lib/plan/isIndexable.js';
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -126,13 +127,20 @@ async function loadBaseContext(entidadId) {
   const domainMeta = resolveDomain(context, data);
   context.domain_tag = domainMeta.domain_tag;
 
-  return { comercioRef, data, entityType, slug, context, domainMeta, referralCode };
+  // ¿La página SEO de esta entidad se indexa en Google? Depende del plan
+  // (tiempo real) y del apagado manual indexable:false. Se calcula sobre el
+  // documento crudo (snap.data()) porque resolvePlanStatus necesita
+  // plan.expires_at como Timestamp de Firestore. NO se mete en `context`
+  // para que no se filtre al entity.json; se pasa solo a buildSeo.
+  const indexable = isIndexable(snap.data());
+
+  return { comercioRef, data, entityType, slug, context, domainMeta, referralCode, indexable };
 }
 
 // ─── EXPORT PRINCIPAL ─────────────────────────────────────────
 
 export async function buildEntity({ comercioId: entidadId }) {
-  const { comercioRef, data, entityType, slug, context, domainMeta, referralCode } =
+  const { comercioRef, data, entityType, slug, context, domainMeta, referralCode, indexable } =
     await loadBaseContext(entidadId);
 
   // ── Builder según entityType ──────────────────────────────
@@ -159,7 +167,7 @@ export async function buildEntity({ comercioId: entidadId }) {
 
   // ── SEO ───────────────────────────────────────────────────
   const savedSeo = { seoHash: data.seoHash || null, seoHtmlUrl: data.seoHtmlUrl || null };
-  await buildSeo({ ...context, indexable: data.indexable === true }, entidadId, savedSeo, slug);
+  await buildSeo({ ...context, indexable }, entidadId, savedSeo, slug);
 
   // ── ENRIQUECER CONTEXTO PARA ENTITY.JSON (LLM) ────────────
   const geoCtx = buildEntityContext(data);
@@ -221,7 +229,7 @@ export async function buildEntity({ comercioId: entidadId }) {
 // que agregarlo acá también o esta función quedará desincronizada
 // silenciosamente respecto de buildEntity().
 export async function regenerateSeoOnly({ comercioId: entidadId }) {
-  const { data, slug, context } = await loadBaseContext(entidadId);
+  const { data, slug, context, indexable } = await loadBaseContext(entidadId);
 
   delete context.domain_tag;
   delete context.contacto;
@@ -236,9 +244,10 @@ export async function regenerateSeoOnly({ comercioId: entidadId }) {
   // esto, buildSeo hace skip por el guard de hash y el botón no tiene
   // ningún efecto visible pese a responder 200 OK.
   const seoResult = await buildSeo(
-    { ...context, indexable: data.indexable === true },
+    { ...context, indexable },
     entidadId, savedSeo, slug, { forceRegenerate: true }
   );
+
   // NOTA: no pisamos seoGeneratedAt acá — buildSeo ya lo persiste en
   // Firestore cuando efectivamente sube un HTML nuevo (skipped: false).
   // Si en algún escenario diera skipped: true (ej. sin slug), no hay

@@ -1,5 +1,6 @@
 // api/sitemap.js
 import admin from 'firebase-admin';
+import { isIndexable } from '../lib/plan/isIndexable.js';
 
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -27,10 +28,9 @@ export default async function handler(req, res) {
       const slug      = data.landing?.slug;
       const activo    = data.landing?.activo;
       const tieneSeo  = !!data.seoHtmlUrl;
-      // Default seguro: si el campo no está seteado, NO se indexa.
-      // Solo entidades marcadas a mano como indexable: true entran al sitemap
-      // (así evitamos indexar demos/pruebas por accidente).
-      const indexable = data.indexable === true;
+      // Entra al sitemap si el plan está activo (calculado en tiempo real)
+      // y no fue apagado a mano con indexable: false.
+      const indexable = isIndexable(data);
 
       if (slug && activo && tieneSeo && indexable) {
         const lastmod = data.seoGeneratedAt
