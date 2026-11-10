@@ -159,7 +159,7 @@ export async function buildEntity({ comercioId: entidadId }) {
 
   // ── SEO ───────────────────────────────────────────────────
   const savedSeo = { seoHash: data.seoHash || null, seoHtmlUrl: data.seoHtmlUrl || null };
-  await buildSeo(context, entidadId, savedSeo, slug);
+  await buildSeo({ ...context, indexable: data.indexable === true }, entidadId, savedSeo, slug);
 
   // ── ENRIQUECER CONTEXTO PARA ENTITY.JSON (LLM) ────────────
   const geoCtx = buildEntityContext(data);
@@ -235,8 +235,10 @@ export async function regenerateSeoOnly({ comercioId: entidadId }) {
   // seo.builder.js, iteración sobre el HTML/JSON-LD generado, etc.). Sin
   // esto, buildSeo hace skip por el guard de hash y el botón no tiene
   // ningún efecto visible pese a responder 200 OK.
-  const seoResult = await buildSeo(context, entidadId, savedSeo, slug, { forceRegenerate: true });
-
+  const seoResult = await buildSeo(
+    { ...context, indexable: data.indexable === true },
+    entidadId, savedSeo, slug, { forceRegenerate: true }
+  );
   // NOTA: no pisamos seoGeneratedAt acá — buildSeo ya lo persiste en
   // Firestore cuando efectivamente sube un HTML nuevo (skipped: false).
   // Si en algún escenario diera skipped: true (ej. sin slug), no hay
