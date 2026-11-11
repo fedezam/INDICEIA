@@ -17,6 +17,21 @@
 // alguno no lo tiene, "a coordinar" (misma regla que `quote` en el
 // closer). También se agregan topes de largo a zona, consulta y
 // cantidad de servicios.
+//
+// 11/11/2026:
+//   - Filtro de activo alineado con services.builder.js: `!== false`.
+//     Antes exigía `=== true` y descartaba servicios cuyo doc no tiene
+//     el campo, que el builder SÍ le entrega al LLM con su id.
+//   - Nombre completo: las variantes (hijos con parent_id) se muestran
+//     como "Padre - Variante" ("Depilacion Definitiva - Axila",
+//     "Presoterapia - 40 minutos"). Sin esto el comercio recibía
+//     "Servicio: 40 minutos".
+//   - `modalidad` es opcional: si no viene (entidades de local fijo),
+//     no se imprime la línea. Antes asumía "En el local".
+//   - Servicio inválido ya no corta con 422: la persona no ve un error
+//     en el navegador, se redirige a WhatsApp con "Servicio: a definir"
+//     y lo que haya en `consulta`. Se loguea aparte
+//     (wa_service_click_sin_servicio) para detectar el problema.
 import admin from 'firebase-admin';
 import { resolveDemoAwareNumber } from '../../lib/redirect/resolveDemoWaNumber.js';
 
@@ -73,20 +88,35 @@ export default async function handler(req, res) {
       serviciosSnap.docs.map(d => [d.id, d.data()])
     );
 
-    // inexistente o inactivo → se ignora, no se inventa
+    // inexistente o inactivo → se ignora, no se inventa.
+    // `!== false` tolera entidades donde `activo` no existe (mismo
+    // criterio que services.builder.js).
     const validos = ids
       .map(id => serviciosById.get(id))
-      .filter(s => s && s.activo === true);
+      .filter(s => s && s.activo !== false);
 
-    if (!validos.length) return res.status(422).send('Servicio inválido o inactivo');
+    const sinServicio = validos.length === 0;
+    if (sinServicio) {
+      console.warn('[SERVICE-REDIRECT] servicio inválido o inactivo', { entidadId, servicio });
+    }
+
+    // Variantes: "Padre - Variante". Si no tiene padre, el nombre solo.
+    const nombreCompleto = (s) => {
+      const n = s.nombre || 'Consulta';
+      const padre = s.parent_id ? serviciosById.get(s.parent_id) : null;
+      return padre?.nombre ? `${padre.nombre} - ${n}` : n;
+    };
 
     // ── líneas de servicio y precio ──
     let servicioLines;
     let precioLine;
 
-    if (validos.length === 1) {
+    if (sinServicio) {
+      servicioLines = ['Servicio: a definir'];
+      precioLine = null;
+    } else if (validos.length === 1) {
       const s = validos[0];
-      servicioLines = [`Servicio: ${s.nombre || 'Consulta'}`];
+      servicioLines = [`Servicio: ${nombreCompleto(s)}`];
       precioLine = tienePrecio(s)
         ? `Precio: $${s.precio.valor}`
         : 'Precio: a coordinar';
@@ -94,7 +124,7 @@ export default async function handler(req, res) {
       servicioLines = [
         'Servicios:',
         ...validos.map(s =>
-          `- ${s.nombre || 'Consulta'} - ${tienePrecio(s) ? `$${s.precio.valor}` : 'a coordinar'}`
+          `- ${nombreCompleto(s)} - ${tienePrecio(s) ? `$${s.precio.valor}` : 'a coordinar'}`
         ),
       ];
       precioLine = validos.every(tienePrecio)
@@ -102,7 +132,10 @@ export default async function handler(req, res) {
         : 'Precio total: a coordinar';
     }
 
-    const modalidadLabel = modalidad === 'domicilio' ? 'A domicilio' : 'En el local';
+    // Modalidad opcional: solo se imprime si el closer la mandó.
+    const modalidadLine = modalidad
+      ? `Modalidad: ${modalidad === 'domicilio' ? 'A domicilio' : 'En el local'}`
+      : null;
 
     const zonaTxt     = zona     ? String(zona).slice(0, MAX_ZONA)         : null;
     const consultaTxt = consulta ? String(consulta).slice(0, MAX_CONSULTA) : null;
@@ -113,7 +146,7 @@ export default async function handler(req, res) {
         : 'Hola! Vengo de IndiceIA 👋',
       '',
       ...servicioLines,
-      `Modalidad: ${modalidadLabel}`,
+      modalidadLine,
       zonaTxt ? `Zona: ${zonaTxt}` : null,
       consultaTxt ? `Consulta: ${consultaTxt}` : null,
       precioLine,
@@ -125,15 +158,19 @@ export default async function handler(req, res) {
 
     // ── log: await antes del redirect — en serverless una escritura
     // fire-and-forget puede no completarse si el proceso se congela
-    // tras responder ──
+    // tras responder. Firestore rechaza `undefined`, por eso `|| null`. ──
     const slug = data.landing?.slug || null;
     if (slug) {
       try {
+        const evento = sinServicio
+          ? 'wa_service_click_sin_servicio'
+          : (isDemo ? 'wa_service_click_demo' : 'wa_service_click');
+
         await db.collection('landing_events').add({
           destination: slug,
-          event: isDemo ? 'wa_service_click_demo' : 'wa_service_click',
-          servicio,
-          modalidad,
+          event: evento,
+          servicio: String(servicio).slice(0, 300),
+          modalidad: modalidad || null,
           zona: zonaTxt,
           timestamp: new Date(),
         });
