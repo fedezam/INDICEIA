@@ -66,6 +66,13 @@
 //      - Huelga: stripOperationalBlocks() descarta el TURN horneado y
 //        buildInactiveBlock() agrega el de huelga (emitir la
 //        escapePhrase) al final, después de ⟦INACTIVE⟧.
+// 10. DELIVERY (11/11/2026): si la entidad no tiene
+//    context.horariosDelivery, se quita del mind el token
+//    ∧delivery_hours_from_context en vez de resolverlo a
+//    delivery_hours_today=closed. Para un negocio sin delivery, "closed"
+//    es una afirmación falsa por omisión (y ruido). Corrige también los
+//    Blobs ya horneados, sin necesidad de regenerarlos; las entidades
+//    nuevas ya no lo traen (compileBoot en blocks.js).
 // ───────────────────────────────────────────────────────────────
 
 import { getHoraActual } from '../../lib/utils/getHoraActual.js';
@@ -231,23 +238,45 @@ export default async function handler(req, res) {
       ? (deliveryStr ? `delivery_hours_today=${deliveryStr}` : 'delivery_hours_today=closed')
       : 'delivery_hours_today=n/a';
 
+    // Delivery: solo existe si la entidad declara horariosDelivery
+    // (nota 10). Sin eso, el token se elimina del mind.
+    const hasDelivery = !!entity.context?.horariosDelivery;
+
     // 5. Sustituir los placeholders reales dentro del mind.
     //    {{NOMBRE_COMERCIO}} se resuelve con split/join (no replace)
     //    para reemplazar TODAS las apariciones y evitar que un
     //    nombre con "$&" o similar se interprete como patrón.
+    //
+    //    Orden de los replace de horarios: si no hay delivery, se
+    //    quita primero el segmento ∧delivery_hours_from_context; así
+    //    el replace de hours_from_context solo puede encontrar el
+    //    token suelto. Si hay delivery, el token suelto aparece
+    //    primero en el string y se resuelve antes que el de delivery.
     const nombreVisible = cleanName(entity.context?.nombre) || 'este comercio';
 
     let mindResuelto = typeof entity.mind === 'string'
       ? entity.mind
-          .replace('now=horaActual', `now=${horaActual}`)
-          .replace(
-            'day_key=diaComercialActual',
-            diaComercialActual ? `day_key=${diaComercialActual}` : 'day_key=diaComercialActual'
-          )
-          .replace('hours_from_context', hoursToken)
-          .replace('delivery_hours_from_context', deliveryToken)
-          .split(NAME_PLACEHOLDER).join(nombreVisible)
       : entity.mind;
+
+    if (typeof mindResuelto === 'string') {
+      if (!hasDelivery) {
+        mindResuelto = mindResuelto.split('∧delivery_hours_from_context').join('');
+      }
+
+      mindResuelto = mindResuelto
+        .replace('now=horaActual', () => `now=${horaActual}`)
+        .replace(
+          'day_key=diaComercialActual',
+          () => (diaComercialActual ? `day_key=${diaComercialActual}` : 'day_key=diaComercialActual')
+        )
+        .replace('hours_from_context', () => hoursToken);
+
+      if (hasDelivery) {
+        mindResuelto = mindResuelto.replace('delivery_hours_from_context', () => deliveryToken);
+      }
+
+      mindResuelto = mindResuelto.split(NAME_PLACEHOLDER).join(nombreVisible);
+    }
 
     // 6. Resolver estado de plan — en tiempo real, leyendo Firestore
     //    (firestoreData.plan), NO el Blob. Cierra el gap del cron.
