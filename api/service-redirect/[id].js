@@ -32,6 +32,10 @@
 //     en el navegador, se redirige a WhatsApp con "Servicio: a definir"
 //     y lo que haya en `consulta`. Se loguea aparte
 //     (wa_service_click_sin_servicio) para detectar el problema.
+//
+// 12/11/2026: el mensaje a WhatsApp ya no lleva emojis. Algunos
+// llegaban como "�" (caracter de reemplazo) y el mensaje es lo que lee
+// el comercio: texto plano, sin adornos.
 import admin from 'firebase-admin';
 import { resolveDemoAwareNumber } from '../../lib/redirect/resolveDemoWaNumber.js';
 
@@ -142,8 +146,8 @@ export default async function handler(req, res) {
 
     const mensaje = [
       isDemo
-        ? 'Hola! Esta es una consulta de PRUEBA generada desde el demostrador de IndiceIA 🧪'
-        : 'Hola! Vengo de IndiceIA 👋',
+        ? 'Hola! Esta es una consulta de PRUEBA generada desde el demostrador de IndiceIA'
+        : 'Hola! Vengo de IndiceIA',
       '',
       ...servicioLines,
       modalidadLine,
@@ -151,7 +155,7 @@ export default async function handler(req, res) {
       consultaTxt ? `Consulta: ${consultaTxt}` : null,
       precioLine,
       '─────────────────',
-      'Quedamos en contacto 🙏',
+      'Quedamos en contacto',
     ].filter(Boolean).join('\n');
 
     const waUrl = `https://wa.me/549${waNumber}?text=${encodeURIComponent(mensaje)}`;
